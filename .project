@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>kryptnostic-instrumentation</name>
-	<comment>Kryptnostic Java client</comment>
+	<name>kryptnostic-conductor-client</name>
+	<comment>Kryptnostic Conductor Client</comment>
 	<projects/>
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>

@@ -1,0 +1,4 @@
+##
+# Configuration for metrics service
+##
+metricsUrl: http://localhost:8084/v1 # client is on same box as metrics service
