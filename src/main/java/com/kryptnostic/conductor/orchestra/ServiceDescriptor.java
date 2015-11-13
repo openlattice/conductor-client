@@ -12,6 +12,7 @@ public class ServiceDescriptor {
     private final Optional<String> pingbackUrl;
     private final int              port;
     private final InetAddress      address;
+    private final String		   path;
 
     @JsonCreator
     public ServiceDescriptor(
@@ -20,13 +21,15 @@ public class ServiceDescriptor {
             Optional<String> healthTopic,
             Optional<String> pingbackUrl,
             int port,
-            InetAddress address ) {
+            InetAddress address,
+            String file) {
         this.name = name;
         this.host = host;
         this.healthTopic = healthTopic;
         this.pingbackUrl = pingbackUrl;
         this.port = port;
         this.address = address;
+        this.path = file;
     }
 
     public String getName() {
@@ -52,5 +55,16 @@ public class ServiceDescriptor {
     public InetAddress getAddress() {
         return address;
     }
+
+	public String getPath() {
+		return path;
+	}
+
+	@Override
+	public String toString() {
+		return "ServiceDescriptor [name=" + name + ", host=" + host + ", healthTopic=" + healthTopic + ", pingbackUrl="
+				+ pingbackUrl + ", port=" + port + ", address=" + address + "]";
+	}
+    
 
 }
