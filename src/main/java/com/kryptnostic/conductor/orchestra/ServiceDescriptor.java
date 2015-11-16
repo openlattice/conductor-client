@@ -1,35 +1,25 @@
 package com.kryptnostic.conductor.orchestra;
 
-import java.net.InetAddress;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.google.common.base.Optional;
 
-public class ServiceDescriptor {
-    private final String           name;
+public class ServiceDescriptor{
+	
+	private final String           name;
     private final String           host;
-    private final Optional<String> healthTopic;
-    private final Optional<String> pingbackUrl;
+    private final String		   pingbackUrl;
     private final int              port;
-    private final InetAddress      address;
-    private final String		   path;
+
 
     @JsonCreator
     public ServiceDescriptor(
             String name,
             String host,
-            Optional<String> healthTopic,
-            Optional<String> pingbackUrl,
-            int port,
-            InetAddress address,
-            String file) {
+            String pingbackUrl,
+            int port) {
         this.name = name;
         this.host = host;
-        this.healthTopic = healthTopic;
         this.pingbackUrl = pingbackUrl;
         this.port = port;
-        this.address = address;
-        this.path = file;
     }
 
     public String getName() {
@@ -40,11 +30,7 @@ public class ServiceDescriptor {
         return host;
     }
 
-    public Optional<String> getHealthTopic() {
-        return healthTopic;
-    }
-
-    public Optional<String> getPingbackUrl() {
+    public String getPingbackUrl() {
         return pingbackUrl;
     }
 
@@ -52,18 +38,10 @@ public class ServiceDescriptor {
         return port;
     }
 
-    public InetAddress getAddress() {
-        return address;
-    }
-
-	public String getPath() {
-		return path;
-	}
-
 	@Override
 	public String toString() {
-		return "ServiceDescriptor [name=" + name + ", host=" + host + ", healthTopic=" + healthTopic + ", pingbackUrl="
-				+ pingbackUrl + ", port=" + port + ", address=" + address + "]";
+		return "ServiceDescriptor [name=" + name + ", host=" + host + ", pingbackUrl=" + pingbackUrl + ", port=" + port
+				+ "]";
 	}
     
 
