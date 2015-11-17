@@ -36,19 +36,23 @@ public class ServiceDescriptorStreamSerializer implements SelfRegisteringStreamS
 	}
 	
 	public static void serialize(ObjectDataOutput out, ServiceDescriptor object) throws IOException {
-		out.writeUTF(object.getName());
-		out.writeUTF(object.getHost());
-		out.writeUTF(object.getPingbackUrl());
-		out.writeInt(object.getPort());
+		out.writeUTF(object.getServiceName());
+		out.writeUTF(object.getServiceHost());
+		out.writeInt(object.getServicePort());
+		out.writeUTF(object.getServicePingbackUrl());
+		out.writeUTF(object.getServiceDeployPath());
+		
 		
 	}
 	
 	public static ServiceDescriptor deserialize(ObjectDataInput in) throws IOException {
 		String name = in.readUTF();
 		String host = in.readUTF();
-		String pingBackUrl = in.readUTF();
 		int port = in.readInt();
-		return new ServiceDescriptor(name, host, pingBackUrl, port);
+		String pingBackUrl = in.readUTF();
+		String deployPath = in.readUTF();
+		
+		return new ServiceDescriptor(name, host, port, pingBackUrl, deployPath );
 	}
 
 }
