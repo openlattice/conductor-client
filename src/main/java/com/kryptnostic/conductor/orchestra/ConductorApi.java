@@ -1,16 +1,20 @@
 package com.kryptnostic.conductor.orchestra;
 
-import retrofit.http.PUT;
 
 import retrofit.http.Body;
+import retrofit.http.GET;
+import retrofit.http.POST;
 
 public interface ConductorApi {
 	
 	final String CONTROLLER 		= "/conductor";
 	final String REGISTRATION 		= "/registration";
+	final String HEALTH				= "/health";
 	
 	
-	@PUT( CONTROLLER + REGISTRATION)
+	@POST( CONTROLLER + REGISTRATION)
 	void setRegistration(@Body ServiceDescriptor desc);
-	
+
+	@GET( CONTROLLER + HEALTH)
+	void checkHealth();
 }
