@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="output" path="bin"/>
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="src/main/resources"/>
 	<classpathentry kind="src" path="src/test/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8" exported="true"/>
+	<classpathentry kind="output" path="bin"/>
 	<classpathentry kind="src" path="/rhizome" exported="true"/>
+	<classpathentry kind="src" path="/kryptnostic-mapstores" exported="true"/>
 	<classpathentry sourcepath="/Users/yao/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.12/58697792617f38bf86d8e26bc004aac505e516a9/slf4j-api-1.7.12-sources.jar" kind="lib" path="/Users/yao/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.12/8e20852d05222dc286bf1c71d78d0531e177c317/slf4j-api-1.7.12.jar" exported="true"/>
 	<classpathentry sourcepath="/Users/yao/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-slf4j-impl/2.4.1/3226497ad2b47a5a2c69aae0a6ed8a341f515957/log4j-slf4j-impl-2.4.1-sources.jar" kind="lib" path="/Users/yao/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-slf4j-impl/2.4.1/1153bec315f388b2635c25cf97105ae9dce61b58/log4j-slf4j-impl-2.4.1.jar" exported="true"/>
 	<classpathentry sourcepath="/Users/yao/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/2.4.1/f10e459cb0edf8182261b72b2d04b77fc4c85cab/log4j-api-2.4.1-sources.jar" kind="lib" path="/Users/yao/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/2.4.1/594e5643c9267ac1e91960a6b7315cf368c9ea02/log4j-api-2.4.1.jar" exported="true"/>
