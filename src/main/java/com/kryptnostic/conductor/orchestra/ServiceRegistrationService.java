@@ -7,7 +7,7 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.v1.NameConstants;
 import com.kryptnostic.conductor.v1.objects.ServiceDescriptor;
 import com.kryptnostic.conductor.v1.objects.ServiceDescriptorSet;
-import com.kryptnostic.conductor.v1processors.ServiceRegistrationServiceEntryProcessor;
+import com.kryptnostic.conductor.v1.processors.ServiceRegistrationServiceEntryProcessor;
 
 
 
