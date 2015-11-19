@@ -9,17 +9,16 @@ import com.kryptnostic.conductor.v1.objects.ServiceDescriptor;
 import com.kryptnostic.conductor.v1.objects.ServiceDescriptorSet;
 import com.kryptnostic.conductor.v1.processors.ServiceRegistrationServiceEntryProcessor;
 
-
-
 public class ServiceRegistrationService {
-	private IMap<String, Set<ServiceDescriptor>> services;
+    private IMap<String, Set<ServiceDescriptor>> services;
 
-	public ServiceRegistrationService(HazelcastInstance hazelcast) {
-		this.services = hazelcast.getMap(NameConstants.CONDUCTOR_MANAGED_SERVICES);
-	}
+    public ServiceRegistrationService( HazelcastInstance hazelcast ) {
+        this.services = hazelcast.getMap( NameConstants.CONDUCTOR_MANAGED_SERVICES );
+    }
 
-	public void register(ServiceDescriptor desc) {
-		services.submitToKey(desc.getServiceName(), new ServiceRegistrationServiceEntryProcessor(new ServiceDescriptorSet(desc)));
-	}
-	
+    public void register( ServiceDescriptor desc ) {
+        services.submitToKey( desc.getServiceName(),
+                new ServiceRegistrationServiceEntryProcessor( new ServiceDescriptorSet( desc ) ) );
+    }
+
 }
