@@ -1,7 +1,5 @@
 package com.kryptnostic.conductor.orchestra;
 
-import java.util.Set;
-
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.v1.objects.ServiceDescriptor;
@@ -10,7 +8,8 @@ import com.kryptnostic.conductor.v1.processors.ServiceRegistrationServiceEntryPr
 import com.kryptnostic.mapstores.v1.constants.HazelcastNames.Maps;
 
 public class ServiceRegistrationService {
-    private IMap<String, Set<ServiceDescriptor>> services;
+
+    private IMap<String, ServiceDescriptorSet> services;
 
     public ServiceRegistrationService( HazelcastInstance hazelcast ) {
         this.services = hazelcast.getMap( Maps.CONDUCTOR_MANAGED_SERVICES );
