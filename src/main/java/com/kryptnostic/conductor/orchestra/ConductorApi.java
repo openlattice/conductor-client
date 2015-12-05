@@ -8,14 +8,15 @@ import retrofit.http.POST;
 
 public interface ConductorApi {
 
-    final String CONTROLLER   = "/conductor";
+    final String MONITORING   = "/monitoring";
+
     final String REGISTRATION = "/registration";
     final String HEALTH       = "/health";
 
-    @POST( CONTROLLER + REGISTRATION )
+    @POST( MONITORING + REGISTRATION )
     void setRegistration( @Body ServiceDescriptor desc );
 
-    @GET( CONTROLLER + HEALTH )
+    @GET( MONITORING + HEALTH )
     void checkHealth();
 
 }
