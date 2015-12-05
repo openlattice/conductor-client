@@ -19,5 +19,4 @@ public class ServiceRegistrationService {
         services.submitToKey( desc.getServiceName(),
                 new ServiceRegistrationServiceEntryProcessor( new ServiceDescriptorSet( desc ) ) );
     }
-
 }
