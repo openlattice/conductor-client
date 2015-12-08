@@ -2,6 +2,7 @@ apply from: "http://api.krypt.int/gradle/kryptnostic.gradle"
 
 description = "Kryptnostic Conductor Client"
 group = "com.kryptnostic"
+ext.projectName = "kryptnostic-conductor-client"
 
 apply plugin: "maven-publish"
 apply plugin: "java"
