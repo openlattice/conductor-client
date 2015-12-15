@@ -1,4 +1,7 @@
-apply from: "http://api.krypt.int/gradle/kryptnostic.gradle"
+/*
+*	Kryptnostic conductor client
+* 	version is defined in kryptnostic-gradles/kryptnostic.gradle
+*/
 
 description = "Kryptnostic Conductor Client"
 group = "com.kryptnostic"
@@ -8,6 +11,8 @@ apply plugin: "java"
 apply plugin: "eclipse"
 apply plugin: "idea"
 apply plugin: "jacoco"
+
+apply from: "http://api.krypt.int/gradle/kryptnostic.gradle"
 
 sourceCompatibility=JavaVersion.VERSION_1_8
 
@@ -20,22 +25,26 @@ dependencies {
     /*
      * @Inject and @Nullable support
      */
-    compile 'javax.inject:javax.inject:1'
+    compile "javax.inject:javax.inject:${javax_inject_version}"
 
     /*
      * TESTING
      */
-    testCompile 'junit:junit:4.11'
-    testCompile "org.mockito:mockito-all:1.9.5"
+    testCompile "junit:junit:${junit_version}"
+    testCompile( "org.mockito:mockito-all:${mockito_version}" ) {
+        exclude module : 'hamcrest'
+        exclude module : 'hamcrest-core'
+    }
 
 
+	/*
+     * Kryptnostic dependencies
+     */
     if( project.hasProperty('developmentMode') && project.developmentMode ) {
         logger.quiet(project.name + " using project dependencies.")
-        compile project(":rhizome")
         compile project(":kryptnostic-mapstores")
     } else {
         logger.quiet(project.name + " using jar dependencies.")
-        compile "com.kryptnostic:rhizome:${rhizome_version}"
         compile "com.kryptnostic:kryptnostic-mapstores:${mapstores_version}"
     }
 }
