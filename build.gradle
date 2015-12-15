@@ -1,12 +1,18 @@
-apply from: "http://api.krypt.int/gradle/kryptnostic.gradle"
+/*
+*	Kryptnostic conductor client
+* 	version is defined in kryptnostic-gradles/kryptnostic.gradle
+*/
 
 description = "Kryptnostic Conductor Client"
 group = "com.kryptnostic"
+ext.projectName = "kryptnostic-conductor-client"
 
 apply plugin: "java"
 apply plugin: "eclipse"
 apply plugin: "idea"
 apply plugin: "jacoco"
+
+apply from: "http://api.krypt.int/gradle/kryptnostic.gradle"
 
 sourceCompatibility=JavaVersion.VERSION_1_8
 
