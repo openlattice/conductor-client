@@ -19,15 +19,18 @@ dependencies {
     /*
      * @Inject and @Nullable support
      */
-    compile 'javax.inject:javax.inject:1'
+    compile 'javax.inject:javax.inject:${javax_inject_version}'
     
       /*
 
     /*
      * TESTING
      */
-    testCompile 'junit:junit:4.11'
-    testCompile "org.mockito:mockito-all:1.9.5"
+    testCompile 'junit:junit:${junit_version}'
+    testCompile( "org.mockito:mockito-all:${mockito_version}" ) {
+        exclude module : 'hamcrest'
+        exclude module : 'hamcrest-core'
+    }
 
 
     if( project.hasProperty('developmentMode') && project.developmentMode ) {
