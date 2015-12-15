@@ -10,8 +10,6 @@ import com.kryptnostic.conductor.v1.objects.ServiceDescriptorSet;
 import com.kryptnostic.conductor.v1.processors.ServiceRegistrationServiceEntryProcessor;
 import com.kryptnostic.mapstores.v1.constants.HazelcastNames.Maps;
 
-// TODO: It needs a HazelcastInstance to do a registration
-// May be put it to integration test
 public class ServiceRegistrationServiceTest {
 
     @Test
