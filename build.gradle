@@ -20,8 +20,6 @@ dependencies {
      * @Inject and @Nullable support
      */
     compile 'javax.inject:javax.inject:${javax_inject_version}'
-    
-      /*
 
     /*
      * TESTING
@@ -33,6 +31,9 @@ dependencies {
     }
 
 
+	/*
+     * Kryptnostic dependencies
+     */
     if( project.hasProperty('developmentMode') && project.developmentMode ) {
         logger.quiet(project.name + " using project dependencies.")
         compile project(":kryptnostic-mapstores")
