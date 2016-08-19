@@ -38,7 +38,7 @@ public class CallableStreamSerializer implements SelfRegisteringStreamSerializer
             // always needed for closure serialization, also if registrationRequired=false
             kryo.register( ClosureSerializer.Closure.class, new ClosureSerializer() );
 
-            kryo.register( Runnable.class, new ClosureSerializer() );
+            kryo.register( Callable.class, new ClosureSerializer() );
 
             return kryo;
         }
