@@ -48,18 +48,24 @@ public class Employee implements Serializable {
             @JsonProperty( "name" ) String name,
             @JsonProperty( "title" ) String title,
             @JsonProperty( "dept" ) String dept,
-            @JsonProperty( "salary" ) String salary ) throws ParseException {
+            @JsonProperty( "salary" ) String salary ) {
         this.name = name;
         this.title = title;
         this.dept = dept;
-        this.salary = CONVERTER.parse( salary ).intValue();
+        int s;
+        try {
+            s = CONVERTER.parse( salary ).intValue();
+        } catch ( ParseException | NumberFormatException e ) {
+            s = 0;
+        }
+        this.salary = s;
     }
-    
+
     public Employee(
             String name,
             String title,
             String dept,
-             int salary ) {
+            int salary ) {
         this.name = name;
         this.title = title;
         this.dept = dept;
