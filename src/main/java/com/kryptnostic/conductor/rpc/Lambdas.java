@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-public class Lambdas {
+public class Lambdas implements Serializable {
     public static Runnable foo() {
         return (Runnable & Serializable) () -> System.out.println( "UNSTOPPABLE" );
     }
