@@ -15,7 +15,7 @@ public class Lambdas implements Serializable {
 
             @Override
             public List<Employee> call() throws Exception {
-                return api.processEmployees();
+                return null;
             }
         };
     }

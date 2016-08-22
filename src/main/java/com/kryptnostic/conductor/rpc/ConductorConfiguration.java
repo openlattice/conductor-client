@@ -16,18 +16,28 @@ public class ConductorConfiguration implements Configuration {
     private static final ConfigurationKey key                        = new SimpleConfigurationKey( "conductor.yaml" );
 
     private static final String           REPORT_EMAIL_ADDRESS_FIELD = "reportEmailAddress";
-    private static final String           SPARK_JARS_FIELD = "sparkJars";
+    private static final String           SPARK_JARS_FIELD           = "sparkJars";
+    private static final String           SPARK_MASTERS_FIELD        = "sparkMasters";
 
     private final String                  reportEmailAddress;
-    private final String[] sparkJars;
-    
+    private final List<String>            sparkMasters;
+    private final String[]                sparkJars;
+
     @JsonCreator
     public ConductorConfiguration(
             @JsonProperty( REPORT_EMAIL_ADDRESS_FIELD ) String reportEmailAddress,
+            @JsonProperty( SPARK_MASTERS_FIELD ) List<String> sparkMasters,
             @JsonProperty( SPARK_JARS_FIELD ) List<String> sparkJars ) {
         this.reportEmailAddress = reportEmailAddress;
-        //Filter out files that don't exist
-        this.sparkJars = sparkJars.stream().filter( fp -> new File(fp).exists() ).collect(Collectors.toList()).toArray( new String[]{} );
+        // Filter out files that don't exist
+        this.sparkMasters = sparkMasters;
+        this.sparkJars = sparkJars.stream().filter( fp -> new File( fp ).exists() ).collect( Collectors.toList() )
+                .toArray( new String[] {} );
+    }
+
+    @JsonProperty( SPARK_MASTERS_FIELD )
+    public List<String> getSparkMasters() {
+        return sparkMasters;
     }
 
     @JsonProperty( REPORT_EMAIL_ADDRESS_FIELD )
