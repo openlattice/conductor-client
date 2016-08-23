@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
     name = DatastoreConstants.PROPERTY_TYPES_TABLE )
-public class PropertyType extends PropertyTypeKey {
+public class PropertyType extends PropertyTypeBase {
 
     @Column(
         name = "typename" )
@@ -33,8 +33,8 @@ public class PropertyType extends PropertyTypeKey {
     }
 
     @Override
-    public PropertyType setType( String type ) {
-        this.type = type;
+    public PropertyType setName( String name ) {
+        this.name = name;
         return this;
     }
 
@@ -61,7 +61,8 @@ public class PropertyType extends PropertyTypeKey {
 
     @Override
     public String toString() {
-        return "PropertyType [typename=" + typename + ", multiplicity=" + multiplicity + "]";
+        return "PropertyType [typename=" + typename + ", multiplicity=" + multiplicity + ", datatype=" + datatype
+                + ", namespace=" + namespace + ", name=" + name + "]";
     }
 
     @Override
@@ -105,7 +106,9 @@ public class PropertyType extends PropertyTypeKey {
             @JsonProperty( SerializationConstants.DATATYPE_FIELD ) EdmPrimitiveTypeKind datatype,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) int multiplicity ) {
 
-        return new PropertyType().setNamespace( namespace ).setType( name ).setDatatype( datatype )
+        return new PropertyType().setNamespace( namespace ).setName( name ).setDatatype( datatype )
                 .setMultiplicity( multiplicity );
     }
+
+    
 }

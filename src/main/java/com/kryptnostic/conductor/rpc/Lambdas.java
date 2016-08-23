@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 public class Lambdas implements Serializable {
+    private static final long serialVersionUID = -8384320983731367620L;
+
     public static Runnable foo() {
         return (Runnable & Serializable) () -> System.out.println( "UNSTOPPABLE" );
     }

@@ -4,9 +4,7 @@ import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.datastax.driver.mapping.annotations.ClusteringColumn;
 import com.datastax.driver.mapping.annotations.Column;
-import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Table;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,13 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
     name = DatastoreConstants.ENTITY_TYPES_TABLE )
-public class EntityType {
-    @PartitionKey(
-        value = 0 )
-    private String                 namespace;
-    @ClusteringColumn(
-        value = 0 )
-    private String                 type;
+public class EntityType extends TypePK {
     @Column(
         name = "typename" )
     private String                 typename;
@@ -34,22 +26,13 @@ public class EntityType {
         name = "properties" )
     public Set<FullQualifiedName>  properties;
 
-    public String getNamespace() {
-        return namespace;
-    }
-
     public EntityType setNamespace( String namespace ) {
         this.namespace = namespace;
         return this;
     }
 
-    //TODO: Changes this to just name. Type => FQN
-    public String getType() {
-        return type;
-    }
-
-    public EntityType setType( String type ) {
-        this.type = type;
+    public EntityType setName( String name ) {
+        this.name = name;
         return this;
     }
 
@@ -84,7 +67,7 @@ public class EntityType {
 
     @Override
     public String toString() {
-        return "ObjectType [namespace=" + namespace + ", type=" + type + ", typename=" + typename + ", key=" + key
+        return "ObjectType [namespace=" + namespace + ", type=" + name + ", typename=" + typename + ", key=" + key
                 + ", allowed=" + properties + "]";
     }
 
@@ -95,7 +78,7 @@ public class EntityType {
         result = prime * result + ( ( key == null ) ? 0 : key.hashCode() );
         result = prime * result + ( ( namespace == null ) ? 0 : namespace.hashCode() );
         result = prime * result + ( ( properties == null ) ? 0 : properties.hashCode() );
-        result = prime * result + ( ( type == null ) ? 0 : type.hashCode() );
+        result = prime * result + ( ( name == null ) ? 0 : name.hashCode() );
         result = prime * result + ( ( typename == null ) ? 0 : typename.hashCode() );
         return result;
     }
@@ -133,11 +116,11 @@ public class EntityType {
         } else if ( !properties.equals( other.properties ) ) {
             return false;
         }
-        if ( type == null ) {
-            if ( other.type != null ) {
+        if ( name == null ) {
+            if ( other.name != null ) {
                 return false;
             }
-        } else if ( !type.equals( other.type ) ) {
+        } else if ( !name.equals( other.name ) ) {
             return false;
         }
         if ( typename == null ) {
@@ -158,7 +141,7 @@ public class EntityType {
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<FullQualifiedName> properties ) {
         return new EntityType()
                 .setNamespace( namespace )
-                .setType( type )
+                .setName( type )
                 .setTypename( null )
                 .setProperties( properties )
                 .setKey( key );
