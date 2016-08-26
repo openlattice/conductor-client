@@ -15,6 +15,7 @@ apply plugin: "jacoco"
 apply from: "https://raw.githubusercontent.com/kryptnostic/gradles/master/kryptnostic.gradle"
 
 sourceCompatibility=JavaVersion.VERSION_1_8
+ext.guava_version='19.0'
 
 dependencies { 
     /*
@@ -33,6 +34,10 @@ dependencies {
     compile 'com.esotericsoftware:reflectasm:1.11.3'
     compile 'org.objenesis:objenesis:2.4'
 
+    
+    compile "com.google.guava:guava:${guava_version}"
+    compile "org.apache.olingo:odata-commons-api:${odata_version}"
+    compile "org.apache.olingo:odata-commons-core:${odata_version}"
 	/*
      * Kryptnostic dependencies
      */
