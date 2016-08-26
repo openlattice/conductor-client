@@ -1,6 +1,10 @@
 package com.kryptnostic.datastore.cassandra;
 
+import java.util.UUID;
+
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeException;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.core.edm.primitivetype.EdmPrimitiveTypeFactory;
 
 import com.datastax.driver.core.DataType;
 
@@ -8,8 +12,8 @@ public class CassandraEdmMapping {
     public static String getCassandraTypeName( EdmPrimitiveTypeKind edmPrimitveTypeKind ) {
         return getCassandraType( edmPrimitveTypeKind ).getName().name();
     }
-    
-    //TODO: Consider replacing with EnumMap?
+
+    // TODO: Consider replacing with EnumMap?
     public static DataType getCassandraType( EdmPrimitiveTypeKind edmPrimitveTypeKind ) {
         switch ( edmPrimitveTypeKind ) {
             case Binary:
@@ -50,6 +54,21 @@ public class CassandraEdmMapping {
 
             default:
                 return DataType.blob();
+        }
+    }
+
+    public static Object getJavaTypeFromPrimitiveTypeKind( String literal, EdmPrimitiveTypeKind type )
+            throws EdmPrimitiveTypeException {
+        String value = EdmPrimitiveTypeFactory.getInstance( type ).fromUriLiteral( literal );
+        switch ( type ) {
+            case String:
+                return value;
+            case Guid:
+                return UUID.fromString( value );
+            case Int64:
+                return Long.parseLong( value );
+            default:
+                return value;
         }
     }
 }

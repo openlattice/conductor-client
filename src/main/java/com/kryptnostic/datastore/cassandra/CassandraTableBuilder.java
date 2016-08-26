@@ -64,15 +64,16 @@ public class CassandraTableBuilder {
     public String buildQuery() {
         Preconditions.checkState( partition != null, "Partition key was not configured" );
         StringBuilder query = new StringBuilder( "CREATE TABLE " );
+        
+        if ( ifNotExists ) {
+            query.append( "IF NOT EXISTS " );
+        }
+        
         if ( keyspace.isPresent() ) {
             query.append( keyspace.get() ).append( "." );
         }
 
         query.append( name );
-
-        if ( ifNotExists ) {
-            query.append( " IF NOT EXISTS" );
-        }
 
         query.append( " ( " );
         appendColumnDefs( query, partition );
