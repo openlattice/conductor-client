@@ -2,6 +2,7 @@ package com.kryptnostic.conductor.rpc.odata;
 
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.mapping.annotations.Column;
@@ -9,6 +10,7 @@ import com.datastax.driver.mapping.annotations.Table;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
@@ -16,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class EntityType extends TypePK {
     @Column(
         name = "typename" )
-    private String                 typename;
+    private String                 typename = null;
 
     @Column(
         name = "key" )
@@ -42,6 +44,8 @@ public class EntityType extends TypePK {
     }
 
     public EntityType setTypename( String typename ) {
+        // typename must only be set once
+        Preconditions.checkArgument( StringUtils.isBlank( this.typename ) );
         this.typename = typename;
         return this;
     }

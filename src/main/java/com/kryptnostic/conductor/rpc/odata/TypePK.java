@@ -13,10 +13,13 @@ import com.kryptnostic.rhizome.mapstores.cassandra.CassandraKey;
 public class TypePK implements CassandraKey {
     @PartitionKey(
         value = 0 )
-    protected String namespace;
+    protected String          namespace;
     @ClusteringColumn(
         value = 0 )
-    protected String name;
+    protected String          name;
+
+    @Transient
+    private FullQualifiedName fqn;
 
     public String getNamespace() {
         return namespace;
@@ -79,7 +82,12 @@ public class TypePK implements CassandraKey {
     @JsonIgnore
     @Transient
     public FullQualifiedName getFullQualifiedName() {
-        return new FullQualifiedName( namespace, name );
+        if ( fqn == null ) {
+            Preconditions.checkState( StringUtils.isNotBlank( namespace ), "Namespace must not be blank." );
+            Preconditions.checkState( StringUtils.isNotBlank( name ), "Name must not be blank." );
+            fqn = new FullQualifiedName( namespace, name );
+        }
+        return fqn;
     }
 
     @Override

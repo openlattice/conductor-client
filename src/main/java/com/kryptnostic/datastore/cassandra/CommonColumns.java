@@ -2,6 +2,8 @@ package com.kryptnostic.datastore.cassandra;
 
 import java.util.function.Function;
 
+import org.apache.commons.lang3.RandomStringUtils;
+
 import com.datastax.driver.core.DataType;
 import com.google.common.base.Preconditions;
 
@@ -12,6 +14,7 @@ public enum CommonColumns {
     DATATYPE( DataType.text() ),
     MULTIPLICITY( DataType.bigint() ),
     NAME( DataType.text() ),
+    NAMESPACE( DataType.text() ),
     OBJECTID( DataType.uuid() ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
@@ -20,9 +23,15 @@ public enum CommonColumns {
     VALUE( null );
 
     private final DataType type;
+    private final String   bindMarker;
 
     private CommonColumns( DataType type ) {
         this.type = type;
+        String maybeNewMarker = RandomStringUtils.randomAlphabetic( 8 );
+        while ( !CommonColumnsHelper.usedBindMarkers.add( maybeNewMarker ) ) {
+            maybeNewMarker = RandomStringUtils.randomAlphabetic( 8 );
+        }
+        this.bindMarker = maybeNewMarker;
     }
 
     public DataType getType( Function<CommonColumns, DataType> typeResolver ) {
@@ -33,8 +42,17 @@ public enum CommonColumns {
         return Preconditions.checkNotNull( type, "This column requires a type resolver." );
     }
 
-    @Override
-    public String toString() {
+    public String bindMarker() {
+        return bindMarker;
+    }
+
+    public String cql() {
         return super.name().toLowerCase();
+    }
+
+    @Override
+    @Deprecated
+    public String toString() {
+        return cql();
     }
 }
