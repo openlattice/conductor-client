@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.SerializedLambda;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import javax.inject.Inject;
 
@@ -12,8 +14,6 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.io.UnsafeInput;
-import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -22,34 +22,40 @@ import com.kryptnostic.conductor.rpc.ConductorSparkApi;
 import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import com.kryptnostic.services.v1.serialization.UUIDStreamSerializer;
 
+@SuppressWarnings( "rawtypes" )
 public class ConductorCallStreamSerializer implements SelfRegisteringStreamSerializer<ConductorCall> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
-        @Override
-        protected Kryo initialValue() {
-            Kryo kryo = new Kryo();
-            // Stuff from
-            // https://github.com/EsotericSoftware/kryo/blob/master/test/com/esotericsoftware/kryo/serializers/Java8ClosureSerializerTest.java
-            kryo.setInstantiatorStrategy( new Kryo.DefaultInstantiatorStrategy( new StdInstantiatorStrategy() ) );
-            kryo.register( Object[].class );
-            kryo.register( java.lang.Class.class );
+                                                               @Override
+                                                               protected Kryo initialValue() {
+                                                                   Kryo kryo = new Kryo();
+                                                                   // Stuff from
+                                                                   // https://github.com/EsotericSoftware/kryo/blob/master/test/com/esotericsoftware/kryo/serializers/Java8ClosureSerializerTest.java
+                                                                   kryo.setInstantiatorStrategy(
+                                                                           new Kryo.DefaultInstantiatorStrategy(
+                                                                                   new StdInstantiatorStrategy() ) );
+                                                                   kryo.register( Object[].class );
+                                                                   kryo.register( java.lang.Class.class );
 
-            // Shared Lambdas
-            kryo.register( Lambdas.class );
-            kryo.register( SerializedLambda.class );
+                                                                   // Shared Lambdas
+                                                                   kryo.register( Lambdas.class );
+                                                                   kryo.register( SerializedLambda.class );
 
-            // always needed for closure serialization, also if registrationRequired=false
-            kryo.register( ClosureSerializer.Closure.class, new ClosureSerializer() );
+                                                                   // always needed for closure serialization, also if
+                                                                   // registrationRequired=false
+                                                                   kryo.register( ClosureSerializer.Closure.class,
+                                                                           new ClosureSerializer() );
 
-            kryo.register( ConductorCall.class, new ClosureSerializer() );
+                                                                   kryo.register( Callable.class,
+                                                                           new ClosureSerializer() );
 
-            return kryo;
-        }
-    };
+                                                                   return kryo;
+                                                               }
+                                                           };
 
-    private final ConductorSparkApi api;
-    
+    private final ConductorSparkApi        api;
 
     @Inject
     public ConductorCallStreamSerializer( ConductorSparkApi api ) {
@@ -58,34 +64,19 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
-        // ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        // ObjectOutput oo = new ObjectOutputStream( baos );
-        // oo.writeObject( object );
-        // oo.flush();
-        // out.writeByteArray( baos.toByteArray() );
+        UUIDStreamSerializer.serialize( out, object.getUserId() );
         Output output = new Output( (OutputStream) out );
         kryoThreadLocal.get().writeClassAndObject( output, object );
         output.flush();
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
     public ConductorCall read( ObjectDataInput in ) throws IOException {
-        // byte[] b = in.readByteArray();
-        // ObjectInput input = new ObjectInputStream( new ByteArrayInputStream( b ) );
-        // ConductorCall c;
-        // try {
-        // c = (ConductorCall) input.readObject();
-        // } catch ( ClassNotFoundException e ) {
-        // e.printStackTrace();
-        // return null;
-        // }
-        // c.setApi( api );
-        // return c;
-
+        UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
-        ConductorCall c = (ConductorCall) kryoThreadLocal.get().readClassAndObject( input );
-        c.setApi( api );
-        return c;
+        Callable<?> c = (Callable<?>) kryoThreadLocal.get().readClassAndObject( input );
+        return new ConductorCall( userId, c, api );
     }
 
     @Override
