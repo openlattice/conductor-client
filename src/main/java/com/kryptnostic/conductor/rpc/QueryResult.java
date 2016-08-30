@@ -2,6 +2,7 @@ package com.kryptnostic.conductor.rpc;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.UUID;
 
@@ -16,13 +17,16 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.base.Optional;
 
-@JsonPropertyOrder( { "tableName", "queryId", "sessionId", "es" } )
 public class QueryResult implements Serializable, Iterable<Row> {
+	private static final String KEYSPACE   = "keyspace";
+	private static final String TABLE_NAME = "tableName";
+	private static final String QUERY_ID   = "queryId";
+	private static final String SESSION_ID = "sessionId";
+	private static final String ES         = "es";
 	private static final long serialVersionUID = -703400960761943382L;
 
 	public static class QueryResultCsvReader {
@@ -42,9 +46,10 @@ public class QueryResult implements Serializable, Iterable<Row> {
                 throw e;
             }
         }
-    }
+	}
 	
     private final String              tableName;
+    private final String			  keyspace;
     private final UUID	              queryId;
     private final String              sessionId;
     private final CsdlEntitySet       es;
@@ -52,58 +57,66 @@ public class QueryResult implements Serializable, Iterable<Row> {
 
     @JsonCreator
     public QueryResult(
-            @JsonProperty( "tableName" ) String tableName,
-            @JsonProperty( "queryId" ) UUID queryId,
-            @JsonProperty( "sessionId" ) String sessionId,
-            @JsonProperty( "es" ) CsdlEntitySet es ) {
-        this(tableName, queryId, sessionId, es, Optional.absent());
+            @JsonProperty( TABLE_NAME ) String tableName,
+            @JsonProperty( KEYSPACE ) String keyspace,
+            @JsonProperty( QUERY_ID ) UUID queryId,
+            @JsonProperty( SESSION_ID ) String sessionId,
+            @JsonProperty( ES ) CsdlEntitySet es ) {
+        this(tableName, keyspace, queryId, sessionId, es, Optional.absent());
     }
 
     public QueryResult(
     		String tableName,
+    		String keyspace,
             UUID queryId,
             String sessionId,
             CsdlEntitySet es,
             Optional<Session> session ) {
     	this.tableName = tableName;
+    	this.keyspace = keyspace;
         this.queryId = queryId;
         this.sessionId = sessionId;
         this.es = es;
         this.session = session;
     }
 
-    @JsonProperty( "tableName" )
+    @JsonProperty( TABLE_NAME )
     public String getTableName() {
         return tableName;
     }
+    
+    @JsonProperty( KEYSPACE )
+    public String getKeyspace() {
+    	return keyspace;
+    }
 
-    @JsonProperty( "queryId" )
+    @JsonProperty( QUERY_ID )
     public UUID getQueryId() {
         return queryId;
     }
 
-    @JsonProperty( "sessionId" )
+    @JsonProperty( SESSION_ID )
     public String getSessionId() {
         return sessionId;
     }
 
-    @JsonProperty( "es" )
+    @JsonProperty( ES )
     public CsdlEntitySet getEntitySet() {
         return es;
     }
 
     @Override
     public String toString() {
-        return "QueryResult [tableName=" + tableName + ", queryId=" + queryId + ", sessionId=" + sessionId + ", es=" + es + "]";
+        return "QueryResult [tableName=" + tableName + ", keyspace=" + keyspace + ", queryId=" + queryId + ", sessionId=" + sessionId + ", es=" + es + "]";
     }
 
 	@Override
 	public Iterator<Row> iterator() {
 		if ( session.isPresent() ) {
-			Statement statement = QueryBuilder.select().from( tableName );
+			Statement statement = QueryBuilder.select().from( keyspace, tableName );
 			ResultSet rs = session.get().execute( statement );
 			return rs.iterator();
 		}
-		return null;
+		return Collections.emptyIterator();
 	}
 }
