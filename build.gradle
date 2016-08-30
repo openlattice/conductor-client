@@ -38,6 +38,10 @@ dependencies {
     compile "com.google.guava:guava:${guava_version}"
     compile "org.apache.olingo:odata-commons-api:${odata_version}"
     compile "org.apache.olingo:odata-commons-core:${odata_version}"
+    compile "org.apache.olingo:odata-client-api:${odata_version}"
+    compile "org.apache.olingo:odata-client-core:${odata_version}"
+    compile "org.apache.olingo:odata-server-api:${odata_version}"
+    compile "org.apache.olingo:odata-server-core:${odata_version}"
 	/*
      * Kryptnostic dependencies
      */
