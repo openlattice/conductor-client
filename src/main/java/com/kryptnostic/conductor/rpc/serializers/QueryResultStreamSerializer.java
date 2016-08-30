@@ -1,6 +1,7 @@
 package com.kryptnostic.conductor.rpc.serializers;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.SerializedLambda;
 import java.util.UUID;
@@ -9,6 +10,7 @@ import java.util.concurrent.Callable;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.hazelcast.nio.ObjectDataInput;
@@ -19,10 +21,12 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.kryptnostic.services.v1.serialization.UUIDStreamSerializer;
 import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 
+import org.apache.olingo.commons.api.edm.provider.CsdlEntitySet;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.server.api.OData;
 import org.apache.olingo.server.api.serializer.ODataSerializer;
 import org.apache.olingo.server.api.serializer.SerializerException;
+import org.apache.olingo.server.api.serializer.SerializerResult;
 
 public class QueryResultStreamSerializer implements SelfRegisteringStreamSerializer<QueryResult> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
@@ -54,14 +58,15 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 		out.writeUTF( object.getTableName() );
 		out.writeUTF( object.getKeyspace() );
 		UUIDStreamSerializer.serialize( out, object.getQueryId() );
-		try {
-			ODataSerializer od = OData.newInstance().createSerializer( ContentType.TEXT_PLAIN );
-			od.
-		} catch (SerializerException e) {
-			e.printStackTrace();
-		}
 		out.writeUTF( object.getSessionId() );
+		// serialize Object.getEntitySet()
 		
+//		try {
+//			ODataSerializer od = OData.newInstance().createSerializer( ContentType.TEXT_PLAIN );
+//		//	SerializerResult result = od.entityCollection(object.getEntitySet()., entityType, object.getEntitySet(), options)
+//		} catch (SerializerException e) {
+//			e.printStackTrace();
+//		}
 		
 		Output output = new Output( (OutputStream) out );
 		kryoThreadLocal.get().writeClassAndObject(output, object);
@@ -72,13 +77,17 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 		String tableName = in.readUTF();
 		String keyspace = in.readUTF();
 		UUID queryId = UUIDStreamSerializer.deserialize( in );
-		return null;
+		String sessionId = in.readUTF();
+		// deserialize entity set
+		CsdlEntitySet es = null; // remove this
+		Input input = new Input( (InputStream) in );
+		Callable<?> c = ( Callable<?> ) kryoThreadLocal.get().readClass( input );
+		return new QueryResult( tableName, keyspace, queryId, sessionId, es );
 	}
 
 	@Override
 	public int getTypeId() {
-		//return HazelcastSerializerTypeIds.QUERY_RESULT.ordinal();
-		return 0;
+		return HazelcastSerializerTypeIds.QUERY_RESULT.ordinal();
 	}
 
 	@Override
