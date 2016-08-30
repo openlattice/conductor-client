@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.edm.provider.CsdlEntitySet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.base.Optional;
+import com.kryptnostic.conductor.rpc.odata.EntitySet;
 
 public class QueryResult implements Serializable, Iterable<Row> {
 	private static final String KEYSPACE   = "keyspace";
@@ -52,7 +52,7 @@ public class QueryResult implements Serializable, Iterable<Row> {
     private final String              tableName;    
     private final UUID	              queryId;
     private final String              sessionId;
-    private final CsdlEntitySet       es;
+    private final EntitySet           es;
     private final Optional<Session>	  session;
 
     @JsonCreator
@@ -61,7 +61,7 @@ public class QueryResult implements Serializable, Iterable<Row> {
             @JsonProperty( TABLE_NAME ) String tableName,
             @JsonProperty( QUERY_ID ) UUID queryId,
             @JsonProperty( SESSION_ID ) String sessionId,
-            @JsonProperty( ES ) CsdlEntitySet es ) {
+            @JsonProperty( ES ) EntitySet es ) {
         this(keyspace, tableName, queryId, sessionId, es, Optional.absent());
     }
 
@@ -70,7 +70,7 @@ public class QueryResult implements Serializable, Iterable<Row> {
     		String tableName,
             UUID queryId,
             String sessionId,
-            CsdlEntitySet es,
+            EntitySet es,
             Optional<Session> session ) {
     	this.keyspace = keyspace;
     	this.tableName = tableName;
@@ -101,7 +101,7 @@ public class QueryResult implements Serializable, Iterable<Row> {
     }
 
     @JsonProperty( ES )
-    public CsdlEntitySet getEntitySet() {
+    public EntitySet getEntitySet() {
         return es;
     }
 
