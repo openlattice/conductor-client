@@ -100,7 +100,7 @@ public class QueryResult implements Serializable, Iterable<Row> {
 	@Override
 	public Iterator<Row> iterator() {
 		if ( session.isPresent() ) {
-			Statement statement = QueryBuilder.select( "*" ).from( tableName );
+			Statement statement = QueryBuilder.select().from( tableName );
 			ResultSet rs = session.get().execute( statement );
 			return rs.iterator();
 		}
