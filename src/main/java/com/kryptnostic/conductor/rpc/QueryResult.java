@@ -48,8 +48,8 @@ public class QueryResult implements Serializable, Iterable<Row> {
         }
 	}
 	
-    private final String              tableName;
     private final String			  keyspace;
+    private final String              tableName;    
     private final UUID	              queryId;
     private final String              sessionId;
     private final CsdlEntitySet       es;
@@ -57,37 +57,37 @@ public class QueryResult implements Serializable, Iterable<Row> {
 
     @JsonCreator
     public QueryResult(
-            @JsonProperty( TABLE_NAME ) String tableName,
             @JsonProperty( KEYSPACE ) String keyspace,
+            @JsonProperty( TABLE_NAME ) String tableName,
             @JsonProperty( QUERY_ID ) UUID queryId,
             @JsonProperty( SESSION_ID ) String sessionId,
             @JsonProperty( ES ) CsdlEntitySet es ) {
-        this(tableName, keyspace, queryId, sessionId, es, Optional.absent());
+        this(keyspace, tableName, queryId, sessionId, es, Optional.absent());
     }
 
     public QueryResult(
-    		String tableName,
     		String keyspace,
+    		String tableName,
             UUID queryId,
             String sessionId,
             CsdlEntitySet es,
             Optional<Session> session ) {
-    	this.tableName = tableName;
     	this.keyspace = keyspace;
+    	this.tableName = tableName;
         this.queryId = queryId;
         this.sessionId = sessionId;
         this.es = es;
         this.session = session;
     }
-
-    @JsonProperty( TABLE_NAME )
-    public String getTableName() {
-        return tableName;
-    }
     
     @JsonProperty( KEYSPACE )
     public String getKeyspace() {
     	return keyspace;
+    }
+    
+    @JsonProperty( TABLE_NAME )
+    public String getTableName() {
+        return tableName;
     }
 
     @JsonProperty( QUERY_ID )
@@ -107,7 +107,7 @@ public class QueryResult implements Serializable, Iterable<Row> {
 
     @Override
     public String toString() {
-        return "QueryResult [tableName=" + tableName + ", keyspace=" + keyspace + ", queryId=" + queryId + ", sessionId=" + sessionId + ", es=" + es + "]";
+        return "QueryResult [keyspace=" + keyspace + ", tableName=" + tableName + ", queryId=" + queryId + ", sessionId=" + sessionId + ", es=" + es + "]";
     }
 
 	@Override
