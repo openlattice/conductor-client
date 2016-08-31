@@ -28,25 +28,6 @@ public class QueryResult implements Serializable, Iterable<Row> {
 	private static final String SESSION_ID = "sessionId";
 	private static final String ES         = "es";
 	private static final long serialVersionUID = -703400960761943382L;
-
-	public static class QueryResultCsvReader {
-        private static final transient CsvMapper mapper = new CsvMapper();
-        private static final transient CsvSchema schema = mapper.schemaFor( QueryResult.class );
-        private static final Logger              logger = LoggerFactory.getLogger( QueryResultCsvReader.class );
-
-        static {
-            logger.info( "Schema: {}", schema.getColumnDesc() );
-        }
-
-        public static QueryResult getQueryResult( String row ) throws IOException {
-            try {
-                return mapper.reader( QueryResult.class ).with( schema ).readValue( row );
-            } catch ( IOException e ) {
-                logger.error( "Something went wrong parsing row: {}", row, e );
-                throw e;
-            }
-        }
-	}
 	
     private final String			  keyspace;
     private final String              tableName;    
