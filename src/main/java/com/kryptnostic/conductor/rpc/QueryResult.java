@@ -104,6 +104,63 @@ public class QueryResult implements Serializable, Iterable<Row> {
     public EntitySet getEntitySet() {
         return es;
     }
+    
+    @Override
+    public boolean equals( Object obj ) {
+        if ( this == obj ) {
+            return true;
+        }
+        if ( obj == null ) {
+            return false;
+        }
+        if ( !( obj instanceof QueryResult ) ) {
+            return false;
+        }
+        QueryResult other = (QueryResult) obj;
+        if ( keyspace == null ) {
+            if ( other.keyspace != null ) {
+                return false;
+            }
+        } else if ( !keyspace.equals( other.keyspace ) ) {
+            return false;
+        }
+        if ( tableName == null ) {
+            if ( other.tableName != null ) {
+                return false;
+            }
+        } else if ( !tableName.equals( other.tableName ) ) {
+            return false;
+        }
+        if ( queryId == null ) {
+            if ( other.queryId != null ) {
+                return false;
+            }
+        } else if ( !queryId.equals( other.queryId ) ) {
+            return false;
+        }
+        if ( sessionId == null ) {
+            if ( other.sessionId != null ) {
+                return false;
+            }
+        } else if ( !sessionId.equals( other.sessionId ) ) {
+            return false;
+        }
+        if ( es == null ) {
+            if ( other.es != null ) {
+                return false;
+            }
+        } else if ( !es.equals( other.es ) ) {
+            return false;
+        }
+        if ( !session.isPresent() ) {
+            if ( other.session.isPresent() ) {
+                return false;
+            }
+        } else if ( !session.get().equals( other.session.get() ) ) {
+            return false;
+        }
+        return true;
+    }
 
     @Override
     public String toString() {
