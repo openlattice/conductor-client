@@ -6,7 +6,6 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.serializers.EntitySetStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.QueryResultStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
 

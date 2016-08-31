@@ -1,6 +1,5 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -22,9 +21,4 @@ implements Serializable {
 		return new FullQualifiedNameStreamSerializer();
 	}
 	
-    @Override
-    public void testSerializeDeserialize() throws SecurityException, IOException {
-        super.testSerializeDeserialize();
-    }
-
 }

@@ -20,7 +20,9 @@ public class FullQualifiedNameStreamSerializer implements SelfRegisteringStreamS
 
 	@Override
 	public FullQualifiedName read(ObjectDataInput in) throws IOException {
-		return new FullQualifiedName( in.readUTF(), in.readUTF() );
+		String namespace = in.readUTF();
+		String name = in.readUTF();
+		return new FullQualifiedName( namespace, name );
 	}
 
 	@Override

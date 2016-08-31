@@ -1,6 +1,5 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -15,10 +14,10 @@ implements Serializable {
 
 	@Override
 	protected EntitySet createInput() {
-		EntitySet es = new EntitySet();
-		es.setName( "foo" );
-		es.setType( new FullQualifiedName( "bar", "baz" ) );
-		es.setTitle( "yay" );
+		EntitySet es = new EntitySet()
+			.setName( "foo" )
+			.setType( new FullQualifiedName( "bar", "baz" ) )
+			.setTitle( "yay" );
 		return es;
 	}
 
@@ -27,9 +26,4 @@ implements Serializable {
 		return new EntitySetStreamSerializer();
 	}
 	
-	@Override
-    public void testSerializeDeserialize() throws SecurityException, IOException {
-        super.testSerializeDeserialize();
-    }
-
 }
