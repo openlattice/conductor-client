@@ -14,8 +14,8 @@ public class FullQualifiedNameStreamSerializer implements SelfRegisteringStreamS
 	@Override
 	public void write(ObjectDataOutput out, FullQualifiedName object)
 			throws IOException {
-		out.writeUTF( object.getName() );
 		out.writeUTF( object.getNamespace() );
+		out.writeUTF( object.getName() );
 	}
 
 	@Override
