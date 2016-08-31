@@ -22,10 +22,10 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
 
 	@Override
 	public EntitySet read(ObjectDataInput in) throws IOException {
-		EntitySet es = new EntitySet();
-		es.setName( in.readUTF() );
-		es.setType( new FullQualifiedNameStreamSerializer().read( in ) );
-		es.setTitle( in.readUTF() );
+		EntitySet es = new EntitySet()
+			.setName( in.readUTF() )
+			.setType( new FullQualifiedNameStreamSerializer().read( in ) )
+			.setTitle( in.readUTF() );
 		return es;
 	}
 
