@@ -14,10 +14,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Iterables;
 
-/**
- @param Map<String, FullQualifiedName> A map that sends typename to FullQualifedName
- @return Lambda function transforming a Row to a SetMultimap, with keys being FullQualifiedName of column typename of Row, and value being the value in the Row.
- */
 public final class ResultSetConversion {
 
 	private void ResultSetConversion() {}
@@ -26,8 +22,8 @@ public final class ResultSetConversion {
 	 * // Only one static method here; should be incorporated in class that
 	 * writes query result into Cassandra Table
 	 * 
-	 * @param Row
-	 * @return SetMultiMap<FullQualifiedName, Object>
+	 * @param mapTypenameToFullQualifiedName a Map that sends Typename to FullQualifiedName
+	 * @return a Function that converts Row to SetMultiMap, which has FullQualifiedName as a key and Row value as the corresponding value.
 	 */
 	public static Function< Row, SetMultimap<FullQualifiedName, Object> > toSetMultimap(
 			final Map<String, FullQualifiedName> mapTypenameToFullQualifiedName) {
