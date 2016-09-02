@@ -7,11 +7,10 @@ import com.datastax.driver.core.DataType;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 
-
 /**
  * This class is not thread safe.
  * 
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt; 
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  *
  */
 public class CassandraTableBuilder {
@@ -64,11 +63,11 @@ public class CassandraTableBuilder {
     public String buildQuery() {
         Preconditions.checkState( partition != null, "Partition key was not configured" );
         StringBuilder query = new StringBuilder( "CREATE TABLE " );
-        
+
         if ( ifNotExists ) {
             query.append( "IF NOT EXISTS " );
         }
-        
+
         if ( keyspace.isPresent() ) {
             query.append( keyspace.get() ).append( "." );
         }

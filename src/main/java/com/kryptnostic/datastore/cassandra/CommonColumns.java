@@ -20,7 +20,8 @@ public enum CommonColumns {
     TITLE( DataType.text() ),
     TYPENAME( DataType.text() ),
     TYPE( DataType.text() ),
-    VALUE( null );
+    VALUE( null ), 
+    FQN( DataType.text() );
 
     private final DataType type;
     private final String   bindMarker;
