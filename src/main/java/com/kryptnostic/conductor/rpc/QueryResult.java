@@ -1,15 +1,10 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.ColumnMetadata;
 import com.datastax.driver.core.ResultSet;
@@ -19,9 +14,8 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.dataformat.csv.CsvMapper;
-import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 
 public class QueryResult implements Serializable, Iterable<Row> {
@@ -171,6 +165,6 @@ public class QueryResult implements Serializable, Iterable<Row> {
 					.getTable( tableName )
 					.getColumns();
 		}
-		return new ArrayList<ColumnMetadata>();
+		return ImmutableList.of();
 	}
 }
