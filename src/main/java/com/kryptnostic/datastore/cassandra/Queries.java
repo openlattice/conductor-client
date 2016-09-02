@@ -40,6 +40,10 @@ public final class Queries {
             + "."
             + DatastoreConstants.PROPERTY_TYPES_TABLE
             + " ( namespace text, name text, typename text, dataType text, multiplicity bigint, PRIMARY KEY ( namespace, name ) )";
+    public static final String CREATE_FQN_LOOKUP_TABLE            = new CassandraTableBuilder(
+            DatastoreConstants.KEYSPACE,
+            DatastoreConstants.FQN_LOOKUP_TABLE ).partitionKey( CommonColumns.TYPENAME )
+                    .columns( CommonColumns.FQN ).buildQuery();
     public static final String CREATE_PROPERTY_TABLE               = "CREATE TABLE IF NOT EXISTS %s.%s ( objectId uuid, aclId uuid, value %s, syncIds list<uuid>, PRIMARY KEY ( ( objectId, aclId ), value ) )";
 
     public static final String CREATE_ENTITY_TABLE                 = "CREATE TABLE IF NOT EXISTS %s.%s_entities ( objectId uuid, aclId uuid, clock timestamp, entitySets set<text>, syncIds list<uuid>, PRIMARY KEY ( ( objectId, aclId ), clock ) )";
