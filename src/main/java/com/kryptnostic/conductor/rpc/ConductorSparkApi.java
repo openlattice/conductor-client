@@ -7,6 +7,6 @@ public interface ConductorSparkApi {
     // Multimap<FullQualifiedName, ?> getEntity( UUID userId, Map<FullQualifiedName, ?> key );
     // List<Entity> getEntitySet( UUID userId, EntitySet entitySet );
 
-    List<UUID> lookupEntities( UUID userId, LoadEntitiesRequest entityKey );
-    
+    List<UUID> lookupEntities( LookupEntitiesRequest entityKey );
+//    QueryResult loadAllEntitiesOfType(  
 }
