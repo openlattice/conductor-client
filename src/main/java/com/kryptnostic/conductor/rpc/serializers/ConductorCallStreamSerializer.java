@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.SerializedLambda;
 import java.util.UUID;
-import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 import javax.inject.Inject;
 
@@ -48,7 +48,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
                                                                    kryo.register( ClosureSerializer.Closure.class,
                                                                            new ClosureSerializer() );
 
-                                                                   kryo.register( Callable.class,
+                                                                   kryo.register( Function.class,
                                                                            new ClosureSerializer() );
 
                                                                    return kryo;
@@ -75,8 +75,9 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     public ConductorCall read( ObjectDataInput in ) throws IOException {
         UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
-        Callable<?> c = (Callable<?>) kryoThreadLocal.get().readClassAndObject( input );
-        return new ConductorCall( userId, c, api );
+        Function<ConductorSparkApi, ?> f = (Function<ConductorSparkApi, ?>) kryoThreadLocal.get()
+                .readClassAndObject( input );
+        return new ConductorCall( userId, f, api );
     }
 
     @Override
