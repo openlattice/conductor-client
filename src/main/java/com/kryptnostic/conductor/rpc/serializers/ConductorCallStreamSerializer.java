@@ -66,7 +66,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getUserId() );
         Output output = new Output( (OutputStream) out );
-        kryoThreadLocal.get().writeClassAndObject( output, object );
+        kryoThreadLocal.get().writeClassAndObject( output, object.getFunction() );
         output.flush();
     }
 
