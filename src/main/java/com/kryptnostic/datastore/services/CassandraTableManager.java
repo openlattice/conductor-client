@@ -46,7 +46,7 @@ public class CassandraTableManager {
     private final PreparedStatement                         getTypenameForPropertyType;
     private final PreparedStatement                         countProperty;
     private final PreparedStatement                         insertPropertyTypeLookup;
-    private final PreparedStatement                         upsertPropertyTypeLookup;
+    private final PreparedStatement                         updatePropertyTypeLookup;
     private final PreparedStatement                         deletePropertyTypeLookup;
     private final PreparedStatement                         getFullQualifiedName;
     
@@ -97,7 +97,7 @@ public class CassandraTableManager {
                         .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) );
 
-        this.upsertPropertyTypeLookup = session
+        this.updatePropertyTypeLookup = session
                 .prepare( ( QueryBuilder.update( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE ) )
                         .with( QueryBuilder.set( CommonColumns.FQN.cql(), QueryBuilder.bindMarker()))
                         .where(QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ))
@@ -227,9 +227,9 @@ public class CassandraTableManager {
                 insertPropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
     }
 
-    public void upsertFQNLookupTable( PropertyType propertyType ) {
+    public void updateFQNLookupTable( PropertyType propertyType ) {
         session.execute(
-                upsertPropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
+                updatePropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
     }
     
     public static String generateTypename() {
