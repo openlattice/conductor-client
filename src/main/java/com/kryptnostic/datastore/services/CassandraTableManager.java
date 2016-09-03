@@ -49,7 +49,7 @@ public class CassandraTableManager {
     private final PreparedStatement                         updatePropertyTypeLookup;
     private final PreparedStatement                         deletePropertyTypeLookup;
     private final PreparedStatement                         getFullQualifiedName;
-    
+
     public CassandraTableManager(
             HazelcastInstance hazelcast,
             String keyspace,
@@ -91,7 +91,7 @@ public class CassandraTableManager {
                         QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
                         QueryBuilder.bindMarker() ) ) );
-        
+
         this.insertPropertyTypeLookup = session
                 .prepare( QueryBuilder.insertInto( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE )
                         .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
@@ -99,18 +99,17 @@ public class CassandraTableManager {
 
         this.updatePropertyTypeLookup = session
                 .prepare( ( QueryBuilder.update( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE ) )
-                        .with( QueryBuilder.set( CommonColumns.FQN.cql(), QueryBuilder.bindMarker()))
-                        .where(QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ))
-                        );
+                        .with( QueryBuilder.set( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.deletePropertyTypeLookup = session
-                .prepare( QueryBuilder.delete().from( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE)
-                        .where(QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )));
+                .prepare( QueryBuilder.delete().from( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE )
+                        .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.getFullQualifiedName = session
                 .prepare( QueryBuilder.select().from( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE )
-                        .where(QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )));
-        
+                        .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
+
     }
 
     public void registerSchema( Schema schema ) {
@@ -231,7 +230,7 @@ public class CassandraTableManager {
         session.execute(
                 updatePropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
     }
-    
+
     public static String generateTypename() {
         return RandomStringUtils.randomAlphanumeric( 24 ).toLowerCase();
     }
@@ -249,13 +248,13 @@ public class CassandraTableManager {
     }
 
     public void deleteFromFQNTable( PropertyType propertyType ) {
-        FullQualifiedName fqn = getFullQualifiedNameForTypename(propertyType.getTypename());
-        if(fqn != null){
+        FullQualifiedName fqn = getFullQualifiedNameForTypename( propertyType.getTypename() );
+        if ( fqn != null ) {
             session.execute(
-                    deletePropertyTypeLookup.bind(propertyType.getTypename()));
+                    deletePropertyTypeLookup.bind( propertyType.getTypename() ) );
         }
     }
-    
+
     public String getTypenameForEntityType( EntityType entityType ) {
         return getTypenameForEntityType( entityType.getNamespace(), entityType.getName() );
     }
@@ -280,20 +279,38 @@ public class CassandraTableManager {
         return getTypenameForPropertyType( fullQualifiedName.getNamespace(), fullQualifiedName.getName() );
     }
 
-    public FullQualifiedName getFullQualifiedNameForTypename( String typename ){
+    public FullQualifiedName getFullQualifiedNameForTypename( String typename ) {
         Row r = session.execute( this.getFullQualifiedName.bind( typename ) ).one();
         if ( r == null ) {
             return null;
         }
-        return new FullQualifiedName(r.getString( CommonColumns.FQN.cql() ));
+        return new FullQualifiedName( r.getString( CommonColumns.FQN.cql() ) );
     }
 
-    public Map<String, FullQualifiedName> getFullQualifiedNamesForTypenames(Iterable<String> typenames){
-        return (Map<String, FullQualifiedName>) Maps.toMap( typenames, (String input) -> {return getFullQualifiedNameForTypename(input);} );
+    public Map<String, FullQualifiedName> getFullQualifiedNamesForTypenames( Iterable<String> typenames ) {
+        return (Map<String, FullQualifiedName>) Maps.toMap( typenames, ( String input ) -> {
+            return getFullQualifiedNameForTypename( input );
+        } );
     }
-    
+
+    public String getTablenameForEntityType( EntityType entityType ) {
+        return getTypenameForEntityType( entityType.getFullQualifiedName() );
+    }
+
+    public String getTablenameForEntityType( FullQualifiedName fqn ) {
+        return TableType.entity_.name() + getTypenameForEntityType( fqn );
+    }
+
+    public String getTablenameForPropertyType( PropertyType propertyType ) {
+        return getTablenameForPropertyType( propertyType.getFullQualifiedName() );
+    }
+
+    public String getTablenameForPropertyType( FullQualifiedName fqn ) {
+        return TableType.property_.name() + getTypenameForPropertyType( fqn );
+    }
+
     public String getTablenameForPropertyIndex( PropertyType propertyType ) {
-        return getTypenameForPropertyType( propertyType.getNamespace(), propertyType.getName() ) + "_index";
+        return getTablenameForPropertyIndex( propertyType.getFullQualifiedName() );
     }
 
     public String getTablenameForPropertyIndex( FullQualifiedName propertyType ) {
