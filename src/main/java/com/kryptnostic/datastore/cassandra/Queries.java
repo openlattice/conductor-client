@@ -97,13 +97,12 @@ public final class Queries {
             Function<CommonColumns, DataType> typeResolver ) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
-                .partitionKey( CommonColumns. OBJECTID )
+                .partitionKey( CommonColumns.OBJECTID )
                 .clusteringColumns( CommonColumns.CLOCK )
                 .columns( CommonColumns.ENTITYSETS, CommonColumns.SYNCIDS )
                 .withTypeResolver( typeResolver )
                 .buildQuery();
     }
-    
 
     // Index creation
     /*
@@ -121,7 +120,7 @@ public final class Queries {
 
     // Lightweight transactions for object insertion.
     public static final String CREATE_SCHEMA_IF_NOT_EXISTS         = "INSERT INTO sparks."
-            + Tables.SCHEMAS.getTableName()
+            + DatastoreConstants.SCHEMAS_TABLE
             + " (namespace, name, aclId, entityTypeFqns) VALUES (?,?,?,?) IF NOT EXISTS";
     public static final String CREATE_ENTITY_SET_IF_NOT_EXISTS     = "INSERT INTO sparks."
             + DatastoreConstants.ENTITY_SETS_TABLE

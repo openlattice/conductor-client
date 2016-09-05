@@ -3,9 +3,12 @@ package com.kryptnostic.datastore.cassandra;
 import java.util.Arrays;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.datastax.driver.core.DataType;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.kryptnostic.conductor.rpc.odata.Tables;
 
 /**
  * This class is not thread safe.
@@ -22,12 +25,18 @@ public class CassandraTableBuilder {
     private CommonColumns[]                   columns      = new CommonColumns[] {};
     private Function<CommonColumns, DataType> typeResolver = c -> c.getType();
 
+    public CassandraTableBuilder( String keyspace, Tables name ) {
+        this( name.getTableName() );
+        this.keyspace = Optional.of( keyspace );
+    }
+
     public CassandraTableBuilder( String keyspace, String name ) {
         this( name );
         this.keyspace = Optional.of( keyspace );
     }
 
     public CassandraTableBuilder( String name ) {
+        Preconditions.checkArgument( StringUtils.isNotBlank( name ), "Table name cannot be blank." );
         this.name = name;
     }
 
