@@ -1,0 +1,150 @@
+package com.kryptnostic.conductor.rpc;
+
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+import com.google.common.base.Function;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.SetMultimap;
+
+public class ResultSetConversionTest {
+    static ResultSet                      rs;
+    static Map<String, FullQualifiedName> map = new HashMap<String, FullQualifiedName>();
+
+    static Integer lengthColumn;
+    static List<String> columnNameList;
+    static List<String> typeList;
+    static List<String> NameList;
+    static List<FullQualifiedName> FQNList;
+
+    static Integer lengthRow;
+    static ArrayList<List<Object>> rowData;
+    
+    @BeforeClass
+    //Setup a table called "test_result_set_conversion". The columns have names from columnNameList with type specified in typeList.
+    public static void SetupCassandraDBforTesting() {
+        //initialize Columns
+        columnNameList = Arrays.asList("property_id", "property_score", "property_text");
+        typeList = Arrays.asList( "int", "int", "text");
+        NameList = Arrays.asList("id", "score", "text");
+        lengthColumn = NameList.size();
+
+        FQNList = new ArrayList<FullQualifiedName>();
+        for(int i = 0; i < lengthColumn; i++){
+            FQNList.add(new FullQualifiedName( "test_result_set_conversion", NameList.get(i)) );
+        }
+
+        // Initialize data to be entered
+        rowData = new ArrayList<List<Object>>();
+        rowData.add( Arrays.asList( 1, 100, "foo" ) );
+        rowData.add( Arrays.asList( 3, 57, "bar" ) );
+        rowData.add( Arrays.asList( 123, 3, "foobar" ) );
+        rowData.add( Arrays.asList( 24, 0, "lol" ) );
+        rowData.add( Arrays.asList( 10, 10, "test" ) );
+        lengthRow = rowData.size();
+                
+        // Create Cassandra session
+        Cluster cluster = Cluster.builder().addContactPoint( "localhost" ).build();
+        Session session = cluster.connect();
+
+        // Create keyspace and table for testing
+        session.execute(
+                "CREATE KEYSPACE IF NOT EXISTS test_result_set_conversion WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}" );
+        session.execute( "USE test_result_set_conversion" );
+        
+        String tableCreation = "CREATE TABLE IF NOT EXISTS test_result_set_conversion.Test \n(";
+        for(int i = 0; i < lengthColumn; i++){
+            tableCreation += columnNameList.get( i ) + " " + typeList.get( i ) + ", ";
+        }
+        tableCreation += "PRIMARY KEY (" + columnNameList.get( 0 ) + ")"
+                + ");";
+        
+        session.execute( tableCreation );
+        
+        // Insert into table
+        String queryHeader = "INSERT INTO test_result_set_conversion.Test ( ";
+        for(int i = 0; i < lengthColumn; i++){
+            queryHeader += columnNameList.get( i );
+            if(i != lengthColumn - 1) queryHeader += ",";
+        }
+        queryHeader += ") VALUES (";
+        
+        for(int i = 0; i < lengthRow; i++){
+            String insertTable = new String(queryHeader);
+            for(int j = 0; j < lengthColumn; j++){
+                if( typeList.get( j ) == "text" ){
+                    insertTable += "'";
+                }
+
+                insertTable += rowData.get( i ).get( j );
+
+                if( typeList.get( j ) == "text" ){
+                    insertTable += "'";
+                }
+
+                if(j != lengthColumn - 1) insertTable += ", ";
+            }
+            insertTable += ");";
+        session.execute(insertTable);
+        }
+        
+        // Query results
+        rs = session.execute( "SELECT * FROM test_result_set_conversion.Test;" );
+
+        // Declare TypeName to FQN map
+        for(int i = 0; i < lengthColumn; i++){
+            map.put( columnNameList.get( i ), FQNList.get( i ) );
+        }
+    }
+
+    @Test
+    public void Test() {
+        Function<Row, SetMultimap< FullQualifiedName, Object> > function = ResultSetConversion.toSetMultimap( map );
+        Iterable< SetMultimap<FullQualifiedName, Object> > convertedData = Iterables.transform( rs, function );
+        
+        //Initialize set for convertedData
+        Set< SetMultimap<FullQualifiedName, Object> > convertedDataSet = new HashSet< SetMultimap<FullQualifiedName, Object> >();
+        Iterator< SetMultimap<FullQualifiedName, Object> > it = convertedData.iterator();
+        while (it.hasNext()){
+            convertedDataSet.add( it.next() );
+        }
+        
+        //Initialize answer
+        Set< SetMultimap<FullQualifiedName, Object> > ans = new HashSet< SetMultimap<FullQualifiedName, Object> >();
+        for(int i = 0; i < lengthRow; i++){
+            SetMultimap<FullQualifiedName, Object> obj= HashMultimap.create();
+            for(int j = 0; j < lengthColumn; j++){
+                obj.put( FQNList.get( j ), rowData.get( i ).get( j ) );
+            }
+            ans.add( obj );
+        }
+
+        //Compare
+        assertEquals(convertedDataSet, ans);
+    }
+
+    @AfterClass
+    public static void RemoveTestingTable() {
+        Cluster cluster = Cluster.builder().addContactPoint( "localhost" ).build();
+        Session session = cluster.connect();
+        session.execute( "DROP KEYSPACE test_result_set_conversion;" );
+    }
+}
