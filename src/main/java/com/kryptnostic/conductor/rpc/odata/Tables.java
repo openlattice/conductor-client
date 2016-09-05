@@ -3,10 +3,12 @@ package com.kryptnostic.conductor.rpc.odata;
 public enum Tables {
     ENTITIES( "entities" ),
     ENTITY_SETS( "entity_sets" ),
-    ENTITY_TYPES( "" ),
+    ENTITY_TYPES( "entity_types" ),
+    FQN_LOOKUP( "fqn_lookup" ),
     PROPERTIES( "_properties" ),
-    PROPERTY_TYPES( "" ),
-    SCHEMAS( "" );
+    PROPERTY_TYPES( "property_types" ),
+    SCHEMAS( "schemas" ),
+    ENTITY_ID_TO_TYPE( "entity_id_to_type" );
 
     private final String tableName;
 

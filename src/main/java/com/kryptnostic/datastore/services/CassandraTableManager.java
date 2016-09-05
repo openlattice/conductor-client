@@ -18,6 +18,7 @@ import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CassandraTableBuilder;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -55,12 +56,7 @@ public class CassandraTableManager {
             String keyspace,
             Session session,
             MappingManager mm ) {
-        createKeyspaceSparksIfNotExists( session );
-        createSchemasTableIfNotExists( session );
-        createEntityTypesTableIfNotExists( session );
-        createPropertyTypesTableIfNotExists( session );
-        createEntitySetTableIfNotExists( session );
-        createFullQualifiedNameLookupTableIfNotExists( session );
+        initCoreTables( keyspace, session );
 
         this.session = session;
         this.keyspace = keyspace;
@@ -71,14 +67,14 @@ public class CassandraTableManager {
 
         this.getTypenameForEntityType = session.prepare( QueryBuilder
                 .select()
-                .from( keyspace, DatastoreConstants.ENTITY_TYPES_TABLE )
+                .from( keyspace, Tables.ENTITY_TYPES.getTableName() )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(),
                         QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
                         QueryBuilder.bindMarker() ) ) );
         this.getTypenameForPropertyType = session.prepare( QueryBuilder
                 .select()
-                .from( keyspace, DatastoreConstants.PROPERTY_TYPES_TABLE )
+                .from( keyspace, Tables.PROPERTY_TYPES.getTableName() )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(),
                         QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
@@ -109,6 +105,21 @@ public class CassandraTableManager {
         this.getFullQualifiedName = session
                 .prepare( QueryBuilder.select().from( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
+
+    }
+
+    private void initCoreTables( String keyspace, Session session ) {
+        createKeyspaceSparksIfNotExists( keyspace, session );
+        createSchemasTableIfNotExists( keyspace, session );
+        createEntityTypesTableIfNotExists( keyspace, session );
+        createPropertyTypesTableIfNotExists( keyspace, session );
+        createEntitySetsTableIfNotExists( keyspace, session );
+        createEntityIdToTypenameTableIfNotExists( session );
+        createFullQualifiedNameLookupTableIfNotExists( session );
+    }
+
+    private static void createEntityIdToTypenameTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateEntityIdToTypenameTableQuery( keyspace ) );
 
     }
 
@@ -387,28 +398,28 @@ public class CassandraTableManager {
                         .and( QueryBuilder.eq( CommonColumns.OBJECTID.cql(), QueryBuilder.bindMarker() ) ) ) );
     }
 
-    private static void createKeyspaceSparksIfNotExists( Session session ) {
+    private static void createKeyspaceSparksIfNotExists( String keyspace, Session session ) {
         session.execute( Queries.CREATE_KEYSPACE );
     }
 
-    private static void createSchemasTableIfNotExists( Session session ) {
-        session.execute( Queries.CREATE_SCHEMAS_TABLE );
+    private static void createSchemasTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateSchemasTableQuery( keyspace ) );
     }
 
-    private static void createEntitySetTableIfNotExists( Session session ) {
-        session.execute( Queries.CREATE_ENTITY_SETS_TABLE );
+    private static void createEntitySetsTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateEntitySetsTable( keyspace ) );
         session.execute( Queries.CREATE_INDEX_ON_NAME );
     }
 
-    private static void createEntityTypesTableIfNotExists( Session session ) {
-        session.execute( Queries.CREATE_ENTITY_TYPES_TABLE );
+    private static void createEntityTypesTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateEntityTypesTableQuery( keyspace ) );
     }
 
-    private void createPropertyTypesTableIfNotExists( Session session ) {
-        session.execute( Queries.CREATE_PROPERTY_TYPES_TABLE );
+    private void createPropertyTypesTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreatePropertyTypesTableQuery( keyspace ) );
     }
 
-    private void createFullQualifiedNameLookupTableIfNotExists( Session session ) {
-        session.execute( Queries.CREATE_FQN_LOOKUP_TABLE );
+    private void createFullQualifiedNameLookupTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateFqnLookupTableQuery( keyspace ) );
     }
 }
