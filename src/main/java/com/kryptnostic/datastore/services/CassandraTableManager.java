@@ -89,21 +89,21 @@ public class CassandraTableManager {
                         QueryBuilder.bindMarker() ) ) );
 
         this.insertPropertyTypeLookup = session
-                .prepare( QueryBuilder.insertInto( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) );
 
         this.updatePropertyTypeLookup = session
-                .prepare( ( QueryBuilder.update( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE ) )
+                .prepare( ( QueryBuilder.update( keyspace, Tables.FQN_LOOKUP.getTableName() ) )
                         .with( QueryBuilder.set( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.deletePropertyTypeLookup = session
-                .prepare( QueryBuilder.delete().from( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE )
+                .prepare( QueryBuilder.delete().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.getFullQualifiedName = session
-                .prepare( QueryBuilder.select().from( keyspace, DatastoreConstants.FQN_LOOKUP_TABLE )
+                .prepare( QueryBuilder.select().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
     }
@@ -114,8 +114,8 @@ public class CassandraTableManager {
         createEntityTypesTableIfNotExists( keyspace, session );
         createPropertyTypesTableIfNotExists( keyspace, session );
         createEntitySetsTableIfNotExists( keyspace, session );
-        createEntityIdToTypenameTableIfNotExists( session );
-        createFullQualifiedNameLookupTableIfNotExists( session );
+        createEntityIdToTypenameTableIfNotExists( keyspace, session );
+        createFullQualifiedNameLookupTableIfNotExists( keyspace, session );
     }
 
     private static void createEntityIdToTypenameTableIfNotExists( String keyspace, Session session ) {
