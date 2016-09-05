@@ -113,10 +113,10 @@ public class CassandraTableBuilder {
         int len = columns.length - 1;
         for ( int i = 0; i < len; ++i ) {
             builder
-                    .append( columns[ i ].toString() ).append( "," );
+                    .append( columns[ i ].cql() ).append( "," );
         }
         builder
-                .append( columns[ len ].toString() );
+                .append( columns[ len ].cql() );
 
         return builder.toString();
     }
@@ -126,7 +126,7 @@ public class CassandraTableBuilder {
             CommonColumns[] columns ) {
         for ( int i = 0; i < columns.length; ++i ) {
             builder
-                    .append( columns[ i ].toString() )
+                    .append( columns[ i ].cql() )
                     .append( " " )
                     .append( columns[ i ].getType( typeResolver ).toString() )
                     .append( "," );
