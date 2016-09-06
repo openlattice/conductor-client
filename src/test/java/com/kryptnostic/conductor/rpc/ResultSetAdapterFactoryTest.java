@@ -25,7 +25,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 
-public class ResultSetConversionTest {
+public class ResultSetAdapterFactoryTest {
     static ResultSet                      rs;
     static Map<String, FullQualifiedName> map = new HashMap<String, FullQualifiedName>();
 
@@ -43,6 +43,7 @@ public class ResultSetConversionTest {
     public static void SetupCassandraDBforTesting() {
         //initialize Columns
         columnNameList = Arrays.asList("property_id", "property_score", "property_text");
+        // Hard-coded test; right now only accepts int and text. Adding new type requires modifying "Wrapper when type is text" lines below.
         typeList = Arrays.asList( "int", "int", "text");
         NameList = Arrays.asList("id", "score", "text");
         lengthColumn = NameList.size();
@@ -90,12 +91,14 @@ public class ResultSetConversionTest {
         for(int i = 0; i < lengthRow; i++){
             String insertTable = new String(queryHeader);
             for(int j = 0; j < lengthColumn; j++){
+                //Wrapper when type is text
                 if( typeList.get( j ) == "text" ){
                     insertTable += "'";
                 }
 
                 insertTable += rowData.get( i ).get( j );
 
+                //Wrapper when type is text
                 if( typeList.get( j ) == "text" ){
                     insertTable += "'";
                 }
@@ -113,11 +116,14 @@ public class ResultSetConversionTest {
         for(int i = 0; i < lengthColumn; i++){
             map.put( columnNameList.get( i ), FQNList.get( i ) );
         }
+        
+        // Close Cassandra session
+        cluster.close();
     }
 
     @Test
     public void Test() {
-        Function<Row, SetMultimap< FullQualifiedName, Object> > function = ResultSetConversion.toSetMultimap( map );
+        Function<Row, SetMultimap< FullQualifiedName, Object> > function = ResultSetAdapterFactory.toSetMultimap( map );
         Iterable< SetMultimap<FullQualifiedName, Object> > convertedData = Iterables.transform( rs, function );
         
         //Initialize set for convertedData
@@ -143,8 +149,12 @@ public class ResultSetConversionTest {
 
     @AfterClass
     public static void RemoveTestingTable() {
+        // Remove table created for this test after.
         Cluster cluster = Cluster.builder().addContactPoint( "localhost" ).build();
         Session session = cluster.connect();
         session.execute( "DROP KEYSPACE test_result_set_conversion;" );
+        
+        // Close Cassandra session
+        cluster.close();
     }
 }
