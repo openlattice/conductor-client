@@ -204,32 +204,4 @@ public class Schema {
 
         return schema;
     }
-
-    public static SchemaFactory schemaFactoryWithAclId( UUID aclId ) {
-        return new SchemaFactory( aclId );
-    }
-
-    public static final class SchemaFactory {
-        private final UUID aclId;
-
-        SchemaFactory( UUID aclId ) {
-            this.aclId = aclId;
-        }
-
-        public Schema fromRow( Row r ) {
-            String namespace = r.getString( CommonColumns.NAMESPACE.cql() );
-            String name = r.getString( CommonColumns.NAME.cql() );
-            Set<FullQualifiedName> entityTypeFqns = MoreObjects
-                    .firstNonNull( r.get( CommonColumns.ENTITY_TYPES.cql(), new TypeToken<Set<FullQualifiedName>>() {
-                        private static final long serialVersionUID = 7226187471436343452L;
-                    } ), ImmutableSet.of() );
-            return new Schema()
-                    .setAclId( aclId )
-                    .setNamespace( namespace )
-                    .setName( name )
-                    .setEntityTypeFqns( entityTypeFqns );
-
-        }
-    }
-
 }

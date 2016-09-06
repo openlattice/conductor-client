@@ -1,10 +1,10 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
@@ -32,6 +31,7 @@ import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
@@ -55,89 +55,78 @@ public class EdmService implements EdmManager {
         Result<EntityType> objectTypes = edmStore.getEntityTypes();
         List<Schema> schemas = ImmutableList.copyOf( getSchemas() );
         schemas.forEach( schema -> logger.info( "Namespace loaded: {}", schema ) );
-        schemas.forEach( this::enrichSchemaWithEntityTypes );
-        schemas.forEach( this::enrichSchemaWithPropertyTypes );
         schemas.forEach( tableManager::registerSchema );
         objectTypes.forEach( objectType -> logger.info( "Object read: {}", objectType ) );
     }
 
     @Override
     public Iterable<Schema> getSchemas() {
+        return getSchemas( EnumSet.allOf( TypeDetails.class ) );
+    }
+
+    @Override
+    public Iterable<Schema> getSchemas( Set<TypeDetails> requestedDetails ) {
         Iterable<UUID> aclIds = ImmutableSet.of( ACLs.EVERYONE_ACL );
-        return Iterables.filter( Iterables.transform( aclIds, aclId -> {
+        Iterable<Iterable<Schema>> results = Iterables.transform( aclIds, ( UUID aclId ) -> {
             PreparedStatement stmt = tableManager.getAllSchemasStatement( aclId );
 
             if ( stmt == null ) {
                 return null;
             }
 
-            ResultSet rs = session.execute( stmt.bind() );
-
-            return Util.transformSafely( rs.one(), r -> Schema.schemaFactoryWithAclId( aclId ).fromRow( r ) );
-        } ), Predicates.notNull() );
-
+            final SchemaDetailsAdapter adapter = new SchemaDetailsAdapter(
+                    aclId,
+                    entityTypeMapper,
+                    propertyTypeMapper,
+                    requestedDetails );
+            return Iterables.transform( session.execute( stmt.bind() ), adapter );
+        } );
+        return Iterables.filter( Iterables.concat( results ), Predicates.notNull() );
     }
 
     @Override
-    public Iterable<Schema> getSchemasInNamespace( String namespace ) {
+    public Iterable<Schema> getSchemasInNamespace( String namespace, Set<TypeDetails> requestedDetails ) {
+        Preconditions.checkArgument( StringUtils.isNotBlank( namespace ), "Namespace cannot be blank." );
         Iterable<UUID> aclIds = ImmutableSet.of( ACLs.EVERYONE_ACL );
-        return Iterables.filter( Iterables.transform( aclIds, aclId -> {
+        Iterable<Iterable<Schema>> results = Iterables.transform( aclIds, aclId -> {
             PreparedStatement stmt = tableManager.getSchemasInNamespaceStatement( aclId );
 
             if ( stmt == null ) {
                 return null;
             }
 
-            ResultSet rs = session.execute( stmt.bind( namespace ) );
+            final SchemaDetailsAdapter adapter = new SchemaDetailsAdapter(
+                    aclId,
+                    entityTypeMapper,
+                    propertyTypeMapper,
+                    requestedDetails );
 
-            return Util.transformSafely( rs.one(), r -> Schema.schemaFactoryWithAclId( aclId ).fromRow( r ) );
-        } ), Predicates.notNull() );
+            return Iterables.transform( session.execute( stmt.bind( namespace ) ), adapter );
+        } );
+        ;
+        return Iterables.filter( Iterables.concat( results ), Predicates.notNull() );
     }
 
     @Override
-    public Iterable<Schema> getSchema( String namespace, String name ) {
+    public Iterable<Schema> getSchema( String namespace, String name, Set<TypeDetails> requestedDetails ) {
         Iterable<UUID> aclIds = ImmutableSet.of( ACLs.EVERYONE_ACL );
-        return Iterables.filter( Iterables.transform( aclIds, aclId -> {
+        Iterable<Iterable<Schema>> results = Iterables.transform( aclIds, aclId -> {
             PreparedStatement stmt = tableManager.getSchemaStatement( aclId );
 
             if ( stmt == null ) {
                 return null;
             }
 
-            ResultSet rs = session.execute( stmt.bind( namespace, name ) );
+            final SchemaDetailsAdapter adapter = new SchemaDetailsAdapter(
+                    aclId,
+                    entityTypeMapper,
+                    propertyTypeMapper,
+                    requestedDetails );
 
-            return Util.transformSafely( rs.one(), r -> Schema.schemaFactoryWithAclId( aclId ).fromRow( r ) );
-        } ), Predicates.notNull() );
-    }
+            return Iterables.transform( session.execute( stmt.bind( namespace, name ) ), adapter );
+        } );
 
-    @Override
-    public void enrichSchemaWithEntityTypes( Schema schema ) {
-        Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
-                .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
-                .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
-                .collect( Collectors.toSet() );
-        schema.addEntityTypes( entityTypes );
-    }
-
-    @Override
-    public void enrichSchemaWithPropertyTypes( Schema schema ) {
-        Set<FullQualifiedName> propertyTypeNames = Sets.newHashSet();
-
-        if ( schema.getEntityTypes().isEmpty() && !schema.getEntityTypeFqns().isEmpty() ) {
-            enrichSchemaWithEntityTypes( schema );
-        }
-
-        for ( EntityType entityType : schema.getEntityTypes() ) {
-            propertyTypeNames.addAll( entityType.getProperties() );
-        }
-
-        Set<PropertyType> propertyTypes = propertyTypeNames.stream()
-                .map( type -> propertyTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
-                .map( futurePropertyType -> Util.getFutureSafely( futurePropertyType ) ).filter( e -> e != null )
-                .collect( Collectors.toSet() );
-
-        schema.addPropertyTypes( propertyTypes );
-
+        return Iterables.filter( Iterables.concat( results ), Predicates.notNull() );
     }
 
     /*
@@ -346,13 +335,10 @@ public class EdmService implements EdmManager {
         final Set<String> namespaces = Sets.newHashSet();
 
         schemas.forEach( schema -> {
-            enrichSchemaWithEntityTypes( schema );
-            enrichSchemaWithPropertyTypes( schema );
             entityTypes.addAll( schema.getEntityTypes() );
             propertyTypes.addAll( schema.getPropertyTypes() );
             schema.getEntityTypes().forEach( entityType -> namespaces.add( entityType.getNamespace() ) );
             schema.getPropertyTypes().forEach( propertyType -> namespaces.add( propertyType.getNamespace() ) );
-
         } );
 
         return new EntityDataModel(

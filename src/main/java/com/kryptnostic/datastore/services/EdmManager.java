@@ -9,21 +9,20 @@ import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
     boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
 
     void upsertSchema( Schema namespace );
 
-    void enrichSchemaWithEntityTypes( Schema schema );
-
-    void enrichSchemaWithPropertyTypes( Schema schema );
-
     Iterable<Schema> getSchemas();
 
-    Iterable<Schema> getSchemasInNamespace( String namespace );
+    Iterable<Schema> getSchemas( Set<TypeDetails> requestedDetails );
 
-    Iterable<Schema> getSchema( String namespace, String name );
+    Iterable<Schema> getSchemasInNamespace( String namespace, Set<TypeDetails> requestedDetails );
+
+    Iterable<Schema> getSchema( String namespace, String name, Set<TypeDetails> requestedDetails );
 
     void deleteSchema( Schema namespaces );
 
@@ -64,5 +63,6 @@ public interface EdmManager {
     EntityDataModel getEntityDataModel();
 
     boolean isExistingEntitySet( FullQualifiedName type, String name );
+
 
 }

@@ -492,7 +492,7 @@ public class CassandraTableManager {
     }
 
     private static void createSchemaAclsTableIfNotExists( String keyspace, Session session ) {
-        session.execute( Queries.getCreateSchemaAclsTableQuery( keyspace ) );
+        session.execute( Queries.createSchemaAclsTableQuery( keyspace ) );
     }
 
     private static void createEntityIdToTypenameTableIfNotExists( String keyspace, Session session ) {
@@ -501,7 +501,7 @@ public class CassandraTableManager {
 
     private static boolean createSchemasTableIfNotExists( String keyspace, UUID aclId, Session session ) {
         return Util.wasLightweightTransactionApplied( session
-                .execute( Queries.getCreateSchemasTableQuery( keyspace, getTablenameForSchemaWithAclId( aclId ) ) ) );
+                .execute( Queries.createSchemasTableQuery( keyspace, getTablenameForSchemaWithAclId( aclId ) ) ) );
     }
 
     private static void createEntitySetsTableIfNotExists( String keyspace, Session session ) {

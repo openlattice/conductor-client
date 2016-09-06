@@ -28,14 +28,14 @@ public final class Queries {
     public static final String CREATE_KEYSPACE = "CREATE KEYSPACE IF NOT EXISTS sparks WITH REPLICATION={ 'class' : 'SimpleStrategy', 'replication_factor' : 1 } AND DURABLE_WRITES=true";
 
     // Table Creation
-    public static final String getCreateSchemaAclsTableQuery( String keyspace ) {
+    public static final String createSchemaAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.SCHEMA_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.ACLID )
                 .buildQuery();
     }
 
-    public static final String getCreateSchemasTableQuery( String keyspace, String table ) {
+    public static final String createSchemasTableQuery( String keyspace, String table ) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE )
@@ -192,7 +192,6 @@ public final class Queries {
         return QueryBuilder.select().all().from( keyspace, table )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
-
     }
 
     public static final RegularStatement addEntityTypesToSchema( String keyspace, String table ) {
