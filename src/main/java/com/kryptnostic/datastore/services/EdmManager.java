@@ -64,5 +64,6 @@ public interface EdmManager {
 
     boolean isExistingEntitySet( FullQualifiedName type, String name );
 
+    EntityType getEntityType( FullQualifiedName fqn );
 
 }

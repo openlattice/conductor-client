@@ -71,15 +71,6 @@ public final class Queries {
                 .buildQuery();
     }
 
-    public static final String getCreateEntityIdToTypenameTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.ENTITY_ID_TO_TYPE )
-                .ifNotExists()
-                .partitionKey( CommonColumns.OBJECTID )
-                .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.TITLE )
-                .buildQuery();
-    }
-
     public static final String getCreateFqnLookupTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.FQN_LOOKUP )
                 .ifNotExists()
@@ -94,7 +85,7 @@ public final class Queries {
             Function<CommonColumns, DataType> typeResolver ) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
-                .partitionKey( CommonColumns.OBJECTID )
+                .partitionKey( CommonColumns.ENTITYID )
                 .clusteringColumns( CommonColumns.VALUE )
                 .columns( CommonColumns.SYNCIDS )
                 .withTypeResolver( typeResolver )
@@ -106,9 +97,17 @@ public final class Queries {
             String table ) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
-                .partitionKey( CommonColumns.OBJECTID )
+                .partitionKey( CommonColumns.ENTITYID )
                 .clusteringColumns( CommonColumns.CLOCK )
-                .columns( CommonColumns.ENTITYSETS, CommonColumns.SYNCIDS )
+                .columns( CommonColumns.TYPENAME, CommonColumns.ENTITYSETS, CommonColumns.SYNCIDS )
+                .buildQuery();
+    }
+
+    public static final String getCreateEntityIdToTypenameTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_ID_TO_TYPE )
+                .ifNotExists()
+                .partitionKey( CommonColumns.ENTITYID )
+                .columns( CommonColumns.TYPENAME )
                 .buildQuery();
     }
 

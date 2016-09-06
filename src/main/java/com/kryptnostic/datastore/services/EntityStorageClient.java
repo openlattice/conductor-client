@@ -169,26 +169,32 @@ public class EntityStorageClient {
             String entitySetName,
             FullQualifiedName entityFqn,
             Entity requestEntity ) {
-        PreparedStatement query = Preconditions.checkNotNull(
+        PreparedStatement createQuery = Preconditions.checkNotNull(
                 tableManager.getInsertEntityPreparedStatement( entityFqn ),
                 "Insert data prepared statement does not exist." );
 
+        PreparedStatement entityIdTypenameLookupQuery = Preconditions.checkNotNull(
+                tableManager.getUpdateEntityIdTypenamePreparedStatement( entityFqn ),
+                "Entity Id typename lookup query cannot be null" );
+
         // this is dangerous, but fairly common practice.
         // best way to fix is to have large pool of generated UUIDs to pull from that can be replenished in bulk.
-        UUID objectId = UUID.randomUUID();
-        BoundStatement boundQuery = query.bind( objectId,
+        UUID entityId = UUID.randomUUID();
+        String typename = tableManager.getTypenameForEntityType( entityFqn );
+        BoundStatement boundQuery = createQuery.bind( entityId,
+                typename,
                 ImmutableSet.of( entitySetName ),
                 ImmutableList.of( syncId ) );
         session.execute( boundQuery );
-
+        session.execute( entityIdTypenameLookupQuery.bind( typename, entityId ) );
         EntityType entityType = dms.getEntityType( entityFqn.getNamespace(), entityFqn.getName() );
         writeProperties( entityType,
                 keyspace,
-                objectId,
+                entityId,
                 syncId,
                 requestEntity.getProperties() );
-        requestEntity.setId( URI.create( objectId.toString() ) );
-        return Pair.of( objectId, requestEntity );
+        requestEntity.setId( URI.create( entityId.toString() ) );
+        return Pair.of( entityId, requestEntity );
     }
 
     private Iterable<ResultSet> writeProperties(
