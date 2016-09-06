@@ -98,10 +98,11 @@ public interface EdmApi {
      * Retrieves the schema contents for a corresponding namespace
      * 
      * @param namespace
-     * @return The schema for the namespace specified by namespace.
+     * @param name
+     * @return All schemas identified by namespace and name, across all accessible Acls.
      */
     @GET( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
-    Schema getSchemaContents(
+    Iterable<Schema> getSchemaContents(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name );
 

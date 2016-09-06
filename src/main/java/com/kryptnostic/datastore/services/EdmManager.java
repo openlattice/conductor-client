@@ -23,7 +23,7 @@ public interface EdmManager {
 
     Iterable<Schema> getSchemasInNamespace( String namespace );
 
-    Schema getSchema( String namespace, String name );
+    Iterable<Schema> getSchema( String namespace, String name );
 
     void deleteSchema( Schema namespaces );
 

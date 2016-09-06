@@ -8,7 +8,7 @@ public enum Tables {
     FQN_LOOKUP( "fqn_lookup" ),
     PROPERTIES( "_properties" ),
     PROPERTY_TYPES( PROPERTY_TYPES_TABLE ),
-    SCHEMAS( SCHEMAS_TABLE ),
+    SCHEMA_ACLS( SCHEMA_ACLS_TABLE ),
     ENTITY_ID_TO_TYPE( "entity_id_to_type" );
 
     private final String tableName;

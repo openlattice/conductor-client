@@ -12,14 +12,18 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import com.datastax.driver.mapping.Result;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
@@ -34,7 +38,6 @@ public class EdmService implements EdmManager {
     private static final Logger         logger = LoggerFactory.getLogger( EdmService.class );
 
     private final Session               session;
-    private final Mapper<Schema>        schemaMapper;
     private final Mapper<EntitySet>     entitySetMapper;
     private final Mapper<EntityType>    entityTypeMapper;
     private final Mapper<PropertyType>  propertyTypeMapper;
@@ -45,7 +48,6 @@ public class EdmService implements EdmManager {
     public EdmService( Session session, MappingManager mappingManager, CassandraTableManager tableManager ) {
         this.session = session;
         this.edmStore = mappingManager.createAccessor( CassandraEdmStore.class );
-        this.schemaMapper = mappingManager.mapper( Schema.class );
         this.entitySetMapper = mappingManager.mapper( EntitySet.class );
         this.entityTypeMapper = mappingManager.mapper( EntityType.class );
         this.propertyTypeMapper = mappingManager.mapper( PropertyType.class );
@@ -60,8 +62,52 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public Schema getSchema( String namespace, String name ) {
-        return schemaMapper.get( namespace, ACLs.EVERYONE_ACL, name );
+    public Iterable<Schema> getSchemas() {
+        Iterable<UUID> aclIds = ImmutableSet.of( ACLs.EVERYONE_ACL );
+        return Iterables.filter( Iterables.transform( aclIds, aclId -> {
+            PreparedStatement stmt = tableManager.getAllSchemasStatement( aclId );
+
+            if ( stmt == null ) {
+                return null;
+            }
+
+            ResultSet rs = session.execute( stmt.bind() );
+
+            return Util.transformSafely( rs.one(), r -> Schema.schemaFactoryWithAclId( aclId ).fromRow( r ) );
+        } ), Predicates.notNull() );
+
+    }
+
+    @Override
+    public Iterable<Schema> getSchemasInNamespace( String namespace ) {
+        Iterable<UUID> aclIds = ImmutableSet.of( ACLs.EVERYONE_ACL );
+        return Iterables.filter( Iterables.transform( aclIds, aclId -> {
+            PreparedStatement stmt = tableManager.getSchemasInNamespaceStatement( aclId );
+
+            if ( stmt == null ) {
+                return null;
+            }
+
+            ResultSet rs = session.execute( stmt.bind( namespace ) );
+
+            return Util.transformSafely( rs.one(), r -> Schema.schemaFactoryWithAclId( aclId ).fromRow( r ) );
+        } ), Predicates.notNull() );
+    }
+
+    @Override
+    public Iterable<Schema> getSchema( String namespace, String name ) {
+        Iterable<UUID> aclIds = ImmutableSet.of( ACLs.EVERYONE_ACL );
+        return Iterables.filter( Iterables.transform( aclIds, aclId -> {
+            PreparedStatement stmt = tableManager.getSchemaStatement( aclId );
+
+            if ( stmt == null ) {
+                return null;
+            }
+
+            ResultSet rs = session.execute( stmt.bind( namespace, name ) );
+
+            return Util.transformSafely( rs.one(), r -> Schema.schemaFactoryWithAclId( aclId ).fromRow( r ) );
+        } ), Predicates.notNull() );
     }
 
     @Override
@@ -94,21 +140,6 @@ public class EdmService implements EdmManager {
 
     }
 
-    @Override
-    public Iterable<Schema> getSchemasInNamespace( String namespace ) {
-        return edmStore.getSchemas( namespace, ImmutableList.of( ACLs.EVERYONE_ACL ) );
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see com.kryptnostic.types.services.EdmManager#getNamespaces(java.util.List)
-     */
-    @Override
-    public Iterable<Schema> getSchemas() {
-        // TODO: Actually grab ACLs based on the current user.
-        return edmStore.getSchemas( ImmutableList.of( ACLs.EVERYONE_ACL ) );
-    }
-
     /*
      * (non-Javadoc)
      * @see com.kryptnostic.types.services.EdmManager#updateObjectType(com.kryptnostic.types.ObjectType)
@@ -139,8 +170,10 @@ public class EdmService implements EdmManager {
      * @see com.kryptnostic.types.services.EdmManager#createNamespace(com.kryptnostic.types.Namespace)
      */
     @Override
-    public void upsertSchema( Schema namespace ) {
-        schemaMapper.save( namespace );
+    public void upsertSchema( Schema schema ) {
+        session.execute( tableManager.getSchemaUpsertStatement( schema.getAclId() ).bind( schema.getNamespace(),
+                schema.getName(),
+                schema.getEntityTypeFqns() ) );
     }
 
     @Override
@@ -171,8 +204,10 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes ) {
+        tableManager.createSchemaTableForAclId( aclId );
         return Util.wasLightweightTransactionApplied(
-                edmStore.createSchemaIfNotExists( namespace, name, aclId, entityTypes ) );
+                session.execute(
+                        tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes ) ) );
     }
 
     @Override
@@ -187,19 +222,23 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deleteSchema( Schema namespaces ) {
-        // TODO: 1. Implement AccessCheck
-
-        schemaMapper.delete( namespaces );
+        // TODO: Implement delete schema
     }
 
     @Override
     public void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
-        edmStore.addEntityTypesToContainer( namespace, ACLs.EVERYONE_ACL, name, entityTypes );
+        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
+            session.executeAsync(
+                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( namespace, name, entityTypes ) );
+        }
     }
 
     @Override
     public void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
-        edmStore.removeEntityTypesFromContainer( namespace, ACLs.EVERYONE_ACL, name, entityTypes );
+        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
+            session.executeAsync(
+                    tableManager.getSchemaRemoveEntityTypeStatement( aclId ).bind( namespace, name, entityTypes ) );
+        }
     }
 
     @Override
@@ -211,7 +250,7 @@ public class EdmService implements EdmManager {
 
         // Make sure that this type doesn't already exist
         String typename = tableManager.getTypenameForEntityType( entityType );
-        
+
         if ( StringUtils.isBlank( typename ) ) {
             // Generate the typename for this type
             entityType.setTypename( CassandraTableManager.generateTypename() );
@@ -223,7 +262,7 @@ public class EdmService implements EdmManager {
                             entityType.getKey(),
                             entityType.getProperties() ) );
         }
-        
+
         // Only create entity table if insert transaction succeeded.
         if ( entityCreated ) {
             tableManager.createEntityTypeTable( entityType,
@@ -326,7 +365,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean isExistingEntitySet( FullQualifiedName type, String name ) {
-        return Util.isCountNonZero( edmStore.countEntitySet( type, name ) );
+        return Util.isCountNonZero( session.execute( tableManager.getCountEntitySetsStatement().bind( type, name ) ) );
     }
 
 }

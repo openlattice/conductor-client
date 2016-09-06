@@ -7,53 +7,34 @@ import java.util.stream.Collectors;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.olingo.commons.api.edm.provider.CsdlSchema;
 
-import com.datastax.driver.mapping.MappingManager;
-import com.datastax.driver.mapping.annotations.ClusteringColumn;
-import com.datastax.driver.mapping.annotations.Column;
-import com.datastax.driver.mapping.annotations.PartitionKey;
-import com.datastax.driver.mapping.annotations.Table;
-import com.datastax.driver.mapping.annotations.Transient;
+import com.datastax.driver.core.Row;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 import jersey.repackaged.com.google.common.base.Preconditions;
 import jersey.repackaged.com.google.common.collect.Sets;
 
 /**
- * This class roughly corresponds to {@link CsdlSchema} and is annotated for use by the {@link MappingManager} to R/W
- * from Cassandra.
+ * This class roughly corresponds to {@link CsdlSchema}
  * 
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  * 
  */
-@Table(
-    keyspace = DatastoreConstants.KEYSPACE,
-    name = DatastoreConstants.SCHEMAS_TABLE )
 public class Schema {
-    @PartitionKey(
-        value = 0 )
-    private UUID                    aclId;
+    private UUID                              aclId;
+    private String                            namespace;
+    private String                            name;
+    private Set<FullQualifiedName>            entityTypeFqns;
 
-    @ClusteringColumn(
-        value = 0 )
-    private String                  namespace;
-
-    @ClusteringColumn(
-        value = 1 )
-    private String                  name;
-
-    @Column(
-        name = "entityTypeFqns" )
-    private Set<FullQualifiedName>  entityTypeFqns;
-
-    @Transient
-    private final Set<PropertyType> propertyTypes;
-
-    @Transient
-    private final Set<EntityType>   entityTypes;
+    // These columns aren't stored in cassandra
+    private final transient Set<PropertyType> propertyTypes;
+    private final transient Set<EntityType>   entityTypes;
 
     public Schema() {
         this( ImmutableSet.of(), ImmutableSet.of() );
@@ -223,4 +204,32 @@ public class Schema {
 
         return schema;
     }
+
+    public static SchemaFactory schemaFactoryWithAclId( UUID aclId ) {
+        return new SchemaFactory( aclId );
+    }
+
+    public static final class SchemaFactory {
+        private final UUID aclId;
+
+        SchemaFactory( UUID aclId ) {
+            this.aclId = aclId;
+        }
+
+        public Schema fromRow( Row r ) {
+            String namespace = r.getString( CommonColumns.NAMESPACE.cql() );
+            String name = r.getString( CommonColumns.NAME.cql() );
+            Set<FullQualifiedName> entityTypeFqns = MoreObjects
+                    .firstNonNull( r.get( CommonColumns.ENTITY_TYPES.cql(), new TypeToken<Set<FullQualifiedName>>() {
+                        private static final long serialVersionUID = 7226187471436343452L;
+                    } ), ImmutableSet.of() );
+            return new Schema()
+                    .setAclId( aclId )
+                    .setNamespace( namespace )
+                    .setName( name )
+                    .setEntityTypeFqns( entityTypeFqns );
+
+        }
+    }
+
 }

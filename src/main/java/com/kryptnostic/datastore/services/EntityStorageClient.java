@@ -177,7 +177,6 @@ public class EntityStorageClient {
         // best way to fix is to have large pool of generated UUIDs to pull from that can be replenished in bulk.
         UUID objectId = UUID.randomUUID();
         BoundStatement boundQuery = query.bind( objectId,
-                aclId,
                 ImmutableSet.of( entitySetName ),
                 ImmutableList.of( syncId ) );
         session.execute( boundQuery );
@@ -186,7 +185,6 @@ public class EntityStorageClient {
         writeProperties( entityType,
                 keyspace,
                 objectId,
-                aclId,
                 syncId,
                 requestEntity.getProperties() );
         requestEntity.setId( URI.create( objectId.toString() ) );
@@ -197,7 +195,6 @@ public class EntityStorageClient {
             EntityType entityType,
             String keyspace,
             UUID objectId,
-            UUID aclId,
             UUID syncId,
             List<Property> properties ) {
         final Set<FullQualifiedName> key = entityType.getKey();
@@ -218,12 +215,12 @@ public class EntityStorageClient {
             logger.info( "Attempting to write property value: {}", property.getValue() );
             // Not safe to change this order without understanding bindMarker re-ordering quirks of QueryBuilder
             ResultSetFuture rsfInsert = session.executeAsync(
-                    insertQuery.bind( ImmutableList.of( syncId ), objectId, aclId, property.getValue() ) );
+                    insertQuery.bind( ImmutableList.of( syncId ), objectId, property.getValue() ) );
             if ( key.contains( fqn ) ) {
                 PreparedStatement indexQuery = tableManager.getUpdatePropertyIndexPreparedStatement( fqn );
                 // Not safe to change this order without understanding bindMarker re-ordering quirks of QueryBuilder
                 ResultSetFuture rsfIndex = session.executeAsync(
-                        indexQuery.bind( ImmutableList.of( syncId ), property.getValue(), aclId, objectId ) );
+                        indexQuery.bind( ImmutableList.of( syncId ), property.getValue(), objectId ) );
                 return Arrays.asList( rsfInsert, rsfIndex );
             }
             return Arrays.asList( rsfInsert );

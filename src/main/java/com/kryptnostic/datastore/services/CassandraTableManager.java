@@ -1,6 +1,9 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -9,11 +12,12 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.mapping.MappingManager;
+import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
+import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
@@ -30,41 +34,59 @@ import jersey.repackaged.com.google.common.collect.Maps;
 
 public class CassandraTableManager {
     static enum TableType {
-        property_,
         entity_,
-        index_;
+        index_,
+        property_,
+        schema_;
     }
 
-    private final String                                    keyspace;
-    private final Session                                   session;
+    private final String                                              keyspace;
+    private final Session                                             session;
 
-    private final Map<FullQualifiedName, PreparedStatement> propertyTypeUpdateStatements;
-    private final Map<FullQualifiedName, PreparedStatement> propertyIndexUpdateStatements;
-    private final Map<FullQualifiedName, PreparedStatement> entityTypeInsertStatements;
-    private final Map<FullQualifiedName, PreparedStatement> entityTypeUpdateStatements;
+    private final ConcurrentMap<FullQualifiedName, PreparedStatement> propertyTypeUpdateStatements;
+    private final ConcurrentMap<FullQualifiedName, PreparedStatement> propertyIndexUpdateStatements;
+    private final ConcurrentMap<FullQualifiedName, PreparedStatement> entityTypeInsertStatements;
+    private final ConcurrentMap<FullQualifiedName, PreparedStatement> entityTypeUpdateStatements;
 
-    private final PreparedStatement                         getTypenameForEntityType;
-    private final PreparedStatement                         getTypenameForPropertyType;
-    private final PreparedStatement                         countProperty;
-    private final PreparedStatement                         insertPropertyTypeLookup;
-    private final PreparedStatement                         updatePropertyTypeLookup;
-    private final PreparedStatement                         deletePropertyTypeLookup;
-    private final PreparedStatement                         getFullQualifiedName;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaInsertStatements;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaUpsertStatements;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaSelectStatements;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaSelectAllStatements;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaSelectAllInNamespaceStatements;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaAddEntityTypes;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaRemoveEntityTypes;
+
+    private final PreparedStatement                                   getTypenameForEntityType;
+    private final PreparedStatement                                   getTypenameForPropertyType;
+    private final PreparedStatement                                   countProperty;
+    private final PreparedStatement                                   countEntitySets;
+    private final PreparedStatement                                   insertPropertyTypeLookup;
+    private final PreparedStatement                                   updatePropertyTypeLookup;
+    private final PreparedStatement                                   deletePropertyTypeLookup;
+    private final PreparedStatement                                   getFullQualifiedName;
 
     public CassandraTableManager(
             HazelcastInstance hazelcast,
             String keyspace,
             Session session,
             MappingManager mm ) {
-        initCoreTables( keyspace, session );
-
         this.session = session;
         this.keyspace = keyspace;
+
         this.propertyTypeUpdateStatements = Maps.newConcurrentMap();
         this.propertyIndexUpdateStatements = Maps.newConcurrentMap();
         this.entityTypeInsertStatements = Maps.newConcurrentMap();
         this.entityTypeUpdateStatements = Maps.newConcurrentMap();
+        this.schemaInsertStatements = Maps.newConcurrentMap();
+        this.schemaUpsertStatements = Maps.newConcurrentMap();
+        this.schemaSelectStatements = Maps.newConcurrentMap();
+        this.schemaSelectAllStatements = Maps.newConcurrentMap();
+        this.schemaSelectAllInNamespaceStatements = Maps.newConcurrentMap();
+        this.schemaAddEntityTypes = Maps.newConcurrentMap();
+        this.schemaRemoveEntityTypes = Maps.newConcurrentMap();
 
+        initCoreTables( keyspace, session );
+        prepareSchemaQueries();
         this.getTypenameForEntityType = session.prepare( QueryBuilder
                 .select()
                 .from( keyspace, Tables.ENTITY_TYPES.getTableName() )
@@ -87,6 +109,7 @@ public class CassandraTableManager {
                         QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
                         QueryBuilder.bindMarker() ) ) );
+        this.countEntitySets = session.prepare( Queries.countEntitySets( keyspace ) );
 
         this.insertPropertyTypeLookup = session
                 .prepare( QueryBuilder.insertInto( keyspace, Tables.FQN_LOOKUP.getTableName() )
@@ -108,19 +131,50 @@ public class CassandraTableManager {
 
     }
 
-    private void initCoreTables( String keyspace, Session session ) {
-        createKeyspaceSparksIfNotExists( keyspace, session );
-        createSchemasTableIfNotExists( keyspace, session );
-        createEntityTypesTableIfNotExists( keyspace, session );
-        createPropertyTypesTableIfNotExists( keyspace, session );
-        createEntitySetsTableIfNotExists( keyspace, session );
-        createEntityIdToTypenameTableIfNotExists( keyspace, session );
-        createFullQualifiedNameLookupTableIfNotExists( keyspace, session );
+    public String getKeyspace() {
+        return keyspace;
     }
 
-    private static void createEntityIdToTypenameTableIfNotExists( String keyspace, Session session ) {
-        session.execute( Queries.getCreateEntityIdToTypenameTableQuery( keyspace ) );
+    public boolean createSchemaTableForAclId( UUID aclId ) {
+        if ( createSchemasTableIfNotExists( keyspace, aclId, session ) ) {
+            prepareSchemaQuery( aclId );
+            return true;
+        }
+        return false;
+    }
 
+    public PreparedStatement getSchemaInsertStatement( UUID aclId ) {
+        return schemaInsertStatements.get( aclId );
+    }
+
+    /**
+     * Get prepared statement for loading schemas from the various tables based on aclId.
+     * 
+     * @param aclId
+     * @return
+     */
+    public PreparedStatement getSchemaStatement( UUID aclId ) {
+        return schemaSelectStatements.get( aclId );
+    }
+
+    public PreparedStatement getSchemasInNamespaceStatement( UUID aclId ) {
+        return schemaSelectAllInNamespaceStatements.get( aclId );
+    }
+
+    public PreparedStatement getAllSchemasStatement( UUID aclId ) {
+        return schemaSelectAllStatements.get( aclId );
+    }
+
+    public PreparedStatement getSchemaUpsertStatement( UUID aclId ) {
+        return schemaUpsertStatements.get( aclId );
+    }
+
+    public PreparedStatement getSchemaAddEntityTypeStatement( UUID aclId ) {
+        return schemaAddEntityTypes.get( aclId );
+    }
+
+    public PreparedStatement getSchemaRemoveEntityTypeStatement( UUID aclId ) {
+        return schemaRemoveEntityTypes.get( aclId );
     }
 
     public void registerSchema( Schema schema ) {
@@ -176,18 +230,16 @@ public class CassandraTableManager {
         return countProperty;
     }
 
+    public PreparedStatement getCountEntitySetsStatement() {
+        return countEntitySets;
+    }
+
     public void createEntityTypeTable( EntityType entityType, Map<FullQualifiedName, PropertyType> keyPropertyTypes ) {
         // Ensure that type name doesn't exist
-        CassandraTableBuilder ctb;
         String entityTableQuery;
 
         do {
-            ctb = new CassandraTableBuilder( keyspace, TableType.entity_.name() + entityType.getTypename() )
-                    .ifNotExists()
-                    .partitionKey( CommonColumns.OBJECTID, CommonColumns.ACLID )
-                    .clusteringColumns( CommonColumns.CLOCK )
-                    .columns( CommonColumns.ENTITYSETS, CommonColumns.SYNCIDS );
-            entityTableQuery = ctb.buildQuery();
+            entityTableQuery = Queries.createEntityTable( keyspace, getTablenameForEntityType( entityType ) );
         } while ( !Util.wasLightweightTransactionApplied( session.execute( entityTableQuery ) ) );
 
         entityType.getKey().forEach( fqn -> {
@@ -200,14 +252,10 @@ public class CassandraTableManager {
             String typename = keyPropertyType.getTypename();
             Preconditions.checkArgument( StringUtils.isNotBlank( typename ),
                     "Typename for key property type cannot be null" );
-            session.execute(
-                    new CassandraTableBuilder( keyspace, TableType.index_.name() + typename )
-                            .partitionKey( CommonColumns.VALUE, CommonColumns.ACLID )
-                            .clusteringColumns( CommonColumns.OBJECTID )
-                            .columns( CommonColumns.SYNCIDS )
-                            .withTypeResolver(
-                                    cc -> CassandraEdmMapping.getCassandraType( keyPropertyType.getDatatype() ) )
-                            .buildQuery() );
+            session.execute( Queries.createPropertyTableQuery( keyspace,
+                    getTablenameForPropertyIndex( keyPropertyType ),
+                    cc -> CassandraEdmMapping.getCassandraType( keyPropertyType.getDatatype() ) ) );
+
             putPropertyIndexUpdateStatement( fqn );
         } );
         putEntityTypeInsertStatement( entityType.getFullQualifiedName() );
@@ -216,16 +264,12 @@ public class CassandraTableManager {
     }
 
     public void createPropertyTypeTable( PropertyType propertyType ) {
-        CassandraTableBuilder ctb;
         String propertyTableQuery;
         DataType valueType = CassandraEdmMapping.getCassandraType( propertyType.getDatatype() );
         do {
-            ctb = new CassandraTableBuilder( keyspace, TableType.property_.name() + propertyType.getTypename() )
-                    .partitionKey( CommonColumns.OBJECTID, CommonColumns.ACLID )
-                    .clusteringColumns( CommonColumns.VALUE )
-                    .columns( CommonColumns.SYNCIDS )
-                    .withTypeResolver( cc -> valueType );
-            propertyTableQuery = ctb.buildQuery();
+            propertyTableQuery = Queries.createPropertyTableQuery( keyspace,
+                    getTablenameForPropertyValuesOfType( propertyType ),
+                    cc -> valueType );
             // Loop until table creation succeeds.
         } while ( !Util.wasLightweightTransactionApplied( session.execute( propertyTableQuery ) ) );
 
@@ -240,10 +284,6 @@ public class CassandraTableManager {
     public void updateFQNLookupTable( PropertyType propertyType ) {
         session.execute(
                 updatePropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
-    }
-
-    public static String generateTypename() {
-        return RandomStringUtils.randomAlphanumeric( 24 ).toLowerCase();
     }
 
     public void deleteEntityTypeTable( String namespace, String entityName ) {
@@ -275,11 +315,8 @@ public class CassandraTableManager {
     }
 
     public String getTypenameForEntityType( String namespace, String name ) {
-        Row r = session.execute( this.getTypenameForEntityType.bind( namespace, name ) ).one();
-        if ( r == null ) {
-            return null;
-        }
-        return r.getString( CommonColumns.TYPENAME.cql() );
+        return Util.transformSafely( session.execute( this.getTypenameForEntityType.bind( namespace, name ) ).one(),
+                r -> r.getString( CommonColumns.TYPENAME.cql() ) );
     }
 
     public String getTypenameForPropertyType( PropertyType propertyType ) {
@@ -290,68 +327,77 @@ public class CassandraTableManager {
         return getTypenameForPropertyType( fullQualifiedName.getNamespace(), fullQualifiedName.getName() );
     }
 
-    public FullQualifiedName getFullQualifiedNameForTypename( String typename ) {
-        Row r = session.execute( this.getFullQualifiedName.bind( typename ) ).one();
-        if ( r == null ) {
-            return null;
-        }
-        return new FullQualifiedName( r.getString( CommonColumns.FQN.cql() ) );
-    }
-
-    public Map<String, FullQualifiedName> getFullQualifiedNamesForTypenames( Iterable<String> typenames ) {
-        return (Map<String, FullQualifiedName>) Maps.toMap( typenames, ( String input ) -> {
-            return getFullQualifiedNameForTypename( input );
-        } );
+    private String getTypenameForPropertyType( String namespace, String name ) {
+        return Util.transformSafely( session.execute( this.getTypenameForPropertyType.bind( namespace, name ) ).one(),
+                r -> r.getString( CommonColumns.TYPENAME.cql() ) );
     }
 
     public String getTablenameForEntityType( EntityType entityType ) {
-        return getTypenameForEntityType( entityType.getFullQualifiedName() );
+        // `If type name is provided then just directly return the table name
+        final String typename = entityType.getTypename();
+        if ( StringUtils.isNotBlank( typename ) ) {
+            return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
+        }
+        return getTablenameForEntityType( entityType.getFullQualifiedName() );
     }
 
     public String getTablenameForEntityType( FullQualifiedName fqn ) {
-        return TableType.entity_.name() + getTypenameForEntityType( fqn );
+        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, getTypenameForEntityType( fqn ) );
     }
 
-    public String getTablenameForPropertyType( PropertyType propertyType ) {
-        return getTablenameForPropertyType( propertyType.getFullQualifiedName() );
+    public String getTablenameForEntityTypeFromTypenameAndAclId( UUID aclId, String typename ) {
+        return getTablename( TableType.entity_, aclId, typename );
     }
 
-    public String getTablenameForPropertyType( FullQualifiedName fqn ) {
-        return TableType.property_.name() + getTypenameForPropertyType( fqn );
+    public String getTablenameForPropertyValuesOfType( PropertyType propertyType ) {
+        // If type name is provided then just directly return the table name
+        final String typename = propertyType.getTypename();
+        if ( StringUtils.isNotBlank( typename ) ) {
+            return getTablenameForPropertyValuesFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
+        }
+        return getTablenameForPropertyValuesOfType( propertyType.getFullQualifiedName() );
+    }
+
+    public String getTablenameForPropertyValuesOfType( FullQualifiedName propertyFqn ) {
+        return getTablenameForPropertyValuesFromTypenameAndAclId( ACLs.EVERYONE_ACL,
+                getTypenameForPropertyType( propertyFqn ) );
+    }
+
+    public String getTablenameForPropertyValuesFromTypenameAndAclId( UUID aclId, String typename ) {
+        return getTablename( TableType.property_, aclId, typename );
     }
 
     public String getTablenameForPropertyIndex( PropertyType propertyType ) {
-        return getTablenameForPropertyIndex( propertyType.getFullQualifiedName() );
-    }
-
-    public String getTablenameForPropertyIndex( FullQualifiedName propertyType ) {
-        return TableType.index_.name()
-                + getTypenameForPropertyType( propertyType.getNamespace(), propertyType.getName() );
-    }
-
-    public String getTablenameForPropertyValues( FullQualifiedName propertyType ) {
-        return TableType.property_.name()
-                + getTypenameForPropertyType( propertyType.getNamespace(), propertyType.getName() );
-    }
-
-    public String getKeyspace() {
-        return keyspace;
-    }
-
-    private String getTypenameForPropertyType( String namespace, String name ) {
-        Row r = session.execute( this.getTypenameForPropertyType.bind( namespace, name ) ).one();
-        if ( r == null ) {
-            return null;
+        final String typename = propertyType.getTypename();
+        if ( StringUtils.isNotBlank( typename ) ) {
+            return getTablenameForPropertyIndexFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
         }
-        return r.getString( CommonColumns.TYPENAME.cql() );
+        return getTablenameForPropertyIndexOfType( propertyType.getFullQualifiedName() );
+    }
+
+    public String getTablenameForPropertyIndexOfType( FullQualifiedName propertyFqn ) {
+        return getTablenameForPropertyIndexFromTypenameAndAclId( ACLs.EVERYONE_ACL,
+                getTypenameForPropertyType( propertyFqn ) );
+    }
+
+    public String getTablenameForPropertyIndexFromTypenameAndAclId( UUID aclId, String typename ) {
+        return getTablename( TableType.index_, aclId, typename );
+    }
+
+    public Map<String, FullQualifiedName> getFullQualifiedNamesForTypenames( Iterable<String> typenames ) {
+        return Maps.toMap( typenames, this::getFullQualifiedNameForTypename );
+    }
+
+    public FullQualifiedName getFullQualifiedNameForTypename( String typename ) {
+        return Util.transformSafely( session.execute( this.getFullQualifiedName.bind( typename ) ).one(),
+                r -> new FullQualifiedName( r.getString( CommonColumns.FQN.cql() ) ) );
     }
 
     private void putEntityTypeInsertStatement( FullQualifiedName entityTypeFqn ) {
         entityTypeInsertStatements.put( entityTypeFqn,
                 session.prepare( QueryBuilder
-                        .insertInto( keyspace, TableType.entity_.name() + getTypenameForEntityType( entityTypeFqn ) )
+                        .insertInto( keyspace, getTablenameForEntityType( entityTypeFqn ) )
                         .value( CommonColumns.OBJECTID.cql(), QueryBuilder.bindMarker() )
-                        .value( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.CLOCK.cql(),
                                 QueryBuilder.fcall( "toTimestamp", QueryBuilder.now() ) )
                         .value( CommonColumns.ENTITYSETS.cql(), QueryBuilder.bindMarker() )
@@ -361,13 +407,12 @@ public class CassandraTableManager {
     private void putEntityTypeUpdateStatement( FullQualifiedName entityTypeFqn ) {
         entityTypeUpdateStatements.put( entityTypeFqn,
                 session.prepare( QueryBuilder
-                        .update( keyspace, TableType.entity_.name() + getTypenameForEntityType( entityTypeFqn ) )
+                        .update( keyspace, getTablenameForEntityType( entityTypeFqn ) )
                         .with( QueryBuilder.addAll( CommonColumns.ENTITYSETS.cql(),
                                 QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.appendAll( CommonColumns.SYNCIDS.cql(),
                                 QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.OBJECTID.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.CLOCK.cql(), QueryBuilder.bindMarker() ) ) ) );
     }
 
@@ -376,11 +421,10 @@ public class CassandraTableManager {
         // mapped to
         propertyTypeUpdateStatements.put( propertyTypeFqn,
                 session.prepare( QueryBuilder
-                        .update( keyspace, TableType.property_.name() + getTypenameForPropertyType( propertyTypeFqn ) )
+                        .update( keyspace, getTablenameForPropertyValuesOfType( propertyTypeFqn ) )
                         .with( QueryBuilder.appendAll( CommonColumns.SYNCIDS.cql(),
                                 QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.OBJECTID.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.VALUE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
     }
@@ -390,20 +434,74 @@ public class CassandraTableManager {
         // mapped to
         propertyIndexUpdateStatements.put( propertyTypeFqn,
                 session.prepare( QueryBuilder
-                        .update( keyspace, TableType.index_.name() + getTypenameForPropertyType( propertyTypeFqn ) )
+                        .update( keyspace, getTablenameForPropertyIndexOfType( propertyTypeFqn ) )
                         .with( QueryBuilder.appendAll( CommonColumns.SYNCIDS.cql(),
                                 QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.VALUE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.OBJECTID.cql(), QueryBuilder.bindMarker() ) ) ) );
+    }
+
+    private void prepareSchemaQueries() {
+        Set<UUID> aclIds = getAclsAppliedToSchemas();
+        aclIds.forEach( this::prepareSchemaQuery );
+    }
+
+    private void prepareSchemaQuery( UUID aclId ) {
+        String table = getTablenameForSchemaWithAclId( aclId );
+        schemaSelectAllStatements.put( aclId, session.prepare( Queries.getAllSchemasQuery( keyspace, table ) ) );
+        schemaSelectAllInNamespaceStatements.put( aclId,
+                session.prepare( Queries.getAllSchemasInNamespaceQuery( keyspace, table ) ) );
+        schemaSelectStatements.put( aclId, session.prepare( Queries.getSchemaQuery( keyspace, table ) ) );
+        schemaInsertStatements.put( aclId, session.prepare( Queries.insertSchemaQueryIfNotExists( keyspace, table ) ) );
+        schemaUpsertStatements.put( aclId, session.prepare( Queries.insertSchemaQuery( keyspace, table ) ) );
+        schemaAddEntityTypes.putIfAbsent( aclId, session.prepare( Queries.addEntityTypesToSchema( keyspace, table ) ) );
+        schemaRemoveEntityTypes.putIfAbsent( aclId,
+                session.prepare( Queries.removeEntityTypesToSchema( keyspace, table ) ) );
+    }
+
+    private Set<UUID> getAclsAppliedToSchemas() {
+        return ImmutableSet.of( ACLs.EVERYONE_ACL );
+    }
+
+    private void initCoreTables( String keyspace, Session session ) {
+        createKeyspaceSparksIfNotExists( keyspace, session );
+        createSchemaAclsTableIfNotExists( keyspace, session );
+        createEntityTypesTableIfNotExists( keyspace, session );
+        createPropertyTypesTableIfNotExists( keyspace, session );
+        createEntitySetsTableIfNotExists( keyspace, session );
+        createEntityIdToTypenameTableIfNotExists( keyspace, session );
+        createFullQualifiedNameLookupTableIfNotExists( keyspace, session );
+        // TODO: Remove this once everyone ACL is baked in.
+        createSchemaTableForAclId( ACLs.EVERYONE_ACL );
+    }
+
+    public static String getTablenameForSchemaWithAclId( UUID aclId ) {
+        return getTablename( TableType.schema_, aclId, "" );
+    }
+
+    public static String getTablename( TableType tableType, UUID aclId, String suffix ) {
+        return tableType.name() + Util.toUnhyphenatedString( aclId ) + "_" + suffix;
+    }
+
+    public static String generateTypename() {
+        return RandomStringUtils.randomAlphanumeric( 24 ).toLowerCase();
     }
 
     private static void createKeyspaceSparksIfNotExists( String keyspace, Session session ) {
         session.execute( Queries.CREATE_KEYSPACE );
     }
 
-    private static void createSchemasTableIfNotExists( String keyspace, Session session ) {
-        session.execute( Queries.getCreateSchemasTableQuery( keyspace ) );
+    private static void createSchemaAclsTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateSchemaAclsTableQuery( keyspace ) );
+    }
+
+    private static void createEntityIdToTypenameTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateEntityIdToTypenameTableQuery( keyspace ) );
+    }
+
+    private static boolean createSchemasTableIfNotExists( String keyspace, UUID aclId, Session session ) {
+        return Util.wasLightweightTransactionApplied( session
+                .execute( Queries.getCreateSchemasTableQuery( keyspace, getTablenameForSchemaWithAclId( aclId ) ) ) );
     }
 
     private static void createEntitySetsTableIfNotExists( String keyspace, Session session ) {
@@ -422,4 +520,5 @@ public class CassandraTableManager {
     private void createFullQualifiedNameLookupTableIfNotExists( String keyspace, Session session ) {
         session.execute( Queries.getCreateFqnLookupTableQuery( keyspace ) );
     }
+
 }
