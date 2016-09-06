@@ -152,6 +152,7 @@ public class EdmService implements EdmManager {
         String typename = tableManager.getTypenameForPropertyType( propertyType );
         propertyType.setTypename( typename );
         propertyTypeMapper.save( propertyType );
+        tableManager.updateFQNLookupTable( propertyType );
     }
 
     /*
@@ -186,6 +187,7 @@ public class EdmService implements EdmManager {
 
         if ( propertyCreated ) {
             tableManager.createPropertyTypeTable( propertyType );
+            tableManager.insertToFQNLookupTable( propertyType );
         }
 
         return propertyCreated;
@@ -207,6 +209,7 @@ public class EdmService implements EdmManager {
     @Override
     public void deletePropertyType( PropertyType propertyType ) {
         propertyTypeMapper.delete( propertyType );
+        tableManager.deleteFromFQNTable( propertyType );
     }
 
     @Override
