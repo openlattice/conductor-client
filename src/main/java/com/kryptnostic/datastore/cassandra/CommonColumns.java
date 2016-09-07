@@ -10,18 +10,21 @@ import com.google.common.base.Preconditions;
 public enum CommonColumns {
     ACLID( DataType.uuid() ),
     CLOCK( DataType.timestamp() ),
-    ENTITYSETS( DataType.set( DataType.text() ) ),
     DATATYPE( DataType.text() ),
+    ENTITYSETS( DataType.set( DataType.text() ) ),
+    ENTITY_TYPES( DataType.set( DataType.text() ) ),
+    FQN( DataType.text() ),
+    KEY( DataType.set( DataType.text() ) ),
     MULTIPLICITY( DataType.bigint() ),
     NAME( DataType.text() ),
     NAMESPACE( DataType.text() ),
-    OBJECTID( DataType.uuid() ),
+    ENTITYID( DataType.uuid() ),
+    PROPERTIES( DataType.set( DataType.text() ) ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
     TYPENAME( DataType.text() ),
     TYPE( DataType.text() ),
-    VALUE( null ), 
-    FQN( DataType.text() );
+    VALUE( null );
 
     private final DataType type;
     private final String   bindMarker;
