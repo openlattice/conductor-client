@@ -137,9 +137,8 @@ public class CassandraTableManager {
                 .prepare( QueryBuilder.select().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
-        //TODO: add this string some class which store constant strings
         this.assignEntityToEntitySet = session
-                .prepare( QueryBuilder.insertInto( keyspace, QueryBuilder.incr( "EntitySet_", QueryBuilder.bindMarker() ).toString() )
+                .prepare( QueryBuilder.insertInto( keyspace, QueryBuilder.bindMarker().toString() )
                         .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ));
     }
 
@@ -367,7 +366,7 @@ public class CassandraTableManager {
     }
     
     public String getTablenameForEntitySet(EntitySet es ) {
-        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, es.getTypename());//TODO:getTypenameForEntitySet( es ) -- need to store this in a table??
+        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, es.getTypename() );//TODO:getTypenameForEntitySet( es ) -- need to store this in a table??
     }
     
     public String getTablenameForEntitySetFromTypenameAndAclId( UUID aclId, String typename ) {
@@ -379,14 +378,12 @@ public class CassandraTableManager {
      */
 
     public Boolean createEntitySetTable( EntitySet es ) {
-        // Ensure that type name doesn't exist
         String entitySetTableQuery;
         
         do {
             entitySetTableQuery = Queries.createEntitySetTableQuery( keyspace, 
                     getTablenameForEntitySet( es ));
         } while ( !Util.wasLightweightTransactionApplied( session.execute( entitySetTableQuery ) ) );
-        //TODO: re-order the bind markers
         
         return true;
     }
@@ -396,8 +393,7 @@ public class CassandraTableManager {
         //Check if this entity set exists in spark table
         //Locate the table for this EntitySet
         //Add this entity into the Cassandra table of the set
-        session.execute(assignEntityToEntitySet.bind(entitySetName, e.getId()));
-        return true;
+        return Util.wasLightweightTransactionApplied( session.execute(assignEntityToEntitySet.bind(entitySetName, e.getId())));
     }
 
     /*************************
