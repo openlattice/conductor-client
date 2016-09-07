@@ -43,7 +43,11 @@ public interface CassandraEdmStore {
             long multiplicity );
 
     @Query( Queries.CREATE_ENTITY_SET_IF_NOT_EXISTS )
-    public ResultSet createEntitySet( FullQualifiedName type, String name, String title );
+    public ResultSet createEntitySet( 
+            FullQualifiedName type, 
+            String name, 
+            String title, 
+            String typename );
 
     @Query( Queries.GET_ENTITY_SET_BY_NAME )
     public EntitySet getEntitySet( String name );
