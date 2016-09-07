@@ -16,7 +16,7 @@ import com.google.common.collect.SetMultimap;
 
 public final class ResultSetAdapterFactory {
 
-	private void ResultSetConversion() {}
+	private void ResultSetAdapterFactory() {}
 
 	/**
 	 * // Only one static method here; should be incorporated in class that
