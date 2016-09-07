@@ -10,4 +10,5 @@ public final class SerializationConstants {
     public static final String NAME_FIELD       = "name";
     public static final String DATATYPE_FIELD   = "datatype";
     public static final String ACL_ID_FIELD     = "aclId";
+    public static final String TITLE_FIELD      = "title"; //for EntitySet
 }

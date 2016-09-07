@@ -299,12 +299,28 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean createEntitySet( FullQualifiedName type, String name, String title ) {
-        return Util.wasLightweightTransactionApplied( edmStore.createEntitySet( type, name, title ) );
+        return createEntitySet(new EntitySet().setType( type ).setName( name ).setTitle( title ));
     }
 
     @Override
     public boolean createEntitySet( EntitySet entitySet ) {
-        return createEntitySet( entitySet.getType(), entitySet.getName(), entitySet.getTitle() );
+        boolean entitySetCreated = false;
+        FullQualifiedName type = entitySet.getType();
+        String name = entitySet.getName();
+        String title = entitySet.getTitle();
+        
+        if(isExistingEntitySet(type, name)) return false;
+        
+        // Make sure that this entity set doesn't already exist
+        String typename = entitySet.getTypename();
+        if( StringUtils.isBlank( typename )) {
+         // Generate the typename for this entity set
+            entitySet.setTypename( tableManager.generateTypename() );
+            entitySetCreated = Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( type, name, title, typename ) );
+        }
+        if(entitySetCreated)
+            return tableManager.createEntitySetTable( entitySet );
+        return entitySetCreated;
     }
 
     @Override

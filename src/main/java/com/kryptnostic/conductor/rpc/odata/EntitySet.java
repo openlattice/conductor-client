@@ -1,11 +1,16 @@
 package com.kryptnostic.conductor.rpc.odata;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.mapping.annotations.ClusteringColumn;
 import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Table;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
@@ -22,6 +27,11 @@ public class EntitySet {
     @Column(
         name = "title" )
     private String            title;
+    
+    @Column(
+        name = "typename" )
+    private String            typename = null;
+
 
     public String getName() {
         return name;
@@ -31,7 +41,20 @@ public class EntitySet {
         this.name = name;
         return this;
     }
+    
+    @JsonIgnore
+    public String getTypename() {
+        return typename;
+    }
 
+    public EntitySet setTypename( String typename ) {
+        // typename must only be set once
+        Preconditions.checkArgument( StringUtils.isBlank( this.typename ) );
+        this.typename = typename;
+        return this;
+    }
+
+    
     public String getTitle() {
         return title;
     }
@@ -101,4 +124,15 @@ public class EntitySet {
         return "EntitySet [type=" + type + ", name=" + name + ", title=" + title + "]";
     }
 
+    @JsonCreator
+    public static EntitySet newEntitySet(
+            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName type,
+            @JsonProperty( SerializationConstants.NAME_FIELD) String name,     
+            @JsonProperty( SerializationConstants.TITLE_FIELD) String title) {
+        return new EntitySet()
+                .setTypename( null )
+                .setType( type )
+                .setName( name )
+                .setTitle( title );
+    }
 }

@@ -111,6 +111,15 @@ public final class Queries {
                 .buildQuery();
     }
 
+    public static final String createEntitySetTableQuery(
+            String keyspace,
+            String table) {
+        return new CassandraTableBuilder( keyspace, table )
+                .ifNotExists()//TODO
+                .buildQuery();
+    }
+    
+    
     // Index creation
     /*
      * HOW DOES SOFTWARE EVEN WORK? https://issues.apache.org/jira/browse/CASSANDRA-11331 Need to remove specific index
