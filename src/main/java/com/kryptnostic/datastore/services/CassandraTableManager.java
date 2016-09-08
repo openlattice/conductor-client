@@ -142,6 +142,7 @@ public class CassandraTableManager {
         this.assignEntityToEntitySet = session
                 .prepare( QueryBuilder.insertInto(keyspace, Tables.ENTITY_SET_MEMBERS.getTableName() )
                         .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
+                        .value( CommonColumns.PARTITION_INDEX.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) );
     }
 
@@ -379,7 +380,12 @@ public class CassandraTableManager {
     public Boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
         String table = getTablenameForEntitySet( es );
         SecureRandom random = new SecureRandom();
-        return Util.wasLightweightTransactionApplied( session.execute( assignEntityToEntitySet.bind( table, Arrays.toString(random.generateSeed(256)), entityId )));
+        return Util.wasLightweightTransactionApplied( 
+                session.execute( 
+                        assignEntityToEntitySet.bind( 
+                                table, 
+                                Arrays.toString(random.generateSeed(256)), 
+                                entityId )));
     }
 
     /*************************
