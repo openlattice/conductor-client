@@ -44,10 +44,10 @@ public interface CassandraEdmStore {
 
     @Query( Queries.CREATE_ENTITY_SET_IF_NOT_EXISTS )
     public ResultSet createEntitySetIfNotExists( 
+            String typename,
             FullQualifiedName type, 
             String name, 
-            String title, 
-            String typename );
+            String title);
 
     @Query( Queries.GET_ENTITY_SET_BY_NAME )
     public EntitySet getEntitySet( String name );

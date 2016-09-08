@@ -42,19 +42,6 @@ public class EntitySet {
         return this;
     }
     
-    @JsonIgnore
-    public String getTypename() {
-        return typename;
-    }
-
-    public EntitySet setTypename( String typename ) {
-        // typename must only be set once
-        Preconditions.checkArgument( StringUtils.isBlank( this.typename ) );
-        this.typename = typename;
-        return this;
-    }
-
-    
     public String getTitle() {
         return title;
     }
@@ -130,7 +117,7 @@ public class EntitySet {
             @JsonProperty( SerializationConstants.NAME_FIELD) String name,     
             @JsonProperty( SerializationConstants.TITLE_FIELD) String title) {
         return new EntitySet()
-                .setTypename( null )
+                //.setTypename( null )
                 .setType( type )
                 .setName( name )
                 .setTitle( title );

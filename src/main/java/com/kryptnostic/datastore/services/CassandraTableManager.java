@@ -344,8 +344,8 @@ public class CassandraTableManager {
                 r -> r.getString( CommonColumns.TYPENAME.cql() ) );
     }
     
-    public String getTypenameForEntitySet( FullQualifiedName type, String name ) {
-        return null; //TODO
+    public String getTypenameForEntitySet( EntitySet entitySet ) {
+        return getTypenameForEntityType( entitySet.getType() );
     }
 
     public String getTablenameForEntityType( EntityType entityType ) {
@@ -366,7 +366,7 @@ public class CassandraTableManager {
     }
     
     public String getTablenameForEntitySet(EntitySet es ) {
-        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, es.getTypename() );//TODO:getTypenameForEntitySet( es ) -- need to store this in a table??
+        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, getTypenameForEntitySet( es ) );
     }
     
     public String getTablenameForEntitySetFromTypenameAndAclId( UUID aclId, String typename ) {
@@ -388,12 +388,9 @@ public class CassandraTableManager {
         return true;
     }
 
-    public Boolean assignEntityToEntitySet( UUID entityId, String entitySetName ) {
-        //returns false if entitySetName does not exist
-        //Check if this entity set exists in spark table
-        //Locate the table for this EntitySet
-        //Add this entity into the Cassandra table of the set
-        return Util.wasLightweightTransactionApplied( session.execute(assignEntityToEntitySet.bind(entitySetName, entityId)));
+    public Boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
+        String esTableName = getTablenameForEntitySet( es );
+        return Util.wasLightweightTransactionApplied( session.execute(assignEntityToEntitySet.bind(esTableName, entityId)));
     }
 
     /*************************
