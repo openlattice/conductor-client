@@ -67,7 +67,6 @@ public class CassandraTableManager {
     private final PreparedStatement                                   updatePropertyTypeLookup;
     private final PreparedStatement                                   deletePropertyTypeLookup;
     private final PreparedStatement                                   getFullQualifiedNameForTypename;
-    private final PreparedStatement                                   assignEntityToEntitySet;
 
     public CassandraTableManager(
             HazelcastInstance hazelcast,
@@ -136,10 +135,6 @@ public class CassandraTableManager {
         this.getFullQualifiedNameForTypename = session
                 .prepare( QueryBuilder.select().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
-
-        this.assignEntityToEntitySet = session
-                .prepare( QueryBuilder.insertInto( keyspace, QueryBuilder.bindMarker().toString() )
-                        .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ));
     }
 
     public String getKeyspace() {
@@ -389,8 +384,8 @@ public class CassandraTableManager {
     }
 
     public Boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
-        String esTableName = getTablenameForEntitySet( es );
-        return Util.wasLightweightTransactionApplied( session.execute(assignEntityToEntitySet.bind(esTableName, entityId)));
+        String table = getTablenameForEntitySet( es );
+        return Util.wasLightweightTransactionApplied( session.execute(Queries.assignEntityToEntitySetQuery( table, entityId )));
     }
 
     /*************************

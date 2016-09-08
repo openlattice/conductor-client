@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.cassandra;
 
+import java.util.UUID;
 import java.util.function.Function;
 
 import com.datastax.driver.core.DataType;
@@ -114,11 +115,10 @@ public final class Queries {
     public static final String createEntitySetTableQuery( String keyspace, String table) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
-                .partitionKey( CommonColumns.TYPENAME )
+                .partitionKey( CommonColumns.TYPENAME, CommonColumns.TYPE )
                 .clusteringColumns( CommonColumns.ENTITYID )
                 .buildQuery();
     }
-    
     
     // Index creation
     /*
@@ -170,6 +170,12 @@ public final class Queries {
             + DatastoreConstants.PROPERTY_TYPES_TABLE + " where namespace=:"
             + ParamNames.NAMESPACE;
 
+    public static final String assignEntityToEntitySetQuery( String table, UUID entityId ) {
+        String result = "INSERT INTO" + " " + table
+                + "(objectId) VALUES (" + entityId + ") IF NOT EXISTS";
+        return result;
+    }
+    
     public static RegularStatement insertSchemaQueryIfNotExists( String keyspace, String table ) {
         return baseInsertSchemaQuery( QueryBuilder
                 .insertInto( keyspace, table )
