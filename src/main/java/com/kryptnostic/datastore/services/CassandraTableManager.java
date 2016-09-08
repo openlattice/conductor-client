@@ -388,12 +388,12 @@ public class CassandraTableManager {
         return true;
     }
 
-    public Boolean assignEntityToEntitySet( Entity e, String entitySetName ) {
+    public Boolean assignEntityToEntitySet( UUID entityId, String entitySetName ) {
         //returns false if entitySetName does not exist
         //Check if this entity set exists in spark table
         //Locate the table for this EntitySet
         //Add this entity into the Cassandra table of the set
-        return Util.wasLightweightTransactionApplied( session.execute(assignEntityToEntitySet.bind(entitySetName, e.getId())));
+        return Util.wasLightweightTransactionApplied( session.execute(assignEntityToEntitySet.bind(entitySetName, entityId)));
     }
 
     /*************************

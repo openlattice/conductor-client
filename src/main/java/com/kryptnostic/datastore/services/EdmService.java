@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -297,6 +298,14 @@ public class EdmService implements EdmManager {
         entitySetMapper.delete( entitySet );
     }
 
+    public void assignEntityToEntitySet( UUID entityId, EntitySet entitySet ) {
+        assignEntityToEntitySet(entityId, entitySet.getName());
+    }
+    
+    public void assignEntityToEntitySet( UUID entityId, String entitySetName ) {
+        tableManager.assignEntityToEntitySet( entityId, entitySetName );
+    }
+    
     @Override
     public boolean createEntitySet( FullQualifiedName type, String name, String title ) {
         return createEntitySet(new EntitySet().setType( type ).setName( name ).setTitle( title ));
