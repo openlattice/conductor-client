@@ -299,6 +299,8 @@ public class EdmService implements EdmManager {
     }
 
     public void assignEntityToEntitySet( UUID entityId, EntitySet entitySet ) {
+      //TODO: check if the table exists
+      //TODO: check if the type match
         assignEntityToEntitySet(entityId, entitySet.getName());
     }
     
@@ -327,8 +329,9 @@ public class EdmService implements EdmManager {
             entitySet.setTypename( tableManager.generateTypename() );
             entitySetCreated = Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( type, name, title, typename ) );
         }
-        if(entitySetCreated)
+        if(entitySetCreated){
             return tableManager.createEntitySetTable( entitySet );
+        }
         return entitySetCreated;
     }
 

@@ -114,7 +114,7 @@ public final class Queries {
     public static final String createEntitySetTableQuery( String keyspace, String table) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
-                .partitionKey( CommonColumns.TYPE )
+                .partitionKey( CommonColumns.TYPENAME )
                 .clusteringColumns( CommonColumns.ENTITYID )
                 .buildQuery();
     }
