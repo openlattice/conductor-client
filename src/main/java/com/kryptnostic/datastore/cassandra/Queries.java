@@ -1,6 +1,5 @@
 package com.kryptnostic.datastore.cassandra;
 
-import java.util.UUID;
 import java.util.function.Function;
 
 import com.datastax.driver.core.DataType;
@@ -14,15 +13,15 @@ public final class Queries {
     private Queries() {}
 
     public static final class ParamNames {
-        public static final String ENTITY_TYPE  = "entType";
-        public static final String ACL_IDS      = "aclIds";
-        public static final String NAMESPACE    = "namespace";
-        public static final String NAME         = "name";
-        public static final String ENTITY_TYPES = "entTypes";
-        public static final String ACL_ID       = "aId";
-        public static final String OBJ_ID       = "objId";
-        public static final String ENTITY_SETS  = "entSets";
-        public static final String SYNC_IDS     = "sId";
+        public static final String ENTITY_TYPE        = "entType";
+        public static final String ACL_IDS            = "aclIds";
+        public static final String NAMESPACE          = "namespace";
+        public static final String NAME               = "name";
+        public static final String ENTITY_TYPES       = "entTypes";
+        public static final String ACL_ID             = "aId";
+        public static final String OBJ_ID             = "objId";
+        public static final String ENTITY_SETS        = "entSets";
+        public static final String SYNC_IDS           = "sId";
     }
 
     // Keyspace setup
@@ -112,11 +111,11 @@ public final class Queries {
                 .buildQuery();
     }
 
-    public static final String createEntitySetTableQuery( String keyspace, String table) {
-        return new CassandraTableBuilder( keyspace, table )
+    public static final String getCreateEntitySetMembersTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SET_MEMBERS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.TYPENAME, CommonColumns.TYPE )
-                .clusteringColumns( CommonColumns.ENTITYID )
+                .partitionKey( CommonColumns.TYPENAME, CommonColumns.PARTITION_INDEX )
+                .columns( CommonColumns.ENTITYID )
                 .buildQuery();
     }
     
@@ -170,12 +169,6 @@ public final class Queries {
             + DatastoreConstants.PROPERTY_TYPES_TABLE + " where namespace=:"
             + ParamNames.NAMESPACE;
 
-    public static final String assignEntityToEntitySetQuery( String table, UUID entityId ) {
-        String result = "INSERT INTO" + " " + table
-                + "(objectId) VALUES (" + entityId + ") IF NOT EXISTS";
-        return result;
-    }
-    
     public static RegularStatement insertSchemaQueryIfNotExists( String keyspace, String table ) {
         return baseInsertSchemaQuery( QueryBuilder
                 .insertInto( keyspace, table )

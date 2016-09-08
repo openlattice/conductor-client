@@ -9,7 +9,8 @@ public enum Tables {
     PROPERTIES( "_properties" ),
     PROPERTY_TYPES( PROPERTY_TYPES_TABLE ),
     SCHEMA_ACLS( SCHEMA_ACLS_TABLE ),
-    ENTITY_ID_TO_TYPE( "entity_id_to_type" );
+    ENTITY_ID_TO_TYPE( "entity_id_to_type" ),
+    ENTITY_SET_MEMBERS( ENTITY_SET_MEMBERS_TABLE );
 
     private final String tableName;
 

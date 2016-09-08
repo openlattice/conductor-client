@@ -1,5 +1,7 @@
 package com.kryptnostic.datastore.services;
 
+import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -67,6 +69,7 @@ public class CassandraTableManager {
     private final PreparedStatement                                   updatePropertyTypeLookup;
     private final PreparedStatement                                   deletePropertyTypeLookup;
     private final PreparedStatement                                   getFullQualifiedNameForTypename;
+    private final PreparedStatement                                   assignEntityToEntitySet;
 
     public CassandraTableManager(
             HazelcastInstance hazelcast,
@@ -135,6 +138,11 @@ public class CassandraTableManager {
         this.getFullQualifiedNameForTypename = session
                 .prepare( QueryBuilder.select().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
+        
+        this.assignEntityToEntitySet = session
+                .prepare( QueryBuilder.insertInto(keyspace, Tables.ENTITY_SET_MEMBERS.getTableName() )
+                        .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
+                        .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) );
     }
 
     public String getKeyspace() {
@@ -368,24 +376,10 @@ public class CassandraTableManager {
         return getTablename( TableType.es_, aclId, typename );
     }
 
-    /**
-     * Entity Set
-     */
-
-    public Boolean createEntitySetTable( EntitySet es ) {
-        String entitySetTableQuery;
-        
-        do {
-            entitySetTableQuery = Queries.createEntitySetTableQuery( keyspace, 
-                    getTablenameForEntitySet( es ));
-        } while ( !Util.wasLightweightTransactionApplied( session.execute( entitySetTableQuery ) ) );
-        
-        return true;
-    }
-
     public Boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
         String table = getTablenameForEntitySet( es );
-        return Util.wasLightweightTransactionApplied( session.execute(Queries.assignEntityToEntitySetQuery( table, entityId )));
+        SecureRandom random = new SecureRandom();
+        return Util.wasLightweightTransactionApplied( session.execute( assignEntityToEntitySet.bind( table, Arrays.toString(random.generateSeed(256)), entityId )));
     }
 
     /*************************
@@ -535,6 +529,7 @@ public class CassandraTableManager {
         createEntityTypesTableIfNotExists( keyspace, session );
         createPropertyTypesTableIfNotExists( keyspace, session );
         createEntitySetsTableIfNotExists( keyspace, session );
+        createEntitySetMembersTableIfNotExists( keyspace, session );
         createFullQualifiedNameLookupTableIfNotExists( keyspace, session );
         createEntityIdTypenameTableIfNotExists( keyspace, session );
         // TODO: Remove this once everyone ACL is baked in.
@@ -575,6 +570,10 @@ public class CassandraTableManager {
         session.execute( Queries.CREATE_INDEX_ON_NAME );
     }
 
+    private static void createEntitySetMembersTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateEntitySetMembersTableQuery( keyspace ) );
+    }
+    
     private static void createEntityIdTypenameTableIfNotExists( String keyspace, Session session ) {
         session.execute( Queries.getCreateEntityIdToTypenameTableQuery( keyspace ) );
     }

@@ -296,6 +296,7 @@ public class EdmService implements EdmManager {
     @Override
     public void deleteEntitySet( EntitySet entitySet ) {
         entitySetMapper.delete( entitySet );
+        //TODO: no need to delete row of EntitySetsTable?
     }
 
     public boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
@@ -309,7 +310,6 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    //TODO: spread entity set across partitions (a possible way, attach a 1-byte key to the table name)
     public boolean createEntitySet( EntitySet entitySet ) {
         FullQualifiedName type = entitySet.getType();
         String name = entitySet.getName();
@@ -317,8 +317,7 @@ public class EdmService implements EdmManager {
         if( isExistingEntitySet( type, name ) ) return false;
         String typename = tableManager.getTypenameForEntityType( type );
         if( !StringUtils.isBlank( typename ) ) return false;
-        if( !Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( type, name, title, typename ) ) ) return false;
-        return tableManager.createEntitySetTable( entitySet );
+        return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( type, name, title, typename ) );
     }
 
     @Override
