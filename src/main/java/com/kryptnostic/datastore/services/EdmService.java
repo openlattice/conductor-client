@@ -298,14 +298,9 @@ public class EdmService implements EdmManager {
         entitySetMapper.delete( entitySet );
     }
 
-    public void assignEntityToEntitySet( UUID entityId, EntitySet entitySet ) {
-      //TODO: check if the table exists
-      //TODO: check if the type match
-        assignEntityToEntitySet(entityId, entitySet.getName());
-    }
-    
-    public void assignEntityToEntitySet( UUID entityId, String entitySetName ) {
-        tableManager.assignEntityToEntitySet( entityId, entitySetName );
+    public boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
+        if( isExistingEntitySet( es.getType(), es.getName() ) ) return false;
+        return tableManager.assignEntityToEntitySet(entityId, es);
     }
     
     @Override
