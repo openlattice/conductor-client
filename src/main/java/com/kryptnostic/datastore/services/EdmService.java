@@ -334,15 +334,17 @@ public class EdmService implements EdmManager {
         if( isExistingEntitySet( typename, name ) ) {
             return false;
         }
-        if( !StringUtils.isBlank( typename ) ) {
-            return false;
-        }
         return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( typename, name, title ) );
     }
 
     @Override
     public boolean createEntitySet( EntitySet entitySet ) {
-        return createEntitySet( entitySet.getType(), entitySet.getName(), entitySet.getTitle() );
+        if( StringUtils.isNotBlank( entitySet.getTypename() ) ) {
+            return false;
+        }
+        String typename = tableManager.getTypenameForEntityType( entitySet.getType() );
+        entitySet.setTypename( typename );
+        return createEntitySet( typename, entitySet.getName(), entitySet.getTitle() );
     }
 
     @Override
