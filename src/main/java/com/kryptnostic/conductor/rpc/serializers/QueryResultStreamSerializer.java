@@ -29,7 +29,6 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 		out.writeUTF( object.getTableName() );
 		UUIDStreamSerializer.serialize( out, object.getQueryId() );
 		out.writeUTF( object.getSessionId() );
-		new EntitySetStreamSerializer().write( out, object.getEntitySet() );	
 	}
 
 	@Override
@@ -38,8 +37,7 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 		String tableName = in.readUTF();
 		UUID queryId = UUIDStreamSerializer.deserialize( in );
 		String sessionId = in.readUTF();
-		EntitySet es = new EntitySetStreamSerializer().read( in );
-		return new QueryResult( keyspace, tableName, queryId, sessionId, es, Optional.fromNullable( session ) );
+		return new QueryResult( keyspace, tableName, queryId, sessionId, Optional.fromNullable( session ) );
 	}
 
 	@Override

@@ -19,11 +19,7 @@ implements Serializable {
 				"namespace",
 				"table",
 				UUID.randomUUID(),
-				" sessionid",
-				new EntitySet()
-					.setName( "esname")
-					.setType(new FullQualifiedName( "foo", "bar" ) )
-					.setTitle( "yay" ) );
+				" sessionid" );
 	}
 
 	@Override
