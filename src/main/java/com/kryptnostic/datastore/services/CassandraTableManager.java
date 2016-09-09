@@ -69,6 +69,7 @@ public class CassandraTableManager {
     private final PreparedStatement                                   updatePropertyTypeLookup;
     private final PreparedStatement                                   deletePropertyTypeLookup;
     private final PreparedStatement                                   getFullQualifiedNameForTypename;
+    private final PreparedStatement                                   getTypenameForEntityId;
     private final PreparedStatement                                   assignEntityToEntitySet;
 
     public CassandraTableManager(
@@ -135,9 +136,16 @@ public class CassandraTableManager {
                 .prepare( QueryBuilder.delete().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
+        //property type
         this.getFullQualifiedNameForTypename = session
                 .prepare( QueryBuilder.select().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
+        
+        
+        
+        this.getTypenameForEntityId = session
+                .prepare( QueryBuilder.select().from( keyspace, Tables.ENTITY_ID_TO_TYPE.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) ) );
         
         this.assignEntityToEntitySet = session
                 .prepare( QueryBuilder.insertInto(keyspace, Tables.ENTITY_SET_MEMBERS.getTableName() )
@@ -321,6 +329,7 @@ public class CassandraTableManager {
     public void updateFQNLookupTable( PropertyType propertyType ) {
         session.execute(
                 updatePropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
+        //TODO: reorder binding?
     }
 
     public void deleteFromFQNTable( PropertyType propertyType ) {
@@ -369,14 +378,33 @@ public class CassandraTableManager {
         return getTablename( TableType.entity_, aclId, typename );
     }
     
-    public String getTablenameForEntitySet(EntitySet es ) {
+    public String getTablenameForEntitySet( EntitySet es ) {
         return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, getTypenameForEntitySet( es ) );
+    }
+    
+    public String getTablenameForEntitySet( FullQualifiedName type ) {
+        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, getTypenameForEntityType( type ) );
+    }
+    
+    public String getTablenameForEntitySet( String typename ) {
+        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
     }
     
     public String getTablenameForEntitySetFromTypenameAndAclId( UUID aclId, String typename ) {
         return getTablename( TableType.es_, aclId, typename );
     }
 
+    public Boolean assignEntityToEntitySet( UUID entityId, String typename, String name ) {
+        String table = getTablenameForEntitySet( typename );
+        SecureRandom random = new SecureRandom();
+        return Util.wasLightweightTransactionApplied( 
+                session.execute( 
+                        assignEntityToEntitySet.bind( 
+                                table, 
+                                Arrays.toString(random.generateSeed(256)), 
+                                entityId )));
+    }
+    
     public Boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
         String table = getTablenameForEntitySet( es );
         SecureRandom random = new SecureRandom();
@@ -386,6 +414,11 @@ public class CassandraTableManager {
                                 table, 
                                 Arrays.toString(random.generateSeed(256)), 
                                 entityId )));
+    }
+    
+    public String getTypenameForEntityId( UUID entityId ) {        
+        return Util.transformSafely( session.execute( this.getTypenameForEntityId.bind( entityId ) ).one(),
+                r -> r.getString( CommonColumns.TYPENAME.cql() ) );
     }
 
     /*************************

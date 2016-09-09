@@ -3,6 +3,7 @@ package com.kryptnostic.datastore.services;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
@@ -41,6 +42,10 @@ public interface EdmManager {
     void deleteEntitySet( EntitySet entitySet );
 
     boolean createEntityType( EntityType objectType );
+    
+    boolean assignEntityToEntitySet( UUID entityId, String entitySetName );
+    
+    boolean assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
 
     void upsertEntityType( EntityType objectType );
 
