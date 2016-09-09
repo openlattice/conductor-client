@@ -343,6 +343,7 @@ public class EdmService implements EdmManager {
             return false;
         }
         String typename = tableManager.getTypenameForEntityType( entitySet.getType() );
+        System.out.println( "typename upon entity set creation: " + typename );
         entitySet.setTypename( typename );
         return createEntitySet( typename, entitySet.getName(), entitySet.getTitle() );
     }
@@ -400,7 +401,8 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean isExistingEntitySet( FullQualifiedName type, String name ) {
-        String typename = tableManager.getTypenameForPropertyType( type );
+        String typename = tableManager.getTypenameForEntityType( type );
+        System.out.println( "typename upon entity set creation: " + typename );
         if( StringUtils.isBlank( typename ) ) {
             return false;
         }
