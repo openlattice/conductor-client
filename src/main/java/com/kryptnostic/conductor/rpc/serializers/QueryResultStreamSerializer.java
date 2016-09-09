@@ -10,7 +10,6 @@ import com.datastax.driver.core.Session;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.conductor.rpc.QueryResult;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.kryptnostic.services.v1.serialization.UUIDStreamSerializer;
 import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;

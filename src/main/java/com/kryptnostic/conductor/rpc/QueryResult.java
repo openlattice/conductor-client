@@ -16,7 +16,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
 
 public class QueryResult implements Serializable, Iterable<Row> {
 	private static final String KEYSPACE   = "keyspace";
