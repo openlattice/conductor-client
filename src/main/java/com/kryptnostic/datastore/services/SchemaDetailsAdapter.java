@@ -96,10 +96,13 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
         public Schema fromRow( Row r ) {
             String namespace = r.getString( CommonColumns.NAMESPACE.cql() );
             String name = r.getString( CommonColumns.NAME.cql() );
-            Set<FullQualifiedName> entityTypeFqns = MoreObjects
-                    .firstNonNull( r.get( CommonColumns.ENTITY_TYPES.cql(), new TypeToken<Set<FullQualifiedName>>() {
+            Set<FullQualifiedName> entityTypeFqns = r.get( CommonColumns.ENTITY_TYPES.cql(),
+                    new TypeToken<Set<FullQualifiedName>>() {
                         private static final long serialVersionUID = 7226187471436343452L;
-                    } ), ImmutableSet.of() );
+                    } );
+            if ( entityTypeFqns == null ) {
+                entityTypeFqns = ImmutableSet.of();
+            }
             return new Schema()
                     .setAclId( aclId )
                     .setNamespace( namespace )
