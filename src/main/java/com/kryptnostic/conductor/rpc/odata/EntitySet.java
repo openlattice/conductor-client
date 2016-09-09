@@ -58,9 +58,9 @@ public class EntitySet {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ( ( type == null ) ? 0 : name.hashCode() );
         result = prime * result + ( ( name == null ) ? 0 : name.hashCode() );
         result = prime * result + ( ( title == null ) ? 0 : title.hashCode() );
+        result = prime * result + ( ( type == null ) ? 0 : name.hashCode() );
         return result;
     }
 
@@ -76,6 +76,13 @@ public class EntitySet {
             return false;
         }
         EntitySet other = (EntitySet) obj;
+        if ( type == null ) {
+            if( other.type != null ) {
+                return false;
+            }
+        } else if ( !type.equals( other.type ) ) {
+            return false;
+        }
         if ( name == null ) {
             if ( other.name != null ) {
                 return false;
