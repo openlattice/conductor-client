@@ -45,7 +45,7 @@ public class EntityType extends TypePK {
 
     public EntityType setTypename( String typename ) {
         // typename must only be set once
-        Preconditions.checkArgument( StringUtils.isBlank( this.typename ) );
+        Preconditions.checkState( StringUtils.isBlank( this.typename ) );
         this.typename = typename;
         return this;
     }

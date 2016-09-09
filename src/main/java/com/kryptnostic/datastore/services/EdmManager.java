@@ -28,6 +28,8 @@ public interface EdmManager {
     void deleteSchema( Schema namespaces );
 
     boolean createEntitySet( FullQualifiedName type, String name, String title );
+    
+    boolean createEntitySet( String typename, String name, String title );
 
     boolean createEntitySet( EntitySet entitySet );
 

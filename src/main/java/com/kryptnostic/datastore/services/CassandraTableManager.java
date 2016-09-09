@@ -141,14 +141,13 @@ public class CassandraTableManager {
                 .prepare( QueryBuilder.select().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
         
-        
-        
         this.getTypenameForEntityId = session
                 .prepare( QueryBuilder.select().from( keyspace, Tables.ENTITY_ID_TO_TYPE.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) ) );
         
         this.assignEntityToEntitySet = session
                 .prepare( QueryBuilder.insertInto(keyspace, Tables.ENTITY_SET_MEMBERS.getTableName() )
+                        .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.PARTITION_INDEX.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) );
@@ -377,41 +376,26 @@ public class CassandraTableManager {
     public String getTablenameForEntityTypeFromTypenameAndAclId( UUID aclId, String typename ) {
         return getTablename( TableType.entity_, aclId, typename );
     }
-    
-    public String getTablenameForEntitySet( EntitySet es ) {
-        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, getTypenameForEntitySet( es ) );
-    }
-    
-    public String getTablenameForEntitySet( FullQualifiedName type ) {
-        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, getTypenameForEntityType( type ) );
-    }
-    
-    public String getTablenameForEntitySet( String typename ) {
-        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
-    }
-    
-    public String getTablenameForEntitySetFromTypenameAndAclId( UUID aclId, String typename ) {
-        return getTablename( TableType.es_, aclId, typename );
-    }
 
     public Boolean assignEntityToEntitySet( UUID entityId, String typename, String name ) {
-        String table = getTablenameForEntitySet( typename );
         SecureRandom random = new SecureRandom();
         return Util.wasLightweightTransactionApplied( 
                 session.execute( 
                         assignEntityToEntitySet.bind( 
-                                table, 
+                                typename,
+                                name, 
                                 Arrays.toString(random.generateSeed(256)), 
                                 entityId )));
     }
     
     public Boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
-        String table = getTablenameForEntitySet( es );
+        String typename = getTypenameForEntitySet( es );
         SecureRandom random = new SecureRandom();
         return Util.wasLightweightTransactionApplied( 
                 session.execute( 
                         assignEntityToEntitySet.bind( 
-                                table, 
+                                typename,
+                                es.getName(), 
                                 Arrays.toString(random.generateSeed(256)), 
                                 entityId )));
     }

@@ -326,6 +326,11 @@ public class EdmService implements EdmManager {
     @Override
     public boolean createEntitySet( FullQualifiedName type, String name, String title ) {
         String typename = tableManager.getTypenameForEntityType( type );
+        return createEntitySet( typename, name, title );
+    }
+    
+    @Override
+    public boolean createEntitySet( String typename, String name, String title ) {
         if( isExistingEntitySet( typename, name ) ) {
             return false;
         }
