@@ -167,7 +167,7 @@ public class ResultSetAdapterFactoryTest {
         // Remove table created for this test after.
         Cluster cluster = Cluster.builder().addContactPoint( "localhost" ).build();
         Session session = cluster.connect();
-        session.execute( "DROP KEYSPACE test_result_set_conversion;" );
+        session.execute( "DROP KEYSPACE IF EXISTS test_result_set_conversion;" );
 
         // Close Cassandra session
         cluster.close();
