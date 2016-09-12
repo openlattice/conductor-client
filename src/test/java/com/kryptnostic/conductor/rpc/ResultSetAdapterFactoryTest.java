@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -33,7 +34,7 @@ import com.kryptnostic.rhizome.configuration.service.ConfigurationService;
 
 public class ResultSetAdapterFactoryTest {
     static ResultSet                      rs;
-    static Map<String, FullQualifiedName> map = new HashMap<String, FullQualifiedName>();
+    static Map<String, FullQualifiedName> map      = new HashMap<String, FullQualifiedName>();
 
     static Integer                        lengthColumn;
     static List<String>                   columnNameList;
@@ -43,6 +44,8 @@ public class ResultSetAdapterFactoryTest {
 
     static Integer                        lengthRow;
     static ArrayList<List<Object>>        rowData;
+    static Random                         rand     = new Random();
+    static String                         keyspace = "test_result_set_conversion_" + rand.nextInt( 10_000 );
 
     @BeforeClass
     // Setup a table called "test_result_set_conversion". The columns have names from columnNameList with type specified
@@ -71,7 +74,7 @@ public class ResultSetAdapterFactoryTest {
         lengthRow = rowData.size();
         RhizomeConfiguration rc = ConfigurationService.StaticLoader.loadConfiguration( RhizomeConfiguration.class );
         CassandraConfiguration cassandraConfiguration = rc.getCassandraConfiguration().get();
-        
+
         // Create Cassandra session
         Cluster cluster = new Cluster.Builder()
                 .withCompression( cassandraConfiguration.getCompression() )
@@ -83,10 +86,11 @@ public class ResultSetAdapterFactoryTest {
 
         // Create keyspace and table for testing
         session.execute(
-                "CREATE KEYSPACE IF NOT EXISTS test_result_set_conversion WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}" );
-        session = cluster.connect("test_result_set_conversion");
+                "CREATE KEYSPACE IF NOT EXISTS " + keyspace
+                        + " WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}" );
+        session = cluster.connect( keyspace );
 
-        String tableCreation = "CREATE TABLE IF NOT EXISTS test_result_set_conversion.Test \n(";
+        String tableCreation = "CREATE TABLE IF NOT EXISTS " + keyspace + ".Test \n(";
         for ( int i = 0; i < lengthColumn; i++ ) {
             tableCreation += columnNameList.get( i ) + " " + typeList.get( i ) + ", ";
         }
@@ -96,7 +100,7 @@ public class ResultSetAdapterFactoryTest {
         session.execute( tableCreation );
 
         // Insert into table
-        String queryHeader = "INSERT INTO test_result_set_conversion.Test ( ";
+        String queryHeader = "INSERT INTO " + keyspace + ".Test ( ";
         for ( int i = 0; i < lengthColumn; i++ ) {
             queryHeader += columnNameList.get( i );
             if ( i != lengthColumn - 1 ) queryHeader += ",";
@@ -125,7 +129,7 @@ public class ResultSetAdapterFactoryTest {
         }
 
         // Query results
-        rs = session.execute( "SELECT * FROM test_result_set_conversion.Test;" );
+        rs = session.execute( "SELECT * FROM " + keyspace + ".Test;" );
 
         // Declare TypeName to FQN map
         for ( int i = 0; i < lengthColumn; i++ ) {
@@ -167,7 +171,7 @@ public class ResultSetAdapterFactoryTest {
         // Remove table created for this test after.
         Cluster cluster = Cluster.builder().addContactPoint( "localhost" ).build();
         Session session = cluster.connect();
-        session.execute( "DROP KEYSPACE test_result_set_conversion;" );
+        session.execute( "DROP KEYSPACE " + keyspace + ";" );
 
         // Close Cassandra session
         cluster.close();
