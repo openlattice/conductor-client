@@ -384,7 +384,7 @@ public class CassandraTableManager {
                         assignEntityToEntitySet.bind( 
                                 typename,
                                 name, 
-                                Arrays.toString(random.generateSeed(256)), 
+                                Arrays.toString(random.generateSeed(1)), 
                                 entityId )));
     }
     
@@ -396,7 +396,7 @@ public class CassandraTableManager {
                         assignEntityToEntitySet.bind( 
                                 typename,
                                 es.getName(), 
-                                Arrays.toString(random.generateSeed(256)), 
+                                Arrays.toString(random.generateSeed(1)), 
                                 entityId )));
     }
     
