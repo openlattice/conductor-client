@@ -10,7 +10,6 @@ import com.datastax.driver.core.Session;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.conductor.rpc.QueryResult;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.kryptnostic.services.v1.serialization.UUIDStreamSerializer;
 import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
@@ -29,7 +28,6 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 		out.writeUTF( object.getTableName() );
 		UUIDStreamSerializer.serialize( out, object.getQueryId() );
 		out.writeUTF( object.getSessionId() );
-		new EntitySetStreamSerializer().write( out, object.getEntitySet() );	
 	}
 
 	@Override
@@ -38,8 +36,7 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 		String tableName = in.readUTF();
 		UUID queryId = UUIDStreamSerializer.deserialize( in );
 		String sessionId = in.readUTF();
-		EntitySet es = new EntitySetStreamSerializer().read( in );
-		return new QueryResult( keyspace, tableName, queryId, sessionId, es, Optional.fromNullable( session ) );
+		return new QueryResult( keyspace, tableName, queryId, sessionId, Optional.fromNullable( session ) );
 	}
 
 	@Override
