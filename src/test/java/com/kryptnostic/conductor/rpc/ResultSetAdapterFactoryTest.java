@@ -33,7 +33,7 @@ import com.kryptnostic.rhizome.configuration.service.ConfigurationService;
 
 public class ResultSetAdapterFactoryTest {
     static ResultSet                      rs;
-    static Map<String, FullQualifiedName> map = new HashMap<String, FullQualifiedName>();
+    static Map<String, FullQualifiedName> map                    = new HashMap<String, FullQualifiedName>();
 
     static Integer                        lengthColumn;
     static List<String>                   columnNameList;
@@ -43,6 +43,21 @@ public class ResultSetAdapterFactoryTest {
 
     static Integer                        lengthRow;
     static ArrayList<List<Object>>        rowData;
+    static RhizomeConfiguration           rc                     = ConfigurationService.StaticLoader
+                                                                         .loadConfiguration(
+                                                                                 RhizomeConfiguration.class );
+    static CassandraConfiguration         cassandraConfiguration = rc.getCassandraConfiguration().get();
+
+    // Create Cassandra session
+    static Cluster                        cluster                = new Cluster.Builder()
+                                                                         .withCompression( cassandraConfiguration
+                                                                                 .getCompression() )
+                                                                         .withPoolingOptions( new PoolingOptions() )
+                                                                         .withProtocolVersion( ProtocolVersion.V4 )
+                                                                         .addContactPoints( cassandraConfiguration
+                                                                                 .getCassandraSeedNodes() )
+                                                                         .build();
+    static Session                        session                = cluster.connect();
 
     //@BeforeClass
     // Setup a table called "test_result_set_conversion". The columns have names from columnNameList with type specified
@@ -69,22 +84,11 @@ public class ResultSetAdapterFactoryTest {
         rowData.add( Arrays.asList( 24, 0, "lol" ) );
         rowData.add( Arrays.asList( 10, 10, "test" ) );
         lengthRow = rowData.size();
-        RhizomeConfiguration rc = ConfigurationService.StaticLoader.loadConfiguration( RhizomeConfiguration.class );
-        CassandraConfiguration cassandraConfiguration = rc.getCassandraConfiguration().get();
-        
-        // Create Cassandra session
-        Cluster cluster = new Cluster.Builder()
-                .withCompression( cassandraConfiguration.getCompression() )
-                .withPoolingOptions( new PoolingOptions() )
-                .withProtocolVersion( ProtocolVersion.V4 )
-                .addContactPoints( cassandraConfiguration.getCassandraSeedNodes() )
-                .build();
-        Session session = cluster.connect();
 
         // Create keyspace and table for testing
         session.execute(
                 "CREATE KEYSPACE IF NOT EXISTS test_result_set_conversion WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}" );
-        session = cluster.connect("test_result_set_conversion");
+        session = cluster.connect( "test_result_set_conversion" );
 
         String tableCreation = "CREATE TABLE IF NOT EXISTS test_result_set_conversion.Test \n(";
         for ( int i = 0; i < lengthColumn; i++ ) {
@@ -131,9 +135,6 @@ public class ResultSetAdapterFactoryTest {
         for ( int i = 0; i < lengthColumn; i++ ) {
             map.put( columnNameList.get( i ), FQNList.get( i ) );
         }
-
-        // Close Cassandra session
-        cluster.close();
     }
 
     //@Test
