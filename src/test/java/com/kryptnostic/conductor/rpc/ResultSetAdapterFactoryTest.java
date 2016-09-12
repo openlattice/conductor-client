@@ -46,6 +46,21 @@ public class ResultSetAdapterFactoryTest {
     static ArrayList<List<Object>>        rowData;
     static Random                         rand     = new Random();
     static String                         keyspace = "test_result_set_conversion_" + rand.nextInt( 10_000 );
+    static RhizomeConfiguration           rc                     = ConfigurationService.StaticLoader
+                                                                         .loadConfiguration(
+                                                                                 RhizomeConfiguration.class );
+    static CassandraConfiguration         cassandraConfiguration = rc.getCassandraConfiguration().get();
+
+    // Create Cassandra session
+    static Cluster                        cluster                = new Cluster.Builder()
+                                                                         .withCompression( cassandraConfiguration
+                                                                                 .getCompression() )
+                                                                         .withPoolingOptions( new PoolingOptions() )
+                                                                         .withProtocolVersion( ProtocolVersion.V4 )
+                                                                         .addContactPoints( cassandraConfiguration
+                                                                                 .getCassandraSeedNodes() )
+                                                                         .build();
+    static Session                        session                = cluster.connect();
 
     @BeforeClass
     // Setup a table called "test_result_set_conversion". The columns have names from columnNameList with type specified
@@ -72,17 +87,6 @@ public class ResultSetAdapterFactoryTest {
         rowData.add( Arrays.asList( 24, 0, "lol" ) );
         rowData.add( Arrays.asList( 10, 10, "test" ) );
         lengthRow = rowData.size();
-        RhizomeConfiguration rc = ConfigurationService.StaticLoader.loadConfiguration( RhizomeConfiguration.class );
-        CassandraConfiguration cassandraConfiguration = rc.getCassandraConfiguration().get();
-
-        // Create Cassandra session
-        Cluster cluster = new Cluster.Builder()
-                .withCompression( cassandraConfiguration.getCompression() )
-                .withPoolingOptions( new PoolingOptions() )
-                .withProtocolVersion( ProtocolVersion.V4 )
-                .addContactPoints( cassandraConfiguration.getCassandraSeedNodes() )
-                .build();
-        Session session = cluster.connect();
 
         // Create keyspace and table for testing
         session.execute(
@@ -135,9 +139,6 @@ public class ResultSetAdapterFactoryTest {
         for ( int i = 0; i < lengthColumn; i++ ) {
             map.put( columnNameList.get( i ), FQNList.get( i ) );
         }
-
-        // Close Cassandra session
-        cluster.close();
     }
 
     @Test
@@ -169,8 +170,6 @@ public class ResultSetAdapterFactoryTest {
     @AfterClass
     public static void RemoveTestingTable() {
         // Remove table created for this test after.
-        Cluster cluster = Cluster.builder().addContactPoint( "localhost" ).build();
-        Session session = cluster.connect();
         session.execute( "DROP KEYSPACE " + keyspace + ";" );
 
         // Close Cassandra session
