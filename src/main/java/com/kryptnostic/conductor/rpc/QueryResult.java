@@ -16,21 +16,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
 
 public class QueryResult implements Serializable, Iterable<Row> {
 	private static final String KEYSPACE   = "keyspace";
 	private static final String TABLE_NAME = "tableName";
 	private static final String QUERY_ID   = "queryId";
 	private static final String SESSION_ID = "sessionId";
-	private static final String ES         = "es";
 	private static final long serialVersionUID = -703400960761943382L;
 	
     private final String			  keyspace;
     private final String              tableName;    
     private final UUID	              queryId;
     private final String              sessionId;
-    private final EntitySet           es;
     private final Optional<Session>	  session;
 
     @JsonCreator
@@ -38,9 +35,8 @@ public class QueryResult implements Serializable, Iterable<Row> {
             @JsonProperty( KEYSPACE ) String keyspace,
             @JsonProperty( TABLE_NAME ) String tableName,
             @JsonProperty( QUERY_ID ) UUID queryId,
-            @JsonProperty( SESSION_ID ) String sessionId,
-            @JsonProperty( ES ) EntitySet es ) {
-        this(keyspace, tableName, queryId, sessionId, es, Optional.absent());
+            @JsonProperty( SESSION_ID ) String sessionId ) {
+        this(keyspace, tableName, queryId, sessionId, Optional.absent());
     }
 
     public QueryResult(
@@ -48,13 +44,11 @@ public class QueryResult implements Serializable, Iterable<Row> {
     		String tableName,
             UUID queryId,
             String sessionId,
-            EntitySet es,
             Optional<Session> session ) {
     	this.keyspace = keyspace;
     	this.tableName = tableName;
         this.queryId = queryId;
         this.sessionId = sessionId;
-        this.es = es;
         this.session = session;
     }
     
@@ -76,11 +70,6 @@ public class QueryResult implements Serializable, Iterable<Row> {
     @JsonProperty( SESSION_ID )
     public String getSessionId() {
         return sessionId;
-    }
-
-    @JsonProperty( ES )
-    public EntitySet getEntitySet() {
-        return es;
     }
     
     @Override
@@ -123,13 +112,6 @@ public class QueryResult implements Serializable, Iterable<Row> {
         } else if ( !sessionId.equals( other.sessionId ) ) {
             return false;
         }
-        if ( es == null ) {
-            if ( other.es != null ) {
-                return false;
-            }
-        } else if ( !es.equals( other.es ) ) {
-            return false;
-        }
         if ( !session.isPresent() ) {
             if ( other.session.isPresent() ) {
                 return false;
@@ -142,7 +124,7 @@ public class QueryResult implements Serializable, Iterable<Row> {
 
     @Override
     public String toString() {
-        return "QueryResult [keyspace=" + keyspace + ", tableName=" + tableName + ", queryId=" + queryId + ", sessionId=" + sessionId + ", es=" + es + "]";
+        return "QueryResult [keyspace=" + keyspace + ", tableName=" + tableName + ", queryId=" + queryId + ", sessionId=" + sessionId;
     }
 
 	@Override
