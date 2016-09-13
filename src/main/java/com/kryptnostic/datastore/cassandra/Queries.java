@@ -13,15 +13,15 @@ public final class Queries {
     private Queries() {}
 
     public static final class ParamNames {
-        public static final String ENTITY_TYPE  = "entType";
-        public static final String ACL_IDS      = "aclIds";
-        public static final String NAMESPACE    = "namespace";
-        public static final String NAME         = "name";
-        public static final String ENTITY_TYPES = "entTypes";
-        public static final String ACL_ID       = "aId";
-        public static final String OBJ_ID       = "objId";
-        public static final String ENTITY_SETS  = "entSets";
-        public static final String SYNC_IDS     = "sId";
+        public static final String ENTITY_TYPE        = "entType";
+        public static final String ACL_IDS            = "aclIds";
+        public static final String NAMESPACE          = "namespace";
+        public static final String NAME               = "name";
+        public static final String ENTITY_TYPES       = "entTypes";
+        public static final String ACL_ID             = "aId";
+        public static final String OBJ_ID             = "objId";
+        public static final String ENTITY_SETS        = "entSets";
+        public static final String SYNC_IDS           = "sId";
     }
 
     // Keyspace setup
@@ -44,10 +44,10 @@ public final class Queries {
                 .buildQuery();
     }
 
-    public static final String getCreateEntitySetsTable( String keyspace ) {
+    public static final String getCreateEntitySetsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.TYPE )
+                .partitionKey( CommonColumns.TYPENAME )
                 .clusteringColumns( CommonColumns.NAME )
                 .columns( CommonColumns.TITLE )
                 .buildQuery();
@@ -111,6 +111,14 @@ public final class Queries {
                 .buildQuery();
     }
 
+    public static final String getCreateEntitySetMembersTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SET_MEMBERS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.TYPENAME, CommonColumns.NAME, CommonColumns.PARTITION_INDEX )
+                .clusteringColumns( CommonColumns.ENTITYID )
+                .buildQuery();
+    }
+    
     // Index creation
     /*
      * HOW DOES SOFTWARE EVEN WORK? https://issues.apache.org/jira/browse/CASSANDRA-11331 Need to remove specific index
@@ -136,7 +144,8 @@ public final class Queries {
 
     public static final String CREATE_ENTITY_SET_IF_NOT_EXISTS     = "INSERT INTO sparks."
             + DatastoreConstants.ENTITY_SETS_TABLE
-            + " (type, name, title) VALUES (?,?,?) IF NOT EXISTS";
+            + " (typename, name, title) VALUES (?,?,?) IF NOT EXISTS";
+
     public static final String CREATE_ENTITY_TYPE_IF_NOT_EXISTS    = "INSERT INTO sparks."
             + DatastoreConstants.ENTITY_TYPES_TABLE
             + " (namespace, name, typename, key, properties) VALUES (?,?,?,?,?) IF NOT EXISTS";
@@ -209,7 +218,7 @@ public final class Queries {
 
     public static final RegularStatement countEntitySets( String keyspace ) {
         return QueryBuilder.select().countAll().from( keyspace, Tables.ENTITY_SETS.getTableName() )
-                .where( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ) )
+                .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
 

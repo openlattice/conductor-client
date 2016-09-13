@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,6 +153,7 @@ public class EdmService implements EdmManager {
         String typename = tableManager.getTypenameForPropertyType( propertyType );
         propertyType.setTypename( typename );
         propertyTypeMapper.save( propertyType );
+        tableManager.updateFQNLookupTable( propertyType );
     }
 
     /*
@@ -186,6 +188,7 @@ public class EdmService implements EdmManager {
 
         if ( propertyCreated ) {
             tableManager.createPropertyTypeTable( propertyType );
+            tableManager.insertToFQNLookupTable( propertyType );
         }
 
         return propertyCreated;
@@ -207,6 +210,7 @@ public class EdmService implements EdmManager {
     @Override
     public void deletePropertyType( PropertyType propertyType ) {
         propertyTypeMapper.delete( propertyType );
+        tableManager.deleteFromFQNTable( propertyType );
     }
 
     @Override
@@ -292,16 +296,56 @@ public class EdmService implements EdmManager {
     @Override
     public void deleteEntitySet( EntitySet entitySet ) {
         entitySetMapper.delete( entitySet );
+        //TODO: no need to delete row of EntitySetsTable?
+    }
+    
+    @Override
+    public boolean assignEntityToEntitySet( UUID entityId, String name ) {
+        String typename = tableManager.getTypenameForEntityId( entityId );
+        if( StringUtils.isBlank( typename ) ) {
+            return false;
+        }
+        if( !isExistingEntitySet( typename, name ) ) {
+            return false;
+        }
+        return tableManager.assignEntityToEntitySet(entityId, typename, name);        
     }
 
     @Override
+    public boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
+        String typenameForEntity = tableManager.getTypenameForEntityId( entityId );
+        if( StringUtils.isBlank( typenameForEntity ) ) {
+            return false;
+        }
+        if( !isExistingEntitySet( typenameForEntity, es.getName() ) ) {
+            return false;
+        }
+        return tableManager.assignEntityToEntitySet(entityId, es);
+    }
+    
+    @Override
     public boolean createEntitySet( FullQualifiedName type, String name, String title ) {
-        return Util.wasLightweightTransactionApplied( edmStore.createEntitySet( type, name, title ) );
+        String typename = tableManager.getTypenameForEntityType( type );
+        return createEntitySet( typename, name, title );
+    }
+    
+    @Override
+    public boolean createEntitySet( String typename, String name, String title ) {
+        if( isExistingEntitySet( typename, name ) ) {
+            return false;
+        }
+        return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( typename, name, title ) );
     }
 
     @Override
     public boolean createEntitySet( EntitySet entitySet ) {
-        return createEntitySet( entitySet.getType(), entitySet.getName(), entitySet.getTitle() );
+        if( StringUtils.isNotBlank( entitySet.getTypename() ) ) {
+            return false;
+        }
+        String typename = tableManager.getTypenameForEntityType( entitySet.getType() );
+        System.out.println( "typename upon entity set creation: " + typename );
+        entitySet.setTypename( typename );
+        return createEntitySet( typename, entitySet.getName(), entitySet.getTitle() );
     }
 
     @Override
@@ -357,7 +401,18 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean isExistingEntitySet( FullQualifiedName type, String name ) {
-        return Util.isCountNonZero( session.execute( tableManager.getCountEntitySetsStatement().bind( type, name ) ) );
+        String typename = tableManager.getTypenameForEntityType( type );
+        System.out.println( "typename upon entity set creation: " + typename );
+        if( StringUtils.isBlank( typename ) ) {
+            return false;
+        }
+        return isExistingEntitySet( typename, name );
     }
+    
+    public boolean isExistingEntitySet( String typename, String name ) {
+        return Util.isCountNonZero( session.execute( tableManager.getCountEntitySetsStatement().bind( typename, name ) ) );
+    }
+    
+
 
 }

@@ -62,7 +62,7 @@ public class ResultSetAdapterFactoryTest {
                                                                          .build();
     static Session                        session                = cluster.connect();
 
-    @BeforeClass
+    //@BeforeClass
     // Setup a table called "test_result_set_conversion". The columns have names from columnNameList with type specified
     // in typeList.
     public static void SetupCassandraDBforTesting() throws UnknownHostException {
@@ -141,7 +141,7 @@ public class ResultSetAdapterFactoryTest {
         }
     }
 
-    @Test
+    //@Test
     public void Test() {
         Function<Row, SetMultimap<FullQualifiedName, Object>> function = ResultSetAdapterFactory.toSetMultimap( map );
         Iterable<SetMultimap<FullQualifiedName, Object>> convertedData = Iterables.transform( rs, function );
@@ -167,10 +167,12 @@ public class ResultSetAdapterFactoryTest {
         assertEquals( convertedDataSet, ans );
     }
 
-    @AfterClass
+    //@AfterClass
     public static void RemoveTestingTable() {
         // Remove table created for this test after.
-        session.execute( "DROP KEYSPACE " + keyspace + ";" );
+        Cluster cluster = Cluster.builder().addContactPoint( "localhost" ).build();
+        Session session = cluster.connect();
+        session.execute( "DROP KEYSPACE IF EXISTS test_result_set_conversion;" );
 
         // Close Cassandra session
         cluster.close();
