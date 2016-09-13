@@ -118,7 +118,7 @@ public class EntitySet {
 
     @Override
     public String toString() {
-        return "EntitySet [name=" + name + ", title=" + title + "]";
+        return "EntitySet [type=" + type + ", name=" + name + ", title=" + title + "]";
     }
 
     @JsonCreator

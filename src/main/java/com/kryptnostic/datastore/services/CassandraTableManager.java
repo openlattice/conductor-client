@@ -384,7 +384,7 @@ public class CassandraTableManager {
                         assignEntityToEntitySet.bind( 
                                 typename,
                                 name, 
-                                Arrays.toString(random.generateSeed(256)), 
+                                Arrays.toString(random.generateSeed(1)), 
                                 entityId )));
     }
     
@@ -396,7 +396,7 @@ public class CassandraTableManager {
                         assignEntityToEntitySet.bind( 
                                 typename,
                                 es.getName(), 
-                                Arrays.toString(random.generateSeed(256)), 
+                                Arrays.toString(random.generateSeed(1)), 
                                 entityId )));
     }
     
@@ -589,7 +589,7 @@ public class CassandraTableManager {
     }
 
     private static void createEntitySetsTableIfNotExists( String keyspace, Session session ) {
-        session.execute( Queries.getCreateEntitySetsTable( keyspace ) );
+        session.execute( Queries.getCreateEntitySetsTableQuery( keyspace ) );
         session.execute( Queries.CREATE_INDEX_ON_NAME );
     }
 
