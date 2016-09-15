@@ -505,6 +505,10 @@ public class CassandraTableManager {
                 r -> new FullQualifiedName( r.getString( CommonColumns.FQN.cql() ) ) );
     }
     
+    public Map<String, FullQualifiedName> getEntityTypesForTypenames( Iterable<String> typenames ) {
+        return Maps.toMap( typenames, this::getEntityTypeForTypename );
+    }
+    
     public FullQualifiedName getEntityTypeForTypename( String typename ) {
         return Util.transformSafely( session.execute( this.getEntityTypeForTypename.bind( typename ) ).one(),
                 r -> new FullQualifiedName( r.getString( CommonColumns.FQN.cql() ) ) );

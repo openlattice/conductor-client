@@ -381,6 +381,16 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public FullQualifiedName getPropertyTypeFullQualifiedName( String typename ) {
+        return tableManager.getPropertyTypeForTypename( typename );
+    }
+    
+    @Override
+    public FullQualifiedName getEntityTypeFullQualifiedName( String typename ) {
+        return tableManager.getEntityTypeForTypename( typename );
+    }
+    
+    @Override
     public EntityDataModel getEntityDataModel() {
         Iterable<Schema> schemas = getSchemas();
         final Set<EntityType> entityTypes = Sets.newHashSet();
