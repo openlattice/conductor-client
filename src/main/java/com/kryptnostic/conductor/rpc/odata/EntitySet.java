@@ -60,7 +60,8 @@ public class EntitySet {
         return this;
     }
     
-    
+    //this shall only be called the first time EntitySet is created, otherwise the return value will be null;
+    //to actually getType after the first time, retrieve the value from the EntityType lookup table
     public FullQualifiedName getType() {
         return type;
     }

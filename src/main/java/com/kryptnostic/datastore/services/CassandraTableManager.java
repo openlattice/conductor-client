@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.core.DataType;
@@ -38,7 +37,6 @@ import jersey.repackaged.com.google.common.collect.Maps;
 public class CassandraTableManager {
     static enum TableType {
         entity_,
-        es_,
         index_,
         property_,
         schema_;
@@ -67,8 +65,12 @@ public class CassandraTableManager {
     private final PreparedStatement                                   countEntitySets;
     private final PreparedStatement                                   insertPropertyTypeLookup;
     private final PreparedStatement                                   updatePropertyTypeLookup;
-    private final PreparedStatement                                   deletePropertyTypeLookup;
-    private final PreparedStatement                                   getFullQualifiedNameForTypename;
+    private final PreparedStatement                                   deletePropertyTypeLookup;   
+    private final PreparedStatement                                   getPropertyTypeForTypename;
+    private final PreparedStatement                                   insertEntityTypeLookup;
+    private final PreparedStatement                                   updateEntityTypeLookup;
+    private final PreparedStatement                                   deleteEntityTypeLookup;   
+    private final PreparedStatement                                   getEntityTypeForTypename;
     private final PreparedStatement                                   getTypenameForEntityId;
     private final PreparedStatement                                   assignEntityToEntitySet;
 
@@ -123,22 +125,39 @@ public class CassandraTableManager {
         this.countEntitySets = session.prepare( Queries.countEntitySets( keyspace ) );
 
         this.insertPropertyTypeLookup = session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.FQN_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getTableName() )
                         .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) );
 
         this.updatePropertyTypeLookup = session
-                .prepare( ( QueryBuilder.update( keyspace, Tables.FQN_LOOKUP.getTableName() ) )
+                .prepare( ( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getTableName() ) )
                         .with( QueryBuilder.set( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.deletePropertyTypeLookup = session
-                .prepare( QueryBuilder.delete().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.delete().from( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
-        //property type
-        this.getFullQualifiedNameForTypename = session
-                .prepare( QueryBuilder.select().from( keyspace, Tables.FQN_LOOKUP.getTableName() )
+        this.getPropertyTypeForTypename = session
+                .prepare( QueryBuilder.select().from( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
+        
+        this.insertEntityTypeLookup = session
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_TYPE_LOOKUP.getTableName() )
+                        .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
+                        .value( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) );
+
+        this.updateEntityTypeLookup = session
+                .prepare( ( QueryBuilder.update( keyspace, Tables.ENTITY_TYPE_LOOKUP.getTableName() ) )
+                        .with( QueryBuilder.set( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
+
+        this.deleteEntityTypeLookup = session
+                .prepare( QueryBuilder.delete().from( keyspace, Tables.ENTITY_TYPE_LOOKUP.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
+
+        this.getEntityTypeForTypename = session
+                .prepare( QueryBuilder.select().from( keyspace, Tables.ENTITY_TYPE_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
         
         this.getTypenameForEntityId = session
@@ -317,28 +336,47 @@ public class CassandraTableManager {
     }
 
     /**
-     * Operations on Typename to (user-friendly) FullQualifiedName Lookup Table
+     * Operations on Typename to (user-friendly) FullQualifiedName Lookup Tables
      */
 
-    public void insertToFQNLookupTable( PropertyType propertyType ) {
+    public void insertToPropertyTypeLookupTable( PropertyType propertyType ) {
         session.execute(
                 insertPropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
     }
 
-    public void updateFQNLookupTable( PropertyType propertyType ) {
+    public void updatePropertyTypeLookupTable( PropertyType propertyType ) {
         session.execute(
                 updatePropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
         //TODO: reorder binding?
     }
 
-    public void deleteFromFQNTable( PropertyType propertyType ) {
-        FullQualifiedName fqn = getFullQualifiedNameForTypename( propertyType.getTypename() );
+    public void deleteFromPropertyTypeLookupTable( PropertyType propertyType ) {
+        FullQualifiedName fqn = getPropertyTypeForTypename( propertyType.getTypename() );
         if ( fqn != null ) {
             session.execute(
                     deletePropertyTypeLookup.bind( propertyType.getTypename() ) );
         }
     }
 
+    public void insertToEntityTypeLookupTable( EntityType entityType ) {
+        session.execute(
+                insertEntityTypeLookup.bind( entityType.getTypename(), entityType.getFullQualifiedName() ) );
+    }
+
+    public void updateEntityTypeLookupTable( EntityType entityType ) {
+        session.execute(
+                updateEntityTypeLookup.bind( entityType.getTypename(), entityType.getFullQualifiedName() ) );
+        //TODO: reorder binding?
+    }
+
+    public void deleteFromEntityTypeLookupTable( EntityType entityType ) {
+        FullQualifiedName fqn = getEntityTypeForTypename( entityType.getTypename() );
+        if ( fqn != null ) {
+            session.execute(
+                    deleteEntityTypeLookup.bind( entityType.getTypename() ) );
+        }
+    }
+    
     /**
      * Name getters for Entity Type
      */
@@ -356,7 +394,8 @@ public class CassandraTableManager {
                 r -> r.getString( CommonColumns.TYPENAME.cql() ) );
     }
     
-    public String getTypenameForEntitySet( EntitySet entitySet ) {
+    //this shall only be called the first time when entitySet is created
+    public String getTypenameForEntitySet( EntitySet entitySet ) {        
         return getTypenameForEntityType( entitySet.getType() );
     }
 
@@ -457,12 +496,21 @@ public class CassandraTableManager {
         return getTablename( TableType.index_, aclId, typename );
     }
 
-    public Map<String, FullQualifiedName> getFullQualifiedNamesForTypenames( Iterable<String> typenames ) {
-        return Maps.toMap( typenames, this::getFullQualifiedNameForTypename );
+    public Map<String, FullQualifiedName> getPropertyTypesForTypenames( Iterable<String> typenames ) {
+        return Maps.toMap( typenames, this::getPropertyTypeForTypename );
     }
 
-    public FullQualifiedName getFullQualifiedNameForTypename( String typename ) {
-        return Util.transformSafely( session.execute( this.getFullQualifiedNameForTypename.bind( typename ) ).one(),
+    public FullQualifiedName getPropertyTypeForTypename( String typename ) {
+        return Util.transformSafely( session.execute( this.getPropertyTypeForTypename.bind( typename ) ).one(),
+                r -> new FullQualifiedName( r.getString( CommonColumns.FQN.cql() ) ) );
+    }
+    
+    public Map<String, FullQualifiedName> getEntityTypesForTypenames( Iterable<String> typenames ) {
+        return Maps.toMap( typenames, this::getEntityTypeForTypename );
+    }
+    
+    public FullQualifiedName getEntityTypeForTypename( String typename ) {
+        return Util.transformSafely( session.execute( this.getEntityTypeForTypename.bind( typename ) ).one(),
                 r -> new FullQualifiedName( r.getString( CommonColumns.FQN.cql() ) ) );
     }
 
@@ -553,7 +601,8 @@ public class CassandraTableManager {
         createPropertyTypesTableIfNotExists( keyspace, session );
         createEntitySetsTableIfNotExists( keyspace, session );
         createEntitySetMembersTableIfNotExists( keyspace, session );
-        createFullQualifiedNameLookupTableIfNotExists( keyspace, session );
+        createPropertyTypeLookupTableIfNotExists( keyspace, session );
+        createEntityTypeLookupTableIfNotExists( keyspace, session );
         createEntityIdTypenameTableIfNotExists( keyspace, session );
         // TODO: Remove this once everyone ACL is baked in.
         createSchemaTableForAclId( ACLs.EVERYONE_ACL );
@@ -609,8 +658,12 @@ public class CassandraTableManager {
         session.execute( Queries.getCreatePropertyTypesTableQuery( keyspace ) );
     }
 
-    private void createFullQualifiedNameLookupTableIfNotExists( String keyspace, Session session ) {
-        session.execute( Queries.getCreateFqnLookupTableQuery( keyspace ) );
+    private void createPropertyTypeLookupTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreatePropertyTypeLookupTableQuery( keyspace ) );
     }
 
+    private void createEntityTypeLookupTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.getCreateEntityTypeLookupTableQuery( keyspace ) );
+    }
+    
 }

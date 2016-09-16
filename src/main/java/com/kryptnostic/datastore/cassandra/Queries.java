@@ -71,14 +71,22 @@ public final class Queries {
                 .buildQuery();
     }
 
-    public static final String getCreateFqnLookupTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.FQN_LOOKUP )
+    public static final String getCreatePropertyTypeLookupTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPE_LOOKUP )
                 .ifNotExists()
                 .partitionKey( CommonColumns.TYPENAME )
                 .columns( CommonColumns.FQN )
                 .buildQuery();
     }
 
+    public static final String getCreateEntityTypeLookupTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPE_LOOKUP )
+                .ifNotExists()
+                .partitionKey( CommonColumns.TYPENAME )
+                .columns( CommonColumns.FQN )
+                .buildQuery();
+    }
+    
     public static final String createPropertyTableQuery(
             String keyspace,
             String table,

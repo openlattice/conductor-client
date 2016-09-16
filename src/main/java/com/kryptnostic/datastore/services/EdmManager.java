@@ -72,5 +72,9 @@ public interface EdmManager {
     boolean isExistingEntitySet( FullQualifiedName type, String name );
 
     EntityType getEntityType( FullQualifiedName fqn );
+    
+    FullQualifiedName getPropertyTypeFullQualifiedName( String typename );
+    
+    FullQualifiedName getEntityTypeFullQualifiedName( String typename );
 
 }

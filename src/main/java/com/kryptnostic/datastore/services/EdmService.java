@@ -141,6 +141,7 @@ public class EdmService implements EdmManager {
         String typename = tableManager.getTypenameForEntityType( entityType );
         entityType.setTypename( typename );
         entityTypeMapper.save( entityType );
+        tableManager.updateEntityTypeLookupTable( entityType );
     }
 
     /*
@@ -153,7 +154,7 @@ public class EdmService implements EdmManager {
         String typename = tableManager.getTypenameForPropertyType( propertyType );
         propertyType.setTypename( typename );
         propertyTypeMapper.save( propertyType );
-        tableManager.updateFQNLookupTable( propertyType );
+        tableManager.updatePropertyTypeLookupTable( propertyType );
     }
 
     /*
@@ -188,7 +189,7 @@ public class EdmService implements EdmManager {
 
         if ( propertyCreated ) {
             tableManager.createPropertyTypeTable( propertyType );
-            tableManager.insertToFQNLookupTable( propertyType );
+            tableManager.insertToPropertyTypeLookupTable( propertyType );
         }
 
         return propertyCreated;
@@ -205,12 +206,13 @@ public class EdmService implements EdmManager {
     @Override
     public void deleteEntityType( EntityType objectType ) {
         entityTypeMapper.delete( objectType );
+        tableManager.deleteFromEntityTypeLookupTable( objectType );
     }
 
     @Override
     public void deletePropertyType( PropertyType propertyType ) {
         propertyTypeMapper.delete( propertyType );
-        tableManager.deleteFromFQNTable( propertyType );
+        tableManager.deleteFromPropertyTypeLookupTable( propertyType );
     }
 
     @Override
@@ -246,7 +248,8 @@ public class EdmService implements EdmManager {
 
         if ( StringUtils.isBlank( typename ) ) {
             // Generate the typename for this type
-            entityType.setTypename( CassandraTableManager.generateTypename() );
+            typename = CassandraTableManager.generateTypename();
+            entityType.setTypename( typename );
 
             entityCreated = Util.wasLightweightTransactionApplied(
                     edmStore.createEntityTypeIfNotExists( entityType.getNamespace(),
@@ -261,6 +264,7 @@ public class EdmService implements EdmManager {
             tableManager.createEntityTypeTable( entityType,
                     Maps.asMap( entityType.getKey(),
                             fqn -> getPropertyType( fqn ) ) );
+            tableManager.insertToEntityTypeLookupTable( entityType );
         }
         return entityCreated;
     }
@@ -376,6 +380,16 @@ public class EdmService implements EdmManager {
         return propertyTypeMapper.get( propertyType.getNamespace(), propertyType.getName() );
     }
 
+    @Override
+    public FullQualifiedName getPropertyTypeFullQualifiedName( String typename ) {
+        return tableManager.getPropertyTypeForTypename( typename );
+    }
+    
+    @Override
+    public FullQualifiedName getEntityTypeFullQualifiedName( String typename ) {
+        return tableManager.getEntityTypeForTypename( typename );
+    }
+    
     @Override
     public EntityDataModel getEntityDataModel() {
         Iterable<Schema> schemas = getSchemas();
