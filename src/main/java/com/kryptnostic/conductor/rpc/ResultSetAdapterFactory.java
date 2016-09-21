@@ -2,6 +2,7 @@ package com.kryptnostic.conductor.rpc;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
 
@@ -10,9 +11,14 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Function;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.HashMultimap; 
+
+import org.apache.olingo.commons.api.data.Entity;
+import org.apache.olingo.commons.api.data.Property;
+import org.apache.olingo.commons.api.data.ValueType;
+import com.kryptnostic.conductor.rpc.odata.PropertyType;
 
 public final class ResultSetAdapterFactory {
 
@@ -40,5 +46,23 @@ public final class ResultSetAdapterFactory {
 			                )
 			        );
 		};
+	}
+	
+	public static Entity mapRowToEntity( Row row, Set<PropertyType> properties ) {
+		Entity entity = new Entity();
+		properties.forEach(property -> {
+			Object value = row.getObject( property.getTypename() );
+			entity.addProperty( new Property( property.getFullQualifiedName().getFullQualifiedNameAsString(), property.getName(), ValueType.PRIMITIVE, value ) );
+		});
+		return entity;
+	}
+	
+	public static SetMultimap<FullQualifiedName, Object> mapRowToObject( Row row, Set<PropertyType> properties ) {
+		SetMultimap<FullQualifiedName, Object> map = HashMultimap.create();
+		properties.forEach(property -> {
+			Object value = row.getObject( property.getTypename() );
+			map.put( property.getFullQualifiedName(), value );
+		});
+		return map;
 	}
 }
