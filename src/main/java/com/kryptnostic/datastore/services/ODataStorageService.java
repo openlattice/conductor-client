@@ -45,12 +45,12 @@ import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.datastore.cassandra.CassandraStorage;
 
-public class EntityStorageClient {
+public class ODataStorageService {
     @Deprecated
     public static final String           ES_PRODUCTS_NAME = "Products";
 
     private static final Logger          logger           = LoggerFactory
-            .getLogger( EntityStorageClient.class );
+            .getLogger( ODataStorageService.class );
     // private final IMap<String, FullQualifiedName> entitySets;
     // private final IMap<FullQualifiedName, EntitySchema> entitySchemas;
     private final EdmManager             dms;
@@ -59,7 +59,7 @@ public class EntityStorageClient {
     private final String                 keyspace;
     private final DurableExecutorService executor;
 
-    public EntityStorageClient(
+    public ODataStorageService(
             String keyspace,
             HazelcastInstance hazelcast,
             EdmManager dms,
