@@ -52,7 +52,7 @@ public final class ResultSetAdapterFactory {
 		Entity entity = new Entity();
 		properties.forEach(property -> {
 			Object value = row.getObject( property.getTypename() );
-			entity.addProperty( new Property( null, property.getTypename(), ValueType.PRIMITIVE, value ) );
+			entity.addProperty( new Property( property.getFullQualifiedName().getFullQualifiedNameAsString(), property.getName(), ValueType.PRIMITIVE, value ) );
 		});
 		return entity;
 	}
