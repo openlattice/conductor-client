@@ -1,6 +1,6 @@
 package com.kryptnostic.datastore.services;
 
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Multimap;
 import com.kryptnostic.conductor.rpc.*;
 import com.squareup.okhttp.Response;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -15,7 +15,7 @@ import java.util.UUID;
  * Created by yao on 9/20/16.
  */
 public interface DataApi {
-    String CONTROLLER = "/raw";
+    String CONTROLLER = "/data";
 
     String ENTITYSET   = "/entityset";
     String ENTITY_DATA = "/entitydata";
@@ -29,10 +29,10 @@ public interface DataApi {
     List<UUID> getFilteredEntitySet( LookupEntitySetRequest lookupEntitiesRequest );
 
     @GET( CONTROLLER + ENTITY_DATA )
-    Iterable<SetMultimap<FullQualifiedName, Object>> getAllEntitiesOfType( LoadAllEntitiesOfTypeRequest loadAllEntitiesOfTypeRequest );
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( LoadAllEntitiesOfTypeRequest loadAllEntitiesOfTypeRequest );
 
     @GET( CONTROLLER + ENTITY_DATA + FILTERED )
-    Iterable<SetMultimap<FullQualifiedName, Object>> getFilteredEntitiesOfType( LookupEntitiesRequest lookupEntitiesRequest );
+    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntitiesOfType( LookupEntitiesRequest lookupEntitiesRequest );
 
     @POST( CONTROLLER + ENTITY_DATA )
     Response createEntityData( CreateEntityRequest createEntityRequest );
