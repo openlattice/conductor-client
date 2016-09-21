@@ -16,7 +16,7 @@ public class ConductorCall<T> implements Callable<T>, Serializable {
     public ConductorCall( UUID userId, Function<ConductorSparkApi, T> call, ConductorSparkApi api ) {
         this.userId = Preconditions.checkNotNull( userId );
         this.f = Preconditions.checkNotNull( call );
-        this.api = Preconditions.checkNotNull( api );
+        this.api = api;
     }
 
     public UUID getUserId() {
