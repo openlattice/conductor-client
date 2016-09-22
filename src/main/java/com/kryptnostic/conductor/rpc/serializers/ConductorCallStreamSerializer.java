@@ -24,7 +24,6 @@ import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.kryptnostic.services.v1.serialization.UUIDStreamSerializer;
 
-@SuppressWarnings( "rawtypes" )
 public class ConductorCallStreamSerializer implements SelfRegisteringStreamSerializer<ConductorCall> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
@@ -64,6 +63,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
+        System.out.println("In serializer.");
         UUIDStreamSerializer.serialize( out, object.getUserId() );
         Output output = new Output( (OutputStream) out );
         kryoThreadLocal.get().writeClassAndObject( output, object.getFunction() );
@@ -71,8 +71,8 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
     public ConductorCall read( ObjectDataInput in ) throws IOException {
+        System.out.println("In de-serializer.");
         UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
         Function<ConductorSparkApi, ?> f = (Function<ConductorSparkApi, ?>) kryoThreadLocal.get()
@@ -82,6 +82,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public int getTypeId() {
+        System.out.println("It's ConductorCall");
         return HazelcastSerializerTypeIds.CONDUCTOR_CALL.ordinal();
     }
 

@@ -7,7 +7,7 @@ import java.util.function.Function;
 
 import com.google.common.base.Preconditions;
 
-public class ConductorCall<T> implements Callable<T>, Serializable {
+public class ConductorCall<T> implements Callable<T> {
     private static final long                    serialVersionUID = 7100103643538018543L;
     private final UUID                           userId;
     private final Function<ConductorSparkApi, T> f;
