@@ -66,7 +66,6 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
-        System.out.println("In serializer.");
         UUIDStreamSerializer.serialize( out, object.getUserId() );
         Output output = new Output( (OutputStream) out );
         kryoThreadLocal.get().writeClassAndObject( output, object.getFunction() );
@@ -75,7 +74,6 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public ConductorCall read( ObjectDataInput in ) throws IOException {
-        System.out.println("In de-serializer.");
         UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
         Function<ConductorSparkApi, ?> f = (Function<ConductorSparkApi, ?>) kryoThreadLocal.get()
@@ -85,7 +83,6 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public int getTypeId() {
-        System.out.println("It's ConductorCall " + HazelcastSerializerTypeIds.CONDUCTOR_CALL.ordinal());
         return HazelcastSerializerTypeIds.CONDUCTOR_CALL.ordinal();
     }
 
