@@ -43,7 +43,7 @@ public interface DataApi {
 
     @GET( CONTROLLER + ENTITY_DATA + FULLQUALIFIEDNAME_PATH )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
-            @Path( FULLQUALIFIEDNAME ) String fanAsString );
+            @Path( FULLQUALIFIEDNAME ) String fqnAsString );
 
     @GET( CONTROLLER + ENTITY_DATA + NAME_SPACE_PATH + NAME_SPACE )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(

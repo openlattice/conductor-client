@@ -51,7 +51,7 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 	}
 
 	public synchronized void setSession( Session session ) {
-		if( session == null ) {
+		if( this.session == null ) {
 			this.session = Preconditions.checkNotNull( session );
 		}
 	}

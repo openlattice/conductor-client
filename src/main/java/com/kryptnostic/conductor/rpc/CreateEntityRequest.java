@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -23,12 +22,13 @@ public class CreateEntityRequest {
 
     @JsonCreator
     public CreateEntityRequest(
-            @JsonProperty( SerializationConstants.ACL_ID_FIELD ) Optional<UUID> aclId,
-            @JsonProperty( SerializationConstants.SYNC_ID ) Optional<UUID> syncId,
+
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
             @JsonProperty( SerializationConstants.KEY_FIELD ) FullQualifiedName entityType,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
-                    Set<HashMultimap<FullQualifiedName, Object>> propertyValues ) {
+                    Set<HashMultimap<FullQualifiedName, Object>> propertyValues,
+            @JsonProperty( SerializationConstants.ACL_ID_FIELD ) Optional<UUID> aclId,
+            @JsonProperty( SerializationConstants.SYNC_ID ) Optional<UUID> syncId ) {
         this.aclId = aclId;
         this.syncId = syncId;
         this.entitySetName = entitySetName;
