@@ -7,6 +7,7 @@ import javax.inject.Inject;
 
 import com.google.common.base.Optional;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Preconditions;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.conductor.rpc.QueryResult;
@@ -15,7 +16,7 @@ import com.kryptnostic.services.v1.serialization.UUIDStreamSerializer;
 import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 
 public class QueryResultStreamSerializer implements SelfRegisteringStreamSerializer<QueryResult> {
-	private final Session session;
+	private Session session;
 	
 	@Inject
 	public QueryResultStreamSerializer( Session session ) {
@@ -47,6 +48,12 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 	@Override
 	public void destroy() {
 		
+	}
+
+	public synchronized void setSession( Session session ) {
+		if( session == null ) {
+			this.session = Preconditions.checkNotNull( session );
+		}
 	}
 
 	@Override

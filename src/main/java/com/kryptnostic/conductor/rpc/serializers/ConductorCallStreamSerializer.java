@@ -9,6 +9,8 @@ import java.util.function.Function;
 
 import javax.inject.Inject;
 
+import com.hazelcast.util.Preconditions;
+import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -40,6 +42,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
                                                                    // Shared Lambdas
                                                                    kryo.register( Lambdas.class );
+                                                                   kryo.register( GetAllEntitiesOfTypeLambda.class );
                                                                    kryo.register( SerializedLambda.class );
 
                                                                    // always needed for closure serialization, also if
@@ -54,7 +57,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
                                                                }
                                                            };
 
-    private final ConductorSparkApi        api;
+    private ConductorSparkApi        api;
 
     @Inject
     public ConductorCallStreamSerializer( ConductorSparkApi api ) {
@@ -82,13 +85,18 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public int getTypeId() {
-        System.out.println("It's ConductorCall");
+        System.out.println("It's ConductorCall " + HazelcastSerializerTypeIds.CONDUCTOR_CALL.ordinal());
         return HazelcastSerializerTypeIds.CONDUCTOR_CALL.ordinal();
     }
 
     @Override
     public void destroy() {
 
+    }
+
+    public synchronized void setConductorSparkApi( ConductorSparkApi api ) {
+        Preconditions.checkState( this.api == null , "Api can only be set once" );
+        this.api  = Preconditions.checkNotNull( api );
     }
 
     @Override
