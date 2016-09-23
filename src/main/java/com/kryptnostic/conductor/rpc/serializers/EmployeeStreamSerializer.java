@@ -30,15 +30,11 @@ public class EmployeeStreamSerializer implements SelfRegisteringStreamSerializer
 
     @Override
     public int getTypeId() {
-
-        System.out.println("It's Employee!!");
         return HazelcastSerializerTypeIds.EMPLOYEE.ordinal();
     }
 
     @Override
-    public void destroy() {
-
-    }
+    public void destroy() {}
 
     @Override
     public Class<Employee> getClazz() {

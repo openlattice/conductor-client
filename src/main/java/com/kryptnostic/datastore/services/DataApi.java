@@ -1,7 +1,6 @@
 package com.kryptnostic.datastore.services;
 
 import com.google.common.collect.Multimap;
-import com.google.common.collect.SetMultimap;
 import com.kryptnostic.conductor.rpc.*;
 import com.squareup.okhttp.Response;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -40,19 +39,19 @@ public interface DataApi {
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body LoadAllEntitiesOfTypeRequest loadAllEntitiesOfTypeRequest );
 
     @PUT( CONTROLLER + ENTITY_DATA )
-    Iterable<SetMultimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
 
     @GET( CONTROLLER + ENTITY_DATA + FULLQUALIFIEDNAME_PATH )
-    Iterable<SetMultimap<FullQualifiedName, Object>> getAllEntitiesOfType(
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
             @Path( FULLQUALIFIEDNAME ) String fanAsString );
 
     @GET( CONTROLLER + ENTITY_DATA + NAME_SPACE_PATH + NAME_SPACE )
-    Iterable<SetMultimap<FullQualifiedName, Object>> getAllEntitiesOfType(
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
             @Path( NAME_SPACE ) String namespace,
             @Path( NAME ) String name );
 
     @GET( CONTROLLER + ENTITY_DATA + FILTERED )
-    Iterable<SetMultimap<FullQualifiedName, Object>> getFilteredEntitiesOfType( @Body LookupEntitiesRequest lookupEntitiesRequest );
+    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntitiesOfType( @Body LookupEntitiesRequest lookupEntitiesRequest );
 
     @POST( CONTROLLER + ENTITY_DATA )
     Response createEntityData( @Body CreateEntityRequest createEntityRequest );
