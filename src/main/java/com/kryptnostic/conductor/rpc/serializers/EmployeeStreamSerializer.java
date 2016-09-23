@@ -34,9 +34,7 @@ public class EmployeeStreamSerializer implements SelfRegisteringStreamSerializer
     }
 
     @Override
-    public void destroy() {
-
-    }
+    public void destroy() {}
 
     @Override
     public Class<Employee> getClazz() {

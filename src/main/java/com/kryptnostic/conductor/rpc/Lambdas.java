@@ -18,7 +18,9 @@ public class Lambdas implements Serializable {
     	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.loadAllEntitiesOfType( fqn );
     }
     
-
+//    public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfType(final FullQualifiedName fqn ) {
+//        return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.loadAllEntitiesOfType( fqn );
+//    }
 //    public static Callable<List<Employee>> getEmployees() {
 //        return new ConductorCall() {
 //            private static final long serialVersionUID = 3766075442981764029L;

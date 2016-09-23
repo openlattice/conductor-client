@@ -17,25 +17,44 @@ import java.util.UUID;
 public interface DataApi {
     String CONTROLLER = "/data";
 
-    String ENTITYSET   = "/entityset";
-    String ENTITY_DATA = "/entitydata";
-    String FILTERED    = "/filtered";
-    String INTEGRATION = "/integration";
+    String FULLQUALIFIEDNAME = "fqn";
+    String NAME              = "name";
+    String NAME_SPACE        = "namespace";
+
+    String ENTITYSET              = "/entityset";
+    String ENTITY_DATA            = "/entitydata";
+    String FILTERED               = "/filtered";
+    String INTEGRATION            = "/integration";
+    String FULLQUALIFIEDNAME_PATH = "/{" + FULLQUALIFIEDNAME + "}";
+    String NAME_PATH              = "/{" + NAME + "}";
+    String NAME_SPACE_PATH        = "/{" + NAME_SPACE + "}";
 
     @GET( CONTROLLER + ENTITYSET )
-    List<UUID> getAllEntitySet( LoadEntitySetRequest loadEntitySetRequest );
+    List<UUID> getAllEntitySet( @Body LoadEntitySetRequest loadEntitySetRequest );
 
     @GET( CONTROLLER + ENTITYSET + FILTERED )
-    List<UUID> getFilteredEntitySet( LookupEntitySetRequest lookupEntitiesRequest );
+    List<UUID> getFilteredEntitySet( @Body LookupEntitySetRequest lookupEntitiesRequest );
 
     @GET( CONTROLLER + ENTITY_DATA )
-    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( LoadAllEntitiesOfTypeRequest loadAllEntitiesOfTypeRequest );
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body LoadAllEntitiesOfTypeRequest loadAllEntitiesOfTypeRequest );
+
+    @PUT( CONTROLLER + ENTITY_DATA )
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
+
+    @GET( CONTROLLER + ENTITY_DATA + FULLQUALIFIEDNAME_PATH )
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
+            @Path( FULLQUALIFIEDNAME ) String fqnAsString );
+
+    @GET( CONTROLLER + ENTITY_DATA + NAME_SPACE_PATH + NAME_SPACE )
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
+            @Path( NAME_SPACE ) String namespace,
+            @Path( NAME ) String name );
 
     @GET( CONTROLLER + ENTITY_DATA + FILTERED )
-    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntitiesOfType( LookupEntitiesRequest lookupEntitiesRequest );
+    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntitiesOfType( @Body LookupEntitiesRequest lookupEntitiesRequest );
 
     @POST( CONTROLLER + ENTITY_DATA )
-    Response createEntityData( CreateEntityRequest createEntityRequest );
+    Response createEntityData( @Body CreateEntityRequest createEntityRequest );
 
     @GET( CONTROLLER + INTEGRATION )
     Map<String, String> getAllIntegrationScripts();

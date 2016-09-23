@@ -9,6 +9,8 @@ import java.util.function.Function;
 
 import javax.inject.Inject;
 
+import com.hazelcast.util.Preconditions;
+import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -24,7 +26,6 @@ import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.kryptnostic.services.v1.serialization.UUIDStreamSerializer;
 
-@SuppressWarnings( "rawtypes" )
 public class ConductorCallStreamSerializer implements SelfRegisteringStreamSerializer<ConductorCall> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
@@ -41,6 +42,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
                                                                    // Shared Lambdas
                                                                    kryo.register( Lambdas.class );
+                                                                   kryo.register( GetAllEntitiesOfTypeLambda.class );
                                                                    kryo.register( SerializedLambda.class );
 
                                                                    // always needed for closure serialization, also if
@@ -55,7 +57,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
                                                                }
                                                            };
 
-    private final ConductorSparkApi        api;
+    private ConductorSparkApi        api;
 
     @Inject
     public ConductorCallStreamSerializer( ConductorSparkApi api ) {
@@ -71,7 +73,6 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
     public ConductorCall read( ObjectDataInput in ) throws IOException {
         UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
@@ -88,6 +89,11 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     @Override
     public void destroy() {
 
+    }
+
+    public synchronized void setConductorSparkApi( ConductorSparkApi api ) {
+        Preconditions.checkState( this.api == null , "Api can only be set once" );
+        this.api  = Preconditions.checkNotNull( api );
     }
 
     @Override

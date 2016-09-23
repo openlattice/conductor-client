@@ -60,7 +60,7 @@ public final class ResultSetAdapterFactory {
 	public static SetMultimap<FullQualifiedName, Object> mapRowToObject( Row row, Set<PropertyType> properties ) {
 		SetMultimap<FullQualifiedName, Object> map = HashMultimap.create();
 		properties.forEach(property -> {
-			Object value = row.getObject( property.getTypename() );
+			Object value = row.getObject( "value_" + property.getTypename() );
 			map.put( property.getFullQualifiedName(), value );
 		});
 		return map;
