@@ -358,7 +358,7 @@ public class EdmService implements EdmManager {
     }
 
     public Iterable<EntityType> getEntityTypes() {
-        return edmStore.getEntityTypes();
+        return edmStore.getEntityTypes().all();
     }
 
     @Override
@@ -376,7 +376,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public Iterable<EntitySet> getEntitySets() {
-        return edmStore.getEntitySets();
+        return edmStore.getEntitySets().all();
     }
 
     @Override
