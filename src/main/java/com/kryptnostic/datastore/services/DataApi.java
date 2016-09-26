@@ -22,7 +22,7 @@ public interface DataApi {
     String NAME              = "name";
     String NAME_SPACE        = "namespace";
 
-    String SCHEMA                          = "/schema";
+    String MULTIPLE                          = "/multiple";
     String ENTITYSET                       = "/entityset";
     String ENTITY_DATA                     = "/entitydata";
     String FILTERED                        = "/filtered";
@@ -50,7 +50,7 @@ public interface DataApi {
     @PUT( CONTROLLER + ENTITY_DATA )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
 
-    @PUT( CONTROLLER + ENTITY_DATA + SCHEMA )
+    @PUT( CONTROLLER + ENTITY_DATA + MULTIPLE )
     Iterable<Iterable<Multimap<FullQualifiedName, Object>>> getAllEntitiesOfSchema( @Body List<FullQualifiedName> fqns );
 
     @GET( CONTROLLER + ENTITY_DATA + FULLQUALIFIEDNAME_PATH )
