@@ -52,8 +52,7 @@ public interface EdmApi {
     /**
      * Creates a schema.
      * 
-     * @param namespace The namespace for the schema.
-     * @param aclId The id of the ACL controlling access to the schema.
+     * @param request The namespace for the schema.
      */
     @PUT( SCHEMA_BASE_PATH )
     Response putSchema( @Body PutSchemaRequest request );
