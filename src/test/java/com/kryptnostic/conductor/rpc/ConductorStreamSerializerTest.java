@@ -19,7 +19,7 @@ public class ConductorStreamSerializerTest extends BaseSerializerTest<ConductorC
 
     @Override
     protected ConductorCall createInput() {
-        return ConductorCall.wrap( Lambdas.getEntities( new FullQualifiedName( "abc","def" ) ) );
+        return ConductorCall.wrap( Lambdas.getAllEntitiesOfType( new FullQualifiedName( "abc","def" ) ) );
     }
 
     @Override

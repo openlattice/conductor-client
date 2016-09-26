@@ -139,6 +139,9 @@ public interface EdmApi {
     @PUT( ENTITY_SETS_BASE_PATH )
     Response putEntitySets( @Body Set<EntitySet> entitySets );
 
+    @GET( ENTITY_SETS_BASE_PATH )
+    Iterable<EntitySet> getEntitySets();
+
     /**
      * Creates an entity type if it doesn't already exist.
      * 
@@ -150,6 +153,9 @@ public interface EdmApi {
 
     @PUT( ENTITY_TYPE_BASE_PATH )
     Response putEntityType( @Body EntityType entityType );
+
+    @GET( ENTITY_TYPE_BASE_PATH )
+    Iterable<EntityType> getEntityTypes();
 
     @GET( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     EntityType getEntityType( String namespace, String entityTypeName );

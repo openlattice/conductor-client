@@ -357,6 +357,10 @@ public class EdmService implements EdmManager {
         return getEntityType( fqn.getNamespace(), fqn.getName() );
     }
 
+    public Iterable<EntityType> getEntityTypes() {
+        return edmStore.getEntityTypes();
+    }
+
     @Override
     public EntityType getEntityType( String namespace, String name ) {
         return entityTypeMapper.get( namespace, name );
