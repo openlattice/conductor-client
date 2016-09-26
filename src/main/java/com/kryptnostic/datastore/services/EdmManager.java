@@ -53,6 +53,8 @@ public interface EdmManager {
 
     EntityType getEntityType( String namespace, String name );
 
+    Iterable<EntityType> getEntityTypes();
+
     void deleteEntityType( EntityType objectType );
 
     void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );

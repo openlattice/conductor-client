@@ -357,6 +357,10 @@ public class EdmService implements EdmManager {
         return getEntityType( fqn.getNamespace(), fqn.getName() );
     }
 
+    public Iterable<EntityType> getEntityTypes() {
+        return edmStore.getEntityTypes().all();
+    }
+
     @Override
     public EntityType getEntityType( String namespace, String name ) {
         return entityTypeMapper.get( namespace, name );
@@ -372,7 +376,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public Iterable<EntitySet> getEntitySets() {
-        return edmStore.getEntitySets();
+        return edmStore.getEntitySets().all();
     }
 
     @Override
