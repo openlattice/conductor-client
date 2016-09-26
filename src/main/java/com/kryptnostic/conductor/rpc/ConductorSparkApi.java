@@ -15,5 +15,5 @@ public interface ConductorSparkApi {
 
     QueryResult loadAllEntitiesOfType( FullQualifiedName entityTypeFqn );
 
-    QueryResult loadEntitySet( EntitySet setType );
+    List<UUID> loadEntitySet( FullQualifiedName fqn );
 }

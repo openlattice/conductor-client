@@ -2,11 +2,9 @@ package com.kryptnostic.datastore.services;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
@@ -57,10 +55,8 @@ public interface EdmApi {
      * @param namespace The namespace for the schema.
      * @param aclId The id of the ACL controlling access to the schema.
      */
-    @PUT( SCHEMA_BASE_PATH + NAMESPACE_PATH )
-    Response putSchema(
-            @Path( NAMESPACE ) String namespace,
-            @Body Optional<UUID> aclId );
+    @PUT( SCHEMA_BASE_PATH )
+    Response putSchema( @Body PutSchemaRequest request );
 
     /**
      * Retrieves schemas matching the namespace provided in the {@code request} parameter. If no namespace is specified

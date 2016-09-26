@@ -3,6 +3,7 @@ package com.kryptnostic.datastore.services;
 import java.util.EnumSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -22,6 +23,7 @@ public class GetSchemasRequest {
     private final Optional<String> name;
     private final Set<TypeDetails> typeDetails;
 
+    @JsonCreator
     public GetSchemasRequest(
             @JsonProperty( EdmApi.NAMESPACE ) Optional<String> namespace,
             @JsonProperty( EdmApi.NAME ) Optional<String> name,

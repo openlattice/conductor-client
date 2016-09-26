@@ -26,17 +26,24 @@ public interface DataApi {
     String FILTERED               = "/filtered";
     String INTEGRATION            = "/integration";
     String FULLQUALIFIEDNAME_PATH = "/{" + FULLQUALIFIEDNAME + "}";
+    String FULLQUALIFIEDNAME_PATH_WITH_DOT = "/{" + FULLQUALIFIEDNAME + ":.+}";
     String NAME_PATH              = "/{" + NAME + "}";
     String NAME_SPACE_PATH        = "/{" + NAME_SPACE + "}";
 
-    @GET( CONTROLLER + ENTITYSET )
-    List<UUID> getAllEntitySet( @Body LoadEntitySetRequest loadEntitySetRequest );
+    @PUT( CONTROLLER + ENTITYSET )
+    Iterable<UUID> getEntitySetOfType( @Body FullQualifiedName fqn );
+
+    @GET( CONTROLLER + ENTITYSET + FULLQUALIFIEDNAME_PATH )
+    Iterable<UUID> getEntitySetOfType(
+            @Path( FULLQUALIFIEDNAME ) String fqnString );
+
+    @GET( CONTROLLER + ENTITYSET + NAME_SPACE_PATH + NAME_PATH )
+    Iterable<UUID> getEntitySetOfType(
+            @Path( NAME_SPACE ) String namespace,
+            @Path( NAME ) String name );
 
     @GET( CONTROLLER + ENTITYSET + FILTERED )
-    List<UUID> getFilteredEntitySet( @Body LookupEntitySetRequest lookupEntitiesRequest );
-
-    @GET( CONTROLLER + ENTITY_DATA )
-    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body LoadAllEntitiesOfTypeRequest loadAllEntitiesOfTypeRequest );
+    Iterable<UUID> getFilteredEntitySet( @Body LookupEntitySetRequest lookupEntitiesRequest );
 
     @PUT( CONTROLLER + ENTITY_DATA )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
@@ -45,13 +52,14 @@ public interface DataApi {
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
             @Path( FULLQUALIFIEDNAME ) String fqnAsString );
 
-    @GET( CONTROLLER + ENTITY_DATA + NAME_SPACE_PATH + NAME_SPACE )
+    @GET( CONTROLLER + ENTITY_DATA + NAME_SPACE_PATH + NAME_PATH )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
             @Path( NAME_SPACE ) String namespace,
             @Path( NAME ) String name );
 
     @GET( CONTROLLER + ENTITY_DATA + FILTERED )
-    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntitiesOfType( @Body LookupEntitiesRequest lookupEntitiesRequest );
+    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntitiesOfType(
+            @Body LookupEntitiesRequest lookupEntitiesRequest );
 
     @POST( CONTROLLER + ENTITY_DATA )
     Response createEntityData( @Body CreateEntityRequest createEntityRequest );
