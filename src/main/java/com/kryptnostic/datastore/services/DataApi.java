@@ -6,7 +6,6 @@ import com.squareup.okhttp.Response;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import retrofit.http.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -21,14 +20,14 @@ public interface DataApi {
     String NAME              = "name";
     String NAME_SPACE        = "namespace";
 
-    String ENTITYSET              = "/entityset";
-    String ENTITY_DATA            = "/entitydata";
-    String FILTERED               = "/filtered";
-    String INTEGRATION            = "/integration";
-    String FULLQUALIFIEDNAME_PATH = "/{" + FULLQUALIFIEDNAME + "}";
+    String ENTITYSET                       = "/entityset";
+    String ENTITY_DATA                     = "/entitydata";
+    String FILTERED                        = "/filtered";
+    String INTEGRATION                     = "/integration";
+    String FULLQUALIFIEDNAME_PATH          = "/{" + FULLQUALIFIEDNAME + "}";
     String FULLQUALIFIEDNAME_PATH_WITH_DOT = "/{" + FULLQUALIFIEDNAME + ":.+}";
-    String NAME_PATH              = "/{" + NAME + "}";
-    String NAME_SPACE_PATH        = "/{" + NAME_SPACE + "}";
+    String NAME_PATH                       = "/{" + NAME + "}";
+    String NAME_SPACE_PATH                 = "/{" + NAME_SPACE + "}";
 
     @PUT( CONTROLLER + ENTITYSET )
     Iterable<UUID> getEntitySetOfType( @Body FullQualifiedName fqn );
