@@ -2,10 +2,12 @@ package com.kryptnostic.datastore.services;
 
 import com.google.common.collect.Multimap;
 import com.kryptnostic.conductor.rpc.*;
+import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.squareup.okhttp.Response;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import retrofit.http.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -20,6 +22,7 @@ public interface DataApi {
     String NAME              = "name";
     String NAME_SPACE        = "namespace";
 
+    String SCHEMA                          = "/schema";
     String ENTITYSET                       = "/entityset";
     String ENTITY_DATA                     = "/entitydata";
     String FILTERED                        = "/filtered";
@@ -46,6 +49,9 @@ public interface DataApi {
 
     @PUT( CONTROLLER + ENTITY_DATA )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
+
+    @POST( CONTROLLER + ENTITY_DATA + SCHEMA )
+    Iterable<Iterable<Multimap<FullQualifiedName, Object>>> getAllEntitiesOfSchema( @Body List<FullQualifiedName> fqns );
 
     @GET( CONTROLLER + ENTITY_DATA + FULLQUALIFIEDNAME_PATH )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
