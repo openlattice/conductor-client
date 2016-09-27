@@ -15,7 +15,6 @@ public class Lambdas implements Serializable {
     public static Runnable foo() {
         return (Runnable & Serializable) () -> System.out.println( "UNSTOPPABLE" );
     }
-<<<<<<< HEAD
     
     public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfType( FullQualifiedName fqn ) {
     	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.loadAllEntitiesOfType( fqn );
