@@ -15,22 +15,29 @@ public class Lambdas implements Serializable {
     public static Runnable foo() {
         return (Runnable & Serializable) () -> System.out.println( "UNSTOPPABLE" );
     }
-    
+
     public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfType( FullQualifiedName fqn ) {
-    	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.loadAllEntitiesOfType( fqn );
+        return (Function<ConductorSparkApi, QueryResult> & Serializable) ( api ) -> api.loadAllEntitiesOfType( fqn );
     }
 
     public static Function<ConductorSparkApi, Iterable<UUID>> getEntitySetOfType( FullQualifiedName fqn ) {
-        return (Function<ConductorSparkApi, Iterable<UUID>> & Serializable ) (api) -> api.loadEntitySet( fqn );
+        return (Function<ConductorSparkApi, Iterable<UUID>> & Serializable) ( api ) -> api.loadEntitySet( fqn );
     }
 
-//    public static Callable<List<Employee>> getEmployees() {
-//        return new ConductorCall() {
-//            private static final long serialVersionUID = 3766075442981764029L;
-//
-//            @Override
-//            public List<Employee> call() throws Exception {
-//                return null;
-//            }
-//        };
+    public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfEntitySet(
+            FullQualifiedName entityFqn,
+            String entitySetName ) {
+        return (Function<ConductorSparkApi, QueryResult> & Serializable) ( api ) -> api
+                .getAllEntitiesOfEntitySet( entityFqn, entitySetName );
+    }
+
+    //    public static Callable<List<Employee>> getEmployees() {
+    //        return new ConductorCall() {
+    //            private static final long serialVersionUID = 3766075442981764029L;
+    //
+    //            @Override
+    //            public List<Employee> call() throws Exception {
+    //                return null;
+    //            }
+    //        };
 }

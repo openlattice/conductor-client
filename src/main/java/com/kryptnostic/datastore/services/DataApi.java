@@ -21,8 +21,9 @@ public interface DataApi {
     String FULLQUALIFIEDNAME = "fqn";
     String NAME              = "name";
     String NAME_SPACE        = "namespace";
+    String TYPE_NAME         = "typename";
 
-    String MULTIPLE                          = "/multiple";
+    String MULTIPLE                        = "/multiple";
     String ENTITYSET                       = "/entityset";
     String ENTITY_DATA                     = "/entitydata";
     String FILTERED                        = "/filtered";
@@ -31,6 +32,7 @@ public interface DataApi {
     String FULLQUALIFIEDNAME_PATH_WITH_DOT = "/{" + FULLQUALIFIEDNAME + ":.+}";
     String NAME_PATH                       = "/{" + NAME + "}";
     String NAME_SPACE_PATH                 = "/{" + NAME_SPACE + "}";
+    String TYPE_NAME_PATH                  = "/{" + TYPE_NAME + "}";
 
     @PUT( CONTROLLER + ENTITYSET )
     Iterable<UUID> getEntitySetOfType( @Body FullQualifiedName fqn );
@@ -47,11 +49,17 @@ public interface DataApi {
     @GET( CONTROLLER + ENTITYSET + FILTERED )
     Iterable<UUID> getFilteredEntitySet( @Body LookupEntitySetRequest lookupEntitiesRequest );
 
+    @GET( CONTROLLER + ENTITYSET + NAME_PATH + TYPE_NAME_PATH + ENTITY_DATA )
+    Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfEntitySet(
+            @Path( NAME ) String entitySetName,
+            @Path( TYPE_NAME ) String typeName );
+
     @PUT( CONTROLLER + ENTITY_DATA )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
 
     @PUT( CONTROLLER + ENTITY_DATA + MULTIPLE )
-    Iterable<Iterable<Multimap<FullQualifiedName, Object>>> getAllEntitiesOfSchema( @Body List<FullQualifiedName> fqns );
+    Iterable<Iterable<Multimap<FullQualifiedName, Object>>> getAllEntitiesOfTypes(
+            @Body List<FullQualifiedName> fqns );
 
     @GET( CONTROLLER + ENTITY_DATA + FULLQUALIFIEDNAME_PATH )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType(
