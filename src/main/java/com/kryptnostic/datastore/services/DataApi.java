@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Multimap;
 import com.kryptnostic.conductor.rpc.*;
 import com.squareup.okhttp.Response;
@@ -50,8 +51,14 @@ public interface DataApi {
             @Path( NAME_SPACE ) String namespace,
             @Path( NAME ) String name );
 
-    @GET( CONTROLLER + ENTITY_DATA + FILTERED )
-    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntities( @Body LookupEntitiesRequest lookupEntitiesRequest );
+
+    @PUT( CONTROLLER + ENTITY_DATA + FILTERED )
+    /**
+     * 
+     * @param obj ObjectNode that builds a LookupEntitiesRequest. Should be JSON of the form userId: UUID, type: Set\<FullQualifiedName\>, properties: Map\<FullQualifiedName as String, Object\>  
+     * @return Iterable of UUID matching the request
+     */
+    Iterable<UUID> getFilteredEntities( @Body ObjectNode obj );
 
     @POST( CONTROLLER + ENTITY_DATA )
     Response createEntityData( @Body CreateEntityRequest createEntityRequest );

@@ -3,6 +3,7 @@ package com.kryptnostic.conductor.rpc;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
 
@@ -64,5 +65,14 @@ public final class ResultSetAdapterFactory {
 			map.put( property.getFullQualifiedName(), value );
 		});
 		return map;
+	}
+	
+	/**
+	 * 
+	 * @param row Cassandra Row object, expected to have a single column of UUID
+	 * @return UUID
+	 */
+	public static UUID mapRowToUUID( Row row) {
+		return row.getUUID(0);
 	}
 }
