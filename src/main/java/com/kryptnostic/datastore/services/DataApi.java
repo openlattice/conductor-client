@@ -58,7 +58,7 @@ public interface DataApi {
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
 
     @PUT( CONTROLLER + ENTITY_DATA + MULTIPLE )
-    Iterable<Iterable<Multimap<FullQualifiedName, Object>>> getAllEntitiesOfSchema(
+    Iterable<Iterable<Multimap<FullQualifiedName, Object>>> getAllEntitiesOfTypes(
             @Body List<FullQualifiedName> fqns );
 
     @GET( CONTROLLER + ENTITY_DATA + FULLQUALIFIEDNAME_PATH )
