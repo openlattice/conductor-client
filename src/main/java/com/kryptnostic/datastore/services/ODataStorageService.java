@@ -118,10 +118,8 @@ public class ODataStorageService {
         } else {
             // TODO: RPC to Spark to load data.
             try {
-                QueryResult result = executor.submit( ConductorCall.wrap( ( ConductorSparkApi sparkApi ) -> {
-                    return sparkApi.loadEntitySet(
-                            new EntitySet().setName( edmEntitySet.getName() ).setTitle( edmEntitySet.getTitle() )
-                                    .setType( edmEntitySet.getEntityType().getFullQualifiedName() ) );
+                 Iterable<UUID> result = executor.submit( ConductorCall.wrap( ( ConductorSparkApi sparkApi ) -> {
+                    return sparkApi.loadEntitySet( edmEntitySet.getEntityType().getFullQualifiedName());
                 } ) ).get();
             } catch ( InterruptedException | ExecutionException e ) {
                 // TODO Auto-generated catch block

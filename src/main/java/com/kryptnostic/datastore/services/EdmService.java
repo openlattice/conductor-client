@@ -224,7 +224,7 @@ public class EdmService implements EdmManager {
     public void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
-                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( namespace, name, entityTypes ) );
+                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( entityTypes, namespace, name ) );
         }
     }
 
@@ -232,7 +232,7 @@ public class EdmService implements EdmManager {
     public void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
-                    tableManager.getSchemaRemoveEntityTypeStatement( aclId ).bind( namespace, name, entityTypes ) );
+                    tableManager.getSchemaRemoveEntityTypeStatement( aclId ).bind( entityTypes, namespace, name ) );
         }
     }
 
@@ -357,6 +357,10 @@ public class EdmService implements EdmManager {
         return getEntityType( fqn.getNamespace(), fqn.getName() );
     }
 
+    public Iterable<EntityType> getEntityTypes() {
+        return edmStore.getEntityTypes().all();
+    }
+
     @Override
     public EntityType getEntityType( String namespace, String name ) {
         return entityTypeMapper.get( namespace, name );
@@ -372,7 +376,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public Iterable<EntitySet> getEntitySets() {
-        return edmStore.getEntitySets();
+        return edmStore.getEntitySets().all();
     }
 
     @Override

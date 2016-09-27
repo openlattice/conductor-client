@@ -2,11 +2,9 @@ package com.kryptnostic.datastore.services;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
@@ -34,7 +32,7 @@ public interface EdmApi {
     String ENTITY_TYPES            = "objectTypes";
     String PROPERTY_TYPES          = "propertyTypes";
     String SCHEMA                  = "schema";
-    String SCHEMAS                 = "schemas;";
+    String SCHEMAS                 = "schemas";
 
     // {namespace}/{schema_name}/{class}/{FQN}/{FQN}
     /*
@@ -54,13 +52,10 @@ public interface EdmApi {
     /**
      * Creates a schema.
      * 
-     * @param namespace The namespace for the schema.
-     * @param aclId The id of the ACL controlling access to the schema.
+     * @param request The namespace for the schema.
      */
-    @PUT( SCHEMA_BASE_PATH + NAMESPACE_PATH )
-    Response putSchema(
-            @Path( NAMESPACE ) String namespace,
-            @Body Optional<UUID> aclId );
+    @PUT( SCHEMA_BASE_PATH )
+    Response putSchema( @Body PutSchemaRequest request );
 
     /**
      * Retrieves schemas matching the namespace provided in the {@code request} parameter. If no namespace is specified
@@ -144,6 +139,9 @@ public interface EdmApi {
     @PUT( ENTITY_SETS_BASE_PATH )
     Response putEntitySets( @Body Set<EntitySet> entitySets );
 
+    @GET( ENTITY_SETS_BASE_PATH )
+    Iterable<EntitySet> getEntitySets();
+
     /**
      * Creates an entity type if it doesn't already exist.
      * 
@@ -155,6 +153,9 @@ public interface EdmApi {
 
     @PUT( ENTITY_TYPE_BASE_PATH )
     Response putEntityType( @Body EntityType entityType );
+
+    @GET( ENTITY_TYPE_BASE_PATH )
+    Iterable<EntityType> getEntityTypes();
 
     @GET( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     EntityType getEntityType( String namespace, String entityTypeName );
