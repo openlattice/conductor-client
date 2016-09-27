@@ -14,8 +14,12 @@ public class Lambdas implements Serializable {
         return (Runnable & Serializable) () -> System.out.println( "UNSTOPPABLE" );
     }
     
-    public static Function<ConductorSparkApi, QueryResult> getEntities( FullQualifiedName fqn ) {
+    public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfType( FullQualifiedName fqn ) {
     	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.loadAllEntitiesOfType( fqn );
+    }
+    
+    public static Function<ConductorSparkApi, QueryResult> getFilteredEntities( LookupEntitiesRequest lookupEntitiesRequest ) {
+    	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.filterEntities( lookupEntitiesRequest );
     }
     
 //    public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfType(final FullQualifiedName fqn ) {

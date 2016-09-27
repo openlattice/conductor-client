@@ -51,7 +51,7 @@ public interface DataApi {
             @Path( NAME ) String name );
 
     @GET( CONTROLLER + ENTITY_DATA + FILTERED )
-    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntitiesOfType( @Body LookupEntitiesRequest lookupEntitiesRequest );
+    Iterable<Multimap<FullQualifiedName, Object>> getFilteredEntities( @Body LookupEntitiesRequest lookupEntitiesRequest );
 
     @POST( CONTROLLER + ENTITY_DATA )
     Response createEntityData( @Body CreateEntityRequest createEntityRequest );

@@ -16,4 +16,11 @@ public interface ConductorSparkApi {
     QueryResult loadAllEntitiesOfType( FullQualifiedName entityTypeFqn );
 
     QueryResult loadEntitySet( EntitySet setType );
+    
+    /**
+     * Return QueryResult of <b>UUID's ONLY</b> of all entities matching a Look Up Entities Request.
+     * @param request A LookupEntitiesRequest object
+     * @return QueryResult of UUID's matching the lookup request
+     */
+    QueryResult filterEntities( LookupEntitiesRequest request);
 }
