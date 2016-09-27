@@ -32,7 +32,7 @@ public interface EdmApi {
     String ENTITY_TYPES            = "objectTypes";
     String PROPERTY_TYPES          = "propertyTypes";
     String SCHEMA                  = "schema";
-    String SCHEMAS                 = "schemas;";
+    String SCHEMAS                 = "schemas";
 
     // {namespace}/{schema_name}/{class}/{FQN}/{FQN}
     /*
