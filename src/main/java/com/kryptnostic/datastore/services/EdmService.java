@@ -224,7 +224,7 @@ public class EdmService implements EdmManager {
     public void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
-                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( namespace, name, entityTypes ) );
+                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( entityTypes, namespace, name ) );
         }
     }
 
@@ -232,7 +232,7 @@ public class EdmService implements EdmManager {
     public void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
-                    tableManager.getSchemaRemoveEntityTypeStatement( aclId ).bind( namespace, name, entityTypes ) );
+                    tableManager.getSchemaRemoveEntityTypeStatement( aclId ).bind( entityTypes, namespace, name ) );
         }
     }
 
