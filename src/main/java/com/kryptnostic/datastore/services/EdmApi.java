@@ -184,4 +184,7 @@ public interface EdmApi {
     @DELETE( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     Response deletePropertyType( String namespace, String name );
 
+    @GET( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
+    PropertyType getPropertyType( String namespace, String entityTypeName );
+
 }
