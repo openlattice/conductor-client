@@ -65,7 +65,7 @@ public interface EdmManager {
 
     void upsertPropertyType( PropertyType propertyType );
 
-    void deletePropertyType( PropertyType propertyType );
+    void deletePropertyType( FullQualifiedName propertyTypeFqn );
 
     PropertyType getPropertyType( FullQualifiedName prop );
 
