@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
@@ -106,19 +107,16 @@ public class CreateEntityRequest {
                     Set<Multimap<String, Object>> propertyValuesInString,
             @JsonProperty( SerializationConstants.ACL_ID_FIELD ) Optional<UUID> aclId,
             @JsonProperty( SerializationConstants.SYNC_ID ) Optional<UUID> syncId ) {
-    	//Create propertyValues with FullQualifiedNameAsKey
+    	//Create propertyValues with FullQualifiedName as key
     	Set< Multimap<FullQualifiedName, Object> > propertyValuesInFQN = propertyValuesInString.stream()
-    			.map( multimap -> multimap.keySet()
-    					.stream()
-    	    			.collect(
-    	    					Collector.of(
-    	    							ImmutableMultimap.Builder<FullQualifiedName, Object>::new,
-    	    							( builder, fqnAsString ) -> builder.putAll( new FullQualifiedName(fqnAsString), multimap.get(fqnAsString) ),
-    	    							( lhs, rhs ) -> lhs.putAll( rhs.build() ),
-    	    							builder -> builder.build()
-    	    							)
-    	    					) 
-    	    			)
+    			.map( multimap -> {
+    				Multimap<FullQualifiedName, Object> multimapInFQN = HashMultimap.create();
+    				for( String fqnAsString : multimap.keySet() ){
+    					multimapInFQN.putAll(new FullQualifiedName(fqnAsString), multimap.get(fqnAsString) );
+    				}
+    				return multimapInFQN;
+    			}
+    			)
     			.collect(Collectors.toSet());
     	
         return new CreateEntityRequest(
