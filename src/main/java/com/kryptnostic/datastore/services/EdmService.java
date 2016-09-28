@@ -36,12 +36,12 @@ import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
-    private static final Logger         logger = LoggerFactory.getLogger( EdmService.class );
+    private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
 
-    private final Session               session;
-    private final Mapper<EntitySet>     entitySetMapper;
-    private final Mapper<EntityType>    entityTypeMapper;
-    private final Mapper<PropertyType>  propertyTypeMapper;
+    private final Session              session;
+    private final Mapper<EntitySet>    entitySetMapper;
+    private final Mapper<EntityType>   entityTypeMapper;
+    private final Mapper<PropertyType> propertyTypeMapper;
 
     private final CassandraEdmStore     edmStore;
     private final CassandraTableManager tableManager;
@@ -210,9 +210,11 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void deletePropertyType( PropertyType propertyType ) {
-        propertyTypeMapper.delete( propertyType );
+    public void deletePropertyType( FullQualifiedName propertyTypeFqn ) {
+        PropertyType propertyType = propertyTypeMapper
+                .get( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() );
         tableManager.deleteFromPropertyTypeLookupTable( propertyType );
+        propertyTypeMapper.delete( propertyType );
     }
 
     @Override
@@ -302,40 +304,40 @@ public class EdmService implements EdmManager {
         entitySetMapper.delete( entitySet );
         //TODO: no need to delete row of EntitySetsTable?
     }
-    
+
     @Override
     public boolean assignEntityToEntitySet( UUID entityId, String name ) {
         String typename = tableManager.getTypenameForEntityId( entityId );
-        if( StringUtils.isBlank( typename ) ) {
+        if ( StringUtils.isBlank( typename ) ) {
             return false;
         }
-        if( !isExistingEntitySet( typename, name ) ) {
+        if ( !isExistingEntitySet( typename, name ) ) {
             return false;
         }
-        return tableManager.assignEntityToEntitySet(entityId, typename, name);        
+        return tableManager.assignEntityToEntitySet( entityId, typename, name );
     }
 
     @Override
     public boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
         String typenameForEntity = tableManager.getTypenameForEntityId( entityId );
-        if( StringUtils.isBlank( typenameForEntity ) ) {
+        if ( StringUtils.isBlank( typenameForEntity ) ) {
             return false;
         }
-        if( !isExistingEntitySet( typenameForEntity, es.getName() ) ) {
+        if ( !isExistingEntitySet( typenameForEntity, es.getName() ) ) {
             return false;
         }
-        return tableManager.assignEntityToEntitySet(entityId, es);
+        return tableManager.assignEntityToEntitySet( entityId, es );
     }
-    
+
     @Override
     public boolean createEntitySet( FullQualifiedName type, String name, String title ) {
         String typename = tableManager.getTypenameForEntityType( type );
         return createEntitySet( typename, name, title );
     }
-    
+
     @Override
     public boolean createEntitySet( String typename, String name, String title ) {
-        if( isExistingEntitySet( typename, name ) ) {
+        if ( isExistingEntitySet( typename, name ) ) {
             return false;
         }
         return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( typename, name, title ) );
@@ -343,7 +345,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean createEntitySet( EntitySet entitySet ) {
-        if( StringUtils.isNotBlank( entitySet.getTypename() ) ) {
+        if ( StringUtils.isNotBlank( entitySet.getTypename() ) ) {
             return false;
         }
         String typename = tableManager.getTypenameForEntityType( entitySet.getType() );
@@ -388,12 +390,12 @@ public class EdmService implements EdmManager {
     public FullQualifiedName getPropertyTypeFullQualifiedName( String typename ) {
         return tableManager.getPropertyTypeForTypename( typename );
     }
-    
+
     @Override
     public FullQualifiedName getEntityTypeFullQualifiedName( String typename ) {
         return tableManager.getEntityTypeForTypename( typename );
     }
-    
+
     @Override
     public EntityDataModel getEntityDataModel() {
         Iterable<Schema> schemas = getSchemas();
@@ -421,16 +423,15 @@ public class EdmService implements EdmManager {
     public boolean isExistingEntitySet( FullQualifiedName type, String name ) {
         String typename = tableManager.getTypenameForEntityType( type );
         System.out.println( "typename upon entity set creation: " + typename );
-        if( StringUtils.isBlank( typename ) ) {
+        if ( StringUtils.isBlank( typename ) ) {
             return false;
         }
         return isExistingEntitySet( typename, name );
     }
-    
-    public boolean isExistingEntitySet( String typename, String name ) {
-        return Util.isCountNonZero( session.execute( tableManager.getCountEntitySetsStatement().bind( typename, name ) ) );
-    }
-    
 
+    public boolean isExistingEntitySet( String typename, String name ) {
+        return Util
+                .isCountNonZero( session.execute( tableManager.getCountEntitySetsStatement().bind( typename, name ) ) );
+    }
 
 }
