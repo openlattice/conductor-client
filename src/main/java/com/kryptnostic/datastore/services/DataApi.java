@@ -47,9 +47,6 @@ public interface DataApi {
             @Path( NAME_SPACE ) String namespace,
             @Path( NAME ) String name );
 
-    @GET( CONTROLLER + ENTITYSET + FILTERED )
-    Iterable<UUID> getFilteredEntitySet( @Body LookupEntitySetRequest lookupEntitiesRequest );
-
     @GET( CONTROLLER + ENTITYSET + NAME_PATH + TYPE_NAME_PATH + ENTITY_DATA )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfEntitySet(
             @Path( NAME ) String entitySetName,
