@@ -4,11 +4,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Multimap;
+import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Created by yao on 9/20/16.
@@ -18,15 +25,15 @@ public class CreateEntityRequest {
     private final Optional<UUID>                               syncId;
     private final String                                       entitySetName;
     private final FullQualifiedName                            entityType;
-    private final Set<HashMultimap<FullQualifiedName, Object>> propertyValues;
+    private final Set<Multimap<FullQualifiedName, Object>> propertyValues;
 
     @JsonCreator
     public CreateEntityRequest(
 
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
-            @JsonProperty( SerializationConstants.KEY_FIELD ) FullQualifiedName entityType,
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityType,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
-                    Set<HashMultimap<FullQualifiedName, Object>> propertyValues,
+                    Set<Multimap<FullQualifiedName, Object>> propertyValues,
             @JsonProperty( SerializationConstants.ACL_ID_FIELD ) Optional<UUID> aclId,
             @JsonProperty( SerializationConstants.SYNC_ID ) Optional<UUID> syncId ) {
         this.aclId = aclId;
@@ -59,7 +66,7 @@ public class CreateEntityRequest {
     }
 
     @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
-    public Set<HashMultimap<FullQualifiedName, Object>> getPropertyValues() {
+    public Set<Multimap<FullQualifiedName, Object>> getPropertyValues() {
         return propertyValues;
     }
 
@@ -90,5 +97,33 @@ public class CreateEntityRequest {
         result = 31 * result + ( entityType != null ? entityType.hashCode() : 0 );
         result = 31 * result + ( propertyValues != null ? propertyValues.hashCode() : 0 );
         return result;
+    }
+    
+    @JsonCreator
+    public static CreateEntityRequest newCreateEntityRequest(
+            @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityType,
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
+                    Set<Multimap<String, Object>> propertyValuesInString,
+            @JsonProperty( SerializationConstants.ACL_ID_FIELD ) Optional<UUID> aclId,
+            @JsonProperty( SerializationConstants.SYNC_ID ) Optional<UUID> syncId ) {
+    	//Create propertyValues with FullQualifiedName as key
+    	Set< Multimap<FullQualifiedName, Object> > propertyValuesInFQN = propertyValuesInString.stream()
+    			.map( multimap -> {
+    				Multimap<FullQualifiedName, Object> multimapInFQN = HashMultimap.create();
+    				for( String fqnAsString : multimap.keySet() ){
+    					multimapInFQN.putAll(new FullQualifiedName(fqnAsString), multimap.get(fqnAsString) );
+    				}
+    				return multimapInFQN;
+    			}
+    			)
+    			.collect(Collectors.toSet());
+    	
+        return new CreateEntityRequest(
+        		entitySetName,
+        		entityType,
+        		propertyValuesInFQN,
+        		aclId,
+        		syncId);
     }
 }
