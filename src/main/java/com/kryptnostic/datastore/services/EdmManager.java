@@ -28,7 +28,7 @@ public interface EdmManager {
     void deleteSchema( Schema namespaces );
 
     boolean createEntitySet( FullQualifiedName type, String name, String title );
-    
+
     boolean createEntitySet( String typename, String name, String title );
 
     boolean createEntitySet( EntitySet entitySet );
@@ -44,9 +44,9 @@ public interface EdmManager {
     void deleteEntitySet( EntitySet entitySet );
 
     boolean createEntityType( EntityType objectType );
-    
+
     boolean assignEntityToEntitySet( UUID entityId, String entitySetName );
-    
+
     boolean assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
 
     void upsertEntityType( EntityType objectType );
@@ -69,14 +69,16 @@ public interface EdmManager {
 
     PropertyType getPropertyType( FullQualifiedName prop );
 
+    Iterable<PropertyType> getPropertyTypesInNamespace( String namespace );
+
     EntityDataModel getEntityDataModel();
 
     boolean isExistingEntitySet( FullQualifiedName type, String name );
 
     EntityType getEntityType( FullQualifiedName fqn );
-    
+
     FullQualifiedName getPropertyTypeFullQualifiedName( String typename );
-    
+
     FullQualifiedName getEntityTypeFullQualifiedName( String typename );
 
 }

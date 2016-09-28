@@ -22,17 +22,17 @@ import retrofit.http.Path;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public interface EdmApi {
-    String ALIAS                   = "alias";
-    String ACL_ID                  = "aclId";
-    String LOAD_DETAILS            = "loadDetails";
-    String NAME                    = "name";
-    String NAMESPACE               = "namespace";
-    String NAMESPACES              = "namespaces";
-    String ENTITY_SETS             = "entitySets";
-    String ENTITY_TYPES            = "objectTypes";
-    String PROPERTY_TYPES          = "propertyTypes";
-    String SCHEMA                  = "schema";
-    String SCHEMAS                 = "schemas";
+    String ALIAS          = "alias";
+    String ACL_ID         = "aclId";
+    String LOAD_DETAILS   = "loadDetails";
+    String NAME           = "name";
+    String NAMESPACE      = "namespace";
+    String NAMESPACES     = "namespaces";
+    String ENTITY_SETS    = "entitySets";
+    String ENTITY_TYPES   = "objectTypes";
+    String PROPERTY_TYPES = "propertyTypes";
+    String SCHEMA         = "schema";
+    String SCHEMAS        = "schemas";
 
     // {namespace}/{schema_name}/{class}/{FQN}/{FQN}
     /*
@@ -51,7 +51,7 @@ public interface EdmApi {
 
     /**
      * Creates a schema.
-     * 
+     *
      * @param request The namespace for the schema.
      */
     @PUT( SCHEMA_BASE_PATH )
@@ -60,12 +60,12 @@ public interface EdmApi {
     /**
      * Retrieves schemas matching the namespace provided in the {@code request} parameter. If no namespace is specified
      * then all schemas will be returned.
-     * 
+     * <p>
      * The level of type detail returned by the server is determined those provided in the {@code typeDetails } field of
      * the request. If no type details are specified then the server return all type details.
-     * 
+     * <p>
      * The server will only return schemas that the calling user is authorized to see.
-     * 
+     *
      * @param request The request options to use when filtering schemas.
      * @return An iterable of Schema objects.
      */
@@ -74,7 +74,7 @@ public interface EdmApi {
 
     /**
      * Gets all schemas available to the calling user.
-     * 
+     *
      * @return An iterable containing all the schemas available to the calling user.
      */
     @GET( SCHEMA_BASE_PATH )
@@ -82,7 +82,7 @@ public interface EdmApi {
 
     /**
      * Retrieves all schemas associated with a given namespace and accessible by the caller.
-     * 
+     *
      * @param namespace The namespace for which to retrieve all accessible schemas.
      * @return All accessible schemas in the provided namespace.
      */
@@ -91,7 +91,7 @@ public interface EdmApi {
 
     /**
      * Retrieves the schema contents for a corresponding namespace
-     * 
+     *
      * @param namespace
      * @param name
      * @return All schemas identified by namespace and name, across all accessible Acls.
@@ -121,20 +121,18 @@ public interface EdmApi {
 
     /**
      * Creates multiple entity sets, if they do not exist.
-     * 
+     *
      * @param entitySets The entity sets to create.
      * @return A map of describing whether or not each entity set was created.
-     * 
      */
     @POST( ENTITY_SETS_BASE_PATH )
     Map<String, Boolean> postEntitySets( @Body Set<EntitySet> entitySets );
 
     /**
      * Creates or updates multiple entity sets.
-     * 
+     *
      * @param entitySets The entity sets to create.
      * @return A map of describing whether or not posted entity sets were created or updated.
-     * 
      */
     @PUT( ENTITY_SETS_BASE_PATH )
     Response putEntitySets( @Body Set<EntitySet> entitySets );
@@ -144,7 +142,7 @@ public interface EdmApi {
 
     /**
      * Creates an entity type if it doesn't already exist.
-     * 
+     *
      * @param entityType the entity to create.
      * @return True if object type was created, false if container already exists.
      */
@@ -158,33 +156,35 @@ public interface EdmApi {
     Iterable<EntityType> getEntityTypes();
 
     @GET( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
-    EntityType getEntityType( String namespace, String entityTypeName );
+    EntityType getEntityType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
 
     @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
-    Response deleteEntityType( String namespace, String entityTypeName );
+    Response deleteEntityType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
 
     /**
      * Creates a property type if doesn't alreadsy exist.
-     * 
+     *
      * @param propertyType The property to create.
      * @return True if property type was created, false if container already exists.
      */
     @POST( PROPERTY_TYPE_BASE_PATH )
-    boolean postPropertyType(
-            PropertyType propertyType );
+    boolean postPropertyType( @Body PropertyType propertyType );
 
     /**
      * @param typeInfo
      * @return An HTTP 200 response with an empty body, if successful. Otherwise, an appropriate HttpStatus code and
-     *         potential error message.
+     * potential error message.
      */
     @PUT( PROPERTY_TYPE_BASE_PATH )
-    Response putPropertyType( PropertyType typeInfo );
+    Response putPropertyType( @Body PropertyType typeInfo );
 
     @DELETE( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
-    Response deletePropertyType( String namespace, String name );
+    Response deletePropertyType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String name );
 
     @GET( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
-    PropertyType getPropertyType( String namespace, String entityTypeName );
+    PropertyType getPropertyType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
+
+    @GET( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH )
+    Iterable<PropertyType> getPropertyTypesInNamespace( @Path( NAMESPACE ) String namespace );
 
 }
