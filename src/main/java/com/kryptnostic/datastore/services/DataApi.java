@@ -80,7 +80,7 @@ public interface DataApi {
      * SerializationConstants.PROPERTIES_FIELD (properties): Map\<FullQualifiedName as String, Object\>  
      * @return Iterable of UUID matching the request
      */
-    Iterable<UUID> getFilteredEntities( @Body ObjectNode obj );
+    Iterable<UUID> getFilteredEntities( @Body LookupEntitiesRequest lookupEntitiesRequest );
 
     @POST( CONTROLLER + ENTITY_DATA )
     Response createEntityData( @Body CreateEntityRequest createEntityRequest );
