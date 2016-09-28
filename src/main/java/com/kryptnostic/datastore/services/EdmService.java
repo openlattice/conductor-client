@@ -204,9 +204,10 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void deleteEntityType( EntityType objectType ) {
-        entityTypeMapper.delete( objectType );
-        tableManager.deleteFromEntityTypeLookupTable( objectType );
+    public void deleteEntityType( FullQualifiedName entityTypeFqn ) {
+        EntityType entityType = entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() );
+        tableManager.deleteFromEntityTypeLookupTable( entityType );
+        entityTypeMapper.delete( entityType );
     }
 
     @Override
