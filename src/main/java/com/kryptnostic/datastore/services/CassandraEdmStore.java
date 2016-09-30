@@ -41,6 +41,14 @@ public interface CassandraEdmStore {
             String typename,
             EdmPrimitiveTypeKind datatype,
             long multiplicity );
+    
+    @Query( Queries.UPDATE_PROPERTY_TYPE_IF_EXISTS )
+    public ResultSet updatePropertyTypeIfExists(
+            EdmPrimitiveTypeKind datatype,
+            long multiplicity,
+            String namespace,
+            String type);
+    
 
     @Query( Queries.CREATE_ENTITY_SET_IF_NOT_EXISTS )
     public ResultSet createEntitySetIfNotExists( 

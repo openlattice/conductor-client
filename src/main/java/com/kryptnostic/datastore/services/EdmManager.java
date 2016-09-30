@@ -63,7 +63,7 @@ public interface EdmManager {
 
     boolean createPropertyType( PropertyType propertyType );
 
-    void upsertPropertyType( PropertyType propertyType );
+    boolean upsertPropertyType( PropertyType propertyType );
 
     void deletePropertyType( FullQualifiedName propertyTypeFqn );
 

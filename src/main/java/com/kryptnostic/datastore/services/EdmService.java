@@ -12,6 +12,7 @@ import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.junit.Assert;
 
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
@@ -147,14 +148,25 @@ public class EdmService implements EdmManager {
     /*
      * (non-Javadoc)
      * @see com.kryptnostic.types.services.EdmManager#createPropertyType(com.kryptnostic.types.PropertyType)
+     * update propertyType (and return true upon success) if exists, return false otherwise
      */
     @Override
-    public void upsertPropertyType( PropertyType propertyType ) {
+    public boolean upsertPropertyType( PropertyType propertyType ) {
         // Create or retrieve it's typename.
-        String typename = tableManager.getTypenameForPropertyType( propertyType );
-        propertyType.setTypename( typename );
-        propertyTypeMapper.save( propertyType );
-        tableManager.updatePropertyTypeLookupTable( propertyType );
+        String typenameFromPropertyTable = tableManager.getTypenameForPropertyType( propertyType );
+        
+        if(StringUtils.isBlank( typenameFromPropertyTable )){
+        	return false;
+        }
+        
+        boolean propertyUpdated = Util.wasLightweightTransactionApplied(
+                edmStore.updatePropertyTypeIfExists( 
+                        propertyType.getDatatype(),
+                        propertyType.getMultiplicity(),
+                        propertyType.getNamespace(),
+                        propertyType.getName() ) );
+        
+        return propertyUpdated;
     }
 
     /*
@@ -175,6 +187,7 @@ public class EdmService implements EdmManager {
          * transaction will fail and return value will be correctly set.
          */
         String typename = tableManager.getTypenameForPropertyType( propertyType );
+        
         boolean propertyCreated = false;
         if ( StringUtils.isBlank( typename ) ) {
 
