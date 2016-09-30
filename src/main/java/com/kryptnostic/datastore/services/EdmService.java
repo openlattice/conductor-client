@@ -8,7 +8,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,6 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
-import com.datastax.driver.mapping.Result;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
@@ -53,11 +51,14 @@ public class EdmService implements EdmManager {
         this.entityTypeMapper = mappingManager.mapper( EntityType.class );
         this.propertyTypeMapper = mappingManager.mapper( PropertyType.class );
         this.tableManager = tableManager;
-        Result<EntityType> objectTypes = edmStore.getEntityTypes();
+        List<EntityType> objectTypes = edmStore.getEntityTypes().all();
         List<Schema> schemas = ImmutableList.copyOf( getSchemas() );
-        schemas.forEach( schema -> logger.info( "Namespace loaded: {}", schema ) );
-        schemas.forEach( tableManager::registerSchema );
+        // Temp comment out the following two lines to avoid "Schema is out of sync." crash
+        // and NPE for the PreparedStatement. Need to engineer it.
+//        schemas.forEach( schema -> logger.info( "Namespace loaded: {}", schema ) );
+//        schemas.forEach( tableManager::registerSchema );
         objectTypes.forEach( objectType -> logger.info( "Object read: {}", objectType ) );
+        objectTypes.forEach( tableManager::registerEntityTypesAndAssociatedPropertyTypes );
     }
 
     @Override
