@@ -98,7 +98,7 @@ public class CreateEntityRequest {
         result = 31 * result + ( propertyValues != null ? propertyValues.hashCode() : 0 );
         return result;
     }
-    
+
     @JsonCreator
     public static CreateEntityRequest newCreateEntityRequest(
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
