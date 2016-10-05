@@ -151,22 +151,18 @@ public class EdmService implements EdmManager {
      * update propertyType (and return true upon success) if exists, return false otherwise
      */
     @Override
-    public boolean upsertPropertyType( PropertyType propertyType ) {
+    public void upsertPropertyType( PropertyType propertyType ) {
         // Create or retrieve it's typename.
         String typenameFromPropertyTable = tableManager.getTypenameForPropertyType( propertyType );
-        
-        if(StringUtils.isBlank( typenameFromPropertyTable )){
-        	return false;
-        }
-        
-        boolean propertyUpdated = Util.wasLightweightTransactionApplied(
-                edmStore.updatePropertyTypeIfExists( 
+
+        if(!StringUtils.isBlank( typenameFromPropertyTable )){
+        	Util.wasLightweightTransactionApplied(
+                edmStore.updatePropertyTypeIfExists(
                         propertyType.getDatatype(),
                         propertyType.getMultiplicity(),
                         propertyType.getNamespace(),
                         propertyType.getName() ) );
-        
-        return propertyUpdated;
+        }
     }
 
     /*
@@ -187,7 +183,7 @@ public class EdmService implements EdmManager {
          * transaction will fail and return value will be correctly set.
          */
         String typename = tableManager.getTypenameForPropertyType( propertyType );
-        
+
         boolean propertyCreated = false;
         if ( StringUtils.isBlank( typename ) ) {
 
