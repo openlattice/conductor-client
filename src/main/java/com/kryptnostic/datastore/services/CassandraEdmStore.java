@@ -26,6 +26,9 @@ public interface CassandraEdmStore {
     @Query( Queries.GET_ALL_PROPERTY_TYPES_IN_NAMESPACE )
     public Result<PropertyType> getPropertyTypesInNamespace( String namespace );
 
+    @Query( Queries.GET_ALL_PROPERTY_TYPES_QUERY )
+    public Result<PropertyType> getPropertyTypes();
+
     @Query( Queries.CREATE_ENTITY_TYPE_IF_NOT_EXISTS )
     public ResultSet createEntityTypeIfNotExists(
             String namespace,

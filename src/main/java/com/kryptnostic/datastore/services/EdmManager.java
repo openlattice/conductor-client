@@ -71,6 +71,8 @@ public interface EdmManager {
 
     Iterable<PropertyType> getPropertyTypesInNamespace( String namespace );
 
+    Iterable<PropertyType> getPropertyTypes();
+
     EntityDataModel getEntityDataModel();
 
     boolean isExistingEntitySet( FullQualifiedName type, String name );
