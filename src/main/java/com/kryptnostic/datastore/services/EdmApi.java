@@ -45,6 +45,7 @@ public interface EdmApi {
     String PROPERTY_TYPE_BASE_PATH = "/property/type";
     String NAMESPACE_PATH          = "/{" + NAMESPACE + "}";
     String NAME_PATH               = "/{" + NAME + "}";
+	String ADD_PROPERTY_PATH       = "/addProperty";
 
     @GET( "/" )
     EntityDataModel getEntityDataModel();
@@ -160,7 +161,19 @@ public interface EdmApi {
 
     @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     Response deleteEntityType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
-
+    
+    /**
+     * @param namespace
+     * @param name
+     * @param propertyTypes Set of (Existing) Property Types to add to EntityType
+     * @return
+     */
+    @PUT( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_PATH )
+    Response addPropertyTypeToEntityType(
+    		@Path( NAMESPACE ) String namespace,
+    		@Path( NAME ) String entityTypeName,
+    		@Body Set<FullQualifiedName> properties
+    		);
     /**
      * Creates a property type if doesn't alreadsy exist.
      *

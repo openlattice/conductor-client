@@ -22,6 +22,8 @@ public final class Queries {
         public static final String OBJ_ID             = "objId";
         public static final String ENTITY_SETS        = "entSets";
         public static final String SYNC_IDS           = "sId";
+        public static final String PROPERTIES         = "properties";
+        public static final String KEY                = "key"; 
     }
 
     // Keyspace setup
@@ -178,6 +180,14 @@ public final class Queries {
             + DatastoreConstants.PROPERTY_TYPES_TABLE + " where namespace=:"
             + ParamNames.NAMESPACE;
 
+    // Update statements for datastore.
+	public static final String UPDATE_EXISTING_ENTITY_TYPE = "UPDATE sparks."
+			+ DatastoreConstants.ENTITY_TYPES_TABLE + " SET properties = :"
+			+ ParamNames.PROPERTIES + " , key = :"
+			+ ParamNames.KEY + " WHERE namespace =:"
+			+ ParamNames.NAMESPACE + " AND name =:"
+			+ ParamNames.NAME;
+	
     public static RegularStatement insertSchemaQueryIfNotExists( String keyspace, String table ) {
         return baseInsertSchemaQuery( QueryBuilder
                 .insertInto( keyspace, table )
