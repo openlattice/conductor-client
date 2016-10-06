@@ -164,8 +164,8 @@ public interface EdmApi {
     
     /**
      * @param namespace
-     * @param name
-     * @param propertyTypes Set of (Existing) Property Types to add to EntityType
+     * @param entityTypeName
+     * @param properties Set of (Existing) Property Types to add to EntityType
      * @return
      */
     @PUT( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_PATH )
