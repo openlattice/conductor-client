@@ -392,6 +392,10 @@ public class EdmService implements EdmManager {
         return edmStore.getPropertyTypesInNamespace( namespace ).all();
     }
 
+    @Override public Iterable<PropertyType> getPropertyTypes() {
+        return edmStore.getPropertyTypes().all();
+    }
+
     @Override
     public FullQualifiedName getPropertyTypeFullQualifiedName( String typename ) {
         return tableManager.getPropertyTypeForTypename( typename );

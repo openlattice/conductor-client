@@ -174,6 +174,8 @@ public final class Queries {
             + DatastoreConstants.ENTITY_SETS_TABLE + " where name = ?";
     public static final String GET_ALL_ENTITY_TYPES_QUERY          = "select * from sparks."
             + DatastoreConstants.ENTITY_TYPES_TABLE;
+    public static final String GET_ALL_PROPERTY_TYPES_QUERY        = "select * from sparks."
+            + DatastoreConstants.PROPERTY_TYPES_TABLE;
     public static final String GET_ALL_PROPERTY_TYPES_IN_NAMESPACE = "select * from sparks."
             + DatastoreConstants.PROPERTY_TYPES_TABLE + " where namespace=:"
             + ParamNames.NAMESPACE;

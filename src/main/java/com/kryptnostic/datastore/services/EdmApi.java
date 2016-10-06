@@ -162,13 +162,13 @@ public interface EdmApi {
     Response deleteEntityType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
 
     /**
-     * Creates a property type if doesn't alreadsy exist.
+     * Creates a property type if doesn't already exist.
      *
      * @param propertyType The property to create.
      * @return True if property type was created, false if container already exists.
      */
     @POST( PROPERTY_TYPE_BASE_PATH )
-    boolean postPropertyType( @Body PropertyType propertyType );
+    boolean createPropertyType( @Body PropertyType propertyType );
 
     /**
      * @param typeInfo
@@ -186,5 +186,8 @@ public interface EdmApi {
 
     @GET( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH )
     Iterable<PropertyType> getPropertyTypesInNamespace( @Path( NAMESPACE ) String namespace );
+
+    @GET( PROPERTY_TYPE_BASE_PATH )
+    Iterable<PropertyType> getPropertyTypes();
 
 }
