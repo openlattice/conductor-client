@@ -61,6 +61,8 @@ public interface EdmManager {
 
     void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );
 
+	void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties);
+
     boolean createPropertyType( PropertyType propertyType );
 
     void upsertPropertyType( PropertyType propertyType );

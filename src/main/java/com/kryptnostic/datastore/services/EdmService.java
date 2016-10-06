@@ -452,4 +452,18 @@ public class EdmService implements EdmManager {
 	           		properties);
         }
 	}        
+	
+	@Override
+	public void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties) {
+        if( propertiesExist( properties) ){
+	       	properties.addAll( entityType.getProperties() );
+	        entityType.setProperties( properties );
+	           
+	        edmStore.updateExistingEntityType(
+	           		entityType.getNamespace(), 
+	           		entityType.getName(), 
+	           		entityType.getKey(), 
+	           		properties);
+        }
+	}    
 }

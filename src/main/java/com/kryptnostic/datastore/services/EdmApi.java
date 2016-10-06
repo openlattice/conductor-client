@@ -114,6 +114,19 @@ public interface EdmApi {
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> entityTypes );
 
+    /**
+     * @param namespace
+     * @param name
+     * @param propertyTypes Set of (Existing) Property Types to add to EntityType
+     * @return
+     */
+    @PUT( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_PATH )
+    Response addPropertyTypesToSchema(
+    		@Path( NAMESPACE ) String namespace,
+    		@Path( NAME ) String name,
+    		@Body Set<FullQualifiedName> properties
+    		);
+    
     @DELETE( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     Response removeEntityTypeFromSchema(
             @Path( NAMESPACE ) String namespace,
