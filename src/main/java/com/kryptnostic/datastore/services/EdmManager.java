@@ -83,4 +83,6 @@ public interface EdmManager {
 
     FullQualifiedName getEntityTypeFullQualifiedName( String typename );
 
+	void addPropertyTypesToEntityType(EntityType entityType, Set<FullQualifiedName> properties);
+
 }

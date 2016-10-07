@@ -8,6 +8,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.mapping.Result;
 import com.datastax.driver.mapping.annotations.Accessor;
+import com.datastax.driver.mapping.annotations.Param;
 import com.datastax.driver.mapping.annotations.Query;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
@@ -64,4 +65,12 @@ public interface CassandraEdmStore {
 
     @Query( Queries.GET_ALL_ENTITY_SETS )
     public Result<EntitySet> getEntitySets();
+    
+    @Query( Queries.UPDATE_EXISTING_ENTITY_TYPE)
+    public ResultSet updateExistingEntityType(
+    		@Param(Queries.ParamNames.NAMESPACE) String namespace,
+    		@Param(Queries.ParamNames.NAME) String name,
+    		@Param(Queries.ParamNames.KEY) Set<FullQualifiedName> key,
+    		@Param(Queries.ParamNames.PROPERTIES) Set<FullQualifiedName> properties
+    		);
 }

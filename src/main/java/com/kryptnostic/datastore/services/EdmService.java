@@ -455,4 +455,17 @@ public class EdmService implements EdmManager {
                 .isCountNonZero( session.execute( tableManager.getCountEntitySetsStatement().bind( typename, name ) ) );
     }
 
+	@Override
+	public void addPropertyTypesToEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
+        if( propertiesExist( properties) ){
+	       	properties.addAll( entityType.getProperties() );
+	        entityType.setProperties( properties );
+	           
+	        edmStore.updateExistingEntityType(
+	           		entityType.getNamespace(), 
+	           		entityType.getName(), 
+	           		entityType.getKey(), 
+	           		properties);
+        }
+	}        
 }
