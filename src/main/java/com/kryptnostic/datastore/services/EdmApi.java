@@ -3,6 +3,7 @@ package com.kryptnostic.datastore.services;
 import java.util.Map;
 import java.util.Set;
 
+import com.kryptnostic.kodex.v1.exceptions.types.ResourceNotFoundException;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
@@ -108,7 +109,7 @@ public interface EdmApi {
      * @return
      */
     @PUT( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
-    Response addEntityTypeToSchema(
+    Response addEntityTypesToSchema(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> entityTypes );
