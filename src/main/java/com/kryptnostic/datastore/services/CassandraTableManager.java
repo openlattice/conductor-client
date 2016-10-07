@@ -58,7 +58,8 @@ public class CassandraTableManager {
     private final ConcurrentMap<UUID, PreparedStatement>              schemaSelectAllInNamespaceStatements;
     private final ConcurrentMap<UUID, PreparedStatement>              schemaAddEntityTypes;
     private final ConcurrentMap<UUID, PreparedStatement>              schemaRemoveEntityTypes;
-
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaAddPropertyTypes;
+    
     private final PreparedStatement                                   getTypenameForEntityType;
     private final PreparedStatement                                   getTypenameForPropertyType;
     private final PreparedStatement                                   countProperty;
@@ -93,6 +94,7 @@ public class CassandraTableManager {
         this.schemaSelectAllInNamespaceStatements = Maps.newConcurrentMap();
         this.schemaAddEntityTypes = Maps.newConcurrentMap();
         this.schemaRemoveEntityTypes = Maps.newConcurrentMap();
+        this.schemaAddPropertyTypes = Maps.newConcurrentMap();
         this.entityIdToTypeUpdateStatements = Maps.newConcurrentMap();
 
         initCoreTables( keyspace, session );
@@ -218,6 +220,10 @@ public class CassandraTableManager {
         return schemaRemoveEntityTypes.get( aclId );
     }
 
+    public PreparedStatement getSchemaAddPropertyTypeStatement( UUID aclId ) {
+        return schemaAddPropertyTypes.get( aclId );
+    }
+    
     public void registerSchema( Schema schema ) {
         Preconditions.checkArgument( schema.getEntityTypeFqns().size() == schema.getEntityTypes().size(),
                 "Schema is out of sync." );
@@ -588,6 +594,7 @@ public class CassandraTableManager {
         schemaAddEntityTypes.putIfAbsent( aclId, session.prepare( Queries.addEntityTypesToSchema( keyspace, table ) ) );
         schemaRemoveEntityTypes.putIfAbsent( aclId,
                 session.prepare( Queries.removeEntityTypesToSchema( keyspace, table ) ) );
+        schemaAddPropertyTypes.putIfAbsent( aclId, session.prepare( Queries.addPropertyTypesToSchema( keyspace, table ) ) );
     }
 
     private Set<UUID> getAclsAppliedToSchemas() {

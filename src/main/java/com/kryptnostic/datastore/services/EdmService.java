@@ -440,7 +440,7 @@ public class EdmService implements EdmManager {
     }
 
 	@Override
-	public void addPropertyTypeToEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
+	public void addPropertyTypesToEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
         if( propertiesExist( properties) ){
 	       	properties.addAll( entityType.getProperties() );
 	        entityType.setProperties( properties );
@@ -456,14 +456,10 @@ public class EdmService implements EdmManager {
 	@Override
 	public void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties) {
         if( propertiesExist( properties) ){
-	       	properties.addAll( entityType.getProperties() );
-	        entityType.setProperties( properties );
-	           
-	        edmStore.updateExistingEntityType(
-	           		entityType.getNamespace(), 
-	           		entityType.getName(), 
-	           		entityType.getKey(), 
-	           		properties);
+            for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
+                session.executeAsync(
+                        tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
+            }
         }
 	}    
 }

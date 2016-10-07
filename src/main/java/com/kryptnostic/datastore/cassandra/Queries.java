@@ -240,4 +240,10 @@ public final class Queries {
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
 
+    public static final RegularStatement addPropertyTypesToSchema( String keyspace, String table ) {
+        return QueryBuilder.update( keyspace, table )
+                .with( QueryBuilder.addAll( CommonColumns.PROPERTY_TYPES.cql(), QueryBuilder.bindMarker() ) )
+                .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
+    }
 }
