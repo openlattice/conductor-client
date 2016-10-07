@@ -13,7 +13,7 @@ import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
-    boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
+    boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes );
 
     void upsertSchema( Schema namespace );
 

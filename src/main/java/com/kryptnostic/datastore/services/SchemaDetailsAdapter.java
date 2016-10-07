@@ -65,7 +65,8 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
 
     public void addPropertyTypesToSchema( Schema schema ) {
         Set<FullQualifiedName> propertyTypeNames = Sets.newHashSet();
-
+        propertyTypeNames.addAll( schema.getPropertyTypeFqns() );
+        
         if ( schema.getEntityTypes().isEmpty() && !schema.getEntityTypeFqns().isEmpty() ) {
             addEntityTypesToSchema( schema );
         }
@@ -100,14 +101,22 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
                     new TypeToken<Set<FullQualifiedName>>() {
                         private static final long serialVersionUID = 7226187471436343452L;
                     } );
+            Set<FullQualifiedName> propertyTypeFqns = r.get( CommonColumns.PROPERTY_TYPES.cql(),
+                    new TypeToken<Set<FullQualifiedName>>() {
+						private static final long serialVersionUID = 888512488865063571L;
+                    } );
             if ( entityTypeFqns == null ) {
                 entityTypeFqns = ImmutableSet.of();
+            }
+            if ( propertyTypeFqns == null ) {
+                propertyTypeFqns = ImmutableSet.of();
             }
             return new Schema()
                     .setAclId( aclId )
                     .setNamespace( namespace )
                     .setName( name )
-                    .setEntityTypeFqns( entityTypeFqns );
+                    .setEntityTypeFqns( entityTypeFqns )
+                    .setPropertyTypeFqns( propertyTypeFqns );
 
         }
     }

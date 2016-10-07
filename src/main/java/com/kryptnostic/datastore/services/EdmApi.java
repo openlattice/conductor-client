@@ -113,25 +113,18 @@ public interface EdmApi {
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> entityTypes );
-    
+
     @DELETE( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     Response removeEntityTypeFromSchema(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> entityTypes );
-    /**
-     * @param namespace
-     * @param name
-     * @param propertyTypes Set of (Existing) Property Types to add to EntityType
-     * @return
-     */
+
     @PUT( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_PATH )
     Response addPropertyTypesToSchema(
-    		@Path( NAMESPACE ) String namespace,
-    		@Path( NAME ) String name,
-    		@Body Set<FullQualifiedName> properties
-    		);
-    
+            @Path( NAMESPACE ) String namespace,
+            @Path( NAME ) String name,
+            @Body Set<FullQualifiedName> properties );
     /**
      * Creates multiple entity sets, if they do not exist.
      *
@@ -177,13 +170,13 @@ public interface EdmApi {
     /**
      * @param namespace
      * @param name
-     * @param propertyTypes Set of (Existing) Property Types to add to EntityType
+     * @param properties Set of (Existing) Property Types to add to EntityType
      * @return
      */
     @PUT( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_PATH )
     Response addPropertyTypesToEntityType(
     		@Path( NAMESPACE ) String namespace,
-    		@Path( NAME ) String entityTypeName,
+    		@Path( NAME ) String name,
     		@Body Set<FullQualifiedName> properties
     		);
     /**

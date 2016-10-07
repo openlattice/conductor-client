@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -165,7 +166,8 @@ public class EdmService implements EdmManager {
     public void upsertSchema( Schema schema ) {
         session.execute( tableManager.getSchemaUpsertStatement( schema.getAclId() ).bind( schema.getNamespace(),
                 schema.getName(),
-                schema.getEntityTypeFqns() ) );
+                schema.getEntityTypeFqns(),
+                schema.getPropertyTypeFqns() ) );
     }
 
     @Override
@@ -196,11 +198,11 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes ) {
+    public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes ) {
         tableManager.createSchemaTableForAclId( aclId );
         return Util.wasLightweightTransactionApplied(
                 session.execute(
-                        tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes ) ) );
+                        tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes, propertyTypes ) ) );
     }
 
     @Override
@@ -226,8 +228,15 @@ public class EdmService implements EdmManager {
     @Override
     public void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
+            Set<FullQualifiedName> propertyTypes = entityTypes.stream()
+            		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
+            		.map(entityType -> entityType.getProperties() )
+            		.reduce((left, right) -> {
+            			left.addAll(right);
+            			return left;
+            		}).get();
             session.executeAsync(
-                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( entityTypes, namespace, name ) );
+                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( entityTypes, propertyTypes, namespace, name ) );
         }
     }
 
@@ -441,9 +450,13 @@ public class EdmService implements EdmManager {
 
 	@Override
 	public void addPropertyTypesToEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
-        if( propertiesExist( properties) ){
-	       	properties.addAll( entityType.getProperties() );
-	        entityType.setProperties( properties );
+        if( propertiesExist( properties) ){	        
+	        Set<FullQualifiedName> schemas = tableManager.getSchemaForEntityType( entityType );
+	        schemas.stream().forEach( schemaFqn -> {
+	        	addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
+	        });
+	        
+	        entityType.addProperties( properties );
 	           
 	        edmStore.updateExistingEntityType(
 	           		entityType.getNamespace(), 
@@ -455,7 +468,7 @@ public class EdmService implements EdmManager {
 	
 	@Override
 	public void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties) {
-        if( propertiesExist( properties) ){
+        if( propertiesExist( properties ) ){
             for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
                 session.executeAsync(
                         tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );

@@ -202,7 +202,8 @@ public final class Queries {
     public static RegularStatement baseInsertSchemaQuery( Insert statement ) {
         return statement.value( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() )
                 .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
-                .value( CommonColumns.ENTITY_TYPES.cql(), QueryBuilder.bindMarker() );
+                .value( CommonColumns.ENTITY_TYPES.cql(), QueryBuilder.bindMarker() )
+                .value( CommonColumns.PROPERTY_TYPES.cql(), QueryBuilder.bindMarker() );
     }
 
     public static RegularStatement getAllSchemasQuery( String keyspace, String table ) {
@@ -223,6 +224,7 @@ public final class Queries {
     public static final RegularStatement addEntityTypesToSchema( String keyspace, String table ) {
         return QueryBuilder.update( keyspace, table )
                 .with( QueryBuilder.addAll( CommonColumns.ENTITY_TYPES.cql(), QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.addAll(CommonColumns.PROPERTY_TYPES.cql(), QueryBuilder.bindMarker() ) )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }

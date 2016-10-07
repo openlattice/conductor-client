@@ -68,6 +68,11 @@ public class EntityType extends TypePK {
         this.properties = properties;
         return this;
     }
+    
+    public EntityType addProperties( Set<FullQualifiedName> properties ) {
+        this.properties.addAll( properties );
+        return this;
+    }
 
     @Override
     public String toString() {
