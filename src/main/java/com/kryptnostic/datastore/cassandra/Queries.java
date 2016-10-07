@@ -160,6 +160,10 @@ public final class Queries {
     public static final String CREATE_PROPERTY_TYPE_IF_NOT_EXISTS  = "INSERT INTO sparks."
             + DatastoreConstants.PROPERTY_TYPES_TABLE
             + " (namespace, name, typename, datatype, multiplicity) VALUES (?,?,?,?,?) IF NOT EXISTS";
+    public static final String UPDATE_PROPERTY_TYPE_IF_EXISTS = "UPDATE sparks."
+    		+ DatastoreConstants.PROPERTY_TYPES_TABLE
+    		+ " SET datatype = ?" + "," + "multiplicity = ?" 
+    		+ " WHERE namespace = ?" + " AND " + "name = ?";
     public static final String INSERT_ENTITY_CLAUSES               = " (objectId, aclId, clock, entitySets, syncIds) VALUES( :"
             + ParamNames.OBJ_ID + ", :"
             + ParamNames.ACL_ID + ", toTimestamp(now()), :"
