@@ -440,7 +440,7 @@ public class EdmService implements EdmManager {
     }
 
 	@Override
-	public void addPropertyTypeToEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
+	public void addPropertyTypesToEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
         if( propertiesExist( properties) ){
 	       	properties.addAll( entityType.getProperties() );
 	        entityType.setProperties( properties );
