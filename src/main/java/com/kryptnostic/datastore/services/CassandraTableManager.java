@@ -178,14 +178,14 @@ public class CassandraTableManager {
         
         this.entityTypeAddSchema = session
         		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
-        				.with( QueryBuilder.add( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
+        				.with( QueryBuilder.addAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
         		);
         
         this.entityTypeRemoveSchema = session
         		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
-        				.with( QueryBuilder.remove( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
+        				.with( QueryBuilder.removeAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
         		);

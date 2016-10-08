@@ -36,6 +36,7 @@ import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
+import com.kryptnostic.instrumentation.v1.exceptions.types.BadRequestException;
 
 public class EdmService implements EdmManager {
     private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
@@ -494,6 +495,8 @@ public class EdmService implements EdmManager {
 	           		entityType.getName(), 
 	           		entityType.getKey(), 
 	           		properties);
+        } else{
+        	throw new BadRequestException();
         }
 	}        
 	
@@ -504,6 +507,8 @@ public class EdmService implements EdmManager {
                 session.executeAsync(
                         tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
             }
+        } else{
+        	throw new BadRequestException();
         }
 	}    
 }
