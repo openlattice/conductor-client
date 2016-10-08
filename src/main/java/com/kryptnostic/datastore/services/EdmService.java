@@ -283,8 +283,12 @@ public class EdmService implements EdmManager {
     }
 
     private void ensureValidEntityType( EntityType entityType ) {
+    	Preconditions.checkNotNull( entityType.getNamespace(), "Namespace for Entity Type is missing");
+    	Preconditions.checkNotNull( entityType.getName(), "Name of Entity Type is missing");
+    	Preconditions.checkNotNull( entityType.getProperties(), "Property for Entity Type is missing");
+    	Preconditions.checkNotNull( entityType.getKey(), "Key for Entity Type is missing");
         Preconditions.checkArgument( propertiesExist( entityType.getProperties() )
-                && entityType.getProperties().containsAll( entityType.getKey() ), "Invalid entity provided" );
+                && entityType.getProperties().containsAll( entityType.getKey() ), "Invalid Entity Type provided" );
     }
 
     private boolean propertiesExist( Set<FullQualifiedName> properties ) {
