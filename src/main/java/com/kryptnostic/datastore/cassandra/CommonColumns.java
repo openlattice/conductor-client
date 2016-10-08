@@ -13,7 +13,6 @@ public enum CommonColumns {
     DATATYPE( DataType.text() ),
     ENTITYSETS( DataType.set( DataType.text() ) ),
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
-    PROPERTY_TYPES( DataType.set( DataType.text() ) ),
     FQN( DataType.text() ),
     KEY( DataType.set( DataType.text() ) ),
     MULTIPLICITY( DataType.bigint() ),

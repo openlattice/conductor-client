@@ -101,7 +101,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
                     new TypeToken<Set<FullQualifiedName>>() {
                         private static final long serialVersionUID = 7226187471436343452L;
                     } );
-            Set<FullQualifiedName> propertyTypeFqns = r.get( CommonColumns.PROPERTY_TYPES.cql(),
+            Set<FullQualifiedName> propertyTypeFqns = r.get( CommonColumns.PROPERTIES.cql(),
                     new TypeToken<Set<FullQualifiedName>>() {
 						private static final long serialVersionUID = 888512488865063571L;
                     } );
