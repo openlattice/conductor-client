@@ -74,6 +74,9 @@ public class CassandraTableManager {
     private final PreparedStatement                                   getEntityTypeForTypename;
     private final PreparedStatement                                   getTypenameForEntityId;
     private final PreparedStatement                                   assignEntityToEntitySet;
+    
+    private final PreparedStatement                                   entityTypeAddSchema;
+    private final PreparedStatement                                   entityTypeRemoveSchema;
 
     public CassandraTableManager(
             HazelcastInstance hazelcast,
@@ -172,6 +175,20 @@ public class CassandraTableManager {
                         .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.PARTITION_INDEX.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) );
+        
+        this.entityTypeAddSchema = session
+        		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
+        				.with( QueryBuilder.add( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
+        		);
+        
+        this.entityTypeRemoveSchema = session
+        		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
+        				.with( QueryBuilder.remove( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
+        		);
     }
 
     public String getKeyspace() {
@@ -443,6 +460,34 @@ public class CassandraTableManager {
                                 es.getName(), 
                                 Arrays.toString(random.generateSeed(1)), 
                                 entityId )));
+    }
+    
+    public void entityTypeAddSchema( EntityType entityType, String schemaNamespace, String schemaName){
+    	entityTypeAddSchema( entityType, new FullQualifiedName(schemaNamespace, schemaName) );
+    }
+    
+    public void entityTypeAddSchema( EntityType entityType, FullQualifiedName schemaFqn){
+    	session.execute(
+    			entityTypeAddSchema.bind(
+    					ImmutableSet.of( schemaFqn ),
+    					entityType.getNamespace(),
+    					entityType.getName()
+    					)
+    			);
+    }
+    
+    public void entityTypeRemoveSchema( EntityType entityType, String schemaNamespace, String schemaName){
+    	entityTypeRemoveSchema( entityType, new FullQualifiedName(schemaNamespace, schemaName) );
+    }
+    
+    public void entityTypeRemoveSchema( EntityType entityType, FullQualifiedName schemaFqn){
+    	session.execute(
+    			entityTypeRemoveSchema.bind(
+    					ImmutableSet.of( schemaFqn ),
+    					entityType.getNamespace(),
+    					entityType.getName()
+    					)
+    			);
     }
     
     public String getTypenameForEntityId( UUID entityId ) {        

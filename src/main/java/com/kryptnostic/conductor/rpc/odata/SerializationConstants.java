@@ -14,4 +14,5 @@ public final class SerializationConstants {
     public static final String ENTITY_SET_NAME  = "entitySetName";
     public static final String TITLE_FIELD      = "title"; //for EntitySet
     public static final String USER_ID  		= "userId";
+    public static final String SCHEMAS          = "schemas";
 }

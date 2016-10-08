@@ -33,7 +33,8 @@ public interface CassandraEdmStore {
             String type,
             String typename,
             Set<FullQualifiedName> key,
-            Set<FullQualifiedName> properties );
+            Set<FullQualifiedName> properties,
+            Set<FullQualifiedName> schemas);
 
     @Query( Queries.CREATE_PROPERTY_TYPE_IF_NOT_EXISTS )
     public ResultSet createPropertyTypeIfNotExists(

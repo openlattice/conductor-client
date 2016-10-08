@@ -10,7 +10,9 @@ import com.datastax.driver.mapping.annotations.Table;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
@@ -27,6 +29,10 @@ public class EntityType extends TypePK {
     @Column(
         name = "properties" )
     public Set<FullQualifiedName>  properties;
+    
+    @Column(
+        name = "schemas" )
+    public Set<FullQualifiedName>  schemas;
 
     public EntityType setNamespace( String namespace ) {
         this.namespace = namespace;
@@ -71,6 +77,15 @@ public class EntityType extends TypePK {
     
     public EntityType addProperties( Set<FullQualifiedName> properties ) {
         this.properties.addAll( properties );
+        return this;
+    }
+
+    public Set<FullQualifiedName> getSchemas() {
+        return schemas;
+    }
+
+    public EntityType setSchemas( Set<FullQualifiedName> schemas ) {
+        this.schemas = schemas;
         return this;
     }
 
@@ -147,12 +162,14 @@ public class EntityType extends TypePK {
             @JsonProperty( SerializationConstants.NAMESPACE_FIELD ) String namespace,
             @JsonProperty( SerializationConstants.TYPE_FIELD ) String type,
             @JsonProperty( SerializationConstants.KEY_FIELD ) Set<FullQualifiedName> key,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<FullQualifiedName> properties ) {
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<FullQualifiedName> properties,
+            @JsonProperty( SerializationConstants.SCHEMAS) Optional<Set<FullQualifiedName>> schemas) {
         return new EntityType()
                 .setNamespace( namespace )
                 .setName( type )
                 .setTypename( null )
                 .setProperties( properties )
-                .setKey( key );
+                .setKey( key )
+                .setSchemas( schemas.or( ImmutableSet.of() ) );
     }
 }

@@ -158,7 +158,7 @@ public final class Queries {
 
     public static final String CREATE_ENTITY_TYPE_IF_NOT_EXISTS    = "INSERT INTO sparks."
             + DatastoreConstants.ENTITY_TYPES_TABLE
-            + " (namespace, name, typename, key, properties) VALUES (?,?,?,?,?) IF NOT EXISTS";
+            + " (namespace, name, typename, key, properties, schemas) VALUES (?,?,?,?,?,?) IF NOT EXISTS";
     public static final String CREATE_PROPERTY_TYPE_IF_NOT_EXISTS  = "INSERT INTO sparks."
             + DatastoreConstants.PROPERTY_TYPES_TABLE
             + " (namespace, name, typename, datatype, multiplicity) VALUES (?,?,?,?,?) IF NOT EXISTS";

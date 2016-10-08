@@ -1,6 +1,7 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -204,6 +205,23 @@ public class EdmService implements EdmManager {
                 session.execute(
                         tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes, propertyTypes ) ) );
     }
+    
+    @Override
+    public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes) {
+        tableManager.createSchemaTableForAclId( aclId );
+        
+        Set<FullQualifiedName> propertyTypes = entityTypes.stream()
+        		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
+        		.map(entityType -> entityType.getProperties() )
+        		.reduce((left, right) -> {
+        			left.addAll(right);
+        			return left;
+        		}).get();
+       
+        return Util.wasLightweightTransactionApplied(
+                session.execute(
+                        tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes, propertyTypes ) ) );
+    }
 
     @Override
     public void deleteEntityType( FullQualifiedName entityTypeFqn ) {
@@ -227,14 +245,18 @@ public class EdmService implements EdmManager {
 
     @Override
     public void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
+        Set<FullQualifiedName> propertyTypes = new HashSet<>();
+        
+        entityTypes.stream()
+        		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
+        		.forEach(entityType -> {
+        			//Get all properties for each entity type
+        			propertyTypes.addAll( entityType.getProperties() );
+        			//Update Schema column for each Entity Type
+        			tableManager.entityTypeAddSchema( entityType, namespace, name);
+        		});
+        
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
-            Set<FullQualifiedName> propertyTypes = entityTypes.stream()
-            		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
-            		.map(entityType -> entityType.getProperties() )
-            		.reduce((left, right) -> {
-            			left.addAll(right);
-            			return left;
-            		}).get();
             session.executeAsync(
                     tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( entityTypes, propertyTypes, namespace, name ) );
         }
@@ -242,6 +264,14 @@ public class EdmService implements EdmManager {
 
     @Override
     public void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
+    	//TODO: propertyTypes not removed From Schema when Entity Types are removed. Need reference counting on propertyTypes to do so.
+        entityTypes.stream()
+        		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
+        		.forEach(entityType -> {
+        			//Update Schema column for each Entity Type
+        			tableManager.entityTypeRemoveSchema( entityType, namespace, name);
+        		});
+        
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
                     tableManager.getSchemaRemoveEntityTypeStatement( aclId ).bind( entityTypes, namespace, name ) );
@@ -268,7 +298,8 @@ public class EdmService implements EdmManager {
                             entityType.getName(),
                             entityType.getTypename(),
                             entityType.getKey(),
-                            entityType.getProperties() ) );
+                            entityType.getProperties(), 
+                            entityType.getSchemas() ) );
         }
 
         // Only create entity table if insert transaction succeeded.
@@ -451,7 +482,7 @@ public class EdmService implements EdmManager {
 	@Override
 	public void addPropertyTypesToEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
         if( propertiesExist( properties) ){	        
-	        Set<FullQualifiedName> schemas = tableManager.getSchemaForEntityType( entityType );
+	        Set<FullQualifiedName> schemas = entityType.getSchemas();
 	        schemas.stream().forEach( schemaFqn -> {
 	        	addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
 	        });

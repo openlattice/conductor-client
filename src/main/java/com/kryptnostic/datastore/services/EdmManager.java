@@ -14,6 +14,8 @@ import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
     boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes );
+    //would attach all property types of the entityTypes to Schema
+    boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes);
 
     void upsertSchema( Schema namespace );
 
