@@ -347,7 +347,7 @@ public class EdmService implements EdmManager {
 	   	return ( session.execute(
 	    		tableManager.getSchemaStatement( aclId ).bind( schema.getNamespace(), schema.getName() ) 
 	    		).one()
-	    == null);
+	    != null);
     }
 
     @Override
@@ -496,35 +496,39 @@ public class EdmService implements EdmManager {
 
 	@Override
 	public void addPropertyTypesToEntityType(String namespace, String name, Set<FullQualifiedName> properties) {
-    	EntityType entityType = getEntityType( namespace, name );
-    	
-        if( propertiesExist( properties) ){
-	        entityType.addProperties( properties );
-
-	        Set<FullQualifiedName> schemas = entityType.getSchemas();
-	        schemas.stream().forEach( schemaFqn -> {
-	        	addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
-	        });
-	        	           
-	        edmStore.updateExistingEntityType(
-	           		entityType.getNamespace(), 
-	           		entityType.getName(), 
-	           		entityType.getKey(), 
-	           		entityType.getProperties());
-        } else{
-        	throw new BadRequestException();
-        }
+		try{
+	    	EntityType entityType = getEntityType( namespace, name );
+	    	
+	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
+		    entityType.addProperties( properties );
+	
+		    Set<FullQualifiedName> schemas = entityType.getSchemas();
+		    schemas.stream().forEach( schemaFqn -> {
+		        addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
+		    });
+		        	           
+		    edmStore.updateExistingEntityType(
+		           	entityType.getNamespace(), 
+		           	entityType.getName(), 
+		           	entityType.getKey(), 
+		          	entityType.getProperties());
+		} catch ( IllegalArgumentException e ){
+			throw new BadRequestException();
+		}
 	}        
 	
 	@Override
 	public void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties) {
-        if( propertiesExist( properties ) && schemaExists( namespace, name) ){
-            for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
-                session.executeAsync(
-                        tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
-            }
-        } else{
-        	throw new BadRequestException();
-        }
+		try{
+	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
+	        Preconditions.checkArgument( schemaExists( namespace, name ), "Schema does not exist." );
+	        
+	        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
+	            session.executeAsync(
+	                    tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
+	        }
+		} catch ( IllegalArgumentException e ){
+			throw new BadRequestException();
+		}
 	}    
 }
