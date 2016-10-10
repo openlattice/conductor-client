@@ -64,6 +64,8 @@ public interface EdmManager {
     void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );
 
 	void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties);
+	
+	void removePropertyTypesFromSchema(String namespace, String name, Set<FullQualifiedName> properties);
 
     boolean createPropertyType( PropertyType propertyType );
 
@@ -86,5 +88,9 @@ public interface EdmManager {
     FullQualifiedName getEntityTypeFullQualifiedName( String typename );
 
 	void addPropertyTypesToEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
+
+	void removePropertyTypesFromEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
+	
+	void removePropertyTypesFromEntityType(EntityType entityType, Set<FullQualifiedName> properties);
 
 }

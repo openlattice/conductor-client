@@ -79,6 +79,11 @@ public class EntityType extends TypePK {
         this.properties.addAll( properties );
         return this;
     }
+    
+    public EntityType removeProperties( Set<FullQualifiedName> properties ) {
+        this.properties.removeAll( properties );
+        return this;
+    }
 
     public Set<FullQualifiedName> getSchemas() {
         return schemas;

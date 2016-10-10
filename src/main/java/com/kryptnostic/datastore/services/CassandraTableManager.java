@@ -59,6 +59,7 @@ public class CassandraTableManager {
     private final ConcurrentMap<UUID, PreparedStatement>              schemaAddEntityTypes;
     private final ConcurrentMap<UUID, PreparedStatement>              schemaRemoveEntityTypes;
     private final ConcurrentMap<UUID, PreparedStatement>              schemaAddPropertyTypes;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaRemovePropertyTypes;
     
     private final PreparedStatement                                   getTypenameForEntityType;
     private final PreparedStatement                                   getTypenameForPropertyType;
@@ -99,6 +100,7 @@ public class CassandraTableManager {
         this.schemaAddEntityTypes = Maps.newConcurrentMap();
         this.schemaRemoveEntityTypes = Maps.newConcurrentMap();
         this.schemaAddPropertyTypes = Maps.newConcurrentMap();
+        this.schemaRemovePropertyTypes = Maps.newConcurrentMap();
         this.entityIdToTypeUpdateStatements = Maps.newConcurrentMap();
 
         initCoreTables( keyspace, session );
@@ -248,6 +250,10 @@ public class CassandraTableManager {
 
     public PreparedStatement getSchemaAddPropertyTypeStatement( UUID aclId ) {
         return schemaAddPropertyTypes.get( aclId );
+    }
+    
+    public PreparedStatement getSchemaRemovePropertyTypeStatement( UUID aclId ) {
+        return schemaRemovePropertyTypes.get( aclId );
     }
     
     public void registerSchema( Schema schema ) {
@@ -653,6 +659,7 @@ public class CassandraTableManager {
         schemaRemoveEntityTypes.putIfAbsent( aclId,
                 session.prepare( Queries.removeEntityTypesToSchema( keyspace, table ) ) );
         schemaAddPropertyTypes.putIfAbsent( aclId, session.prepare( Queries.addPropertyTypesToSchema( keyspace, table ) ) );
+        schemaRemovePropertyTypes.putIfAbsent( aclId, session.prepare( Queries.removePropertyTypesFromSchema( keyspace, table ) ) );
     }
 
     private Set<UUID> getAclsAppliedToSchemas() {

@@ -229,6 +229,11 @@ public class EdmService implements EdmManager {
     @Override
     public void deleteEntityType( FullQualifiedName entityTypeFqn ) {
         EntityType entityType = entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() );
+        
+        entityType.getSchemas().forEach( 
+        		schemaFqn -> removeEntityTypesFromSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of( entityTypeFqn) )
+        		);
+        
         tableManager.deleteFromEntityTypeLookupTable( entityType );
         entityTypeMapper.delete( entityType );
     }
@@ -237,6 +242,10 @@ public class EdmService implements EdmManager {
     public void deletePropertyType( FullQualifiedName propertyTypeFqn ) {
         PropertyType propertyType = propertyTypeMapper
                 .get( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() );
+        
+        getSchemas().forEach( schema -> removePropertyTypesFromSchema(schema.getNamespace(), schema.getName(), ImmutableSet.of(propertyTypeFqn) ) );
+        edmStore.getEntityTypes().all().forEach( entityType -> removePropertyTypesFromEntityType(entityType, ImmutableSet.of(propertyTypeFqn) ) );
+        
         tableManager.deleteFromPropertyTypeLookupTable( propertyType );
         propertyTypeMapper.delete( propertyType );
     }
@@ -515,7 +524,31 @@ public class EdmService implements EdmManager {
 		} catch ( IllegalArgumentException e ){
 			throw new BadRequestException();
 		}
-	}        
+	}     
+	
+	@Override
+	public void removePropertyTypesFromEntityType(String namespace, String name, Set<FullQualifiedName> properties) {
+	    EntityType entityType = getEntityType( namespace, name );
+	    removePropertyTypesFromEntityType( entityType, properties );
+	}
+	
+	@Override
+	public void removePropertyTypesFromEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
+		try{
+	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
+		    entityType.removeProperties( properties );
+	
+		    //TODO: Remove properties from Schema, once reference counting is implemented.
+		        	           
+		    edmStore.updateExistingEntityType(
+		           	entityType.getNamespace(), 
+		           	entityType.getName(), 
+		           	entityType.getKey(), 
+		          	entityType.getProperties());
+		} catch ( IllegalArgumentException e ){
+			throw new BadRequestException();
+		}
+	}
 	
 	@Override
 	public void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties) {
@@ -531,4 +564,22 @@ public class EdmService implements EdmManager {
 			throw new BadRequestException();
 		}
 	}    
+	
+	@Override
+	public void removePropertyTypesFromSchema(String namespace, String name, Set<FullQualifiedName> properties) {
+		try{
+	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
+	        Preconditions.checkArgument( schemaExists( namespace, name ), "Schema does not exist." );
+	        
+	        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
+	            session.executeAsync(
+	                    tableManager.getSchemaRemovePropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
+	        }
+		} catch ( IllegalArgumentException e ){
+			throw new BadRequestException();
+		}
+	} 
+	
+	
+	
 }
