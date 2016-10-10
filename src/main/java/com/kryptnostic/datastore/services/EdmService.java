@@ -202,15 +202,19 @@ public class EdmService implements EdmManager {
     @Override
     public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes ) {
         tableManager.createSchemaTableForAclId( aclId );
+        
+        entityTypes.stream()
+		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
+		.forEach( entityType ->
+					tableManager.entityTypeAddSchema(entityType, namespace, name)	
+				);
         return Util.wasLightweightTransactionApplied(
                 session.execute(
                         tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes, propertyTypes ) ) );
     }
     
     @Override
-    public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes) {
-        tableManager.createSchemaTableForAclId( aclId );
-        
+    public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes) {        
         Set<FullQualifiedName> propertyTypes = entityTypes.stream()
         		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
         		.map(entityType -> entityType.getProperties() )
@@ -219,9 +223,7 @@ public class EdmService implements EdmManager {
         			return left;
         		}).get();
        
-        return Util.wasLightweightTransactionApplied(
-                session.execute(
-                        tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes, propertyTypes ) ) );
+        return createSchema( namespace, name, aclId, entityTypes, propertyTypes);
     }
 
     @Override
@@ -494,7 +496,7 @@ public class EdmService implements EdmManager {
 	           		entityType.getNamespace(), 
 	           		entityType.getName(), 
 	           		entityType.getKey(), 
-	           		properties);
+	           		entityType.getProperties());
         } else{
         	throw new BadRequestException();
         }

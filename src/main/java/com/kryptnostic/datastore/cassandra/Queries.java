@@ -42,7 +42,7 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE )
                 .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.ENTITY_TYPES )
+                .columns( CommonColumns.ENTITY_TYPES, CommonColumns.PROPERTIES )
                 .buildQuery();
     }
 
@@ -60,7 +60,7 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE )
                 .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.TYPENAME, CommonColumns.KEY, CommonColumns.PROPERTIES )
+                .columns( CommonColumns.TYPENAME, CommonColumns.KEY, CommonColumns.PROPERTIES, CommonColumns.SCHEMAS )
                 .buildQuery();
     }
 
