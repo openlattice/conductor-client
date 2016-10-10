@@ -3,6 +3,7 @@ package com.kryptnostic.datastore.services;
 import java.util.Map;
 import java.util.Set;
 
+import com.kryptnostic.kodex.v1.exceptions.types.ResourceNotFoundException;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
@@ -111,7 +112,7 @@ public interface EdmApi {
      * @return
      */
     @PUT( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
-    Response addEntityTypeToSchema(
+    Response addEntityTypesToSchema(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> entityTypes );
@@ -195,13 +196,13 @@ public interface EdmApi {
     		@Body Set<FullQualifiedName> properties
     		);
     /**
-     * Creates a property type if doesn't alreadsy exist.
+     * Creates a property type if doesn't already exist.
      *
      * @param propertyType The property to create.
      * @return True if property type was created, false if container already exists.
      */
     @POST( PROPERTY_TYPE_BASE_PATH )
-    boolean postPropertyType( @Body PropertyType propertyType );
+    boolean createPropertyType( @Body PropertyType propertyType );
 
     /**
      * @param typeInfo
@@ -219,5 +220,8 @@ public interface EdmApi {
 
     @GET( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH )
     Iterable<PropertyType> getPropertyTypesInNamespace( @Path( NAMESPACE ) String namespace );
+
+    @GET( PROPERTY_TYPE_BASE_PATH )
+    Iterable<PropertyType> getPropertyTypes();
 
 }

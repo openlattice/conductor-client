@@ -77,6 +77,8 @@ public interface EdmManager {
 
     Iterable<PropertyType> getPropertyTypesInNamespace( String namespace );
 
+    Iterable<PropertyType> getPropertyTypes();
+
     EntityDataModel getEntityDataModel();
 
     boolean isExistingEntitySet( FullQualifiedName type, String name );
@@ -87,7 +89,7 @@ public interface EdmManager {
 
     FullQualifiedName getEntityTypeFullQualifiedName( String typename );
 
-	void addPropertyTypesToEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
+    void addPropertyTypesToEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
 
 	void removePropertyTypesFromEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
 	

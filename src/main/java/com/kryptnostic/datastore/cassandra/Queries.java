@@ -162,6 +162,10 @@ public final class Queries {
     public static final String CREATE_PROPERTY_TYPE_IF_NOT_EXISTS  = "INSERT INTO sparks."
             + DatastoreConstants.PROPERTY_TYPES_TABLE
             + " (namespace, name, typename, datatype, multiplicity) VALUES (?,?,?,?,?) IF NOT EXISTS";
+    public static final String UPDATE_PROPERTY_TYPE_IF_EXISTS = "UPDATE sparks."
+    		+ DatastoreConstants.PROPERTY_TYPES_TABLE
+    		+ " SET datatype = ?" + "," + "multiplicity = ?" 
+    		+ " WHERE namespace = ?" + " AND " + "name = ?";
     public static final String INSERT_ENTITY_CLAUSES               = " (objectId, aclId, clock, entitySets, syncIds) VALUES( :"
             + ParamNames.OBJ_ID + ", :"
             + ParamNames.ACL_ID + ", toTimestamp(now()), :"
@@ -176,6 +180,8 @@ public final class Queries {
             + DatastoreConstants.ENTITY_SETS_TABLE + " where name = ?";
     public static final String GET_ALL_ENTITY_TYPES_QUERY          = "select * from sparks."
             + DatastoreConstants.ENTITY_TYPES_TABLE;
+    public static final String GET_ALL_PROPERTY_TYPES_QUERY        = "select * from sparks."
+            + DatastoreConstants.PROPERTY_TYPES_TABLE;
     public static final String GET_ALL_PROPERTY_TYPES_IN_NAMESPACE = "select * from sparks."
             + DatastoreConstants.PROPERTY_TYPES_TABLE + " where namespace=:"
             + ParamNames.NAMESPACE;

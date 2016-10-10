@@ -10,17 +10,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.junit.Assert;
 
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
-import com.datastax.driver.mapping.Result;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
@@ -56,11 +55,14 @@ public class EdmService implements EdmManager {
         this.entityTypeMapper = mappingManager.mapper( EntityType.class );
         this.propertyTypeMapper = mappingManager.mapper( PropertyType.class );
         this.tableManager = tableManager;
-        Result<EntityType> objectTypes = edmStore.getEntityTypes();
+        List<EntityType> objectTypes = edmStore.getEntityTypes().all();
         List<Schema> schemas = ImmutableList.copyOf( getSchemas() );
-        schemas.forEach( schema -> logger.info( "Namespace loaded: {}", schema ) );
-        schemas.forEach( tableManager::registerSchema );
+        // Temp comment out the following two lines to avoid "Schema is out of sync." crash
+        // and NPE for the PreparedStatement. Need to engineer it.
+//        schemas.forEach( schema -> logger.info( "Namespace loaded: {}", schema ) );
+//        schemas.forEach( tableManager::registerSchema );
         objectTypes.forEach( objectType -> logger.info( "Object read: {}", objectType ) );
+        objectTypes.forEach( tableManager::registerEntityTypesAndAssociatedPropertyTypes );
     }
 
     @Override
@@ -150,14 +152,21 @@ public class EdmService implements EdmManager {
     /*
      * (non-Javadoc)
      * @see com.kryptnostic.types.services.EdmManager#createPropertyType(com.kryptnostic.types.PropertyType)
+     * update propertyType (and return true upon success) if exists, return false otherwise
      */
     @Override
     public void upsertPropertyType( PropertyType propertyType ) {
         // Create or retrieve it's typename.
-        String typename = tableManager.getTypenameForPropertyType( propertyType );
-        propertyType.setTypename( typename );
-        propertyTypeMapper.save( propertyType );
-        tableManager.updatePropertyTypeLookupTable( propertyType );
+        String typenameFromPropertyTable = tableManager.getTypenameForPropertyType( propertyType );
+
+        if(!StringUtils.isBlank( typenameFromPropertyTable )){
+        	Util.wasLightweightTransactionApplied(
+                edmStore.updatePropertyTypeIfExists(
+                        propertyType.getDatatype(),
+                        propertyType.getMultiplicity(),
+                        propertyType.getNamespace(),
+                        propertyType.getName() ) );
+        }
     }
 
     /*
@@ -179,6 +188,7 @@ public class EdmService implements EdmManager {
          * transaction will fail and return value will be correctly set.
          */
         String typename = tableManager.getTypenameForPropertyType( propertyType );
+
         boolean propertyCreated = false;
         if ( StringUtils.isBlank( typename ) ) {
 
@@ -451,8 +461,14 @@ public class EdmService implements EdmManager {
         return propertyTypeMapper.get( propertyType.getNamespace(), propertyType.getName() );
     }
 
-    @Override public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
+    @Override
+    public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
         return edmStore.getPropertyTypesInNamespace( namespace ).all();
+    }
+
+    @Override
+    public Iterable<PropertyType> getPropertyTypes() {
+        return edmStore.getPropertyTypes().all();
     }
 
     @Override
@@ -579,7 +595,4 @@ public class EdmService implements EdmManager {
 			throw new BadRequestException();
 		}
 	} 
-	
-	
-	
 }

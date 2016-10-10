@@ -278,6 +278,14 @@ public class CassandraTableManager {
         } );
     }
 
+    public void registerEntityTypesAndAssociatedPropertyTypes( EntityType entityType ){
+        putEntityTypeInsertStatement( entityType.getFullQualifiedName() );
+        putEntityTypeUpdateStatement( entityType.getFullQualifiedName() );
+        putEntityIdToTypeUpdateStatement( entityType.getFullQualifiedName() );
+        entityType.getKey().forEach( fqn -> putPropertyIndexUpdateStatement( fqn ) );
+        entityType.getProperties().forEach( fqn -> putPropertyTypeUpdateStatement( fqn ) );
+    }
+
     public PreparedStatement getInsertEntityPreparedStatement( EntityType entityType ) {
         return getInsertEntityPreparedStatement( entityType.getFullQualifiedName() );
     }
