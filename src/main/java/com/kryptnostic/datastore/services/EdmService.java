@@ -409,7 +409,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public EntityType getEntityType( String namespace, String name ) {
-        return entityTypeMapper.get( namespace, name );
+        return Preconditions.checkNotNull( entityTypeMapper.get( namespace, name ), "Entity Type does not exist" );
     }
 
     public EntitySet getEntitySet( FullQualifiedName type, String name ) {
@@ -483,15 +483,17 @@ public class EdmService implements EdmManager {
     }
 
 	@Override
-	public void addPropertyTypesToEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
-        if( propertiesExist( properties) ){	        
+	public void addPropertyTypesToEntityType(String namespace, String name, Set<FullQualifiedName> properties) {
+    	EntityType entityType = getEntityType( namespace, name );
+    	
+        if( propertiesExist( properties) ){
+	        entityType.addProperties( properties );
+
 	        Set<FullQualifiedName> schemas = entityType.getSchemas();
 	        schemas.stream().forEach( schemaFqn -> {
 	        	addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
 	        });
-	        
-	        entityType.addProperties( properties );
-	           
+	        	           
 	        edmStore.updateExistingEntityType(
 	           		entityType.getNamespace(), 
 	           		entityType.getName(), 
@@ -504,6 +506,7 @@ public class EdmService implements EdmManager {
 	
 	@Override
 	public void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties) {
+		//TODO: Add validation for Schema
         if( propertiesExist( properties ) ){
             for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
                 session.executeAsync(

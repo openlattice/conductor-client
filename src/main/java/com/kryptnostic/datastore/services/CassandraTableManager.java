@@ -63,6 +63,7 @@ public class CassandraTableManager {
     private final PreparedStatement                                   getTypenameForEntityType;
     private final PreparedStatement                                   getTypenameForPropertyType;
     private final PreparedStatement                                   countProperty;
+    private final PreparedStatement                                   countEntityTypes;
     private final PreparedStatement                                   countEntitySets;
     private final PreparedStatement                                   insertPropertyTypeLookup;
     private final PreparedStatement                                   updatePropertyTypeLookup;
@@ -127,6 +128,14 @@ public class CassandraTableManager {
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
                         QueryBuilder.bindMarker() ) ) );
 
+        this.countEntityTypes = session.prepare( QueryBuilder
+                .select().countAll()
+                .from( keyspace, DatastoreConstants.ENTITY_TYPES_TABLE )
+                .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(),
+                        QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
+                        QueryBuilder.bindMarker() ) ) );
+        
         this.countEntitySets = session.prepare( Queries.countEntitySets( keyspace ) );
 
         this.insertPropertyTypeLookup = session
@@ -297,6 +306,10 @@ public class CassandraTableManager {
 
     public PreparedStatement getCountPropertyStatement() {
         return countProperty;
+    }
+    
+    public PreparedStatement getCountEntityTypesStatement() {
+        return countEntityTypes;
     }
 
     public PreparedStatement getCountEntitySetsStatement() {
