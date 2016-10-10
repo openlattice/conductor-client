@@ -338,6 +338,18 @@ public class EdmService implements EdmManager {
         }
     }
 
+    private boolean schemaExists( String namespace, String name ) {
+    	return schemaExists( new FullQualifiedName(namespace, name) );
+    }
+    
+    private boolean schemaExists( FullQualifiedName schema ) {
+        UUID aclId = ACLs.EVERYONE_ACL;
+	   	return ( session.execute(
+	    		tableManager.getSchemaStatement( aclId ).bind( schema.getNamespace(), schema.getName() ) 
+	    		).one()
+	    == null);
+    }
+
     @Override
     public void upsertEntitySet( EntitySet entitySet ) {
         entitySetMapper.save( entitySet );
@@ -506,8 +518,7 @@ public class EdmService implements EdmManager {
 	
 	@Override
 	public void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties) {
-		//TODO: Add validation for Schema
-        if( propertiesExist( properties ) ){
+        if( propertiesExist( properties ) && schemaExists( namespace, name) ){
             for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
                 session.executeAsync(
                         tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
