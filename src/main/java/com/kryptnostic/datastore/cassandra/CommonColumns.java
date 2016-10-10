@@ -20,6 +20,7 @@ public enum CommonColumns {
     NAMESPACE( DataType.text() ),
     ENTITYID( DataType.uuid() ),
     PROPERTIES( DataType.set( DataType.text() ) ),
+    SCHEMAS( DataType.set(DataType.text() ) ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
     TYPENAME( DataType.text() ),

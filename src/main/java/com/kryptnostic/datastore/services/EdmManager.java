@@ -13,7 +13,9 @@ import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
-    boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
+    boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes );
+    //would attach all property types of the entityTypes to Schema
+    boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes);
 
     void upsertSchema( Schema namespace );
 
@@ -61,6 +63,10 @@ public interface EdmManager {
 
     void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );
 
+	void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties);
+	
+	void removePropertyTypesFromSchema(String namespace, String name, Set<FullQualifiedName> properties);
+
     boolean createPropertyType( PropertyType propertyType );
 
     void upsertPropertyType( PropertyType propertyType );
@@ -83,6 +89,10 @@ public interface EdmManager {
 
     FullQualifiedName getEntityTypeFullQualifiedName( String typename );
 
-	void addPropertyTypesToEntityType(EntityType entityType, Set<FullQualifiedName> properties);
+    void addPropertyTypesToEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
+
+	void removePropertyTypesFromEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
+	
+	void removePropertyTypesFromEntityType(EntityType entityType, Set<FullQualifiedName> properties);
 
 }

@@ -31,6 +31,7 @@ public class Schema {
     private String                            namespace;
     private String                            name;
     private Set<FullQualifiedName>            entityTypeFqns;
+    private Set<FullQualifiedName>            propertyTypeFqns;
 
     // These columns aren't stored in cassandra
     private final transient Set<PropertyType> propertyTypes;
@@ -46,6 +47,10 @@ public class Schema {
 
         setEntityTypeFqns( entityTypes.stream()
                 .map( entityType -> new FullQualifiedName( entityType.getNamespace(), entityType.getName() ) )
+                .collect( Collectors.toSet() ) );
+        
+        setPropertyTypeFqns( propertyTypes.stream()
+                .map( propertyType -> new FullQualifiedName( propertyType.getNamespace(), propertyType.getName() ) )
                 .collect( Collectors.toSet() ) );
     }
 
@@ -87,6 +92,15 @@ public class Schema {
         this.entityTypeFqns = entityTypeFqns;
         return this;
     }
+    
+    public Set<FullQualifiedName> getPropertyTypeFqns() {
+        return propertyTypeFqns;
+    }
+
+    public Schema setPropertyTypeFqns( Set<FullQualifiedName> propertyTypeFqns ) {
+        this.propertyTypeFqns = propertyTypeFqns;
+        return this;
+    }
 
     public Set<EntityType> getEntityTypes() {
         return entityTypes;
@@ -105,12 +119,16 @@ public class Schema {
 
     public void addPropertyTypes( Set<PropertyType> propertyTypes ) {
         this.propertyTypes.addAll( propertyTypes );
+        // Need to sync property type names
+        propertyTypes.forEach( propertyType -> propertyTypeFqns
+                .add( new FullQualifiedName( propertyType.getNamespace(), propertyType.getName() ) ) );
     }
 
     @Override
     public String toString() {
-        return "Schema [aclId=" + aclId + ", namespace=" + namespace + ", name=" + name + ", entityFqns="
-                + entityTypeFqns + ", propertyTypes=" + propertyTypes + ", entityTypes=" + entityTypes + "]";
+        return "Schema [aclId=" + aclId + ", namespace=" + namespace + ", name=" + name 
+        		+ ", entityFqns=" + entityTypeFqns + ", propertyFqns=" + propertyTypeFqns 
+        		+ ", entityTypes=" + entityTypes + ", propertyTypes=" + propertyTypes + "]";
     }
 
     @Override
@@ -119,6 +137,7 @@ public class Schema {
         int result = 1;
         result = prime * result + ( ( aclId == null ) ? 0 : aclId.hashCode() );
         result = prime * result + ( ( entityTypeFqns == null ) ? 0 : entityTypeFqns.hashCode() );
+        result = prime * result + ( ( propertyTypeFqns == null ) ? 0 : propertyTypeFqns.hashCode() );
         result = prime * result + ( ( entityTypes == null ) ? 0 : entityTypes.hashCode() );
         result = prime * result + ( ( name == null ) ? 0 : name.hashCode() );
         result = prime * result + ( ( namespace == null ) ? 0 : namespace.hashCode() );
@@ -173,6 +192,13 @@ public class Schema {
         } else if ( !namespace.equals( other.namespace ) ) {
             return false;
         }
+        if ( propertyTypeFqns == null ) {
+            if ( other.propertyTypeFqns != null ) {
+                return false;
+            }
+        } else if ( !propertyTypeFqns.equals( other.propertyTypeFqns ) ) {
+            return false;
+        }
         if ( propertyTypes == null ) {
             if ( other.propertyTypes != null ) {
                 return false;
@@ -190,10 +216,13 @@ public class Schema {
             String name,
             Optional<Set<FullQualifiedName>> entityTypeNames,
             Optional<Set<EntityType>> entityTypes,
+            Optional<Set<FullQualifiedName>> propertyTypeNames,
             Optional<Set<PropertyType>> propertyTypes ) {
 
         Preconditions.checkArgument(
                 ( entityTypes.isPresent() && !entityTypeNames.isPresent() ) || !entityTypes.isPresent() );
+        Preconditions.checkArgument(
+                ( propertyTypes.isPresent() && !propertyTypeNames.isPresent() ) || !propertyTypes.isPresent() );
 
         Schema schema = new Schema( entityTypes.or( ImmutableSet.of() ), propertyTypes.or( ImmutableSet.of() ) )
                 .setAclId( aclId.or( ACLs.EVERYONE_ACL ) )
@@ -201,6 +230,7 @@ public class Schema {
                 .setName( name );
 
         schema.setEntityTypeFqns( entityTypeNames.or( schema.getEntityTypeFqns() ) );
+        schema.setPropertyTypeFqns( propertyTypeNames.or( schema.getPropertyTypeFqns() ) );
 
         return schema;
     }

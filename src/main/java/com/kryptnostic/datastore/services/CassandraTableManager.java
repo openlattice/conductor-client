@@ -58,10 +58,13 @@ public class CassandraTableManager {
     private final ConcurrentMap<UUID, PreparedStatement>              schemaSelectAllInNamespaceStatements;
     private final ConcurrentMap<UUID, PreparedStatement>              schemaAddEntityTypes;
     private final ConcurrentMap<UUID, PreparedStatement>              schemaRemoveEntityTypes;
-
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaAddPropertyTypes;
+    private final ConcurrentMap<UUID, PreparedStatement>              schemaRemovePropertyTypes;
+    
     private final PreparedStatement                                   getTypenameForEntityType;
     private final PreparedStatement                                   getTypenameForPropertyType;
     private final PreparedStatement                                   countProperty;
+    private final PreparedStatement                                   countEntityTypes;
     private final PreparedStatement                                   countEntitySets;
     private final PreparedStatement                                   insertPropertyTypeLookup;
     private final PreparedStatement                                   updatePropertyTypeLookup;
@@ -73,6 +76,9 @@ public class CassandraTableManager {
     private final PreparedStatement                                   getEntityTypeForTypename;
     private final PreparedStatement                                   getTypenameForEntityId;
     private final PreparedStatement                                   assignEntityToEntitySet;
+    
+    private final PreparedStatement                                   entityTypeAddSchema;
+    private final PreparedStatement                                   entityTypeRemoveSchema;
 
     public CassandraTableManager(
             HazelcastInstance hazelcast,
@@ -93,6 +99,8 @@ public class CassandraTableManager {
         this.schemaSelectAllInNamespaceStatements = Maps.newConcurrentMap();
         this.schemaAddEntityTypes = Maps.newConcurrentMap();
         this.schemaRemoveEntityTypes = Maps.newConcurrentMap();
+        this.schemaAddPropertyTypes = Maps.newConcurrentMap();
+        this.schemaRemovePropertyTypes = Maps.newConcurrentMap();
         this.entityIdToTypeUpdateStatements = Maps.newConcurrentMap();
 
         initCoreTables( keyspace, session );
@@ -122,6 +130,14 @@ public class CassandraTableManager {
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
                         QueryBuilder.bindMarker() ) ) );
 
+        this.countEntityTypes = session.prepare( QueryBuilder
+                .select().countAll()
+                .from( keyspace, DatastoreConstants.ENTITY_TYPES_TABLE )
+                .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(),
+                        QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
+                        QueryBuilder.bindMarker() ) ) );
+        
         this.countEntitySets = session.prepare( Queries.countEntitySets( keyspace ) );
 
         this.insertPropertyTypeLookup = session
@@ -170,6 +186,20 @@ public class CassandraTableManager {
                         .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.PARTITION_INDEX.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) );
+        
+        this.entityTypeAddSchema = session
+        		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
+        				.with( QueryBuilder.addAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
+        		);
+        
+        this.entityTypeRemoveSchema = session
+        		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
+        				.with( QueryBuilder.removeAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
+        		);
     }
 
     public String getKeyspace() {
@@ -218,6 +248,14 @@ public class CassandraTableManager {
         return schemaRemoveEntityTypes.get( aclId );
     }
 
+    public PreparedStatement getSchemaAddPropertyTypeStatement( UUID aclId ) {
+        return schemaAddPropertyTypes.get( aclId );
+    }
+    
+    public PreparedStatement getSchemaRemovePropertyTypeStatement( UUID aclId ) {
+        return schemaRemovePropertyTypes.get( aclId );
+    }
+    
     public void registerSchema( Schema schema ) {
         Preconditions.checkArgument( schema.getEntityTypeFqns().size() == schema.getEntityTypes().size(),
                 "Schema is out of sync." );
@@ -282,6 +320,10 @@ public class CassandraTableManager {
 
     public PreparedStatement getCountPropertyStatement() {
         return countProperty;
+    }
+    
+    public PreparedStatement getCountEntityTypesStatement() {
+        return countEntityTypes;
     }
 
     public PreparedStatement getCountEntitySetsStatement() {
@@ -447,6 +489,34 @@ public class CassandraTableManager {
                                 entityId )));
     }
     
+    public void entityTypeAddSchema( EntityType entityType, String schemaNamespace, String schemaName){
+    	entityTypeAddSchema( entityType, new FullQualifiedName(schemaNamespace, schemaName) );
+    }
+    
+    public void entityTypeAddSchema( EntityType entityType, FullQualifiedName schemaFqn){
+    	session.execute(
+    			entityTypeAddSchema.bind(
+    					ImmutableSet.of( schemaFqn ),
+    					entityType.getNamespace(),
+    					entityType.getName()
+    					)
+    			);
+    }
+    
+    public void entityTypeRemoveSchema( EntityType entityType, String schemaNamespace, String schemaName){
+    	entityTypeRemoveSchema( entityType, new FullQualifiedName(schemaNamespace, schemaName) );
+    }
+    
+    public void entityTypeRemoveSchema( EntityType entityType, FullQualifiedName schemaFqn){
+    	session.execute(
+    			entityTypeRemoveSchema.bind(
+    					ImmutableSet.of( schemaFqn ),
+    					entityType.getNamespace(),
+    					entityType.getName()
+    					)
+    			);
+    }
+    
     public String getTypenameForEntityId( UUID entityId ) {        
         return Util.transformSafely( session.execute( this.getTypenameForEntityId.bind( entityId ) ).one(),
                 r -> r.getString( CommonColumns.TYPENAME.cql() ) );
@@ -596,6 +666,8 @@ public class CassandraTableManager {
         schemaAddEntityTypes.putIfAbsent( aclId, session.prepare( Queries.addEntityTypesToSchema( keyspace, table ) ) );
         schemaRemoveEntityTypes.putIfAbsent( aclId,
                 session.prepare( Queries.removeEntityTypesToSchema( keyspace, table ) ) );
+        schemaAddPropertyTypes.putIfAbsent( aclId, session.prepare( Queries.addPropertyTypesToSchema( keyspace, table ) ) );
+        schemaRemovePropertyTypes.putIfAbsent( aclId, session.prepare( Queries.removePropertyTypesFromSchema( keyspace, table ) ) );
     }
 
     private Set<UUID> getAclsAppliedToSchemas() {

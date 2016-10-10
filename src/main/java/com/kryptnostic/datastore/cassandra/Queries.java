@@ -42,7 +42,7 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE )
                 .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.ENTITY_TYPES )
+                .columns( CommonColumns.ENTITY_TYPES, CommonColumns.PROPERTIES )
                 .buildQuery();
     }
 
@@ -60,7 +60,7 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE )
                 .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.TYPENAME, CommonColumns.KEY, CommonColumns.PROPERTIES )
+                .columns( CommonColumns.TYPENAME, CommonColumns.KEY, CommonColumns.PROPERTIES, CommonColumns.SCHEMAS )
                 .buildQuery();
     }
 
@@ -158,7 +158,7 @@ public final class Queries {
 
     public static final String CREATE_ENTITY_TYPE_IF_NOT_EXISTS    = "INSERT INTO sparks."
             + DatastoreConstants.ENTITY_TYPES_TABLE
-            + " (namespace, name, typename, key, properties) VALUES (?,?,?,?,?) IF NOT EXISTS";
+            + " (namespace, name, typename, key, properties, schemas) VALUES (?,?,?,?,?,?) IF NOT EXISTS";
     public static final String CREATE_PROPERTY_TYPE_IF_NOT_EXISTS  = "INSERT INTO sparks."
             + DatastoreConstants.PROPERTY_TYPES_TABLE
             + " (namespace, name, typename, datatype, multiplicity) VALUES (?,?,?,?,?) IF NOT EXISTS";
@@ -208,7 +208,8 @@ public final class Queries {
     public static RegularStatement baseInsertSchemaQuery( Insert statement ) {
         return statement.value( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() )
                 .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
-                .value( CommonColumns.ENTITY_TYPES.cql(), QueryBuilder.bindMarker() );
+                .value( CommonColumns.ENTITY_TYPES.cql(), QueryBuilder.bindMarker() )
+                .value( CommonColumns.PROPERTIES.cql(), QueryBuilder.bindMarker() );
     }
 
     public static RegularStatement getAllSchemasQuery( String keyspace, String table ) {
@@ -229,6 +230,7 @@ public final class Queries {
     public static final RegularStatement addEntityTypesToSchema( String keyspace, String table ) {
         return QueryBuilder.update( keyspace, table )
                 .with( QueryBuilder.addAll( CommonColumns.ENTITY_TYPES.cql(), QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.addAll(CommonColumns.PROPERTIES.cql(), QueryBuilder.bindMarker() ) )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
@@ -246,4 +248,17 @@ public final class Queries {
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
 
+    public static final RegularStatement addPropertyTypesToSchema( String keyspace, String table ) {
+        return QueryBuilder.update( keyspace, table )
+                .with( QueryBuilder.addAll( CommonColumns.PROPERTIES.cql(), QueryBuilder.bindMarker() ) )
+                .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
+    }
+    
+    public static final RegularStatement removePropertyTypesFromSchema( String keyspace, String table ) {
+        return QueryBuilder.update( keyspace, table )
+                .with( QueryBuilder.removeAll( CommonColumns.PROPERTIES.cql(), QueryBuilder.bindMarker() ) )
+                .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
+    }
 }

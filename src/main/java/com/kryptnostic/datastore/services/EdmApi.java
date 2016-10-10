@@ -46,7 +46,9 @@ public interface EdmApi {
     String PROPERTY_TYPE_BASE_PATH = "/property/type";
     String NAMESPACE_PATH          = "/{" + NAMESPACE + "}";
     String NAME_PATH               = "/{" + NAME + "}";
-	String ADD_PROPERTY_PATH       = "/addProperty";
+    
+	String ADD_PROPERTY_TYPES_PATH = "/addPropertyTypes";
+	String DELETE_PROPERTY_TYPES_PATH = "/deletePropertyTypes";
 
     @GET( "/" )
     EntityDataModel getEntityDataModel();
@@ -121,6 +123,17 @@ public interface EdmApi {
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> entityTypes );
 
+    @PUT( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_TYPES_PATH )
+    Response addPropertyTypesToSchema(
+            @Path( NAMESPACE ) String namespace,
+            @Path( NAME ) String name,
+            @Body Set<FullQualifiedName> properties );
+    
+    @DELETE( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
+    Response removePropertyTypesFromSchema(
+            @Path( NAMESPACE ) String namespace,
+            @Path( NAME ) String name,
+            @Body Set<FullQualifiedName> properties );
     /**
      * Creates multiple entity sets, if they do not exist.
      *
@@ -165,14 +178,21 @@ public interface EdmApi {
     
     /**
      * @param namespace
-     * @param entityTypeName
+     * @param name
      * @param properties Set of (Existing) Property Types to add to EntityType
      * @return
      */
-    @PUT( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_PATH )
+    @PUT( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_TYPES_PATH )
     Response addPropertyTypesToEntityType(
     		@Path( NAMESPACE ) String namespace,
-    		@Path( NAME ) String entityTypeName,
+    		@Path( NAME ) String name,
+    		@Body Set<FullQualifiedName> properties
+    		);
+    
+    @DELETE ( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
+    Response removePropertyTypesFromEntityType(
+    		@Path( NAMESPACE ) String namespace,
+    		@Path( NAME ) String name,
     		@Body Set<FullQualifiedName> properties
     		);
     /**
