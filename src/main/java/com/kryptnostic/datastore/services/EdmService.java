@@ -313,7 +313,11 @@ public class EdmService implements EdmManager {
         			tableManager.entityTypeRemoveSchema( entityType, namespace, name);
         		});
         
-        removePropertyTypesFromSchema( namespace, name, propertyTypes );
+//        removePropertyTypesFromSchema( namespace, name, propertyTypes );
+        propertyTypes.stream()
+				.forEach(propertyTypeFqn ->
+					tableManager.propertyTypeRemoveSchema( propertyTypeFqn, namespace, name )
+				);
         
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
