@@ -79,6 +79,8 @@ public class CassandraTableManager {
     
     private final PreparedStatement                                   entityTypeAddSchema;
     private final PreparedStatement                                   entityTypeRemoveSchema;
+    private final PreparedStatement                                   propertyTypeAddSchema;
+    private final PreparedStatement                                   propertyTypeRemoveSchema;
 
     public CassandraTableManager(
             HazelcastInstance hazelcast,
@@ -196,6 +198,20 @@ public class CassandraTableManager {
         
         this.entityTypeRemoveSchema = session
         		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
+        				.with( QueryBuilder.removeAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
+        		);
+        
+        this.propertyTypeAddSchema = session
+        		.prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES.getTableName() )
+        				.with( QueryBuilder.addAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
+        		);
+        
+        this.propertyTypeRemoveSchema = session
+        		.prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES.getTableName() )
         				.with( QueryBuilder.removeAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
@@ -490,15 +506,23 @@ public class CassandraTableManager {
     }
     
     public void entityTypeAddSchema( EntityType entityType, String schemaNamespace, String schemaName){
-    	entityTypeAddSchema( entityType, new FullQualifiedName(schemaNamespace, schemaName) );
+    	entityTypeAddSchema( entityType.getNamespace(), entityType.getName(), new FullQualifiedName(schemaNamespace, schemaName) );
     }
     
     public void entityTypeAddSchema( EntityType entityType, FullQualifiedName schemaFqn){
+    	entityTypeAddSchema( entityType.getNamespace(), entityType.getName(), schemaFqn);
+    }
+
+    public void entityTypeAddSchema( FullQualifiedName entityTypeFqn, String schemaNamespace, String schemaName){
+    	entityTypeAddSchema( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), new FullQualifiedName(schemaNamespace, schemaName) );
+    }
+
+    public void entityTypeAddSchema( String entityTypeNamespace, String entityTypeName, FullQualifiedName schemaFqn){
     	session.execute(
     			entityTypeAddSchema.bind(
     					ImmutableSet.of( schemaFqn ),
-    					entityType.getNamespace(),
-    					entityType.getName()
+    					entityTypeNamespace,
+    					entityTypeName
     					)
     			);
     }
@@ -572,6 +596,34 @@ public class CassandraTableManager {
 
     public String getTablenameForPropertyIndexFromTypenameAndAclId( UUID aclId, String typename ) {
         return getTablename( TableType.index_, aclId, typename );
+    }
+    
+    public void propertyTypeAddSchema( FullQualifiedName propertyTypeFqn, String schemaNamespace, String schemaName){
+    	propertyTypeAddSchema( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName(), new FullQualifiedName(schemaNamespace, schemaName) );
+    }
+
+    public void propertyTypeAddSchema( String propertyTypeNamespace, String propertyTypeName, FullQualifiedName schemaFqn){
+    	session.execute(
+    			propertyTypeAddSchema.bind(
+    					ImmutableSet.of( schemaFqn ),
+    					propertyTypeNamespace,
+    					propertyTypeName
+    					)
+    			);
+    }
+    
+    public void propertyTypeRemoveSchema( FullQualifiedName propertyType, String schemaNamespace, String schemaName){
+    	propertyTypeRemoveSchema( propertyType.getNamespace(), propertyType.getName(), new FullQualifiedName(schemaNamespace, schemaName) );
+    }
+    
+    public void propertyTypeRemoveSchema( String propertyTypeNamespace, String propertyTypeName, FullQualifiedName schemaFqn){
+    	session.execute(
+    			propertyTypeRemoveSchema.bind(
+    					ImmutableSet.of( schemaFqn ),
+    					propertyTypeNamespace,
+    					propertyTypeName
+    					)
+    			);
     }
 
     public Map<String, FullQualifiedName> getPropertyTypesForTypenames( Iterable<String> typenames ) {

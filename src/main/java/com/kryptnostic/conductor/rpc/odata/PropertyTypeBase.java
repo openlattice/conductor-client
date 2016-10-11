@@ -1,6 +1,9 @@
 package com.kryptnostic.conductor.rpc.odata;
 
+import java.util.Set;
+
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.mapping.annotations.Column;
 
@@ -19,6 +22,11 @@ public class PropertyTypeBase extends TypePK {
         this.name = name;
         return this;
     }
+    
+    public PropertyTypeBase setSchemas( Set<FullQualifiedName> schemas ) {
+        this.schemas = schemas;
+        return this;
+    }
 
     public EdmPrimitiveTypeKind getDatatype() {
         return datatype;
@@ -31,7 +39,8 @@ public class PropertyTypeBase extends TypePK {
 
     @Override
     public String toString() {
-        return "PropertyTypeBase [datatype=" + datatype + ", namespace=" + namespace + ", name=" + name + "]";
+        return "PropertyTypeBase [datatype=" + datatype + ", namespace=" + namespace + ", name=" + name 
+        		+ ", schemas=" + schemas + "]";
     }
 
     @Override
