@@ -164,6 +164,7 @@ public class EdmService implements EdmManager {
                 edmStore.updatePropertyTypeIfExists(
                         propertyType.getDatatype(),
                         propertyType.getMultiplicity(),
+                        propertyType.getSchemas(),
                         propertyType.getNamespace(),
                         propertyType.getName() ) );
         }
@@ -198,10 +199,17 @@ public class EdmService implements EdmManager {
                             propertyType.getName(),
                             propertyType.getTypename(),
                             propertyType.getDatatype(),
-                            propertyType.getMultiplicity() ) );
+                            propertyType.getMultiplicity(),
+                            propertyType.getSchemas() ) );
         }
 
         if ( propertyCreated ) {
+
+            propertyType.getSchemas()
+    		.forEach( 
+    					schemaFqn -> addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of(propertyType.getFullQualifiedName()) ) 
+    				);
+
             tableManager.createPropertyTypeTable( propertyType );
             tableManager.insertToPropertyTypeLookupTable( propertyType );
         }
@@ -214,10 +222,15 @@ public class EdmService implements EdmManager {
         tableManager.createSchemaTableForAclId( aclId );
         
         entityTypes.stream()
-		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
-		.forEach( entityType ->
-					tableManager.entityTypeAddSchema(entityType, namespace, name)	
+		.forEach( entityTypeFqn ->
+					tableManager.entityTypeAddSchema(entityTypeFqn, namespace, name)	
 				);
+        
+        propertyTypes.stream()
+		.forEach( propertyTypeFqn ->
+					tableManager.propertyTypeAddSchema(propertyTypeFqn, namespace, name)	
+				);
+        
         return Util.wasLightweightTransactionApplied(
                 session.execute(
                         tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes, propertyTypes ) ) );
@@ -243,7 +256,7 @@ public class EdmService implements EdmManager {
         entityType.getSchemas().forEach( 
         		schemaFqn -> removeEntityTypesFromSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of( entityTypeFqn) )
         		);
-        
+        //TODO: remove property types from schema using reference counting
         tableManager.deleteFromEntityTypeLookupTable( entityType );
         entityTypeMapper.delete( entityType );
     }
@@ -253,7 +266,7 @@ public class EdmService implements EdmManager {
         PropertyType propertyType = propertyTypeMapper
                 .get( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() );
         
-        getSchemas().forEach( schema -> removePropertyTypesFromSchema(schema.getNamespace(), schema.getName(), ImmutableSet.of(propertyTypeFqn) ) );
+        propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema(schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of(propertyTypeFqn) ) );
         edmStore.getEntityTypes().all().forEach( entityType -> removePropertyTypesFromEntityType(entityType, ImmutableSet.of(propertyTypeFqn) ) );
         
         tableManager.deleteFromPropertyTypeLookupTable( propertyType );
@@ -277,6 +290,8 @@ public class EdmService implements EdmManager {
         			//Update Schema column for each Entity Type
         			tableManager.entityTypeAddSchema( entityType, namespace, name);
         		});
+
+        addPropertyTypesToSchema( namespace, name, propertyTypes );
         
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
@@ -286,13 +301,23 @@ public class EdmService implements EdmManager {
 
     @Override
     public void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
-    	//TODO: propertyTypes not removed From Schema when Entity Types are removed. Need reference counting on propertyTypes to do so.
+    	//TODO: propertyTypes not removed From Schema table when Entity Types are removed. Need reference counting on propertyTypes to do so.
+        Set<FullQualifiedName> propertyTypes = new HashSet<>();
+        
         entityTypes.stream()
         		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
         		.forEach(entityType -> {
+        			//Get all properties for each entity type
+        			propertyTypes.addAll( entityType.getProperties() );
         			//Update Schema column for each Entity Type
         			tableManager.entityTypeRemoveSchema( entityType, namespace, name);
         		});
+        
+//        removePropertyTypesFromSchema( namespace, name, propertyTypes );
+        propertyTypes.stream()
+				.forEach(propertyTypeFqn ->
+					tableManager.propertyTypeRemoveSchema( propertyTypeFqn, namespace, name )
+				);
         
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
@@ -322,6 +347,11 @@ public class EdmService implements EdmManager {
                             entityType.getKey(),
                             entityType.getProperties(), 
                             entityType.getSchemas() ) );
+            
+            entityType.getSchemas()
+            		.forEach( 
+            					schemaFqn -> addEntityTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of(entityType.getFullQualifiedName()) ) 
+            				);
         }
 
         // Only create entity table if insert transaction succeeded.
@@ -550,6 +580,7 @@ public class EdmService implements EdmManager {
 	public void removePropertyTypesFromEntityType(String namespace, String name, Set<FullQualifiedName> properties) {
 	    EntityType entityType = getEntityType( namespace, name );
 	    removePropertyTypesFromEntityType( entityType, properties );
+	    //TODO: remove property types from Schema should be done via reference counting
 	}
 	
 	@Override
@@ -576,6 +607,11 @@ public class EdmService implements EdmManager {
 	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
 	        Preconditions.checkArgument( schemaExists( namespace, name ), "Schema does not exist." );
 	        
+	        properties.stream()
+	        		.forEach(
+	        				propertyTypeFqn -> tableManager.propertyTypeAddSchema( propertyTypeFqn, namespace, name)
+	        		);
+	        
 	        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
 	            session.executeAsync(
 	                    tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
@@ -590,6 +626,11 @@ public class EdmService implements EdmManager {
 		try{
 	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
 	        Preconditions.checkArgument( schemaExists( namespace, name ), "Schema does not exist." );
+	        
+	        properties.stream()
+					.forEach(propertyTypeFqn ->
+						tableManager.propertyTypeRemoveSchema( propertyTypeFqn, namespace, name )
+					);
 	        
 	        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
 	            session.executeAsync(

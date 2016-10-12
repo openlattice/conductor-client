@@ -69,7 +69,7 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE )
                 .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.TYPENAME, CommonColumns.DATATYPE, CommonColumns.MULTIPLICITY )
+                .columns( CommonColumns.TYPENAME, CommonColumns.DATATYPE, CommonColumns.MULTIPLICITY, CommonColumns.SCHEMAS )
                 .buildQuery();
     }
 
@@ -161,10 +161,10 @@ public final class Queries {
             + " (namespace, name, typename, key, properties, schemas) VALUES (?,?,?,?,?,?) IF NOT EXISTS";
     public static final String CREATE_PROPERTY_TYPE_IF_NOT_EXISTS  = "INSERT INTO sparks."
             + DatastoreConstants.PROPERTY_TYPES_TABLE
-            + " (namespace, name, typename, datatype, multiplicity) VALUES (?,?,?,?,?) IF NOT EXISTS";
+            + " (namespace, name, typename, datatype, multiplicity, schemas) VALUES (?,?,?,?,?,?) IF NOT EXISTS";
     public static final String UPDATE_PROPERTY_TYPE_IF_EXISTS = "UPDATE sparks."
     		+ DatastoreConstants.PROPERTY_TYPES_TABLE
-    		+ " SET datatype = ?" + "," + "multiplicity = ?" 
+    		+ " SET datatype = ?" + "," + "multiplicity = ?" + "," + "schemas = ?"
     		+ " WHERE namespace = ?" + " AND " + "name = ?";
     public static final String INSERT_ENTITY_CLAUSES               = " (objectId, aclId, clock, entitySets, syncIds) VALUES( :"
             + ParamNames.OBJ_ID + ", :"

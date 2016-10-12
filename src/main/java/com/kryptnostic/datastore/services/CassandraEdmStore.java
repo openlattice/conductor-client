@@ -45,12 +45,14 @@ public interface CassandraEdmStore {
             String type,
             String typename,
             EdmPrimitiveTypeKind datatype,
-            long multiplicity );
+            long multiplicity,
+            Set<FullQualifiedName> schemas);
     
     @Query( Queries.UPDATE_PROPERTY_TYPE_IF_EXISTS )
     public ResultSet updatePropertyTypeIfExists(
             EdmPrimitiveTypeKind datatype,
             long multiplicity,
+            Set<FullQualifiedName> schemas,
             String namespace,
             String type);
     

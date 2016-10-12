@@ -1,12 +1,17 @@
 package com.kryptnostic.conductor.rpc.odata;
 
+import java.util.Set;
+
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.Table;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
@@ -37,6 +42,12 @@ public class PropertyType extends PropertyTypeBase {
         this.name = name;
         return this;
     }
+    
+    @Override
+    public PropertyType setSchemas( Set<FullQualifiedName> schemas ) {
+        this.schemas = schemas;
+        return this;
+    }
 
     @JsonIgnore
     public PropertyType setTypename( String typename ) {
@@ -62,7 +73,8 @@ public class PropertyType extends PropertyTypeBase {
     @Override
     public String toString() {
         return "PropertyType [typename=" + typename + ", multiplicity=" + multiplicity + ", datatype=" + datatype
-                + ", namespace=" + namespace + ", name=" + name + "]";
+                + ", namespace=" + namespace + ", name=" + name 
+                + ", schemas=" + schemas + "]";
     }
 
     @Override
@@ -104,10 +116,12 @@ public class PropertyType extends PropertyTypeBase {
             @JsonProperty( SerializationConstants.NAMESPACE_FIELD ) String namespace,
             @JsonProperty( SerializationConstants.NAME_FIELD ) String name,
             @JsonProperty( SerializationConstants.DATATYPE_FIELD ) EdmPrimitiveTypeKind datatype,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) int multiplicity ) {
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) int multiplicity,
+            @JsonProperty( SerializationConstants.SCHEMAS) Optional<Set<FullQualifiedName>> schemas) {
 
         return new PropertyType().setNamespace( namespace ).setName( name ).setDatatype( datatype )
-                .setMultiplicity( multiplicity );
+                .setMultiplicity( multiplicity )
+                .setSchemas( schemas.or( ImmutableSet.of() ) );
     }
 
     
