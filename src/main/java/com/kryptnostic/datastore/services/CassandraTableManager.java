@@ -83,6 +83,14 @@ public class CassandraTableManager {
     private final PreparedStatement                                   propertyTypeRemoveSchema;
 
     public CassandraTableManager(
+            String keyspace,
+            Session session,
+            MappingManager mm ){
+        this( null, keyspace,session,mm );
+    }
+
+    @Deprecated
+    public CassandraTableManager(
             HazelcastInstance hazelcast,
             String keyspace,
             Session session,
