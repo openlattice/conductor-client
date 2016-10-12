@@ -29,10 +29,6 @@ public class EntityType extends TypePK {
     @Column(
         name = "properties" )
     public Set<FullQualifiedName>  properties;
-    
-    @Column(
-        name = "schemas" )
-    public Set<FullQualifiedName>  schemas;
 
     public EntityType setNamespace( String namespace ) {
         this.namespace = namespace;
@@ -41,6 +37,12 @@ public class EntityType extends TypePK {
 
     public EntityType setName( String name ) {
         this.name = name;
+        return this;
+    }
+    
+    @Override
+    public EntityType setSchemas( Set<FullQualifiedName> schemas ) {
+        this.schemas = schemas;
         return this;
     }
 
@@ -85,19 +87,11 @@ public class EntityType extends TypePK {
         return this;
     }
 
-    public Set<FullQualifiedName> getSchemas() {
-        return schemas;
-    }
-
-    public EntityType setSchemas( Set<FullQualifiedName> schemas ) {
-        this.schemas = schemas;
-        return this;
-    }
-
     @Override
     public String toString() {
         return "ObjectType [namespace=" + namespace + ", type=" + name + ", typename=" + typename + ", key=" + key
-                + ", allowed=" + properties + "]";
+                + ", allowed=" + properties
+                + ", schemas=" + schemas + "]";
     }
 
     @Override
@@ -109,6 +103,7 @@ public class EntityType extends TypePK {
         result = prime * result + ( ( properties == null ) ? 0 : properties.hashCode() );
         result = prime * result + ( ( name == null ) ? 0 : name.hashCode() );
         result = prime * result + ( ( typename == null ) ? 0 : typename.hashCode() );
+        result = prime * result + ( ( schemas == null ) ? 0 : schemas.hashCode() );
         return result;
     }
 
@@ -157,6 +152,13 @@ public class EntityType extends TypePK {
                 return false;
             }
         } else if ( !typename.equals( other.typename ) ) {
+            return false;
+        }
+        if ( schemas == null ) {
+            if ( other.schemas != null ) {
+                return false;
+            }
+        } else if ( !schemas.equals( other.schemas ) ) {
             return false;
         }
         return true;

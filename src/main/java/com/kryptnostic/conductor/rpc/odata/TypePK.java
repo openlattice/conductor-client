@@ -1,9 +1,13 @@
 package com.kryptnostic.conductor.rpc.odata;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.mapping.annotations.ClusteringColumn;
+import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -17,7 +21,11 @@ public class TypePK implements CassandraKey {
     @ClusteringColumn(
         value = 0 )
     protected String          name;
-
+    
+    @Column(
+            name = "schemas" )
+    protected Set<FullQualifiedName>  schemas = Collections.emptySet();
+    
     @Transient
     private FullQualifiedName fqn;
 
@@ -41,12 +49,22 @@ public class TypePK implements CassandraKey {
         return this;
     }
 
+    public Set<FullQualifiedName> getSchemas() {
+        return schemas;
+    }
+
+    public TypePK setSchemas( Set<FullQualifiedName> schemas ) {
+        this.schemas = schemas;
+        return this;
+    }
+    
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ( ( name == null ) ? 0 : name.hashCode() );
         result = prime * result + ( ( namespace == null ) ? 0 : namespace.hashCode() );
+        result = prime * result + ( ( schemas == null ) ? 0 : schemas.hashCode() );
         return result;
     }
 
@@ -74,6 +92,13 @@ public class TypePK implements CassandraKey {
                 return false;
             }
         } else if ( !namespace.equals( other.namespace ) ) {
+            return false;
+        }
+        if ( schemas == null ) {
+            if ( other.schemas != null ) {
+                return false;
+            }
+        } else if ( !schemas.equals( other.schemas ) ) {
             return false;
         }
         return true;
