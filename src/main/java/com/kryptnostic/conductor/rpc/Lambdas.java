@@ -1,12 +1,8 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.function.Function;
 
-import com.dkhenry.RethinkDB.RqlQuery;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 public class Lambdas implements Serializable {
@@ -17,15 +13,11 @@ public class Lambdas implements Serializable {
     }
     
     public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfType( FullQualifiedName fqn ) {
-    	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.loadAllEntitiesOfType( fqn );
+    	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.getAllEntitiesOfType( fqn );
     }
     
     public static Function<ConductorSparkApi, QueryResult> getFilteredEntities( LookupEntitiesRequest lookupEntitiesRequest ) {
-    	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.filterEntities( lookupEntitiesRequest );
-    }
-
-    public static Function<ConductorSparkApi, Iterable<UUID>> getEntitySetOfType( FullQualifiedName fqn ) {
-        return (Function<ConductorSparkApi, Iterable<UUID>> & Serializable) ( api ) -> api.loadEntitySet( fqn );
+    	return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.getFilterEntities( lookupEntitiesRequest );
     }
 
     public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfEntitySet(
@@ -34,17 +26,5 @@ public class Lambdas implements Serializable {
         return (Function<ConductorSparkApi, QueryResult> & Serializable) ( api ) -> api
                 .getAllEntitiesOfEntitySet( entityFqn, entitySetName );
     }
-//    public static Function<ConductorSparkApi, QueryResult> getAllEntitiesOfType(final FullQualifiedName fqn ) {
-//        return (Function<ConductorSparkApi, QueryResult> & Serializable) (api) -> api.loadAllEntitiesOfType( fqn );
-//    }
-//    public static Callable<List<Employee>> getEmployees() {
-//        return new ConductorCall() {
-//            private static final long serialVersionUID = 3766075442981764029L;
-//
-//            @Override
-//            public List<Employee> call() throws Exception {
-//                return null;
-//            }
-//        };
 
 }

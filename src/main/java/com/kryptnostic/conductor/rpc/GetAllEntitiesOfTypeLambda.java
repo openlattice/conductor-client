@@ -17,6 +17,6 @@ public class GetAllEntitiesOfTypeLambda implements Function<ConductorSparkApi, Q
 
     @Override
     public QueryResult apply( ConductorSparkApi api ) {
-        return api.loadAllEntitiesOfType( fqn );
+        return api.getAllEntitiesOfType( fqn );
     }
 }
