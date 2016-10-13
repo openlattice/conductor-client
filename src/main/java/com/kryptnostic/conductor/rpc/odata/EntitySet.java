@@ -9,6 +9,8 @@ import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Table;
 import com.datastax.driver.mapping.annotations.Transient;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
@@ -18,6 +20,7 @@ import com.google.common.base.Preconditions;
 public class EntitySet {
     @PartitionKey(
         value = 0 )
+    @JsonIgnore
     private String            typename = null;
     
     @ClusteringColumn(
@@ -132,4 +135,5 @@ public class EntitySet {
                 .setName( name )
                 .setTitle( title );
     }
+    
 }
