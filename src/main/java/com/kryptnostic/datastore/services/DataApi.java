@@ -35,10 +35,10 @@ public interface DataApi {
     String NAME_SPACE_PATH                 = "/{" + NAME_SPACE + "}";
     String TYPE_NAME_PATH                  = "/{" + TYPE_NAME + "}";
 
-    @GET( CONTROLLER + ENTITYSET + NAME_PATH + TYPE_NAME_PATH + ENTITY_DATA )
+    @GET( CONTROLLER + ENTITYSET + NAME_SPACE_PATH + TYPE_NAME_PATH + NAME_PATH )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfEntitySet(
             @Path( NAME ) String entitySetName,
-            @Path( TYPE_NAME ) String typeName );
+            @Path( NAME_SPACE ) String entityTypeNamespace, @Path( TYPE_NAME ) String entityTypeName );
 
     @PUT( CONTROLLER + ENTITY_DATA )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
