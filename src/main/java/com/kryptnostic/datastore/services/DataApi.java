@@ -35,18 +35,6 @@ public interface DataApi {
     String NAME_SPACE_PATH                 = "/{" + NAME_SPACE + "}";
     String TYPE_NAME_PATH                  = "/{" + TYPE_NAME + "}";
 
-    @PUT( CONTROLLER + ENTITYSET )
-    Iterable<UUID> getEntitySetOfType( @Body FullQualifiedName fqn );
-
-    @GET( CONTROLLER + ENTITYSET + FULLQUALIFIEDNAME_PATH )
-    Iterable<UUID> getEntitySetOfType(
-            @Path( FULLQUALIFIEDNAME ) String fqnString );
-
-    @GET( CONTROLLER + ENTITYSET + NAME_SPACE_PATH + NAME_PATH )
-    Iterable<UUID> getEntitySetOfType(
-            @Path( NAME_SPACE ) String namespace,
-            @Path( NAME ) String name );
-
     @GET( CONTROLLER + ENTITYSET + NAME_PATH + TYPE_NAME_PATH + ENTITY_DATA )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfEntitySet(
             @Path( NAME ) String entitySetName,
