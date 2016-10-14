@@ -478,16 +478,18 @@ public class EdmService implements EdmManager {
     }
 
     public EntitySet getEntitySet( FullQualifiedName type, String name ) {
-        return entitySetMapper.get( type, name );
+        return EntitySetTypenameSettingFactory( entitySetMapper.get( type, name ) );
     }
 
     public EntitySet getEntitySet( String name ) {
-        return edmStore.getEntitySet( name );
+        return EntitySetTypenameSettingFactory( edmStore.getEntitySet( name ) );
     }
 
     @Override
     public Iterable<EntitySet> getEntitySets() {
-        return edmStore.getEntitySets().all();
+        return edmStore.getEntitySets().all().stream()
+        		.map( entitySet -> EntitySetTypenameSettingFactory(entitySet) )
+        		.collect( Collectors.toList() );
     }
 
     @Override
@@ -639,5 +641,10 @@ public class EdmService implements EdmManager {
 		} catch ( IllegalArgumentException e ){
 			throw new BadRequestException();
 		}
-	} 
+	}
+	
+	private EntitySet EntitySetTypenameSettingFactory( EntitySet es ){
+		Preconditions.checkNotNull( es.getTypename(), "Entity set has no associated entity type.");
+		return es.setType( tableManager.getEntityTypeForTypename( es.getTypename() ) );
+	}
 }
