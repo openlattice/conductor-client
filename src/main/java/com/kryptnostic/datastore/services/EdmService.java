@@ -365,8 +365,12 @@ public class EdmService implements EdmManager {
     }
 
     private void ensureValidEntityType( EntityType entityType ) {
+    	Preconditions.checkNotNull( entityType.getNamespace(), "Namespace for Entity Type is missing");
+    	Preconditions.checkNotNull( entityType.getName(), "Name of Entity Type is missing");
+    	Preconditions.checkNotNull( entityType.getProperties(), "Property for Entity Type is missing");
+    	Preconditions.checkNotNull( entityType.getKey(), "Key for Entity Type is missing");
         Preconditions.checkArgument( propertiesExist( entityType.getProperties() )
-                && entityType.getProperties().containsAll( entityType.getKey() ), "Invalid entity provided" );
+                && entityType.getProperties().containsAll( entityType.getKey() ), "Invalid Entity Type provided" );
     }
 
     private boolean propertiesExist( Set<FullQualifiedName> properties ) {
@@ -474,16 +478,18 @@ public class EdmService implements EdmManager {
     }
 
     public EntitySet getEntitySet( FullQualifiedName type, String name ) {
-        return entitySetMapper.get( type, name );
+        return EntitySetTypenameSettingFactory( entitySetMapper.get( type, name ) );
     }
 
     public EntitySet getEntitySet( String name ) {
-        return edmStore.getEntitySet( name );
+        return EntitySetTypenameSettingFactory( edmStore.getEntitySet( name ) );
     }
 
     @Override
     public Iterable<EntitySet> getEntitySets() {
-        return edmStore.getEntitySets().all();
+        return edmStore.getEntitySets().all().stream()
+        		.map( entitySet -> EntitySetTypenameSettingFactory(entitySet) )
+        		.collect( Collectors.toList() );
     }
 
     @Override
@@ -635,5 +641,10 @@ public class EdmService implements EdmManager {
 		} catch ( IllegalArgumentException e ){
 			throw new BadRequestException();
 		}
-	} 
+	}
+	
+	private EntitySet EntitySetTypenameSettingFactory( EntitySet es ){
+		Preconditions.checkNotNull( es.getTypename(), "Entity set has no associated entity type.");
+		return es.setType( tableManager.getEntityTypeForTypename( es.getTypename() ) );
+	}
 }

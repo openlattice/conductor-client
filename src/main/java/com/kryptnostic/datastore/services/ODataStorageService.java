@@ -38,10 +38,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.Futures;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.durableexecutor.DurableExecutorService;
-import com.kryptnostic.conductor.rpc.ConductorCall;
-import com.kryptnostic.conductor.rpc.ConductorSparkApi;
-import com.kryptnostic.conductor.rpc.QueryResult;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.datastore.cassandra.CassandraStorage;
 
@@ -51,8 +47,6 @@ public class ODataStorageService {
 
     private static final Logger          logger           = LoggerFactory
             .getLogger( ODataStorageService.class );
-    // private final IMap<String, FullQualifiedName> entitySets;
-    // private final IMap<FullQualifiedName, EntitySchema> entitySchemas;
     private final EdmManager             dms;
     private final CassandraTableManager  tableManager;
     private final Session                session;
@@ -115,21 +109,10 @@ public class ODataStorageService {
                             "19 Optimum Resolution 1024 x 768 @ 85Hz, resolution 1280 x 960" ) );
             e3.setId( createId( "Products", 1 ) );
             productList.add( e3 );
-        } else {
-            // TODO: RPC to Spark to load data.
-            try {
-                 Iterable<UUID> result = executor.submit( ConductorCall.wrap( ( ConductorSparkApi sparkApi ) -> {
-                    return sparkApi.loadEntitySet( edmEntitySet.getEntityType().getFullQualifiedName());
-                } ) ).get();
-            } catch ( InterruptedException | ExecutionException e ) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            ;
-        }
+        } else {}
         return productsCollection;
     }
-
+    
     public Entity readEntityData( EdmEntitySet edmEntitySet, List<UriParameter> keyParams )
             throws ODataApplicationException {
 
@@ -148,10 +131,6 @@ public class ODataStorageService {
 
         return null;
     }
-
-    // public Entity readEntityData( Map<FullQualifiedName, Object> key ) {
-    //
-    // }
 
     public Entity createEntityData( UUID aclId, UUID syncId, EdmEntitySet edmEntitySet, Entity requestEntity ) {
         FullQualifiedName entityFqn = edmEntitySet.getEntityType().getFullQualifiedName();

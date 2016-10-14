@@ -1,21 +1,10 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.util.List;
-import java.util.UUID;
-
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-
 public interface ConductorSparkApi {
-    // Multimap<FullQualifiedName, ?> getEntity( UUID userId, Map<FullQualifiedName, ?> key );
-    // List<Entity> getEntitySet( UUID userId, EntitySet entitySet );
 
-    List<UUID> lookupEntities( LookupEntitiesRequest entityKey );
-
-    QueryResult loadAllEntitiesOfType( FullQualifiedName entityTypeFqn );
-
-    List<UUID> loadEntitySet( FullQualifiedName fqn );
+    QueryResult getAllEntitiesOfType( FullQualifiedName entityTypeFqn );
 
     QueryResult getAllEntitiesOfEntitySet( FullQualifiedName entityFqn, String entitySetName );
 
@@ -24,5 +13,5 @@ public interface ConductorSparkApi {
      * @param request A LookupEntitiesRequest object
      * @return QueryResult of UUID's matching the lookup request
      */
-    QueryResult filterEntities( LookupEntitiesRequest request);
+    QueryResult getFilterEntities( LookupEntitiesRequest request);
 }
