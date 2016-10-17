@@ -30,13 +30,42 @@ public final class Queries {
     public static final String CREATE_KEYSPACE = "CREATE KEYSPACE IF NOT EXISTS sparks WITH REPLICATION={ 'class' : 'SimpleStrategy', 'replication_factor' : 1 } AND DURABLE_WRITES=true";
 
     // Table Creation
-    public static final String createSchemaAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.SCHEMA_ACLS )
+    public static final String createPropertyTypesAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.ACLID )
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.ACLID )
+                .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
-
+    
+    public static final String createEntityTypesAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.ACLID )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+    
+    public static final String createEntitySetsAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.ACLID )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+    
+    public static final String createSchemasAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.ACLID )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+    
     public static final String createSchemasTableQuery( String keyspace, String table ) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()

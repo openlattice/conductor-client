@@ -9,10 +9,11 @@ public enum Tables {
     ENTITY_TYPE_LOOKUP( "entity_type_lookup" ),
     PROPERTIES( "_properties" ),
     PROPERTY_TYPES( PROPERTY_TYPES_TABLE ),
-    SCHEMA_ACLS( SCHEMA_ACLS_TABLE ),
     ENTITY_ID_TO_TYPE( "entity_id_to_type" ),
-    ENTITY_SET_MEMBERS( ENTITY_SET_MEMBERS_TABLE );
-
+    ENTITY_SET_MEMBERS( ENTITY_SET_MEMBERS_TABLE ),
+	PROPERTY_TYPES_ACLS( PROPERTY_TYPES_ACLS_TABLE ),
+    SCHEMAS_ACLS( SCHEMAS_ACLS_TABLE );
+	
     private final String tableName;
 
     private Tables( String tableName ) {

@@ -3,7 +3,7 @@ package com.kryptnostic.datastore;
 import java.util.Set;
 
 /**
- * @author Ho Chung
+ * @author Ho Chung Siu
  * Modified from Drew's Permission.java in mapstore
  * 
  */
@@ -21,7 +21,16 @@ public enum Permission {
         return permissions;
     }
     
+    public int asNumber(){
+    	return Permission.asNumber( this );
+    }
+    
+    public int hasPosition(){
+    	return Permission.hasPosition( this );
+    }
+    
     public static int asNumber( Permission permission ){
+    	//WARNING: This function has to be in sync with hasPosition
     	switch( permission ){
     	    case READ:
     	    	return 1;
@@ -40,6 +49,22 @@ public enum Permission {
     	return permissions.stream()
     			.mapToInt( permission -> Permission.asNumber(permission) )
     			.sum();
+    }
+    
+    public static int hasPosition( Permission permission ){
+    	//WARNING: This function has to be in sync with asNumber
+    	switch( permission ){
+    	    case READ:
+    	    	return 0;
+    	    case WRITE:
+    	    	return 1;
+    	    case ALTER:
+    	    	return 2;
+    	    case OWNER:
+    	    	return 3;
+    	    default:
+    	    	return -1;
+    	}
     }
 }
 

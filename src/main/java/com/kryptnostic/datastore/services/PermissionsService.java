@@ -3,18 +3,31 @@ package com.kryptnostic.datastore.services;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.core.Session;
 import com.kryptnostic.datastore.Permission;
+import com.kryptnostic.instrumentation.v1.exceptions.types.UnauthorizedException;
 
 public class PermissionsService implements PermissionsManager{
+	/** 
+	 * Being of debug
+	 */
+	private static UUID                   currentId;
+	public static void setCurrentUserIdForDebug( UUID currentId ){
+		PermissionsService.currentId = currentId;
+	}
+	/**
+	 * End of debug
+	 */
 
     private final Session              session;
     private final CassandraTableManager tableManager;
     
-    public PermissionsService(){
-    	//constructor
+    public PermissionsService( Session session, CassandraTableManager tableManager ){
+    	this.session = session;
+    	this.tableManager = tableManager;
     }
 	/**
 	 * @Inject
@@ -26,35 +39,47 @@ public class PermissionsService implements PermissionsManager{
 	@Override
 	public void addPermissionsForPropertyTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyType(fqn, Permission.OWNER) ){
-			int currentPermission = session.execute( tableManager.getPermissionsForPropertyType( userId, fqn ) );
+			int currentPermission = tableManager.getPermissionsForPropertyType( userId, fqn );
 			
 			int permissionsToAdd = Permission.asNumber( permissions );
-			//add Permission corresponds to bitwise or as numbers
-		    session.execute( tableManager.setPermissionsForPropertyType( userId, fqn, currentPermission | permissionsToAdd ) );
+			//add Permission corresponds to bitwise or current permission, and permissionsToAdd 
+		    tableManager.setPermissionsForPropertyType( userId, fqn, currentPermission | permissionsToAdd );
 		}	
 	}
 
 	@Override
 	public void removePermissionsForPropertyTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyType(fqn, Permission.OWNER) ){
-			int currentPermission = session.execute( tableManager.getPermissionsForPropertyType( userId, fqn ) );
+			int currentPermission = tableManager.getPermissionsForPropertyType( userId, fqn );
 			
-			int permissionsToAdd = Permission.asNumber( permissions );
-			//remove Permission corresponds to bitwise or as numbers
-		    session.execute( tableManager.setPermissionsForPropertyType( userId, fqn, currentPermission | ~permissionsToAdd ) );
+			int permissionsToRemove = Permission.asNumber( permissions );
+			//remove Permission corresponds to bitwise or current permission, and NOT permissionsToRemove
+		    tableManager.setPermissionsForPropertyType( userId, fqn, currentPermission | ~permissionsToRemove );
 		}	
 	}
 
 	@Override
 	public void setPermissionsForPropertyTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
-		// TODO Auto-generated method stub
-		
+		if ( checkUserHasPermissionsOnPropertyType(fqn, Permission.OWNER) ){
+			int permissionsToSet = Permission.asNumber( permissions );
+		    tableManager.setPermissionsForPropertyType( userId, fqn, permissionsToSet );
+		}			
 	}
 
 	@Override
 	public boolean checkUserHasPermissionsOnPropertyType(FullQualifiedName fqn, Permission permission) {
-		// TODO Auto-generated method stub
-		return false;
+		//TODO currentId = current user's Id, should be obtained from Auth0 or wherever.
+		int position = Permission.hasPosition( permission );
+
+		boolean userHasPermission = BooleanUtils.toBoolean( 
+				//check if the corresponding bit of permission is set
+				    ( tableManager.getPermissionsForPropertyType( currentId, fqn)  >> position ) & 1 
+				);
+		if( userHasPermission ){
+			return true;
+		}else{
+			throw new UnauthorizedException();
+		}
 	}
 
 	@Override

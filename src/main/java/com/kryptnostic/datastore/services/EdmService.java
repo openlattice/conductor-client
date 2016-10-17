@@ -33,6 +33,7 @@ import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.instrumentation.v1.exceptions.types.BadRequestException;
@@ -40,6 +41,17 @@ import com.kryptnostic.instrumentation.v1.exceptions.types.BadRequestException;
 public class EdmService implements EdmManager {
     private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
 
+	/** 
+	 * Being of debug
+	 */
+	private static UUID                   currentId;
+	public static void setCurrentUserIdForDebug( UUID currentId ){
+		EdmService.currentId = currentId;
+	}
+	/**
+	 * End of debug
+	 */
+	
     private final Session              session;
     private final Mapper<EntitySet>    entitySetMapper;
     private final Mapper<EntityType>   entityTypeMapper;
@@ -204,7 +216,6 @@ public class EdmService implements EdmManager {
         }
 
         if ( propertyCreated ) {
-
             propertyType.getSchemas()
     		.forEach( 
     					schemaFqn -> addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of(propertyType.getFullQualifiedName()) ) 
@@ -212,6 +223,7 @@ public class EdmService implements EdmManager {
 
             tableManager.createPropertyTypeTable( propertyType );
             tableManager.insertToPropertyTypeLookupTable( propertyType );
+            tableManager.setPermissionsForPropertyType( currentId, propertyType.getFullQualifiedName(), Permission.OWNER );
         }
 
         return propertyCreated;

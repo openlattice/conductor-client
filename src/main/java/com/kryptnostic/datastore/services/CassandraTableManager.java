@@ -27,6 +27,7 @@ import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.Queries;
@@ -79,6 +80,9 @@ public class CassandraTableManager {
     private final PreparedStatement                                   entityTypeRemoveSchema;
     private final PreparedStatement                                   propertyTypeAddSchema;
     private final PreparedStatement                                   propertyTypeRemoveSchema;
+    
+    private final PreparedStatement                                   setPermissionsForPropertyType;
+    private final PreparedStatement                                   getPermissionsForPropertyType;
 
     public CassandraTableManager(
             String keyspace,
@@ -213,6 +217,23 @@ public class CassandraTableManager {
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
         		);
+        
+        this.setPermissionsForPropertyType = session
+        		.prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_ACLS.getTableName() )
+        		        .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+        		        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+        		        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+        		        .and( QueryBuilder.eq( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() ))
+        		);
+        
+        this.getPermissionsForPropertyType = session
+        		.prepare( QueryBuilder.select()
+        				.from( keyspace, Tables.PROPERTY_TYPES_ACLS.getTableName() )
+        		        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+        		        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+        		        .and( QueryBuilder.eq( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() ))
+        		);
+        
     }
 
     public String getKeyspace() {
@@ -725,7 +746,7 @@ public class CassandraTableManager {
 
     private void initCoreTables( String keyspace, Session session ) {
         createKeyspaceSparksIfNotExists( keyspace, session );
-        createSchemaAclsTableIfNotExists( keyspace, session );
+        createAclsTableIfNotExists( keyspace, session );
         createEntityTypesTableIfNotExists( keyspace, session );
         createPropertyTypesTableIfNotExists( keyspace, session );
         createEntitySetsTableIfNotExists( keyspace, session );
@@ -757,8 +778,11 @@ public class CassandraTableManager {
         session.execute( Queries.CREATE_KEYSPACE );
     }
 
-    private static void createSchemaAclsTableIfNotExists( String keyspace, Session session ) {
-        session.execute( Queries.createSchemaAclsTableQuery( keyspace ) );
+    private static void createAclsTableIfNotExists( String keyspace, Session session ) {
+        session.execute( Queries.createPropertyTypesAclsTableQuery( keyspace ) );
+        session.execute( Queries.createEntityTypesAclsTableQuery( keyspace ) );
+        session.execute( Queries.createEntitySetsAclsTableQuery( keyspace ) );
+        session.execute( Queries.createSchemasAclsTableQuery( keyspace ) );
     }
 
     private static boolean createSchemasTableIfNotExists( String keyspace, UUID aclId, Session session ) {
@@ -793,6 +817,31 @@ public class CassandraTableManager {
 
     private void createEntityTypeLookupTableIfNotExists( String keyspace, Session session ) {
         session.execute( Queries.getCreateEntityTypeLookupTableQuery( keyspace ) );
+    }
+    
+    /**************
+     Acl Operations
+     **************/
+    public int getPermissionsForPropertyType( UUID aclId, FullQualifiedName propertyTypeFqn ) {
+        return Util.transformSafely( session.execute( this.setPermissionsForPropertyType.bind(
+        		    propertyTypeFqn.getNamespace(),
+        		    propertyTypeFqn.getName(),
+        		    aclId
+        		) ).one(),
+        r -> r.getInt( CommonColumns.PERMISSIONS.cql() ) );
+    }
+
+    public void setPermissionsForPropertyType( UUID aclId, FullQualifiedName propertyTypeFqn, int permission ) {
+        session.execute( this.setPermissionsForPropertyType.bind(
+        		    permission, 
+        		    propertyTypeFqn.getNamespace(),
+        		    propertyTypeFqn.getName(),
+        		    aclId
+        		)  );
+    }
+    
+    public void setPermissionsForPropertyType( UUID aclId, FullQualifiedName propertyTypeFqn, Permission permission ) {
+    	setPermissionsForPropertyType( aclId, propertyTypeFqn, permission.asNumber() );
     }
     
 }

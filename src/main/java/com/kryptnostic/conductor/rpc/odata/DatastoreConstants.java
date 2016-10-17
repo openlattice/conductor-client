@@ -17,8 +17,11 @@ public final class DatastoreConstants {
     public static final String ENTITY_TYPES_TABLE       = "entity_types";
     public static final String PROPERTY_TYPES_TABLE     = "property_types";
     public static final String SCHEMAS_TABLE_PREFIX     = "schemas_";
-    public static final String SCHEMA_ACLS_TABLE        = "schema_acls";
     public static final String ENTITY_SET_MEMBERS_TABLE = "entity_set_members";
+    
+    // ACL TABLES
+    public static final String PROPERTY_TYPES_ACLS_TABLE= "property_types_acls";   
+    public static final String SCHEMAS_ACLS_TABLE       = "schema_acls";   
 
     // PARAMETERS
     public static final String APPLIED_FIELD        = "[applied]";
