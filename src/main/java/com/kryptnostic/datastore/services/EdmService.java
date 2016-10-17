@@ -173,18 +173,18 @@ public class EdmService implements EdmManager {
      */
     @Override
     public void upsertPropertyType( PropertyType propertyType ) {
-        // Create or retrieve it's typename.
-        String typenameFromPropertyTable = tableManager.getTypenameForPropertyType( propertyType );
-
-        if(!StringUtils.isBlank( typenameFromPropertyTable )){
+    	
+    	if( checkPropertyTypeExists(propertyType) ){
         	Util.wasLightweightTransactionApplied(
-                edmStore.updatePropertyTypeIfExists(
-                        propertyType.getDatatype(),
-                        propertyType.getMultiplicity(),
-                        propertyType.getSchemas(),
-                        propertyType.getNamespace(),
-                        propertyType.getName() ) );
-        }
+                    edmStore.updatePropertyTypeIfExists(
+                            propertyType.getDatatype(),
+                            propertyType.getMultiplicity(),
+                            propertyType.getSchemas(),
+                            propertyType.getNamespace(),
+                            propertyType.getName() ) );    		
+    	} else {
+    		createPropertyType( propertyType );
+    	}
     }
 
     /*
@@ -668,5 +668,10 @@ public class EdmService implements EdmManager {
 	private EntitySet EntitySetTypenameSettingFactory( EntitySet es ){
 		Preconditions.checkNotNull( es.getTypename(), "Entity set has no associated entity type.");
 		return es.setType( tableManager.getEntityTypeForTypename( es.getTypename() ) );
+	}
+	
+	private boolean checkPropertyTypeExists( PropertyType propertyType ){
+        String typename = tableManager.getTypenameForPropertyType( propertyType );
+        return StringUtils.isNotBlank( typename );
 	}
 }
