@@ -520,24 +520,20 @@ public class EdmService implements EdmManager {
     @Override
     public EntityDataModel getEntityDataModel() {
         Iterable<Schema> schemas = getSchemas();
-        final Set<EntityType> entityTypes = Sets.newHashSet();
-        final Set<PropertyType> propertyTypes = Sets.newHashSet();
-        final Set<EntitySet> entitySets = Sets.newHashSet();
+        Iterable<EntityType> entityTypes = getEntityTypes();
+        Iterable<PropertyType> propertyTypes = getPropertyTypes();
+        Iterable<EntitySet> entitySets = getEntitySets();
         final Set<String> namespaces = Sets.newHashSet();
-
-        schemas.forEach( schema -> {
-            entityTypes.addAll( schema.getEntityTypes() );
-            propertyTypes.addAll( schema.getPropertyTypes() );
-            schema.getEntityTypes().forEach( entityType -> namespaces.add( entityType.getNamespace() ) );
-            schema.getPropertyTypes().forEach( propertyType -> namespaces.add( propertyType.getNamespace() ) );
-        } );
+        
+        entityTypes.forEach( entityType -> namespaces.add( entityType.getNamespace() ));
+        propertyTypes.forEach( propertyType -> namespaces.add( propertyType.getNamespace() ));
 
         return new EntityDataModel(
                 namespaces,
-                ImmutableSet.copyOf( schemas ),
+                schemas,
                 entityTypes,
                 propertyTypes,
-                entitySets );
+                entitySets);
     }
 
     @Override
