@@ -14,9 +14,9 @@ public class PermissionsService implements PermissionsManager{
 	/** 
 	 * Being of debug
 	 */
-	private static UUID                   currentId;
-	public static void setCurrentUserIdForDebug( UUID currentId ){
-		PermissionsService.currentId = currentId;
+	private UUID                   currentId;
+	public void setCurrentUserIdForDebug( UUID currentId ){
+		this.currentId = currentId;
 	}
 	/**
 	 * End of debug

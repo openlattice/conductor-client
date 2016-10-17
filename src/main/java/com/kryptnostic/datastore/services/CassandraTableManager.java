@@ -16,6 +16,8 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.mapping.MappingManager;
@@ -83,6 +85,7 @@ public class CassandraTableManager {
     
     private final PreparedStatement                                   setPermissionsForPropertyType;
     private final PreparedStatement                                   getPermissionsForPropertyType;
+    private final PreparedStatement                                   deleteFromPropertyTypesAclsTable;
 
     public CassandraTableManager(
             String keyspace,
@@ -234,6 +237,12 @@ public class CassandraTableManager {
         		        .and( QueryBuilder.eq( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() ))
         		);
         
+        this.deleteFromPropertyTypesAclsTable = session
+        		.prepare( QueryBuilder.delete()
+        				.from( keyspace, Tables.PROPERTY_TYPES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+        		);
     }
 
     public String getKeyspace() {
@@ -821,14 +830,26 @@ public class CassandraTableManager {
     
     /**************
      Acl Operations
-     **************/
+     **************/    
+    /**
+     * 
+     * @param aclId
+     * @param propertyTypeFqn
+     * @return Return permission if the property type is found in Acl table. Return 0 otherwise.
+     */
     public int getPermissionsForPropertyType( UUID aclId, FullQualifiedName propertyTypeFqn ) {
-        return Util.transformSafely( session.execute( this.setPermissionsForPropertyType.bind(
-        		    propertyTypeFqn.getNamespace(),
-        		    propertyTypeFqn.getName(),
-        		    aclId
-        		) ).one(),
-        r -> r.getInt( CommonColumns.PERMISSIONS.cql() ) );
+    	Row propertyTypeAcl = session.execute( this.getPermissionsForPropertyType.bind(
+    		    propertyTypeFqn.getNamespace(),
+    		    propertyTypeFqn.getName(),
+    		    aclId
+    		) ).one();
+    	if( propertyTypeAcl != null ){
+    		return Util.transformSafely( propertyTypeAcl, r -> r.getInt( CommonColumns.PERMISSIONS.cql() ) );
+    	} else {
+    		// Property Type not found in Acl table; would mean no permission for now
+    		// TODO: change this, if you want default permission of a group
+    		return 0;
+    	}
     }
 
     public void setPermissionsForPropertyType( UUID aclId, FullQualifiedName propertyTypeFqn, int permission ) {
@@ -842,6 +863,10 @@ public class CassandraTableManager {
     
     public void setPermissionsForPropertyType( UUID aclId, FullQualifiedName propertyTypeFqn, Permission permission ) {
     	setPermissionsForPropertyType( aclId, propertyTypeFqn, permission.asNumber() );
+    }
+    
+    public void deleteFromPropertyTypesAclsTable( FullQualifiedName propertyTypeFqn ) {
+        session.execute( deleteFromPropertyTypesAclsTable.bind( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() ) );
     }
     
 }

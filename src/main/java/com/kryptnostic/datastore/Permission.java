@@ -38,8 +38,8 @@ public enum Permission {
     	    	return 2;
     	    case ALTER:
     	    	return 4;
-    	    case OWNER:
-    	    	return 8;
+    	    case OWNER: // Owner has rights to alter, write, read as well; 8+4+2+1 = 15.
+    	    	return 15;
     	    default:
     	    	return 0;
     	}

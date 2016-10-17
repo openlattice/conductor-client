@@ -9,6 +9,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.inject.Inject;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -44,14 +46,15 @@ public class EdmService implements EdmManager {
 	/** 
 	 * Being of debug
 	 */
-	private static UUID                   currentId;
-	public static void setCurrentUserIdForDebug( UUID currentId ){
-		EdmService.currentId = currentId;
+	private UUID                   currentId;
+	@Override
+	public void setCurrentUserIdForDebug( UUID currentId ){
+		this.currentId = currentId;
 	}
 	/**
 	 * End of debug
 	 */
-	
+    
     private final Session              session;
     private final Mapper<EntitySet>    entitySetMapper;
     private final Mapper<EntityType>   entityTypeMapper;
@@ -59,14 +62,16 @@ public class EdmService implements EdmManager {
 
     private final CassandraEdmStore     edmStore;
     private final CassandraTableManager tableManager;
+    private final PermissionsService    permissionsService;
 
-    public EdmService( Session session, MappingManager mappingManager, CassandraTableManager tableManager ) {
+    public EdmService( Session session, MappingManager mappingManager, CassandraTableManager tableManager, PermissionsService permissionsService ) {
         this.session = session;
         this.edmStore = mappingManager.createAccessor( CassandraEdmStore.class );
         this.entitySetMapper = mappingManager.mapper( EntitySet.class );
         this.entityTypeMapper = mappingManager.mapper( EntityType.class );
         this.propertyTypeMapper = mappingManager.mapper( PropertyType.class );
         this.tableManager = tableManager;
+        this.permissionsService = permissionsService;
         List<EntityType> objectTypes = edmStore.getEntityTypes().all();
         List<Schema> schemas = ImmutableList.copyOf( getSchemas() );
         // Temp comment out the following two lines to avoid "Schema is out of sync." crash
@@ -282,6 +287,8 @@ public class EdmService implements EdmManager {
         edmStore.getEntityTypes().all().forEach( entityType -> removePropertyTypesFromEntityType(entityType, ImmutableSet.of(propertyTypeFqn) ) );
         
         tableManager.deleteFromPropertyTypeLookupTable( propertyType );
+        tableManager.deleteFromPropertyTypesAclsTable( propertyTypeFqn );
+        
         propertyTypeMapper.delete( propertyType );
     }
 
@@ -506,7 +513,10 @@ public class EdmService implements EdmManager {
 
     @Override
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
-        return propertyTypeMapper.get( propertyType.getNamespace(), propertyType.getName() );
+    	if( permissionsService.checkUserHasPermissionsOnPropertyType( propertyType, Permission.READ ) ){
+    	    return propertyTypeMapper.get( propertyType.getNamespace(), propertyType.getName() );
+    	}
+    	return null;
     }
 
     @Override
