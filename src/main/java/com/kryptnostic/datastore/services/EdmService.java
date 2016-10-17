@@ -46,7 +46,7 @@ public class EdmService implements EdmManager {
 	/** 
 	 * Being of debug
 	 */
-	private UUID                   currentId;
+	private UUID                   currentId = new UUID(1,2);
 	@Override
 	public void setCurrentUserIdForDebug( UUID currentId ){
 		this.currentId = currentId;
@@ -521,12 +521,16 @@ public class EdmService implements EdmManager {
 
     @Override
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
-        return edmStore.getPropertyTypesInNamespace( namespace ).all();
+        return edmStore.getPropertyTypesInNamespace( namespace ).all().stream()
+        		.filter( propertyType -> permissionsService.checkUserHasPermissionsOnPropertyType( propertyType.getFullQualifiedName(), Permission.READ ) )
+        		.collect( Collectors.toList() );
     }
 
     @Override
     public Iterable<PropertyType> getPropertyTypes() {
-        return edmStore.getPropertyTypes().all();
+        return edmStore.getPropertyTypes().all().stream()
+        		.filter( propertyType -> permissionsService.checkUserHasPermissionsOnPropertyType( propertyType.getFullQualifiedName(), Permission.READ ) )
+        		.collect( Collectors.toList() );
     }
 
     @Override

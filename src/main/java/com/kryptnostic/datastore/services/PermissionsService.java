@@ -14,7 +14,7 @@ public class PermissionsService implements PermissionsManager{
 	/** 
 	 * Being of debug
 	 */
-	private UUID                   currentId;
+	private UUID                   currentId = new UUID(1,2);
 	public void setCurrentUserIdForDebug( UUID currentId ){
 		this.currentId = currentId;
 	}
