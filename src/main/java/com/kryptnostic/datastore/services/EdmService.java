@@ -166,11 +166,13 @@ public class EdmService implements EdmManager {
         	//Retrieve database record of entityType
         	EntityType dbRecord = getEntityType( entityType.getFullQualifiedName() );
         	//Retrieve properties known to user
-        	Set<FullQualifiedName> knownPropertyTypesInEntityType = getAuthorizedPropertyTypesInEntityTypes( dbRecord );
+        	Set<FullQualifiedName> knownPropertyTypesInEntityType = dbRecord.getAuthorizedProperties();
         	Set<FullQualifiedName> unknownPropertyTypesInEntityType = Sets.difference(dbRecord.getProperties(), knownPropertyTypesInEntityType);
         	//Known property types are updated by upsert request, permissions updated accordingly
         	  //Remove the known property types in database properly; this step takes care of removal of permissions
         	removePropertyTypesFromEntityType(dbRecord, knownPropertyTypesInEntityType, true);
+        	//TODO: BUG - user permissions might have been changed before. So you shouldn't give it OWNER permission; should be same permission for existing, known property types. The new ones can be OWNER
+        	 asdfasdfasdfasdfas
         	  //Rectify the entityType to save
         	entityType.addProperties( unknownPropertyTypesInEntityType );
         	  //Update permissions
@@ -604,25 +606,38 @@ public class EdmService implements EdmManager {
 
 	@Override
 	public void addPropertyTypesToEntityType(String namespace, String name, Set<FullQualifiedName> properties) {
+		EntityType entityType;
+		FullQualifiedName entityTypeFqn = new FullQualifiedName( namespace, name );
+		
 		try{
-	    	EntityType entityType = getEntityType( namespace, name );
-	    	
+	    	entityType = getEntityType( namespace, name );	    	
 	        Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
-		    entityType.addProperties( properties );
-	
-		    Set<FullQualifiedName> schemas = entityType.getSchemas();
-		    schemas.stream().forEach( schemaFqn -> {
-		        addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
-		    });
-		        	           
-		    edmStore.updateExistingEntityType(
-		           	entityType.getNamespace(), 
-		           	entityType.getName(), 
-		           	entityType.getKey(), 
-		          	entityType.getProperties());
 		} catch ( IllegalArgumentException e ){
 			throw new BadRequestException();
 		}
+		
+		if( permissionsService.checkUserHasPermissionsOnEntityType( entityTypeFqn, Permission.ALTER) ){
+		    entityType.addProperties( properties );
+	        edmStore.updateExistingEntityType(
+	            entityType.getNamespace(), 
+	            entityType.getName(), 
+	            entityType.getKey(), 
+	            entityType.getProperties()
+	        );
+	
+		    Set<FullQualifiedName> schemas = entityType.getSchemas();
+		    schemas.forEach( schemaFqn -> {
+		        addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
+		    });
+		    
+		    //Acl
+		    properties.forEach( propertyTypeFqn -> {
+	        	//TODO: BUG - user permissions might have been changed before. So you shouldn't give it OWNER permission; should be same permission for existing, known property types. The new ones can be OWNER
+		    	asfdasdfasdafsdf
+		    	tableManager.setPermissionsForPropertyTypeInEntityType( currentId, entityTypeFqn, propertyTypeFqn, Permission.OWNER);
+		    });
+		}
+	    
 	}     
 	
 	@Override
