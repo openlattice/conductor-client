@@ -20,9 +20,13 @@ public final class DatastoreConstants {
     public static final String ENTITY_SET_MEMBERS_TABLE = "entity_set_members";
     
     // ACL TABLES
-    public static final String PROPERTY_TYPES_ACLS_TABLE= "property_types_acls";   
-    public static final String SCHEMAS_ACLS_TABLE       = "schema_acls";   
+    public static final String PROPERTY_TYPES_ACLS_TABLE = "property_types_acls";
+    public static final String ENTITY_TYPES_ACLS_TABLE   = "entity_types_acls";
+    public static final String ENTITY_SETS_ACLS_TABLE    = "entity_sets_acls";
+    public static final String SCHEMAS_ACLS_TABLE        = "schema_acls";   
 
+    public static final String PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS_TABLE = "property_types_in_entity_types_acls";
+    
     // PARAMETERS
     public static final String APPLIED_FIELD        = "[applied]";
 }

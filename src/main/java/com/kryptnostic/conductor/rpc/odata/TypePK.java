@@ -12,6 +12,7 @@ import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Transient;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.rhizome.mapstores.cassandra.CassandraKey;
 
 public class TypePK implements CassandraKey {
@@ -50,7 +51,12 @@ public class TypePK implements CassandraKey {
     }
 
     public Set<FullQualifiedName> getSchemas() {
-        return schemas;
+    	//Ho Chung: very artificial - but this is because Cassandra does not distinguish null and empty things right now :/
+        if( schemas != null){
+        	return schemas;
+        } else {
+        	return Collections.emptySet();
+        }
     }
 
     public TypePK setSchemas( Set<FullQualifiedName> schemas ) {

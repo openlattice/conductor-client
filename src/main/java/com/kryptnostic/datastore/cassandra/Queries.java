@@ -40,7 +40,7 @@ public final class Queries {
     }
     
     public static final String createEntityTypesAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
                 .clusteringColumns( CommonColumns.ACLID )
@@ -49,7 +49,7 @@ public final class Queries {
     }
     
     public static final String createEntitySetsAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAME )
                 .clusteringColumns( CommonColumns.ACLID )
@@ -58,9 +58,18 @@ public final class Queries {
     }
     
     public static final String createSchemasAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
+        return new CassandraTableBuilder( keyspace, Tables.SCHEMAS_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.ACLID )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+    
+    public static final String createPropertyTypesInEntityTypesAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME, CommonColumns.FQN )
                 .clusteringColumns( CommonColumns.ACLID )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();

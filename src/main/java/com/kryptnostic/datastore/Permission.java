@@ -25,12 +25,12 @@ public enum Permission {
     	return Permission.asNumber( this );
     }
     
-    public int hasPosition(){
-    	return Permission.hasPosition( this );
+    public int getPosition(){
+    	return Permission.getPosition( this );
     }
     
     public static int asNumber( Permission permission ){
-    	//WARNING: This function has to be in sync with hasPosition
+    	//WARNING: This function has to be in sync with getPosition
     	switch( permission ){
     	    case READ:
     	    	return 1;
@@ -48,10 +48,11 @@ public enum Permission {
     public static int asNumber( Set<Permission> permissions ){
     	return permissions.stream()
     			.mapToInt( permission -> Permission.asNumber(permission) )
+    			//TODO update this; sum is bad, because of the OWNER number above. You want bitwise or.
     			.sum();
     }
     
-    public static int hasPosition( Permission permission ){
+    public static int getPosition( Permission permission ){
     	//WARNING: This function has to be in sync with asNumber
     	switch( permission ){
     	    case READ:

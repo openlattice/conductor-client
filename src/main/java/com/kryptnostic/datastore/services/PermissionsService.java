@@ -14,7 +14,8 @@ public class PermissionsService implements PermissionsManager{
 	/** 
 	 * Being of debug
 	 */
-	private UUID                   currentId = new UUID(1,2);
+	//TODO currentId = current user's Id, should be obtained from Auth0 or wherever.
+	private UUID                   currentId;
 	public void setCurrentUserIdForDebug( UUID currentId ){
 		this.currentId = currentId;
 	}
@@ -37,7 +38,7 @@ public class PermissionsService implements PermissionsManager{
 	 */
 
 	@Override
-	public void addPermissionsForPropertyTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+	public void addPermissionsForPropertyType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyType(fqn, Permission.OWNER) ){
 			int currentPermission = tableManager.getPermissionsForPropertyType( userId, fqn );
 			
@@ -48,7 +49,7 @@ public class PermissionsService implements PermissionsManager{
 	}
 
 	@Override
-	public void removePermissionsForPropertyTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+	public void removePermissionsForPropertyType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyType(fqn, Permission.OWNER) ){
 			int currentPermission = tableManager.getPermissionsForPropertyType( userId, fqn );
 			
@@ -59,7 +60,7 @@ public class PermissionsService implements PermissionsManager{
 	}
 
 	@Override
-	public void setPermissionsForPropertyTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+	public void setPermissionsForPropertyType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyType(fqn, Permission.OWNER) ){
 			int permissionsToSet = Permission.asNumber( permissions );
 		    tableManager.setPermissionsForPropertyType( userId, fqn, permissionsToSet );
@@ -68,13 +69,13 @@ public class PermissionsService implements PermissionsManager{
 
 	@Override
 	public boolean checkUserHasPermissionsOnPropertyType(FullQualifiedName fqn, Permission permission) {
-		//TODO currentId = current user's Id, should be obtained from Auth0 or wherever.
-		int position = Permission.hasPosition( permission );
+		int position = Permission.getPosition( permission );
 
 		boolean userHasPermission = BooleanUtils.toBoolean( 
 				//check if the corresponding bit of permission is set
 				    ( tableManager.getPermissionsForPropertyType( currentId, fqn)  >> position ) & 1 
 				);
+		
 		if( userHasPermission ){
 			return true;
 		}else{
@@ -83,45 +84,67 @@ public class PermissionsService implements PermissionsManager{
 	}
 
 	@Override
-	public void addPermissionsForEntityTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
-		// TODO Auto-generated method stub
-		
+	public void addPermissionsForEntityType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+		if ( checkUserHasPermissionsOnEntityType(fqn, Permission.OWNER) ){
+			int currentPermission = tableManager.getPermissionsForEntityType( userId, fqn );
+			
+			int permissionsToAdd = Permission.asNumber( permissions );
+			//add Permission corresponds to bitwise or current permission, and permissionsToAdd 
+		    tableManager.setPermissionsForEntityType( userId, fqn, currentPermission | permissionsToAdd );
+		}			
 	}
 
 	@Override
-	public void removePermissionsForEntityTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
-		// TODO Auto-generated method stub
-		
+	public void removePermissionsForEntityType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+		if ( checkUserHasPermissionsOnEntityType(fqn, Permission.OWNER) ){
+			int currentPermission = tableManager.getPermissionsForEntityType( userId, fqn );
+			
+			int permissionsToRemove = Permission.asNumber( permissions );
+			//remove Permission corresponds to bitwise or current permission, and NOT permissionsToRemove
+		    tableManager.setPermissionsForEntityType( userId, fqn, currentPermission | ~permissionsToRemove );
+		}	
 	}
 
 	@Override
-	public void setPermissionsForEntityTypes(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
-		// TODO Auto-generated method stub
-		
+	public void setPermissionsForEntityType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+		if ( checkUserHasPermissionsOnEntityType(fqn, Permission.OWNER) ){
+			int permissionsToSet = Permission.asNumber( permissions );
+		    tableManager.setPermissionsForEntityType( userId, fqn, permissionsToSet );
+		}		
 	}
 
 	@Override
 	public boolean checkUserHasPermissionsOnEntityType(FullQualifiedName fqn, Permission permission) {
-		// TODO Auto-generated method stub
-		return false;
+		int position = Permission.getPosition( permission );
+
+		boolean userHasPermission = BooleanUtils.toBoolean( 
+				//check if the corresponding bit of permission is set
+				    ( tableManager.getPermissionsForEntityType( currentId, fqn)  >> position ) & 1 
+				);
+		
+		if( userHasPermission ){
+			return true;
+		}else{
+			throw new UnauthorizedException();
+		}
 	}
 
 	@Override
-	public void addPermissionsForEntitySets(UUID userId, FullQualifiedName type, String name,
+	public void addPermissionsForEntitySet(UUID userId, FullQualifiedName type, String name,
 			Set<Permission> permissions) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void removePermissionsForEntitySets(UUID userId, FullQualifiedName type, String name,
+	public void removePermissionsForEntitySet(UUID userId, FullQualifiedName type, String name,
 			Set<Permission> permissions) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void setPermissionsForEntitySets(UUID userId, FullQualifiedName type, String name,
+	public void setPermissionsForEntitySet(UUID userId, FullQualifiedName type, String name,
 			Set<Permission> permissions) {
 		// TODO Auto-generated method stub
 		
@@ -134,19 +157,19 @@ public class PermissionsService implements PermissionsManager{
 	}
 
 	@Override
-	public void addPermissionsForSchemas(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+	public void addPermissionsForSchema(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void removePermissionsForSchemas(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+	public void removePermissionsForSchema(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void setPermissionsForSchemas(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
+	public void setPermissionsForSchema(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -156,6 +179,55 @@ public class PermissionsService implements PermissionsManager{
 		// TODO Auto-generated method stub
 		return false;
 	}
+	
+	@Override
+	public void addPermissionsForPropertyTypeInEntityType(UUID userId, FullQualifiedName entityTypeFqn,
+			FullQualifiedName propertyTypeFqn, Set<Permission> permissions) {
+		if ( checkUserHasPermissionsOnPropertyTypeInEntityType( propertyTypeFqn, entityTypeFqn, Permission.OWNER) ){
+            int currentPermission = tableManager.getPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn );
+			
+			int permissionsToAdd = Permission.asNumber( permissions );
+			//add Permission corresponds to bitwise or current permission, and permissionsToAdd 
+		    tableManager.setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, currentPermission | permissionsToAdd );		
+		}
+	}
+	
+	@Override
+	public void removePermissionsForPropertyTypeInEntityType(UUID userId, FullQualifiedName entityTypeFqn,
+			FullQualifiedName propertyTypeFqn, Set<Permission> permissions) {
+		if ( checkUserHasPermissionsOnPropertyTypeInEntityType( propertyTypeFqn, entityTypeFqn, Permission.OWNER) ){
+            int currentPermission = tableManager.getPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn );
+			
+			int permissionsToRemove = Permission.asNumber( permissions );
+			//remove Permission corresponds to bitwise or current permission, and NOT permissionsToRemove
+		    tableManager.setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, currentPermission | ~permissionsToRemove );		
+		}		
+	}
+	
+	@Override
+	public void setPermissionsForPropertyTypeInEntityType(UUID userId, FullQualifiedName entityTypeFqn,
+			FullQualifiedName propertyTypeFqn, Set<Permission> permissions) {
+		if ( checkUserHasPermissionsOnPropertyTypeInEntityType( propertyTypeFqn, entityTypeFqn, Permission.OWNER) ){
+			int permissionsToSet = Permission.asNumber( permissions );
+		    tableManager.setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, permissionsToSet );		
+		}	
+	}
+	
+	@Override
+	public boolean checkUserHasPermissionsOnPropertyTypeInEntityType(FullQualifiedName entityTypeFqn,
+			FullQualifiedName propertyTypeFqn, Permission permission) {
+		int position = Permission.getPosition( permission );
 
+		boolean userHasPermission = BooleanUtils.toBoolean( 
+				//check if the corresponding bit of permission is set
+				    ( tableManager.getPermissionsForPropertyTypeInEntityType( currentId, propertyTypeFqn, entityTypeFqn)  >> position ) & 1 
+				);
+		
+		if( userHasPermission ){
+			return true;
+		}else{
+			throw new UnauthorizedException();
+		}
+	}
 
 }
