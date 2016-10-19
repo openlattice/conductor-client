@@ -3,7 +3,6 @@ package com.kryptnostic.datastore.services;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
@@ -13,9 +12,9 @@ import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
-    boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes );
+    void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes );
     //would attach all property types of the entityTypes to Schema
-    boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes);
+    void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes);
 
     void upsertSchema( Schema namespace );
 
@@ -29,11 +28,11 @@ public interface EdmManager {
 
     void deleteSchema( Schema namespaces );
 
-    boolean createEntitySet( FullQualifiedName type, String name, String title );
+    void createEntitySet( FullQualifiedName type, String name, String title );
 
-    boolean createEntitySet( String typename, String name, String title );
+    void createEntitySet( String typename, String name, String title );
 
-    boolean createEntitySet( EntitySet entitySet );
+    void createEntitySet( EntitySet entitySet );
 
     void upsertEntitySet( EntitySet entitySet );
 
@@ -45,11 +44,11 @@ public interface EdmManager {
 
     void deleteEntitySet( EntitySet entitySet );
 
-    boolean createEntityType( EntityType objectType );
+    void createEntityType( EntityType objectType );
 
-    boolean assignEntityToEntitySet( UUID entityId, String entitySetName );
+    void assignEntityToEntitySet( UUID entityId, String entitySetName );
 
-    boolean assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
+    void assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
 
     void upsertEntityType( EntityType objectType );
 
@@ -67,7 +66,7 @@ public interface EdmManager {
 	
 	void removePropertyTypesFromSchema(String namespace, String name, Set<FullQualifiedName> properties);
 
-    boolean createPropertyType( PropertyType propertyType );
+    void createPropertyType( PropertyType propertyType );
 
     void upsertPropertyType( PropertyType propertyType );
 
