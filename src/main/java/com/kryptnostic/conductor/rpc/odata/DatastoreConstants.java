@@ -27,6 +27,8 @@ public final class DatastoreConstants {
 
     public static final String PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS_TABLE = "property_types_in_entity_types_acls";
     
+    public static final String ENTITY_TYPES_ALTER_RIGHTS_ACLS_TABLE = "entity_types_alter_rights_acls";
+    
     // PARAMETERS
     public static final String APPLIED_FIELD        = "[applied]";
 }

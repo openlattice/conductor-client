@@ -13,6 +13,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
+import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
@@ -22,19 +23,35 @@ import com.kryptnostic.datastore.util.Util;
 
 public class SchemaDetailsAdapter implements Function<Row, Schema> {
     private final SchemaFactory        schemaFactory;
+    private final CassandraTableManager ctb;
     private final Mapper<EntityType>   entityTypeMapper;
     private final Mapper<PropertyType> propertyTypeMapper;
+    private final PermissionsService   ps;
     private final Set<TypeDetails>     requestedDetails;
+    
+	/** 
+	 * Being of debug
+	 */
+	private UUID                   aclId;
+	/**
+	 * End of debug
+	 */
 
     public SchemaDetailsAdapter(
             UUID aclId,
+            CassandraTableManager ctb,
             Mapper<EntityType> entityTypeMapper,
             Mapper<PropertyType> propertyTypeMapper,
+            PermissionsService ps,
             Set<TypeDetails> requestedDetails ) {
+    	this.ctb = ctb;
         this.entityTypeMapper = entityTypeMapper;
         this.propertyTypeMapper = propertyTypeMapper;
+        this.ps = ps;
         this.requestedDetails = requestedDetails;
-        this.schemaFactory = schemaFactoryWithAclId( aclId );
+        this.schemaFactory = schemaFactoryWithAclId( ACLs.EVERYONE_ACL );
+        //debug
+        this.aclId = aclId;
     }
 
     @Override
@@ -56,11 +73,21 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
     }
 
     public void addEntityTypesToSchema( Schema schema ) {
-        Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
-                .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
-                .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
-                .collect( Collectors.toSet() );
-        schema.addEntityTypes( entityTypes );
+    	if( aclId != null ){
+            Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
+                    .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
+                    .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
+                    .map( entityType -> EdmDetailsAdapter.setViewableDetails(ctb, ps, entityType) )
+                    .collect( Collectors.toSet() );
+            schema.addEntityTypes( entityTypes );
+    	} else {
+    		// no currentId; this should only happen when system first starts up
+            Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
+                    .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
+                    .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
+                    .collect( Collectors.toSet() );
+            schema.addEntityTypes( entityTypes );   		
+    	}
     }
 
     public void addPropertyTypesToSchema( Schema schema ) {

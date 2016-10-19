@@ -69,8 +69,8 @@ public final class Queries {
     public static final String createPropertyTypesInEntityTypesAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME, CommonColumns.FQN )
-                .clusteringColumns( CommonColumns.ACLID )
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.FQN, CommonColumns.ACLID )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -164,6 +164,14 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.TYPENAME, CommonColumns.NAME, CommonColumns.PARTITION_INDEX )
                 .clusteringColumns( CommonColumns.ENTITYID )
+                .buildQuery();
+    }
+    
+    public static final String createEntityTypesAlterRightsAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.ACLID )
                 .buildQuery();
     }
     
@@ -299,4 +307,10 @@ public final class Queries {
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
+    
+    //Acl
+    public static final String GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_TYPE = "SELECT * from sparks."
+            + DatastoreConstants.ENTITY_TYPES_ALTER_RIGHTS_ACLS_TABLE + " WHERE namespace=:"
+            + ParamNames.NAMESPACE + " AND name=:"
+            + ParamNames.NAME;
 }

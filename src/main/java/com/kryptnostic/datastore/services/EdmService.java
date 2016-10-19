@@ -36,6 +36,7 @@ import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.Permission;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.instrumentation.v1.exceptions.types.BadRequestException;
@@ -89,44 +90,45 @@ public class EdmService implements EdmManager {
 
     @Override
     public Iterable<Schema> getSchemas( Set<TypeDetails> requestedDetails ) {
-        Iterable<UUID> aclIds = ImmutableSet.of( ACLs.EVERYONE_ACL );
-        Iterable<Iterable<Schema>> results = Iterables.transform( aclIds, ( UUID aclId ) -> {
-            PreparedStatement stmt = tableManager.getAllSchemasStatement( aclId );
+        PreparedStatement stmt = tableManager.getAllSchemasStatement( ACLs.EVERYONE_ACL );
 
-            if ( stmt == null ) {
-                return null;
-            }
+        if ( stmt == null ) {
+            return null;
+        }
 
-            final SchemaDetailsAdapter adapter = new SchemaDetailsAdapter(
-                    aclId,
-                    entityTypeMapper,
-                    propertyTypeMapper,
-                    requestedDetails );
-            return Iterables.transform( session.execute( stmt.bind() ), adapter );
-        } );
+        final SchemaDetailsAdapter adapter = new SchemaDetailsAdapter(
+                currentId,
+                tableManager,
+                entityTypeMapper,
+                propertyTypeMapper,
+                permissionsService,
+                requestedDetails );
+        
+        Iterable<Schema> results = Iterables.transform( session.execute( stmt.bind() ), adapter );
+            
         return Iterables.filter( Iterables.concat( results ), Predicates.notNull() );
     }
 
     @Override
     public Iterable<Schema> getSchemasInNamespace( String namespace, Set<TypeDetails> requestedDetails ) {
         Preconditions.checkArgument( StringUtils.isNotBlank( namespace ), "Namespace cannot be blank." );
-        Iterable<UUID> aclIds = ImmutableSet.of( ACLs.EVERYONE_ACL );
-        Iterable<Iterable<Schema>> results = Iterables.transform( aclIds, aclId -> {
-            PreparedStatement stmt = tableManager.getSchemasInNamespaceStatement( aclId );
+        
+        PreparedStatement stmt = tableManager.getSchemasInNamespaceStatement( ACLs.EVERYONE_ACL );
 
-            if ( stmt == null ) {
-                return null;
-            }
+        if ( stmt == null ) {
+            return null;
+        }
 
-            final SchemaDetailsAdapter adapter = new SchemaDetailsAdapter(
-                    aclId,
-                    entityTypeMapper,
-                    propertyTypeMapper,
-                    requestedDetails );
+        final SchemaDetailsAdapter adapter = new SchemaDetailsAdapter(
+                currentId,
+                tableManager,
+                entityTypeMapper,
+                propertyTypeMapper,
+                permissionsService,
+                requestedDetails );
+        
+        Iterable<Schema> results = Iterables.transform( session.execute( stmt.bind( namespace) ), adapter );
 
-            return Iterables.transform( session.execute( stmt.bind( namespace ) ), adapter );
-        } );
-        ;
         return Iterables.filter( Iterables.concat( results ), Predicates.notNull() );
     }
 
@@ -142,8 +144,10 @@ public class EdmService implements EdmManager {
 
             final SchemaDetailsAdapter adapter = new SchemaDetailsAdapter(
                     aclId,
+                    tableManager,
                     entityTypeMapper,
                     propertyTypeMapper,
+                    permissionsService,
                     requestedDetails );
 
             return Iterables.transform( session.execute( stmt.bind( namespace, name ) ), adapter );
@@ -166,20 +170,19 @@ public class EdmService implements EdmManager {
         	//Retrieve database record of entityType
         	EntityType dbRecord = getEntityType( entityType.getFullQualifiedName() );
         	//Retrieve properties known to user
-        	Set<FullQualifiedName> knownPropertyTypesInEntityType = dbRecord.getAuthorizedProperties();
-        	Set<FullQualifiedName> unknownPropertyTypesInEntityType = Sets.difference(dbRecord.getProperties(), knownPropertyTypesInEntityType);
-        	//Known property types are updated by upsert request, permissions updated accordingly
-        	  //Remove the known property types in database properly; this step takes care of removal of permissions
-        	removePropertyTypesFromEntityType(dbRecord, knownPropertyTypesInEntityType, true);
-        	//TODO: BUG - user permissions might have been changed before. So you shouldn't give it OWNER permission; should be same permission for existing, known property types. The new ones can be OWNER
-        	 asdfasdfasdfasdfas
-        	  //Rectify the entityType to save
-        	entityType.addProperties( unknownPropertyTypesInEntityType );
-        	  //Update permissions
-            entityType.getProperties().forEach( propertyTypeFqn -> {
-                tableManager.setPermissionsForPropertyTypeInEntityType( currentId, entityType.getFullQualifiedName(), propertyTypeFqn, Permission.OWNER );	
-            });
+        	Set<FullQualifiedName> knownPropertyTypesInEntityType = dbRecord.getViewableProperties();
+        	Set<FullQualifiedName> inertPropertyTypesInEntityType = Sets.intersection(knownPropertyTypesInEntityType, entityType.getProperties());
+        	Set<FullQualifiedName> removablePropertyTypesInEntityType = Sets.difference(knownPropertyTypesInEntityType, inertPropertyTypesInEntityType);
+        	Set<FullQualifiedName> newPropertyTypesInEntityType = Sets.difference(entityType.getProperties(), inertPropertyTypesInEntityType);       	
+        	//Update properties and their permissions accordingly
+        	  //Remove the removable property types in database properly; this step takes care of removal of permissions
+        	removePropertyTypesFromEntityType(dbRecord, removablePropertyTypesInEntityType, true);
+        	  //Give owner rights for the new property types
+        	newPropertyTypesInEntityType.forEach( propertyTypeFqn ->
+                         tableManager.setPermissionsForPropertyTypeInEntityType( currentId, entityType.getFullQualifiedName(), propertyTypeFqn, Permission.OWNER )	        
+        			);
             //Update entityType
+        	entityType.addProperties( newPropertyTypesInEntityType );
         	entityTypeMapper.save( entityType );
 
         } else {
@@ -308,6 +311,8 @@ public class EdmService implements EdmManager {
         //TODO: remove property types from schema using reference counting
         tableManager.deleteFromEntityTypeLookupTable( entityType );
         tableManager.deleteFromEntityTypesAclsTable( entityTypeFqn );
+        tableManager.deleteFromPropertyTypeInEntityTypesAclsTable(entityTypeFqn);
+        tableManager.removeFromEntityTypesAlterRightsTable( entityTypeFqn );
         
         entityTypeMapper.delete( entityType );
     }
@@ -318,7 +323,10 @@ public class EdmService implements EdmManager {
                 .get( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() );
         
         propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema(schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of(propertyTypeFqn) ) );
-        edmStore.getEntityTypes().all().forEach( entityType -> removePropertyTypesFromEntityType(entityType, ImmutableSet.of(propertyTypeFqn) ) );
+        edmStore.getEntityTypes().all().forEach( entityType -> {
+        	removePropertyTypesFromEntityType(entityType, ImmutableSet.of(propertyTypeFqn) );
+        	tableManager.deleteFromPropertyTypeInEntityTypesAclsTable(entityType.getFullQualifiedName(), propertyTypeFqn);
+        });
         
         tableManager.deleteFromPropertyTypeLookupTable( propertyType );
         tableManager.deleteFromPropertyTypesAclsTable( propertyTypeFqn );
@@ -494,18 +502,25 @@ public class EdmService implements EdmManager {
 
     @Override
     public EntityType getEntityType( FullQualifiedName entityTypeFqn ) {
-    	if( permissionsService.checkUserHasPermissionsOnEntityType( entityTypeFqn, Permission.READ ) ){
-    	    return Preconditions.checkNotNull( 
-    	    		entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() )
-    	    		, "Entity type does not exist" );
+    	if( permissionsService.checkUserHasPermissionsOnEntityType( entityTypeFqn, Permission.DISCOVER ) ){
+    		EntityType entityType = entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() );
+    	    Preconditions.checkNotNull( entityType, "Entity type does not exist" );
+    	    
+    	    return EdmDetailsAdapter.setViewableDetails( tableManager, permissionsService, entityType );
     	}
     	return null;
     }
 
     public Iterable<EntityType> getEntityTypes() {
+    	if( currentId != null){
         return edmStore.getEntityTypes().all().stream()
-        		.filter( entityType -> permissionsService.checkUserHasPermissionsOnEntityType( entityType.getFullQualifiedName(), Permission.READ ) )
+        		.filter( entityType -> permissionsService.checkUserHasPermissionsOnEntityType( entityType.getFullQualifiedName(), Permission.DISCOVER ) )
+        		.map( entityType -> EdmDetailsAdapter.setViewableDetails(tableManager, permissionsService, entityType))
         		.collect( Collectors.toList() );
+    	} else {
+    		// Should only be called when starting up
+            return edmStore.getEntityTypes().all();
+    	}
     }
 
     @Override
@@ -514,23 +529,23 @@ public class EdmService implements EdmManager {
     }
 
     public EntitySet getEntitySet( FullQualifiedName type, String name ) {
-        return EntitySetTypenameSettingFactory( entitySetMapper.get( type, name ) );
+        return EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySetMapper.get( type, name ) );
     }
 
     public EntitySet getEntitySet( String name ) {
-        return EntitySetTypenameSettingFactory( edmStore.getEntitySet( name ) );
+        return EdmDetailsAdapter.setEntitySetTypename( tableManager, edmStore.getEntitySet( name ) );
     }
 
     @Override
     public Iterable<EntitySet> getEntitySets() {
         return edmStore.getEntitySets().all().stream()
-        		.map( entitySet -> EntitySetTypenameSettingFactory(entitySet) )
+        		.map( entitySet -> EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet ) )
         		.collect( Collectors.toList() );
     }
 
     @Override
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
-    	if( permissionsService.checkUserHasPermissionsOnPropertyType( propertyType, Permission.READ ) ){
+    	if( permissionsService.checkUserHasPermissionsOnPropertyType( propertyType, Permission.DISCOVER ) ){
     	    return Preconditions.checkNotNull( 
     	    		propertyTypeMapper.get( propertyType.getNamespace(), propertyType.getName() )
     	    		, "Property type does not exist" );
@@ -541,21 +556,21 @@ public class EdmService implements EdmManager {
     @Override
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
         return edmStore.getPropertyTypesInNamespace( namespace ).all().stream()
-        		.filter( propertyType -> permissionsService.checkUserHasPermissionsOnPropertyType( propertyType.getFullQualifiedName(), Permission.READ ) )
+        		.filter( propertyType -> permissionsService.checkUserHasPermissionsOnPropertyType( propertyType.getFullQualifiedName(), Permission.DISCOVER ) )
         		.collect( Collectors.toList() );
     }
 
     @Override
     public Iterable<PropertyType> getPropertyTypes() {
         return edmStore.getPropertyTypes().all().stream()
-        		.filter( propertyType -> permissionsService.checkUserHasPermissionsOnPropertyType( propertyType.getFullQualifiedName(), Permission.READ ) )
+        		.filter( propertyType -> permissionsService.checkUserHasPermissionsOnPropertyType( propertyType.getFullQualifiedName(), Permission.DISCOVER ) )
         		.collect( Collectors.toList() );
     }
 
     @Override
     public FullQualifiedName getPropertyTypeFullQualifiedName( String typename ) {
     	FullQualifiedName fqn = tableManager.getPropertyTypeForTypename( typename );
-    	if ( fqn != null && permissionsService.checkUserHasPermissionsOnPropertyType( fqn, Permission.READ ) ){
+    	if ( fqn != null && permissionsService.checkUserHasPermissionsOnPropertyType( fqn, Permission.DISCOVER ) ){
     		return fqn;
     	}
         return null;
@@ -564,7 +579,7 @@ public class EdmService implements EdmManager {
     @Override
     public FullQualifiedName getEntityTypeFullQualifiedName( String typename ) {
     	FullQualifiedName fqn = tableManager.getEntityTypeForTypename( typename );
-    	if ( fqn != null && permissionsService.checkUserHasPermissionsOnEntityType( fqn, Permission.READ ) ){
+    	if ( fqn != null && permissionsService.checkUserHasPermissionsOnEntityType( fqn, Permission.DISCOVER ) ){
     		return fqn;
     	}
         return null;
@@ -617,7 +632,8 @@ public class EdmService implements EdmManager {
 		}
 		
 		if( permissionsService.checkUserHasPermissionsOnEntityType( entityTypeFqn, Permission.ALTER) ){
-		    entityType.addProperties( properties );
+		    Set<FullQualifiedName> newProperties = Sets.difference( properties, entityType.getViewableProperties() );
+		    entityType.addProperties( newProperties );
 	        edmStore.updateExistingEntityType(
 	            entityType.getNamespace(), 
 	            entityType.getName(), 
@@ -627,13 +643,21 @@ public class EdmService implements EdmManager {
 	
 		    Set<FullQualifiedName> schemas = entityType.getSchemas();
 		    schemas.forEach( schemaFqn -> {
-		        addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
+		        addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), newProperties);
 		    });
 		    
 		    //Acl
-		    properties.forEach( propertyTypeFqn -> {
-	        	//TODO: BUG - user permissions might have been changed before. So you shouldn't give it OWNER permission; should be same permission for existing, known property types. The new ones can be OWNER
-		    	asfdasdfasdafsdf
+		    //"Owner" rights for each new property in entity type
+		    //"Discover" rights for existing users with Alter Rights on the entity type
+		    Iterable<UUID> usersWithAlterRights = Iterables.transform( 
+		    		edmStore.getUsersWithAlterRightsForEntityType( namespace, name ),
+		    		row -> row.getUUID( CommonColumns.ACLID.cql() )
+		    		);
+		    
+		    newProperties.forEach( propertyTypeFqn -> {
+		    	usersWithAlterRights.forEach( user -> 
+		    	    tableManager.setPermissionsForPropertyTypeInEntityType( currentId, entityTypeFqn, propertyTypeFqn, Permission.DISCOVER)
+		    	);
 		    	tableManager.setPermissionsForPropertyTypeInEntityType( currentId, entityTypeFqn, propertyTypeFqn, Permission.OWNER);
 		    });
 		}
@@ -650,7 +674,6 @@ public class EdmService implements EdmManager {
 	@Override
 	public void removePropertyTypesFromEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
 		try{
-			ensureValidEntityType( entityType );
 	        Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
 	        
 	        removePropertyTypesFromEntityType( entityType, properties, true);
@@ -665,8 +688,14 @@ public class EdmService implements EdmManager {
     	 * checkedValid means that entityType is checked to be valid, and property types are checked to exist; error throwing should be done there.
     	 */	
 		if( checkedValid ){
-		    entityType.removeProperties( properties );
+			Set<FullQualifiedName> removableProperties = properties.stream().filter( propertyTypeFqn -> 
+			    	permissionsService.checkUserHasPermissionsOnPropertyTypeInEntityType( 
+			    			entityType.getFullQualifiedName(), 
+			    			propertyTypeFqn, 
+			    			Permission.ALTER )
+					).collect( Collectors.toSet() );
 			
+		    entityType.removeProperties( removableProperties );
 		    //TODO: Remove properties from Schema, once reference counting is implemented.
 		        	           
 		    edmStore.updateExistingEntityType(
@@ -674,6 +703,12 @@ public class EdmService implements EdmManager {
 		           	entityType.getName(), 
 		           	entityType.getKey(), 
 		          	entityType.getProperties());
+		    
+		    //Acl
+		    removableProperties.forEach( propertyTypeFqn ->
+		    		    tableManager.deleteFromPropertyTypeInEntityTypesAclsTable(entityType.getFullQualifiedName(), propertyTypeFqn)
+		    		);
+
 		}
 	}
 	
@@ -717,10 +752,6 @@ public class EdmService implements EdmManager {
 		}
 	}
 	
-	private EntitySet EntitySetTypenameSettingFactory( EntitySet es ){
-		Preconditions.checkNotNull( es.getTypename(), "Entity set has no associated entity type.");
-		return es.setType( tableManager.getEntityTypeForTypename( es.getTypename() ) );
-	}
 	
 	/**************
 	 * Validation
@@ -780,5 +811,5 @@ public class EdmService implements EdmManager {
 	    		).one()
 	    != null);
     }
-
+    
 }

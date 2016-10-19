@@ -7,7 +7,9 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.Table;
+import com.datastax.driver.mapping.annotations.Transient;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
@@ -29,6 +31,10 @@ public class EntityType extends TypePK {
     @Column(
         name = "properties" )
     public Set<FullQualifiedName>  properties;
+    
+    @JsonIgnore
+    @Transient
+    private transient Set<FullQualifiedName> viewableProperties;
 
     public EntityType setNamespace( String namespace ) {
         this.namespace = namespace;
@@ -71,7 +77,7 @@ public class EntityType extends TypePK {
     public Set<FullQualifiedName> getProperties() {
         return properties;
     }
-
+    
     public EntityType setProperties( Set<FullQualifiedName> properties ) {
         this.properties = properties;
         return this;
@@ -86,11 +92,22 @@ public class EntityType extends TypePK {
         this.properties.removeAll( properties );
         return this;
     }
+    
+    @JsonGetter("properties")
+    public Set<FullQualifiedName> getViewableProperties() {
+        return viewableProperties;
+    }
+
+    public EntityType setViewableProperties( Set<FullQualifiedName> viewableProperties ) {
+        this.viewableProperties = viewableProperties;
+        return this;
+    }
+
 
     @Override
     public String toString() {
         return "ObjectType [namespace=" + namespace + ", type=" + name + ", typename=" + typename + ", key=" + key
-                + ", allowed=" + properties
+                + ", allowed=" + viewableProperties
                 + ", schemas=" + schemas + "]";
     }
 

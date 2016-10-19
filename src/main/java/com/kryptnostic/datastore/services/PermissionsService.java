@@ -7,6 +7,10 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.core.Session;
+import com.datastax.driver.mapping.Mapper;
+import com.datastax.driver.mapping.MappingManager;
+import com.google.common.collect.ImmutableSet;
+import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.instrumentation.v1.exceptions.types.UnauthorizedException;
 
@@ -24,11 +28,13 @@ public class PermissionsService implements PermissionsManager{
 	 */
 
     private final Session              session;
+    private final Mapper<EntityType>   entityTypeMapper;
     private final CassandraTableManager tableManager;
     
-    public PermissionsService( Session session, CassandraTableManager tableManager ){
+    public PermissionsService( Session session, MappingManager mappingManager, CassandraTableManager tableManager ){
     	this.session = session;
     	this.tableManager = tableManager;
+        this.entityTypeMapper = mappingManager.mapper( EntityType.class );
     }
 	/**
 	 * @Inject
@@ -40,12 +46,16 @@ public class PermissionsService implements PermissionsManager{
 	@Override
 	public void addPermissionsForPropertyType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyType(fqn, Permission.OWNER) ){
-			int currentPermission = tableManager.getPermissionsForPropertyType( userId, fqn );
-			
-			int permissionsToAdd = Permission.asNumber( permissions );
-			//add Permission corresponds to bitwise or current permission, and permissionsToAdd 
-		    tableManager.setPermissionsForPropertyType( userId, fqn, currentPermission | permissionsToAdd );
+               addPermissionsForPropertyType( userId, fqn, permissions, true );
 		}	
+	}
+	
+	private void addPermissionsForPropertyType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions, boolean userHasPermission) {
+		int currentPermission = tableManager.getPermissionsForPropertyType( userId, fqn );
+			
+		int permissionsToAdd = Permission.asNumber( permissions );
+	    //add Permission corresponds to bitwise or current permission, and permissionsToAdd 
+		setPermissionsForPropertyType( userId, fqn, currentPermission | permissionsToAdd );
 	}
 
 	@Override
@@ -55,7 +65,7 @@ public class PermissionsService implements PermissionsManager{
 			
 			int permissionsToRemove = Permission.asNumber( permissions );
 			//remove Permission corresponds to bitwise or current permission, and NOT permissionsToRemove
-		    tableManager.setPermissionsForPropertyType( userId, fqn, currentPermission | ~permissionsToRemove );
+		    setPermissionsForPropertyType( userId, fqn, currentPermission | ~permissionsToRemove );
 		}	
 	}
 
@@ -63,24 +73,21 @@ public class PermissionsService implements PermissionsManager{
 	public void setPermissionsForPropertyType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyType(fqn, Permission.OWNER) ){
 			int permissionsToSet = Permission.asNumber( permissions );
-		    tableManager.setPermissionsForPropertyType( userId, fqn, permissionsToSet );
+		    setPermissionsForPropertyType( userId, fqn, permissionsToSet );
 		}			
 	}
 
+	private void setPermissionsForPropertyType( UUID userId, FullQualifiedName fqn, int permission ){
+		    tableManager.setPermissionsForPropertyType( userId, fqn, permission );
+	}
+	
 	@Override
 	public boolean checkUserHasPermissionsOnPropertyType(FullQualifiedName fqn, Permission permission) {
-		int position = Permission.getPosition( permission );
-
-		boolean userHasPermission = BooleanUtils.toBoolean( 
-				//check if the corresponding bit of permission is set
-				    ( tableManager.getPermissionsForPropertyType( currentId, fqn)  >> position ) & 1 
-				);
+		boolean userHasPermission = Permission.canDoAction( 
+				tableManager.getPermissionsForPropertyType( currentId, fqn), 
+				permission );
 		
-		if( userHasPermission ){
-			return true;
-		}else{
-			throw new UnauthorizedException();
-		}
+        return userHasPermission;
 	}
 
 	@Override
@@ -90,7 +97,7 @@ public class PermissionsService implements PermissionsManager{
 			
 			int permissionsToAdd = Permission.asNumber( permissions );
 			//add Permission corresponds to bitwise or current permission, and permissionsToAdd 
-		    tableManager.setPermissionsForEntityType( userId, fqn, currentPermission | permissionsToAdd );
+		    setPermissionsForEntityType( userId, fqn, currentPermission, currentPermission | permissionsToAdd );
 		}			
 	}
 
@@ -101,32 +108,60 @@ public class PermissionsService implements PermissionsManager{
 			
 			int permissionsToRemove = Permission.asNumber( permissions );
 			//remove Permission corresponds to bitwise or current permission, and NOT permissionsToRemove
-		    tableManager.setPermissionsForEntityType( userId, fqn, currentPermission | ~permissionsToRemove );
+		    setPermissionsForEntityType( userId, fqn, currentPermission, currentPermission | ~permissionsToRemove );
 		}	
 	}
 
 	@Override
 	public void setPermissionsForEntityType(UUID userId, FullQualifiedName fqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnEntityType(fqn, Permission.OWNER) ){
+			int currentPermission = tableManager.getPermissionsForEntityType( userId, fqn );
+			
 			int permissionsToSet = Permission.asNumber( permissions );
-		    tableManager.setPermissionsForEntityType( userId, fqn, permissionsToSet );
+		    setPermissionsForEntityType( userId, fqn, currentPermission, permissionsToSet );
 		}		
 	}
 
+	private void setPermissionsForEntityType(UUID userId, FullQualifiedName fqn, int oldPermission, int newPermission){
+		tableManager.setPermissionsForEntityType( userId, fqn, newPermission);
+
+		boolean oldPermissionCanAlter = Permission.canDoAction( oldPermission, Permission.ALTER );
+		boolean newPermissionCanAlter = Permission.canDoAction( newPermission, Permission.ALTER );
+		
+		if( !oldPermissionCanAlter && newPermissionCanAlter ){
+			addUserToEntityTypesAlterRightsTable( userId, fqn );
+			// For now, getting ALTER/OWNER permission for an entity type would automatically allow user to discover all discoverable properties in the entity type
+		    updateDiscoverablePropertyTypesForEntityType( userId, fqn );
+		} else if( oldPermissionCanAlter && !newPermissionCanAlter ){
+			removeUserFromEntityTypesAlterRightsTable( userId, fqn );
+		}
+	}
+	
+	private void addUserToEntityTypesAlterRightsTable( UUID userId, FullQualifiedName entityTypeFqn ){
+		tableManager.addToEntityTypesAlterRightsTable( userId, entityTypeFqn );
+	}
+	
+	private void removeUserFromEntityTypesAlterRightsTable( UUID userId, FullQualifiedName entityTypeFqn ){
+		tableManager.removeFromEntityTypesAlterRightsTable( userId, entityTypeFqn );
+	}
+	
+	private void updateDiscoverablePropertyTypesForEntityType( UUID userId, FullQualifiedName entityTypeFqn ){
+		entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() )
+		    .getProperties()
+		    .stream()
+		    .filter( propertyTypeFqn -> checkUserHasPermissionsOnPropertyType( propertyTypeFqn, Permission.DISCOVER ) )
+		    .forEach( propertyTypeFqn -> {
+		    	addPermissionsForPropertyTypeInEntityType( userId, entityTypeFqn, propertyTypeFqn, ImmutableSet.of(Permission.DISCOVER), true);
+		    });
+	}
+	
 	@Override
 	public boolean checkUserHasPermissionsOnEntityType(FullQualifiedName fqn, Permission permission) {
-		int position = Permission.getPosition( permission );
-
-		boolean userHasPermission = BooleanUtils.toBoolean( 
-				//check if the corresponding bit of permission is set
-				    ( tableManager.getPermissionsForEntityType( currentId, fqn)  >> position ) & 1 
-				);
+		boolean userHasPermission = Permission.canDoAction( 
+				tableManager.getPermissionsForEntityType( currentId, fqn), 
+				permission );		
 		
-		if( userHasPermission ){
-			return true;
-		}else{
-			throw new UnauthorizedException();
-		}
+        return userHasPermission;
 	}
 
 	@Override
@@ -184,11 +219,22 @@ public class PermissionsService implements PermissionsManager{
 	public void addPermissionsForPropertyTypeInEntityType(UUID userId, FullQualifiedName entityTypeFqn,
 			FullQualifiedName propertyTypeFqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyTypeInEntityType( propertyTypeFqn, entityTypeFqn, Permission.OWNER) ){
-            int currentPermission = tableManager.getPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn );
-			
-			int permissionsToAdd = Permission.asNumber( permissions );
-			//add Permission corresponds to bitwise or current permission, and permissionsToAdd 
-		    tableManager.setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, currentPermission | permissionsToAdd );		
+			addPermissionsForPropertyTypeInEntityType( userId, entityTypeFqn, propertyTypeFqn, permissions, true);
+		}
+	}
+	
+	private void addPermissionsForPropertyTypeInEntityType(UUID userId, FullQualifiedName entityTypeFqn,
+			FullQualifiedName propertyTypeFqn, Set<Permission> permissions, boolean userHasPermission) {
+        int currentPermission = tableManager.getPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn );
+		
+		int permissionsToAdd = Permission.asNumber( permissions );
+		//add Permission corresponds to bitwise or current permission, and permissionsToAdd 
+	    setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, currentPermission | permissionsToAdd );
+		// If user has DISCOVER/READ rights relatively, should have DISCOVER/READ right absolutely for the property type
+		if( Permission.canDoAction( permissionsToAdd, Permission.READ) ){
+		    addPermissionsForPropertyType( userId, propertyTypeFqn, ImmutableSet.of(Permission.READ), true );
+		} else if ( Permission.canDoAction( permissionsToAdd, Permission.DISCOVER ) ){
+		    addPermissionsForPropertyType( userId, propertyTypeFqn, ImmutableSet.of(Permission.DISCOVER), true );			
 		}
 	}
 	
@@ -200,7 +246,7 @@ public class PermissionsService implements PermissionsManager{
 			
 			int permissionsToRemove = Permission.asNumber( permissions );
 			//remove Permission corresponds to bitwise or current permission, and NOT permissionsToRemove
-		    tableManager.setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, currentPermission | ~permissionsToRemove );		
+		    setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, currentPermission | ~permissionsToRemove );		
 		}		
 	}
 	
@@ -209,25 +255,23 @@ public class PermissionsService implements PermissionsManager{
 			FullQualifiedName propertyTypeFqn, Set<Permission> permissions) {
 		if ( checkUserHasPermissionsOnPropertyTypeInEntityType( propertyTypeFqn, entityTypeFqn, Permission.OWNER) ){
 			int permissionsToSet = Permission.asNumber( permissions );
-		    tableManager.setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, permissionsToSet );		
+		    setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, permissionsToSet );		
 		}	
+	}
+	
+	private void setPermissionsForPropertyTypeInEntityType(UUID userId, FullQualifiedName entityTypeFqn,
+			FullQualifiedName propertyTypeFqn, int permission) {
+		tableManager.setPermissionsForPropertyTypeInEntityType( userId, propertyTypeFqn, entityTypeFqn, permission );		
 	}
 	
 	@Override
 	public boolean checkUserHasPermissionsOnPropertyTypeInEntityType(FullQualifiedName entityTypeFqn,
 			FullQualifiedName propertyTypeFqn, Permission permission) {
-		int position = Permission.getPosition( permission );
-
-		boolean userHasPermission = BooleanUtils.toBoolean( 
-				//check if the corresponding bit of permission is set
-				    ( tableManager.getPermissionsForPropertyTypeInEntityType( currentId, propertyTypeFqn, entityTypeFqn)  >> position ) & 1 
-				);
+		boolean userHasPermission = Permission.canDoAction( 
+				tableManager.getPermissionsForPropertyTypeInEntityType( currentId, propertyTypeFqn, entityTypeFqn), 
+				permission );	
 		
-		if( userHasPermission ){
-			return true;
-		}else{
-			throw new UnauthorizedException();
-		}
+        return userHasPermission;
 	}
 
 }

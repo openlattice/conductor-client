@@ -76,4 +76,10 @@ public interface CassandraEdmStore {
     		@Param(Queries.ParamNames.KEY) Set<FullQualifiedName> key,
     		@Param(Queries.ParamNames.PROPERTIES) Set<FullQualifiedName> properties
     		);
+    
+    @Query( Queries.GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_TYPE)
+    public ResultSet getUsersWithAlterRightsForEntityType(
+    		@Param(Queries.ParamNames.NAMESPACE) String namespace,
+    		@Param(Queries.ParamNames.NAME) String name
+    		);
 }

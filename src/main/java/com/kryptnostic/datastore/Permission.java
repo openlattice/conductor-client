@@ -2,6 +2,8 @@ package com.kryptnostic.datastore;
 
 import java.util.Set;
 
+import org.apache.commons.lang3.BooleanUtils;
+
 /**
  * @author Ho Chung
  * Modified from Drew's Permission.java in mapstore
@@ -51,7 +53,7 @@ public enum Permission {
     	return permissions.stream()
     			.mapToInt( permission -> Permission.asNumber(permission) )
     			//Union of permission -> bitwise or.
-    			.reduce(0, (a,b) -> a & b );
+    			.reduce(0, (a,b) -> a | b );
     }
     
     public static int getPosition( Permission permission ){
@@ -70,6 +72,15 @@ public enum Permission {
     	    default:
     	    	return -1;
     	}
+    }
+    
+    public static boolean canDoAction( int userPermission, Permission action){
+    	//True if user is allowed to do action; false otherwise
+    	int position = getPosition( action );
+    	return BooleanUtils.toBoolean( 
+				//check if the corresponding bit of permission is set
+				    ( userPermission  >> position ) & 1 
+				);
     }
 }
 

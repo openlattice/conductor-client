@@ -92,7 +92,12 @@ public class CassandraTableManager {
 
     private final PreparedStatement                                   setPermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   getPermissionsForPropertyTypeInEntityType;
-    private final PreparedStatement                                   deleteFromPropertyTypeInEntityTypesAclsTable;
+    private final PreparedStatement                                   deleteRowFromPropertyTypeInEntityTypesAclsTable;
+    private final PreparedStatement                                   deleteEntityTypeFromPropertyTypeInEntityTypesAclsTable;
+    
+    private final PreparedStatement                                   addUserToEntityTypesAlterRightsTable;
+    private final PreparedStatement                                   removeUserFromEntityTypesAlterRightsTable;
+    private final PreparedStatement                                   removeEntityTypeFromEntityTypesAlterRightsTable;
 
     public CassandraTableManager(
             String keyspace,
@@ -292,13 +297,43 @@ public class CassandraTableManager {
         		        .and( QueryBuilder.eq( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() ))
         		);
         
-        this.deleteFromPropertyTypeInEntityTypesAclsTable = session
+        this.deleteRowFromPropertyTypeInEntityTypesAclsTable = session
         		.prepare( QueryBuilder.delete()
         				.from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
         		        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
         		);
+        
+        this.deleteEntityTypeFromPropertyTypeInEntityTypesAclsTable = session
+        		.prepare( QueryBuilder.delete()
+        				.from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+        		);
+        
+        this.addUserToEntityTypesAlterRightsTable = session
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS.getTableName() )
+                        .value( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() )
+                        .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
+                        .value( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() )
+                );
+        
+        this.removeUserFromEntityTypesAlterRightsTable = session
+                .prepare( QueryBuilder.delete()
+                		.from( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ACLID.cql(), QueryBuilder.bindMarker() ) )
+                );
+        
+        this.removeEntityTypeFromEntityTypesAlterRightsTable = session
+                .prepare( QueryBuilder.delete()
+                		.from( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) )
+                );
+
     }
 
     public String getKeyspace() {
@@ -850,6 +885,8 @@ public class CassandraTableManager {
         session.execute( Queries.createSchemasAclsTableQuery( keyspace ) );
         
         session.execute( Queries.createPropertyTypesInEntityTypesAclsTableQuery( keyspace ) );
+        
+        session.execute( Queries.createEntityTypesAlterRightsAclsTableQuery( keyspace ) );
     }
 
     private static boolean createSchemasTableIfNotExists( String keyspace, UUID aclId, Session session ) {
@@ -1003,6 +1040,28 @@ public class CassandraTableManager {
     }
     
     public void deleteFromPropertyTypeInEntityTypesAclsTable( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
-        session.execute( deleteFromPropertyTypeInEntityTypesAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), propertyTypeFqn ) );
+        session.execute( deleteRowFromPropertyTypeInEntityTypesAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), propertyTypeFqn ) );
+    }
+    
+    public void deleteFromPropertyTypeInEntityTypesAclsTable( FullQualifiedName entityTypeFqn ) {
+        session.execute( deleteEntityTypeFromPropertyTypeInEntityTypesAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
+    }
+    
+    public void addToEntityTypesAlterRightsTable( UUID userId, FullQualifiedName entityTypeFqn ){
+    	session.execute( this.addUserToEntityTypesAlterRightsTable.bind(
+    			    entityTypeFqn.getNamespace(), entityTypeFqn.getName(), userId
+    			) );
+    }
+    	
+    public void removeFromEntityTypesAlterRightsTable( UUID userId, FullQualifiedName entityTypeFqn ){
+    	session.execute( this.removeUserFromEntityTypesAlterRightsTable.bind(
+       			    entityTypeFqn.getNamespace(), entityTypeFqn.getName(), userId
+       			) );    		
+    }
+    
+    public void removeFromEntityTypesAlterRightsTable( FullQualifiedName entityTypeFqn ){
+    	session.execute( this.removeEntityTypeFromEntityTypesAlterRightsTable.bind(
+       			    entityTypeFqn.getNamespace(), entityTypeFqn.getName()
+       			) );    		
     }
 }
