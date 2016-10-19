@@ -431,6 +431,7 @@ public class EdmService implements EdmManager {
                 tableManager.insertToEntityTypeLookupTable( entityType );
                 //Acl
                 tableManager.setPermissionsForEntityType( currentId, entityType.getFullQualifiedName(), Permission.OWNER );
+                tableManager.addToEntityTypesAlterRightsTable( currentId, entityType.getFullQualifiedName() );
                 entityType.getProperties().forEach( propertyTypeFqn -> {
                     tableManager.setPermissionsForPropertyTypeInEntityType( currentId, entityType.getFullQualifiedName(), propertyTypeFqn, Permission.OWNER );	
                 });
@@ -655,10 +656,10 @@ public class EdmService implements EdmManager {
 		    		);
 		    
 		    newProperties.forEach( propertyTypeFqn -> {
-		    	usersWithAlterRights.forEach( user -> 
-		    	    tableManager.setPermissionsForPropertyTypeInEntityType( currentId, entityTypeFqn, propertyTypeFqn, Permission.DISCOVER)
+		    	usersWithAlterRights.forEach( userId -> 
+		    	    permissionsService.addPermissionsForPropertyTypeInEntityType( userId, entityTypeFqn, propertyTypeFqn, ImmutableSet.of(Permission.DISCOVER) )
 		    	);
-		    	tableManager.setPermissionsForPropertyTypeInEntityType( currentId, entityTypeFqn, propertyTypeFqn, Permission.OWNER);
+	    	    permissionsService.addPermissionsForPropertyTypeInEntityType( currentId, entityTypeFqn, propertyTypeFqn, ImmutableSet.of(Permission.OWNER) );
 		    });
 		}
 	    
