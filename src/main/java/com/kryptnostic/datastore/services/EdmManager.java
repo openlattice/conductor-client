@@ -12,9 +12,15 @@ import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
-    void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes );
+    void createSchema(
+            String namespace,
+            String name,
+            UUID aclId,
+            Set<FullQualifiedName> entityTypes,
+            Set<FullQualifiedName> propertyTypes );
+
     //would attach all property types of the entityTypes to Schema
-    void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes);
+    void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
 
     void upsertSchema( Schema namespace );
 
@@ -28,11 +34,11 @@ public interface EdmManager {
 
     void deleteSchema( Schema namespaces );
 
-    void createEntitySet( FullQualifiedName type, String name, String title );
+    boolean createEntitySet( FullQualifiedName type, String name, String title );
 
-    void createEntitySet( String typename, String name, String title );
+    boolean createEntitySet( String typename, String name, String title );
 
-    void createEntitySet( EntitySet entitySet );
+    boolean createEntitySet( EntitySet entitySet );
 
     void upsertEntitySet( EntitySet entitySet );
 
@@ -62,9 +68,9 @@ public interface EdmManager {
 
     void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );
 
-	void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties);
-	
-	void removePropertyTypesFromSchema(String namespace, String name, Set<FullQualifiedName> properties);
+    void addPropertyTypesToSchema( String namespace, String name, Set<FullQualifiedName> properties );
+
+    void removePropertyTypesFromSchema( String namespace, String name, Set<FullQualifiedName> properties );
 
     void createPropertyType( PropertyType propertyType );
 
@@ -88,10 +94,16 @@ public interface EdmManager {
 
     FullQualifiedName getEntityTypeFullQualifiedName( String typename );
 
-    void addPropertyTypesToEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
+    void addPropertyTypesToEntityType(
+            String entityTypeNamespace,
+            String entityTypeName,
+            Set<FullQualifiedName> properties );
 
-	void removePropertyTypesFromEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
-	
-	void removePropertyTypesFromEntityType(EntityType entityType, Set<FullQualifiedName> properties);
+    void removePropertyTypesFromEntityType(
+            String entityTypeNamespace,
+            String entityTypeName,
+            Set<FullQualifiedName> properties );
+
+    void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
 
 }

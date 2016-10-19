@@ -45,9 +45,9 @@ public interface EdmApi {
     String PROPERTY_TYPE_BASE_PATH = "/property/type";
     String NAMESPACE_PATH          = "/{" + NAMESPACE + "}";
     String NAME_PATH               = "/{" + NAME + "}";
-    
-	String ADD_PROPERTY_TYPES_PATH = "/addPropertyTypes";
-	String DELETE_PROPERTY_TYPES_PATH = "/deletePropertyTypes";
+
+    String ADD_PROPERTY_TYPES_PATH    = "/addPropertyTypes";
+    String DELETE_PROPERTY_TYPES_PATH = "/deletePropertyTypes";
 
     @GET( "/" )
     EntityDataModel getEntityDataModel();
@@ -127,12 +127,13 @@ public interface EdmApi {
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> properties );
-    
+
     @DELETE( SCHEMA_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
     Response removePropertyTypesFromSchema(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> properties );
+
     /**
      * Creates multiple entity sets, if they do not exist.
      *
@@ -174,7 +175,7 @@ public interface EdmApi {
 
     @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     Response deleteEntityType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
-    
+
     /**
      * @param namespace
      * @param name
@@ -183,17 +184,18 @@ public interface EdmApi {
      */
     @PUT( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ADD_PROPERTY_TYPES_PATH )
     Response addPropertyTypesToEntityType(
-    		@Path( NAMESPACE ) String namespace,
-    		@Path( NAME ) String name,
-    		@Body Set<FullQualifiedName> properties
-    		);
-    
-    @DELETE ( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
+            @Path( NAMESPACE ) String namespace,
+            @Path( NAME ) String name,
+            @Body Set<FullQualifiedName> properties
+    );
+
+    @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
     Response removePropertyTypesFromEntityType(
-    		@Path( NAMESPACE ) String namespace,
-    		@Path( NAME ) String name,
-    		@Body Set<FullQualifiedName> properties
-    		);
+            @Path( NAMESPACE ) String namespace,
+            @Path( NAME ) String name,
+            @Body Set<FullQualifiedName> properties
+    );
+
     /**
      * Creates a property type if doesn't already exist.
      *

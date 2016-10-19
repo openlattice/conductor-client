@@ -53,7 +53,7 @@ public interface DataApi {
 
     @PUT( CONTROLLER + ENTITY_DATA + FILTERED )
     /**
-     * 
+     *
      * @param obj ObjectNode that builds a LookupEntitiesRequest. Should be JSON of the form 
      * SerializationConstants.USER_ID (userId): UUID, 
      * SerializationConstants.TYPE_FIELD (type): Set\<FullQualifiedName\>, 
