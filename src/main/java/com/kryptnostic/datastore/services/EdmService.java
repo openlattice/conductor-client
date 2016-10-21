@@ -190,10 +190,8 @@ public class EdmService implements EdmManager {
          * transaction will fail and return value will be correctly set.
          */
         String typename = tableManager.getTypenameForPropertyType( propertyType );
-
         boolean propertyCreated = false;
         if ( StringUtils.isBlank( typename ) ) {
-
             propertyType.setTypename( CassandraTableManager.generateTypename() );
             propertyCreated = Util.wasLightweightTransactionApplied(
                     edmStore.createPropertyTypeIfNotExists( propertyType.getNamespace(),
@@ -202,20 +200,23 @@ public class EdmService implements EdmManager {
                             propertyType.getDatatype(),
                             propertyType.getMultiplicity(),
                             propertyType.getSchemas() ) );
-        }
 
-        if ( propertyCreated ) {
+            if ( propertyCreated ) {
+                propertyType.getSchemas()
+                        .forEach(
+                                schemaFqn -> addPropertyTypesToSchema( schemaFqn.getNamespace(),
+                                        schemaFqn.getName(),
+                                        ImmutableSet.of( propertyType.getFullQualifiedName() ) ) );
 
-            propertyType.getSchemas()
-                    .forEach(
-                            schemaFqn -> addPropertyTypesToSchema( schemaFqn.getNamespace(),
-                                    schemaFqn.getName(),
-                                    ImmutableSet.of( propertyType.getFullQualifiedName() ) )
-                    );
+                tableManager.createPropertyTypeTable( propertyType );
+                tableManager.insertToPropertyTypeLookupTable( propertyType );
+            }
 
-            tableManager.createPropertyTypeTable( propertyType );
-            tableManager.insertToPropertyTypeLookupTable( propertyType );
         } else {
+            propertyCreated = true;
+        }
+        
+        if( !propertyCreated ) {
             throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
         }
     }
