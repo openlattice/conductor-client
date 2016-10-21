@@ -481,9 +481,10 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean createEntitySet( String typename, String name, String title ) {
-        if ( isExistingEntitySet( typename, name ) ) {
-            throw new BadRequestException( "Entity set already exists." );
-        }
+        // TODO: clean up unit tests to follow the pattern and figure out a better to return this HttpStatus
+//        if ( isExistingEntitySet( typename, name ) ) {
+//            throw new BadRequestException( "Entity set already exists." );
+//        }
         return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( typename, name, title ) );
     }
 
