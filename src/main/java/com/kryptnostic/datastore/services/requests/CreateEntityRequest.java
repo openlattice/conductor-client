@@ -1,4 +1,4 @@
-package com.kryptnostic.conductor.rpc;
+package com.kryptnostic.datastore.services.requests;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
  * Created by yao on 9/20/16.
  */
 public class CreateEntityRequest {
-    private final Optional<UUID>                               aclId;
-    private final Optional<UUID>                               syncId;
-    private final String                                       entitySetName;
-    private final FullQualifiedName                            entityType;
+    private final Optional<UUID>                           aclId;
+    private final Optional<UUID>                           syncId;
+    private final String                                   entitySetName;
+    private final FullQualifiedName                        entityType;
     private final Set<Multimap<FullQualifiedName, Object>> propertyValues;
 
     @JsonCreator
@@ -32,8 +32,7 @@ public class CreateEntityRequest {
 
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
             @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityType,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
-                    Set<Multimap<FullQualifiedName, Object>> propertyValues,
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<Multimap<FullQualifiedName, Object>> propertyValues,
             @JsonProperty( SerializationConstants.ACL_ID_FIELD ) Optional<UUID> aclId,
             @JsonProperty( SerializationConstants.SYNC_ID ) Optional<UUID> syncId ) {
         this.aclId = aclId;
@@ -70,7 +69,8 @@ public class CreateEntityRequest {
         return propertyValues;
     }
 
-    @Override public boolean equals( Object o ) {
+    @Override
+    public boolean equals( Object o ) {
         if ( this == o )
             return true;
         if ( o == null || getClass() != o.getClass() )
@@ -90,7 +90,8 @@ public class CreateEntityRequest {
 
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = aclId != null ? aclId.hashCode() : 0;
         result = 31 * result + ( syncId != null ? syncId.hashCode() : 0 );
         result = 31 * result + ( entitySetName != null ? entitySetName.hashCode() : 0 );
@@ -103,27 +104,25 @@ public class CreateEntityRequest {
     public static CreateEntityRequest newCreateEntityRequest(
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
             @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityType,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
-                    Set<Multimap<String, Object>> propertyValuesInString,
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<Multimap<String, Object>> propertyValuesInString,
             @JsonProperty( SerializationConstants.ACL_ID_FIELD ) Optional<UUID> aclId,
             @JsonProperty( SerializationConstants.SYNC_ID ) Optional<UUID> syncId ) {
-    	//Create propertyValues with FullQualifiedName as key
-    	Set< Multimap<FullQualifiedName, Object> > propertyValuesInFQN = propertyValuesInString.stream()
-    			.map( multimap -> {
-    				Multimap<FullQualifiedName, Object> multimapInFQN = HashMultimap.create();
-    				for( String fqnAsString : multimap.keySet() ){
-    					multimapInFQN.putAll(new FullQualifiedName(fqnAsString), multimap.get(fqnAsString) );
-    				}
-    				return multimapInFQN;
-    			}
-    			)
-    			.collect(Collectors.toSet());
-    	
+        // Create propertyValues with FullQualifiedName as key
+        Set<Multimap<FullQualifiedName, Object>> propertyValuesInFQN = propertyValuesInString.stream()
+                .map( multimap -> {
+                    Multimap<FullQualifiedName, Object> multimapInFQN = HashMultimap.create();
+                    for ( String fqnAsString : multimap.keySet() ) {
+                        multimapInFQN.putAll( new FullQualifiedName( fqnAsString ), multimap.get( fqnAsString ) );
+                    }
+                    return multimapInFQN;
+                } )
+                .collect( Collectors.toSet() );
+
         return new CreateEntityRequest(
-        		entitySetName,
-        		entityType,
-        		propertyValuesInFQN,
-        		aclId,
-        		syncId);
+                entitySetName,
+                entityType,
+                propertyValuesInFQN,
+                aclId,
+                syncId );
     }
 }

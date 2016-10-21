@@ -10,7 +10,7 @@ import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
-import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
+import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
 	/** 

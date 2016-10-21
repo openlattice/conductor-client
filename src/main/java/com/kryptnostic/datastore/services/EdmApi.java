@@ -10,6 +10,8 @@ import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.datastore.services.requests.GetSchemasRequest;
+import com.kryptnostic.datastore.services.requests.PutSchemaRequest;
 
 import retrofit.client.Response;
 import retrofit.http.Body;

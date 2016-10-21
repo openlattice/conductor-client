@@ -37,7 +37,7 @@ import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
+import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.instrumentation.v1.exceptions.types.BadRequestException;
 

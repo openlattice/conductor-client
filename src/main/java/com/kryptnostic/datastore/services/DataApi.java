@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Multimap;
 import com.kryptnostic.conductor.rpc.*;
 import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.datastore.services.requests.CreateEntityRequest;
 import com.squareup.okhttp.Response;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import retrofit.http.*;

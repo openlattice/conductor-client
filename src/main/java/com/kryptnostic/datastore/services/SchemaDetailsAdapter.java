@@ -18,7 +18,7 @@ import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
+import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 
 public class SchemaDetailsAdapter implements Function<Row, Schema> {
