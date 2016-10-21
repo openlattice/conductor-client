@@ -1,9 +1,7 @@
 package com.kryptnostic.datastore.services;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Multimap;
 import com.kryptnostic.conductor.rpc.*;
-import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.squareup.okhttp.Response;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import retrofit.http.*;
@@ -13,9 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Created by yao on 9/20/16.
- */
 public interface DataApi {
     String CONTROLLER = "/data";
 
@@ -58,7 +53,7 @@ public interface DataApi {
 
     @PUT( CONTROLLER + ENTITY_DATA + FILTERED )
     /**
-     * 
+     *
      * @param obj ObjectNode that builds a LookupEntitiesRequest. Should be JSON of the form 
      * SerializationConstants.USER_ID (userId): UUID, 
      * SerializationConstants.TYPE_FIELD (type): Set\<FullQualifiedName\>, 

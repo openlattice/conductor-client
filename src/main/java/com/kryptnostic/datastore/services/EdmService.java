@@ -9,11 +9,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.kryptnostic.datastore.exceptions.BadRequestException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.junit.Assert;
 
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
@@ -35,7 +35,8 @@ import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
-import com.kryptnostic.instrumentation.v1.exceptions.types.BadRequestException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpServerErrorException;
 
 public class EdmService implements EdmManager {
     private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
@@ -59,8 +60,8 @@ public class EdmService implements EdmManager {
         List<Schema> schemas = ImmutableList.copyOf( getSchemas() );
         // Temp comment out the following two lines to avoid "Schema is out of sync." crash
         // and NPE for the PreparedStatement. Need to engineer it.
-//        schemas.forEach( schema -> logger.info( "Namespace loaded: {}", schema ) );
-//        schemas.forEach( tableManager::registerSchema );
+        //        schemas.forEach( schema -> logger.info( "Namespace loaded: {}", schema ) );
+        //        schemas.forEach( tableManager::registerSchema );
         objectTypes.forEach( objectType -> logger.info( "Object read: {}", objectType ) );
         objectTypes.forEach( tableManager::registerEntityTypesAndAssociatedPropertyTypes );
     }
@@ -156,18 +157,18 @@ public class EdmService implements EdmManager {
      */
     @Override
     public void upsertPropertyType( PropertyType propertyType ) {
-    	
-    	if( checkPropertyTypeExists(propertyType) ){
-        	Util.wasLightweightTransactionApplied(
+
+        if ( checkPropertyTypeExists( propertyType ) ) {
+            Util.wasLightweightTransactionApplied(
                     edmStore.updatePropertyTypeIfExists(
                             propertyType.getDatatype(),
                             propertyType.getMultiplicity(),
                             propertyType.getSchemas(),
                             propertyType.getNamespace(),
-                            propertyType.getName() ) );    		
-    	} else {
-    		createPropertyType( propertyType );
-    	}
+                            propertyType.getName() ) );
+        } else {
+            createPropertyType( propertyType );
+        }
     }
 
     /*
@@ -183,7 +184,7 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public boolean createPropertyType( PropertyType propertyType ) {
+    public void createPropertyType( PropertyType propertyType ) {
         /*
          * We retrieve or create the typename for the property. If the property already exists then lightweight
          * transaction will fail and return value will be correctly set.
@@ -206,56 +207,70 @@ public class EdmService implements EdmManager {
         if ( propertyCreated ) {
 
             propertyType.getSchemas()
-    		.forEach( 
-    					schemaFqn -> addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of(propertyType.getFullQualifiedName()) ) 
-    				);
+                    .forEach(
+                            schemaFqn -> addPropertyTypesToSchema( schemaFqn.getNamespace(),
+                                    schemaFqn.getName(),
+                                    ImmutableSet.of( propertyType.getFullQualifiedName() ) )
+                    );
 
             tableManager.createPropertyTypeTable( propertyType );
             tableManager.insertToPropertyTypeLookupTable( propertyType );
+        } else {
+            throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
         }
-
-        return propertyCreated;
     }
 
     @Override
-    public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes ) {
+    public void createSchema(
+            String namespace,
+            String name,
+            UUID aclId,
+            Set<FullQualifiedName> entityTypes,
+            Set<FullQualifiedName> propertyTypes ) {
+        boolean created = false;
         tableManager.createSchemaTableForAclId( aclId );
-        
+
         entityTypes.stream()
-		.forEach( entityTypeFqn ->
-					tableManager.entityTypeAddSchema(entityTypeFqn, namespace, name)	
-				);
-        
+                .forEach( entityTypeFqn ->
+                        tableManager.entityTypeAddSchema( entityTypeFqn, namespace, name )
+                );
+
         propertyTypes.stream()
-		.forEach( propertyTypeFqn ->
-					tableManager.propertyTypeAddSchema(propertyTypeFqn, namespace, name)	
-				);
-        
-        return Util.wasLightweightTransactionApplied(
+                .forEach( propertyTypeFqn ->
+                        tableManager.propertyTypeAddSchema( propertyTypeFqn, namespace, name )
+                );
+
+        created = Util.wasLightweightTransactionApplied(
                 session.execute(
-                        tableManager.getSchemaInsertStatement( aclId ).bind( namespace, name, entityTypes, propertyTypes ) ) );
+                        tableManager.getSchemaInsertStatement( aclId )
+                                .bind( namespace, name, entityTypes, propertyTypes ) ) );
+        if ( !created ) {
+            throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
+        }
     }
-    
+
     @Override
-    public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes) {        
+    public void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes ) {
         Set<FullQualifiedName> propertyTypes = entityTypes.stream()
-        		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
-        		.map(entityType -> entityType.getProperties() )
-        		.reduce((left, right) -> {
-        			left.addAll(right);
-        			return left;
-        		}).get();
-       
-        return createSchema( namespace, name, aclId, entityTypes, propertyTypes);
+                .map( entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
+                .map( entityType -> entityType.getProperties() )
+                .reduce( ( left, right ) -> {
+                    left.addAll( right );
+                    return left;
+                } ).get();
+
+        createSchema( namespace, name, aclId, entityTypes, propertyTypes );
     }
 
     @Override
     public void deleteEntityType( FullQualifiedName entityTypeFqn ) {
         EntityType entityType = entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() );
-        
-        entityType.getSchemas().forEach( 
-        		schemaFqn -> removeEntityTypesFromSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of( entityTypeFqn) )
-        		);
+
+        entityType.getSchemas().forEach(
+                schemaFqn -> removeEntityTypesFromSchema( schemaFqn.getNamespace(),
+                        schemaFqn.getName(),
+                        ImmutableSet.of( entityTypeFqn ) )
+        );
         //TODO: remove property types from schema using reference counting
         tableManager.deleteFromEntityTypeLookupTable( entityType );
         entityTypeMapper.delete( entityType );
@@ -265,10 +280,13 @@ public class EdmService implements EdmManager {
     public void deletePropertyType( FullQualifiedName propertyTypeFqn ) {
         PropertyType propertyType = propertyTypeMapper
                 .get( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() );
-        
-        propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema(schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of(propertyTypeFqn) ) );
-        edmStore.getEntityTypes().all().forEach( entityType -> removePropertyTypesFromEntityType(entityType, ImmutableSet.of(propertyTypeFqn) ) );
-        
+
+        propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema( schemaFqn.getNamespace(),
+                schemaFqn.getName(),
+                ImmutableSet.of( propertyTypeFqn ) ) );
+        edmStore.getEntityTypes().all().forEach( entityType -> removePropertyTypesFromEntityType( entityType,
+                ImmutableSet.of( propertyTypeFqn ) ) );
+
         tableManager.deleteFromPropertyTypeLookupTable( propertyType );
         propertyTypeMapper.delete( propertyType );
     }
@@ -281,44 +299,45 @@ public class EdmService implements EdmManager {
     @Override
     public void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
         Set<FullQualifiedName> propertyTypes = new HashSet<>();
-        
+
         entityTypes.stream()
-        		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
-        		.forEach(entityType -> {
-        			//Get all properties for each entity type
-        			propertyTypes.addAll( entityType.getProperties() );
-        			//Update Schema column for each Entity Type
-        			tableManager.entityTypeAddSchema( entityType, namespace, name);
-        		});
+                .map( entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
+                .forEach( entityType -> {
+                    //Get all properties for each entity type
+                    propertyTypes.addAll( entityType.getProperties() );
+                    //Update Schema column for each Entity Type
+                    tableManager.entityTypeAddSchema( entityType, namespace, name );
+                } );
 
         addPropertyTypesToSchema( namespace, name, propertyTypes );
-        
+
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
-                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( entityTypes, propertyTypes, namespace, name ) );
+                    tableManager.getSchemaAddEntityTypeStatement( aclId )
+                            .bind( entityTypes, propertyTypes, namespace, name ) );
         }
     }
 
     @Override
     public void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
-    	//TODO: propertyTypes not removed From Schema table when Entity Types are removed. Need reference counting on propertyTypes to do so.
+        //TODO: propertyTypes not removed From Schema table when Entity Types are removed. Need reference counting on propertyTypes to do so.
         Set<FullQualifiedName> propertyTypes = new HashSet<>();
-        
+
         entityTypes.stream()
-        		.map(entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
-        		.forEach(entityType -> {
-        			//Get all properties for each entity type
-        			propertyTypes.addAll( entityType.getProperties() );
-        			//Update Schema column for each Entity Type
-        			tableManager.entityTypeRemoveSchema( entityType, namespace, name);
-        		});
-        
-//        removePropertyTypesFromSchema( namespace, name, propertyTypes );
+                .map( entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
+                .forEach( entityType -> {
+                    //Get all properties for each entity type
+                    propertyTypes.addAll( entityType.getProperties() );
+                    //Update Schema column for each Entity Type
+                    tableManager.entityTypeRemoveSchema( entityType, namespace, name );
+                } );
+
+        //        removePropertyTypesFromSchema( namespace, name, propertyTypes );
         propertyTypes.stream()
-				.forEach(propertyTypeFqn ->
-					tableManager.propertyTypeRemoveSchema( propertyTypeFqn, namespace, name )
-				);
-        
+                .forEach( propertyTypeFqn ->
+                        tableManager.propertyTypeRemoveSchema( propertyTypeFqn, namespace, name )
+                );
+
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
                     tableManager.getSchemaRemoveEntityTypeStatement( aclId ).bind( entityTypes, namespace, name ) );
@@ -326,7 +345,7 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public boolean createEntityType(
+    public void createEntityType(
             EntityType entityType ) {
         boolean entityCreated = false;
         // Make sure entity type is valid
@@ -345,13 +364,15 @@ public class EdmService implements EdmManager {
                             entityType.getName(),
                             entityType.getTypename(),
                             entityType.getKey(),
-                            entityType.getProperties(), 
+                            entityType.getProperties(),
                             entityType.getSchemas() ) );
-            
+
             entityType.getSchemas()
-            		.forEach( 
-            					schemaFqn -> addEntityTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of(entityType.getFullQualifiedName()) ) 
-            				);
+                    .forEach(
+                            schemaFqn -> addEntityTypesToSchema( schemaFqn.getNamespace(),
+                                    schemaFqn.getName(),
+                                    ImmutableSet.of( entityType.getFullQualifiedName() ) )
+                    );
         }
 
         // Only create entity table if insert transaction succeeded.
@@ -360,15 +381,16 @@ public class EdmService implements EdmManager {
                     Maps.asMap( entityType.getKey(),
                             fqn -> getPropertyType( fqn ) ) );
             tableManager.insertToEntityTypeLookupTable( entityType );
+        } else {
+            throw new InternalError();
         }
-        return entityCreated;
     }
 
     private void ensureValidEntityType( EntityType entityType ) {
-    	Preconditions.checkNotNull( entityType.getNamespace(), "Namespace for Entity Type is missing");
-    	Preconditions.checkNotNull( entityType.getName(), "Name of Entity Type is missing");
-    	Preconditions.checkNotNull( entityType.getProperties(), "Property for Entity Type is missing");
-    	Preconditions.checkNotNull( entityType.getKey(), "Key for Entity Type is missing");
+        Preconditions.checkNotNull( entityType.getNamespace(), "Namespace for Entity Type is missing" );
+        Preconditions.checkNotNull( entityType.getName(), "Name of Entity Type is missing" );
+        Preconditions.checkNotNull( entityType.getProperties(), "Property for Entity Type is missing" );
+        Preconditions.checkNotNull( entityType.getKey(), "Key for Entity Type is missing" );
         Preconditions.checkArgument( propertiesExist( entityType.getProperties() )
                 && entityType.getProperties().containsAll( entityType.getKey() ), "Invalid Entity Type provided" );
     }
@@ -392,15 +414,15 @@ public class EdmService implements EdmManager {
     }
 
     private boolean schemaExists( String namespace, String name ) {
-    	return schemaExists( new FullQualifiedName(namespace, name) );
+        return schemaExists( new FullQualifiedName( namespace, name ) );
     }
-    
+
     private boolean schemaExists( FullQualifiedName schema ) {
         UUID aclId = ACLs.EVERYONE_ACL;
-	   	return ( session.execute(
-	    		tableManager.getSchemaStatement( aclId ).bind( schema.getNamespace(), schema.getName() ) 
-	    		).one()
-	    != null);
+        return ( session.execute(
+                tableManager.getSchemaStatement( aclId ).bind( schema.getNamespace(), schema.getName() )
+        ).one()
+                != null );
     }
 
     @Override
@@ -415,27 +437,35 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public boolean assignEntityToEntitySet( UUID entityId, String name ) {
+    public void assignEntityToEntitySet( UUID entityId, String name ) {
+        boolean assigned = false;
         String typename = tableManager.getTypenameForEntityId( entityId );
         if ( StringUtils.isBlank( typename ) ) {
-            return false;
+            throw new BadRequestException( "Entity type not found." );
         }
         if ( !isExistingEntitySet( typename, name ) ) {
-            return false;
+            throw new BadRequestException( "Entity set does not exist." );
         }
-        return tableManager.assignEntityToEntitySet( entityId, typename, name );
+        assigned = tableManager.assignEntityToEntitySet( entityId, typename, name );
+        if ( !assigned ) {
+            throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
+        }
     }
 
     @Override
-    public boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
+    public void assignEntityToEntitySet( UUID entityId, EntitySet es ) {
+        boolean assigned = false;
         String typenameForEntity = tableManager.getTypenameForEntityId( entityId );
         if ( StringUtils.isBlank( typenameForEntity ) ) {
-            return false;
+            throw new BadRequestException( "Entity type not found." );
         }
         if ( !isExistingEntitySet( typenameForEntity, es.getName() ) ) {
-            return false;
+            throw new BadRequestException( "Entity set does not exist." );
         }
-        return tableManager.assignEntityToEntitySet( entityId, es );
+        assigned = tableManager.assignEntityToEntitySet( entityId, es );
+        if ( !assigned ) {
+            throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
+        }
     }
 
     @Override
@@ -447,7 +477,7 @@ public class EdmService implements EdmManager {
     @Override
     public boolean createEntitySet( String typename, String name, String title ) {
         if ( isExistingEntitySet( typename, name ) ) {
-            return false;
+            throw new BadRequestException( "Entity set already exists." );
         }
         return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( typename, name, title ) );
     }
@@ -455,7 +485,7 @@ public class EdmService implements EdmManager {
     @Override
     public boolean createEntitySet( EntitySet entitySet ) {
         if ( StringUtils.isNotBlank( entitySet.getTypename() ) ) {
-            return false;
+            throw new BadRequestException( "Typename is not provided." );
         }
         String typename = tableManager.getTypenameForEntityType( entitySet.getType() );
         System.out.println( "typename upon entity set creation: " + typename );
@@ -488,8 +518,8 @@ public class EdmService implements EdmManager {
     @Override
     public Iterable<EntitySet> getEntitySets() {
         return edmStore.getEntitySets().all().stream()
-        		.map( entitySet -> EntitySetTypenameSettingFactory(entitySet) )
-        		.collect( Collectors.toList() );
+                .map( entitySet -> EntitySetTypenameSettingFactory( entitySet ) )
+                .collect( Collectors.toList() );
     }
 
     @Override
@@ -555,101 +585,102 @@ public class EdmService implements EdmManager {
                 .isCountNonZero( session.execute( tableManager.getCountEntitySetsStatement().bind( typename, name ) ) );
     }
 
-	@Override
-	public void addPropertyTypesToEntityType(String namespace, String name, Set<FullQualifiedName> properties) {
-		try{
-	    	EntityType entityType = getEntityType( namespace, name );
-	    	
-	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
-		    entityType.addProperties( properties );
-	
-		    Set<FullQualifiedName> schemas = entityType.getSchemas();
-		    schemas.stream().forEach( schemaFqn -> {
-		        addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties);
-		    });
-		        	           
-		    edmStore.updateExistingEntityType(
-		           	entityType.getNamespace(), 
-		           	entityType.getName(), 
-		           	entityType.getKey(), 
-		          	entityType.getProperties());
-		} catch ( IllegalArgumentException e ){
-			throw new BadRequestException();
-		}
-	}     
-	
-	@Override
-	public void removePropertyTypesFromEntityType(String namespace, String name, Set<FullQualifiedName> properties) {
-	    EntityType entityType = getEntityType( namespace, name );
-	    removePropertyTypesFromEntityType( entityType, properties );
-	    //TODO: remove property types from Schema should be done via reference counting
-	}
-	
-	@Override
-	public void removePropertyTypesFromEntityType(EntityType entityType, Set<FullQualifiedName> properties) {
-		try{
-	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
-		    entityType.removeProperties( properties );
-	
-		    //TODO: Remove properties from Schema, once reference counting is implemented.
-		        	           
-		    edmStore.updateExistingEntityType(
-		           	entityType.getNamespace(), 
-		           	entityType.getName(), 
-		           	entityType.getKey(), 
-		          	entityType.getProperties());
-		} catch ( IllegalArgumentException e ){
-			throw new BadRequestException();
-		}
-	}
-	
-	@Override
-	public void addPropertyTypesToSchema(String namespace, String name, Set<FullQualifiedName> properties) {
-		try{
-	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
-	        Preconditions.checkArgument( schemaExists( namespace, name ), "Schema does not exist." );
-	        
-	        properties.stream()
-	        		.forEach(
-	        				propertyTypeFqn -> tableManager.propertyTypeAddSchema( propertyTypeFqn, namespace, name)
-	        		);
-	        
-	        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
-	            session.executeAsync(
-	                    tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
-	        }
-		} catch ( IllegalArgumentException e ){
-			throw new BadRequestException();
-		}
-	}    
-	
-	@Override
-	public void removePropertyTypesFromSchema(String namespace, String name, Set<FullQualifiedName> properties) {
-		try{
-	        Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
-	        Preconditions.checkArgument( schemaExists( namespace, name ), "Schema does not exist." );
-	        
-	        properties.stream()
-					.forEach(propertyTypeFqn ->
-						tableManager.propertyTypeRemoveSchema( propertyTypeFqn, namespace, name )
-					);
-	        
-	        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
-	            session.executeAsync(
-	                    tableManager.getSchemaRemovePropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
-	        }
-		} catch ( IllegalArgumentException e ){
-			throw new BadRequestException();
-		}
-	}
-	
-	private EntitySet EntitySetTypenameSettingFactory( EntitySet es ){
-		Preconditions.checkNotNull( es.getTypename(), "Entity set has no associated entity type.");
-		return es.setType( tableManager.getEntityTypeForTypename( es.getTypename() ) );
-	}
-	
-	private boolean checkPropertyTypeExists( PropertyType propertyType ){
+    @Override
+    public void addPropertyTypesToEntityType( String namespace, String name, Set<FullQualifiedName> properties ) {
+        try {
+            EntityType entityType = getEntityType( namespace, name );
+
+            Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
+            entityType.addProperties( properties );
+
+            Set<FullQualifiedName> schemas = entityType.getSchemas();
+            schemas.stream().forEach( schemaFqn -> {
+                addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), properties );
+            } );
+
+            edmStore.updateExistingEntityType(
+                    entityType.getNamespace(),
+                    entityType.getName(),
+                    entityType.getKey(),
+                    entityType.getProperties() );
+        } catch ( IllegalArgumentException e ) {
+            throw new BadRequestException( "Illegal Arguments are provided." );
+        }
+    }
+
+    @Override
+    public void removePropertyTypesFromEntityType( String namespace, String name, Set<FullQualifiedName> properties ) {
+        EntityType entityType = getEntityType( namespace, name );
+        removePropertyTypesFromEntityType( entityType, properties );
+        //TODO: remove property types from Schema should be done via reference counting
+    }
+
+    @Override
+    public void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties ) {
+        try {
+            Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
+            entityType.removeProperties( properties );
+
+            //TODO: Remove properties from Schema, once reference counting is implemented.
+
+            edmStore.updateExistingEntityType(
+                    entityType.getNamespace(),
+                    entityType.getName(),
+                    entityType.getKey(),
+                    entityType.getProperties() );
+        } catch ( IllegalArgumentException e ) {
+            throw new BadRequestException( "Illegal Arguments are provided." );
+        }
+    }
+
+    @Override
+    public void addPropertyTypesToSchema( String namespace, String name, Set<FullQualifiedName> properties ) {
+        try {
+            Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
+            Preconditions.checkArgument( schemaExists( namespace, name ), "Schema does not exist." );
+
+            properties.stream()
+                    .forEach(
+                            propertyTypeFqn -> tableManager.propertyTypeAddSchema( propertyTypeFqn, namespace, name )
+                    );
+
+            for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
+                session.executeAsync(
+                        tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
+            }
+        } catch ( IllegalArgumentException e ) {
+            throw new BadRequestException( "Illegal Arguments are provided." );
+        }
+    }
+
+    @Override
+    public void removePropertyTypesFromSchema( String namespace, String name, Set<FullQualifiedName> properties ) {
+        try {
+            Preconditions.checkArgument( propertiesExist( properties ), "Some properties do not exist." );
+            Preconditions.checkArgument( schemaExists( namespace, name ), "Schema does not exist." );
+
+            properties.stream()
+                    .forEach( propertyTypeFqn ->
+                            tableManager.propertyTypeRemoveSchema( propertyTypeFqn, namespace, name )
+                    );
+
+            for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
+                session.executeAsync(
+                        tableManager.getSchemaRemovePropertyTypeStatement( aclId )
+                                .bind( properties, namespace, name ) );
+            }
+        } catch ( IllegalArgumentException e ) {
+            throw new BadRequestException( "Illegal Arguments are provided." );
+        }
+    }
+
+    private EntitySet EntitySetTypenameSettingFactory( EntitySet es ) {
+        Preconditions.checkNotNull( es.getTypename(), "Entity set has no associated entity type." );
+        return es.setType( tableManager.getEntityTypeForTypename( es.getTypename() ) );
+    }
+
+    private boolean checkPropertyTypeExists( PropertyType propertyType ) {
         String typename = tableManager.getTypenameForPropertyType( propertyType );
         return StringUtils.isNotBlank( typename );
-	}
+    }
 }
