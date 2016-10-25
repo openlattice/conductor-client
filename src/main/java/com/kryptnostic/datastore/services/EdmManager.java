@@ -16,7 +16,7 @@ public interface EdmManager {
 	/** 
 	 * Being of debug
 	 */
-	void setCurrentUserIdForDebug( UUID currentId );
+	void setCurrentUserForDebug( String username, Set<String> roles );
 	/**
 	 * End of debug
 	 */
@@ -51,6 +51,8 @@ public interface EdmManager {
     Iterable<EntitySet> getEntitySets();
 
     void deleteEntitySet( EntitySet entitySet );
+    
+    void deleteEntitySet( FullQualifiedName entityType, String name );
 
     boolean createEntityType( EntityType objectType );
 
@@ -98,8 +100,8 @@ public interface EdmManager {
 
     void addPropertyTypesToEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
 
-	void removePropertyTypesFromEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
-	
-	void removePropertyTypesFromEntityType(EntityType entityType, Set<FullQualifiedName> properties);
+    void removePropertyTypesFromEntityType(String entityTypeNamespace, String entityTypeName, Set<FullQualifiedName> properties);
+    
+    void removePropertyTypesFromEntityType(EntityType entityType, Set<FullQualifiedName> properties);
 
 }

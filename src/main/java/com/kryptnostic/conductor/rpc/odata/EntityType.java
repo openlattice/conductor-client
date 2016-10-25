@@ -16,6 +16,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
+import jersey.repackaged.com.google.common.collect.Sets;
+
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
     name = DatastoreConstants.ENTITY_TYPES_TABLE )
@@ -35,6 +37,10 @@ public class EntityType extends TypePK {
     @JsonIgnore
     @Transient
     private transient Set<FullQualifiedName> viewableProperties;
+    
+    @JsonIgnore
+    @Transient
+    private transient Set<FullQualifiedName> viewableKey;
 
     public EntityType setNamespace( String namespace ) {
         this.namespace = namespace;
@@ -102,11 +108,22 @@ public class EntityType extends TypePK {
         this.viewableProperties = viewableProperties;
         return this;
     }
+    
+    @JsonGetter("key")
+    public Set<FullQualifiedName> getViewableKey() {
+        return viewableKey;
+    }
+
+    public EntityType setViewableKey( Set<FullQualifiedName> viewableKey ) {
+        this.viewableKey = viewableKey;
+        return this;
+    }
 
 
     @Override
     public String toString() {
-        return "ObjectType [namespace=" + namespace + ", type=" + name + ", typename=" + typename + ", key=" + key
+        return "ObjectType [namespace=" + namespace + ", type=" + name + ", typename=" + typename
+                + ", key=" + viewableKey
                 + ", allowed=" + viewableProperties
                 + ", schemas=" + schemas + "]";
     }

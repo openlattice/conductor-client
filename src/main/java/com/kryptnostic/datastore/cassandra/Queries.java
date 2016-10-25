@@ -34,7 +34,7 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.ACLID )
+                .clusteringColumns( CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -43,7 +43,7 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.ACLID )
+                .clusteringColumns( CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -51,8 +51,8 @@ public final class Queries {
     public static final String createEntitySetsAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.ACLID )
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.TYPE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -61,7 +61,7 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, Tables.SCHEMAS_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.ACLID )
+                .clusteringColumns( CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -70,7 +70,16 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.FQN, CommonColumns.ACLID )
+                .clusteringColumns( CommonColumns.FQN, CommonColumns.ROLE )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+    
+    public static final String createPropertyTypesInEntitySetsAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.TYPE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.FQN, CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -171,7 +180,15 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.ACLID )
+                .clusteringColumns( CommonColumns.ROLE )
+                .buildQuery();
+    }
+    
+    public static final String createEntitySetsAlterRightsAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ALTER_RIGHTS_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.TYPE, CommonColumns.NAME )
+                .clusteringColumns( CommonColumns.ROLE )
                 .buildQuery();
     }
     
@@ -311,6 +328,11 @@ public final class Queries {
     //Acl
     public static final String GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_TYPE = "SELECT * from sparks."
             + DatastoreConstants.ENTITY_TYPES_ALTER_RIGHTS_ACLS_TABLE + " WHERE namespace=:"
+            + ParamNames.NAMESPACE + " AND name=:"
+            + ParamNames.NAME;
+    
+    public static final String GET_ACLS_FOR_PROPERTY_TYPE = "SELECT * from sparks."
+            + DatastoreConstants.PROPERTY_TYPES_ACLS_TABLE + " WHERE namespace=:"
             + ParamNames.NAMESPACE + " AND name=:"
             + ParamNames.NAME;
 }

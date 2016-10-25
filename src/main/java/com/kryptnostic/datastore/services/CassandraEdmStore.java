@@ -82,4 +82,10 @@ public interface CassandraEdmStore {
     		@Param(Queries.ParamNames.NAMESPACE) String namespace,
     		@Param(Queries.ParamNames.NAME) String name
     		);
+
+    @Query( Queries.GET_ACLS_FOR_PROPERTY_TYPE)
+    public ResultSet getAclsForPropertyType(
+            @Param(Queries.ParamNames.NAMESPACE) String namespace,
+            @Param(Queries.ParamNames.NAME) String name
+            );
 }

@@ -56,11 +56,11 @@ public interface PermissionsApi {
 
     @DELETE( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ACL_PATH )
     Response removePropertyTypeAcls( @Path( NAMESPACE ) String namespace, @Path( NAME ) String name, @Body Set<UUID> users );
-
+/**
     @POST( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ACL_PATH )
     Response setEntityTypeAcls( @Path( NAMESPACE ) String namespace, @Path( NAME ) String name, @Body Set<ModifyEntityTypeAclRequest> requests );
 
     @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ACL_PATH )
     Response removeEntityTypeAcls( @Path( NAMESPACE ) String namespace, @Path( NAME ) String name, @Body Set<RemoveEntityTypeAclRequest> requests );
-    
+*/
 }

@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 
 public enum CommonColumns {
     ACLID( DataType.uuid() ),
+    ROLE( DataType.text() ),
     CLOCK( DataType.timestamp() ),
     DATATYPE( DataType.text() ),
     ENTITYSETS( DataType.set( DataType.text() ) ),

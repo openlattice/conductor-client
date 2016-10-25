@@ -32,13 +32,13 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
 	/** 
 	 * Being of debug
 	 */
-	private static UUID                   currentId;
+	private static String username;
 	/**
 	 * End of debug
 	 */
 
     public SchemaDetailsAdapter(
-            UUID currentId,
+            String username,
             CassandraTableManager ctb,
             Mapper<EntityType> entityTypeMapper,
             Mapper<PropertyType> propertyTypeMapper,
@@ -51,7 +51,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
         this.requestedDetails = requestedDetails;
         this.schemaFactory = schemaFactoryWithAclId( ACLs.EVERYONE_ACL );
         //debug
-        this.currentId = currentId;
+        this.username = username;
     }
 
     @Override
@@ -73,7 +73,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
     }
 
     public void addEntityTypesToSchema( Schema schema ) {
-    	if( currentId != null ){
+    	if( username != null ){
             Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
                     .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
                     .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
