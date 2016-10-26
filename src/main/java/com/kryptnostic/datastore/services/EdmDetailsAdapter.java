@@ -44,10 +44,10 @@ public class EdmDetailsAdapter {
 		return es.setType( ctb.getEntityTypeForTypename( es.getTypename() ) );
 	}
 	
-	public static EntityType setViewableDetails( CassandraTableManager ctb, PermissionsService ps, EntityType entityType){
+	public static EntityType setViewableDetails( CassandraTableManager ctb, ActionAuthorizationService authzService, EntityType entityType){
 		//Set viewable properties of entity type
 		Set<FullQualifiedName> viewableProperties = entityType.getProperties().stream()
-				.filter( propertyTypeFqn -> ps.checkUserHasPermissionsOnPropertyType( currentRoles, propertyTypeFqn, Permission.DISCOVER ) )
+				.filter( propertyTypeFqn -> authzService.getPropertyType( currentRoles, propertyTypeFqn ) )
 				.collect( Collectors.toSet() );
 		entityType.setViewableProperties( viewableProperties );
 		

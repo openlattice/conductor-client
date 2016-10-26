@@ -94,6 +94,9 @@ public class CassandraTableManager {
     private final PreparedStatement                                   getPermissionsForEntitySet;
     private final PreparedStatement                                   deleteFromEntitySetsAclsTable;
     
+    private final PreparedStatement                                   getAclsForPropertyType;
+    private final PreparedStatement                                   getAclsForEntityType;
+    
     private final PreparedStatement                                   setPermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   getPermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   deleteRowFromPropertyTypeInEntityTypesAclsTable;
@@ -316,6 +319,20 @@ public class CassandraTableManager {
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
                 );
         
+        this.getAclsForPropertyType = session
+                .prepare( QueryBuilder.select()
+                        .from( keyspace, Tables.PROPERTY_TYPES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                );
+
+        this.getAclsForEntityType = session
+                .prepare( QueryBuilder.select()
+                        .from( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                );
+
         this.setPermissionsForPropertyTypeInEntityType = session
         		.prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
         		        .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
@@ -1034,7 +1051,7 @@ public class CassandraTableManager {
 
     public int getPermissionsForPropertyType( String role, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return Permission.ALTER.asNumber();
         } else {
         	Row propertyTypePermission = session.execute( this.getPermissionsForPropertyType.bind(
         		    propertyTypeFqn.getNamespace(),
@@ -1070,7 +1087,7 @@ public class CassandraTableManager {
 
     public int getPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return Permission.ALTER.asNumber();
         } else {
         	Row entityTypePermission = session.execute( this.getPermissionsForEntityType.bind(
         		    entityTypeFqn.getNamespace(),
@@ -1106,7 +1123,7 @@ public class CassandraTableManager {
 
     public int getPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return Permission.ALTER.asNumber();
         } else {
             Row entityTypePermission = session.execute( this.getPermissionsForEntitySet.bind(
                     entityTypeFqn.getNamespace(),
@@ -1142,9 +1159,17 @@ public class CassandraTableManager {
         session.execute( deleteFromEntitySetsAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName ) );
     }
     
+    public ResultSet getAclsForPropertyType( FullQualifiedName propertyTypeFqn ) {
+        return session.execute( getAclsForPropertyType.bind( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() ) );
+    }
+    
+    public ResultSet getAclsForEntityType( FullQualifiedName entityTypeFqn ) {
+        return session.execute( getAclsForEntityType.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
+    }
+    
     public int getPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return Permission.ALTER.asNumber();
         } else {
             Row propertyTypeInentityTypePermission = session.execute( this.getPermissionsForPropertyTypeInEntityType.bind(
         		    entityTypeFqn.getNamespace(),
@@ -1186,7 +1211,7 @@ public class CassandraTableManager {
     
     public int getPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return Permission.ALTER.asNumber();
         } else {
             Row propertyTypeInentitySetPermission = session.execute( this.getPermissionsForPropertyTypeInEntitySet.bind(
                     entityTypeFqn.getNamespace(),

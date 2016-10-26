@@ -26,7 +26,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
     private final CassandraTableManager ctb;
     private final Mapper<EntityType>   entityTypeMapper;
     private final Mapper<PropertyType> propertyTypeMapper;
-    private final PermissionsService   ps;
+    private final ActionAuthorizationService   authzService;
     private final Set<TypeDetails>     requestedDetails;
     
 	/** 
@@ -42,12 +42,12 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
             CassandraTableManager ctb,
             Mapper<EntityType> entityTypeMapper,
             Mapper<PropertyType> propertyTypeMapper,
-            PermissionsService ps,
+            ActionAuthorizationService authzService,
             Set<TypeDetails> requestedDetails ) {
     	this.ctb = ctb;
         this.entityTypeMapper = entityTypeMapper;
         this.propertyTypeMapper = propertyTypeMapper;
-        this.ps = ps;
+        this.authzService = authzService;
         this.requestedDetails = requestedDetails;
         this.schemaFactory = schemaFactoryWithAclId( ACLs.EVERYONE_ACL );
         //debug
@@ -77,7 +77,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
             Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
                     .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
                     .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
-                    .map( entityType -> EdmDetailsAdapter.setViewableDetails(ctb, ps, entityType) )
+                    .map( entityType -> EdmDetailsAdapter.setViewableDetails(ctb, authzService, entityType) )
                     .collect( Collectors.toSet() );
             schema.addEntityTypes( entityTypes );
     	} else {

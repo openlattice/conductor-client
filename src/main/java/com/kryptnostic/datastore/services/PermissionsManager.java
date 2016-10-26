@@ -71,8 +71,6 @@ public interface PermissionsManager {
     void addToEntitySetsAlterRightsTable( String role, FullQualifiedName entityTypeFqn, String name );
     
     void removeFromEntitySetsAlterRightsTable( String role, FullQualifiedName entityTypeFqn, String name );
-	
-	// TODO get Permitted Entity Types, Property Types, Entity Sets, Schemas.
 
 	// Utility functions for removing all permission details associated to a type
 	void removePermissionsForPropertyType( FullQualifiedName fqn );
@@ -92,5 +90,16 @@ public interface PermissionsManager {
 	void removeFromEntityTypesAlterRightsTable( FullQualifiedName entityTypeFqn );
 	
     void removeFromEntitySetsAlterRightsTable( FullQualifiedName entityTypeFqn, String name );
+    
+    // Permission inheritance
+    void derivePermissions( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties, String derivedOption );
 
+    void inheritPermissionsFromPropertyType( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
+
+    void inheritPermissionsFromPropertyType( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
+
+    void inheritPermissionsFromBothTypes( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
+
+    void inheritPermissionsFromBothTypes( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
+    
 }

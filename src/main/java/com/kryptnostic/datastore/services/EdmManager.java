@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
