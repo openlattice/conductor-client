@@ -96,6 +96,7 @@ public class CassandraTableManager {
     
     private final PreparedStatement                                   getAclsForPropertyType;
     private final PreparedStatement                                   getAclsForEntityType;
+    private final PreparedStatement                                   getAclsForEntitySet;
     
     private final PreparedStatement                                   setPermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   getPermissionsForPropertyTypeInEntityType;
@@ -330,6 +331,14 @@ public class CassandraTableManager {
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                );
+        
+        this.getAclsForEntitySet = session
+                .prepare( QueryBuilder.select()
+                        .from( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
                 );
 
@@ -1165,6 +1174,10 @@ public class CassandraTableManager {
     
     public ResultSet getAclsForEntityType( FullQualifiedName entityTypeFqn ) {
         return session.execute( getAclsForEntityType.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
+    }
+    
+    public ResultSet getAclsForEntitySet( FullQualifiedName entityTypeFqn, String entitySetName ) {
+        return session.execute( getAclsForEntitySet.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName ) );
     }
     
     public int getPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {

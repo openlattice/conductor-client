@@ -69,6 +69,9 @@ public interface CassandraEdmStore {
     @Query( Queries.GET_ALL_ENTITY_SETS )
     public Result<EntitySet> getEntitySets();
     
+    @Query( Queries.GET_ALL_ENTITY_SETS_FOR_ENTITY_TYPE )
+    public Result<EntitySet> getEntitySetsForEntityType( String typename );
+    
     @Query( Queries.UPDATE_EXISTING_ENTITY_TYPE)
     public ResultSet updateExistingEntityType(
     		@Param(Queries.ParamNames.NAMESPACE) String namespace,
@@ -79,9 +82,16 @@ public interface CassandraEdmStore {
     
     @Query( Queries.GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_TYPE)
     public ResultSet getUsersWithAlterRightsForEntityType(
-    		@Param(Queries.ParamNames.NAMESPACE) String namespace,
-    		@Param(Queries.ParamNames.NAME) String name
-    		);
+            @Param(Queries.ParamNames.NAMESPACE) String namespace,
+            @Param(Queries.ParamNames.NAME) String name
+            );
+    
+    @Query( Queries.GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_SET)
+    public ResultSet getUsersWithAlterRightsForEntitySet(
+            @Param(Queries.ParamNames.NAMESPACE) String namespace,
+            @Param(Queries.ParamNames.ENTITY_TYPE) String type,
+            @Param(Queries.ParamNames.NAME) String name
+            );
 
     @Query( Queries.GET_ACLS_FOR_PROPERTY_TYPE)
     public ResultSet getAclsForPropertyType(

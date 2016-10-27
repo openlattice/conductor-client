@@ -323,12 +323,17 @@ public class EdmService implements EdmManager {
                     schemaFqn -> removeEntityTypesFromSchema( schemaFqn.getNamespace(), schemaFqn.getName(), ImmutableSet.of( entityTypeFqn) )
                     );
             //TODO: remove property types from schema using reference counting
-            tableManager.deleteFromEntityTypeLookupTable( entityType );
             
+            //Remove all entity sets of the type
+            getEntitySetsForEntityType( entityTypeFqn ).forEach( entitySet -> {
+                deleteEntitySet( entityTypeFqn, entitySet.getName(), true );
+            });            
             permissionsService.removePermissionsForEntityType( entityTypeFqn);
             permissionsService.removePermissionsForPropertyTypeInEntityType( entityTypeFqn );
             permissionsService.removeFromEntityTypesAlterRightsTable( entityTypeFqn );
             
+            //Previous functions may need lookup to work - must delete lookup last
+            tableManager.deleteFromEntityTypeLookupTable( entityType );
             entityTypeMapper.delete( entityType );
         }
     }
@@ -475,15 +480,24 @@ public class EdmService implements EdmManager {
         deleteEntitySet( entityTypeFqn, typename, entitySetName);
     }
 
+    private void deleteEntitySet( FullQualifiedName entityTypeFqn, String entitySetName, boolean hasPermission ){
+        String typename = tableManager.getTypenameForEntityType( entityTypeFqn );
+        deleteEntitySet( entityTypeFqn, typename, entitySetName, hasPermission);
+    }
+    
     private void deleteEntitySet( FullQualifiedName entityTypeFqn, String entityTypename, String entitySetName ){
        if( authzService.deleteEntitySet( currentRoles, entityTypeFqn, entitySetName )){
-            //Acls removal
-            permissionsService.removePermissionsForEntitySet( entityTypeFqn, entitySetName );
-            permissionsService.removePermissionsForPropertyTypeInEntitySet( entityTypeFqn, entitySetName );
-            permissionsService.removeFromEntitySetsAlterRightsTable( entityTypeFqn, entitySetName );
-            
-            entitySetMapper.delete( entityTypename, entitySetName );
+           deleteEntitySet( entityTypeFqn, entityTypename, entitySetName, true);
         }
+    }
+    
+    private void deleteEntitySet( FullQualifiedName entityTypeFqn, String entityTypename, String entitySetName, boolean hasPermission){
+        //Acls removal
+        permissionsService.removePermissionsForEntitySet( entityTypeFqn, entitySetName );
+        permissionsService.removePermissionsForPropertyTypeInEntitySet( entityTypeFqn, entitySetName );
+        permissionsService.removeFromEntitySetsAlterRightsTable( entityTypeFqn, entitySetName );
+        
+        entitySetMapper.delete( entityTypename, entitySetName );
     }
     
     @Override
@@ -588,6 +602,15 @@ public class EdmService implements EdmManager {
             return entitySet;
         }   
         return null;
+    }
+    
+    private Iterable<EntitySet> getEntitySetsForEntityType( FullQualifiedName type ) {
+        // Returns ALL entity sets of an entity type, viewable or not.
+        // Used for deletion of all entity sets when deleting an entity type.
+        String typename = tableManager.getTypenameForEntityType( type.getNamespace(), type.getName() );
+        return edmStore.getEntitySetsForEntityType( typename ).all().stream()
+                .map( entitySet -> EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet ) )
+                .collect( Collectors.toList() );
     }
 
     @Override
@@ -706,7 +729,7 @@ public class EdmService implements EdmManager {
 		    });
 		    
 		    //Acl
-		    //"Discover" rights for existing users with Alter Rights on the entity type
+		    //DISCOVER rights for existing users with Alter Rights on the entity type
 		    Iterable<String> rolesWithAlterRights = Iterables.transform( 
 		    		edmStore.getUsersWithAlterRightsForEntityType( namespace, name ),
 		    		row -> row.getString( CommonColumns.ROLE.cql() )
@@ -718,6 +741,21 @@ public class EdmService implements EdmManager {
 		    	    	    	role, entityTypeFqn, propertyTypeFqn, ImmutableSet.of(Permission.DISCOVER) );
 		    	    }
 		    	});
+		    });
+		    //DISCOVER rights for existing users with Alter rights of all entity sets
+		    getEntitySetsForEntityType( entityTypeFqn ).forEach( entitySet -> {
+		        Iterable<String> rolesWithAlterRightsForEntitySet = Iterables.transform( 
+	                    edmStore.getUsersWithAlterRightsForEntitySet( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySet.getName() ),
+	                    row -> row.getString( CommonColumns.ROLE.cql() )
+	                    );
+	            newProperties.forEach( propertyTypeFqn -> {
+	                rolesWithAlterRightsForEntitySet.forEach( role -> { 
+	                    if( authzService.getPropertyType( ImmutableSet.of(role), propertyTypeFqn ) ){
+	                        permissionsService.addPermissionsForPropertyTypeInEntitySet( 
+	                                role, entityTypeFqn, entitySet.getName(), propertyTypeFqn, ImmutableSet.of(Permission.DISCOVER) );
+	                    }
+	                });
+	            });
 		    });
 		}
 	    
@@ -747,7 +785,6 @@ public class EdmService implements EdmManager {
     	 * checkedValid means that entityType is checked to be valid, and property types are checked to exist; error throwing should be done there.
     	 */	
 		if( checkedValid && authzService.alterEntityType( currentRoles, entityType.getFullQualifiedName() ) ){
-		    //Debug
 			Set<FullQualifiedName> removableProperties = Sets.intersection( properties, entityType.getViewableProperties() );
 			
 		    entityType.removeProperties( removableProperties );

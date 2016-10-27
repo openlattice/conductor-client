@@ -13,7 +13,7 @@ import org.apache.commons.lang3.BooleanUtils;
 public enum Permission {
 	/**
 	 * Alter means changing metadata of a type - for example, adding/removing property types to an entity type
-	 * WARNING: Owner is the shorthand for ALTER+WRITE+READ+DISCOVER for frontend usage. In particular it's not a true permission comparing to others, at least for now. That means it should NEVER be used in ActionAuthorizationService 
+	 * Owner has deletion right of an entire type. 
 	 */
     DISCOVER, READ, WRITE, ALTER, OWNER;
 	
@@ -36,14 +36,14 @@ public enum Permission {
     	switch( permission ){
     	    case DISCOVER:
     	    	return 1;
-    	    case READ: // Being able to read means you already know the existence of this type: 2+1 = 3
+    	    case READ: // Being able to read means you can discover this type: 2+1 = 3
     	    	return 3;
-    	    case WRITE: // Being able to write means you already know the existence of this type: 4+1 = 5
+    	    case WRITE: // Being able to write means you can discover this type: 4+1 = 5
     	    	return 5;
-    	    case ALTER: // Being able to alter means you already know the existence of this type: 8+1 = 9
+    	    case ALTER: // Being able to alter means you can discover this type: 8+1 = 9
     	    	return 9;
-    	    case OWNER: // Owner = ALTER + WRITE + READ + DISCOVER = 8+4+2+1 = 15.
-    	        return 15;
+    	    case OWNER: // Being an owner gives you all the possible rights: 16+8+4+2+1 = 31.
+    	        return 31;
     	    default:
     	    	return 0;
     	}
@@ -67,6 +67,8 @@ public enum Permission {
     	    	return 2;
     	    case ALTER:
     	    	return 3;
+    	    case OWNER:
+    	        return 4;
     	    default:
     	    	return -1;
     	}

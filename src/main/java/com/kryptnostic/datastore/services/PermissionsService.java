@@ -3,6 +3,7 @@ package com.kryptnostic.datastore.services;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -187,6 +188,11 @@ public class PermissionsService implements PermissionsManager{
 	private void setPermissionsForEntitySet(String role, FullQualifiedName type, String name, int oldPermission, int newPermission){
         tableManager.setPermissionsForEntitySet( role, type, name, newPermission);
 
+        // Any entity set permission would grant Discover right to underlying Entity Type
+        if( oldPermission == 0 && newPermission > 0){
+            addPermissionsForEntityType( role, type, ImmutableSet.of(Permission.DISCOVER) );
+        }
+        
         boolean oldPermissionCanAlter = Permission.canDoAction( oldPermission, Permission.ALTER );
         boolean newPermissionCanAlter = Permission.canDoAction( newPermission, Permission.ALTER );
         
@@ -440,23 +446,23 @@ public class PermissionsService implements PermissionsManager{
     @Override
     public void derivePermissions( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties, String derivedOption){
         switch( derivedOption ){
-            case "BothTypes": 
-                inheritPermissionsFromBothTypes( entityTypeFqn, properties );
+            case "PropertyTypeEntityType": 
+                inheritPermissionsFromPropertyTypeAndEntityType( entityTypeFqn, properties );
                 break;
             case "PropertyType":
-                inheritPermissionsFromBothTypes( entityTypeFqn, properties );
+                inheritPermissionsFromPropertyType( entityTypeFqn, properties );
                 break;
             default: // Do nothing
         }
     }
     
     @Override
-    public void inheritPermissionsFromBothTypes( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties ){
+    public void inheritPermissionsFromPropertyTypeAndEntityType( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties ){
         int entityTypePermission = getPermissionsForEntityType( role, entityTypeFqn );
-        inheritPermissionsFromBothTypes( role, entityTypeFqn, entityTypePermission, properties);
+        inheritPermissionsFromPropertyTypeAndEntityType( role, entityTypeFqn, entityTypePermission, properties);
     }
     
-    private void inheritPermissionsFromBothTypes( String role, FullQualifiedName entityTypeFqn, int entityTypePermission, Set<FullQualifiedName> properties){
+    private void inheritPermissionsFromPropertyTypeAndEntityType( String role, FullQualifiedName entityTypeFqn, int entityTypePermission, Set<FullQualifiedName> properties){
         properties.forEach( propertyTypeFqn -> {
             int propertyTypePermission = getPermissionsForPropertyType( role, propertyTypeFqn );
             boolean modifiedReadOrWrite = false;
@@ -478,12 +484,12 @@ public class PermissionsService implements PermissionsManager{
     }
    
     @Override
-    public void inheritPermissionsFromBothTypes( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties ){
+    public void inheritPermissionsFromPropertyTypeAndEntityType( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties ){
         // Get all the permission info of an entity Type. There is a list of roles involved there.
         ResultSet resultSet = tableManager.getAclsForEntityType( entityTypeFqn ); 
         Map<String, Integer> rolesToPermissions = EdmDetailsAdapter.aclAdapter( resultSet );
         for( Map.Entry<String, Integer> entry : rolesToPermissions.entrySet() ){
-            inheritPermissionsFromBothTypes( entry.getKey(), entityTypeFqn, entry.getValue(), properties);
+            inheritPermissionsFromPropertyTypeAndEntityType( entry.getKey(), entityTypeFqn, entry.getValue(), properties);
             //TODO rethink if this is a good design choice; Cassandra seems to have automatic batch statement if the partition key is the same. For this reason you may want to do outer for loop with properties instead.
         }
     }
@@ -531,4 +537,125 @@ public class PermissionsService implements PermissionsManager{
         }   
     }
 
+    @Override
+    public void derivePermissions( FullQualifiedName entityTypeFqn, String entitySetName, String derivedOption ){
+        switch( derivedOption ){
+            case "EntityType":
+                inheritPermissionsFromEntityType( entityTypeFqn );
+                break;
+            default: // Do nothing
+        }        
+    }
+
+    @Override
+    public void inheritPermissionsFromEntityType( String role, FullQualifiedName entityTypeFqn ){
+        String typename = tableManager.getTypenameForEntityType( entityTypeFqn.getNamespace(), entityTypeFqn.getName() );
+        int entityTypePermission = getPermissionsForEntityType( role, entityTypeFqn );
+        
+        edmStore.getEntitySetsForEntityType( typename ).all().stream()
+        .map( entitySet -> entitySet.getName() )
+        .filter( entitySetName -> checkUserHasPermissionsOnEntitySet( ImmutableSet.of(role), entityTypeFqn, entitySetName, Permission.DISCOVER) )
+        .forEach( entitySetName -> {
+            boolean modifiedRead = false;
+            boolean modifiedWrite = false;
+            
+            if( Permission.canDoAction( entityTypePermission, Permission.READ ) ){
+                addPermissionsForEntitySet( role, entityTypeFqn, entitySetName, ImmutableSet.of(Permission.READ) );
+                if( !modifiedRead ){
+                    modifiedRead = true;
+                }
+            }
+            
+            if( Permission.canDoAction( entityTypePermission, Permission.WRITE ) ){
+                addPermissionsForEntitySet( role, entityTypeFqn, entitySetName, ImmutableSet.of(Permission.WRITE) );
+                if( !modifiedWrite ){
+                    modifiedWrite = true;
+                }
+            }
+            
+            if( !modifiedRead && !modifiedWrite && Permission.canDoAction( entityTypePermission, Permission.DISCOVER ) ){
+                addPermissionsForEntitySet( role, entityTypeFqn, entitySetName, ImmutableSet.of(Permission.DISCOVER) );
+            }           
+        });
+    }
+    
+    @Override
+    public void inheritPermissionsFromEntityType( FullQualifiedName entityTypeFqn ){
+        
+    }
+    
+    @Override
+    public void derivePermissions( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties, String derivedOption){
+        switch( derivedOption ){
+            case "PropertyTypeEntitySet": 
+                inheritPermissionsFromPropertyTypeAndEntitySet( entityTypeFqn, entitySetName, properties );
+                break;
+            case "PropertyType":
+                inheritPermissionsFromPropertyType( entityTypeFqn, properties );
+                break;
+            default: // Do nothing
+        }
+    }
+    
+    @Override
+    public void inheritPermissionsFromPropertyTypeAndEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties ){
+        int entitySetPermission = getPermissionsForEntitySet( role, entityTypeFqn, entitySetName );
+        inheritPermissionsFromPropertyTypeAndEntitySet( role, entityTypeFqn, entitySetName, entitySetPermission, properties);
+    }
+    
+    private void inheritPermissionsFromPropertyTypeAndEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, int entitySetPermission, Set<FullQualifiedName> properties){
+        properties.forEach( propertyTypeFqn -> {
+            int propertyTypePermission = getPermissionsForPropertyType( role, propertyTypeFqn );
+            boolean modifiedReadOrWrite = false;
+            
+            if( Permission.canDoAction( entitySetPermission, Permission.READ ) && Permission.canDoAction( propertyTypePermission, Permission.READ ) ){
+                addPermissionsForPropertyTypeInEntitySet( role, entityTypeFqn, entitySetName, propertyTypeFqn, ImmutableSet.of(Permission.READ) );
+                modifiedReadOrWrite = true;
+            }
+            
+            if( Permission.canDoAction( entitySetPermission, Permission.WRITE ) && Permission.canDoAction( propertyTypePermission, Permission.WRITE ) ){
+                addPermissionsForPropertyTypeInEntitySet( role, entityTypeFqn, entitySetName, propertyTypeFqn, ImmutableSet.of(Permission.WRITE) );
+                modifiedReadOrWrite = true;
+            }
+            
+            if( !modifiedReadOrWrite && Permission.canDoAction( entitySetPermission, Permission.DISCOVER ) && Permission.canDoAction( propertyTypePermission, Permission.DISCOVER ) ){
+                addPermissionsForPropertyTypeInEntitySet( role, entityTypeFqn, entitySetName, propertyTypeFqn, ImmutableSet.of(Permission.DISCOVER) );
+            }
+        });
+    }
+   
+    @Override
+    public void inheritPermissionsFromPropertyTypeAndEntitySet( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties ){
+        // Get all the permission info of an entity set. There is a list of roles involved there.
+        ResultSet resultSet = tableManager.getAclsForEntitySet( entityTypeFqn, entitySetName ); 
+        Map<String, Integer> rolesToPermissions = EdmDetailsAdapter.aclAdapter( resultSet );
+        for( Map.Entry<String, Integer> entry : rolesToPermissions.entrySet() ){
+            inheritPermissionsFromPropertyTypeAndEntitySet( entry.getKey(), entityTypeFqn, entitySetName, entry.getValue(), properties);
+            //TODO rethink if this is a good design choice; Cassandra seems to have automatic batch statement if the partition key is the same. For this reason you may want to do outer for loop with properties instead.
+        }
+    }
+   
+    @Override
+    public void inheritPermissionsFromPropertyTypeAndEntityType( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties){
+        properties.forEach( propertyTypeFqn -> {
+            int permission = getPermissionsForPropertyTypeInEntityType( role, entityTypeFqn, propertyTypeFqn );
+            setPermissionsForPropertyTypeInEntitySet(role, entityTypeFqn, entitySetName, propertyTypeFqn, permission);
+        });   
+    }
+
+    @Override
+    public void inheritPermissionsFromPropertyTypeAndEntityType( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties){
+        ResultSet resultSet = tableManager.getAclsForEntityType( entityTypeFqn ); 
+        Map<String, Integer> rolesToPermissions = EdmDetailsAdapter.aclAdapter( resultSet );
+        properties.forEach( propertyTypeFqn -> {
+            for( Map.Entry<String, Integer> entry : rolesToPermissions.entrySet() ){
+                Integer permission = entry.getValue();
+                if( permission != 0){
+                    setPermissionsForPropertyTypeInEntitySet( entry.getKey(), entityTypeFqn, entitySetName, propertyTypeFqn, permission);
+                    //TODO rethink if this is a good design choice; Cassandra seems to have automatic batch statement if the partition key is the same. For this reason you may want to do outer for loop with properties instead.
+                }
+            }   
+        });
+    }
+    
 }

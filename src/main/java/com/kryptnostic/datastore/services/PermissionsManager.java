@@ -91,15 +91,33 @@ public interface PermissionsManager {
 	
     void removeFromEntitySetsAlterRightsTable( FullQualifiedName entityTypeFqn, String name );
     
-    // Permission inheritance
+    // Permission inheritance: for property type in Entity Type
     void derivePermissions( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties, String derivedOption );
 
     void inheritPermissionsFromPropertyType( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
 
     void inheritPermissionsFromPropertyType( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
 
-    void inheritPermissionsFromBothTypes( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
+    void inheritPermissionsFromPropertyTypeAndEntityType( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
 
-    void inheritPermissionsFromBothTypes( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
-    
+    void inheritPermissionsFromPropertyTypeAndEntityType( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
+
+    // Permission inheritance: for Entity Sets
+    void derivePermissions( FullQualifiedName entityTypeFqn, String entitySetName, String derivedOption );
+
+    void inheritPermissionsFromEntityType( String role, FullQualifiedName entityTypeFqn );
+
+    void inheritPermissionsFromEntityType( FullQualifiedName entityTypeFqn );
+
+    // Permission inheritance: for property type in Entity Set
+    void derivePermissions( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties, String derivedOption );
+
+    void inheritPermissionsFromPropertyTypeAndEntityType( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties );
+
+    void inheritPermissionsFromPropertyTypeAndEntityType( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties );
+
+    void inheritPermissionsFromPropertyTypeAndEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties );
+
+    void inheritPermissionsFromPropertyTypeAndEntitySet( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties );
+
 }

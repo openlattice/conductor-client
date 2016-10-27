@@ -239,6 +239,8 @@ public final class Queries {
     // Read queries for datastore.
     public static final String GET_ALL_ENTITY_SETS                 = "select * from sparks."
             + DatastoreConstants.ENTITY_SETS_TABLE;
+    public static final String GET_ALL_ENTITY_SETS_FOR_ENTITY_TYPE = "select * from sparks."
+            + DatastoreConstants.ENTITY_SETS_TABLE + " where typename = ?";
     public static final String GET_ENTITY_SET_BY_NAME              = "select * from sparks."
             + DatastoreConstants.ENTITY_SETS_TABLE + " where name = ?";
     public static final String GET_ALL_ENTITY_TYPES_QUERY          = "select * from sparks."
@@ -329,6 +331,12 @@ public final class Queries {
     public static final String GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_TYPE = "SELECT * from sparks."
             + DatastoreConstants.ENTITY_TYPES_ALTER_RIGHTS_ACLS_TABLE + " WHERE namespace=:"
             + ParamNames.NAMESPACE + " AND name=:"
+            + ParamNames.NAME;
+
+    public static final String GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_SET = "SELECT * from sparks."
+            + DatastoreConstants.ENTITY_SETS_ALTER_RIGHTS_ACLS_TABLE + " WHERE namespace=:"
+            + ParamNames.NAMESPACE + " AND type=:"
+            + ParamNames.ENTITY_TYPE + " AND name=:"
             + ParamNames.NAME;
     
     public static final String GET_ACLS_FOR_PROPERTY_TYPE = "SELECT * from sparks."
