@@ -33,14 +33,6 @@ public class EntityType extends TypePK {
     @Column(
         name = "properties" )
     public Set<FullQualifiedName>  properties;
-    
-    @JsonIgnore
-    @Transient
-    private transient Set<FullQualifiedName> viewableProperties;
-    
-    @JsonIgnore
-    @Transient
-    private transient Set<FullQualifiedName> viewableKey;
 
     public EntityType setNamespace( String namespace ) {
         this.namespace = namespace;
@@ -98,33 +90,12 @@ public class EntityType extends TypePK {
         this.properties.removeAll( properties );
         return this;
     }
-    
-    @JsonGetter("properties")
-    public Set<FullQualifiedName> getViewableProperties() {
-        return viewableProperties;
-    }
-
-    public EntityType setViewableProperties( Set<FullQualifiedName> viewableProperties ) {
-        this.viewableProperties = viewableProperties;
-        return this;
-    }
-    
-    @JsonGetter("key")
-    public Set<FullQualifiedName> getViewableKey() {
-        return viewableKey;
-    }
-
-    public EntityType setViewableKey( Set<FullQualifiedName> viewableKey ) {
-        this.viewableKey = viewableKey;
-        return this;
-    }
-
 
     @Override
     public String toString() {
         return "ObjectType [namespace=" + namespace + ", type=" + name + ", typename=" + typename
-                + ", key=" + viewableKey
-                + ", allowed=" + viewableProperties
+                + ", key=" + key
+                + ", allowed=" + properties
                 + ", schemas=" + schemas + "]";
     }
 

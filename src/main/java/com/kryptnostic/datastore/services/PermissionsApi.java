@@ -61,19 +61,6 @@ public interface PermissionsApi {
     String NAME_PATH               = "/{" + NAME + "}";
     String ACL_PATH                = "/acl";
 
-/** TODO there should be an endpoint returning all users's rights on a type
-    @GET( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ACL_PATH )
-    Map< UUID, Set<String> > getPropertyTypeAcls( @Path( NAMESPACE ) String namespace, @Path( NAME ) String name );
-*/ 
-
-    /**
-     * Update permissions of property types. 
-     * @param requests
-     * @return
-     */
-    @POST( CONTROLLER + PROPERTY_TYPE_BASE_PATH )
-    Response updatePropertyTypesAcls( @Body Set<AclRequest> requests );
-
     @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH )
     Response updateEntityTypesAcls( @Body Set<AclRequest> requests );
 
@@ -85,18 +72,6 @@ public interface PermissionsApi {
 
     @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
     Response updatePropertyTypeInEntitySetAcls( @Body Set<PropertyTypeInEntitySetAclRequest> requests );
-    
-    @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
-    Response derivePropertyTypeInEntityTypeAcls(@Body Set<DerivePropertyTypeInEntityTypeAclRequest> requests,  @RequestParam( INHERIT ) String inheritOption );
-
-    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
-    Response derivePropertyTypeInEntitySetAcls(@Body Set<DerivePropertyTypeInEntitySetAclRequest> requests,  @RequestParam( INHERIT ) String inheritOption );
-
-    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH )
-    Response deriveEntitySetAcls(@Body Set<DeriveEntitySetAclRequest> requests,  @RequestParam( INHERIT ) String inheritOption );
-
-    @DELETE( CONTROLLER + PROPERTY_TYPE_BASE_PATH )
-    Response removePropertyTypeAcls( @Body Set<FullQualifiedName> propertyTypeFqns );
 
     @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH )
     Response removeEntityTypeAcls( @Body Set<FullQualifiedName> entityTypeFqns );

@@ -43,26 +43,4 @@ public class EdmDetailsAdapter {
 		Preconditions.checkNotNull( es.getTypename(), "Entity set has no associated entity type.");
 		return es.setType( ctb.getEntityTypeForTypename( es.getTypename() ) );
 	}
-	
-	public static EntityType setViewableDetails( CassandraTableManager ctb, ActionAuthorizationService authzService, EntityType entityType){
-		//Set viewable properties of entity type
-		Set<FullQualifiedName> viewableProperties = entityType.getProperties().stream()
-				.filter( propertyTypeFqn -> authzService.getPropertyType( currentRoles, propertyTypeFqn ) )
-				.collect( Collectors.toSet() );
-		entityType.setViewableProperties( viewableProperties );
-		
-	    //Set viewable key of entity type
-		Set<FullQualifiedName> viewableKey = Sets.intersection( entityType.getKey(), viewableProperties );
-		entityType.setViewableKey( viewableKey );
-		
-		return entityType;
-	}
-
-	public static Map<String, Integer> aclAdapter( ResultSet resultSet ){
-        Map<String, Integer> rolesToPermissions = new HashMap<>();
-        for(Row row: resultSet){
-            rolesToPermissions.put( row.getString( CommonColumns.ROLE.cql() ), row.getInt( CommonColumns.PERMISSIONS.cql() ) );
-        }
-        return rolesToPermissions;
-	}
 }

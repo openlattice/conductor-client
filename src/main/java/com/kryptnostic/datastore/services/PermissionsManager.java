@@ -9,15 +9,9 @@ import com.kryptnostic.datastore.Permission;
 
 public interface PermissionsManager {
     
-	// Permissions for a user of an individual type
-	void addPermissionsForPropertyType( String role, FullQualifiedName fqn, Set<Permission> permissions );
-	
-	void removePermissionsForPropertyType( String role, FullQualifiedName fqn, Set<Permission> permissions );
-
-	void setPermissionsForPropertyType( String role, FullQualifiedName fqn, Set<Permission> permissions );
-
-	boolean checkUserHasPermissionsOnPropertyType( Set<String> roles, FullQualifiedName fqn, Permission permission );
-
+    /**
+     * Permissions for a user of an individual type
+     */
 	void addPermissionsForEntityType( String role, FullQualifiedName fqn, Set<Permission> permissions );
 	
 	void removePermissionsForEntityType( String role, FullQualifiedName fqn, Set<Permission> permissions );
@@ -34,16 +28,7 @@ public interface PermissionsManager {
 
 	boolean checkUserHasPermissionsOnEntitySet( Set<String> roles, FullQualifiedName type, String name, Permission permission );
 
-	// TODO Schema ones not implemented yet
-	void addPermissionsForSchema( String role, FullQualifiedName fqn, Set<Permission> permissions );			
-
-	void removePermissionsForSchema( String role, FullQualifiedName fqn, Set<Permission> permissions );
-
-	void setPermissionsForSchema( String role, FullQualifiedName fqn, Set<Permission> permissions );
-
-	boolean checkUserHasPermissionsOnSchema( Set<String> roles, FullQualifiedName fqn, Permission permission );
-
-	// Permissions for a user of sub-types
+	// Permissions for a user of pair of types
     void addPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
     
     void removePermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
@@ -60,21 +45,7 @@ public interface PermissionsManager {
 
     boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( Set<String> roles, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Permission permission );
 
-	/**
-	 * 	User with ALTER rights to Entity types would automatically have DISCOVER rights to all property types of that entity type
-	 *  This is to avoid conflicts when a user tries to add property type to an entity type, which already exists but is unbeknownst to him
-	 *  For this reason, need a table to look up users with ALTER rights from entity types
-	 */
-    void addToEntityTypesAlterRightsTable( String role, FullQualifiedName entityTypeFqn );
-    
-    void removeFromEntityTypesAlterRightsTable( String role, FullQualifiedName entityTypeFqn );
-    
-    void addToEntitySetsAlterRightsTable( String role, FullQualifiedName entityTypeFqn, String name );
-    
-    void removeFromEntitySetsAlterRightsTable( String role, FullQualifiedName entityTypeFqn, String name );
-
 	// Utility functions for removing all permission details associated to a type
-	void removePermissionsForPropertyType( FullQualifiedName fqn );
 
     void removePermissionsForEntityType( FullQualifiedName fqn );
 
@@ -87,38 +58,5 @@ public interface PermissionsManager {
     void removePermissionsForPropertyTypeInEntitySet( FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn );
 
     void removePermissionsForPropertyTypeInEntitySet( FullQualifiedName entityTypeFqn, String entitySetName );
-
-	void removeFromEntityTypesAlterRightsTable( FullQualifiedName entityTypeFqn );
-	
-    void removeFromEntitySetsAlterRightsTable( FullQualifiedName entityTypeFqn, String name );
-    
-    // Permission inheritance: for property type in Entity Type
-    void derivePermissions( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties, String derivedOption );
-
-    void inheritPermissionsFromPropertyType( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
-
-    void inheritPermissionsFromPropertyType( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
-
-    void inheritPermissionsFromPropertyTypeAndEntityType( String role, FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
-
-    void inheritPermissionsFromPropertyTypeAndEntityType( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties );
-
-    // Permission inheritance: for Entity Sets
-    void derivePermissions( FullQualifiedName entityTypeFqn, String entitySetName, String derivedOption );
-
-    void inheritPermissionsFromEntityType( String role, FullQualifiedName entityTypeFqn );
-
-    void inheritPermissionsFromEntityType( FullQualifiedName entityTypeFqn );
-
-    // Permission inheritance: for property type in Entity Set
-    void derivePermissions( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties, String derivedOption );
-
-    void inheritPermissionsFromPropertyTypeAndEntityType( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties );
-
-    void inheritPermissionsFromPropertyTypeAndEntityType( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties );
-
-    void inheritPermissionsFromPropertyTypeAndEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties );
-
-    void inheritPermissionsFromPropertyTypeAndEntitySet( FullQualifiedName entityTypeFqn, String entitySetName, Set<FullQualifiedName> properties );
 
 }

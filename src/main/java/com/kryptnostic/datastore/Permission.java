@@ -18,7 +18,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 public enum Permission {
 	/**
 	 * Alter means changing metadata of a type - for example, adding/removing property types to an entity type
-	 * Owner has deletion right of an entire type. 
+	 * WARNING: Owner is currently being used as a shorthand for having all rights. In particular, it should never be used in ActionAuthorizationService
 	 */
     DISCOVER, READ, WRITE, ALTER, OWNER;
 	
@@ -62,8 +62,8 @@ public enum Permission {
     	    	return 5;
     	    case ALTER: // Being able to alter means you can discover this type: 8+1 = 9
     	    	return 9;
-    	    case OWNER: // Being an owner gives you all the possible rights: 16+8+4+2+1 = 31.
-    	        return 31;
+    	    case OWNER: // Being an owner gives you all the possible rights: 8+4+2+1 = 15.
+    	        return 15;
     	    default:
     	    	return 0;
     	}
@@ -87,8 +87,6 @@ public enum Permission {
     	    	return 2;
     	    case ALTER:
     	    	return 3;
-    	    case OWNER:
-    	        return 4;
     	    default:
     	    	return -1;
     	}

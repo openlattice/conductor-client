@@ -22,36 +22,23 @@ import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails
 import com.kryptnostic.datastore.util.Util;
 
 public class SchemaDetailsAdapter implements Function<Row, Schema> {
-    private final SchemaFactory        schemaFactory;
+    private final SchemaFactory         schemaFactory;
     private final CassandraTableManager ctb;
-    private final Mapper<EntityType>   entityTypeMapper;
-    private final Mapper<PropertyType> propertyTypeMapper;
-    private final ActionAuthorizationService   authzService;
-    private final Set<TypeDetails>     requestedDetails;
-    
-	/** 
-	 * Being of debug
-	 */
-	private static String username;
-	/**
-	 * End of debug
-	 */
+    private final Mapper<EntityType>    entityTypeMapper;
+    private final Mapper<PropertyType>  propertyTypeMapper;
+    private final Set<TypeDetails>      requestedDetails;
 
     public SchemaDetailsAdapter(
             String username,
             CassandraTableManager ctb,
             Mapper<EntityType> entityTypeMapper,
             Mapper<PropertyType> propertyTypeMapper,
-            ActionAuthorizationService authzService,
             Set<TypeDetails> requestedDetails ) {
-    	this.ctb = ctb;
+        this.ctb = ctb;
         this.entityTypeMapper = entityTypeMapper;
         this.propertyTypeMapper = propertyTypeMapper;
-        this.authzService = authzService;
         this.requestedDetails = requestedDetails;
         this.schemaFactory = schemaFactoryWithAclId( ACLs.EVERYONE_ACL );
-        //debug
-        this.username = username;
     }
 
     @Override
@@ -73,27 +60,17 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
     }
 
     public void addEntityTypesToSchema( Schema schema ) {
-    	if( username != null ){
-            Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
-                    .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
-                    .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
-                    .map( entityType -> EdmDetailsAdapter.setViewableDetails(ctb, authzService, entityType) )
-                    .collect( Collectors.toSet() );
-            schema.addEntityTypes( entityTypes );
-    	} else {
-    		// no currentId; this should only happen when system first starts up
-            Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
-                    .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
-                    .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
-                    .collect( Collectors.toSet() );
-            schema.addEntityTypes( entityTypes );   		
-    	}
+        Set<EntityType> entityTypes = schema.getEntityTypeFqns().stream()
+                .map( type -> entityTypeMapper.getAsync( type.getNamespace(), type.getName() ) )
+                .map( futureEntityType -> Util.getFutureSafely( futureEntityType ) ).filter( e -> e != null )
+                .collect( Collectors.toSet() );
+        schema.addEntityTypes( entityTypes );
     }
 
     public void addPropertyTypesToSchema( Schema schema ) {
         Set<FullQualifiedName> propertyTypeNames = Sets.newHashSet();
         propertyTypeNames.addAll( schema.getPropertyTypeFqns() );
-        
+
         if ( schema.getEntityTypes().isEmpty() && !schema.getEntityTypeFqns().isEmpty() ) {
             addEntityTypesToSchema( schema );
         }
@@ -130,7 +107,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
                     } );
             Set<FullQualifiedName> propertyTypeFqns = r.get( CommonColumns.PROPERTIES.cql(),
                     new TypeToken<Set<FullQualifiedName>>() {
-						private static final long serialVersionUID = 888512488865063571L;
+                        private static final long serialVersionUID = 888512488865063571L;
                     } );
             if ( entityTypeFqns == null ) {
                 entityTypeFqns = ImmutableSet.of();

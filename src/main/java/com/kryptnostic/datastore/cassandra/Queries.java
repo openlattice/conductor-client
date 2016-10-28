@@ -29,16 +29,7 @@ public final class Queries {
     // Keyspace setup
     public static final String CREATE_KEYSPACE = "CREATE KEYSPACE IF NOT EXISTS sparks WITH REPLICATION={ 'class' : 'SimpleStrategy', 'replication_factor' : 1 } AND DURABLE_WRITES=true";
 
-    // Table Creation
-    public static final String createPropertyTypesAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_ACLS )
-                .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.ROLE )
-                .columns( CommonColumns.PERMISSIONS )
-                .buildQuery();
-    }
-    
+    // Table Creation    
     public static final String createEntityTypesAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ACLS )
                 .ifNotExists()
@@ -176,22 +167,6 @@ public final class Queries {
                 .buildQuery();
     }
     
-    public static final String createEntityTypesAlterRightsAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS )
-                .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.ROLE )
-                .buildQuery();
-    }
-    
-    public static final String createEntitySetsAlterRightsAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ALTER_RIGHTS_ACLS )
-                .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.TYPE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.ROLE )
-                .buildQuery();
-    }
-    
     // Index creation
     /*
      * HOW DOES SOFTWARE EVEN WORK? https://issues.apache.org/jira/browse/CASSANDRA-11331 Need to remove specific index
@@ -326,21 +301,4 @@ public final class Queries {
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
-    
-    //Acl
-    public static final String GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_TYPE = "SELECT * from sparks."
-            + DatastoreConstants.ENTITY_TYPES_ALTER_RIGHTS_ACLS_TABLE + " WHERE namespace=:"
-            + ParamNames.NAMESPACE + " AND name=:"
-            + ParamNames.NAME;
-
-    public static final String GET_USERS_WITH_ALTER_RIGHTS_FOR_ENTITY_SET = "SELECT * from sparks."
-            + DatastoreConstants.ENTITY_SETS_ALTER_RIGHTS_ACLS_TABLE + " WHERE namespace=:"
-            + ParamNames.NAMESPACE + " AND type=:"
-            + ParamNames.ENTITY_TYPE + " AND name=:"
-            + ParamNames.NAME;
-    
-    public static final String GET_ACLS_FOR_PROPERTY_TYPE = "SELECT * from sparks."
-            + DatastoreConstants.PROPERTY_TYPES_ACLS_TABLE + " WHERE namespace=:"
-            + ParamNames.NAMESPACE + " AND name=:"
-            + ParamNames.NAME;
 }

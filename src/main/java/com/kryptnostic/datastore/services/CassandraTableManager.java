@@ -84,9 +84,6 @@ public class CassandraTableManager {
     private final PreparedStatement                                   propertyTypeAddSchema;
     private final PreparedStatement                                   propertyTypeRemoveSchema;
     
-    private final PreparedStatement                                   setPermissionsForPropertyType;
-    private final PreparedStatement                                   getPermissionsForPropertyType;
-    private final PreparedStatement                                   deleteFromPropertyTypesAclsTable;
     private final PreparedStatement                                   setPermissionsForEntityType;
     private final PreparedStatement                                   getPermissionsForEntityType;
     private final PreparedStatement                                   deleteFromEntityTypesAclsTable;
@@ -94,7 +91,6 @@ public class CassandraTableManager {
     private final PreparedStatement                                   getPermissionsForEntitySet;
     private final PreparedStatement                                   deleteFromEntitySetsAclsTable;
     
-    private final PreparedStatement                                   getAclsForPropertyType;
     private final PreparedStatement                                   getAclsForEntityType;
     private final PreparedStatement                                   getAclsForEntitySet;
     
@@ -107,12 +103,6 @@ public class CassandraTableManager {
     private final PreparedStatement                                   deleteRowFromPropertyTypeInEntitySetsAclsTable;
     private final PreparedStatement                                   deleteEntitySetFromPropertyTypeInEntitySetsAclsTable;
     
-    private final PreparedStatement                                   addUserToEntityTypesAlterRightsTable;
-    private final PreparedStatement                                   removeUserFromEntityTypesAlterRightsTable;
-    private final PreparedStatement                                   removeEntityTypeFromEntityTypesAlterRightsTable;
-    private final PreparedStatement                                   addUserToEntitySetsAlterRightsTable;
-    private final PreparedStatement                                   removeUserFromEntitySetsAlterRightsTable;
-    private final PreparedStatement                                   removeEntitySetFromEntitySetsAlterRightsTable;
 
     public CassandraTableManager(
             String keyspace,
@@ -247,30 +237,7 @@ public class CassandraTableManager {
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
         		);
-        
-        this.setPermissionsForPropertyType = session
-        		.prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_ACLS.getTableName() )
-        		        .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-        		        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
-        		);
-        
-        this.getPermissionsForPropertyType = session
-        		.prepare( QueryBuilder.select()
-        				.from( keyspace, Tables.PROPERTY_TYPES_ACLS.getTableName() )
-        		        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
-        		);
-        
-        this.deleteFromPropertyTypesAclsTable = session
-        		.prepare( QueryBuilder.delete()
-        				.from( keyspace, Tables.PROPERTY_TYPES_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-        		);
-        
+
         this.setPermissionsForEntityType = session
         		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
         		        .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
@@ -320,13 +287,6 @@ public class CassandraTableManager {
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
                 );
         
-        this.getAclsForPropertyType = session
-                .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                );
-
         this.getAclsForEntityType = session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
@@ -411,55 +371,7 @@ public class CassandraTableManager {
                         .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
                 );
-        
-        this.addUserToEntityTypesAlterRightsTable = session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS.getTableName() )
-                        .value( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() )
-                        .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
-                        .value( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() )
-                );
-        
-        this.removeUserFromEntityTypesAlterRightsTable = session
-                .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
-                );
-        
-        this.removeEntityTypeFromEntityTypesAlterRightsTable = session
-                .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_TYPES_ALTER_RIGHTS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) )
-                );
-        
-        this.addUserToEntitySetsAlterRightsTable = session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_SETS_ALTER_RIGHTS_ACLS.getTableName() )
-                        .value( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() )
-                        .value( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() )
-                        .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
-                        .value( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() )
-                );
-        
-        this.removeUserFromEntitySetsAlterRightsTable = session
-                .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_SETS_ALTER_RIGHTS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
-                );
-        
-        this.removeEntitySetFromEntitySetsAlterRightsTable = session
-                .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_SETS_ALTER_RIGHTS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) )
-                );
-
-    }
+            }
 
     public String getKeyspace() {
         return keyspace;
@@ -1008,16 +920,12 @@ public class CassandraTableManager {
     }
 
     private static void createAclsTableIfNotExists( String keyspace, Session session ) {
-        session.execute( Queries.createPropertyTypesAclsTableQuery( keyspace ) );
         session.execute( Queries.createEntityTypesAclsTableQuery( keyspace ) );
         session.execute( Queries.createEntitySetsAclsTableQuery( keyspace ) );
         session.execute( Queries.createSchemasAclsTableQuery( keyspace ) );
         
         session.execute( Queries.createPropertyTypesInEntityTypesAclsTableQuery( keyspace ) );
         session.execute( Queries.createPropertyTypesInEntitySetsAclsTableQuery( keyspace ) );
-        
-        session.execute( Queries.createEntityTypesAlterRightsAclsTableQuery( keyspace ) );
-        session.execute( Queries.createEntitySetsAlterRightsAclsTableQuery( keyspace ) );
     }
 
     private static boolean createSchemasTableIfNotExists( String keyspace, UUID aclId, Session session ) {
@@ -1058,45 +966,9 @@ public class CassandraTableManager {
      Acl Operations
      **************/        
 
-    public int getPermissionsForPropertyType( String role, FullQualifiedName propertyTypeFqn ) {
-        if( role == Constants.ROLE_ADMIN ){
-            return Permission.ALTER.asNumber();
-        } else {
-        	Row propertyTypePermission = session.execute( this.getPermissionsForPropertyType.bind(
-        		    propertyTypeFqn.getNamespace(),
-        		    propertyTypeFqn.getName(),
-        		    role
-        		) ).one();
-        	if( propertyTypePermission != null ){
-        		return Util.transformSafely( propertyTypePermission, r -> r.getInt( CommonColumns.PERMISSIONS.cql() ) );
-        	} else {
-        		// Property Type not found in Acl table; would mean no permission for now
-        		// TODO: change this, if you want default permission of a group
-        		return 0;
-        	}
-        }
-    }
-
-    public void setPermissionsForPropertyType( String role, FullQualifiedName propertyTypeFqn, int permission ) {
-        session.execute( this.setPermissionsForPropertyType.bind(
-        		    permission, 
-        		    propertyTypeFqn.getNamespace(),
-        		    propertyTypeFqn.getName(),
-        		    role
-        		)  );
-    }
-    
-    public void setPermissionsForPropertyType( String role, FullQualifiedName propertyTypeFqn, Permission permission ) {
-    	setPermissionsForPropertyType( role, propertyTypeFqn, permission.asNumber() );
-    }
-    
-    public void deleteFromPropertyTypesAclsTable( FullQualifiedName propertyTypeFqn ) {
-        session.execute( deleteFromPropertyTypesAclsTable.bind( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() ) );
-    }
-
     public int getPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.ALTER.asNumber();
+            return Permission.OWNER.asNumber();
         } else {
         	Row entityTypePermission = session.execute( this.getPermissionsForEntityType.bind(
         		    entityTypeFqn.getNamespace(),
@@ -1132,7 +1004,7 @@ public class CassandraTableManager {
 
     public int getPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.ALTER.asNumber();
+            return Permission.OWNER.asNumber();
         } else {
             Row entityTypePermission = session.execute( this.getPermissionsForEntitySet.bind(
                     entityTypeFqn.getNamespace(),
@@ -1168,10 +1040,6 @@ public class CassandraTableManager {
         session.execute( deleteFromEntitySetsAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName ) );
     }
     
-    public ResultSet getAclsForPropertyType( FullQualifiedName propertyTypeFqn ) {
-        return session.execute( getAclsForPropertyType.bind( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() ) );
-    }
-    
     public ResultSet getAclsForEntityType( FullQualifiedName entityTypeFqn ) {
         return session.execute( getAclsForEntityType.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
     }
@@ -1182,7 +1050,7 @@ public class CassandraTableManager {
     
     public int getPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.ALTER.asNumber();
+            return Permission.OWNER.asNumber();
         } else {
             Row propertyTypeInentityTypePermission = session.execute( this.getPermissionsForPropertyTypeInEntityType.bind(
         		    entityTypeFqn.getNamespace(),
@@ -1224,7 +1092,7 @@ public class CassandraTableManager {
     
     public int getPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.ALTER.asNumber();
+            return Permission.OWNER.asNumber();
         } else {
             Row propertyTypeInentitySetPermission = session.execute( this.getPermissionsForPropertyTypeInEntitySet.bind(
                     entityTypeFqn.getNamespace(),
@@ -1264,41 +1132,5 @@ public class CassandraTableManager {
     
     public void deleteFromPropertyTypeInEntitySetsAclsTable( FullQualifiedName entityTypeFqn, String entitySetName ) {
         session.execute( deleteEntitySetFromPropertyTypeInEntitySetsAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName ) );
-    }
-    
-    public void addToEntityTypesAlterRightsTable( String role, FullQualifiedName entityTypeFqn ){
-    	session.execute( this.addUserToEntityTypesAlterRightsTable.bind(
-    			    entityTypeFqn.getNamespace(), entityTypeFqn.getName(), role
-    			) );
-    }
-    	
-    public void removeFromEntityTypesAlterRightsTable( String role, FullQualifiedName entityTypeFqn ){
-    	session.execute( this.removeUserFromEntityTypesAlterRightsTable.bind(
-       			    entityTypeFqn.getNamespace(), entityTypeFqn.getName(), role
-       			) );    		
-    }
-    
-    public void removeFromEntityTypesAlterRightsTable( FullQualifiedName entityTypeFqn ){
-    	session.execute( this.removeEntityTypeFromEntityTypesAlterRightsTable.bind(
-       			    entityTypeFqn.getNamespace(), entityTypeFqn.getName()
-       			) );    		
-    }
-    
-    public void addToEntitySetsAlterRightsTable( String role, FullQualifiedName entityTypeFqn, String name ){
-        session.execute( this.addUserToEntitySetsAlterRightsTable.bind(
-                    entityTypeFqn.getNamespace(), entityTypeFqn.getName(), name, role
-                ) );
-    }
-        
-    public void removeFromEntitySetsAlterRightsTable( String role, FullQualifiedName entityTypeFqn, String name ){
-        session.execute( this.removeUserFromEntitySetsAlterRightsTable.bind(
-                    entityTypeFqn.getNamespace(), entityTypeFqn.getName(), name, role
-                ) );            
-    }
-    
-    public void removeFromEntitySetsAlterRightsTable( FullQualifiedName entityTypeFqn, String name ){
-        session.execute( this.removeEntitySetFromEntitySetsAlterRightsTable.bind(
-                    entityTypeFqn.getNamespace(), entityTypeFqn.getName(), name
-                ) );            
     }
 }
