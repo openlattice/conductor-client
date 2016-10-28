@@ -1,6 +1,8 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.io.Serializable;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -25,6 +27,13 @@ public class Lambdas implements Serializable {
             String entitySetName ) {
         return (Function<ConductorSparkApi, QueryResult> & Serializable) ( api ) -> api
                 .getAllEntitiesOfEntitySet( entityFqn, entitySetName );
+    }
+    
+    public static Function<ConductorSparkApi, Boolean> setUser(
+            String username,
+            Set<String> currentRoles ) {
+        return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
+                .setUser( username, currentRoles );
     }
 
 }

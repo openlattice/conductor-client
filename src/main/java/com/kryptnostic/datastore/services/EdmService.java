@@ -53,7 +53,7 @@ public class EdmService implements EdmManager {
     private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
 
 	/** 
-	 * Being of debug
+	 * Being of debug for Ho Chung
 	 */
     private String username;
 	private Set<String> currentRoles;
@@ -63,7 +63,7 @@ public class EdmService implements EdmManager {
 		this.currentRoles = roles;
 	}
 	/**
-	 * End of debug
+	 * End of debug for Ho Chung
 	 */
     
     private final Session              session;
@@ -554,7 +554,7 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public EntityType getEntityType( FullQualifiedName entityTypeFqn ) {
+    public EntityType getEntityType( FullQualifiedName entityTypeFqn ) {        
     	if( authzService.getEntityType( currentRoles, entityTypeFqn ) ){
     		EntityType entityType = entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() );
     	    Preconditions.checkNotNull( entityType, "Entity type does not exist" );
