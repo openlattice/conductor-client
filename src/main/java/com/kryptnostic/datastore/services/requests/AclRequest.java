@@ -10,23 +10,56 @@ import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
 public class AclRequest {
-    private final String role;
-    private final Action action;
-    private final FullQualifiedName fqn;
-    private final Set<Permission> permissions;
+    protected String role;
+    protected Action action;
+    protected FullQualifiedName fqn;
+    protected Set<Permission> permissions;
     
     @JsonCreator
-    public AclRequest(
+    public AclRequest createAclRequest(
             @JsonProperty( SerializationConstants.ROLE ) String role,
             @JsonProperty( SerializationConstants.ACTION) Action action,
             @JsonProperty( SerializationConstants.FQN) FullQualifiedName fqn,
             @JsonProperty( SerializationConstants.PERMISSIONS) Set<Permission> permissions){
-        this.role = role;
-        this.action = action;
-        this.fqn = fqn;
-        this.permissions = permissions;        
+        return new AclRequest().setRole(role).setAction( action ).setFqn( fqn ).setPermissions( permissions );
     }
     
+    public String getRole() {
+        return role;
+    }
+
+    public Action getAction() {
+        return action;
+    }
+
+    public FullQualifiedName getFqn() {
+        return fqn;
+    }
+
+    public Set<Permission> getPermissions() {
+        return permissions;
+    }
+    
+    public AclRequest setRole( String role ) {
+        this.role = role;
+        return this;
+    }
+
+    public AclRequest setAction( Action action ) {
+        this.action = action;
+        return this;
+    }
+
+    public AclRequest setFqn( FullQualifiedName fqn ) {
+        this.fqn = fqn;
+        return this;
+    }
+
+    public AclRequest setPermissions( Set<Permission> permissions ) {
+        this.permissions = permissions;
+        return this;
+    }
+
     @Override
     public boolean equals( Object o ) {
         if ( this == o )
@@ -52,22 +85,6 @@ public class AclRequest {
         result = 31 * result + ( fqn != null ? fqn.hashCode() : 0 );
         result = 31 * result + ( permissions != null ? permissions.hashCode() : 0 );
         return result;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public Action getAction() {
-        return action;
-    }
-
-    public FullQualifiedName getFqn() {
-        return fqn;
-    }
-
-    public Set<Permission> getPermissions() {
-        return permissions;
     }
 
 }

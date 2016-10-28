@@ -34,6 +34,7 @@ public interface PermissionsManager {
 
 	boolean checkUserHasPermissionsOnEntitySet( Set<String> roles, FullQualifiedName type, String name, Permission permission );
 
+	// TODO Schema ones not implemented yet
 	void addPermissionsForSchema( String role, FullQualifiedName fqn, Set<Permission> permissions );			
 
 	void removePermissionsForSchema( String role, FullQualifiedName fqn, Set<Permission> permissions );

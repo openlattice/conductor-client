@@ -4,11 +4,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.datastore.services.requests.AclRequest;
+import com.kryptnostic.datastore.services.requests.DeriveEntitySetAclRequest;
+import com.kryptnostic.datastore.services.requests.DerivePropertyTypeInEntitySetAclRequest;
+import com.kryptnostic.datastore.services.requests.DerivePropertyTypeInEntityTypeAclRequest;
+import com.kryptnostic.datastore.services.requests.EntitySetAclRequest;
+import com.kryptnostic.datastore.services.requests.EntitySetRemoveAclRequest;
+import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRequest;
+import com.kryptnostic.datastore.services.requests.PropertyTypeInEntityTypeAclRequest;
 
 import retrofit.client.Response;
 import retrofit.http.Body;
@@ -36,6 +45,7 @@ public interface PermissionsApi {
     String SCHEMA         = "schema";
     String SCHEMAS        = "schemas";
     String ACTION         = "action";
+    String INHERIT        = "inherit";
 
     // {namespace}/{schema_name}/{class}/{FQN}/{FQN}
     /*
@@ -51,18 +61,47 @@ public interface PermissionsApi {
     String NAME_PATH               = "/{" + NAME + "}";
     String ACL_PATH                = "/acl";
 
-/** TODO: there should be an endpoint returning all users's rights on a type
+/** TODO there should be an endpoint returning all users's rights on a type
     @GET( PROPERTY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ACL_PATH )
     Map< UUID, Set<String> > getPropertyTypeAcls( @Path( NAMESPACE ) String namespace, @Path( NAME ) String name );
 */ 
 
+    /**
+     * Update permissions of property types. 
+     * @param requests
+     * @return
+     */
     @POST( CONTROLLER + PROPERTY_TYPE_BASE_PATH )
-    Response updatePropertyTypeAcls( @Body Set<AclRequest> requests );
-/**
-    @POST( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ACL_PATH )
-    Response setEntityTypeAcls( @Path( NAMESPACE ) String namespace, @Path( NAME ) String name, @Body Set<ModifyEntityTypeAclRequest> requests );
+    Response updatePropertyTypesAcls( @Body Set<AclRequest> requests );
 
-    @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + ACL_PATH )
-    Response removeEntityTypeAcls( @Path( NAMESPACE ) String namespace, @Path( NAME ) String name, @Body Set<RemoveEntityTypeAclRequest> requests );
-*/
+    @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH )
+    Response updateEntityTypesAcls( @Body Set<AclRequest> requests );
+
+    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH )
+    Response updateEntitySetsAcls( @Body Set<EntitySetAclRequest> requests );
+    
+    @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
+    Response updatePropertyTypeInEntityTypeAcls( @Body Set<PropertyTypeInEntityTypeAclRequest> requests );
+
+    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
+    Response updatePropertyTypeInEntitySetAcls( @Body Set<PropertyTypeInEntitySetAclRequest> requests );
+    
+    @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
+    Response derivePropertyTypeInEntityTypeAcls(@Body Set<DerivePropertyTypeInEntityTypeAclRequest> requests,  @RequestParam( INHERIT ) String inheritOption );
+
+    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
+    Response derivePropertyTypeInEntitySetAcls(@Body Set<DerivePropertyTypeInEntitySetAclRequest> requests,  @RequestParam( INHERIT ) String inheritOption );
+
+    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH )
+    Response deriveEntitySetAcls(@Body Set<DeriveEntitySetAclRequest> requests,  @RequestParam( INHERIT ) String inheritOption );
+
+    @DELETE( CONTROLLER + PROPERTY_TYPE_BASE_PATH )
+    Response removePropertyTypeAcls( @Body Set<FullQualifiedName> propertyTypeFqns );
+
+    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH )
+    Response removeEntityTypeAcls( @Body Set<FullQualifiedName> entityTypeFqns );
+
+    @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH )
+    Response removeEntitySetAcls( @Body Set<EntitySetRemoveAclRequest> requests );
+
 }

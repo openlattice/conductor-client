@@ -1,8 +1,13 @@
 package com.kryptnostic.datastore;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 /**
  * @author Ho Chung
@@ -17,6 +22,21 @@ public enum Permission {
 	 */
     DISCOVER, READ, WRITE, ALTER, OWNER;
 	
+    private static Map<String, Permission> namesMap = new HashMap<String, Permission>(5);
+
+    static {
+        namesMap.put("discover", Permission.DISCOVER);
+        namesMap.put("read", Permission.READ);
+        namesMap.put("write", Permission.WRITE);
+        namesMap.put("alter", Permission.ALTER);
+        namesMap.put("owner", Permission.OWNER);
+    }
+
+    @JsonCreator
+    public static Permission forValue(String value) {
+        return namesMap.get(StringUtils.lowerCase(value));
+    }
+    
     public static Permission[] permissions = values();
 
     public static Permission[] getValues() {
