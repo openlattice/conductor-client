@@ -14,13 +14,7 @@ import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
-	/** 
-	 * Being of debug
-	 */
-	void setCurrentUserForDebug( String username, Set<String> roles );
-	/**
-	 * End of debug
-	 */
+
     boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes, Set<FullQualifiedName> propertyTypes );
     //would attach all property types of the entityTypes to Schema
     boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes);

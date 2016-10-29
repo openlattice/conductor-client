@@ -1,6 +1,6 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.util.Set;
+import java.util.List;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -12,11 +12,12 @@ public interface ConductorSparkApi {
 
     /**
      * Return QueryResult of <b>UUID's ONLY</b> of all entities matching a Look Up Entities Request.
+     * 
      * @param request A LookupEntitiesRequest object
      * @return QueryResult of UUID's matching the lookup request
      */
-    QueryResult getFilterEntities( LookupEntitiesRequest request);
-    
-    //Debug for Ho Chung
-    Boolean setUser( String username, Set<String> currentRoles );
+    QueryResult getFilterEntities( LookupEntitiesRequest request );
+
+    // Debug for Ho Chung
+    Boolean setUser( String username, List<String> currentRoles );
 }

@@ -29,7 +29,6 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
     private final Set<TypeDetails>      requestedDetails;
 
     public SchemaDetailsAdapter(
-            String username,
             CassandraTableManager ctb,
             Mapper<EntityType> entityTypeMapper,
             Mapper<PropertyType> propertyTypeMapper,

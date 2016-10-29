@@ -1,7 +1,7 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -18,7 +18,7 @@ public interface PermissionsManager {
 
 	void setPermissionsForEntityType( String role, FullQualifiedName fqn, Set<Permission> permissions );
 
-	boolean checkUserHasPermissionsOnEntityType( Set<String> roles, FullQualifiedName fqn, Permission permission );
+    boolean checkUserHasPermissionsOnEntityType( List<String> roles, FullQualifiedName fqn, Permission permission );
 
 	void addPermissionsForEntitySet( String role, FullQualifiedName type, String name, Set<Permission> permissions );
 
@@ -26,7 +26,7 @@ public interface PermissionsManager {
 
 	void setPermissionsForEntitySet( String role, FullQualifiedName type, String name, Set<Permission> permissions );
 
-	boolean checkUserHasPermissionsOnEntitySet( Set<String> roles, FullQualifiedName type, String name, Permission permission );
+	boolean checkUserHasPermissionsOnEntitySet( List<String> roles, FullQualifiedName type, String name, Permission permission );
 
 	// Permissions for a user of pair of types
     void addPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
@@ -35,7 +35,7 @@ public interface PermissionsManager {
 
     void setPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
 
-    boolean checkUserHasPermissionsOnPropertyTypeInEntityType( Set<String> roles, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Permission permission );
+    boolean checkUserHasPermissionsOnPropertyTypeInEntityType( List<String> roles, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Permission permission );
 
     void addPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
     
@@ -43,7 +43,7 @@ public interface PermissionsManager {
 
     void setPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
 
-    boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( Set<String> roles, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Permission permission );
+    boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( List<String> roles, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Permission permission );
 
 	// Utility functions for removing all permission details associated to a type
 

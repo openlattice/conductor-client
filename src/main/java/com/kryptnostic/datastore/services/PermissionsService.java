@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.List;
 import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -53,7 +54,7 @@ public class PermissionsService implements PermissionsManager{
 	}
 	
 	@Override
-	public boolean checkUserHasPermissionsOnEntityType( Set<String> roles, FullQualifiedName fqn, Permission permission) {
+	public boolean checkUserHasPermissionsOnEntityType( List<String> roles, FullQualifiedName fqn, Permission permission) {
         if( roles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -69,7 +70,7 @@ public class PermissionsService implements PermissionsManager{
         return tableManager.getPermissionsForEntityType( role, fqn );
     }
     
-    private int getPermissionsForEntityType( Set<String> roles, FullQualifiedName fqn ){
+    private int getPermissionsForEntityType( List<String> roles, FullQualifiedName fqn ){
         return roles.stream()
                 .mapToInt( role -> getPermissionsForEntityType( role, fqn ) )
                 .reduce( 0, ( a,b ) -> a | b );
@@ -107,7 +108,7 @@ public class PermissionsService implements PermissionsManager{
 	}
     
 	@Override
-	public boolean checkUserHasPermissionsOnEntitySet( Set<String> roles, FullQualifiedName type, String name, Permission permission) {
+	public boolean checkUserHasPermissionsOnEntitySet( List<String> roles, FullQualifiedName type, String name, Permission permission) {
         if( roles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -123,7 +124,7 @@ public class PermissionsService implements PermissionsManager{
         return tableManager.getPermissionsForEntitySet( role, type, name );
     }
     
-    private int getPermissionsForEntitySet( Set<String> roles, FullQualifiedName type, String name ){
+    private int getPermissionsForEntitySet( List<String> roles, FullQualifiedName type, String name ){
         return roles.stream()
                 .mapToInt( role -> getPermissionsForEntitySet( role, type, name ) )
                 .reduce( 0, ( a,b ) -> a | b );
@@ -162,7 +163,7 @@ public class PermissionsService implements PermissionsManager{
 	}
 	
 	@Override
-	public boolean checkUserHasPermissionsOnPropertyTypeInEntityType( Set<String> roles, FullQualifiedName entityTypeFqn,
+	public boolean checkUserHasPermissionsOnPropertyTypeInEntityType( List<String> roles, FullQualifiedName entityTypeFqn,
 			FullQualifiedName propertyTypeFqn, Permission permission) {
         if( roles.contains( Constants.ROLE_ADMIN ) ){
             return true;
@@ -179,7 +180,7 @@ public class PermissionsService implements PermissionsManager{
         return tableManager.getPermissionsForPropertyTypeInEntityType( role, entityTypeFqn, propertyTypeFqn );
     }
     
-    private int getPermissionsForPropertyTypeInEntityType( Set<String> roles, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ){
+    private int getPermissionsForPropertyTypeInEntityType( List<String> roles, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ){
         return roles.stream()
                 .mapToInt( role -> getPermissionsForPropertyTypeInEntityType( role, entityTypeFqn, propertyTypeFqn ) )
                 .reduce( 0, ( a,b ) -> a | b ); 
@@ -218,7 +219,7 @@ public class PermissionsService implements PermissionsManager{
     }
     
     @Override
-    public boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( Set<String> roles, FullQualifiedName entityTypeFqn, String entitySetName,
+    public boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( List<String> roles, FullQualifiedName entityTypeFqn, String entitySetName,
             FullQualifiedName propertyTypeFqn, Permission permission) {
         if( roles.contains( Constants.ROLE_ADMIN ) ){
             return true;
@@ -235,7 +236,8 @@ public class PermissionsService implements PermissionsManager{
         return tableManager.getPermissionsForPropertyTypeInEntitySet( role, entityTypeFqn, entitySetName, propertyTypeFqn );
     }
     
-    private int getPermissionsForPropertyTypeInEntitySet( Set<String> roles, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ){
+    private int getPermissionsForPropertyTypeInEntitySet(
+            List<String> roles, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ){
         return roles.stream()
                 .mapToInt( role -> getPermissionsForPropertyTypeInEntitySet( role, entityTypeFqn, entitySetName, propertyTypeFqn ) )
                 .reduce( 0, ( a,b ) -> a | b ); 

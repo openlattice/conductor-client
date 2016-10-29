@@ -23,19 +23,6 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
  *
  */
 public class EdmDetailsAdapter {
-
-	/** 
-	 * Being of debug
-	 */
-    private static String username;
-	private static Set<String>                   currentRoles;
-	public static void setCurrentUserForDebug( String username, Set<String> roles ){
-	    EdmDetailsAdapter.username = username;
-		EdmDetailsAdapter.currentRoles = roles;
-	}
-	/**
-	 * End of debug
-	 */
 	
 	private void EdmDetailsAdapterFactory(){}
 	
