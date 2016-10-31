@@ -1,29 +1,30 @@
 package com.kryptnostic.datastore.services;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.Multimap;
-import com.kryptnostic.conductor.rpc.*;
-import com.kryptnostic.conductor.rpc.odata.Schema;
-import com.kryptnostic.datastore.services.requests.CreateEntityRequest;
-import com.squareup.okhttp.Response;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import retrofit.http.*;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Created by yao on 9/20/16.
- */
-public interface DataApi {
-    String CONTROLLER = "/data";
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-    String FULLQUALIFIEDNAME = "fqn";
-    String NAME              = "name";
-    String NAME_SPACE        = "namespace";
-    String TYPE_NAME         = "typename";
+import com.google.common.collect.Multimap;
+import com.kryptnostic.conductor.rpc.LookupEntitiesRequest;
+import com.kryptnostic.datastore.services.requests.CreateEntityRequest;
+import com.squareup.okhttp.Response;
+
+import retrofit.http.Body;
+import retrofit.http.GET;
+import retrofit.http.POST;
+import retrofit.http.PUT;
+import retrofit.http.Path;
+
+public interface DataApi {
+    String CONTROLLER                      = "/data";
+
+    String FULLQUALIFIEDNAME               = "fqn";
+    String NAME                            = "name";
+    String NAME_SPACE                      = "namespace";
+    String TYPE_NAME                       = "typename";
 
     String MULTIPLE                        = "/multiple";
     String ENTITYSET                       = "/entityset";
@@ -39,7 +40,8 @@ public interface DataApi {
     @GET( CONTROLLER + ENTITY_DATA + NAME_SPACE_PATH + TYPE_NAME_PATH + NAME_PATH )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfEntitySet(
             @Path( NAME ) String entitySetName,
-            @Path( NAME_SPACE ) String entityTypeNamespace, @Path( TYPE_NAME ) String entityTypeName );
+            @Path( NAME_SPACE ) String entityTypeNamespace,
+            @Path( TYPE_NAME ) String entityTypeName );
 
     @PUT( CONTROLLER + ENTITY_DATA )
     Iterable<Multimap<FullQualifiedName, Object>> getAllEntitiesOfType( @Body FullQualifiedName fqn );
@@ -59,11 +61,11 @@ public interface DataApi {
 
     @PUT( CONTROLLER + ENTITY_DATA + FILTERED )
     /**
-     * 
-     * @param obj ObjectNode that builds a LookupEntitiesRequest. Should be JSON of the form 
-     * SerializationConstants.USER_ID (userId): UUID, 
-     * SerializationConstants.TYPE_FIELD (type): Set\<FullQualifiedName\>, 
-     * SerializationConstants.PROPERTIES_FIELD (properties): Map\<FullQualifiedName as String, Object\>  
+     *
+     * @param obj ObjectNode that builds a LookupEntitiesRequest. Should be JSON of the form
+     *            SerializationConstants.USER_ID (userId): UUID, SerializationConstants.TYPE_FIELD (type):
+     *            Set\<FullQualifiedName\>, SerializationConstants.PROPERTIES_FIELD (properties): Map\<FullQualifiedName
+     *            as String, Object\>
      * @return Iterable of UUID matching the request
      */
     Iterable<UUID> getFilteredEntities( @Body LookupEntitiesRequest lookupEntitiesRequest );

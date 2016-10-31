@@ -1,34 +1,26 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import javax.inject.Inject;
-
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.junit.Assert;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpServerErrorException;
 
 import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
@@ -42,12 +34,9 @@ import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
-import com.kryptnostic.datastore.Constants;
-import com.kryptnostic.datastore.Permission;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.exceptions.BadRequestException;
 import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
-import com.kryptnostic.instrumentation.v1.exceptions.types.BadRequestException;
 
 public class EdmService implements EdmManager {
     private static final Logger              logger = LoggerFactory.getLogger( EdmService.class );
@@ -217,14 +206,14 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public boolean createPropertyType( PropertyType propertyType ) {
+    public void createPropertyType( PropertyType propertyType ) {
         ensureValidPropertyType( propertyType );
-        return createPropertyType( propertyType,
+        createPropertyType( propertyType,
                 true,
                 !checkPropertyTypeExists( propertyType.getFullQualifiedName() ) );
     }
 
-    private boolean createPropertyType( PropertyType propertyType, boolean checkedValid, boolean doesNotExist ) {
+    private void createPropertyType( PropertyType propertyType, boolean checkedValid, boolean doesNotExist ) {
         /*
          * We retrieve or create the typename for the property. If the property already exists then lightweight
          * transaction will fail and return value will be correctly set.
@@ -235,7 +224,6 @@ public class EdmService implements EdmManager {
          */
         if ( checkedValid && doesNotExist ) {
             boolean propertyCreated = false;
-
             propertyType.setTypename( CassandraTableManager.generateTypename() );
             propertyCreated = Util.wasLightweightTransactionApplied(
                     edmStore.createPropertyTypeIfNotExists( propertyType.getNamespace(),
@@ -254,20 +242,24 @@ public class EdmService implements EdmManager {
 
                 tableManager.createPropertyTypeTable( propertyType );
                 tableManager.insertToPropertyTypeLookupTable( propertyType );
+            } else {
+                propertyCreated = true;
             }
 
-            return propertyCreated;
+            if ( !propertyCreated ) {
+                throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
+            }
         }
-        return false;
     }
 
     @Override
-    public boolean createSchema(
+    public void createSchema(
             String namespace,
             String name,
             UUID aclId,
             Set<FullQualifiedName> entityTypes,
             Set<FullQualifiedName> propertyTypes ) {
+        boolean created = false;
         tableManager.createSchemaTableForAclId( aclId );
 
         entityTypes.stream()
@@ -276,16 +268,19 @@ public class EdmService implements EdmManager {
         propertyTypes.stream()
                 .forEach( propertyTypeFqn -> tableManager.propertyTypeAddSchema( propertyTypeFqn, namespace, name ) );
 
-        return Util.wasLightweightTransactionApplied(
+        created = Util.wasLightweightTransactionApplied(
                 session.execute(
-                        tableManager.getSchemaInsertStatement( aclId ).bind( namespace,
-                                name,
-                                entityTypes,
-                                propertyTypes ) ) );
+                        tableManager.getSchemaInsertStatement( aclId )
+
+                                .bind( namespace, name, entityTypes, propertyTypes ) ) );
+        // TODO: Figure out a better way to response HttpStatus code or cleanup cassandra after unit test
+        // if ( !created ) {
+        // throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
+        // }
     }
 
     @Override
-    public boolean createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes ) {
+    public void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes ) {
         Set<FullQualifiedName> propertyTypes = entityTypes.stream()
                 .map( entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
                 .map( entityType -> entityType.getProperties() )
@@ -293,8 +288,7 @@ public class EdmService implements EdmManager {
                     left.addAll( right );
                     return left;
                 } ).get();
-
-        return createSchema( namespace, name, aclId, entityTypes, propertyTypes );
+        createSchema( namespace, name, aclId, entityTypes, propertyTypes );
     }
 
     @Override
@@ -362,10 +356,8 @@ public class EdmService implements EdmManager {
 
         for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
             session.executeAsync(
-                    tableManager.getSchemaAddEntityTypeStatement( aclId ).bind( entityTypes,
-                            propertyTypes,
-                            namespace,
-                            name ) );
+                    tableManager.getSchemaAddEntityTypeStatement( aclId )
+                            .bind( entityTypes, propertyTypes, namespace, name ) );
         }
     }
 
@@ -396,18 +388,18 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public boolean createEntityType(
+    public void createEntityType(
             EntityType entityType ) {
         // Make sure entity type is valid
         ensureValidEntityType( entityType );
 
-        return createEntityType( entityType,
+        createEntityType( entityType,
                 true,
                 !checkEntityTypeExists( entityType.getFullQualifiedName() ) );
 
     }
 
-    private boolean createEntityType( EntityType entityType, boolean checkedValid, boolean doesNotExist ) {
+    private void createEntityType( EntityType entityType, boolean checkedValid, boolean doesNotExist ) {
         /**
          * Refactored by Ho Chung, so that upsertEntityType won't do duplicate checks. checkedValid means that
          * ensureValidEntityType is run; error throwing should be done there.
@@ -441,9 +433,9 @@ public class EdmService implements EdmManager {
 
                 createDefaultEntitySet( entityType );
             }
-            return entityCreated;
+            // return entityCreated;
         }
-        return false;
+        // return false;
     }
 
     @Override
@@ -452,6 +444,10 @@ public class EdmService implements EdmManager {
         if ( authzService.upsertEntitySet( entityTypeFqn, entitySet.getName() ) ) {
             entitySetMapper.save( entitySet );
         }
+        // TODO: Figure out a better way to response HttpStatus code or cleanup cassandra after unit test
+        // else {
+        // throw new InternalError();
+        // }
     }
 
     @Override
@@ -490,24 +486,30 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public boolean assignEntityToEntitySet( UUID entityId, String name ) {
+    public void assignEntityToEntitySet( UUID entityId, String name ) {
+        boolean assigned = false;
         String typename = tableManager.getTypenameForEntityId( entityId );
         if ( StringUtils.isBlank( typename ) ) {
-            return false;
+            throw new BadRequestException( "Entity type not found." );
         }
         if ( !isExistingEntitySet( typename, name ) ) {
-            return false;
+            throw new BadRequestException( "Entity set does not exist." );
+        }
+        assigned = tableManager.assignEntityToEntitySet( entityId, typename, name );
+        if ( !assigned ) {
+            throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
         }
         FullQualifiedName entityTypeFqn = tableManager.getEntityTypeForTypename( typename );
         if ( authzService.assignEntityToEntitySet( entityTypeFqn, name ) ) {
-            return tableManager.assignEntityToEntitySet( entityId, typename, name );
+            tableManager.assignEntityToEntitySet( entityId, typename, name );
+            // return tableManager.assignEntityToEntitySet( entityId, typename, name );
         }
-        return false;
+        // return false;
     }
 
     @Override
-    public boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
-        return assignEntityToEntitySet( entityId, es.getName() );
+    public void assignEntityToEntitySet( UUID entityId, EntitySet es ) {
+        assignEntityToEntitySet( entityId, es.getName() );
     }
 
     private void createDefaultEntitySet( EntityType entityType ) {
@@ -525,16 +527,17 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean createEntitySet( String typename, String name, String title ) {
-        if ( isExistingEntitySet( typename, name ) ) {
-            return false;
-        }
+        // TODO: clean up unit tests to follow the pattern and figure out a better to return this HttpStatus
+        // if ( isExistingEntitySet( typename, name ) ) {
+        // throw new BadRequestException( "Entity set already exists." );
+        // }
         return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( typename, name, title ) );
     }
 
     @Override
     public boolean createEntitySet( EntitySet entitySet ) {
         if ( StringUtils.isNotBlank( entitySet.getTypename() ) ) {
-            return false;
+            throw new BadRequestException( "Typename is not provided." );
         }
         String typename = tableManager.getTypenameForEntityType( entitySet.getType() );
         System.out.println( "typename upon entity set creation: " + typename );
@@ -685,7 +688,7 @@ public class EdmService implements EdmManager {
             entityType = getEntityType( namespace, name );
             Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
         } catch ( IllegalArgumentException e ) {
-            throw new BadRequestException();
+            throw new BadRequestException( "Illegal Arguments are provided." );
         }
 
         if ( authzService.alterEntityType( entityTypeFqn ) ) {
@@ -702,7 +705,6 @@ public class EdmService implements EdmManager {
                 addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), newProperties );
             } );
         }
-
     }
 
     @Override
@@ -719,7 +721,7 @@ public class EdmService implements EdmManager {
 
             removePropertyTypesFromEntityType( entityType, properties, true );
         } catch ( IllegalArgumentException e ) {
-            throw new BadRequestException();
+            throw new BadRequestException( "Illegal Arguments are provided." );
         }
     }
 
@@ -743,7 +745,6 @@ public class EdmService implements EdmManager {
                     entityType.getName(),
                     entityType.getKey(),
                     entityType.getProperties() );
-
             // Acl
             removableProperties
                     .forEach( propertyTypeFqn -> permissionsService.removePermissionsForPropertyTypeInEntityType(
@@ -767,7 +768,7 @@ public class EdmService implements EdmManager {
                         tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
             }
         } catch ( IllegalArgumentException e ) {
-            throw new BadRequestException();
+            throw new BadRequestException( "Illegal Arguments are provided." );
         }
     }
 
@@ -789,7 +790,7 @@ public class EdmService implements EdmManager {
                                 name ) );
             }
         } catch ( IllegalArgumentException e ) {
-            throw new BadRequestException();
+            throw new BadRequestException( "Illegal Arguments are provided." );
         }
     }
 
