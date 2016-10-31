@@ -10,7 +10,10 @@ import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
 public class PropertyTypeInEntitySetAclRequest extends AclRequest {
+   
+    @JsonProperty( SerializationConstants.NAME_FIELD)
     protected String entitySetName;
+    @JsonProperty( SerializationConstants.PROPERTIES_FIELD)
     protected FullQualifiedName propertyTypeFqn;
 
     @Override
@@ -26,9 +29,16 @@ public class PropertyTypeInEntitySetAclRequest extends AclRequest {
     }
 
     @Override
+    @JsonProperty( SerializationConstants.TYPE_FIELD)
     public PropertyTypeInEntitySetAclRequest setFqn( FullQualifiedName fqn ) {
         this.fqn = fqn;
         return this;
+    }
+
+    @Override
+    @JsonProperty( SerializationConstants.TYPE_FIELD)
+    public FullQualifiedName getFqn() {
+        return fqn;
     }
 
     @Override

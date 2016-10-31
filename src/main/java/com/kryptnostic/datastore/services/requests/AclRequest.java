@@ -10,9 +10,13 @@ import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
 public class AclRequest {
+    @JsonProperty( SerializationConstants.ROLE )
     protected String role;
+    @JsonProperty( SerializationConstants.ACTION)
     protected Action action;
+    @JsonProperty( SerializationConstants.FQN)
     protected FullQualifiedName fqn;
+    @JsonProperty( SerializationConstants.PERMISSIONS)
     protected Set<Permission> permissions;
     
     @JsonCreator
