@@ -18,4 +18,6 @@ public interface ConductorSparkApi {
      */
     QueryResult getFilterEntities( LookupEntitiesRequest request );
 
+    // Debug for Ho Chung
+    Boolean setUser( String username, List<String> currentRoles );
 }
