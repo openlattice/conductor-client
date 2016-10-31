@@ -10,6 +10,7 @@ import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
 public class PropertyTypeInEntityTypeAclRequest extends AclRequest {
+    @JsonProperty( SerializationConstants.PROPERTIES_FIELD)
     protected FullQualifiedName propertyTypeFqn;
 
     @Override
@@ -25,9 +26,17 @@ public class PropertyTypeInEntityTypeAclRequest extends AclRequest {
     }
 
     @Override
+    @JsonProperty( SerializationConstants.TYPE_FIELD)
     public PropertyTypeInEntityTypeAclRequest setFqn( FullQualifiedName fqn ) {
         this.fqn = fqn;
         return this;
+    }
+    
+    // TODO adhoc fix to force Jackson use type for this class - better solutions?
+    @Override
+    @JsonProperty( SerializationConstants.TYPE_FIELD)
+    public FullQualifiedName getFqn( ) {
+        return fqn;
     }
 
     @Override

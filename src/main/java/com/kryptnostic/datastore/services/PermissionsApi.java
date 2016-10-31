@@ -15,8 +15,10 @@ import com.kryptnostic.datastore.services.requests.DeriveEntitySetAclRequest;
 import com.kryptnostic.datastore.services.requests.DerivePropertyTypeInEntitySetAclRequest;
 import com.kryptnostic.datastore.services.requests.DerivePropertyTypeInEntityTypeAclRequest;
 import com.kryptnostic.datastore.services.requests.EntitySetAclRequest;
-import com.kryptnostic.datastore.services.requests.EntitySetRemoveAclRequest;
+import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRemovalRequest;
+import com.kryptnostic.datastore.services.requests.EntitySetAclRemovalRequest;
 import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRequest;
+import com.kryptnostic.datastore.services.requests.PropertyTypeInEntityTypeAclRemovalRequest;
 import com.kryptnostic.datastore.services.requests.PropertyTypeInEntityTypeAclRequest;
 
 import retrofit.client.Response;
@@ -59,7 +61,7 @@ public interface PermissionsApi {
     String PROPERTY_TYPE_BASE_PATH = "/property/type";
     String NAMESPACE_PATH          = "/{" + NAMESPACE + "}";
     String NAME_PATH               = "/{" + NAME + "}";
-    String ACL_PATH                = "/acl";
+    String ALL_PATH = "/all";
 
     @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH )
     Response updateEntityTypesAcls( @Body Set<AclRequest> requests );
@@ -77,6 +79,19 @@ public interface PermissionsApi {
     Response removeEntityTypeAcls( @Body Set<FullQualifiedName> entityTypeFqns );
 
     @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH )
-    Response removeEntitySetAcls( @Body Set<EntitySetRemoveAclRequest> requests );
+    Response removeEntitySetAcls( @Body Set<EntitySetAclRemovalRequest> requests );
+
+    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
+    Response removePropertyTypeInEntityTypeAcls( @Body Set<PropertyTypeInEntityTypeAclRemovalRequest> requests );
+ 
+    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+    Response removeAllPropertyTypesInEntityTypeAcls( @Body Set<FullQualifiedName> entityTypeFqns );
+    
+    @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
+    Response removePropertyTypeInEntitySetAcls( @Body Set<PropertyTypeInEntitySetAclRemovalRequest> requests );
+ 
+    @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+    Response removeAllPropertyTypesInEntitySetAcls( @Body Set<EntitySetAclRemovalRequest> requests );
 
 }
+

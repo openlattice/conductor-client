@@ -12,6 +12,7 @@ import com.kryptnostic.datastore.Permission;
 
 public class EntitySetAclRequest extends AclRequest {
     
+    @JsonProperty( SerializationConstants.NAME_FIELD)
     protected String entitySetName;
 
     @Override
@@ -27,11 +28,19 @@ public class EntitySetAclRequest extends AclRequest {
     }
 
     @Override
+    @JsonProperty( SerializationConstants.TYPE_FIELD)
     public EntitySetAclRequest setFqn( FullQualifiedName fqn ) {
         this.fqn = fqn;
         return this;
     }
-
+    
+    // TODO adhoc fix to force Jackson use type for this class - better solutions?
+    @Override
+    @JsonProperty( SerializationConstants.TYPE_FIELD)
+    public FullQualifiedName getFqn( ) {
+        return fqn;
+    }
+    
     @Override
     public EntitySetAclRequest setPermissions( Set<Permission> permissions ) {
         this.permissions = permissions;
