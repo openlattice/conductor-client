@@ -167,13 +167,13 @@ public class EntityType extends TypePK {
     @JsonCreator
     public static EntityType newEntityType(
             @JsonProperty( SerializationConstants.NAMESPACE_FIELD ) String namespace,
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) String type,
+            @JsonProperty( SerializationConstants.NAME_FIELD ) String name,
             @JsonProperty( SerializationConstants.KEY_FIELD ) Set<FullQualifiedName> key,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<FullQualifiedName> properties,
             @JsonProperty( SerializationConstants.SCHEMAS) Optional<Set<FullQualifiedName>> schemas) {
         return new EntityType()
                 .setNamespace( namespace )
-                .setName( type )
+                .setName( name )
                 .setTypename( null )
                 .setProperties( properties )
                 .setKey( key )
