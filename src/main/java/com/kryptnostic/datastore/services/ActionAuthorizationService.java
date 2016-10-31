@@ -10,9 +10,11 @@ import com.kryptnostic.datastore.Permission;
 
 public class ActionAuthorizationService {
 
-//    private List<String> currentRoles = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().map(grantedAuthority -> grantedAuthority.getAuthority()).collect( Collectors.toList() );
-    private List<String> currentRoles;
-    
+    // private List<String> currentRoles =
+    // SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().map(grantedAuthority ->
+    // grantedAuthority.getAuthority()).collect( Collectors.toList() );
+    private List<String>             currentRoles;
+
     private final PermissionsService ps;
 
     public ActionAuthorizationService( PermissionsService ps ) {
