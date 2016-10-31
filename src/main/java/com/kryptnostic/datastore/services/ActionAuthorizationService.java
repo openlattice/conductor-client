@@ -8,6 +8,21 @@ import com.kryptnostic.datastore.Permission;
 
 public class ActionAuthorizationService {
 
+    /**
+     * Being of debug
+     */
+    private String       username;
+    private List<String> currentRoles;
+
+    public void setCurrentUserForDebug( String username, List<String> roles ) {
+        this.username = username;
+        this.currentRoles = roles;
+    }
+
+    /**
+     * End of debug
+     */
+    
     private final PermissionsService ps;
 
     public ActionAuthorizationService( PermissionsService ps ) {
