@@ -29,11 +29,4 @@ public class Lambdas implements Serializable {
         return (Function<ConductorSparkApi, QueryResult> & Serializable) ( api ) -> api
                 .getAllEntitiesOfEntitySet( entityFqn, entitySetName );
     }
-
-    public static Function<ConductorSparkApi, Boolean> setUser(
-            String username,
-            List<String> currentRoles ) {
-        return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
-                .setUser( username, currentRoles );
-    }
 }

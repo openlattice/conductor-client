@@ -1,27 +1,17 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.kryptnostic.datastore.Permission;
 
 public class ActionAuthorizationService {
 
-    /**
-     * Being of debug
-     */
-    private String       username;
+//    private List<String> currentRoles = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().map(grantedAuthority -> grantedAuthority.getAuthority()).collect( Collectors.toList() );
     private List<String> currentRoles;
-
-    public void setCurrentUserForDebug( String username, List<String> roles ) {
-        this.username = username;
-        this.currentRoles = roles;
-    }
-
-    /**
-     * End of debug
-     */
     
     private final PermissionsService ps;
 

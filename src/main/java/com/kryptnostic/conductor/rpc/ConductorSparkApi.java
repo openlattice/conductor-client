@@ -17,7 +17,4 @@ public interface ConductorSparkApi {
      * @return QueryResult of UUID's matching the lookup request
      */
     QueryResult getFilterEntities( LookupEntitiesRequest request );
-
-    // Debug for Ho Chung
-    Boolean setUser( String username, List<String> currentRoles );
 }
