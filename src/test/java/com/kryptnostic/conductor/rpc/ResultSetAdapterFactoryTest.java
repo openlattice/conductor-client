@@ -14,6 +14,9 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.PoolingOptions;
@@ -31,7 +34,7 @@ import com.kryptnostic.rhizome.configuration.service.ConfigurationService;
 
 public class ResultSetAdapterFactoryTest {
     static ResultSet                      rs;
-    static Map<String, FullQualifiedName> map                    = new HashMap<String, FullQualifiedName>();
+    static Map<String, FullQualifiedName> map      = new HashMap<String, FullQualifiedName>();
 
     static Integer                        lengthColumn;
     static List<String>                   columnNameList;
@@ -41,26 +44,25 @@ public class ResultSetAdapterFactoryTest {
 
     static Integer                        lengthRow;
     static ArrayList<List<Object>>        rowData;
-    static Random                         rand                   = new Random();
-    static String                         keyspace               = "test_result_set_conversion_"
-            + rand.nextInt( 10_000 );
+    static Random                         rand     = new Random();
+    static String                         keyspace = "test_result_set_conversion_" + rand.nextInt( 10_000 );
     static RhizomeConfiguration           rc                     = ConfigurationService.StaticLoader
-            .loadConfiguration(
-                    RhizomeConfiguration.class );
+                                                                         .loadConfiguration(
+                                                                                 RhizomeConfiguration.class );
     static CassandraConfiguration         cassandraConfiguration = rc.getCassandraConfiguration().get();
 
     // Create Cassandra session
     static Cluster                        cluster                = new Cluster.Builder()
-            .withCompression( cassandraConfiguration
-                    .getCompression() )
-            .withPoolingOptions( new PoolingOptions() )
-            .withProtocolVersion( ProtocolVersion.V4 )
-            .addContactPoints( cassandraConfiguration
-                    .getCassandraSeedNodes() )
-            .build();
+                                                                         .withCompression( cassandraConfiguration
+                                                                                 .getCompression() )
+                                                                         .withPoolingOptions( new PoolingOptions() )
+                                                                         .withProtocolVersion( ProtocolVersion.V4 )
+                                                                         .addContactPoints( cassandraConfiguration
+                                                                                 .getCassandraSeedNodes() )
+                                                                         .build();
     static Session                        session                = cluster.connect();
 
-    // @BeforeClass
+    //@BeforeClass
     // Setup a table called "test_result_set_conversion". The columns have names from columnNameList with type specified
     // in typeList.
     public static void SetupCassandraDBforTesting() throws UnknownHostException {
@@ -139,7 +141,7 @@ public class ResultSetAdapterFactoryTest {
         }
     }
 
-    // @Test
+    //@Test
     public void Test() {
         Function<Row, SetMultimap<FullQualifiedName, Object>> function = ResultSetAdapterFactory.toSetMultimap( map );
         Iterable<SetMultimap<FullQualifiedName, Object>> convertedData = Iterables.transform( rs, function );
@@ -165,7 +167,7 @@ public class ResultSetAdapterFactoryTest {
         assertEquals( convertedDataSet, ans );
     }
 
-    // @AfterClass
+    //@AfterClass
     public static void RemoveTestingTable() {
         // Remove table created for this test after.
         Cluster cluster = Cluster.builder().addContactPoint( "localhost" ).build();

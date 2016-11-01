@@ -9,21 +9,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 
 public class DerivePropertyTypeInEntitySetAclRequest {
-    protected String                 role;
-    protected FullQualifiedName      entityTypeFqn;
-    protected String                 entitySetName;
+    protected String role;
+    protected FullQualifiedName entityTypeFqn;
+    protected String entitySetName;
     protected Set<FullQualifiedName> properties;
-
+    
     @JsonCreator
     public DerivePropertyTypeInEntitySetAclRequest createAclRequest(
             @JsonProperty( SerializationConstants.ROLE ) String role,
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
-            @JsonProperty( SerializationConstants.NAME_FIELD ) String entitySetName,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<FullQualifiedName> properties ) {
-        return new DerivePropertyTypeInEntitySetAclRequest().setRole( role ).setType( entityTypeFqn )
-                .setName( entitySetName ).setProperties( properties );
+            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.NAME_FIELD) String entitySetName,
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD) Set<FullQualifiedName> properties){
+        return new DerivePropertyTypeInEntitySetAclRequest().setRole(role).setType( entityTypeFqn ).setName( entitySetName ).setProperties( properties );
     }
-
+    
     public String getRole() {
         return role;
     }
@@ -31,7 +30,7 @@ public class DerivePropertyTypeInEntitySetAclRequest {
     public FullQualifiedName getType() {
         return entityTypeFqn;
     }
-
+    
     public String getName() {
         return entitySetName;
     }
@@ -39,7 +38,7 @@ public class DerivePropertyTypeInEntitySetAclRequest {
     public Set<FullQualifiedName> getProperties() {
         return properties;
     }
-
+    
     public DerivePropertyTypeInEntitySetAclRequest setRole( String role ) {
         this.role = role;
         return this;

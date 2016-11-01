@@ -37,7 +37,7 @@ public interface CassandraEdmStore {
             String typename,
             Set<FullQualifiedName> key,
             Set<FullQualifiedName> properties,
-            Set<FullQualifiedName> schemas );
+            Set<FullQualifiedName> schemas);
 
     @Query( Queries.CREATE_PROPERTY_TYPE_IF_NOT_EXISTS )
     public ResultSet createPropertyTypeIfNotExists(
@@ -46,35 +46,37 @@ public interface CassandraEdmStore {
             String typename,
             EdmPrimitiveTypeKind datatype,
             long multiplicity,
-            Set<FullQualifiedName> schemas );
-
+            Set<FullQualifiedName> schemas);
+    
     @Query( Queries.UPDATE_PROPERTY_TYPE_IF_EXISTS )
     public ResultSet updatePropertyTypeIfExists(
             EdmPrimitiveTypeKind datatype,
             long multiplicity,
             Set<FullQualifiedName> schemas,
             String namespace,
-            String type );
+            String type);
+    
 
     @Query( Queries.CREATE_ENTITY_SET_IF_NOT_EXISTS )
-    public ResultSet createEntitySetIfNotExists(
-            String typename,
-            String name,
-            String title );
+    public ResultSet createEntitySetIfNotExists( 
+            String typename, 
+            String name, 
+            String title);
 
     @Query( Queries.GET_ENTITY_SET_BY_NAME )
     public EntitySet getEntitySet( String name );
 
     @Query( Queries.GET_ALL_ENTITY_SETS )
     public Result<EntitySet> getEntitySets();
-
+    
     @Query( Queries.GET_ALL_ENTITY_SETS_FOR_ENTITY_TYPE )
     public Result<EntitySet> getEntitySetsForEntityType( String typename );
-
-    @Query( Queries.UPDATE_EXISTING_ENTITY_TYPE )
+    
+    @Query( Queries.UPDATE_EXISTING_ENTITY_TYPE)
     public ResultSet updateExistingEntityType(
-            @Param( Queries.ParamNames.NAMESPACE ) String namespace,
-            @Param( Queries.ParamNames.NAME ) String name,
-            @Param( Queries.ParamNames.KEY ) Set<FullQualifiedName> key,
-            @Param( Queries.ParamNames.PROPERTIES ) Set<FullQualifiedName> properties );
+    		@Param(Queries.ParamNames.NAMESPACE) String namespace,
+    		@Param(Queries.ParamNames.NAME) String name,
+    		@Param(Queries.ParamNames.KEY) Set<FullQualifiedName> key,
+    		@Param(Queries.ParamNames.PROPERTIES) Set<FullQualifiedName> properties
+    		);
 }

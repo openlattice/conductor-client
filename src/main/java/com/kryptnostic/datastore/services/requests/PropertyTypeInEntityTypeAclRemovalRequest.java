@@ -9,12 +9,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 
 public class PropertyTypeInEntityTypeAclRemovalRequest {
-
-    @JsonProperty( SerializationConstants.TYPE_FIELD )
-    protected FullQualifiedName      entityTypeFqn;
-    @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
+    
+    @JsonProperty( SerializationConstants.TYPE_FIELD)
+    protected FullQualifiedName entityTypeFqn;
+    @JsonProperty( SerializationConstants.PROPERTIES_FIELD)
     protected Set<FullQualifiedName> properties;
-
+    
     @Override
     public boolean equals( Object o ) {
         if ( this == o )
@@ -53,11 +53,11 @@ public class PropertyTypeInEntityTypeAclRemovalRequest {
         this.properties = properties;
         return this;
     }
-
+    
     @JsonCreator
     public static PropertyTypeInEntityTypeAclRemovalRequest newAclRemovalRequest(
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<FullQualifiedName> properties ) {
+            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD) Set<FullQualifiedName> properties) {
         return new PropertyTypeInEntityTypeAclRemovalRequest()
                 .setType( entityTypeFqn )
                 .setProperties( properties );

@@ -21,14 +21,14 @@ public enum CommonColumns {
     NAMESPACE( DataType.text() ),
     ENTITYID( DataType.uuid() ),
     PROPERTIES( DataType.set( DataType.text() ) ),
-    SCHEMAS( DataType.set( DataType.text() ) ),
+    SCHEMAS( DataType.set(DataType.text() ) ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
     TYPENAME( DataType.text() ),
     TYPE( DataType.text() ),
     VALUE( null ),
-    PERMISSIONS( DataType.cint() ),
-    PARTITION_INDEX( DataType.tinyint() ); // partition index within a table for distribution purpose
+    PERMISSIONS ( DataType.cint() ),
+    PARTITION_INDEX( DataType.tinyint() ); //partition index within a table for distribution purpose
 
     private final DataType type;
     private final String   bindMarker;

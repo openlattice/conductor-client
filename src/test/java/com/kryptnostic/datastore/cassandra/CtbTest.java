@@ -9,7 +9,7 @@ public class CtbTest {
     @Test
     public void testTableQuery() {
         System.out.println( new CassandraTableBuilder( Tables.ENTITY_SETS.getTableName() ).ifNotExists()
-                .partitionKey( CommonColumns.TYPE, CommonColumns.ACLID )
+                .partitionKey( CommonColumns.TYPE ,CommonColumns.ACLID )
                 .clusteringColumns( CommonColumns.NAME )
                 .columns( CommonColumns.TITLE ).buildQuery() );
     }

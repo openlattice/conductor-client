@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
@@ -19,7 +20,7 @@ public interface EdmManager {
             Set<FullQualifiedName> entityTypes,
             Set<FullQualifiedName> propertyTypes );
 
-    // would attach all property types of the entityTypes to Schema
+    //would attach all property types of the entityTypes to Schema
     void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
 
     void upsertSchema( Schema namespace );
@@ -49,7 +50,7 @@ public interface EdmManager {
     Iterable<EntitySet> getEntitySets();
 
     void deleteEntitySet( EntitySet entitySet );
-
+    
     void deleteEntitySet( FullQualifiedName entityType, String name );
 
     void createEntityType( EntityType objectType );

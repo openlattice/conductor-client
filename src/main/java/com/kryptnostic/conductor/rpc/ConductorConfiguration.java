@@ -1,15 +1,15 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.io.File;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.rhizome.configuration.Configuration;
 import com.kryptnostic.rhizome.configuration.ConfigurationKey;
 import com.kryptnostic.rhizome.configuration.SimpleConfigurationKey;
+
+import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ConductorConfiguration implements Configuration {
     private static final long             serialVersionUID           = -3847142110887587615L;

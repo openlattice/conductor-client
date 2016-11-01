@@ -7,11 +7,15 @@ import java.util.stream.Collectors;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.olingo.commons.api.edm.provider.CsdlSchema;
 
+import com.datastax.driver.core.Row;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 import jersey.repackaged.com.google.common.base.Preconditions;
 import jersey.repackaged.com.google.common.collect.Sets;
@@ -44,7 +48,7 @@ public class Schema {
         setEntityTypeFqns( entityTypes.stream()
                 .map( entityType -> new FullQualifiedName( entityType.getNamespace(), entityType.getName() ) )
                 .collect( Collectors.toSet() ) );
-
+        
         setPropertyTypeFqns( propertyTypes.stream()
                 .map( propertyType -> new FullQualifiedName( propertyType.getNamespace(), propertyType.getName() ) )
                 .collect( Collectors.toSet() ) );
@@ -88,7 +92,7 @@ public class Schema {
         this.entityTypeFqns = entityTypeFqns;
         return this;
     }
-
+    
     public Set<FullQualifiedName> getPropertyTypeFqns() {
         return propertyTypeFqns;
     }
@@ -122,9 +126,9 @@ public class Schema {
 
     @Override
     public String toString() {
-        return "Schema [aclId=" + aclId + ", namespace=" + namespace + ", name=" + name
-                + ", entityFqns=" + entityTypeFqns + ", propertyFqns=" + propertyTypeFqns
-                + ", entityTypes=" + entityTypes + ", propertyTypes=" + propertyTypes + "]";
+        return "Schema [aclId=" + aclId + ", namespace=" + namespace + ", name=" + name 
+        		+ ", entityFqns=" + entityTypeFqns + ", propertyFqns=" + propertyTypeFqns 
+        		+ ", entityTypes=" + entityTypes + ", propertyTypes=" + propertyTypes + "]";
     }
 
     @Override

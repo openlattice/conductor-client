@@ -1,5 +1,6 @@
 package com.kryptnostic.conductor.rpc;
 
+import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.function.Function;

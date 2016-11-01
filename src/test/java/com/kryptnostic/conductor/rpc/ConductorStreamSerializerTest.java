@@ -1,13 +1,12 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.io.IOException;
-import java.io.Serializable;
-
+import com.kryptnostic.conductor.rpc.serializers.ConductorCallStreamSerializer;
+import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.junit.Test;
 
-import com.kryptnostic.conductor.rpc.serializers.ConductorCallStreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
+import java.io.IOException;
+import java.io.Serializable;
 
 public class ConductorStreamSerializerTest extends BaseSerializerTest<ConductorCallStreamSerializer, ConductorCall>
         implements Serializable {
@@ -15,12 +14,12 @@ public class ConductorStreamSerializerTest extends BaseSerializerTest<ConductorC
 
     @Override
     protected ConductorCallStreamSerializer createSerializer() {
-        return new ConductorCallStreamSerializer( null );
+        return new ConductorCallStreamSerializer(null);
     }
 
     @Override
     protected ConductorCall createInput() {
-        return ConductorCall.wrap( Lambdas.getAllEntitiesOfType( new FullQualifiedName( "abc", "def" ) ) );
+        return ConductorCall.wrap( Lambdas.getAllEntitiesOfType( new FullQualifiedName( "abc","def" ) ) );
     }
 
     @Override

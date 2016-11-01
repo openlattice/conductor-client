@@ -11,7 +11,6 @@ import com.kryptnostic.datastore.services.EdmApi;
 
 /**
  * Class specifying request options for loading schemas.
- * 
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  *
  */
@@ -30,8 +29,7 @@ public class GetSchemasRequest {
             @JsonProperty( EdmApi.NAMESPACE ) Optional<String> namespace,
             @JsonProperty( EdmApi.NAME ) Optional<String> name,
             @JsonProperty( EdmApi.LOAD_DETAILS ) Optional<Set<TypeDetails>> loadDetails ) {
-        Preconditions.checkArgument(
-                ( name.isPresent() && namespace.isPresent() ) || ( !name.isPresent() && !namespace.isPresent() ),
+        Preconditions.checkArgument( (name.isPresent() && namespace.isPresent()) || (!name.isPresent() && !namespace.isPresent()),
                 "Namespace must provided if name is present." );
         this.namespace = namespace;
         this.name = name;

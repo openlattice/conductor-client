@@ -42,7 +42,7 @@ public class PropertyType extends PropertyTypeBase {
         this.name = name;
         return this;
     }
-
+    
     @Override
     public PropertyType setSchemas( Set<FullQualifiedName> schemas ) {
         this.schemas = schemas;
@@ -73,7 +73,7 @@ public class PropertyType extends PropertyTypeBase {
     @Override
     public String toString() {
         return "PropertyType [typename=" + typename + ", multiplicity=" + multiplicity + ", datatype=" + datatype
-                + ", namespace=" + namespace + ", name=" + name
+                + ", namespace=" + namespace + ", name=" + name 
                 + ", schemas=" + schemas + "]";
     }
 
@@ -117,11 +117,12 @@ public class PropertyType extends PropertyTypeBase {
             @JsonProperty( SerializationConstants.NAME_FIELD ) String name,
             @JsonProperty( SerializationConstants.DATATYPE_FIELD ) EdmPrimitiveTypeKind datatype,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) int multiplicity,
-            @JsonProperty( SerializationConstants.SCHEMAS ) Optional<Set<FullQualifiedName>> schemas ) {
+            @JsonProperty( SerializationConstants.SCHEMAS) Optional<Set<FullQualifiedName>> schemas) {
 
         return new PropertyType().setNamespace( namespace ).setName( name ).setDatatype( datatype )
                 .setMultiplicity( multiplicity )
                 .setSchemas( schemas.or( ImmutableSet.of() ) );
     }
 
+    
 }

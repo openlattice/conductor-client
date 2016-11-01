@@ -10,36 +10,36 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 public class EntitySetStreamSerializer implements SelfRegisteringStreamSerializer<EntitySet> {
 
-    @Override
-    public void write( ObjectDataOutput out, EntitySet object )
-            throws IOException {
-        out.writeUTF( object.getName() );
-        new FullQualifiedNameStreamSerializer().write( out, object.getType() );
-        out.writeUTF( object.getTitle() );
-    }
+	@Override
+	public void write(ObjectDataOutput out, EntitySet object)
+			throws IOException {
+		out.writeUTF( object.getName() );
+		new FullQualifiedNameStreamSerializer().write( out, object.getType() );
+		out.writeUTF( object.getTitle() );
+	}
 
-    @Override
-    public EntitySet read( ObjectDataInput in ) throws IOException {
-        EntitySet es = new EntitySet()
-                .setName( in.readUTF() )
-                .setType( new FullQualifiedNameStreamSerializer().read( in ) )
-                .setTitle( in.readUTF() );
-        return es;
-    }
+	@Override
+	public EntitySet read(ObjectDataInput in) throws IOException {
+		EntitySet es = new EntitySet()
+			.setName( in.readUTF() )
+			.setType( new FullQualifiedNameStreamSerializer().read( in ) )
+			.setTitle( in.readUTF() );
+		return es;
+	}
 
-    @Override
-    public int getTypeId() {
-        return HazelcastSerializerTypeIds.ENTITY_SET.ordinal();
-    }
+	@Override
+	public int getTypeId() {
+		return HazelcastSerializerTypeIds.ENTITY_SET.ordinal();
+	}
 
-    @Override
-    public void destroy() {
+	@Override
+	public void destroy() {
+		
+	}
 
-    }
-
-    @Override
-    public Class<EntitySet> getClazz() {
-        return EntitySet.class;
-    }
+	@Override
+	public Class<EntitySet> getClazz() {
+		return EntitySet.class;
+	}
 
 }
