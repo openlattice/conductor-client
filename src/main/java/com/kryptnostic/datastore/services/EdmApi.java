@@ -19,6 +19,7 @@ import retrofit.http.GET;
 import retrofit.http.POST;
 import retrofit.http.PUT;
 import retrofit.http.Path;
+import retrofit.http.Query;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -197,6 +198,7 @@ public interface EdmApi {
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> properties
     );
+
 
     /**
      * Creates a property type if doesn't already exist.

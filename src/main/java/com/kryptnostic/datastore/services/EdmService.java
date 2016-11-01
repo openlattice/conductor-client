@@ -734,10 +734,14 @@ public class EdmService implements EdmManager {
          * and property types are checked to exist; error throwing should be done there.
          */
         if ( checkedValid && authzService.alterEntityType( entityType.getFullQualifiedName() ) ) {
-            Set<FullQualifiedName> removableProperties = Sets.intersection( properties,
-                    entityType.getProperties() );
 
-            entityType.removeProperties( removableProperties );
+            if( properties != null && entityType.getProperties() != null ){
+                entityType.removeProperties( properties );
+                // Acl
+                properties
+                        .forEach( propertyTypeFqn -> permissionsService.removePermissionsForPropertyTypeInEntityType(
+                                entityType.getFullQualifiedName(), propertyTypeFqn ) );
+            }
             // TODO: Remove properties from Schema, once reference counting is implemented.
 
             edmStore.updateExistingEntityType(
@@ -745,10 +749,6 @@ public class EdmService implements EdmManager {
                     entityType.getName(),
                     entityType.getKey(),
                     entityType.getProperties() );
-            // Acl
-            removableProperties
-                    .forEach( propertyTypeFqn -> permissionsService.removePermissionsForPropertyTypeInEntityType(
-                            entityType.getFullQualifiedName(), propertyTypeFqn ) );
 
         }
     }
