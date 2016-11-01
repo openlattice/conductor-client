@@ -7,16 +7,12 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.Table;
-import com.datastax.driver.mapping.annotations.Transient;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-
-import jersey.repackaged.com.google.common.collect.Sets;
 
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
@@ -43,7 +39,7 @@ public class EntityType extends TypePK {
         this.name = name;
         return this;
     }
-    
+
     @Override
     public EntityType setSchemas( Set<FullQualifiedName> schemas ) {
         this.schemas = schemas;
@@ -75,17 +71,17 @@ public class EntityType extends TypePK {
     public Set<FullQualifiedName> getProperties() {
         return properties;
     }
-    
+
     public EntityType setProperties( Set<FullQualifiedName> properties ) {
         this.properties = properties;
         return this;
     }
-    
+
     public EntityType addProperties( Set<FullQualifiedName> properties ) {
         this.properties.addAll( properties );
         return this;
     }
-    
+
     public EntityType removeProperties( Set<FullQualifiedName> properties ) {
         this.properties.removeAll( properties );
         return this;
@@ -175,7 +171,7 @@ public class EntityType extends TypePK {
             @JsonProperty( SerializationConstants.TYPE_FIELD ) String type,
             @JsonProperty( SerializationConstants.KEY_FIELD ) Set<FullQualifiedName> key,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<FullQualifiedName> properties,
-            @JsonProperty( SerializationConstants.SCHEMAS) Optional<Set<FullQualifiedName>> schemas) {
+            @JsonProperty( SerializationConstants.SCHEMAS ) Optional<Set<FullQualifiedName>> schemas ) {
         return new EntityType()
                 .setNamespace( namespace )
                 .setName( type )

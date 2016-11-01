@@ -10,9 +10,6 @@ import com.kryptnostic.datastore.Permission;
 
 public class ActionAuthorizationService {
 
-    // private List<String> currentRoles =
-    // SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().map(grantedAuthority ->
-    // grantedAuthority.getAuthority()).collect( Collectors.toList() );
     private List<String>             currentRoles;
 
     private final PermissionsService ps;
@@ -21,11 +18,11 @@ public class ActionAuthorizationService {
         this.ps = ps;
     };
 
-    private void updateRoles(){
-        currentRoles = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().map(grantedAuthority ->
-        grantedAuthority.getAuthority()).collect( Collectors.toList() );
+    private void updateRoles() {
+        currentRoles = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map( grantedAuthority -> grantedAuthority.getAuthority() ).collect( Collectors.toList() );
     }
-    
+
     /**
      * Entity Data Model actions
      */
@@ -144,4 +141,48 @@ public class ActionAuthorizationService {
         updateRoles();
         return ps.checkUserHasPermissionsOnEntitySet( currentRoles, entityTypeFqn, entitySetName, Permission.WRITE );
     }
+
+    /**
+     * Permissions modification actions
+     */
+    public boolean updateEntityTypesAcls() {
+        return true;
+    }
+
+    public boolean updateEntitySetsAcls() {
+        return true;
+    }
+
+    public boolean updatePropertyTypeInEntityTypeAcls() {
+        return true;
+    }
+
+    public boolean updatePropertyTypeInEntitySetAcls() {
+        return true;
+    }
+
+    public boolean removeEntityTypeAcls() {
+        return true;
+    }
+
+    public boolean removeEntitySetAcls() {
+        return true;
+    }
+
+    public boolean removePropertyTypeInEntityTypeAcls() {
+        return true;
+    }
+
+    public boolean removeAllPropertyTypesInEntityTypeAcls() {
+        return true;
+    }
+
+    public boolean removePropertyTypeInEntitySetAcls() {
+        return true;
+    }
+
+    public boolean removeAllPropertyTypesInEntitySetAcls() {
+        return true;
+    }
+
 }

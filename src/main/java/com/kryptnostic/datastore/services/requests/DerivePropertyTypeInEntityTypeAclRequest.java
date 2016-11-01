@@ -9,18 +9,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 
 public class DerivePropertyTypeInEntityTypeAclRequest {
-    protected String role;
-    protected FullQualifiedName entityTypeFqn;
+    protected String                 role;
+    protected FullQualifiedName      entityTypeFqn;
     protected Set<FullQualifiedName> properties;
-    
+
     @JsonCreator
     public DerivePropertyTypeInEntityTypeAclRequest createAclRequest(
             @JsonProperty( SerializationConstants.ROLE ) String role,
-            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD) Set<FullQualifiedName> properties){
-        return new DerivePropertyTypeInEntityTypeAclRequest().setRole(role).setType( entityTypeFqn ).setProperties( properties );
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Set<FullQualifiedName> properties ) {
+        return new DerivePropertyTypeInEntityTypeAclRequest().setRole( role ).setType( entityTypeFqn )
+                .setProperties( properties );
     }
-    
+
     public String getRole() {
         return role;
     }
@@ -32,7 +33,7 @@ public class DerivePropertyTypeInEntityTypeAclRequest {
     public Set<FullQualifiedName> getProperties() {
         return properties;
     }
-    
+
     public DerivePropertyTypeInEntityTypeAclRequest setRole( String role ) {
         this.role = role;
         return this;
@@ -71,5 +72,5 @@ public class DerivePropertyTypeInEntityTypeAclRequest {
         result = 31 * result + ( properties != null ? properties.hashCode() : 0 );
         return result;
     }
-    
+
 }

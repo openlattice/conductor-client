@@ -4,16 +4,15 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 
 public class EntitySetAclRemovalRequest {
-    
-    @JsonProperty( SerializationConstants.TYPE_FIELD)
+
+    @JsonProperty( SerializationConstants.TYPE_FIELD )
     protected FullQualifiedName entityTypeFqn;
-    @JsonProperty( SerializationConstants.NAME_FIELD)
-    protected String entitySetName;
-    
+    @JsonProperty( SerializationConstants.NAME_FIELD )
+    protected String            entitySetName;
+
     @Override
     public boolean equals( Object o ) {
         if ( this == o )
@@ -52,11 +51,11 @@ public class EntitySetAclRemovalRequest {
         this.entitySetName = entitySetName;
         return this;
     }
-    
+
     @JsonCreator
     public static EntitySetAclRemovalRequest newEntitySet(
-            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
-            @JsonProperty( SerializationConstants.NAME_FIELD) String entitySetName) {
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.NAME_FIELD ) String entitySetName ) {
         return new EntitySetAclRemovalRequest()
                 .setType( entityTypeFqn )
                 .setName( entitySetName );

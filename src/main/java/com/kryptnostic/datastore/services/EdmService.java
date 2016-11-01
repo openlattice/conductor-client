@@ -735,7 +735,7 @@ public class EdmService implements EdmManager {
          */
         if ( checkedValid && authzService.alterEntityType( entityType.getFullQualifiedName() ) ) {
 
-            if( properties != null && entityType.getProperties() != null ){
+            if ( properties != null && entityType.getProperties() != null ) {
                 entityType.removeProperties( properties );
                 // Acl
                 properties

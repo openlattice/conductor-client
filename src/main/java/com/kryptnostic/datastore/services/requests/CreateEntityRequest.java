@@ -1,21 +1,15 @@
 package com.kryptnostic.datastore.services.requests;
 
+import java.util.Set;
+import java.util.UUID;
+
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 /**
  * Created by yao on 9/20/16.
@@ -23,7 +17,7 @@ import java.util.stream.Collectors;
 public class CreateEntityRequest {
     private final Optional<UUID>                           aclId;
     private final Optional<UUID>                           syncId;
-    private final Optional<String>                                   entitySetName;
+    private final Optional<String>                         entitySetName;
     private final FullQualifiedName                        entityType;
     private final Set<Multimap<FullQualifiedName, Object>> propertyValues;
 

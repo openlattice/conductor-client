@@ -13,23 +13,23 @@ public final class Queries {
     private Queries() {}
 
     public static final class ParamNames {
-        public static final String ENTITY_TYPE        = "entType";
-        public static final String ACL_IDS            = "aclIds";
-        public static final String NAMESPACE          = "namespace";
-        public static final String NAME               = "name";
-        public static final String ENTITY_TYPES       = "entTypes";
-        public static final String ACL_ID             = "aId";
-        public static final String OBJ_ID             = "objId";
-        public static final String ENTITY_SETS        = "entSets";
-        public static final String SYNC_IDS           = "sId";
-        public static final String PROPERTIES         = "properties";
-        public static final String KEY                = "key"; 
+        public static final String ENTITY_TYPE  = "entType";
+        public static final String ACL_IDS      = "aclIds";
+        public static final String NAMESPACE    = "namespace";
+        public static final String NAME         = "name";
+        public static final String ENTITY_TYPES = "entTypes";
+        public static final String ACL_ID       = "aId";
+        public static final String OBJ_ID       = "objId";
+        public static final String ENTITY_SETS  = "entSets";
+        public static final String SYNC_IDS     = "sId";
+        public static final String PROPERTIES   = "properties";
+        public static final String KEY          = "key";
     }
 
     // Keyspace setup
     public static final String CREATE_KEYSPACE = "CREATE KEYSPACE IF NOT EXISTS sparks WITH REPLICATION={ 'class' : 'SimpleStrategy', 'replication_factor' : 1 } AND DURABLE_WRITES=true";
 
-    // Table Creation    
+    // Table Creation
     public static final String createEntityTypesAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ACLS )
                 .ifNotExists()
@@ -38,7 +38,7 @@ public final class Queries {
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
-    
+
     public static final String createEntitySetsAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ACLS )
                 .ifNotExists()
@@ -47,7 +47,7 @@ public final class Queries {
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
-    
+
     public static final String createSchemasAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.SCHEMAS_ACLS )
                 .ifNotExists()
@@ -56,7 +56,7 @@ public final class Queries {
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
-    
+
     public static final String createPropertyTypesInEntityTypesAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS )
                 .ifNotExists()
@@ -65,7 +65,7 @@ public final class Queries {
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
-    
+
     public static final String createPropertyTypesInEntitySetsAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS )
                 .ifNotExists()
@@ -74,7 +74,7 @@ public final class Queries {
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
-    
+
     public static final String createSchemasTableQuery( String keyspace, String table ) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
@@ -107,7 +107,10 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.NAMESPACE )
                 .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.TYPENAME, CommonColumns.DATATYPE, CommonColumns.MULTIPLICITY, CommonColumns.SCHEMAS )
+                .columns( CommonColumns.TYPENAME,
+                        CommonColumns.DATATYPE,
+                        CommonColumns.MULTIPLICITY,
+                        CommonColumns.SCHEMAS )
                 .buildQuery();
     }
 
@@ -126,7 +129,7 @@ public final class Queries {
                 .columns( CommonColumns.FQN )
                 .buildQuery();
     }
-    
+
     public static final String createPropertyTableQuery(
             String keyspace,
             String table,
@@ -166,7 +169,7 @@ public final class Queries {
                 .clusteringColumns( CommonColumns.ENTITYID )
                 .buildQuery();
     }
-    
+
     // Index creation
     /*
      * HOW DOES SOFTWARE EVEN WORK? https://issues.apache.org/jira/browse/CASSANDRA-11331 Need to remove specific index
@@ -200,10 +203,10 @@ public final class Queries {
     public static final String CREATE_PROPERTY_TYPE_IF_NOT_EXISTS  = "INSERT INTO sparks."
             + DatastoreConstants.PROPERTY_TYPES_TABLE
             + " (namespace, name, typename, datatype, multiplicity, schemas) VALUES (?,?,?,?,?,?) IF NOT EXISTS";
-    public static final String UPDATE_PROPERTY_TYPE_IF_EXISTS = "UPDATE sparks."
-    		+ DatastoreConstants.PROPERTY_TYPES_TABLE
-    		+ " SET datatype = ?" + "," + "multiplicity = ?" + "," + "schemas = ?"
-    		+ " WHERE namespace = ?" + " AND " + "name = ?";
+    public static final String UPDATE_PROPERTY_TYPE_IF_EXISTS      = "UPDATE sparks."
+            + DatastoreConstants.PROPERTY_TYPES_TABLE
+            + " SET datatype = ?" + "," + "multiplicity = ?" + "," + "schemas = ?"
+            + " WHERE namespace = ?" + " AND " + "name = ?";
     public static final String INSERT_ENTITY_CLAUSES               = " (objectId, aclId, clock, entitySets, syncIds) VALUES( :"
             + ParamNames.OBJ_ID + ", :"
             + ParamNames.ACL_ID + ", toTimestamp(now()), :"
@@ -227,13 +230,13 @@ public final class Queries {
             + ParamNames.NAMESPACE;
 
     // Update statements for datastore.
-	public static final String UPDATE_EXISTING_ENTITY_TYPE = "UPDATE sparks."
-			+ DatastoreConstants.ENTITY_TYPES_TABLE + " SET properties = :"
-			+ ParamNames.PROPERTIES + " , key = :"
-			+ ParamNames.KEY + " WHERE namespace =:"
-			+ ParamNames.NAMESPACE + " AND name =:"
-			+ ParamNames.NAME;
-	
+    public static final String UPDATE_EXISTING_ENTITY_TYPE         = "UPDATE sparks."
+            + DatastoreConstants.ENTITY_TYPES_TABLE + " SET properties = :"
+            + ParamNames.PROPERTIES + " , key = :"
+            + ParamNames.KEY + " WHERE namespace =:"
+            + ParamNames.NAMESPACE + " AND name =:"
+            + ParamNames.NAME;
+
     public static RegularStatement insertSchemaQueryIfNotExists( String keyspace, String table ) {
         return baseInsertSchemaQuery( QueryBuilder
                 .insertInto( keyspace, table )
@@ -270,7 +273,7 @@ public final class Queries {
     public static final RegularStatement addEntityTypesToSchema( String keyspace, String table ) {
         return QueryBuilder.update( keyspace, table )
                 .with( QueryBuilder.addAll( CommonColumns.ENTITY_TYPES.cql(), QueryBuilder.bindMarker() ) )
-                .and( QueryBuilder.addAll(CommonColumns.PROPERTIES.cql(), QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.addAll( CommonColumns.PROPERTIES.cql(), QueryBuilder.bindMarker() ) )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
@@ -294,7 +297,7 @@ public final class Queries {
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
-    
+
     public static final RegularStatement removePropertyTypesFromSchema( String keyspace, String table ) {
         return QueryBuilder.update( keyspace, table )
                 .with( QueryBuilder.removeAll( CommonColumns.PROPERTIES.cql(), QueryBuilder.bindMarker() ) )

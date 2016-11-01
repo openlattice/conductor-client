@@ -22,7 +22,7 @@ public class PropertyTypeBase extends TypePK {
         this.name = name;
         return this;
     }
-    
+
     public PropertyTypeBase setSchemas( Set<FullQualifiedName> schemas ) {
         this.schemas = schemas;
         return this;
@@ -39,8 +39,8 @@ public class PropertyTypeBase extends TypePK {
 
     @Override
     public String toString() {
-        return "PropertyTypeBase [datatype=" + datatype + ", namespace=" + namespace + ", name=" + name 
-        		+ ", schemas=" + schemas + "]";
+        return "PropertyTypeBase [datatype=" + datatype + ", namespace=" + namespace + ", name=" + name
+                + ", schemas=" + schemas + "]";
     }
 
     @Override

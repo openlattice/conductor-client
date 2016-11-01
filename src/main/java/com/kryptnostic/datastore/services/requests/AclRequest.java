@@ -11,23 +11,23 @@ import com.kryptnostic.datastore.Permission;
 
 public class AclRequest {
     @JsonProperty( SerializationConstants.ROLE )
-    protected String role;
-    @JsonProperty( SerializationConstants.ACTION)
-    protected Action action;
-    @JsonProperty( SerializationConstants.FQN)
+    protected String            role;
+    @JsonProperty( SerializationConstants.ACTION )
+    protected Action            action;
+    @JsonProperty( SerializationConstants.FQN )
     protected FullQualifiedName fqn;
-    @JsonProperty( SerializationConstants.PERMISSIONS)
-    protected Set<Permission> permissions;
-    
+    @JsonProperty( SerializationConstants.PERMISSIONS )
+    protected Set<Permission>   permissions;
+
     @JsonCreator
     public AclRequest createAclRequest(
             @JsonProperty( SerializationConstants.ROLE ) String role,
-            @JsonProperty( SerializationConstants.ACTION) Action action,
-            @JsonProperty( SerializationConstants.FQN) FullQualifiedName fqn,
-            @JsonProperty( SerializationConstants.PERMISSIONS) Set<Permission> permissions){
-        return new AclRequest().setRole(role).setAction( action ).setFqn( fqn ).setPermissions( permissions );
+            @JsonProperty( SerializationConstants.ACTION ) Action action,
+            @JsonProperty( SerializationConstants.FQN ) FullQualifiedName fqn,
+            @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
+        return new AclRequest().setRole( role ).setAction( action ).setFqn( fqn ).setPermissions( permissions );
     }
-    
+
     public String getRole() {
         return role;
     }
@@ -43,7 +43,7 @@ public class AclRequest {
     public Set<Permission> getPermissions() {
         return permissions;
     }
-    
+
     public AclRequest setRole( String role ) {
         this.role = role;
         return this;

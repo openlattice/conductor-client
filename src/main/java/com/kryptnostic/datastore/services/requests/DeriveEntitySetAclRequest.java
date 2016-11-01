@@ -1,7 +1,5 @@
 package com.kryptnostic.datastore.services.requests;
 
-import java.util.Set;
-
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -9,18 +7,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 
 public class DeriveEntitySetAclRequest {
-    protected String role;
+    protected String            role;
     protected FullQualifiedName entityTypeFqn;
-    protected String entitySetName;
-    
+    protected String            entitySetName;
+
     @JsonCreator
     public DeriveEntitySetAclRequest createAclRequest(
             @JsonProperty( SerializationConstants.ROLE ) String role,
-            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
-            @JsonProperty( SerializationConstants.NAME_FIELD) String entitySetName ){
-        return new DeriveEntitySetAclRequest().setRole(role).setType( entityTypeFqn ).setName( entitySetName );
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.NAME_FIELD ) String entitySetName ) {
+        return new DeriveEntitySetAclRequest().setRole( role ).setType( entityTypeFqn ).setName( entitySetName );
     }
-    
+
     public String getRole() {
         return role;
     }
@@ -28,11 +26,11 @@ public class DeriveEntitySetAclRequest {
     public FullQualifiedName getType() {
         return entityTypeFqn;
     }
-    
+
     public String getName() {
         return entitySetName;
     }
-    
+
     public DeriveEntitySetAclRequest setRole( String role ) {
         this.role = role;
         return this;
@@ -47,7 +45,6 @@ public class DeriveEntitySetAclRequest {
         this.entitySetName = entitySetName;
         return this;
     }
-
 
     @Override
     public boolean equals( Object o ) {

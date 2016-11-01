@@ -1,11 +1,11 @@
 package com.kryptnostic.datastore.services.requests;
 
+import java.util.UUID;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.kryptnostic.datastore.services.EdmApi;
-
-import java.util.UUID;
 
 /**
  * Created by yao on 9/26/16.

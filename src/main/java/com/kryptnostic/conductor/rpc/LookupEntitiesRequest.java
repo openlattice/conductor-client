@@ -1,6 +1,5 @@
 package com.kryptnostic.conductor.rpc;
 
-
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -10,7 +9,6 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 
 public class LookupEntitiesRequest {
@@ -38,26 +36,23 @@ public class LookupEntitiesRequest {
     public UUID getUserId() {
         return userId;
     }
-    
+
     @JsonCreator
     public static LookupEntitiesRequest newLookupEntitiesRequest(
-    		@JsonProperty( SerializationConstants.USER_ID ) UUID userId,
-    		@JsonProperty( SerializationConstants.TYPE_FIELD ) Set<FullQualifiedName> entityTypes,
-    		@JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Map<String, Object> propertyMapInString) {
-    	//Create propertyValues with FullQualifiedName as key
-    	Map<FullQualifiedName, Object> propertyMapInFQN = propertyMapInString.entrySet()
-    			.stream()
-    			.collect(Collectors.toMap(
-    						entry -> new FullQualifiedName( entry.getKey() ),
-    						entry -> entry.getValue()
-    					)
-    			);
-    	
+            @JsonProperty( SerializationConstants.USER_ID ) UUID userId,
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) Set<FullQualifiedName> entityTypes,
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) Map<String, Object> propertyMapInString ) {
+        // Create propertyValues with FullQualifiedName as key
+        Map<FullQualifiedName, Object> propertyMapInFQN = propertyMapInString.entrySet()
+                .stream()
+                .collect( Collectors.toMap(
+                        entry -> new FullQualifiedName( entry.getKey() ),
+                        entry -> entry.getValue() ) );
+
         return new LookupEntitiesRequest(
-        		userId,
-        		entityTypes,
-        		propertyMapInFQN
-        		);
-    } 
+                userId,
+                entityTypes,
+                propertyMapInFQN );
+    }
 
 }

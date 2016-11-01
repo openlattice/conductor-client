@@ -9,7 +9,6 @@ import com.datastax.driver.mapping.annotations.PartitionKey;
 import com.datastax.driver.mapping.annotations.Table;
 import com.datastax.driver.mapping.annotations.Transient;
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
@@ -22,7 +21,7 @@ public class EntitySet {
         value = 0 )
     @JsonIgnore
     private String            typename = null;
-    
+
     @ClusteringColumn(
         value = 0 )
     private String            name;
@@ -30,7 +29,7 @@ public class EntitySet {
     @Column(
         name = "title" )
     private String            title;
-    
+
     @Transient
     private FullQualifiedName type;
 
@@ -42,7 +41,7 @@ public class EntitySet {
         this.name = name;
         return this;
     }
-    
+
     public String getTitle() {
         return title;
     }
@@ -51,24 +50,24 @@ public class EntitySet {
         this.title = title;
         return this;
     }
-    
+
     public String getTypename() {
         return typename;
     }
-    
+
     public EntitySet setTypename( String typename ) {
         // typename must only be set once
         Preconditions.checkState( StringUtils.isBlank( this.typename ) );
         this.typename = typename;
         return this;
     }
-    
-    //this shall only be called the first time EntitySet is created, otherwise the return value will be null;
-    //to actually getType after the first time, retrieve the value from the EntityType lookup table
+
+    // this shall only be called the first time EntitySet is created, otherwise the return value will be null;
+    // to actually getType after the first time, retrieve the value from the EntityType lookup table
     public FullQualifiedName getType() {
         return type;
     }
-    
+
     public EntitySet setType( FullQualifiedName type ) {
         this.type = type;
         return this;
@@ -97,7 +96,7 @@ public class EntitySet {
         }
         EntitySet other = (EntitySet) obj;
         if ( type == null ) {
-            if( other.type != null ) {
+            if ( other.type != null ) {
                 return false;
             }
         } else if ( !type.equals( other.type ) ) {
@@ -127,13 +126,13 @@ public class EntitySet {
 
     @JsonCreator
     public static EntitySet newEntitySet(
-            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName type,
-            @JsonProperty( SerializationConstants.NAME_FIELD) String name,     
-            @JsonProperty( SerializationConstants.TITLE_FIELD) String title) {
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName type,
+            @JsonProperty( SerializationConstants.NAME_FIELD ) String name,
+            @JsonProperty( SerializationConstants.TITLE_FIELD ) String title ) {
         return new EntitySet()
                 .setType( type )
                 .setName( name )
                 .setTitle( title );
     }
-    
+
 }

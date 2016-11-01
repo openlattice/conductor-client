@@ -112,7 +112,7 @@ public class ODataStorageService {
         } else {}
         return productsCollection;
     }
-    
+
     public Entity readEntityData( EdmEntitySet edmEntitySet, List<UriParameter> keyParams )
             throws ODataApplicationException {
 

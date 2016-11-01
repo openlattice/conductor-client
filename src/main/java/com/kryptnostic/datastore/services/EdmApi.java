@@ -19,35 +19,34 @@ import retrofit.http.GET;
 import retrofit.http.POST;
 import retrofit.http.PUT;
 import retrofit.http.Path;
-import retrofit.http.Query;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public interface EdmApi {
-    String ALIAS          = "alias";
-    String ACL_ID         = "aclId";
-    String LOAD_DETAILS   = "loadDetails";
-    String NAME           = "name";
-    String NAMESPACE      = "namespace";
-    String NAMESPACES     = "namespaces";
-    String ENTITY_SETS    = "entitySets";
-    String ENTITY_TYPES   = "objectTypes";
-    String PROPERTY_TYPES = "propertyTypes";
-    String SCHEMA         = "schema";
-    String SCHEMAS        = "schemas";
+    String ALIAS                      = "alias";
+    String ACL_ID                     = "aclId";
+    String LOAD_DETAILS               = "loadDetails";
+    String NAME                       = "name";
+    String NAMESPACE                  = "namespace";
+    String NAMESPACES                 = "namespaces";
+    String ENTITY_SETS                = "entitySets";
+    String ENTITY_TYPES               = "objectTypes";
+    String PROPERTY_TYPES             = "propertyTypes";
+    String SCHEMA                     = "schema";
+    String SCHEMAS                    = "schemas";
 
     // {namespace}/{schema_name}/{class}/{FQN}/{FQN}
     /*
      * /entity/type/{namespace}/{name} /entity/set/{namespace}/{name} /schema/{namespace}/{name}
      * /property/{namespace}/{name}
      */
-    String SCHEMA_BASE_PATH        = "/schema";
-    String ENTITY_SETS_BASE_PATH   = "/entity/set";
-    String ENTITY_TYPE_BASE_PATH   = "/entity/type";
-    String PROPERTY_TYPE_BASE_PATH = "/property/type";
-    String NAMESPACE_PATH          = "/{" + NAMESPACE + "}";
-    String NAME_PATH               = "/{" + NAME + "}";
+    String SCHEMA_BASE_PATH           = "/schema";
+    String ENTITY_SETS_BASE_PATH      = "/entity/set";
+    String ENTITY_TYPE_BASE_PATH      = "/entity/type";
+    String PROPERTY_TYPE_BASE_PATH    = "/property/type";
+    String NAMESPACE_PATH             = "/{" + NAMESPACE + "}";
+    String NAME_PATH                  = "/{" + NAME + "}";
 
     String ADD_PROPERTY_TYPES_PATH    = "/addPropertyTypes";
     String DELETE_PROPERTY_TYPES_PATH = "/deletePropertyTypes";
@@ -189,16 +188,13 @@ public interface EdmApi {
     Response addPropertyTypesToEntityType(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,
-            @Body Set<FullQualifiedName> properties
-    );
+            @Body Set<FullQualifiedName> properties );
 
     @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
     Response removePropertyTypesFromEntityType(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,
-            @Body Set<FullQualifiedName> properties
-    );
-
+            @Body Set<FullQualifiedName> properties );
 
     /**
      * Creates a property type if doesn't already exist.
@@ -212,7 +208,7 @@ public interface EdmApi {
     /**
      * @param typeInfo
      * @return An HTTP 200 response with an empty body, if successful. Otherwise, an appropriate HttpStatus code and
-     * potential error message.
+     *         potential error message.
      */
     @PUT( PROPERTY_TYPE_BASE_PATH )
     Response putPropertyType( @Body PropertyType typeInfo );

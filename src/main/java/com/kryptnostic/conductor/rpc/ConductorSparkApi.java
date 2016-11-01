@@ -1,7 +1,5 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.util.List;
-
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 public interface ConductorSparkApi {

@@ -1,7 +1,6 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.function.Function;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;

@@ -1,7 +1,5 @@
 package com.kryptnostic.datastore.services;
 
-import java.util.Set;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
