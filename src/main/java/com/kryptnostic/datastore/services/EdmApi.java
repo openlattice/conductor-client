@@ -3,12 +3,8 @@ package com.kryptnostic.datastore.services;
 import java.util.Map;
 import java.util.Set;
 
+import com.kryptnostic.conductor.rpc.odata.*;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
-import com.kryptnostic.conductor.rpc.odata.Schema;
 
 import retrofit.client.Response;
 import retrofit.http.Body;
@@ -168,7 +164,7 @@ public interface EdmApi {
     Response putEntityType( @Body EntityType entityType );
 
     @GET( ENTITY_TYPE_BASE_PATH )
-    Iterable<EntityType> getEntityTypes();
+    Iterable<DetailedEntityType> getEntityTypes();
 
     @GET( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     EntityType getEntityType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
