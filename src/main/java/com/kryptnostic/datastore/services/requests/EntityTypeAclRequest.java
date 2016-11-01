@@ -9,25 +9,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
-public class AclRequest {
+public class EntityTypeAclRequest {
     @JsonProperty( SerializationConstants.ROLE )
-    protected String role;
-    @JsonProperty( SerializationConstants.ACTION)
-    protected Action action;
-    @JsonProperty( SerializationConstants.FQN)
-    protected FullQualifiedName fqn;
-    @JsonProperty( SerializationConstants.PERMISSIONS)
-    protected Set<Permission> permissions;
-    
-    @JsonCreator
-    public AclRequest createAclRequest(
-            @JsonProperty( SerializationConstants.ROLE ) String role,
-            @JsonProperty( SerializationConstants.ACTION) Action action,
-            @JsonProperty( SerializationConstants.FQN) FullQualifiedName fqn,
-            @JsonProperty( SerializationConstants.PERMISSIONS) Set<Permission> permissions){
-        return new AclRequest().setRole(role).setAction( action ).setFqn( fqn ).setPermissions( permissions );
-    }
-    
+    protected String            role;
+    @JsonProperty( SerializationConstants.ACTION )
+    protected Action            action;
+    @JsonProperty( SerializationConstants.TYPE_FIELD )
+    protected FullQualifiedName entityTypeFqn;
+    @JsonProperty( SerializationConstants.PERMISSIONS )
+    protected Set<Permission>   permissions;
+
     public String getRole() {
         return role;
     }
@@ -36,30 +27,30 @@ public class AclRequest {
         return action;
     }
 
-    public FullQualifiedName getFqn() {
-        return fqn;
+    public FullQualifiedName getType() {
+        return entityTypeFqn;
     }
 
     public Set<Permission> getPermissions() {
         return permissions;
     }
-    
-    public AclRequest setRole( String role ) {
+
+    public EntityTypeAclRequest setRole( String role ) {
         this.role = role;
         return this;
     }
 
-    public AclRequest setAction( Action action ) {
+    public EntityTypeAclRequest setAction( Action action ) {
         this.action = action;
         return this;
     }
 
-    public AclRequest setFqn( FullQualifiedName fqn ) {
-        this.fqn = fqn;
+    public EntityTypeAclRequest setType( FullQualifiedName entityTypeFqn ) {
+        this.entityTypeFqn = entityTypeFqn;
         return this;
     }
 
-    public AclRequest setPermissions( Set<Permission> permissions ) {
+    public EntityTypeAclRequest setPermissions( Set<Permission> permissions ) {
         this.permissions = permissions;
         return this;
     }
@@ -71,13 +62,13 @@ public class AclRequest {
         if ( o == null || getClass() != o.getClass() )
             return false;
 
-        AclRequest that = (AclRequest) o;
+        EntityTypeAclRequest that = (EntityTypeAclRequest) o;
 
         if ( role != null ? !role.equals( that.role ) : that.role != null )
             return false;
         if ( action != null ? !action.equals( that.action ) : that.action != null )
             return false;
-        if ( fqn != null ? !fqn.equals( that.fqn ) : that.fqn != null )
+        if ( entityTypeFqn != null ? !entityTypeFqn.equals( that.entityTypeFqn ) : that.entityTypeFqn != null )
             return false;
         return permissions != null ? permissions.equals( that.permissions ) : that.permissions == null;
     }
@@ -86,9 +77,19 @@ public class AclRequest {
     public int hashCode() {
         int result = role != null ? role.hashCode() : 0;
         result = 31 * result + ( action != null ? action.hashCode() : 0 );
-        result = 31 * result + ( fqn != null ? fqn.hashCode() : 0 );
+        result = 31 * result + ( entityTypeFqn != null ? entityTypeFqn.hashCode() : 0 );
         result = 31 * result + ( permissions != null ? permissions.hashCode() : 0 );
         return result;
+    }
+
+    @JsonCreator
+    public EntityTypeAclRequest createAclRequest(
+            @JsonProperty( SerializationConstants.ROLE ) String role,
+            @JsonProperty( SerializationConstants.ACTION ) Action action,
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
+        return new EntityTypeAclRequest().setRole( role ).setAction( action ).setType( entityTypeFqn )
+                .setPermissions( permissions );
     }
 
 }

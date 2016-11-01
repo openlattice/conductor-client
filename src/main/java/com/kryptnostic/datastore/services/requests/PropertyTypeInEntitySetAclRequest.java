@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
-public class PropertyTypeInEntitySetAclRequest extends AclRequest {
+public class PropertyTypeInEntitySetAclRequest extends EntityTypeAclRequest {
    
     @JsonProperty( SerializationConstants.NAME_FIELD)
     protected String entitySetName;
@@ -29,16 +29,9 @@ public class PropertyTypeInEntitySetAclRequest extends AclRequest {
     }
 
     @Override
-    @JsonProperty( SerializationConstants.TYPE_FIELD)
-    public PropertyTypeInEntitySetAclRequest setFqn( FullQualifiedName fqn ) {
-        this.fqn = fqn;
+    public PropertyTypeInEntitySetAclRequest setType( FullQualifiedName entityTypeFqn ) {
+        this.entityTypeFqn = entityTypeFqn;
         return this;
-    }
-
-    @Override
-    @JsonProperty( SerializationConstants.TYPE_FIELD)
-    public FullQualifiedName getFqn() {
-        return fqn;
     }
 
     @Override
@@ -98,7 +91,7 @@ public class PropertyTypeInEntitySetAclRequest extends AclRequest {
             @JsonProperty( SerializationConstants.NAME_FIELD) String entitySetName,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD) FullQualifiedName propertyTypeFqn,
             @JsonProperty( SerializationConstants.PERMISSIONS) Set<Permission> permissions){
-        return new PropertyTypeInEntitySetAclRequest().setRole(role).setAction( action ).setFqn( entityTypeFqn ).setName(entitySetName).setPropertyType( propertyTypeFqn ).setPermissions( permissions );
+        return new PropertyTypeInEntitySetAclRequest().setRole(role).setAction( action ).setType( entityTypeFqn ).setName(entitySetName).setPropertyType( propertyTypeFqn ).setPermissions( permissions );
     }
 
 }

@@ -9,8 +9,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
-public class PropertyTypeInEntityTypeAclRequest extends AclRequest {
-    @JsonProperty( SerializationConstants.PROPERTIES_FIELD)
+public class PropertyTypeInEntityTypeAclRequest extends EntityTypeAclRequest {
+    @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
     protected FullQualifiedName propertyTypeFqn;
 
     @Override
@@ -26,17 +26,9 @@ public class PropertyTypeInEntityTypeAclRequest extends AclRequest {
     }
 
     @Override
-    @JsonProperty( SerializationConstants.TYPE_FIELD)
-    public PropertyTypeInEntityTypeAclRequest setFqn( FullQualifiedName fqn ) {
-        this.fqn = fqn;
+    public PropertyTypeInEntityTypeAclRequest setType( FullQualifiedName entityTypeFqn ) {
+        this.entityTypeFqn = entityTypeFqn;
         return this;
-    }
-    
-    // TODO adhoc fix to force Jackson use type for this class - better solutions?
-    @Override
-    @JsonProperty( SerializationConstants.TYPE_FIELD)
-    public FullQualifiedName getFqn( ) {
-        return fqn;
     }
 
     @Override
@@ -44,16 +36,16 @@ public class PropertyTypeInEntityTypeAclRequest extends AclRequest {
         this.permissions = permissions;
         return this;
     }
-    
-    public FullQualifiedName getPropertyType(){
+
+    public FullQualifiedName getPropertyType() {
         return propertyTypeFqn;
     }
-    
-    public PropertyTypeInEntityTypeAclRequest setPropertyType( FullQualifiedName propertyTypeFqn ){
+
+    public PropertyTypeInEntityTypeAclRequest setPropertyType( FullQualifiedName propertyTypeFqn ) {
         this.propertyTypeFqn = propertyTypeFqn;
         return this;
     }
-    
+
     @Override
     public int hashCode() {
         int result = super.hashCode();
@@ -67,22 +59,23 @@ public class PropertyTypeInEntityTypeAclRequest extends AclRequest {
             return true;
         if ( obj == null || getClass() != obj.getClass() )
             return false;
-        if( !super.equals( obj ) )
+        if ( !super.equals( obj ) )
             return false;
-        
+
         PropertyTypeInEntityTypeAclRequest that = (PropertyTypeInEntityTypeAclRequest) obj;
 
         return propertyTypeFqn != null ? propertyTypeFqn.equals( that.propertyTypeFqn ) : that.propertyTypeFqn == null;
     }
-    
+
     @JsonCreator
     public PropertyTypeInEntityTypeAclRequest createRequest(
             @JsonProperty( SerializationConstants.ROLE ) String role,
-            @JsonProperty( SerializationConstants.ACTION) Action action,
-            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD) FullQualifiedName propertyTypeFqn,
-            @JsonProperty( SerializationConstants.PERMISSIONS) Set<Permission> permissions){
-        return new PropertyTypeInEntityTypeAclRequest().setRole(role).setAction( action ).setFqn( entityTypeFqn ).setPropertyType( propertyTypeFqn ).setPermissions( permissions );
+            @JsonProperty( SerializationConstants.ACTION ) Action action,
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) FullQualifiedName propertyTypeFqn,
+            @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
+        return new PropertyTypeInEntityTypeAclRequest().setRole( role ).setAction( action ).setType( entityTypeFqn )
+                .setPropertyType( propertyTypeFqn ).setPermissions( permissions );
     }
 
 }
