@@ -33,7 +33,7 @@ public final class Queries {
     public static final String createEntityTypesAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
+                .partitionKey( CommonColumns.ENTITY_TYPE )
                 .clusteringColumns( CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
@@ -42,7 +42,7 @@ public final class Queries {
     public static final String createEntitySetsAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.TYPE, CommonColumns.NAME )
+                .partitionKey( CommonColumns.ENTITY_TYPE, CommonColumns.ENTITY_SET )
                 .clusteringColumns( CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
@@ -60,8 +60,8 @@ public final class Queries {
     public static final String createPropertyTypesInEntityTypesAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.FQN, CommonColumns.ROLE )
+                .partitionKey( CommonColumns.ENTITY_TYPE )
+                .clusteringColumns( CommonColumns.PROPERTY_TYPE, CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -69,8 +69,8 @@ public final class Queries {
     public static final String createPropertyTypesInEntitySetsAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE, CommonColumns.TYPE, CommonColumns.NAME )
-                .clusteringColumns( CommonColumns.FQN, CommonColumns.ROLE )
+                .partitionKey( CommonColumns.ENTITY_TYPE, CommonColumns.ENTITY_SET )
+                .clusteringColumns( CommonColumns.PROPERTY_TYPE, CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -147,7 +147,7 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.ENTITYID )
                 .clusteringColumns( CommonColumns.CLOCK )
-                .columns( CommonColumns.TYPENAME, CommonColumns.ENTITYSETS, CommonColumns.SYNCIDS )
+                .columns( CommonColumns.TYPENAME, CommonColumns.ENTITY_SETS, CommonColumns.SYNCIDS )
                 .buildQuery();
     }
 

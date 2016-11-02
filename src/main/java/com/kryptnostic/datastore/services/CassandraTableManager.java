@@ -86,31 +86,32 @@ public class CassandraTableManager {
     private final PreparedStatement                                   propertyTypeRemoveSchema;
     
     private final PreparedStatement                                   addPermissionsForEntityType;
-    private final PreparedStatement                                   removePermissionsForEntityType;
     private final PreparedStatement                                   setPermissionsForEntityType;
     private final PreparedStatement                                   getPermissionsForEntityType;
-    private final PreparedStatement                                   deleteFromEntityTypesAclsTable;
+    private final PreparedStatement                                   deleteRowFromEntityTypesAclsTable;
+    private final PreparedStatement                                   deleteEntityTypeFromEntityTypesAclsTable;
     private final PreparedStatement                                   addPermissionsForEntitySet;
-    private final PreparedStatement                                   removePermissionsForEntitySet;
     private final PreparedStatement                                   setPermissionsForEntitySet;
     private final PreparedStatement                                   getPermissionsForEntitySet;
-    private final PreparedStatement                                   deleteFromEntitySetsAclsTable;
+    private final PreparedStatement                                   deleteRowFromEntitySetsAclsTable;
+    private final PreparedStatement                                   deleteEntitySetFromEntitySetsAclsTable;
     
     private final PreparedStatement                                   getAclsForEntityType;
     private final PreparedStatement                                   getAclsForEntitySet;
     
     private final PreparedStatement                                   addPermissionsForPropertyTypeInEntityType;
-    private final PreparedStatement                                   removePermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   setPermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   getPermissionsForPropertyTypeInEntityType;
-    private final PreparedStatement                                   deleteRowFromPropertyTypeInEntityTypesAclsTable;
-    private final PreparedStatement                                   deleteEntityTypeFromPropertyTypeInEntityTypesAclsTable;
+    private final PreparedStatement                                   deleteRowFromPropertyTypesInEntityTypesAclsTable;
+    private final PreparedStatement                                   deletePairFromPropertyTypesInEntityTypesAclsTable;
+    private final PreparedStatement                                   deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable;
     private final PreparedStatement                                   addPermissionsForPropertyTypeInEntitySet;
     private final PreparedStatement                                   removePermissionsForPropertyTypeInEntitySet;
     private final PreparedStatement                                   setPermissionsForPropertyTypeInEntitySet;
     private final PreparedStatement                                   getPermissionsForPropertyTypeInEntitySet;
-    private final PreparedStatement                                   deleteRowFromPropertyTypeInEntitySetsAclsTable;
-    private final PreparedStatement                                   deleteEntitySetFromPropertyTypeInEntitySetsAclsTable;
+    private final PreparedStatement                                   deleteRowFromPropertyTypesInEntitySetsAclsTable;
+    private final PreparedStatement                                   deletePairFromPropertyTypesInEntitySetsAclsTable;
+    private final PreparedStatement                                   deleteEntitySetFromPropertyTypesInEntitySetsAclsTable;
     
 
     public CassandraTableManager(
@@ -250,207 +251,192 @@ public class CassandraTableManager {
         this.addPermissionsForEntityType = session
                 .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
-                );
-        
-        this.removePermissionsForEntityType = session
-                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
-                        .with( QueryBuilder.removeAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.setPermissionsForEntityType = session
         		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
         		        .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-        		        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+        		        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
         		        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
         		);
         
         this.getPermissionsForEntityType = session
         		.prepare( QueryBuilder.select()
         				.from( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
-        		        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+        		        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
         		        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
         		);
+
+        this.deleteRowFromEntityTypesAclsTable = session
+                .prepare( QueryBuilder.delete()
+                        .from( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
         
-        this.deleteFromEntityTypesAclsTable = session
+        this.deleteEntityTypeFromEntityTypesAclsTable = session
         		.prepare( QueryBuilder.delete()
         				.from( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
         		);
 
         this.addPermissionsForEntitySet = session
                 .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
-                );
-        
-        this.removePermissionsForEntitySet = session
-                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
-                        .with( QueryBuilder.removeAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.setPermissionsForEntitySet = session
                 .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.getPermissionsForEntitySet = session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))                        
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))                        
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
-        
-        this.deleteFromEntitySetsAclsTable = session
+
+        this.deleteRowFromEntitySetsAclsTable = session
                 .prepare( QueryBuilder.delete()
                         .from( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                        );
+        
+        this.deleteEntitySetFromEntitySetsAclsTable = session
+                .prepare( QueryBuilder.delete()
+                        .from( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.getAclsForEntityType = session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.getAclsForEntitySet = session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
                 );
 
         this.addPermissionsForPropertyTypeInEntityType = session
                 .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
-                );
-        
-        this.removePermissionsForPropertyTypeInEntityType = session
-                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
-                        .with( QueryBuilder.removeAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.setPermissionsForPropertyTypeInEntityType = session
         		.prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
         		        .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-        		        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+        		        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+        		        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
         		        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
         		);
         
         this.getPermissionsForPropertyTypeInEntityType = session
         		.prepare( QueryBuilder.select()
         				.from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
-        		        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+        		        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+        		        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
         		        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
         		);
         
-        this.deleteRowFromPropertyTypeInEntityTypesAclsTable = session
-        		.prepare( QueryBuilder.delete()
-        				.from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-        		        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
-        		);
+        this.deleteRowFromPropertyTypesInEntityTypesAclsTable = session
+                .prepare( QueryBuilder.delete()
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
         
-        this.deleteEntityTypeFromPropertyTypeInEntityTypesAclsTable = session
+        this.deletePairFromPropertyTypesInEntityTypesAclsTable = session
+                .prepare( QueryBuilder.delete()
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                );
+        
+        this.deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable = session
         		.prepare( QueryBuilder.delete()
         				.from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
         		);
 
         this.addPermissionsForPropertyTypeInEntitySet = session
                 .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.removePermissionsForPropertyTypeInEntitySet = session
                 .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
                         .with( QueryBuilder.removeAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.setPermissionsForPropertyTypeInEntitySet = session
                 .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
         
         this.getPermissionsForPropertyTypeInEntitySet = session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
+
+        this.deleteRowFromPropertyTypesInEntitySetsAclsTable = session
+                .prepare( QueryBuilder.delete()
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
                         .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
                 );
         
-        this.deleteRowFromPropertyTypeInEntitySetsAclsTable = session
+        this.deletePairFromPropertyTypesInEntitySetsAclsTable = session
                 .prepare( QueryBuilder.delete()
                         .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ))
                 );
         
-        this.deleteEntitySetFromPropertyTypeInEntitySetsAclsTable = session
+        this.deleteEntitySetFromPropertyTypesInEntitySetsAclsTable = session
                 .prepare( QueryBuilder.delete()
                         .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
-                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ))
                 );
             }
 
@@ -896,7 +882,7 @@ public class CassandraTableManager {
                         .value( CommonColumns.CLOCK.cql(),
                                 QueryBuilder.fcall( "toTimestamp", QueryBuilder.now() ) )
                         .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
-                        .value( CommonColumns.ENTITYSETS.cql(), QueryBuilder.bindMarker() )
+                        .value( CommonColumns.ENTITY_SETS.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.SYNCIDS.cql(), QueryBuilder.bindMarker() ) ) );
     }
 
@@ -905,7 +891,7 @@ public class CassandraTableManager {
                 session.prepare( QueryBuilder
                         .update( keyspace, getTablenameForEntityType( entityTypeFqn ) )
                         .with( QueryBuilder.set( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.addAll( CommonColumns.ENTITYSETS.cql(),
+                        .and( QueryBuilder.addAll( CommonColumns.ENTITY_SETS.cql(),
                                 QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.appendAll( CommonColumns.SYNCIDS.cql(),
                                 QueryBuilder.bindMarker() ) )
@@ -1051,9 +1037,9 @@ public class CassandraTableManager {
         if( role == Constants.ROLE_ADMIN ){
             return EnumSet.allOf(Permission.class);
         } else {
+            String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         	Row row = session.execute( this.getPermissionsForEntityType.bind(
-        		    entityTypeFqn.getNamespace(),
-        		    entityTypeFqn.getName(),
+        		    entityTypeTypename,
         		    role
         		) ).one();
         	if( row != null ){
@@ -1066,43 +1052,40 @@ public class CassandraTableManager {
     }
 
     public void addPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         session.execute( this.addPermissionsForEntityType.bind(
                     permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
-                    role
-                )  );
-    }
-    
-    public void removePermissionsForEntityType( String role, FullQualifiedName entityTypeFqn, Set<Permission> permissions ) {
-        session.execute( this.removePermissionsForEntityType.bind(
-                    permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
+                    entityTypeTypename,
                     role
                 )  );
     }
     
     public void setPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         session.execute( this.setPermissionsForEntityType.bind(
         		    permissions, 
-        		    entityTypeFqn.getNamespace(),
-        		    entityTypeFqn.getName(),
+        		    entityTypeTypename,
         		    role
         		)  );
     }
     
     public void deleteFromEntityTypesAclsTable( FullQualifiedName entityTypeFqn ) {
-        session.execute( deleteFromEntityTypesAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        session.execute( deleteEntityTypeFromEntityTypesAclsTable.bind( entityTypeTypename ) );
+    }
+    
+    public void deleteFromEntityTypesAclsTable( String role, FullQualifiedName entityTypeFqn ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        session.execute( deleteRowFromEntityTypesAclsTable.bind( entityTypeTypename, role ) );
     }
 
     public EnumSet<Permission> getPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName ) {
         if( role == Constants.ROLE_ADMIN ){
             return EnumSet.allOf(Permission.class);
         } else {
+            String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
             Row row = session.execute( this.getPermissionsForEntitySet.bind(
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
+                    entityTypeTypename,
                     entitySetName,
                     role
                 ) ).one();
@@ -1117,55 +1100,54 @@ public class CassandraTableManager {
     }
 
     public void addPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         session.execute( this.addPermissionsForEntitySet.bind(
                     permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
+                    entityTypeTypename,
                     entitySetName,
                     role
                 )  );
     }
-    
-    public void removePermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<Permission> permissions ) {
-        session.execute( this.removePermissionsForEntitySet.bind(
-                    permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
-                    entitySetName,
-                    role
-                )  );
-    }
-    
+
     public void setPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         session.execute( this.setPermissionsForEntitySet.bind(
                     permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
+                    entityTypeTypename,
                     entitySetName,
                     role
                 )  );
     }
     
     public void deleteFromEntitySetsAclsTable( FullQualifiedName entityTypeFqn, String entitySetName ) {
-        session.execute( deleteFromEntitySetsAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName ) );
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        session.execute( deleteEntitySetFromEntitySetsAclsTable.bind( entityTypeTypename, entitySetName ) );
+    }
+
+    public void deleteFromEntitySetsAclsTable( String role, FullQualifiedName entityTypeFqn, String entitySetName ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        session.execute( deleteRowFromEntitySetsAclsTable.bind( entityTypeTypename, entitySetName, role ) );
     }
     
     public ResultSet getAclsForEntityType( FullQualifiedName entityTypeFqn ) {
-        return session.execute( getAclsForEntityType.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        return session.execute( getAclsForEntityType.bind( entityTypeTypename ) );
     }
     
     public ResultSet getAclsForEntitySet( FullQualifiedName entityTypeFqn, String entitySetName ) {
-        return session.execute( getAclsForEntitySet.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName ) );
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        return session.execute( getAclsForEntitySet.bind( entityTypeTypename, entitySetName ) );
     }
     
     public EnumSet<Permission> getPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
             return EnumSet.allOf(Permission.class);
         } else {
+            String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+            String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType.bind(
-        		    entityTypeFqn.getNamespace(),
-        		    entityTypeFqn.getName(),
-        		    propertyTypeFqn,
+        		    entityTypeTypename,
+        		    propertyTypeTypename,
         		    role
         		) ).one();
         	if( row != null ){
@@ -1179,53 +1161,54 @@ public class CassandraTableManager {
     }
 
     public void addPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
         session.execute( this.addPermissionsForPropertyTypeInEntityType.bind(
                     permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
-                    propertyTypeFqn,
+                    entityTypeTypename,
+                    propertyTypeTypename,
                     role
                 )  );
     }
-    
-    public void removePermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
-        session.execute( this.removePermissionsForPropertyTypeInEntityType.bind(
-                    permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
-                    propertyTypeFqn,
-                    role
-                )  );
-    }
-
 
     public void setPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
         session.execute( this.setPermissionsForPropertyTypeInEntityType.bind(
         		    permissions, 
-        		    entityTypeFqn.getNamespace(),
-        		    entityTypeFqn.getName(),
-        		    propertyTypeFqn,
+        		    entityTypeTypename,
+        		    propertyTypeTypename,
         		    role
         		)  );
     }
-    
-    public void deleteFromPropertyTypeInEntityTypesAclsTable( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
-        session.execute( deleteRowFromPropertyTypeInEntityTypesAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), propertyTypeFqn ) );
+
+    public void deleteFromPropertyTypesInEntityTypesAclsTable( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
+        session.execute( deleteRowFromPropertyTypesInEntityTypesAclsTable.bind( entityTypeTypename, propertyTypeTypename, role ) );
+    }
+
+    public void deleteFromPropertyTypesInEntityTypesAclsTable( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
+        session.execute( deletePairFromPropertyTypesInEntityTypesAclsTable.bind( entityTypeTypename, propertyTypeTypename ) );
     }
     
-    public void deleteFromPropertyTypeInEntityTypesAclsTable( FullQualifiedName entityTypeFqn ) {
-        session.execute( deleteEntityTypeFromPropertyTypeInEntityTypesAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
+    public void deleteFromPropertyTypesInEntityTypesAclsTable( FullQualifiedName entityTypeFqn ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        session.execute( deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable.bind( entityTypeTypename ) );
     }    
     
     public EnumSet<Permission> getPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
             return EnumSet.allOf( Permission.class );
         } else {
+            String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+            String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet.bind(
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
+                    entityTypeTypename,
                     entitySetName,
-                    propertyTypeFqn,
+                    propertyTypeTypename,
                     role
                 ) ).one();
             if( row != null ){
@@ -1239,43 +1222,55 @@ public class CassandraTableManager {
     }
 
     public void addPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
         session.execute( this.addPermissionsForPropertyTypeInEntitySet.bind(
                     permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
+                    entityTypeTypename,
                     entitySetName,
-                    propertyTypeFqn,
+                    propertyTypeTypename,
                     role
                 )  );
     }
 
     public void removePermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
         session.execute( this.removePermissionsForPropertyTypeInEntitySet.bind(
                     permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
+                    entityTypeTypename,
                     entitySetName,
-                    propertyTypeFqn,
+                    propertyTypeTypename,
                     role
                 )  );
     }
     
     public void setPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
         session.execute( this.setPermissionsForPropertyTypeInEntitySet.bind(
                     permissions, 
-                    entityTypeFqn.getNamespace(),
-                    entityTypeFqn.getName(),
+                    entityTypeTypename,
                     entitySetName,
-                    propertyTypeFqn,
+                    propertyTypeTypename,
                     role
                 )  );
     }
-    
-    public void deleteFromPropertyTypeInEntitySetsAclsTable( FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
-        session.execute( deleteRowFromPropertyTypeInEntitySetsAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName, propertyTypeFqn ) );
+
+    public void deleteFromPropertyTypesInEntitySetsAclsTable( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
+        session.execute( deleteRowFromPropertyTypesInEntitySetsAclsTable.bind( entityTypeTypename, entitySetName, propertyTypeTypename, role ) );
     }
     
-    public void deleteFromPropertyTypeInEntitySetsAclsTable( FullQualifiedName entityTypeFqn, String entitySetName ) {
-        session.execute( deleteEntitySetFromPropertyTypeInEntitySetsAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName ) );
+    public void deleteFromPropertyTypesInEntitySetsAclsTable( FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
+        session.execute( deletePairFromPropertyTypesInEntitySetsAclsTable.bind( entityTypeTypename, entitySetName, propertyTypeTypename ) );
+    }
+    
+    public void deleteFromPropertyTypesInEntitySetsAclsTable( FullQualifiedName entityTypeFqn, String entitySetName ) {
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        session.execute( deleteEntitySetFromPropertyTypesInEntitySetsAclsTable.bind( entityTypeTypename, entitySetName ) );
     }
 }

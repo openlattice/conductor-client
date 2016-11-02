@@ -34,12 +34,19 @@ public class PermissionsService implements PermissionsManager {
 
     @Override
     public void removePermissionsForEntityType( String role, FullQualifiedName fqn, Set<Permission> permissions ) {
-        tableManager.removePermissionsForEntityType( role, fqn, permissions );
+        EnumSet<Permission> userPermissions = getPermissionsForEntityType( role, fqn );
+        userPermissions.removeAll( permissions );
+
+        setPermissionsForEntityType( role, fqn, userPermissions );
     }
 
     @Override
     public void setPermissionsForEntityType( String role, FullQualifiedName fqn, Set<Permission> permissions ) {
-        tableManager.setPermissionsForEntityType( role, fqn, permissions );
+        if( !permissions.isEmpty() ){
+            tableManager.setPermissionsForEntityType( role, fqn, permissions );
+        } else {
+            tableManager.deleteFromEntityTypesAclsTable( role, fqn );
+        }
     }
 
     @Override
@@ -77,7 +84,10 @@ public class PermissionsService implements PermissionsManager {
             FullQualifiedName type,
             String name,
             Set<Permission> permissions ) {
-        tableManager.removePermissionsForEntitySet( role, type, name, permissions );
+        EnumSet<Permission> userPermissions = getPermissionsForEntitySet( role, type, name );
+        userPermissions.removeAll( permissions );
+
+        setPermissionsForEntitySet( role, type, name, userPermissions );
     }
 
     @Override
@@ -86,7 +96,11 @@ public class PermissionsService implements PermissionsManager {
             FullQualifiedName type,
             String name,
             Set<Permission> permissions ) {
-        tableManager.setPermissionsForEntitySet( role, type, name, permissions );
+        if( !permissions.isEmpty() ){
+            tableManager.setPermissionsForEntitySet( role, type, name, permissions );
+        } else {
+            tableManager.deleteFromEntitySetsAclsTable( role, type, name );
+        }
     }
 
     @Override
@@ -128,10 +142,10 @@ public class PermissionsService implements PermissionsManager {
             FullQualifiedName entityTypeFqn,
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
-        tableManager.removePermissionsForPropertyTypeInEntityType( role,
-                entityTypeFqn,
-                propertyTypeFqn,
-                permissions );
+        EnumSet<Permission> userPermissions = getPermissionsForPropertyTypeInEntityType( role, entityTypeFqn, propertyTypeFqn );
+        userPermissions.removeAll( permissions );
+        
+        setPermissionsForPropertyTypeInEntityType( role, entityTypeFqn, propertyTypeFqn, userPermissions);
     }
 
     @Override
@@ -140,7 +154,11 @@ public class PermissionsService implements PermissionsManager {
             FullQualifiedName entityTypeFqn,
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
-        tableManager.setPermissionsForPropertyTypeInEntityType( role, entityTypeFqn, propertyTypeFqn, permissions );
+        if( !permissions.isEmpty() ){
+            tableManager.setPermissionsForPropertyTypeInEntityType( role, entityTypeFqn, propertyTypeFqn, permissions );
+        } else {
+            tableManager.deleteFromPropertyTypesInEntityTypesAclsTable( role, entityTypeFqn, propertyTypeFqn );
+        }
     }
 
     @Override
@@ -191,11 +209,17 @@ public class PermissionsService implements PermissionsManager {
             String entitySetName,
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
-        tableManager.removePermissionsForPropertyTypeInEntitySet( role,
+        EnumSet<Permission> userPermissions = getPermissionsForPropertyTypeInEntitySet( role,
+                entityTypeFqn,
+                entitySetName,
+                propertyTypeFqn );
+        userPermissions.removeAll( permissions );
+
+        setPermissionsForPropertyTypeInEntitySet( role,
                 entityTypeFqn,
                 entitySetName,
                 propertyTypeFqn,
-                permissions );
+                userPermissions );
     }
 
     @Override
@@ -205,11 +229,18 @@ public class PermissionsService implements PermissionsManager {
             String entitySetName,
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
-        tableManager.setPermissionsForPropertyTypeInEntitySet( role,
-                entityTypeFqn,
-                entitySetName,
-                propertyTypeFqn,
-                permissions );
+        if( !permissions.isEmpty() ){
+            tableManager.setPermissionsForPropertyTypeInEntitySet( role,
+                    entityTypeFqn,
+                    entitySetName,
+                    propertyTypeFqn,
+                    permissions );
+        } else {
+            tableManager.deleteFromPropertyTypesInEntitySetsAclsTable( role,
+                    entityTypeFqn,
+                    entitySetName,
+                    propertyTypeFqn );
+        }
     }
 
     @Override
@@ -265,12 +296,12 @@ public class PermissionsService implements PermissionsManager {
     public void removePermissionsForPropertyTypeInEntityType(
             FullQualifiedName entityTypeFqn,
             FullQualifiedName propertyTypeFqn ) {
-        tableManager.deleteFromPropertyTypeInEntityTypesAclsTable( entityTypeFqn, propertyTypeFqn );
+        tableManager.deleteFromPropertyTypesInEntityTypesAclsTable( entityTypeFqn, propertyTypeFqn );
     }
 
     @Override
     public void removePermissionsForPropertyTypeInEntityType( FullQualifiedName entityTypeFqn ) {
-        tableManager.deleteFromPropertyTypeInEntityTypesAclsTable( entityTypeFqn );
+        tableManager.deleteFromPropertyTypesInEntityTypesAclsTable( entityTypeFqn );
     }
 
     @Override
@@ -278,12 +309,12 @@ public class PermissionsService implements PermissionsManager {
             FullQualifiedName entityTypeFqn,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        tableManager.deleteFromPropertyTypeInEntitySetsAclsTable( entityTypeFqn, entitySetName, propertyTypeFqn );
+        tableManager.deleteFromPropertyTypesInEntitySetsAclsTable( entityTypeFqn, entitySetName, propertyTypeFqn );
     }
 
     @Override
     public void removePermissionsForPropertyTypeInEntitySet( FullQualifiedName entityTypeFqn, String entitySetName ) {
-        tableManager.deleteFromPropertyTypeInEntitySetsAclsTable( entityTypeFqn, entitySetName );
+        tableManager.deleteFromPropertyTypesInEntitySetsAclsTable( entityTypeFqn, entitySetName );
     }
 
 }
