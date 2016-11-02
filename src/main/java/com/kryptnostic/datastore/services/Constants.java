@@ -1,4 +1,4 @@
-package com.kryptnostic.datastore;
+package com.kryptnostic.datastore.services;
 
 public class Constants {
 

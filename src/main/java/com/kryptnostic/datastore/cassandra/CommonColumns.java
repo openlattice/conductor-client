@@ -27,7 +27,7 @@ public enum CommonColumns {
     TYPENAME( DataType.text() ),
     TYPE( DataType.text() ),
     VALUE( null ),
-    PERMISSIONS ( DataType.cint() ),
+    PERMISSIONS ( DataType.set( DataType.text() ) ),
     PARTITION_INDEX( DataType.tinyint() ); //partition index within a table for distribution purpose
 
     private final DataType type;

@@ -2,6 +2,7 @@ package com.kryptnostic.datastore.services;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -22,6 +23,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.mapping.MappingManager;
 import com.google.common.collect.ImmutableSet;
+import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
@@ -29,7 +31,6 @@ import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.conductor.rpc.odata.Tables;
-import com.kryptnostic.datastore.Constants;
 import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -84,9 +85,13 @@ public class CassandraTableManager {
     private final PreparedStatement                                   propertyTypeAddSchema;
     private final PreparedStatement                                   propertyTypeRemoveSchema;
     
+    private final PreparedStatement                                   addPermissionsForEntityType;
+    private final PreparedStatement                                   removePermissionsForEntityType;
     private final PreparedStatement                                   setPermissionsForEntityType;
     private final PreparedStatement                                   getPermissionsForEntityType;
     private final PreparedStatement                                   deleteFromEntityTypesAclsTable;
+    private final PreparedStatement                                   addPermissionsForEntitySet;
+    private final PreparedStatement                                   removePermissionsForEntitySet;
     private final PreparedStatement                                   setPermissionsForEntitySet;
     private final PreparedStatement                                   getPermissionsForEntitySet;
     private final PreparedStatement                                   deleteFromEntitySetsAclsTable;
@@ -94,10 +99,14 @@ public class CassandraTableManager {
     private final PreparedStatement                                   getAclsForEntityType;
     private final PreparedStatement                                   getAclsForEntitySet;
     
+    private final PreparedStatement                                   addPermissionsForPropertyTypeInEntityType;
+    private final PreparedStatement                                   removePermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   setPermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   getPermissionsForPropertyTypeInEntityType;
     private final PreparedStatement                                   deleteRowFromPropertyTypeInEntityTypesAclsTable;
     private final PreparedStatement                                   deleteEntityTypeFromPropertyTypeInEntityTypesAclsTable;
+    private final PreparedStatement                                   addPermissionsForPropertyTypeInEntitySet;
+    private final PreparedStatement                                   removePermissionsForPropertyTypeInEntitySet;
     private final PreparedStatement                                   setPermissionsForPropertyTypeInEntitySet;
     private final PreparedStatement                                   getPermissionsForPropertyTypeInEntitySet;
     private final PreparedStatement                                   deleteRowFromPropertyTypeInEntitySetsAclsTable;
@@ -238,6 +247,22 @@ public class CassandraTableManager {
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) 
         		);
 
+        this.addPermissionsForEntityType = session
+                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
+                        .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
+        
+        this.removePermissionsForEntityType = session
+                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
+                        .with( QueryBuilder.removeAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
+        
         this.setPermissionsForEntityType = session
         		.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ACLS.getTableName() )
         		        .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
@@ -260,6 +285,24 @@ public class CassandraTableManager {
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
         		);
+
+        this.addPermissionsForEntitySet = session
+                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
+                        .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
+        
+        this.removePermissionsForEntitySet = session
+                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
+                        .with( QueryBuilder.removeAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
         
         this.setPermissionsForEntitySet = session
                 .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ACLS.getTableName() )
@@ -302,6 +345,24 @@ public class CassandraTableManager {
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
                 );
 
+        this.addPermissionsForPropertyTypeInEntityType = session
+                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
+                        .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
+        
+        this.removePermissionsForPropertyTypeInEntityType = session
+                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
+                        .with( QueryBuilder.removeAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
+        
         this.setPermissionsForPropertyTypeInEntityType = session
         		.prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS.getTableName() )
         		        .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
@@ -334,6 +395,26 @@ public class CassandraTableManager {
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
         		);
+
+        this.addPermissionsForPropertyTypeInEntitySet = session
+                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
+                        .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
+        
+        this.removePermissionsForPropertyTypeInEntitySet = session
+                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
+                        .with( QueryBuilder.removeAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.TYPE.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ))
+                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ))
+                );
         
         this.setPermissionsForPropertyTypeInEntitySet = session
                 .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS.getTableName() )
@@ -966,65 +1047,78 @@ public class CassandraTableManager {
      Acl Operations
      **************/        
 
-    public int getPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn ) {
+    public EnumSet<Permission> getPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return EnumSet.allOf(Permission.class);
         } else {
-        	Row entityTypePermission = session.execute( this.getPermissionsForEntityType.bind(
+        	Row row = session.execute( this.getPermissionsForEntityType.bind(
         		    entityTypeFqn.getNamespace(),
         		    entityTypeFqn.getName(),
         		    role
         		) ).one();
-        	if( entityTypePermission != null ){
-        		return Util.transformSafely( entityTypePermission, r -> r.getInt( CommonColumns.PERMISSIONS.cql() ) );
+        	if( row != null ){
+        		return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
         	} else {
         		// Property Type not found in Acl table; would mean no permission for now
-        		// TODO: change this, if you want default permission of a group
-        		return 0;
+        		return EnumSet.noneOf( Permission.class );
         	}
         }
     }
 
-    public void setPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn, int permission ) {
+    public void addPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn, Set<Permission> permissions ) {
+        session.execute( this.addPermissionsForEntityType.bind(
+                    permissions, 
+                    entityTypeFqn.getNamespace(),
+                    entityTypeFqn.getName(),
+                    role
+                )  );
+    }
+    
+    public void removePermissionsForEntityType( String role, FullQualifiedName entityTypeFqn, Set<Permission> permissions ) {
+        session.execute( this.removePermissionsForEntityType.bind(
+                    permissions, 
+                    entityTypeFqn.getNamespace(),
+                    entityTypeFqn.getName(),
+                    role
+                )  );
+    }
+    
+    public void setPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn, Set<Permission> permissions ) {
         session.execute( this.setPermissionsForEntityType.bind(
-        		    permission, 
+        		    permissions, 
         		    entityTypeFqn.getNamespace(),
         		    entityTypeFqn.getName(),
         		    role
         		)  );
     }
     
-    public void setPermissionsForEntityType( String role, FullQualifiedName entityTypeFqn, Permission permission ) {
-    	setPermissionsForEntityType( role, entityTypeFqn, permission.asNumber() );
-    }
-    
     public void deleteFromEntityTypesAclsTable( FullQualifiedName entityTypeFqn ) {
         session.execute( deleteFromEntityTypesAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
     }
 
-    public int getPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName ) {
+    public EnumSet<Permission> getPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return EnumSet.allOf(Permission.class);
         } else {
-            Row entityTypePermission = session.execute( this.getPermissionsForEntitySet.bind(
+            Row row = session.execute( this.getPermissionsForEntitySet.bind(
                     entityTypeFqn.getNamespace(),
                     entityTypeFqn.getName(),
                     entitySetName,
                     role
                 ) ).one();
-            if( entityTypePermission != null ){
-                return Util.transformSafely( entityTypePermission, r -> r.getInt( CommonColumns.PERMISSIONS.cql() ) );
+            if( row != null ){
+                return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
             } else {
                 // Property Type not found in Acl table; would mean no permission for now
                 // TODO: change this, if you want default permission of a group
-                return 0;
+                return EnumSet.noneOf( Permission.class );
             }
         }
     }
 
-    public void setPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, int permission ) {
-        session.execute( this.setPermissionsForEntitySet.bind(
-                    permission, 
+    public void addPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<Permission> permissions ) {
+        session.execute( this.addPermissionsForEntitySet.bind(
+                    permissions, 
                     entityTypeFqn.getNamespace(),
                     entityTypeFqn.getName(),
                     entitySetName,
@@ -1032,8 +1126,24 @@ public class CassandraTableManager {
                 )  );
     }
     
-    public void setPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Permission permission ) {
-        setPermissionsForEntitySet( role, entityTypeFqn, entitySetName, permission.asNumber() );
+    public void removePermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<Permission> permissions ) {
+        session.execute( this.removePermissionsForEntitySet.bind(
+                    permissions, 
+                    entityTypeFqn.getNamespace(),
+                    entityTypeFqn.getName(),
+                    entitySetName,
+                    role
+                )  );
+    }
+    
+    public void setPermissionsForEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, Set<Permission> permissions ) {
+        session.execute( this.setPermissionsForEntitySet.bind(
+                    permissions, 
+                    entityTypeFqn.getNamespace(),
+                    entityTypeFqn.getName(),
+                    entitySetName,
+                    role
+                )  );
     }
     
     public void deleteFromEntitySetsAclsTable( FullQualifiedName entityTypeFqn, String entitySetName ) {
@@ -1048,38 +1158,55 @@ public class CassandraTableManager {
         return session.execute( getAclsForEntitySet.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName(), entitySetName ) );
     }
     
-    public int getPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
+    public EnumSet<Permission> getPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return EnumSet.allOf(Permission.class);
         } else {
-            Row propertyTypeInentityTypePermission = session.execute( this.getPermissionsForPropertyTypeInEntityType.bind(
+            Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType.bind(
         		    entityTypeFqn.getNamespace(),
         		    entityTypeFqn.getName(),
         		    propertyTypeFqn,
         		    role
         		) ).one();
-        	if( propertyTypeInentityTypePermission != null ){
-        		return Util.transformSafely( propertyTypeInentityTypePermission, r -> r.getInt( CommonColumns.PERMISSIONS.cql() ) );
+        	if( row != null ){
+        		return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
         	} else {
         		// Property Type not found in Acl table; would mean no permission for now
         		// TODO: change this, if you want default permission of a group
-        		return 0;
+        		return EnumSet.noneOf( Permission.class );
         	}
         }
     }
 
-    public void setPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, int permission ) {
+    public void addPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        session.execute( this.addPermissionsForPropertyTypeInEntityType.bind(
+                    permissions, 
+                    entityTypeFqn.getNamespace(),
+                    entityTypeFqn.getName(),
+                    propertyTypeFqn,
+                    role
+                )  );
+    }
+    
+    public void removePermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        session.execute( this.removePermissionsForPropertyTypeInEntityType.bind(
+                    permissions, 
+                    entityTypeFqn.getNamespace(),
+                    entityTypeFqn.getName(),
+                    propertyTypeFqn,
+                    role
+                )  );
+    }
+
+
+    public void setPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
         session.execute( this.setPermissionsForPropertyTypeInEntityType.bind(
-        		    permission, 
+        		    permissions, 
         		    entityTypeFqn.getNamespace(),
         		    entityTypeFqn.getName(),
         		    propertyTypeFqn,
         		    role
         		)  );
-    }
-    
-    public void setPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Permission permission ) {
-    	setPermissionsForPropertyTypeInEntityType( role, entityTypeFqn, propertyTypeFqn, permission.asNumber() );
     }
     
     public void deleteFromPropertyTypeInEntityTypesAclsTable( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
@@ -1090,30 +1217,41 @@ public class CassandraTableManager {
         session.execute( deleteEntityTypeFromPropertyTypeInEntityTypesAclsTable.bind( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) );
     }    
     
-    public int getPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
+    public EnumSet<Permission> getPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
         if( role == Constants.ROLE_ADMIN ){
-            return Permission.OWNER.asNumber();
+            return EnumSet.allOf( Permission.class );
         } else {
-            Row propertyTypeInentitySetPermission = session.execute( this.getPermissionsForPropertyTypeInEntitySet.bind(
+            Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet.bind(
                     entityTypeFqn.getNamespace(),
                     entityTypeFqn.getName(),
                     entitySetName,
                     propertyTypeFqn,
                     role
                 ) ).one();
-            if( propertyTypeInentitySetPermission != null ){
-                return Util.transformSafely( propertyTypeInentitySetPermission, r -> r.getInt( CommonColumns.PERMISSIONS.cql() ) );
+            if( row != null ){
+                return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
             } else {
                 // Property Type not found in Acl table; would mean no permission for now
                 // TODO: change this, if you want default permission of a group
-                return 0;
+                return EnumSet.noneOf( Permission.class );
             }
         }
     }
 
-    public void setPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, int permission ) {
-        session.execute( this.setPermissionsForPropertyTypeInEntitySet.bind(
-                    permission, 
+    public void addPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        session.execute( this.addPermissionsForPropertyTypeInEntitySet.bind(
+                    permissions, 
+                    entityTypeFqn.getNamespace(),
+                    entityTypeFqn.getName(),
+                    entitySetName,
+                    propertyTypeFqn,
+                    role
+                )  );
+    }
+
+    public void removePermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        session.execute( this.removePermissionsForPropertyTypeInEntitySet.bind(
+                    permissions, 
                     entityTypeFqn.getNamespace(),
                     entityTypeFqn.getName(),
                     entitySetName,
@@ -1122,8 +1260,15 @@ public class CassandraTableManager {
                 )  );
     }
     
-    public void setPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Permission permission ) {
-        setPermissionsForPropertyTypeInEntitySet( role, entityTypeFqn, entitySetName, propertyTypeFqn, permission.asNumber() );
+    public void setPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions ) {
+        session.execute( this.setPermissionsForPropertyTypeInEntitySet.bind(
+                    permissions, 
+                    entityTypeFqn.getNamespace(),
+                    entityTypeFqn.getName(),
+                    entitySetName,
+                    propertyTypeFqn,
+                    role
+                )  );
     }
     
     public void deleteFromPropertyTypeInEntitySetsAclsTable( FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn ) {
