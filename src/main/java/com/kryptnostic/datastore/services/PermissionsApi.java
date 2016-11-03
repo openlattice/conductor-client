@@ -126,9 +126,7 @@ public interface PermissionsApi {
      * @param requests Set of FullQualifiedName of entity types, where the access rights of all property types associated to each entity type are removed.
      * @return
      */
-// Debug by Ho Chung
-//    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
-    @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
     Response removeAllPropertyTypesInEntityTypeAcls( @Body Set<FullQualifiedName> entityTypeFqns );
 
     /**
@@ -151,8 +149,6 @@ public interface PermissionsApi {
      * - name: [String] name of the entity set.
      * @return
      */
-// Debug by Ho Chung
-//    @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
     @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
     Response removeAllPropertyTypesInEntitySetAcls( @Body Set<EntitySetAclRemovalRequest> requests );
 
