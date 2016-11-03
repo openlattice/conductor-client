@@ -44,6 +44,7 @@ public interface EdmApi {
 
     String ADD_PROPERTY_TYPES_PATH    = "/addPropertyTypes";
     String DELETE_PROPERTY_TYPES_PATH = "/deletePropertyTypes";
+    String DETAILS_PATH               = "/details";
 
     @GET( "/" )
     EntityDataModel getEntityDataModel();
@@ -164,7 +165,10 @@ public interface EdmApi {
     Response putEntityType( @Body EntityType entityType );
 
     @GET( ENTITY_TYPE_BASE_PATH )
-    Iterable<DetailedEntityType> getEntityTypes();
+    Iterable<EntityType> getEntityTypes();
+
+    @GET( ENTITY_TYPE_BASE_PATH + DETAILS_PATH )
+    Iterable<EntityTypeWithDetails> getEntityTypesWithDetails();
 
     @GET( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     EntityType getEntityType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
