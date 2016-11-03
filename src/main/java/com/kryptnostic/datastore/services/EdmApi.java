@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.kryptnostic.conductor.rpc.odata.DetailedEntityType;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
@@ -19,7 +20,6 @@ import retrofit.http.GET;
 import retrofit.http.POST;
 import retrofit.http.PUT;
 import retrofit.http.Path;
-import retrofit.http.Query;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -171,7 +171,7 @@ public interface EdmApi {
     Response putEntityType( @Body EntityType entityType );
 
     @GET( ENTITY_TYPE_BASE_PATH )
-    Iterable<EntityType> getEntityTypes();
+    Iterable<DetailedEntityType> getEntityTypes();
 
     @GET( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH )
     EntityType getEntityType( @Path( NAMESPACE ) String namespace, @Path( NAME ) String entityTypeName );
