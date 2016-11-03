@@ -39,23 +39,21 @@ import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
-    private static final Logger              logger = LoggerFactory.getLogger( EdmService.class );
+    private static final Logger         logger = LoggerFactory.getLogger( EdmService.class );
 
-    private final Session                    session;
-    private final Mapper<EntitySet>          entitySetMapper;
-    private final Mapper<EntityType>         entityTypeMapper;
-    private final Mapper<PropertyType>       propertyTypeMapper;
+    private final Session               session;
+    private final Mapper<EntitySet>     entitySetMapper;
+    private final Mapper<EntityType>    entityTypeMapper;
+    private final Mapper<PropertyType>  propertyTypeMapper;
 
-    private final CassandraEdmStore          edmStore;
-    private final CassandraTableManager      tableManager;
-    private final ActionAuthorizationService authzService;
-    private final PermissionsService         permissionsService;
+    private final CassandraEdmStore     edmStore;
+    private final CassandraTableManager tableManager;
+    private final PermissionsService    permissionsService;
 
     public EdmService(
             Session session,
             MappingManager mappingManager,
             CassandraTableManager tableManager,
-            ActionAuthorizationService authzService,
             PermissionsService permissionsService ) {
         this.session = session;
         this.edmStore = mappingManager.createAccessor( CassandraEdmStore.class );
@@ -63,7 +61,6 @@ public class EdmService implements EdmManager {
         this.entityTypeMapper = mappingManager.mapper( EntityType.class );
         this.propertyTypeMapper = mappingManager.mapper( PropertyType.class );
         this.tableManager = tableManager;
-        this.authzService = authzService;
         this.permissionsService = permissionsService;
         List<EntityType> objectTypes = edmStore.getEntityTypes().all();
         List<Schema> schemas = ImmutableList.copyOf( getSchemas() );
@@ -148,23 +145,21 @@ public class EdmService implements EdmManager {
         // This call will fail if the typename has already been set for the entity.
         ensureValidEntityType( entityType );
         if ( checkEntityTypeExists( entityType.getFullQualifiedName() ) ) {
-            if ( authzService.upsertEntityType( entityType.getFullQualifiedName() ) ) {
-                // Retrieve database record of entityType
-                EntityType dbRecord = getEntityType( entityType.getFullQualifiedName() );
-                // Retrieve properties known to user
-                Set<FullQualifiedName> currentPropertyTypes = dbRecord.getProperties();
-                // Remove the removable property types in database properly; this step takes care of removal of
-                // permissions
-                Set<FullQualifiedName> removablePropertyTypesInEntityType = Sets.difference( currentPropertyTypes,
-                        entityType.getProperties() );
-                removePropertyTypesFromEntityType( dbRecord, removablePropertyTypesInEntityType, true );
-                // Add the new property types in
-                Set<FullQualifiedName> newPropertyTypesInEntityType = Sets.difference( entityType.getProperties(),
-                        currentPropertyTypes );
-                addPropertyTypesToEntityType( entityType.getNamespace(),
-                        entityType.getName(),
-                        newPropertyTypesInEntityType );
-            }
+            // Retrieve database record of entityType
+            EntityType dbRecord = getEntityType( entityType.getFullQualifiedName() );
+            // Retrieve properties known to user
+            Set<FullQualifiedName> currentPropertyTypes = dbRecord.getProperties();
+            // Remove the removable property types in database properly; this step takes care of removal of
+            // permissions
+            Set<FullQualifiedName> removablePropertyTypesInEntityType = Sets.difference( currentPropertyTypes,
+                    entityType.getProperties() );
+            removePropertyTypesFromEntityType( dbRecord, removablePropertyTypesInEntityType, true );
+            // Add the new property types in
+            Set<FullQualifiedName> newPropertyTypesInEntityType = Sets.difference( entityType.getProperties(),
+                    currentPropertyTypes );
+            addPropertyTypesToEntityType( entityType.getNamespace(),
+                    entityType.getName(),
+                    newPropertyTypesInEntityType );
         } else {
             createEntityType( entityType, true, true );
         }
@@ -179,15 +174,13 @@ public class EdmService implements EdmManager {
     public void upsertPropertyType( PropertyType propertyType ) {
         ensureValidPropertyType( propertyType );
         if ( checkPropertyTypeExists( propertyType.getFullQualifiedName() ) ) {
-            if ( authzService.upsertPropertyType( propertyType.getFullQualifiedName() ) ) {
-                Util.wasLightweightTransactionApplied(
-                        edmStore.updatePropertyTypeIfExists(
-                                propertyType.getDatatype(),
-                                propertyType.getMultiplicity(),
-                                propertyType.getSchemas(),
-                                propertyType.getNamespace(),
-                                propertyType.getName() ) );
-            }
+            Util.wasLightweightTransactionApplied(
+                    edmStore.updatePropertyTypeIfExists(
+                            propertyType.getDatatype(),
+                            propertyType.getMultiplicity(),
+                            propertyType.getSchemas(),
+                            propertyType.getNamespace(),
+                            propertyType.getName() ) );
         } else {
             createPropertyType( propertyType, true, true );
         }
@@ -295,24 +288,22 @@ public class EdmService implements EdmManager {
     public void deleteEntityType( FullQualifiedName entityTypeFqn ) {
         EntityType entityType = entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() );
 
-        if ( authzService.deleteEntityType( entityTypeFqn ) ) {
-            entityType.getSchemas().forEach(
-                    schemaFqn -> removeEntityTypesFromSchema( schemaFqn.getNamespace(),
-                            schemaFqn.getName(),
-                            ImmutableSet.of( entityTypeFqn ) ) );
-            // TODO: remove property types from schema using reference counting
+        entityType.getSchemas().forEach(
+                schemaFqn -> removeEntityTypesFromSchema( schemaFqn.getNamespace(),
+                        schemaFqn.getName(),
+                        ImmutableSet.of( entityTypeFqn ) ) );
+        // TODO: remove property types from schema using reference counting
 
-            // Remove all entity sets of the type
-            getEntitySetsForEntityType( entityTypeFqn ).forEach( entitySet -> {
-                deleteEntitySet( entityTypeFqn, entitySet.getName(), true );
-            } );
-            permissionsService.removePermissionsForEntityType( entityTypeFqn );
-            permissionsService.removePermissionsForPropertyTypeInEntityType( entityTypeFqn );
+        // Remove all entity sets of the type
+        getEntitySetsForEntityType( entityTypeFqn ).forEach( entitySet -> {
+            deleteEntitySet( entityTypeFqn, entitySet.getName() );
+        } );
+        permissionsService.removePermissionsForEntityType( entityTypeFqn );
+        permissionsService.removePermissionsForPropertyTypeInEntityType( entityTypeFqn );
 
-            // Previous functions may need lookup to work - must delete lookup last
-            tableManager.deleteFromEntityTypeLookupTable( entityType );
-            entityTypeMapper.delete( entityType );
-        }
+        // Previous functions may need lookup to work - must delete lookup last
+        tableManager.deleteFromEntityTypeLookupTable( entityType );
+        entityTypeMapper.delete( entityType );
     }
 
     @Override
@@ -320,18 +311,16 @@ public class EdmService implements EdmManager {
         PropertyType propertyType = propertyTypeMapper
                 .get( propertyTypeFqn.getNamespace(), propertyTypeFqn.getName() );
 
-        if ( authzService.deletePropertyType( propertyTypeFqn ) ) {
-            propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema( schemaFqn.getNamespace(),
-                    schemaFqn.getName(),
-                    ImmutableSet.of( propertyTypeFqn ) ) );
-            getEntityTypes().forEach( entityType -> {
-                removePropertyTypesFromEntityType( entityType, ImmutableSet.of( propertyTypeFqn ) );
-            } );
+        propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema( schemaFqn.getNamespace(),
+                schemaFqn.getName(),
+                ImmutableSet.of( propertyTypeFqn ) ) );
+        getEntityTypes().forEach( entityType -> {
+            removePropertyTypesFromEntityType( entityType, ImmutableSet.of( propertyTypeFqn ) );
+        } );
 
-            tableManager.deleteFromPropertyTypeLookupTable( propertyType );
+        tableManager.deleteFromPropertyTypeLookupTable( propertyType );
 
-            propertyTypeMapper.delete( propertyType );
-        }
+        propertyTypeMapper.delete( propertyType );
     }
 
     @Override
@@ -440,10 +429,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public void upsertEntitySet( EntitySet entitySet ) {
-        FullQualifiedName entityTypeFqn = tableManager.getEntityTypeForTypename( entitySet.getTypename() );
-        if ( authzService.upsertEntitySet( entityTypeFqn, entitySet.getName() ) ) {
-            entitySetMapper.save( entitySet );
-        }
+        entitySetMapper.save( entitySet );
         // TODO: Figure out a better way to response HttpStatus code or cleanup cassandra after unit test
         // else {
         // throw new InternalError();
@@ -462,27 +448,13 @@ public class EdmService implements EdmManager {
         deleteEntitySet( entityTypeFqn, typename, entitySetName );
     }
 
-    private void deleteEntitySet( FullQualifiedName entityTypeFqn, String entitySetName, boolean hasPermission ) {
-        String typename = tableManager.getTypenameForEntityType( entityTypeFqn );
-        deleteEntitySet( entityTypeFqn, typename, entitySetName, hasPermission );
-    }
-
     private void deleteEntitySet( FullQualifiedName entityTypeFqn, String entityTypename, String entitySetName ) {
-        if ( authzService.deleteEntitySet( entityTypeFqn, entitySetName ) ) {
-            deleteEntitySet( entityTypeFqn, entityTypename, entitySetName, true );
-        }
-    }
-
-    private void deleteEntitySet(
-            FullQualifiedName entityTypeFqn,
-            String entityTypename,
-            String entitySetName,
-            boolean hasPermission ) {
         // Acls removal
         permissionsService.removePermissionsForEntitySet( entityTypeFqn, entitySetName );
         permissionsService.removePermissionsForPropertyTypeInEntitySet( entityTypeFqn, entitySetName );
 
         entitySetMapper.delete( entityTypename, entitySetName );
+
     }
 
     @Override
@@ -499,11 +471,8 @@ public class EdmService implements EdmManager {
         if ( !assigned ) {
             throw new HttpServerErrorException( HttpStatus.INTERNAL_SERVER_ERROR );
         }
-        FullQualifiedName entityTypeFqn = tableManager.getEntityTypeForTypename( typename );
-        if ( authzService.assignEntityToEntitySet( entityTypeFqn, name ) ) {
-            tableManager.assignEntityToEntitySet( entityId, typename, name );
-            // return tableManager.assignEntityToEntitySet( entityId, typename, name );
-        }
+        tableManager.assignEntityToEntitySet( entityId, typename, name );
+        // return tableManager.assignEntityToEntitySet( entityId, typename, name );
         // return false;
     }
 
@@ -566,13 +535,10 @@ public class EdmService implements EdmManager {
     @Override
     public EntitySet getEntitySet( FullQualifiedName type, String entitySetName ) {
         String typename = tableManager.getTypenameForEntityType( type.getNamespace(), type.getName() );
-        if ( authzService.getEntitySet( type, entitySetName ) ) {
-            EntitySet entitySet = entitySetMapper.get( typename, entitySetName );
-            Preconditions.checkNotNull( entitySet, "Entity Set does not exist" );
+        EntitySet entitySet = entitySetMapper.get( typename, entitySetName );
+        Preconditions.checkNotNull( entitySet, "Entity Set does not exist" );
 
-            return EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet );
-        }
-        return null;
+        return EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet );
     }
 
     @Override
@@ -581,10 +547,7 @@ public class EdmService implements EdmManager {
         // correct?
         EntitySet entitySet = EdmDetailsAdapter.setEntitySetTypename( tableManager, edmStore.getEntitySet( name ) );
 
-        if ( authzService.getEntitySet( entitySet.getType(), name ) ) {
-            return entitySet;
-        }
-        return null;
+        return entitySet;
     }
 
     private Iterable<EntitySet> getEntitySetsForEntityType( FullQualifiedName type ) {
@@ -598,12 +561,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public Iterable<EntitySet> getEntitySets() {
-        return edmStore.getEntitySets().all().stream()
-                .map( entitySet -> EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet ) )
-                .filter( entitySet -> authzService.getEntitySet(
-                        entitySet.getType(),
-                        entitySet.getName() ) )
-                .collect( Collectors.toList() );
+        return edmStore.getEntitySets().all();
     }
 
     @Override
@@ -668,10 +626,7 @@ public class EdmService implements EdmManager {
             return false;
         }
 
-        if ( authzService.getEntitySet( type, name ) ) {
-            return isExistingEntitySet( typename, name );
-        }
-        return false;
+        return isExistingEntitySet( typename, name );
     }
 
     private boolean isExistingEntitySet( String typename, String name ) {
@@ -682,7 +637,6 @@ public class EdmService implements EdmManager {
     @Override
     public void addPropertyTypesToEntityType( String namespace, String name, Set<FullQualifiedName> properties ) {
         EntityType entityType;
-        FullQualifiedName entityTypeFqn = new FullQualifiedName( namespace, name );
 
         try {
             entityType = getEntityType( namespace, name );
@@ -691,20 +645,18 @@ public class EdmService implements EdmManager {
             throw new BadRequestException( "Illegal Arguments are provided." );
         }
 
-        if ( authzService.alterEntityType( entityTypeFqn ) ) {
-            Set<FullQualifiedName> newProperties = Sets.difference( properties, entityType.getProperties() );
-            entityType.addProperties( newProperties );
-            edmStore.updateExistingEntityType(
-                    entityType.getNamespace(),
-                    entityType.getName(),
-                    entityType.getKey(),
-                    entityType.getProperties() );
+        Set<FullQualifiedName> newProperties = Sets.difference( properties, entityType.getProperties() );
+        entityType.addProperties( newProperties );
+        edmStore.updateExistingEntityType(
+                entityType.getNamespace(),
+                entityType.getName(),
+                entityType.getKey(),
+                entityType.getProperties() );
 
-            Set<FullQualifiedName> schemas = entityType.getSchemas();
-            schemas.forEach( schemaFqn -> {
-                addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), newProperties );
-            } );
-        }
+        Set<FullQualifiedName> schemas = entityType.getSchemas();
+        schemas.forEach( schemaFqn -> {
+            addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), newProperties );
+        } );
     }
 
     @Override
@@ -733,9 +685,9 @@ public class EdmService implements EdmManager {
          * Refactored by Ho Chung, to avoid duplicate checks. checkedValid means that entityType is checked to be valid,
          * and property types are checked to exist; error throwing should be done there.
          */
-        if ( checkedValid && authzService.alterEntityType( entityType.getFullQualifiedName() ) ) {
+        if ( checkedValid ) {
 
-            if( properties != null && entityType.getProperties() != null ){
+            if ( properties != null && entityType.getProperties() != null ) {
                 entityType.removeProperties( properties );
                 // Acl
                 properties
