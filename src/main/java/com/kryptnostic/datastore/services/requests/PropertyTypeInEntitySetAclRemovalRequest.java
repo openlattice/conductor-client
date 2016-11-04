@@ -10,8 +10,6 @@ import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 
 public class PropertyTypeInEntitySetAclRemovalRequest {
     
-    @JsonProperty( SerializationConstants.TYPE_FIELD)
-    protected FullQualifiedName entityTypeFqn;
     @JsonProperty( SerializationConstants.NAME_FIELD)
     protected String entitySetName;
     @JsonProperty( SerializationConstants.PROPERTIES_FIELD)
@@ -26,8 +24,6 @@ public class PropertyTypeInEntitySetAclRemovalRequest {
 
         PropertyTypeInEntitySetAclRemovalRequest that = (PropertyTypeInEntitySetAclRemovalRequest) o;
 
-        if ( entityTypeFqn != null ? !entityTypeFqn.equals( that.entityTypeFqn ) : that.entityTypeFqn != null )
-            return false;
         if ( entitySetName != null ? !entitySetName.equals( that.entitySetName ) : that.entitySetName != null )
             return false;
         return properties != null ? properties.equals( that.properties ) : that.properties == null;
@@ -35,19 +31,9 @@ public class PropertyTypeInEntitySetAclRemovalRequest {
 
     @Override
     public int hashCode() {
-        int result = entityTypeFqn != null ? entityTypeFqn.hashCode() : 0;
-        result = 31 * result + ( entitySetName != null ? entitySetName.hashCode() : 0 );
+        int result = entitySetName != null ? entitySetName.hashCode() : 0 ;
         result = 31 * result + ( properties != null ? properties.hashCode() : 0 );
         return result;
-    }
-
-    public FullQualifiedName getType() {
-        return entityTypeFqn;
-    }
-
-    public PropertyTypeInEntitySetAclRemovalRequest setType( FullQualifiedName entityTypeFqn ) {
-        this.entityTypeFqn = entityTypeFqn;
-        return this;
     }
 
     public String getName() {
@@ -70,11 +56,9 @@ public class PropertyTypeInEntitySetAclRemovalRequest {
     
     @JsonCreator
     public static PropertyTypeInEntitySetAclRemovalRequest newAclRemovalRequest(
-            @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
             @JsonProperty( SerializationConstants.NAME_FIELD) String entitySetName,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD) Set<FullQualifiedName> properties) {
         return new PropertyTypeInEntitySetAclRemovalRequest()
-                .setType( entityTypeFqn )
                 .setName( entitySetName )
                 .setProperties( properties );
     }

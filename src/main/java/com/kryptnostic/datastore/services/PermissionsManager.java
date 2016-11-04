@@ -20,13 +20,13 @@ public interface PermissionsManager {
 
     boolean checkUserHasPermissionsOnEntityType( List<String> roles, FullQualifiedName fqn, Permission permission );
 
-	void addPermissionsForEntitySet( String role, FullQualifiedName type, String name, Set<Permission> permissions );
+	void addPermissionsForEntitySet( String role, String name, Set<Permission> permissions );
 
-	void removePermissionsForEntitySet( String role, FullQualifiedName type, String name, Set<Permission> permissions );
+	void removePermissionsForEntitySet( String role, String name, Set<Permission> permissions );
 
-	void setPermissionsForEntitySet( String role, FullQualifiedName type, String name, Set<Permission> permissions );
+	void setPermissionsForEntitySet( String role, String name, Set<Permission> permissions );
 
-	boolean checkUserHasPermissionsOnEntitySet( List<String> roles, FullQualifiedName type, String name, Permission permission );
+	boolean checkUserHasPermissionsOnEntitySet( List<String> roles, String name, Permission permission );
 
 	// Permissions for a user of pair of types
     void addPermissionsForPropertyTypeInEntityType( String role, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
@@ -37,26 +37,26 @@ public interface PermissionsManager {
 
     boolean checkUserHasPermissionsOnPropertyTypeInEntityType( List<String> roles, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Permission permission );
 
-    void addPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
+    void addPermissionsForPropertyTypeInEntitySet( String role, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
     
-    void removePermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
+    void removePermissionsForPropertyTypeInEntitySet( String role, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
 
-    void setPermissionsForPropertyTypeInEntitySet( String role, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
+    void setPermissionsForPropertyTypeInEntitySet( String role, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
 
-    boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( List<String> roles, FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn, Permission permission );
+    boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( List<String> roles, String entitySetName, FullQualifiedName propertyTypeFqn, Permission permission );
 
 	// Utility functions for removing all permission details associated to a type
 
     void removePermissionsForEntityType( FullQualifiedName fqn );
 
-    void removePermissionsForEntitySet( FullQualifiedName entityTypeFqn, String entitySetName );
+    void removePermissionsForEntitySet( String entitySetName );
 
 	void removePermissionsForPropertyTypeInEntityType( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn );
 	
 	void removePermissionsForPropertyTypeInEntityType( FullQualifiedName entityTypeFqn );
 	
-    void removePermissionsForPropertyTypeInEntitySet( FullQualifiedName entityTypeFqn, String entitySetName, FullQualifiedName propertyTypeFqn );
+    void removePermissionsForPropertyTypeInEntitySet( String entitySetName, FullQualifiedName propertyTypeFqn );
 
-    void removePermissionsForPropertyTypeInEntitySet( FullQualifiedName entityTypeFqn, String entitySetName );
+    void removePermissionsForPropertyTypeInEntitySet( String entitySetName );
 
 }

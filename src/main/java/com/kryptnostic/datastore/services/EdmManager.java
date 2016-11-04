@@ -43,15 +43,13 @@ public interface EdmManager {
 
     void upsertEntitySet( EntitySet entitySet );
 
-    EntitySet getEntitySet( FullQualifiedName entityType, String name );
-
     EntitySet getEntitySet( String name );
 
     Iterable<EntitySet> getEntitySets();
 
     void deleteEntitySet( EntitySet entitySet );
     
-    void deleteEntitySet( FullQualifiedName entityType, String name );
+    void deleteEntitySet( String name );
 
     void createEntityType( EntityType objectType );
 
@@ -88,8 +86,8 @@ public interface EdmManager {
     Iterable<PropertyType> getPropertyTypes();
 
     EntityDataModel getEntityDataModel();
-
-    boolean isExistingEntitySet( FullQualifiedName type, String name );
+    
+    boolean isExistingEntitySet( String name );
 
     EntityType getEntityType( FullQualifiedName fqn );
 

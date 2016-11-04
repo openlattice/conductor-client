@@ -2,6 +2,7 @@ package com.kryptnostic.datastore.services;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -158,6 +159,15 @@ public interface EdmApi {
     @GET( ENTITY_SETS_BASE_PATH )
     Iterable<EntitySet> getEntitySets();
 
+    @GET( ENTITY_SETS_BASE_PATH + NAME_PATH )
+    EntitySet getEntitySet( @Path( NAME ) String entitySetName );
+
+    @POST( ENTITY_SETS_BASE_PATH + NAME_PATH )
+    Response assignEntityToEntitySet( @Path( NAME) String entitySetName, @Body Set<UUID> entityIds );
+
+    @DELETE( ENTITY_SETS_BASE_PATH + NAME_PATH )
+    Response deleteEntitySet( @Path( NAME ) String entitySetName );
+    
     /**
      * Creates an entity type if it doesn't already exist.
      *

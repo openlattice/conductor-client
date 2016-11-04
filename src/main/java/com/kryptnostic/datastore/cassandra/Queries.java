@@ -42,7 +42,7 @@ public final class Queries {
     public static final String createEntitySetsAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.ENTITY_TYPE, CommonColumns.ENTITY_SET )
+                .partitionKey( CommonColumns.ENTITY_SET )
                 .clusteringColumns( CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
@@ -69,7 +69,7 @@ public final class Queries {
     public static final String createPropertyTypesInEntitySetsAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.ENTITY_TYPE, CommonColumns.ENTITY_SET )
+                .partitionKey( CommonColumns.ENTITY_SET )
                 .clusteringColumns( CommonColumns.PROPERTY_TYPE, CommonColumns.ROLE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
@@ -175,11 +175,12 @@ public final class Queries {
     public static final String CREATE_INDEX_ON_NAME               = "CREATE INDEX IF NOT EXISTS entity_sets_name_idx ON "
             + DatastoreConstants.KEYSPACE
             + "."
-            + Tables.ENTITY_SETS.getTableName() + " (name)";
+            + Tables.ENTITY_SETS.getTableName() 
+            + " (" + CommonColumns.NAME.cql() + ")";
     /**
      * This is the query for adding the secondary index on the entitySets column for entity table of a given type
      */
-    public static final String CREATE_INDEX_ON_ENTITY_ENTITY_SETS = "CREATE INDEX IF NOT EXISTS ON %s.%s (entitysets)";
+    public static final String CREATE_INDEX_ON_ENTITY_ENTITY_SETS = "CREATE INDEX IF NOT EXISTS ON %s.%s (" + CommonColumns.ENTITY_SETS.cql() + ")";
 
     // Lightweight transactions for object insertion.
     public static final RegularStatement createSchemaIfNotExists( String keyspace, String table ) {

@@ -10,8 +10,13 @@ import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
 public class PropertyTypeInEntityTypeAclRequest extends EntityTypeAclRequest {
-    @JsonProperty( SerializationConstants.PROPERTIES_FIELD )
+    
+    @JsonProperty( SerializationConstants.PROPERTY_FIELD )
     protected FullQualifiedName propertyTypeFqn;
+
+    public FullQualifiedName getPropertyType() {
+        return propertyTypeFqn;
+    }
 
     @Override
     public PropertyTypeInEntityTypeAclRequest setRole( String role ) {
@@ -35,10 +40,6 @@ public class PropertyTypeInEntityTypeAclRequest extends EntityTypeAclRequest {
     public PropertyTypeInEntityTypeAclRequest setPermissions( Set<Permission> permissions ) {
         this.permissions = permissions;
         return this;
-    }
-
-    public FullQualifiedName getPropertyType() {
-        return propertyTypeFqn;
     }
 
     public PropertyTypeInEntityTypeAclRequest setPropertyType( FullQualifiedName propertyTypeFqn ) {
@@ -72,7 +73,7 @@ public class PropertyTypeInEntityTypeAclRequest extends EntityTypeAclRequest {
             @JsonProperty( SerializationConstants.ROLE ) String role,
             @JsonProperty( SerializationConstants.ACTION ) Action action,
             @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
-            @JsonProperty( SerializationConstants.PROPERTIES_FIELD ) FullQualifiedName propertyTypeFqn,
+            @JsonProperty( SerializationConstants.PROPERTY_FIELD ) FullQualifiedName propertyTypeFqn,
             @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
         return new PropertyTypeInEntityTypeAclRequest().setRole( role ).setAction( action ).setType( entityTypeFqn )
                 .setPropertyType( propertyTypeFqn ).setPermissions( permissions );

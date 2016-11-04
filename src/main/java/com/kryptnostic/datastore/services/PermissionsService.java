@@ -72,55 +72,51 @@ public class PermissionsService implements PermissionsManager {
     @Override
     public void addPermissionsForEntitySet(
             String role,
-            FullQualifiedName type,
             String name,
             Set<Permission> permissions ) {
-        tableManager.addPermissionsForEntitySet( role, type, name, permissions );
+        tableManager.addPermissionsForEntitySet( role, name, permissions );
     }
 
     @Override
     public void removePermissionsForEntitySet(
             String role,
-            FullQualifiedName type,
             String name,
             Set<Permission> permissions ) {
-        EnumSet<Permission> userPermissions = getPermissionsForEntitySet( role, type, name );
+        EnumSet<Permission> userPermissions = getPermissionsForEntitySet( role, name );
         userPermissions.removeAll( permissions );
 
-        setPermissionsForEntitySet( role, type, name, userPermissions );
+        setPermissionsForEntitySet( role, name, userPermissions );
     }
 
     @Override
     public void setPermissionsForEntitySet(
             String role,
-            FullQualifiedName type,
             String name,
             Set<Permission> permissions ) {
         if( !permissions.isEmpty() ){
-            tableManager.setPermissionsForEntitySet( role, type, name, permissions );
+            tableManager.setPermissionsForEntitySet( role, name, permissions );
         } else {
-            tableManager.deleteFromEntitySetsAclsTable( role, type, name );
+            tableManager.deleteFromEntitySetsAclsTable( role, name );
         }
     }
 
     @Override
     public boolean checkUserHasPermissionsOnEntitySet(
             List<String> roles,
-            FullQualifiedName type,
             String name,
             Permission permission ) {
-        EnumSet<Permission> userPermissions = getPermissionsForEntitySet( roles, type, name );
+        EnumSet<Permission> userPermissions = getPermissionsForEntitySet( roles, name );
 
         return userPermissions.contains( permission );
     }
 
-    private EnumSet<Permission> getPermissionsForEntitySet( String role, FullQualifiedName type, String name ) {
-        return tableManager.getPermissionsForEntitySet( role, type, name );
+    private EnumSet<Permission> getPermissionsForEntitySet( String role, String name ) {
+        return tableManager.getPermissionsForEntitySet( role, name );
     }
     
-    private EnumSet<Permission> getPermissionsForEntitySet( List<String> roles, FullQualifiedName type, String name ) {
+    private EnumSet<Permission> getPermissionsForEntitySet( List<String> roles, String name ) {
         return roles.stream()
-                .flatMap( role -> getPermissionsForEntitySet( role, type, name ).stream() )
+                .flatMap( role -> getPermissionsForEntitySet( role, name ).stream() )
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(Permission.class)));
     }
 
@@ -191,12 +187,10 @@ public class PermissionsService implements PermissionsManager {
     @Override
     public void addPermissionsForPropertyTypeInEntitySet(
             String role,
-            FullQualifiedName entityTypeFqn,
             String entitySetName,
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
         tableManager.addPermissionsForPropertyTypeInEntitySet( role,
-                entityTypeFqn,
                 entitySetName,
                 propertyTypeFqn,
                 permissions );
@@ -205,18 +199,15 @@ public class PermissionsService implements PermissionsManager {
     @Override
     public void removePermissionsForPropertyTypeInEntitySet(
             String role,
-            FullQualifiedName entityTypeFqn,
             String entitySetName,
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
         EnumSet<Permission> userPermissions = getPermissionsForPropertyTypeInEntitySet( role,
-                entityTypeFqn,
                 entitySetName,
                 propertyTypeFqn );
         userPermissions.removeAll( permissions );
 
         setPermissionsForPropertyTypeInEntitySet( role,
-                entityTypeFqn,
                 entitySetName,
                 propertyTypeFqn,
                 userPermissions );
@@ -225,19 +216,16 @@ public class PermissionsService implements PermissionsManager {
     @Override
     public void setPermissionsForPropertyTypeInEntitySet(
             String role,
-            FullQualifiedName entityTypeFqn,
             String entitySetName,
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
         if( !permissions.isEmpty() ){
             tableManager.setPermissionsForPropertyTypeInEntitySet( role,
-                    entityTypeFqn,
                     entitySetName,
                     propertyTypeFqn,
                     permissions );
         } else {
             tableManager.deleteFromPropertyTypesInEntitySetsAclsTable( role,
-                    entityTypeFqn,
                     entitySetName,
                     propertyTypeFqn );
         }
@@ -246,12 +234,10 @@ public class PermissionsService implements PermissionsManager {
     @Override
     public boolean checkUserHasPermissionsOnPropertyTypeInEntitySet(
             List<String> roles,
-            FullQualifiedName entityTypeFqn,
             String entitySetName,
             FullQualifiedName propertyTypeFqn,
             Permission permission ) {
         EnumSet<Permission> userPermissions = getPermissionsForPropertyTypeInEntitySet( roles,
-                entityTypeFqn,
                 entitySetName,
                 propertyTypeFqn );
         
@@ -260,23 +246,19 @@ public class PermissionsService implements PermissionsManager {
 
     private EnumSet<Permission> getPermissionsForPropertyTypeInEntitySet(
             String role,
-            FullQualifiedName entityTypeFqn,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
         return tableManager.getPermissionsForPropertyTypeInEntitySet( role,
-                entityTypeFqn,
                 entitySetName,
                 propertyTypeFqn );
     }
 
     private EnumSet<Permission> getPermissionsForPropertyTypeInEntitySet(
             List<String> roles,
-            FullQualifiedName entityTypeFqn,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
         return roles.stream()
                 .flatMap( role -> getPermissionsForPropertyTypeInEntitySet( role,
-                        entityTypeFqn,
                         entitySetName,
                         propertyTypeFqn ).stream() )
                 .collect(Collectors.toCollection(() -> EnumSet.noneOf(Permission.class)));
@@ -288,8 +270,8 @@ public class PermissionsService implements PermissionsManager {
     }
 
     @Override
-    public void removePermissionsForEntitySet( FullQualifiedName entityTypeName, String entitySetName ) {
-        tableManager.deleteFromEntitySetsAclsTable( entityTypeName, entitySetName );
+    public void removePermissionsForEntitySet( String entitySetName ) {
+        tableManager.deleteFromEntitySetsAclsTable( entitySetName );
     }
 
     @Override
@@ -306,15 +288,14 @@ public class PermissionsService implements PermissionsManager {
 
     @Override
     public void removePermissionsForPropertyTypeInEntitySet(
-            FullQualifiedName entityTypeFqn,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        tableManager.deleteFromPropertyTypesInEntitySetsAclsTable( entityTypeFqn, entitySetName, propertyTypeFqn );
+        tableManager.deleteFromPropertyTypesInEntitySetsAclsTable( entitySetName, propertyTypeFqn );
     }
 
     @Override
-    public void removePermissionsForPropertyTypeInEntitySet( FullQualifiedName entityTypeFqn, String entitySetName ) {
-        tableManager.deleteFromPropertyTypesInEntitySetsAclsTable( entityTypeFqn, entitySetName );
+    public void removePermissionsForPropertyTypeInEntitySet( String entitySetName ) {
+        tableManager.deleteFromPropertyTypesInEntitySetsAclsTable( entitySetName );
     }
 
 }

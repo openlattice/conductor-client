@@ -296,7 +296,7 @@ public class EdmService implements EdmManager {
 
         // Remove all entity sets of the type
         getEntitySetsForEntityType( entityTypeFqn ).forEach( entitySet -> {
-            deleteEntitySet( entityTypeFqn, entitySet.getName() );
+            deleteEntitySet( entitySet.getName() );
         } );
         permissionsService.removePermissionsForEntityType( entityTypeFqn );
         permissionsService.removePermissionsForPropertyTypeInEntityType( entityTypeFqn );
@@ -438,23 +438,17 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deleteEntitySet( EntitySet entitySet ) {
-        FullQualifiedName entityTypeFqn = tableManager.getEntityTypeForTypename( entitySet.getTypename() );
-        deleteEntitySet( entityTypeFqn, entitySet.getTypename(), entitySet.getName() );
+        deleteEntitySet( entitySet.getName() );
     }
 
     @Override
-    public void deleteEntitySet( FullQualifiedName entityTypeFqn, String entitySetName ) {
-        String typename = tableManager.getTypenameForEntityType( entityTypeFqn );
-        deleteEntitySet( entityTypeFqn, typename, entitySetName );
-    }
-
-    private void deleteEntitySet( FullQualifiedName entityTypeFqn, String entityTypename, String entitySetName ) {
+    public void deleteEntitySet( String entitySetName ) {
+        EntitySet entitySet = EdmDetailsAdapter.setEntitySetTypename( tableManager, edmStore.getEntitySet( entitySetName ) );
         // Acls removal
-        permissionsService.removePermissionsForEntitySet( entityTypeFqn, entitySetName );
-        permissionsService.removePermissionsForPropertyTypeInEntitySet( entityTypeFqn, entitySetName );
+        permissionsService.removePermissionsForEntitySet( entitySetName );
+        permissionsService.removePermissionsForPropertyTypeInEntitySet( entitySetName );
 
-        entitySetMapper.delete( entityTypename, entitySetName );
-
+        entitySetMapper.delete( entitySet );
     }
 
     @Override
@@ -533,21 +527,8 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public EntitySet getEntitySet( FullQualifiedName type, String entitySetName ) {
-        String typename = tableManager.getTypenameForEntityType( type.getNamespace(), type.getName() );
-        EntitySet entitySet = entitySetMapper.get( typename, entitySetName );
-        Preconditions.checkNotNull( entitySet, "Entity Set does not exist" );
-
-        return EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet );
-    }
-
-    @Override
     public EntitySet getEntitySet( String name ) {
-        // TODO Ho Chung: This function assumes that entity set has unique name across different entity types - is this
-        // correct?
-        EntitySet entitySet = EdmDetailsAdapter.setEntitySetTypename( tableManager, edmStore.getEntitySet( name ) );
-
-        return entitySet;
+        return EdmDetailsAdapter.setEntitySetTypename( tableManager, edmStore.getEntitySet( name ) );
     }
 
     private Iterable<EntitySet> getEntitySetsForEntityType( FullQualifiedName type ) {
@@ -619,14 +600,12 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public boolean isExistingEntitySet( FullQualifiedName type, String name ) {
-        String typename = tableManager.getTypenameForEntityType( type );
-        System.out.println( "typename upon entity set creation: " + typename );
-        if ( StringUtils.isBlank( typename ) ) {
-            return false;
+    public boolean isExistingEntitySet( String name ) {
+        EntitySet entitySet = edmStore.getEntitySet( name );
+        if ( entitySet != null ) {
+            return true;
         }
-
-        return isExistingEntitySet( typename, name );
+        return false;
     }
 
     private boolean isExistingEntitySet( String typename, String name ) {

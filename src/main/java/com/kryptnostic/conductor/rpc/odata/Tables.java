@@ -7,6 +7,7 @@ public enum Tables {
     ENTITY_TYPES(ENTITY_TYPES_TABLE ),
     PROPERTY_TYPE_LOOKUP( "property_type_lookup" ),
     ENTITY_TYPE_LOOKUP( "entity_type_lookup" ),
+    ENTITY_SET_LOOKUP( "entity_set_lookup" ),
     PROPERTIES( "_properties" ),
     PROPERTY_TYPES( PROPERTY_TYPES_TABLE ),
     ENTITY_ID_TO_TYPE( "entity_id_to_type" ),

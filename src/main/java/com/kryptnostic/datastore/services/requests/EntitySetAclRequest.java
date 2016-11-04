@@ -2,17 +2,19 @@ package com.kryptnostic.datastore.services.requests;
 
 import java.util.Set;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 
-public class EntitySetAclRequest extends EntityTypeAclRequest {
+public class EntitySetAclRequest extends AclRequest {
 
     @JsonProperty( SerializationConstants.NAME_FIELD )
     protected String entitySetName;
+
+    public String getName() {
+        return entitySetName;
+    }
 
     @Override
     public EntitySetAclRequest setRole( String role ) {
@@ -27,22 +29,12 @@ public class EntitySetAclRequest extends EntityTypeAclRequest {
     }
 
     @Override
-    public EntitySetAclRequest setType( FullQualifiedName entityTypeFqn ) {
-        this.entityTypeFqn = entityTypeFqn;
-        return this;
-    }
-
-    @Override
     public EntitySetAclRequest setPermissions( Set<Permission> permissions ) {
         this.permissions = permissions;
         return this;
     }
 
-    public String getEntitySetName() {
-        return entitySetName;
-    }
-
-    public EntitySetAclRequest setEntitySetName( String entitySetName ) {
+    public EntitySetAclRequest setName( String entitySetName ) {
         this.entitySetName = entitySetName;
         return this;
     }
@@ -69,13 +61,12 @@ public class EntitySetAclRequest extends EntityTypeAclRequest {
     }
 
     @JsonCreator
-    public EntityTypeAclRequest createEntitySetAclRequest(
+    public EntitySetAclRequest createEntitySetAclRequest(
             @JsonProperty( SerializationConstants.ROLE ) String role,
             @JsonProperty( SerializationConstants.ACTION ) Action action,
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
             @JsonProperty( SerializationConstants.NAME_FIELD ) String entitySetName,
             @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
-        return new EntitySetAclRequest().setRole( role ).setAction( action ).setType( entityTypeFqn )
-                .setEntitySetName( entitySetName ).setPermissions( permissions );
+        return new EntitySetAclRequest().setRole( role ).setAction( action ).setName( entitySetName )
+                .setPermissions( permissions );
     }
 }

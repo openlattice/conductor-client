@@ -1,5 +1,6 @@
 package com.kryptnostic.conductor.rpc;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +59,7 @@ public final class ResultSetAdapterFactory {
 		return entity;
 	}
 	
-	public static SetMultimap<FullQualifiedName, Object> mapRowToObject( Row row, Set<PropertyType> properties ) {
+	public static SetMultimap<FullQualifiedName, Object> mapRowToObject( Row row, Collection<PropertyType> properties ) {
 		SetMultimap<FullQualifiedName, Object> map = HashMultimap.create();
 		properties.forEach(property -> {
 			Object value = row.getObject( "value_" + property.getTypename() );
