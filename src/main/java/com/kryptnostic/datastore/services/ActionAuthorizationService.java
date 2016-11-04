@@ -4,12 +4,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.auth0.spring.security.api.Auth0UserDetails;
 import com.kryptnostic.datastore.Permission;
 
 public class ActionAuthorizationService {
 
+    private String username;
     private List<String>             currentRoles;
 
     private final PermissionsService ps;
@@ -18,9 +21,17 @@ public class ActionAuthorizationService {
         this.ps = ps;
     };
 
-    private void updateRoles() {
+    private void updateUserInfo() {
+        Auth0UserDetails user = (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
+        //TODO: feel very worried by using username as identifier, since it will return email if exists, otherwise user_id. This means that username can potentially add emails to same identity and username will return differently. Attempts to retrieve userId so far has failed (always null).
+        this.username = user.getUsername();
+        this.currentRoles = user.getAuthorities().stream()
+                .map( grantedAuthority -> grantedAuthority.getAuthority() ).collect( Collectors.toList() );
+        /**
         currentRoles = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map( grantedAuthority -> grantedAuthority.getAuthority() ).collect( Collectors.toList() );
+        */
     }
 
     /**
@@ -28,12 +39,12 @@ public class ActionAuthorizationService {
      */
 
     public boolean upsertPropertyType( FullQualifiedName propertyTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         return true;
     }
 
     public boolean upsertEntityType( FullQualifiedName entityTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         }else{
@@ -42,7 +53,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean upsertEntitySet( String entitySetName ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -51,12 +62,12 @@ public class ActionAuthorizationService {
     }
 
     public boolean deletePropertyType( FullQualifiedName propertyTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         return true;
     }
 
     public boolean deleteEntityType( FullQualifiedName entityTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -65,7 +76,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean deleteEntitySet( String entitySetName ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -74,7 +85,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean getEntitySet( String entitySetName ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -83,7 +94,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean alterEntityType( FullQualifiedName entityTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -92,7 +103,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean alterEntitySet( String entitySetName ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -101,7 +112,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean assignEntityToEntitySet( String entitySetName ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -110,7 +121,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean readPropertyTypeInEntityType( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -124,7 +135,7 @@ public class ActionAuthorizationService {
     public boolean readPropertyTypeInEntitySet(
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -136,7 +147,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean writePropertyTypeInEntityType( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -150,7 +161,7 @@ public class ActionAuthorizationService {
     public boolean writePropertyTypeInEntitySet(
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -166,7 +177,7 @@ public class ActionAuthorizationService {
      */
 
     public boolean getAllEntitiesOfType( FullQualifiedName entityTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -175,7 +186,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean getAllEntitiesOfEntitySet( String entitySetName ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -184,7 +195,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean createEntityOfEntityType( FullQualifiedName entityTypeFqn ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
@@ -193,7 +204,7 @@ public class ActionAuthorizationService {
     }
 
     public boolean createEntityOfEntitySet( String entitySetName ) {
-        updateRoles();
+        updateUserInfo();
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
