@@ -111,8 +111,14 @@ public class PermissionsService implements PermissionsManager {
     
     private EnumSet<Permission> getPermissionsForEntityType( String username, List<String> roles, FullQualifiedName fqn ) {
         EnumSet<Permission> userPermissions = getRolePermissionsForEntityType( roles, fqn );
-        userPermissions.addAll( getUserPermissionsForEntityType( username, fqn) );
+        //Debug by Ho Chung
+        System.err.println( "Entity Type " + fqn );
+        System.err.println( "Roles " + roles );
+        System.err.println( "Permissions so far" + userPermissions );
         
+        userPermissions.addAll( getUserPermissionsForEntityType( username, fqn) );
+
+        System.err.println( "Permissions eventually" + userPermissions );
         return userPermissions;
     }
 
