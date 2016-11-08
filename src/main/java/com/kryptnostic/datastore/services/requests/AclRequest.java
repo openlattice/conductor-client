@@ -6,17 +6,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
+import com.kryptnostic.datastore.Principal;
 
 public class AclRequest {
-    @JsonProperty( SerializationConstants.ROLE )
-    protected String          role;
+    @JsonProperty( SerializationConstants.PRINCIPAL )
+    protected Principal principal;
     @JsonProperty( SerializationConstants.ACTION )
     protected Action          action;
     @JsonProperty( SerializationConstants.PERMISSIONS )
     protected Set<Permission> permissions;
 
-    public String getRole() {
-        return role;
+    public Principal getPrincipal() {
+        return principal;
     }
 
     public Action getAction() {
@@ -27,8 +28,8 @@ public class AclRequest {
         return permissions;
     }
 
-    public AclRequest setRole( String role ) {
-        this.role = role;
+    public AclRequest setPrincipal( Principal principal ) {
+        this.principal = principal;
         return this;
     }
 
@@ -51,7 +52,7 @@ public class AclRequest {
 
         AclRequest that = (AclRequest) o;
 
-        if ( role != null ? !role.equals( that.role ) : that.role != null )
+        if ( principal != null ? !principal.equals( that.principal ) : that.principal != null )
             return false;
         if ( action != null ? !action.equals( that.action ) : that.action != null )
             return false;
@@ -60,7 +61,7 @@ public class AclRequest {
 
     @Override
     public int hashCode() {
-        int result = role != null ? role.hashCode() : 0;
+        int result = principal != null ? principal.hashCode() : 0;
         result = 31 * result + ( action != null ? action.hashCode() : 0 );
         result = 31 * result + ( permissions != null ? permissions.hashCode() : 0 );
         return result;
@@ -68,10 +69,10 @@ public class AclRequest {
 
     @JsonCreator
     public AclRequest createAclRequest(
-            @JsonProperty( SerializationConstants.ROLE ) String role,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.ACTION ) Action action,
             @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
-        return new AclRequest().setRole( role ).setAction( action ).setPermissions( permissions );
+        return new AclRequest().setPrincipal( principal ).setAction( action ).setPermissions( permissions );
     }
 
 }

@@ -7,22 +7,23 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
+import com.kryptnostic.datastore.Principal;
 
 public class DerivePropertyTypeInEntityTypeAclRequest {
-    protected String role;
+    protected Principal principal;
     protected FullQualifiedName entityTypeFqn;
     protected Set<FullQualifiedName> properties;
     
     @JsonCreator
     public DerivePropertyTypeInEntityTypeAclRequest createAclRequest(
-            @JsonProperty( SerializationConstants.ROLE ) String role,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
             @JsonProperty( SerializationConstants.PROPERTIES_FIELD) Set<FullQualifiedName> properties){
-        return new DerivePropertyTypeInEntityTypeAclRequest().setRole(role).setType( entityTypeFqn ).setProperties( properties );
+        return new DerivePropertyTypeInEntityTypeAclRequest().setPrincipal( principal ).setType( entityTypeFqn ).setProperties( properties );
     }
     
-    public String getRole() {
-        return role;
+    public Principal getPrincipal() {
+        return principal;
     }
 
     public FullQualifiedName getType() {
@@ -33,8 +34,8 @@ public class DerivePropertyTypeInEntityTypeAclRequest {
         return properties;
     }
     
-    public DerivePropertyTypeInEntityTypeAclRequest setRole( String role ) {
-        this.role = role;
+    public DerivePropertyTypeInEntityTypeAclRequest setPrincipal( Principal principal ) {
+        this.principal = principal;
         return this;
     }
 
@@ -57,7 +58,7 @@ public class DerivePropertyTypeInEntityTypeAclRequest {
 
         DerivePropertyTypeInEntityTypeAclRequest that = (DerivePropertyTypeInEntityTypeAclRequest) o;
 
-        if ( role != null ? !role.equals( that.role ) : that.role != null )
+        if ( principal != null ? !principal.equals( that.principal ) : that.principal != null )
             return false;
         if ( entityTypeFqn != null ? !entityTypeFqn.equals( that.entityTypeFqn ) : that.entityTypeFqn != null )
             return false;
@@ -66,7 +67,7 @@ public class DerivePropertyTypeInEntityTypeAclRequest {
 
     @Override
     public int hashCode() {
-        int result = role != null ? role.hashCode() : 0;
+        int result = principal != null ? principal.hashCode() : 0;
         result = 31 * result + ( entityTypeFqn != null ? entityTypeFqn.hashCode() : 0 );
         result = 31 * result + ( properties != null ? properties.hashCode() : 0 );
         return result;

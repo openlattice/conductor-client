@@ -18,7 +18,7 @@ public final class SerializationConstants {
     public static final String USER_ID          = "userId";
     public static final String SCHEMAS          = "schemas";
     public static final String FQN              = "fqn";
-    public static final String ROLE             = "role";
+    public static final String PRINCIPAL        = "principal";
     public static final String ACTION           = "action";
     public static final String PERMISSIONS      = "permissions";
 

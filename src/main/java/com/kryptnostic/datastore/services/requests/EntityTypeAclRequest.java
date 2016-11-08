@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
+import com.kryptnostic.datastore.Principal;
 
 public class EntityTypeAclRequest extends AclRequest {
 
@@ -19,8 +20,8 @@ public class EntityTypeAclRequest extends AclRequest {
     }
     
     @Override
-    public EntityTypeAclRequest setRole( String role ) {
-        this.role = role;
+    public EntityTypeAclRequest setPrincipal( Principal principal ) {
+        this.principal = principal;
         return this;
     }
 
@@ -64,11 +65,11 @@ public class EntityTypeAclRequest extends AclRequest {
 
     @JsonCreator
     public EntityTypeAclRequest createAclRequest(
-            @JsonProperty( SerializationConstants.ROLE ) String role,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.ACTION ) Action action,
             @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
             @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
-        return new EntityTypeAclRequest().setRole( role ).setAction( action ).setType( entityTypeFqn )
+        return new EntityTypeAclRequest().setPrincipal( principal ).setAction( action ).setType( entityTypeFqn )
                 .setPermissions( permissions );
     }
 

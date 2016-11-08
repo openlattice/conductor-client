@@ -48,7 +48,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         }else{
-            return ps.checkUserHasPermissionsOnEntityType( currentRoles, entityTypeFqn, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
         }
     }
 
@@ -57,7 +57,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntitySet( currentRoles, entitySetName, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
         }
     }
 
@@ -71,7 +71,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntityType( currentRoles, entityTypeFqn, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
         }
     }
 
@@ -80,7 +80,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntitySet( currentRoles, entitySetName, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
         }
     }
 
@@ -89,7 +89,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntitySet( currentRoles, entitySetName, Permission.DISCOVER );
+            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.DISCOVER );
         }
     }
 
@@ -98,7 +98,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntityType( currentRoles, entityTypeFqn, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
         }
     }
 
@@ -107,7 +107,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntitySet( currentRoles, entitySetName, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
         }
     }
 
@@ -116,7 +116,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntitySet( currentRoles, entitySetName, Permission.WRITE );
+            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.WRITE );
         }
     }
 
@@ -125,7 +125,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( currentRoles,
+            return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( username, currentRoles,
                 entityTypeFqn,
                 propertyTypeFqn,
                 Permission.READ );
@@ -139,7 +139,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( currentRoles,
+            return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( username, currentRoles,
                 entitySetName,
                 propertyTypeFqn,
                 Permission.READ );
@@ -151,7 +151,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( currentRoles,
+            return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( username, currentRoles,
                 entityTypeFqn,
                 propertyTypeFqn,
                 Permission.WRITE );
@@ -165,7 +165,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( currentRoles,
+            return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( username, currentRoles,
                 entitySetName,
                 propertyTypeFqn,
                 Permission.WRITE );
@@ -181,7 +181,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntityType( currentRoles, entityTypeFqn, Permission.READ );
+            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.READ );
         }
     }
 
@@ -190,7 +190,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntitySet( currentRoles, entitySetName, Permission.READ );
+            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.READ );
         }
     }
 
@@ -199,7 +199,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntityType( currentRoles, entityTypeFqn, Permission.WRITE );
+            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.WRITE );
         }
     }
 
@@ -208,7 +208,7 @@ public class ActionAuthorizationService {
         if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
             return true;
         } else {
-            return ps.checkUserHasPermissionsOnEntitySet( currentRoles, entitySetName, Permission.WRITE );
+            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.WRITE );
         }
     }
 

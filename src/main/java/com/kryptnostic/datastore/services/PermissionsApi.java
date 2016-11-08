@@ -1,10 +1,15 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.kryptnostic.datastore.services.requests.EntityTypeAclRequest;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.datastore.services.requests.EntitySetAclRequest;
 import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRemovalRequest;
 import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRequest;
@@ -22,10 +27,28 @@ import retrofit.http.POST;
  *
  */
 public interface PermissionsApi {
+    
+    static enum Principal {
+        ROLE,
+        USER;
+        
+        private static Map<String, Principal> namesMap = new HashMap<String, Principal>( 2 );
+
+        static {
+            namesMap.put( "role", Principal.ROLE );
+            namesMap.put( "user", Principal.USER );
+        }
+        
+        @JsonCreator
+        public static Principal forValue( String value ) {
+            return namesMap.get( StringUtils.lowerCase( value ) );
+        }
+    }
 
     String NAME                    = "name";
     String NAMESPACE               = "namespace";
     String ACTION                  = "action";
+    String PRINCIPAL               = "principal";
 
     String CONTROLLER              = "/acl";
     String ENTITY_SETS_BASE_PATH   = "/entity/set";

@@ -6,6 +6,8 @@ import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.schemabuilder.CreateIndex;
+import com.datastax.driver.core.schemabuilder.SchemaStatement;
 import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 
@@ -30,20 +32,38 @@ public final class Queries {
     public static final String CREATE_KEYSPACE = "CREATE KEYSPACE IF NOT EXISTS sparks WITH REPLICATION={ 'class' : 'SimpleStrategy', 'replication_factor' : 1 } AND DURABLE_WRITES=true";
 
     // Table Creation    
-    public static final String createEntityTypesAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ACLS )
+    public static final String createEntityTypesRolesAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.ENTITY_TYPE )
-                .clusteringColumns( CommonColumns.ROLE )
+                .partitionKey( CommonColumns.ROLE )
+                .clusteringColumns( CommonColumns.ENTITY_TYPE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
     
-    public static final String createEntitySetsAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ACLS )
+    public static final String createEntityTypesUsersAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES_USERS_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.ENTITY_SET )
-                .clusteringColumns( CommonColumns.ROLE )
+                .partitionKey( CommonColumns.USER )
+                .clusteringColumns( CommonColumns.ENTITY_TYPE )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+
+    public static final String createEntitySetsRolesAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_ROLES_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.ROLE )
+                .clusteringColumns( CommonColumns.ENTITY_SET )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+
+    public static final String createEntitySetsUsersAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_USERS_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.USER )
+                .clusteringColumns( CommonColumns.ENTITY_SET )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -57,20 +77,38 @@ public final class Queries {
                 .buildQuery();
     }
     
-    public static final String createPropertyTypesInEntityTypesAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ACLS )
+    public static final String createPropertyTypesInEntityTypesRolesAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.ENTITY_TYPE )
-                .clusteringColumns( CommonColumns.PROPERTY_TYPE, CommonColumns.ROLE )
+                .partitionKey( CommonColumns.ROLE )
+                .clusteringColumns( CommonColumns.ENTITY_TYPE, CommonColumns.PROPERTY_TYPE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
     
-    public static final String createPropertyTypesInEntitySetsAclsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ACLS )
+    public static final String createPropertyTypesInEntityTypesUsersAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.ENTITY_SET )
-                .clusteringColumns( CommonColumns.PROPERTY_TYPE, CommonColumns.ROLE )
+                .partitionKey( CommonColumns.USER )
+                .clusteringColumns( CommonColumns.ENTITY_TYPE, CommonColumns.PROPERTY_TYPE )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+    
+    public static final String createPropertyTypesInEntitySetsRolesAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.ROLE )
+                .clusteringColumns( CommonColumns.ENTITY_TYPE, CommonColumns.PROPERTY_TYPE )
+                .columns( CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+    
+    public static final String createPropertyTypesInEntitySetsUsersAclsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.USER )
+                .clusteringColumns( CommonColumns.ENTITY_TYPE, CommonColumns.PROPERTY_TYPE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -181,6 +219,46 @@ public final class Queries {
      * This is the query for adding the secondary index on the entitySets column for entity table of a given type
      */
     public static final String CREATE_INDEX_ON_ENTITY_ENTITY_SETS = "CREATE INDEX IF NOT EXISTS ON %s.%s (" + CommonColumns.ENTITY_SETS.cql() + ")";
+    
+    public static String createIndex( String keyspace, String tableName, String columnName){
+        return "CREATE INDEX IF NOT EXISTS ON "
+                + keyspace 
+                + "." 
+                + tableName
+                + " (" + columnName + ")";
+    }
+    
+    public static String indexEntityTypeOnEntityTypesRolesAclsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName(), CommonColumns.ENTITY_TYPE.cql() );
+    }
+    
+    public static String indexEntityTypeOnEntityTypesUsersAclsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName(), CommonColumns.ENTITY_TYPE.cql() );
+    }
+
+    public static String indexEntitySetOnEntitySetsRolesAclsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+    }
+    
+    public static String indexEntitySetOnEntitySetsUsersAclsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+    }
+    
+    public static String indexEntityTypeOnPropertyTypesInEntityTypesRolesAclsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getTableName(), CommonColumns.ENTITY_TYPE.cql() );
+    }
+    
+    public static String indexEntityTypeOnPropertyTypesInEntityTypesUsersAclsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getTableName(), CommonColumns.ENTITY_TYPE.cql() );
+    }
+    
+    public static String indexEntitySetOnPropertyTypesInEntitySetsRolesAclsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+    }
+
+    public static String indexEntitySetOnPropertyTypesInEntitySetsUsersAclsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+    }
 
     // Lightweight transactions for object insertion.
     public static final RegularStatement createSchemaIfNotExists( String keyspace, String table ) {

@@ -7,22 +7,23 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
+import com.kryptnostic.datastore.Principal;
 
 public class DeriveEntitySetAclRequest {
-    protected String role;
+    protected Principal principal;
     protected FullQualifiedName entityTypeFqn;
     protected String entitySetName;
     
     @JsonCreator
     public DeriveEntitySetAclRequest createAclRequest(
-            @JsonProperty( SerializationConstants.ROLE ) String role,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal Principal,
             @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName entityTypeFqn,
             @JsonProperty( SerializationConstants.NAME_FIELD) String entitySetName ){
-        return new DeriveEntitySetAclRequest().setRole(role).setType( entityTypeFqn ).setName( entitySetName );
+        return new DeriveEntitySetAclRequest().setPrincipal( principal ).setType( entityTypeFqn ).setName( entitySetName );
     }
     
-    public String getRole() {
-        return role;
+    public Principal getPrincipal() {
+        return principal;
     }
 
     public FullQualifiedName getType() {
@@ -33,8 +34,8 @@ public class DeriveEntitySetAclRequest {
         return entitySetName;
     }
     
-    public DeriveEntitySetAclRequest setRole( String role ) {
-        this.role = role;
+    public DeriveEntitySetAclRequest setPrincipal( Principal principal ) {
+        this.principal = principal;
         return this;
     }
 
@@ -58,7 +59,7 @@ public class DeriveEntitySetAclRequest {
 
         DeriveEntitySetAclRequest that = (DeriveEntitySetAclRequest) o;
 
-        if ( role != null ? !role.equals( that.role ) : that.role != null )
+        if ( principal != null ? !principal.equals( that.principal ) : that.principal != null )
             return false;
         if ( entityTypeFqn != null ? !entityTypeFqn.equals( that.entityTypeFqn ) : that.entityTypeFqn != null )
             return false;
@@ -67,7 +68,7 @@ public class DeriveEntitySetAclRequest {
 
     @Override
     public int hashCode() {
-        int result = role != null ? role.hashCode() : 0;
+        int result = principal != null ? principal.hashCode() : 0;
         result = 31 * result + ( entityTypeFqn != null ? entityTypeFqn.hashCode() : 0 );
         result = 31 * result + ( entitySetName != null ? entitySetName.hashCode() : 0 );
         return result;
