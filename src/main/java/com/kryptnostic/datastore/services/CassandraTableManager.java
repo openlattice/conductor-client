@@ -1193,7 +1193,7 @@ public class CassandraTableManager {
             Set<Permission> permissions ) {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         session.execute( this.addPermissionsForEntityType
-                .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
+                .get( PrincipalType.ROLE )
                 .bind( permissions, role, entityTypeTypename ) );
     }
 
@@ -1203,7 +1203,7 @@ public class CassandraTableManager {
             Set<Permission> permissions ) {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         session.execute( this.addPermissionsForEntityType
-                .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
+                .get( PrincipalType.USER )
                 .bind( permissions, user, entityTypeTypename ) );
     }
 
@@ -1213,7 +1213,7 @@ public class CassandraTableManager {
             Set<Permission> permissions ) {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         session.execute( this.setPermissionsForEntityType
-                .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
+                .get( PrincipalType.ROLE )
                 .bind( permissions, role, entityTypeTypename ) );
     }
 
@@ -1223,7 +1223,7 @@ public class CassandraTableManager {
             Set<Permission> permissions ) {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         session.execute( this.setPermissionsForEntityType
-                .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
+                .get( PrincipalType.USER )
                 .bind( permissions, user, entityTypeTypename ) );
     }
 
