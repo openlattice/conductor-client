@@ -99,7 +99,7 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.ROLE )
-                .clusteringColumns( CommonColumns.ENTITY_TYPE, CommonColumns.PROPERTY_TYPE )
+                .clusteringColumns( CommonColumns.ENTITY_SET, CommonColumns.PROPERTY_TYPE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
@@ -108,7 +108,7 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.USER )
-                .clusteringColumns( CommonColumns.ENTITY_TYPE, CommonColumns.PROPERTY_TYPE )
+                .clusteringColumns( CommonColumns.ENTITY_SET, CommonColumns.PROPERTY_TYPE )
                 .columns( CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
