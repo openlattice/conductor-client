@@ -1240,12 +1240,8 @@ public class CassandraTableManager {
 
     public void deleteUserAndTypeFromEntityTypesAclsTable( String user, FullQualifiedName entityTypeFqn ) {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
-        BatchStatement stmt = new BatchStatement()
-                .add( deleteRowFromEntityTypesAclsTable.get( Pair.of( PrincipalType.USER, Index.BY_TYPES ) )
-                        .bind( entityTypeTypename, user ) )
-                .add( deleteRowFromEntityTypesAclsTable.get( Pair.of( PrincipalType.USER, Index.BY_ROLES ) )
-                        .bind( user, entityTypeTypename ) );
-        session.execute( stmt );
+        session.execute( deleteRowFromEntityTypesAclsTable.get( PrincipalType.USER )
+                .bind( user, entityTypeTypename ) );
     }
 
     public EnumSet<Permission> getRolePermissionsForEntitySet( String role, String entitySetName ) {
@@ -1254,7 +1250,7 @@ public class CassandraTableManager {
         } else {
             Row row = session.execute( this.getPermissionsForEntitySet
                     .get( PrincipalType.ROLE )
-                    .bind( entitySetName, role ) )
+                    .bind( role, entitySetName ) )
                     .one();
             if ( row != null ) {
                 return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
@@ -1269,7 +1265,7 @@ public class CassandraTableManager {
     public EnumSet<Permission> getUserPermissionsForEntitySet( String user, String entitySetName ) {
         Row row = session.execute( this.getPermissionsForEntitySet
                 .get( PrincipalType.USER )
-                .bind( entitySetName, user ) )
+                .bind( user, entitySetName ) )
                 .one();
         if ( row != null ) {
             return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
@@ -1281,78 +1277,41 @@ public class CassandraTableManager {
     }
 
     public void addRolePermissionsForEntitySet( String role, String entitySetName, Set<Permission> permissions ) {
-        BatchStatement stmt = new BatchStatement()
-                .add( this.addPermissionsForEntitySet
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( permissions, entitySetName, role ) )
-                .add( this.addPermissionsForEntitySet
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( permissions, role, entitySetName ) );
-        session.execute( stmt );
+        session.execute( this.addPermissionsForEntitySet
+                .get( PrincipalType.ROLE )
+                .bind( permissions, role, entitySetName ) );
     }
 
     public void addUserPermissionsForEntitySet( String user, String entitySetName, Set<Permission> permissions ) {
-        BatchStatement stmt = new BatchStatement()
-                .add( this.addPermissionsForEntitySet
-                        .get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( permissions, entitySetName, user ) )
-                .add( this.addPermissionsForEntitySet
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( permissions, user, entitySetName ) );
-        session.execute( stmt );
+        session.execute( this.addPermissionsForEntitySet
+                .get( PrincipalType.USER )
+                .bind( permissions, user, entitySetName ) );
     }
 
     public void setRolePermissionsForEntitySet( String role, String entitySetName, Set<Permission> permissions ) {
-        BatchStatement stmt = new BatchStatement()
-                .add( this.setPermissionsForEntitySet
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( permissions, entitySetName, role ) )
-                .add( this.setPermissionsForEntitySet
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( permissions, role, entitySetName ) );
-        session.execute( stmt );
+        session.execute( this.setPermissionsForEntitySet
+                .get( PrincipalType.ROLE )
+                .bind( permissions, role, entitySetName ) );
     }
 
     public void setUserPermissionsForEntitySet( String user, String entitySetName, Set<Permission> permissions ) {
-        BatchStatement stmt = new BatchStatement()
-                .add( this.setPermissionsForEntitySet
-                        .get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( permissions, entitySetName, user ) )
-                .add( this.setPermissionsForEntitySet
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( permissions, user, entitySetName ) );
-        session.execute( stmt );
+        session.execute( this.setPermissionsForEntitySet
+                .get( PrincipalType.USER )
+                .bind( permissions, user, entitySetName ) );
     }
 
     public void deleteEntitySetFromEntitySetsAclsTable( String entitySetName ) {
-        BatchStatement stmt = new BatchStatement()
-                .add( deleteEntitySetFromEntitySetsAclsTable.get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( entitySetName ) )
-                .add( deleteEntitySetFromEntitySetsAclsTable.get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( entitySetName ) )
-                .add( deleteEntitySetFromEntitySetsAclsTable.get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( entitySetName ) )
-                .add( deleteEntitySetFromEntitySetsAclsTable.get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( entitySetName ) );
-        session.execute( stmt );
+        //TODO rewrite this
     }
 
     public void deleteRoleAndSetFromEntitySetsAclsTable( String role, String entitySetName ) {
-        BatchStatement stmt = new BatchStatement()
-                .add( deleteRowFromEntitySetsAclsTable.get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( entitySetName, role ) )
-                .add( deleteRowFromEntitySetsAclsTable.get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( role, entitySetName ) );
-        session.execute( stmt );
+        session.execute( deleteRowFromEntitySetsAclsTable.get( PrincipalType.ROLE )
+                .bind( role, entitySetName ) );
     }
 
     public void deleteUserAndSetFromEntitySetsAclsTable( String user, String entitySetName ) {
-        BatchStatement stmt = new BatchStatement()
-                .add( deleteRowFromEntitySetsAclsTable.get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( entitySetName, user ) )
-                .add( deleteRowFromEntitySetsAclsTable.get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( user, entitySetName ) );
-        session.execute( stmt );
+        session.execute( deleteRowFromEntitySetsAclsTable.get( PrincipalType.USER )
+                .bind( user, entitySetName ) );
     }
 
     public ResultSet getAclsForEntityType( FullQualifiedName entityTypeFqn ) {
@@ -1375,7 +1334,7 @@ public class CassandraTableManager {
             String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType
                     .get( PrincipalType.ROLE )
-                    .bind( entityTypeTypename, propertyTypeTypename, role ) )
+                    .bind( role, entityTypeTypename, propertyTypeTypename ) )
                     .one();
             if ( row != null ) {
                 return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
@@ -1395,7 +1354,7 @@ public class CassandraTableManager {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
         Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType
                 .get( PrincipalType.USER )
-                .bind( entityTypeTypename, propertyTypeTypename, user ) )
+                .bind( user, entityTypeTypename, propertyTypeTypename ) )
                 .one();
         if ( row != null ) {
             return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
@@ -1414,14 +1373,9 @@ public class CassandraTableManager {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.addPermissionsForPropertyTypeInEntityType
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_TYPES ) )
-                        .bind( permissions, entityTypeTypename, propertyTypeTypename, role ) )
-                .add( this.addPermissionsForPropertyTypeInEntityType
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( permissions, role, entityTypeTypename, propertyTypeTypename ) );
-        session.execute( stmt );
+        session.execute( this.addPermissionsForPropertyTypeInEntityType
+                .get( PrincipalType.ROLE )
+                .bind( permissions, role, entityTypeTypename, propertyTypeTypename ) );
     }
 
     public void addUserPermissionsForPropertyTypeInEntityType(
@@ -1432,14 +1386,9 @@ public class CassandraTableManager {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.addPermissionsForPropertyTypeInEntityType
-                        .get( Pair.of( PrincipalType.USER, Index.BY_TYPES ) )
-                        .bind( permissions, entityTypeTypename, propertyTypeTypename, user ) )
-                .add( this.addPermissionsForPropertyTypeInEntityType
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( permissions, user, entityTypeTypename, propertyTypeTypename ) );
-        session.execute( stmt );
+        session.execute( this.addPermissionsForPropertyTypeInEntityType
+                .get( PrincipalType.USER )
+                .bind( permissions, user, entityTypeTypename, propertyTypeTypename ) );
     }
 
     public void setRolePermissionsForPropertyTypeInEntityType(
@@ -1450,14 +1399,9 @@ public class CassandraTableManager {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.setPermissionsForPropertyTypeInEntityType
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_TYPES ) )
-                        .bind( permissions, entityTypeTypename, propertyTypeTypename, role ) )
-                .add( this.setPermissionsForPropertyTypeInEntityType
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( permissions, role, entityTypeTypename, propertyTypeTypename ) );
-        session.execute( stmt );
+        session.execute( this.setPermissionsForPropertyTypeInEntityType
+                .get( PrincipalType.ROLE )
+                .bind( permissions, role, entityTypeTypename, propertyTypeTypename ) );
     }
 
     public void setUserPermissionsForPropertyTypeInEntityType(
@@ -1468,14 +1412,9 @@ public class CassandraTableManager {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.setPermissionsForPropertyTypeInEntityType
-                        .get( Pair.of( PrincipalType.USER, Index.BY_TYPES ) )
-                        .bind( permissions, entityTypeTypename, propertyTypeTypename, user ) )
-                .add( this.setPermissionsForPropertyTypeInEntityType
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( permissions, user, entityTypeTypename, propertyTypeTypename ) );
-        session.execute( stmt );
+        session.execute( this.setPermissionsForPropertyTypeInEntityType
+                .get( PrincipalType.USER )
+                .bind( permissions, user, entityTypeTypename, propertyTypeTypename ) );
     }
 
     public void deleteRoleAndTypesFromPropertyTypesInEntityTypesAclsTable(
@@ -1485,14 +1424,9 @@ public class CassandraTableManager {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.deleteRowFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_TYPES ) )
-                        .bind( entityTypeTypename, propertyTypeTypename, role ) )
-                .add( this.deleteRowFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( role, entityTypeTypename, propertyTypeTypename ) );
-        session.execute( stmt );
+        session.execute( this.deleteRowFromPropertyTypesInEntityTypesAclsTable
+                .get( PrincipalType.ROLE )
+                .bind( role, entityTypeTypename, propertyTypeTypename ) );
     }
 
     public void deleteUserAndTypesFromPropertyTypesInEntityTypesAclsTable(
@@ -1502,14 +1436,9 @@ public class CassandraTableManager {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.deleteRowFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_TYPES ) )
-                        .bind( entityTypeTypename, propertyTypeTypename, user ) )
-                .add( this.deleteRowFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_ROLES ) )
-                        .bind( user, entityTypeTypename, propertyTypeTypename ) );
-        session.execute( stmt );
+        session.execute( this.deleteRowFromPropertyTypesInEntityTypesAclsTable
+                .get( PrincipalType.USER )
+                .bind( user, entityTypeTypename, propertyTypeTypename ) );
     }
 
     public void deleteTypesFromPropertyTypesInEntityTypesAclsTable(
@@ -1517,40 +1446,12 @@ public class CassandraTableManager {
             FullQualifiedName propertyTypeFqn ) {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-
-        BatchStatement stmt = new BatchStatement()
-                .add( this.deletePairFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_TYPES ) )
-                        .bind( entityTypeTypename, propertyTypeTypename ) )
-                .add( this.deletePairFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( entityTypeTypename, propertyTypeTypename ) )
-                .add( this.deletePairFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_TYPES ) )
-                        .bind( entityTypeTypename, propertyTypeTypename ) )
-                .add( this.deletePairFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( entityTypeTypename, propertyTypeTypename ) );
-        session.execute( stmt );
+        // TODO: rewrite this
     }
 
     public void deleteTypesFromPropertyTypesInEntityTypesAclsTable( FullQualifiedName entityTypeFqn ) {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
-
-        BatchStatement stmt = new BatchStatement()
-                .add( this.deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_TYPES ) )
-                        .bind( entityTypeTypename ) )
-                .add( this.deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( entityTypeTypename ) )
-                .add( this.deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_TYPES ) )
-                        .bind( entityTypeTypename ) )
-                .add( this.deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( entityTypeTypename ) );
-        session.execute( stmt );
+        // TODO: rewrite this
     }
 
     public EnumSet<Permission> getRolePermissionsForPropertyTypeInEntitySet(
@@ -1563,7 +1464,7 @@ public class CassandraTableManager {
             String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet
                     .get( PrincipalType.ROLE )
-                    .bind( entitySetName, propertyTypeTypename, role ) )
+                    .bind( role, entitySetName, propertyTypeTypename ) )
                     .one();
             if ( row != null ) {
                 return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
@@ -1582,7 +1483,7 @@ public class CassandraTableManager {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
         Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet
                 .get( PrincipalType.USER )
-                .bind( entitySetName, propertyTypeTypename, user ) )
+                .bind( user, entitySetName, propertyTypeTypename ) )
                 .one();
         if ( row != null ) {
             return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
@@ -1600,14 +1501,9 @@ public class CassandraTableManager {
             Set<Permission> permissions ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.addPermissionsForPropertyTypeInEntitySet
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( permissions, entitySetName, propertyTypeTypename, role ) )
-                .add( this.addPermissionsForPropertyTypeInEntitySet
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( permissions, role, entitySetName, propertyTypeTypename ) );
-        session.execute( stmt );
+        session.execute( this.addPermissionsForPropertyTypeInEntitySet
+                .get( PrincipalType.ROLE )
+                .bind( permissions, role, entitySetName, propertyTypeTypename ) );
     }
 
     public void addUserPermissionsForPropertyTypeInEntitySet(
@@ -1617,14 +1513,9 @@ public class CassandraTableManager {
             Set<Permission> permissions ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.addPermissionsForPropertyTypeInEntitySet
-                        .get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( permissions, entitySetName, propertyTypeTypename, user ) )
-                .add( this.addPermissionsForPropertyTypeInEntitySet
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( permissions, user, entitySetName, propertyTypeTypename ) );
-        session.execute( stmt );
+        session.execute( this.addPermissionsForPropertyTypeInEntitySet
+                .get( PrincipalType.USER )
+                .bind( permissions, user, entitySetName, propertyTypeTypename ) );
     }
 
     public void setRolePermissionsForPropertyTypeInEntitySet(
@@ -1633,14 +1524,10 @@ public class CassandraTableManager {
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-        BatchStatement stmt = new BatchStatement()
-                .add( this.setPermissionsForPropertyTypeInEntitySet
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( permissions, entitySetName, propertyTypeTypename, role ) )
-                .add( this.setPermissionsForPropertyTypeInEntitySet
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( permissions, role, entitySetName, propertyTypeTypename ) );
-        session.execute( stmt );
+
+        session.execute( this.setPermissionsForPropertyTypeInEntitySet
+                .get( PrincipalType.ROLE )
+                .bind( permissions, role, entitySetName, propertyTypeTypename ) );
     }
 
     public void setUserPermissionsForPropertyTypeInEntitySet(
@@ -1649,14 +1536,10 @@ public class CassandraTableManager {
             FullQualifiedName propertyTypeFqn,
             Set<Permission> permissions ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-        BatchStatement stmt = new BatchStatement()
-                .add( this.setPermissionsForPropertyTypeInEntitySet
-                        .get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( permissions, entitySetName, propertyTypeTypename, user ) )
-                .add( this.setPermissionsForPropertyTypeInEntitySet
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( permissions, user, entitySetName, propertyTypeTypename ) );
-        session.execute( stmt );
+
+        session.execute( this.setPermissionsForPropertyTypeInEntitySet
+                .get( PrincipalType.USER )
+                .bind( permissions, user, entitySetName, propertyTypeTypename ) );
     }
 
     public void deleteRoleAndSetFromPropertyTypesInEntitySetsAclsTable(
@@ -1665,15 +1548,9 @@ public class CassandraTableManager {
             FullQualifiedName propertyTypeFqn ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.deleteRowFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( entitySetName, propertyTypeTypename, role ) )
-                .add( this.deleteRowFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( role, entitySetName, propertyTypeTypename ) );
-
-        session.execute( stmt );
+        session.execute( this.deleteRowFromPropertyTypesInEntitySetsAclsTable
+                .get( PrincipalType.ROLE )
+                .bind( role, entitySetName, propertyTypeTypename ) );
     }
 
     public void deleteUserAndSetFromPropertyTypesInEntitySetsAclsTable(
@@ -1682,54 +1559,19 @@ public class CassandraTableManager {
             FullQualifiedName propertyTypeFqn ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
 
-        BatchStatement stmt = new BatchStatement()
-                .add( this.deleteRowFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( entitySetName, propertyTypeTypename, user ) )
-                .add( this.deleteRowFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( user, entitySetName, propertyTypeTypename ) );
-
-        session.execute( stmt );
+        session.execute( this.deleteRowFromPropertyTypesInEntitySetsAclsTable
+                .get( PrincipalType.USER )
+                .bind( user, entitySetName, propertyTypeTypename ) );
     }
 
     public void deleteSetAndTypeFromPropertyTypesInEntitySetsAclsTable(
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-
-        BatchStatement stmt = new BatchStatement()
-                .add( this.deletePairFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( entitySetName, propertyTypeTypename ) )
-                .add( this.deletePairFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( entitySetName, propertyTypeTypename ) )
-                .add( this.deletePairFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( entitySetName, propertyTypeTypename ) )
-                .add( this.deletePairFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( entitySetName, propertyTypeTypename ) );
-
-        session.execute( stmt );
+        // TODO: rewrite this
     }
 
     public void deleteSetFromPropertyTypesInEntitySetsAclsTable( String entitySetName ) {
-        BatchStatement stmt = new BatchStatement()
-                .add( this.deleteEntitySetFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_SETS ) )
-                        .bind( entitySetName ) )
-                .add( this.deleteEntitySetFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.ROLE, Index.BY_ROLES ) )
-                        .bind( entitySetName ) )
-                .add( this.deleteEntitySetFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_SETS ) )
-                        .bind( entitySetName ) )
-                .add( this.deleteEntitySetFromPropertyTypesInEntitySetsAclsTable
-                        .get( Pair.of( PrincipalType.USER, Index.BY_USERS ) )
-                        .bind( entitySetName ) );
-
-        session.execute( stmt );
+        // TODO: rewrite this
     }
 }
