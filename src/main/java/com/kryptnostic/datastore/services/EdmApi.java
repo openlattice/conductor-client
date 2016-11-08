@@ -6,9 +6,9 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.kryptnostic.conductor.rpc.odata.DetailedEntityType;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
+import com.kryptnostic.conductor.rpc.odata.EntityTypeWithDetails;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.services.requests.GetSchemasRequest;
