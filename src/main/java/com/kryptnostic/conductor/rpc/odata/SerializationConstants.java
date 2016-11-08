@@ -3,6 +3,7 @@ package com.kryptnostic.conductor.rpc.odata;
 public final class SerializationConstants {
     private SerializationConstants() {}
 
+    public static final String ENTITY_FIELD     = "entity";
     public static final String NAMESPACE_FIELD  = "namespace";
     public static final String TYPE_FIELD       = "type";
     public static final String KEY_FIELD        = "key";
