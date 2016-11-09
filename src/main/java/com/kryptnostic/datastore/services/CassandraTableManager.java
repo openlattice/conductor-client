@@ -283,14 +283,14 @@ public class CassandraTableManager {
         getPermissionsForEntityType.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) ) ) );
+                        .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForEntityType.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) ) ) );
+                        .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.deleteRowFromEntityTypesAclsTable = new HashMap<>();
 
@@ -1229,7 +1229,7 @@ public class CassandraTableManager {
 
     public void deleteEntityTypeFromEntityTypesAclsTable( FullQualifiedName entityTypeFqn ) {
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
-        //TODO rewrite this again
+        // TODO rewrite this again
     }
 
     public void deleteRoleAndTypeFromEntityTypesAclsTable( String role, FullQualifiedName entityTypeFqn ) {
@@ -1301,7 +1301,7 @@ public class CassandraTableManager {
     }
 
     public void deleteEntitySetFromEntitySetsAclsTable( String entitySetName ) {
-        //TODO rewrite this
+        // TODO rewrite this
     }
 
     public void deleteRoleAndSetFromEntitySetsAclsTable( String role, String entitySetName ) {
