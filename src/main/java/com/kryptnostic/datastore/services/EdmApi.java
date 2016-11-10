@@ -24,6 +24,7 @@ import retrofit.http.GET;
 import retrofit.http.POST;
 import retrofit.http.PUT;
 import retrofit.http.Path;
+import retrofit.http.Query;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -40,6 +41,7 @@ public interface EdmApi {
     String PROPERTY_TYPES = "propertyTypes";
     String SCHEMA         = "schema";
     String SCHEMAS        = "schemas";
+    String IS_OWNER       = "isOwner";
 
     // {namespace}/{schema_name}/{class}/{FQN}/{FQN}
     /*
@@ -160,8 +162,13 @@ public interface EdmApi {
     @PUT( ENTITY_SETS_BASE_PATH )
     Response putEntitySets( @Body Set<EntitySet> entitySets );
 
+    /**
+     * 
+     * @param isOwner Optional. If isOwner is true, return all EntitySets user owns. If isOwner is false, return all EntitySetsWithPermissions user does not own. If isOwner is null, return all EntitySetsWithPermissions.
+     * @return
+     */
     @GET( ENTITY_SETS_BASE_PATH )
-    Iterable<EntitySetWithPermissions> getEntitySets();
+    Iterable<? extends EntitySet> getEntitySets( @Query( IS_OWNER ) Boolean isOwner );
 
     @GET( ENTITY_SETS_BASE_PATH + NAME_PATH )
     EntitySet getEntitySet( @Path( NAME ) String entitySetName );

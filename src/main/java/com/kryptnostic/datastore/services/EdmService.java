@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -602,6 +603,13 @@ public class EdmService implements EdmManager {
     public Iterable<EntitySet> getEntitySets() {
         return edmStore.getEntitySets().all().stream()
                 .map( entitySet -> EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet ) )
+                .collect( Collectors.toList() );
+    }
+    
+    @Override
+    public Iterable<EntitySet> getEntitySetsUserOwns( String username ) {
+        return StreamSupport.stream(getEntitySetNamesUserOwns( username ).spliterator(), false)
+                .map( entitySetName -> getEntitySet( entitySetName ) )
                 .collect( Collectors.toList() );
     }
     
