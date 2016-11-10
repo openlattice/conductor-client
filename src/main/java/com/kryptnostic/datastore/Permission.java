@@ -14,16 +14,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum Permission {
     /**
-     * Alter means changing metadata of a type - for example, adding/removing property types to an entity type WARNING:
-     * Owner is currently being used as a shorthand for having all rights. In particular, it should never be used in
-     * ActionAuthorizationService
+     * Alter means changing metadata of a type - for example, adding/removing property types to an entity type
      */
     DISCOVER,
     LINK,
     READ,
     WRITE,
-    ALTER,
-    OWNER;
+    ALTER;
 
     private static Map<String, Permission> namesMap = new HashMap<String, Permission>( 6 );
 
@@ -33,7 +30,6 @@ public enum Permission {
         namesMap.put( "read", Permission.READ );
         namesMap.put( "write", Permission.WRITE );
         namesMap.put( "alter", Permission.ALTER );
-        namesMap.put( "owner", Permission.OWNER );
     }
 
     @JsonCreator

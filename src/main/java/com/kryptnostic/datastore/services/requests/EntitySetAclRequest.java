@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services.requests;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -30,7 +31,7 @@ public class EntitySetAclRequest extends AclRequest {
     }
 
     @Override
-    public EntitySetAclRequest setPermissions( Set<Permission> permissions ) {
+    public EntitySetAclRequest setPermissions( EnumSet<Permission> permissions ) {
         this.permissions = permissions;
         return this;
     }
@@ -61,12 +62,18 @@ public class EntitySetAclRequest extends AclRequest {
         return entitySetName != null ? entitySetName.equals( that.entitySetName ) : that.entitySetName == null;
     }
 
+    @Override
+    public String toString() {
+        return "EntitySetAclRequest [entitySetName=" + entitySetName + ", principal=" + principal + ", action=" + action
+                + ", permissions=" + permissions + "]";
+    }
+
     @JsonCreator
     public EntitySetAclRequest createEntitySetAclRequest(
             @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.ACTION ) Action action,
             @JsonProperty( SerializationConstants.NAME_FIELD ) String entitySetName,
-            @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
+            @JsonProperty( SerializationConstants.PERMISSIONS ) EnumSet<Permission> permissions ) {
         return new EntitySetAclRequest().setPrincipal( principal ).setAction( action ).setName( entitySetName )
                 .setPermissions( permissions );
     }

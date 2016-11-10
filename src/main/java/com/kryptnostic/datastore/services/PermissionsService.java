@@ -1,8 +1,11 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -10,10 +13,16 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
+import com.google.common.collect.Iterables;
+import com.kryptnostic.conductor.rpc.ResultSetAdapterFactory;
+import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.datastore.Permission;
+import com.kryptnostic.datastore.PermissionsInfo;
 import com.kryptnostic.datastore.Principal;
+import com.kryptnostic.datastore.PrincipalType;
 import com.kryptnostic.datastore.exceptions.BadRequestException;
+import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRequest;
 
 public class PermissionsService implements PermissionsManager {
 
@@ -179,6 +188,28 @@ public class PermissionsService implements PermissionsManager {
         EnumSet<Permission> userPermissions = getPermissionsForEntitySet( username, roles, name );
 
         return userPermissions.contains( permission );
+    }
+    
+    @Override
+    public boolean checkIfUserIsOwnerOfEntitySet(
+            String username,
+            String entitySetName ) {
+        return tableManager.checkIfUserIsOwnerOfEntitySet( username, entitySetName );
+    }
+    
+    @Override
+    public boolean checkIfUserIsOwnerOfEntitySet(
+            String username,
+            UUID requestId ) {
+        String entitySetName = tableManager.getEntitySetNameFromRequestId( requestId );
+        return checkIfUserIsOwnerOfEntitySet( username, entitySetName );
+    }
+    
+    @Override
+    public boolean checkIfUserIsOwnerOfPermissionsRequest(
+            String username,
+            UUID requestId ) {
+        return tableManager.checkIfUserIsOwnerOfPermissionsRequest( username, requestId );
     }
 
     private EnumSet<Permission> getRolePermissionsForEntitySet( String role, String name ) {
@@ -493,4 +524,102 @@ public class PermissionsService implements PermissionsManager {
         tableManager.deleteSetFromPropertyTypesInEntitySetsAclsTable( entitySetName );
     }
 
+    @Override
+    public EnumSet<Permission> getEntitySetAclsForUser( String username, List<String> currentRoles, String entitySetName ){
+        return getPermissionsForEntitySet( username, currentRoles, entitySetName );
+    }
+    
+    @Override
+    public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForUser( String username, List<String> currentRoles, String entitySetName ){
+        EntitySet es = EdmDetailsAdapter.setEntitySetTypename( tableManager, edmStore.getEntitySet( entitySetName ) );    
+        EntityType entityType = entityTypeMapper.get( es.getType().getNamespace(), es.getType().getName() );
+        
+        Map<FullQualifiedName, EnumSet<Permission>> userPermissions = entityType.getProperties()
+                .stream()
+                .collect( Collectors.toMap( fqn -> fqn, fqn -> getPermissionsForPropertyTypeInEntitySet( username, currentRoles, entitySetName, fqn) ) );
+        
+        return userPermissions;
+    }
+
+    @Override
+    public EnumSet<Permission> getEntityTypeAclsForUser( String username, List<String> currentRoles, FullQualifiedName entityTypeFqn ){
+        return getPermissionsForEntityType( username, currentRoles, entityTypeFqn );
+    }
+    
+    @Override
+    public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntityTypeAclsForUser( String username, List<String> currentRoles, FullQualifiedName entityTypeFqn ){
+        EntityType entityType = entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() );
+        
+        Map<FullQualifiedName, EnumSet<Permission>> userPermissions = entityType.getProperties()
+                .stream()
+                .collect( Collectors.toMap( fqn -> fqn, fqn -> getPermissionsForPropertyTypeInEntityType( username, currentRoles, entityTypeFqn, fqn) ) );
+        
+        return userPermissions;
+    }
+
+    @Override
+    public Iterable<PermissionsInfo> getEntitySetAclsForOwner( String entitySetName ){
+        Iterable<PermissionsInfo> roleAcls = Iterables.transform( tableManager.getRoleAclsForEntitySet( entitySetName ), ResultSetAdapterFactory::mapRoleRowToPermissionsInfo );
+        Iterable<PermissionsInfo> userAcls = Iterables.transform( tableManager.getUserAclsForEntitySet( entitySetName ), ResultSetAdapterFactory::mapUserRowToPermissionsInfo );
+        
+        return Iterables.concat( roleAcls, userAcls );
+    }
+    
+    @Override
+    public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForOwner( String entitySetName, Principal principal ){
+        EntitySet es = EdmDetailsAdapter.setEntitySetTypename( tableManager, edmStore.getEntitySet( entitySetName ) );    
+        EntityType entityType = entityTypeMapper.get( es.getType().getNamespace(), es.getType().getName() );
+        
+        Map<FullQualifiedName, EnumSet<Permission>> userPermissions = entityType.getProperties()
+                .stream()
+                .collect( Collectors.toMap( fqn -> fqn, fqn -> getPermissionsForPropertyTypeInEntitySet( principal, entitySetName, fqn) ) );
+        
+        return userPermissions;
+    }
+
+    @Override
+    public void addPermissionsRequestForPropertyTypeInEntitySet( String username, Principal principal, String entitySetName, FullQualifiedName propertyTypeFqn, EnumSet<Permission> permissions ){
+        tableManager.addPermissionsRequestForPropertyTypeInEntitySet( username, principal, entitySetName, propertyTypeFqn, permissions);
+    }
+
+    @Override
+    public void removePermissionsRequestForEntitySet( UUID id ){
+        tableManager.removePermissionsRequestForEntitySet( id );
+    }
+    
+    @Override
+    public Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfUsername( String username ){
+        return Iterables.concat( getAllReceivedRequestsForPermissionsOfUsername(PrincipalType.ROLE, username), getAllReceivedRequestsForPermissionsOfUsername(PrincipalType.USER, username) );
+    }
+
+    private Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfUsername( PrincipalType type, String username ){
+        return Iterables.transform( tableManager.getAllReceivedRequestsForPermissionsOfUsername( type, username ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequest( type, row) );        
+    }
+
+    @Override
+    public Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName ){
+        return Iterables.concat( getAllReceivedRequestsForPermissionsOfEntitySet(PrincipalType.ROLE, entitySetName), getAllReceivedRequestsForPermissionsOfEntitySet(PrincipalType.USER, entitySetName) );
+    }
+    
+    private Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfEntitySet( PrincipalType type, String entitySetName ){
+        return Iterables.transform( tableManager.getAllReceivedRequestsForPermissionsOfEntitySet( type, entitySetName ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequest( type, row) );        
+    }
+
+    @Override
+    public Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username ){
+        return Iterables.concat( getAllSentRequestsForPermissions(PrincipalType.ROLE, username), getAllSentRequestsForPermissions(PrincipalType.USER, username) );
+    }
+    
+    private Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( PrincipalType type, String username ){
+        return Iterables.transform( tableManager.getAllSentRequestsForPermissions( type, username ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequest( type, row) );        
+    }
+
+    @Override
+    public Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username, String entitySetName ){
+        return Iterables.concat( getAllSentRequestsForPermissions(PrincipalType.ROLE, username, entitySetName), getAllSentRequestsForPermissions(PrincipalType.USER, username, entitySetName) );
+    }
+    
+    private Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( PrincipalType type, String username, String entitySetName ){
+        return Iterables.transform( tableManager.getAllSentRequestsForPermissions( type, username, entitySetName ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequest( type, row) );
+    }
 }

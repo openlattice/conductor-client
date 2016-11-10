@@ -21,6 +21,7 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
@@ -34,6 +35,9 @@ import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.datastore.Permission;
+import com.kryptnostic.datastore.Principal;
+import com.kryptnostic.datastore.PrincipalType;
 import com.kryptnostic.datastore.exceptions.BadRequestException;
 import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
@@ -141,7 +145,7 @@ public class EdmService implements EdmManager {
      * @see com.kryptnostic.types.services.EdmManager#updateObjectType(com.kryptnostic.types.ObjectType)
      */
     @Override
-    public void upsertEntityType( EntityType entityType ) {
+    public void upsertEntityType( Optional<String> username, EntityType entityType ) {
         // This call will fail if the typename has already been set for the entity.
         ensureValidEntityType( entityType );
         if ( checkEntityTypeExists( entityType.getFullQualifiedName() ) ) {
@@ -161,7 +165,7 @@ public class EdmService implements EdmManager {
                     entityType.getName(),
                     newPropertyTypesInEntityType );
         } else {
-            createEntityType( entityType, true, true );
+            createEntityType( username, entityType, true, true );
         }
     }
 
@@ -382,13 +386,28 @@ public class EdmService implements EdmManager {
         // Make sure entity type is valid
         ensureValidEntityType( entityType );
 
-        createEntityType( entityType,
+        createEntityType( Optional.absent(),
+                entityType,
+                true,
+                !checkEntityTypeExists( entityType.getFullQualifiedName() ) );
+
+    }
+    
+    @Override
+    public void createEntityType(
+            Optional<String> username,
+            EntityType entityType ) {
+        // Make sure entity type is valid
+        ensureValidEntityType( entityType );
+
+        createEntityType( username,
+                entityType,
                 true,
                 !checkEntityTypeExists( entityType.getFullQualifiedName() ) );
 
     }
 
-    private void createEntityType( EntityType entityType, boolean checkedValid, boolean doesNotExist ) {
+    private boolean createEntityType( Optional<String> username, EntityType entityType, boolean checkedValid, boolean doesNotExist ) {
         /**
          * Refactored by Ho Chung, so that upsertEntityType won't do duplicate checks. checkedValid means that
          * ensureValidEntityType is run; error throwing should be done there.
@@ -420,11 +439,15 @@ public class EdmService implements EdmManager {
                                 fqn -> getPropertyType( fqn ) ) );
                 tableManager.insertToEntityTypeLookupTable( entityType );
 
-                createDefaultEntitySet( entityType );
+                if( username.isPresent() ){
+                    createDefaultEntitySet( username.get(), entityType );
+                } else {
+                    createDefaultEntitySet( entityType );
+                }
             }
-            // return entityCreated;
+             return entityCreated;
         }
-        // return false;
+         return false;
     }
 
     @Override
@@ -481,13 +504,21 @@ public class EdmService implements EdmManager {
         String title = "Default Entity Set for the entity type with typename " + typename;
         createEntitySet( typename, name, title );
     }
+    
+    private void createDefaultEntitySet( String username, EntityType entityType ) {
+        String typename = tableManager.getTypenameForEntityType( entityType.getFullQualifiedName() );
+        String name = tableManager.getNameForDefaultEntitySet( typename );
+        String title = "Default Entity Set for the entity type with typename " + typename;
+        createEntitySet( username, typename, name, title );
+    }
+
 
     @Override
     public boolean createEntitySet( FullQualifiedName type, String name, String title ) {
         String typename = tableManager.getTypenameForEntityType( type );
         return createEntitySet( typename, name, title );
     }
-
+    
     @Override
     public boolean createEntitySet( String typename, String name, String title ) {
         // TODO: clean up unit tests to follow the pattern and figure out a better to return this HttpStatus
@@ -497,6 +528,16 @@ public class EdmService implements EdmManager {
         return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( typename, name, title ) );
     }
 
+    private boolean createEntitySet( String username, String typename, String name, String title ) {
+        boolean entitySetCreated = createEntitySet( typename, name, title );
+        
+        if( entitySetCreated ){
+            tableManager.addOwnerForEntitySet( name, username );
+        }
+        
+        return entitySetCreated;
+    }
+    
     @Override
     public boolean createEntitySet( EntitySet entitySet ) {
         if ( StringUtils.isNotBlank( entitySet.getTypename() ) ) {
@@ -506,6 +547,23 @@ public class EdmService implements EdmManager {
         System.out.println( "typename upon entity set creation: " + typename );
         entitySet.setTypename( typename );
         return createEntitySet( typename, entitySet.getName(), entitySet.getTitle() );
+    }
+
+    
+    @Override
+    public boolean createEntitySet( Optional<String> username, EntitySet entitySet){
+        boolean entitySetCreated = createEntitySet( entitySet );
+        if( entitySetCreated && username.isPresent()){
+            tableManager.addOwnerForEntitySet( entitySet.getName(), username.get() );
+            
+            EntityType entityType = entityTypeMapper.get( entitySet.getType().getNamespace(), entitySet.getType().getName() );
+            permissionsService.addPermissionsForEntitySet( new Principal( PrincipalType.USER, username.get()), entitySet.getName(), EnumSet.allOf( Permission.class ) );
+            entityType.getProperties().forEach( propertyTypeFqn -> 
+                permissionsService.addPermissionsForPropertyTypeInEntitySet( new Principal( PrincipalType.USER, username.get()), entitySet.getName(), propertyTypeFqn, EnumSet.allOf( Permission.class ) )
+                    );
+            
+       }
+        return entitySetCreated;
     }
 
     @Override
@@ -542,7 +600,9 @@ public class EdmService implements EdmManager {
 
     @Override
     public Iterable<EntitySet> getEntitySets() {
-        return edmStore.getEntitySets().all();
+        return edmStore.getEntitySets().all().stream()
+                .map( entitySet -> EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet ) )
+                .collect( Collectors.toList() );
     }
 
     @Override

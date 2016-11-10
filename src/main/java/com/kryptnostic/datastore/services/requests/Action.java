@@ -8,7 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum Action {
-    ADD, REMOVE, SET;
+    ADD, REMOVE, SET, REQUEST;
     
     private static Map<String, Action> namesMap = new HashMap<>(3);
     
@@ -16,6 +16,7 @@ public enum Action {
         namesMap.put("add", Action.ADD);
         namesMap.put("remove", Action.REMOVE);
         namesMap.put("set", Action.SET);
+        namesMap.put("request", Action.REQUEST);
     }
     
     @JsonCreator

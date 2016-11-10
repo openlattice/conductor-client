@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services.requests;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -32,7 +33,7 @@ public class EntityTypeAclRequest extends AclRequest {
     }
 
     @Override
-    public EntityTypeAclRequest setPermissions( Set<Permission> permissions ) {
+    public EntityTypeAclRequest setPermissions( EnumSet<Permission> permissions ) {
         this.permissions = permissions;
         return this;
     }
@@ -63,12 +64,18 @@ public class EntityTypeAclRequest extends AclRequest {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return "EntityTypeAclRequest [entityTypeFqn=" + entityTypeFqn + ", principal=" + principal + ", action="
+                + action + ", permissions=" + permissions + "]";
+    }
+
     @JsonCreator
     public EntityTypeAclRequest createAclRequest(
             @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.ACTION ) Action action,
             @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
-            @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
+            @JsonProperty( SerializationConstants.PERMISSIONS ) EnumSet<Permission> permissions ) {
         return new EntityTypeAclRequest().setPrincipal( principal ).setAction( action ).setType( entityTypeFqn )
                 .setPermissions( permissions );
     }

@@ -1,12 +1,18 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.kryptnostic.datastore.Permission;
+import com.kryptnostic.datastore.PermissionsInfo;
 import com.kryptnostic.datastore.Principal;
+import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRequest;
 
 public interface PermissionsManager {
     
@@ -27,7 +33,13 @@ public interface PermissionsManager {
 
 	void setPermissionsForEntitySet( Principal principal, String name, Set<Permission> permissions );
 
-	boolean checkUserHasPermissionsOnEntitySet( String username, List<String> roles, String name, Permission permission );
+    boolean checkUserHasPermissionsOnEntitySet( String username, List<String> roles, String name, Permission permission );
+    
+    boolean checkIfUserIsOwnerOfEntitySet( String username, String name );
+    
+    boolean checkIfUserIsOwnerOfEntitySet( String username, UUID requestId );
+    
+    boolean checkIfUserIsOwnerOfPermissionsRequest( String username, UUID requestId );
 
 	// Permissions for a user of pair of types
     void addPermissionsForPropertyTypeInEntityType( Principal principal, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
@@ -59,5 +71,33 @@ public interface PermissionsManager {
     void removePermissionsForPropertyTypeInEntitySet( String entitySetName, FullQualifiedName propertyTypeFqn );
 
     void removePermissionsForPropertyTypeInEntitySet( String entitySetName );
+    
+    // Utility functions for retrieving permissions
+
+    EnumSet<Permission> getEntitySetAclsForUser( String username, List<String> currentRoles, String entitySetName );
+
+    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForUser( String username, List<String> currentRoles, String entitySetName );
+
+    EnumSet<Permission> getEntityTypeAclsForUser( String username, List<String> currentRoles, FullQualifiedName entityTypeFqn );
+    
+    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntityTypeAclsForUser( String username, List<String> currentRoles, FullQualifiedName entityTypeFqn );
+
+    Iterable<PermissionsInfo> getEntitySetAclsForOwner( String entitySetName );
+    
+    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForOwner( String entitySetName, Principal principal );
+    
+    // Methods for requesting permissions
+    
+    void addPermissionsRequestForPropertyTypeInEntitySet( String username, Principal principal, String entitySetName, FullQualifiedName propertyTypeFqn, EnumSet<Permission> permissions );
+
+    void removePermissionsRequestForEntitySet( UUID id );
+    
+    Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfUsername( String username );
+    
+    Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName );
+    
+    Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username );
+    
+    Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username, String entitySetName );
 
 }

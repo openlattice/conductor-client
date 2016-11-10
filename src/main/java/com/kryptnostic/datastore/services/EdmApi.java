@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -7,10 +8,12 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
+import com.kryptnostic.conductor.rpc.odata.EntitySetWithPermissions;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.EntityTypeWithDetails;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.datastore.services.requests.GetSchemasRequest;
 import com.kryptnostic.datastore.services.requests.PutSchemaRequest;
 
@@ -158,7 +161,7 @@ public interface EdmApi {
     Response putEntitySets( @Body Set<EntitySet> entitySets );
 
     @GET( ENTITY_SETS_BASE_PATH )
-    Iterable<EntitySet> getEntitySets();
+    Iterable<EntitySetWithPermissions> getEntitySets();
 
     @GET( ENTITY_SETS_BASE_PATH + NAME_PATH )
     EntitySet getEntitySet( @Path( NAME ) String entitySetName );
@@ -206,9 +209,7 @@ public interface EdmApi {
             @Body Set<FullQualifiedName> properties
     );
 
-    //Debug by Ho Chung
-    @POST( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
-//    @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
+    @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
     Response removePropertyTypesFromEntityType(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,

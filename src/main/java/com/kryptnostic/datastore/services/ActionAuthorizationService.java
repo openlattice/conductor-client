@@ -1,6 +1,7 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -32,6 +33,20 @@ public class ActionAuthorizationService {
         currentRoles = SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map( grantedAuthority -> grantedAuthority.getAuthority() ).collect( Collectors.toList() );
         */
+    }
+    
+    /**
+     * User Info 
+     */
+    
+    public String getUsername(){
+        updateUserInfo();
+        return username;
+    }
+    
+    public List<String> getRoles(){
+        updateUserInfo();        
+        return currentRoles;
     }
 
     /**
@@ -213,7 +228,7 @@ public class ActionAuthorizationService {
     }
 
     /**
-     * Permissions modification actions
+     * Permissions actions
      */
     public boolean updateEntityTypesAcls() {
         return true;
@@ -254,5 +269,16 @@ public class ActionAuthorizationService {
     public boolean removeAllPropertyTypesInEntitySetAcls() {
         return true;
     }
+    
+    public boolean getEntitySetAclsForOwner( String entitySetName ){
+        return ps.checkIfUserIsOwnerOfEntitySet( username, entitySetName );
+    }
 
+    public boolean removePermissionsRequestForEntitySet( UUID id ){
+        return ( ps.checkIfUserIsOwnerOfEntitySet( username, id ) || ps.checkIfUserIsOwnerOfPermissionsRequest( username, id ) );
+    }
+    
+    public boolean getAllReceivedRequestsForPermissions( String entitySetName ){
+        return ps.checkIfUserIsOwnerOfEntitySet( username, entitySetName );        
+    }
 }

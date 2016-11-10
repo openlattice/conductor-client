@@ -21,5 +21,7 @@ public final class SerializationConstants {
     public static final String PRINCIPAL        = "principal";
     public static final String ACTION           = "action";
     public static final String PERMISSIONS      = "permissions";
+    
+    public static final String TIMESTAMP        = "timestamp";
 
 }

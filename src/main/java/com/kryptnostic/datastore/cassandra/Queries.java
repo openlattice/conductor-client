@@ -68,6 +68,22 @@ public final class Queries {
                 .buildQuery();
     }
     
+    public static final String createEntitySetsOwnerTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_OWNER )
+                .ifNotExists()
+                .partitionKey( CommonColumns.ENTITY_SET )
+                .columns( CommonColumns.USER )
+                .buildQuery();
+    }
+
+    public static final String createEntitySetsOwnerLookupTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS_OWNER_LOOKUP )
+                .ifNotExists()
+                .partitionKey( CommonColumns.USER )
+                .clusteringColumns( CommonColumns.ENTITY_SET )
+                .buildQuery();
+    }
+
     public static final String createSchemasAclsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.SCHEMAS_ACLS )
                 .ifNotExists()
@@ -113,6 +129,40 @@ public final class Queries {
                 .buildQuery();
     }
     
+    public static final String createRolesAclsRequestsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ROLES_ACLS_REQUESTS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.USER )
+                .clusteringColumns( CommonColumns.ENTITY_SET, CommonColumns.CLOCK, CommonColumns.REQUESTID )
+                .columns( CommonColumns.NAME, CommonColumns.PROPERTY_TYPE, CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+
+    public static final String createRolesAclsRequestsLookupTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.ROLES_ACLS_REQUESTS_LOOKUP )
+                .ifNotExists()
+                .partitionKey( CommonColumns.REQUESTID )
+                .columns( CommonColumns.USER, CommonColumns.ENTITY_SET, CommonColumns.CLOCK )
+                .buildQuery();
+    }
+
+    public static final String createUsersAclsRequestsTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.USERS_ACLS_REQUESTS )
+                .ifNotExists()
+                .partitionKey( CommonColumns.USER )
+                .clusteringColumns( CommonColumns.ENTITY_SET, CommonColumns.CLOCK, CommonColumns.REQUESTID )
+                .columns( CommonColumns.NAME, CommonColumns.PROPERTY_TYPE, CommonColumns.PERMISSIONS )
+                .buildQuery();
+    }
+
+    public static final String createUsersAclsRequestsLookupTableQuery( String keyspace ) {
+        return new CassandraTableBuilder( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP )
+                .ifNotExists()
+                .partitionKey( CommonColumns.REQUESTID )
+                .columns( CommonColumns.USER, CommonColumns.ENTITY_SET, CommonColumns.CLOCK )
+                .buildQuery();
+    }
+
     public static final String createSchemasTableQuery( String keyspace, String table ) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
@@ -258,6 +308,14 @@ public final class Queries {
 
     public static String indexEntitySetOnPropertyTypesInEntitySetsUsersAclsTableQuery( String keyspace ){
         return createIndex( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+    }
+    
+    public static String indexEntitySetOnRolesAclsRequestsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.ROLES_ACLS_REQUESTS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+    }
+    
+    public static String indexEntitySetOnUsersAclsRequestsTableQuery( String keyspace ){
+        return createIndex( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName(), CommonColumns.ENTITY_SET.cql() );
     }
 
     // Lightweight transactions for object insertion.

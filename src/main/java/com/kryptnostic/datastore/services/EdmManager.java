@@ -40,6 +40,8 @@ public interface EdmManager {
     boolean createEntitySet( String typename, String name, String title );
 
     boolean createEntitySet( EntitySet entitySet );
+    
+    boolean createEntitySet( Optional<String> username, EntitySet entitySet );
 
     void upsertEntitySet( EntitySet entitySet );
 
@@ -52,12 +54,14 @@ public interface EdmManager {
     void deleteEntitySet( String name );
 
     void createEntityType( EntityType objectType );
+    
+    void createEntityType( Optional<String> username, EntityType objectType );
 
     void assignEntityToEntitySet( UUID entityId, String entitySetName );
 
     void assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
 
-    void upsertEntityType( EntityType objectType );
+    void upsertEntityType( Optional<String> username, EntityType objectType );
 
     EntityType getEntityType( String namespace, String name );
 

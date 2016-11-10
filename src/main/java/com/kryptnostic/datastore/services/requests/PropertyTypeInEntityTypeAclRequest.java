@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services.requests;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -38,7 +39,7 @@ public class PropertyTypeInEntityTypeAclRequest extends EntityTypeAclRequest {
     }
 
     @Override
-    public PropertyTypeInEntityTypeAclRequest setPermissions( Set<Permission> permissions ) {
+    public PropertyTypeInEntityTypeAclRequest setPermissions( EnumSet<Permission> permissions ) {
         this.permissions = permissions;
         return this;
     }
@@ -69,13 +70,20 @@ public class PropertyTypeInEntityTypeAclRequest extends EntityTypeAclRequest {
         return propertyTypeFqn != null ? propertyTypeFqn.equals( that.propertyTypeFqn ) : that.propertyTypeFqn == null;
     }
 
+    @Override
+    public String toString() {
+        return "PropertyTypeInEntityTypeAclRequest [propertyTypeFqn=" + propertyTypeFqn + ", entityTypeFqn="
+                + entityTypeFqn + ", principal=" + principal + ", action=" + action + ", permissions=" + permissions
+                + "]";
+    }
+
     @JsonCreator
     public PropertyTypeInEntityTypeAclRequest createRequest(
             @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.ACTION ) Action action,
             @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
             @JsonProperty( SerializationConstants.PROPERTY_FIELD ) FullQualifiedName propertyTypeFqn,
-            @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
+            @JsonProperty( SerializationConstants.PERMISSIONS ) EnumSet<Permission> permissions ) {
         return new PropertyTypeInEntityTypeAclRequest().setPrincipal( principal ).setAction( action ).setType( entityTypeFqn )
                 .setPropertyType( propertyTypeFqn ).setPermissions( permissions );
     }

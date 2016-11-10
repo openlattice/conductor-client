@@ -22,6 +22,7 @@ public enum CommonColumns {
     MULTIPLICITY( DataType.bigint() ),
     NAME( DataType.text() ),
     NAMESPACE( DataType.text() ),
+    REQUESTID( DataType.uuid() ),
     ENTITYID( DataType.uuid() ),
     PROPERTY_TYPE( DataType.text() ),
     PROPERTIES( DataType.set( DataType.text() ) ),

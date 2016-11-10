@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services.requests;
 
+import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -14,9 +15,16 @@ public class PropertyTypeInEntitySetAclRequest extends EntitySetAclRequest {
 
     @JsonProperty( SerializationConstants.PROPERTY_FIELD )
     protected FullQualifiedName propertyTypeFqn;
+    
+    @JsonProperty( SerializationConstants.TIMESTAMP )
+    protected String timestamp;
 
     public FullQualifiedName getPropertyType() {
         return propertyTypeFqn;
+    }
+    
+    public String getTimestamp() {
+        return timestamp;
     }
 
     @Override
@@ -32,7 +40,7 @@ public class PropertyTypeInEntitySetAclRequest extends EntitySetAclRequest {
     }
 
     @Override
-    public PropertyTypeInEntitySetAclRequest setPermissions( Set<Permission> permissions ) {
+    public PropertyTypeInEntitySetAclRequest setPermissions( EnumSet<Permission> permissions ) {
         this.permissions = permissions;
         return this;
     }
@@ -47,11 +55,17 @@ public class PropertyTypeInEntitySetAclRequest extends EntitySetAclRequest {
         this.propertyTypeFqn = propertyTypeFqn;
         return this;
     }
+    
+    public PropertyTypeInEntitySetAclRequest setTimestamp( String timestamp ) {
+        this.timestamp = timestamp;
+        return this;
+    }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + ( propertyTypeFqn != null ? propertyTypeFqn.hashCode() : 0 );
+        result = 31 * result + ( timestamp != null ? timestamp.hashCode() : 0 );
         return result;
     }
 
@@ -66,7 +80,16 @@ public class PropertyTypeInEntitySetAclRequest extends EntitySetAclRequest {
 
         PropertyTypeInEntitySetAclRequest that = (PropertyTypeInEntitySetAclRequest) obj;
 
+        if ( timestamp != null ? !timestamp.equals( that.timestamp ) : that.timestamp != null )
+            return false;
         return propertyTypeFqn != null ? propertyTypeFqn.equals( that.propertyTypeFqn ) : that.propertyTypeFqn == null;
+    }
+
+    @Override
+    public String toString() {
+        return "PropertyTypeInEntitySetAclRequest [propertyTypeFqn=" + propertyTypeFqn + ", timestamp=" + timestamp
+                + ", entitySetName=" + entitySetName + ", principal=" + principal + ", action=" + action
+                + ", permissions=" + permissions + "]";
     }
 
     @JsonCreator
@@ -75,9 +98,10 @@ public class PropertyTypeInEntitySetAclRequest extends EntitySetAclRequest {
             @JsonProperty( SerializationConstants.ACTION ) Action action,
             @JsonProperty( SerializationConstants.NAME_FIELD ) String entitySetName,
             @JsonProperty( SerializationConstants.PROPERTY_FIELD ) FullQualifiedName propertyTypeFqn,
-            @JsonProperty( SerializationConstants.PERMISSIONS ) Set<Permission> permissions ) {
+            @JsonProperty( SerializationConstants.PERMISSIONS ) EnumSet<Permission> permissions,
+            @JsonProperty( SerializationConstants.TIMESTAMP ) String timestamp ) {
         return new PropertyTypeInEntitySetAclRequest().setPrincipal( principal ).setAction( action ).setName( entitySetName )
-                .setPropertyType( propertyTypeFqn ).setPermissions( permissions );
+                .setPropertyType( propertyTypeFqn ).setPermissions( permissions ).setTimestamp( timestamp );
     }
 
 }
