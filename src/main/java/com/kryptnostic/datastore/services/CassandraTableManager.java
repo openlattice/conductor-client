@@ -3,6 +3,7 @@ package com.kryptnostic.datastore.services;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,26 +13,26 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
+import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
@@ -46,8 +47,8 @@ import com.kryptnostic.datastore.PrincipalType;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.Queries;
-import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
+import com.kryptnostic.datastore.util.Util;
 
 public class CassandraTableManager {
     static enum TableType {
@@ -147,6 +148,9 @@ public class CassandraTableManager {
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByUsernameAndEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestById;
+    private final Mapper<PropertyType>                                propertyTypeMapper;
+    private final Mapper<EntitySet>                                   entitySetMapper;
+    private final Mapper<EntityType>                                  entityTypeMapper;
 
     public CassandraTableManager(
             String keyspace,
@@ -738,7 +742,7 @@ public class CassandraTableManager {
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) ) ) );
-        
+
         this.getAclsRequestsByUsernameAndEntitySet = new HashMap<>();
 
         getAclsRequestsByUsernameAndEntitySet.put( PrincipalType.ROLE, session
@@ -752,7 +756,7 @@ public class CassandraTableManager {
                         .from( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
-        
+
         this.getAclsRequestsByEntitySet = new HashMap<>();
 
         getAclsRequestsByEntitySet.put( PrincipalType.ROLE, session
@@ -776,6 +780,10 @@ public class CassandraTableManager {
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() ) ) ) );
+
+        this.propertyTypeMapper = mm.mapper( PropertyType.class );
+        this.entitySetMapper = mm.mapper( EntitySet.class );
+        this.entityTypeMapper = mm.mapper( EntityType.class );
     }
 
     public String getKeyspace() {
@@ -909,24 +917,38 @@ public class CassandraTableManager {
     public void createEntityTypeTable( EntityType entityType, Map<FullQualifiedName, PropertyType> keyPropertyTypes ) {
         // Ensure that type name doesn't exist
         String entityTableQuery;
+        Set<PropertyType> propertyTypes = entityType.getProperties().stream()
+                .map( this::getPropertyType )
+                .collect( Collectors.toSet() );
 
+        String maybeTablename = null;
         do {
-            entityTableQuery = Queries.createEntityTable( keyspace, getTablenameForEntityType( entityType ) );
+            maybeTablename = getTablenameForEntityType( entityType );
+            entityTableQuery = Queries.createEntityTable( keyspace,
+                    maybeTablename,
+                    keyPropertyTypes,
+                    propertyTypes );
         } while ( !Util.wasLightweightTransactionApplied( session.execute( entityTableQuery ) ) );
 
+        Preconditions.checkState( StringUtils.isNotBlank( maybeTablename ),
+                "Tablename for creating entity type {} cannot be blank.",
+                entityType );
+        final String tablename = maybeTablename;
+        propertyTypes.stream()
+                .forEach( pt -> Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) );
         entityType.getKey().forEach( fqn -> {
             // TODO: Use elasticsearch for maintaining index instead of maintaining in Cassandra.
             /*
              * This makes sure that index tables are created if they do not exist. Other entity types may already be
              * using this property type as a key.
              */
-            PropertyType keyPropertyType = keyPropertyTypes.get( fqn );
-            String typename = keyPropertyType.getTypename();
-            Preconditions.checkArgument( StringUtils.isNotBlank( typename ),
-                    "Typename for key property type cannot be null" );
-            session.execute( Queries.createPropertyTableQuery( keyspace,
-                    getTablenameForPropertyIndex( keyPropertyType ),
-                    cc -> CassandraEdmMapping.getCassandraType( keyPropertyType.getDatatype() ) ) );
+            // PropertyType keyPropertyType = keyPropertyTypes.get( fqn );
+            // String typename = keyPropertyType.getTypename();
+            // Preconditions.checkArgument( StringUtils.isNotBlank( typename ),
+            // "Typename for key property type cannot be null" );
+            // session.execute( Queries.createPropertyTableQuery( keyspace,
+            // getTablenameForPropertyIndex( keyPropertyType ),
+            // cc -> CassandraEdmMapping.getCassandraType( keyPropertyType.getDatatype() ) ) );
 
             putPropertyIndexUpdateStatement( fqn );
         } );
@@ -1218,8 +1240,41 @@ public class CassandraTableManager {
                         .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) ) ) );
     }
 
+    public static class PreparedStatementMapping {
+        public PreparedStatement               stmt;
+        public Map<FullQualifiedName, Integer> mapping;
+    }
+
+    // TODO: Cache these calls per user.
+    public PreparedStatementMapping getInsertEntityPreparedStatement(
+            FullQualifiedName entityTypeFqn,
+            Collection<FullQualifiedName> writableProperties,
+            Optional<String> entitySetName ) {
+        PreparedStatementMapping psm = new PreparedStatementMapping();
+        psm.mapping = Maps.newHashMapWithExpectedSize( writableProperties.size() );
+
+        Insert query = QueryBuilder
+                .insertInto( keyspace, getTablenameForEntityType( entityTypeFqn ) )
+                .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() )
+                .value( CommonColumns.CLOCK.cql(),
+                        QueryBuilder.fcall( "toTimestamp", QueryBuilder.now() ) )
+                .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
+                .value( CommonColumns.ENTITY_SETS.cql(), QueryBuilder.bindMarker() )
+                .value( CommonColumns.SYNCIDS.cql(), QueryBuilder.bindMarker() );
+
+        int order = 4;
+        for ( FullQualifiedName fqn : writableProperties ) {
+            query = query.value( Queries.fqnToColumnName( fqn ),
+                    QueryBuilder.bindMarker( Queries.fqnToColumnName( fqn ) + "_bm" ) );
+            psm.mapping.put( fqn, order++ );
+        }
+
+        psm.stmt = session.prepare( query );
+        return psm;
+    }
+
     private void putEntityTypeInsertStatement( FullQualifiedName entityTypeFqn ) {
-        entityTypeInsertStatements.put( entityTypeFqn,
+        entityTypeInsertStatements.putIfAbsent( entityTypeFqn,
                 session.prepare( QueryBuilder
                         .insertInto( keyspace, getTablenameForEntityType( entityTypeFqn ) )
                         .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() )
@@ -1925,15 +1980,15 @@ public class CassandraTableManager {
      * Entity Set Owner methods
      */
     public String getOwnerForEntitySet( String entitySetName ) {
-        
+
         return Util.transformSafely( session.execute( this.getOwnerForEntitySet.bind( entitySetName ) ).one(),
                 r -> r.getString( CommonColumns.USER.cql() ) );
     }
 
     public boolean checkIfUserIsOwnerOfEntitySet( String username, String entitySetName ) {
         String owner = getOwnerForEntitySet( entitySetName );
-        
-        if( owner != null && !owner.isEmpty() ){
+
+        if ( owner != null && !owner.isEmpty() ) {
             return username.equals( owner );
         }
         return false;
@@ -1962,12 +2017,12 @@ public class CassandraTableManager {
 
     public boolean checkIfUserIsOwnerOfPermissionsRequest( String username, UUID id ) {
         String owner = getUsernameFromRequestId( id );
-        if( owner != null && !owner.isEmpty() ){
+        if ( owner != null && !owner.isEmpty() ) {
             return username.equals( owner );
         }
         return false;
     }
-    
+
     public void addPermissionsRequestForPropertyTypeInEntitySet(
             String username,
             Principal principal,
@@ -2045,12 +2100,12 @@ public class CassandraTableManager {
         session.execute( this.deleteLookupForAclsRequest.get( type ).bind( id ) );
     }
 
-    public String getEntitySetNameFromRequestId( UUID id ){
+    public String getEntitySetNameFromRequestId( UUID id ) {
         // Retrieve Row info by request id
         Row rowRole = session.execute( this.getAclsRequestById
                 .get( PrincipalType.ROLE )
                 .bind( id ) ).one();
-        
+
         if ( rowRole != null ) {
             return rowRole.getString( CommonColumns.ENTITY_SET.cql() );
         } else {
@@ -2065,13 +2120,13 @@ public class CassandraTableManager {
             }
         }
     }
-    
-    public String getUsernameFromRequestId( UUID id ){
+
+    public String getUsernameFromRequestId( UUID id ) {
         // Retrieve Row info by request id
         Row rowRole = session.execute( this.getAclsRequestById
                 .get( PrincipalType.ROLE )
                 .bind( id ) ).one();
-        
+
         if ( rowRole != null ) {
             return rowRole.getString( CommonColumns.USER.cql() );
         } else {
@@ -2086,7 +2141,7 @@ public class CassandraTableManager {
             }
         }
     }
-    
+
     public Iterable<Row> getAllReceivedRequestsForPermissionsOfUsername( PrincipalType type, String username ) {
         return StreamSupport.stream( getEntitySetsUserOwns( username ).spliterator(), false )
                 .map( entitySetName -> getAllReceivedRequestsForPermissionsOfEntitySet( type, entitySetName ) )
@@ -2098,14 +2153,28 @@ public class CassandraTableManager {
         return session
                 .execute( getAclsRequestsByEntitySet.get( type ).bind( entitySetName ) );
     }
-    
+
     public Iterable<Row> getAllSentRequestsForPermissions( PrincipalType type, String username ) {
         return session
                 .execute( getAclsRequestsByUsername.get( type ).bind( username ) );
     }
-    
+
     public Iterable<Row> getAllSentRequestsForPermissions( PrincipalType type, String username, String entitySetName ) {
         return session
                 .execute( getAclsRequestsByUsernameAndEntitySet.get( type ).bind( username, entitySetName ) );
+    }
+
+    public EntityType getEntityType( FullQualifiedName entityTypeFqn ) {
+
+        return Preconditions.checkNotNull(
+                entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ),
+                "Entity type does not exist" );
+
+    }
+
+    public PropertyType getPropertyType( FullQualifiedName propertyType ) {
+        return Preconditions.checkNotNull(
+                propertyTypeMapper.get( propertyType.getNamespace(), propertyType.getName() ),
+                "Property type does not exist" );
     }
 }

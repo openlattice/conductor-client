@@ -17,13 +17,34 @@ import com.kryptnostic.conductor.rpc.odata.Tables;
  *
  */
 public class CassandraTableBuilder {
-    private Optional<String>                  keyspace     = Optional.absent();
+
+    public static class ValueColumn {
+        private final String   cql;
+        private final DataType dataType;
+
+        public ValueColumn( String cql, DataType dataType ) {
+            this.cql = cql;
+            this.dataType = dataType;
+        }
+
+        public String cql() {
+            return cql;
+        }
+
+        public DataType getDataType() {
+            return dataType;
+        }
+    }
+
+    private Optional<String>                  keyspace               = Optional.absent();
     private final String                      name;
-    private boolean                           ifNotExists  = false;
-    private CommonColumns[]                   partition    = null;
-    private CommonColumns[]                   clustering   = new CommonColumns[] {};
-    private CommonColumns[]                   columns      = new CommonColumns[] {};
-    private Function<CommonColumns, DataType> typeResolver = c -> c.getType();
+    private boolean                           ifNotExists            = false;
+    private CommonColumns[]                   partition              = null;
+    private CommonColumns[]                   clustering             = new CommonColumns[] {};
+    private ValueColumn[]                     clusteringValueColumns = new ValueColumn[] {};
+    private CommonColumns[]                   columns                = new CommonColumns[] {};
+    private ValueColumn[]                     valueColumns           = new ValueColumn[] {};
+    private Function<CommonColumns, DataType> typeResolver           = c -> c.getType();
 
     public CassandraTableBuilder( String keyspace, Tables name ) {
         this( name.getTableName() );
@@ -53,9 +74,21 @@ public class CassandraTableBuilder {
         return this;
     }
 
+    public CassandraTableBuilder clusteringColumns( ValueColumn... clusteringValueColumns ) {
+        this.clusteringValueColumns = Preconditions.checkNotNull( clusteringValueColumns );
+        Arrays.asList( clusteringValueColumns ).forEach( Preconditions::checkNotNull );
+        return this;
+    }
+
     public CassandraTableBuilder columns( CommonColumns... columns ) {
         this.columns = Preconditions.checkNotNull( columns );
         Arrays.asList( columns ).forEach( Preconditions::checkNotNull );
+        return this;
+    }
+
+    public CassandraTableBuilder columns( ValueColumn... valueColumns ) {
+        this.valueColumns = Preconditions.checkNotNull( valueColumns );
+        Arrays.asList( valueColumns ).forEach( Preconditions::checkNotNull );
         return this;
     }
 
@@ -88,21 +121,29 @@ public class CassandraTableBuilder {
         if ( clustering.length > 0 ) {
             appendColumnDefs( query, clustering );
         }
+
+        if ( clusteringValueColumns.length > 0 ) {
+            appendColumnDefs( query, clusteringValueColumns );
+        }
+
         if ( columns.length > 0 ) {
             appendColumnDefs( query, columns );
+        }
+        if ( valueColumns.length > 0 ) {
+            appendColumnDefs( query, valueColumns );
         }
 
         // extra comma from appendColumns is already included
         query.append( " PRIMARY KEY (" );
 
-        //
+        // Only add if compound partition key
         if ( this.partition.length > 1 ) {
             query.append( " ( " );
         }
 
         query.append( getPrimaryKeyDef( partition ) );
 
-        //
+        // Only add if compound partition key
         if ( this.partition.length > 1 ) {
             query.append( " ) " );
         }
@@ -112,11 +153,30 @@ public class CassandraTableBuilder {
             query.append( getPrimaryKeyDef( clustering ) );
         }
 
+        if ( clusteringValueColumns.length > 0 ) {
+            query.append( ", " );
+            query.append( getPrimaryKeyDef( clustering ) );
+        }
+
         query.append( " ) )" );
         return query.toString();
     }
 
     private static String getPrimaryKeyDef( CommonColumns[] columns ) {
+        StringBuilder builder = new StringBuilder();
+
+        int len = columns.length - 1;
+        for ( int i = 0; i < len; ++i ) {
+            builder
+                    .append( columns[ i ].cql() ).append( "," );
+        }
+        builder
+                .append( columns[ len ].cql() );
+
+        return builder.toString();
+    }
+
+    private static String getPrimaryKeyDef( ValueColumn[] columns ) {
         StringBuilder builder = new StringBuilder();
 
         int len = columns.length - 1;
@@ -142,4 +202,18 @@ public class CassandraTableBuilder {
         }
         return builder;
     }
+
+    private StringBuilder appendColumnDefs(
+            StringBuilder builder,
+            ValueColumn[] columns ) {
+        for ( int i = 0; i < columns.length; ++i ) {
+            builder
+                    .append( columns[ i ].cql() )
+                    .append( " " )
+                    .append( columns[ i ].getDataType().toString() )
+                    .append( "," );
+        }
+        return builder;
+    }
+
 }
