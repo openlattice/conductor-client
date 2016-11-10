@@ -21,7 +21,7 @@ public final class DatastoreConstants {
     
     // ACL TABLES
     public static final String ENTITY_TYPES_ROLES_ACLS_TABLE   = "entity_types_roles_acls";
-    public static final String ENTITY_TYPES_USERS_ACLS_TABLE   = "entity_types_users_acls_by_entity_types";
+    public static final String ENTITY_TYPES_USERS_ACLS_TABLE   = "entity_types_users_acls";
     
     public static final String ENTITY_SETS_ROLES_ACLS_TABLE    = "entity_sets_roles_acls";
     public static final String ENTITY_SETS_USERS_ACLS_TABLE    = "entity_sets_users_acls";

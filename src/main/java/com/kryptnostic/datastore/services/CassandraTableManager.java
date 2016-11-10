@@ -1434,6 +1434,10 @@ public class CassandraTableManager {
     private void deleteEntityTypeFromEntityTypesAclsTable( PrincipalType type, FullQualifiedName entityTypeFqn ){
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         ResultSet rs = session.execute( this.getPermissionsForEntityTypeByType.get( type ).bind( entityTypeFqn ) );
+        
+        for( Row row : rs ){
+            
+        }
     }
 
     public void deleteRoleAndTypeFromEntityTypesAclsTable( String role, FullQualifiedName entityTypeFqn ) {
