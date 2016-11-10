@@ -48,6 +48,8 @@ public interface EdmManager {
     EntitySet getEntitySet( String name );
 
     Iterable<EntitySet> getEntitySets();
+    
+    Iterable<String> getEntitySetNamesUserOwns( String username );
 
     void deleteEntitySet( EntitySet entitySet );
     

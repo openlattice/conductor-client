@@ -604,6 +604,11 @@ public class EdmService implements EdmManager {
                 .map( entitySet -> EdmDetailsAdapter.setEntitySetTypename( tableManager, entitySet ) )
                 .collect( Collectors.toList() );
     }
+    
+    @Override
+    public Iterable<String> getEntitySetNamesUserOwns( String username ){
+        return tableManager.getEntitySetsUserOwns( username );
+    }
 
     @Override
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
