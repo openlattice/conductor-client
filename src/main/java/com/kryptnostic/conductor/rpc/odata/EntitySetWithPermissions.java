@@ -13,13 +13,23 @@ import com.kryptnostic.datastore.services.requests.EntitySetAclRequest;
 
 public class EntitySetWithPermissions extends EntitySet {
     private EnumSet<Permission> permissions;
+    private Boolean isOwner;
 
     public EnumSet<Permission> getPermissions() {
         return permissions;
     }
+    
+    public Boolean getIsOwner() {
+        return isOwner;
+    }
 
     public EntitySetWithPermissions setPermissions( EnumSet<Permission> permissions ) {
         this.permissions = permissions;
+        return this;
+    }
+
+    public EntitySetWithPermissions setIsOwner( boolean isOwner ) {
+        this.isOwner = isOwner;
         return this;
     }
     
@@ -59,6 +69,7 @@ public class EntitySetWithPermissions extends EntitySet {
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + ( ( permissions == null ) ? 0 : permissions.hashCode() );
+        result = 31 * result + ( ( isOwner == null ) ? 0 : isOwner.hashCode() );
         return result;
     }
     
@@ -73,13 +84,15 @@ public class EntitySetWithPermissions extends EntitySet {
 
         EntitySetWithPermissions that = (EntitySetWithPermissions) obj;
 
+        if ( isOwner != null ? !isOwner.equals( that.isOwner ) : that.isOwner != null )
+            return false;
         return permissions != null ? permissions.equals( that.permissions ) : that.permissions == null;
     }
 
     @Override
     public String toString() {
-        return "EntitySetWithPermissions [permissions=" + permissions + ", typename=" + typename + ", name=" + name
-                + ", title=" + title + ", type=" + type + "]";
+        return "EntitySetWithPermissions [permissions=" + permissions + ", isOwner=" + isOwner + ", typename="
+                + typename + ", name=" + name + ", title=" + title + ", type=" + type + "]";
     }
 
     @JsonCreator
@@ -87,11 +100,13 @@ public class EntitySetWithPermissions extends EntitySet {
             @JsonProperty( SerializationConstants.TYPE_FIELD) FullQualifiedName type,
             @JsonProperty( SerializationConstants.NAME_FIELD) String name,     
             @JsonProperty( SerializationConstants.TITLE_FIELD) String title,
-            @JsonProperty( SerializationConstants.PERMISSIONS) EnumSet<Permission> permissions) {
+            @JsonProperty( SerializationConstants.PERMISSIONS) EnumSet<Permission> permissions,
+            @JsonProperty( SerializationConstants.IS_OWNER) Boolean isOwner ) {
         return new EntitySetWithPermissions()
                 .setType( type )
                 .setName( name )
                 .setTitle( title )
-                .setPermissions( permissions );
+                .setPermissions( permissions )
+                .setIsOwner( isOwner );
     }
 }
