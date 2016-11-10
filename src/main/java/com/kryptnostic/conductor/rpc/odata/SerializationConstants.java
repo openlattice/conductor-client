@@ -23,5 +23,5 @@ public final class SerializationConstants {
     public static final String PERMISSIONS      = "permissions";
     
     public static final String TIMESTAMP        = "timestamp";
-
+    public static final String REQUEST_ID       = "requestId";
 }

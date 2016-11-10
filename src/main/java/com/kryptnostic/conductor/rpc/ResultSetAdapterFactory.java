@@ -105,6 +105,7 @@ public final class ResultSetAdapterFactory {
                 .setName( row.getString( CommonColumns.ENTITY_SET.cql() ) )
                 .setPropertyType( row.get( CommonColumns.PROPERTY_TYPE.cql(), FullQualifiedName.class ))
                 .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ))
-                .setTimestamp( row.get( CommonColumns.CLOCK.cql(), Instant.class ).toString() );
+                .setTimestamp( row.get( CommonColumns.CLOCK.cql(), Instant.class ).toString() )
+                .setRequestId( row.getUUID( CommonColumns.REQUESTID.cql() ) );
     }
 }
