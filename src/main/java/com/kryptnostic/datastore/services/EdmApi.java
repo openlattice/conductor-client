@@ -168,7 +168,7 @@ public interface EdmApi {
      * @return
      */
     @GET( ENTITY_SETS_BASE_PATH )
-    Iterable<? extends EntitySet> getEntitySets( @Query( IS_OWNER ) Boolean isOwner );
+    Iterable<EntitySetWithPermissions> getEntitySets( @Query( IS_OWNER ) Boolean isOwner );
 
     @GET( ENTITY_SETS_BASE_PATH + NAME_PATH )
     EntitySet getEntitySet( @Path( NAME ) String entitySetName );
