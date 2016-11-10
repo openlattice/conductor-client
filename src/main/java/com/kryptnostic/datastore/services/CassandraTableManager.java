@@ -107,10 +107,12 @@ public class CassandraTableManager {
     private final Map<PrincipalType, PreparedStatement>               addPermissionsForEntityType;
     private final Map<PrincipalType, PreparedStatement>               setPermissionsForEntityType;
     private final Map<PrincipalType, PreparedStatement>               getPermissionsForEntityType;
+    private final Map<PrincipalType, PreparedStatement>               getPermissionsForEntityTypeByType;
     private final Map<PrincipalType, PreparedStatement>               deleteRowFromEntityTypesAclsTable;
     private final Map<PrincipalType, PreparedStatement>               addPermissionsForEntitySet;
     private final Map<PrincipalType, PreparedStatement>               setPermissionsForEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getPermissionsForEntitySet;
+    private final Map<PrincipalType, PreparedStatement>               getPermissionsForEntitySetBySet;
     private final Map<PrincipalType, PreparedStatement>               deleteRowFromEntitySetsAclsTable;
 
     private final Map<PrincipalType, PreparedStatement>               addPermissionsForPropertyTypeInEntityType;
@@ -122,7 +124,6 @@ public class CassandraTableManager {
     private final Map<PrincipalType, PreparedStatement>               getPermissionsForPropertyTypeInEntitySet;
     private final Map<PrincipalType, PreparedStatement>               deleteRowFromPropertyTypesInEntitySetsAclsTable;
 
-    private final Map<PrincipalType, PreparedStatement>               getAclsForEntitySet;
     private final PreparedStatement                                   getOwnerForEntitySet;
     private final PreparedStatement                                   getEntitySetsUserOwns;
     private final PreparedStatement                                   updateOwnerForEntitySet;
@@ -313,6 +314,18 @@ public class CassandraTableManager {
                         .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
+        
+        this.getPermissionsForEntityTypeByType = new HashMap<>();
+
+        getPermissionsForEntityTypeByType.put( PrincipalType.ROLE,
+                session.prepare( QueryBuilder.select()
+                        .from( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
+
+        getPermissionsForEntityTypeByType.put( PrincipalType.USER,
+                session.prepare( QueryBuilder.select()
+                        .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.deleteRowFromEntityTypesAclsTable = new HashMap<>();
 
@@ -374,6 +387,18 @@ public class CassandraTableManager {
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
+        this.getPermissionsForEntitySetBySet = new HashMap<>();
+
+        this.getPermissionsForEntitySetBySet.put( PrincipalType.ROLE,
+                session.prepare( QueryBuilder.select()
+                        .from( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
+
+        this.getPermissionsForEntitySetBySet.put( PrincipalType.USER,
+                session.prepare( QueryBuilder.select()
+                        .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
+        
         this.deleteRowFromEntitySetsAclsTable = new HashMap<>();
 
         deleteRowFromEntitySetsAclsTable.put( PrincipalType.ROLE,
@@ -387,21 +412,6 @@ public class CassandraTableManager {
                         .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
-
-        /**
-         * Retrieving permissions
-         */
-        this.getAclsForEntitySet = new HashMap<>();
-
-        this.getAclsForEntitySet.put( PrincipalType.ROLE,
-                session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
-
-        this.getAclsForEntitySet.put( PrincipalType.USER,
-                session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         /**
          * Entity Set Owner updates
@@ -1417,8 +1427,13 @@ public class CassandraTableManager {
     }
 
     public void deleteEntityTypeFromEntityTypesAclsTable( FullQualifiedName entityTypeFqn ) {
-        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         // TODO rewrite this again
+        
+    }
+    
+    private void deleteEntityTypeFromEntityTypesAclsTable( PrincipalType type, FullQualifiedName entityTypeFqn ){
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        ResultSet rs = session.execute( this.getPermissionsForEntityTypeByType.get( type ).bind( entityTypeFqn ) );
     }
 
     public void deleteRoleAndTypeFromEntityTypesAclsTable( String role, FullQualifiedName entityTypeFqn ) {
@@ -1504,11 +1519,11 @@ public class CassandraTableManager {
     }
 
     public ResultSet getRoleAclsForEntitySet( String entitySetName ) {
-        return session.execute( getAclsForEntitySet.get( PrincipalType.ROLE ).bind( entitySetName ) );
+        return session.execute( getPermissionsForEntitySetBySet.get( PrincipalType.ROLE ).bind( entitySetName ) );
     }
 
     public ResultSet getUserAclsForEntitySet( String entitySetName ) {
-        return session.execute( getAclsForEntitySet.get( PrincipalType.USER ).bind( entitySetName ) );
+        return session.execute( getPermissionsForEntitySetBySet.get( PrincipalType.USER ).bind( entitySetName ) );
     }
 
     public EnumSet<Permission> getRolePermissionsForPropertyTypeInEntityType(
@@ -1757,6 +1772,7 @@ public class CassandraTableManager {
             FullQualifiedName propertyTypeFqn ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
         // TODO: rewrite this
+        
     }
 
     public void deleteSetFromPropertyTypesInEntitySetsAclsTable( String entitySetName ) {
