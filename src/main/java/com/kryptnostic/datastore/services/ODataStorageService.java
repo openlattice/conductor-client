@@ -25,6 +25,7 @@ import org.apache.olingo.server.api.uri.UriParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
@@ -152,24 +153,24 @@ public class ODataStorageService {
             String entitySetName,
             FullQualifiedName entityFqn,
             Entity requestEntity ) {
-        PreparedStatement createQuery = Preconditions.checkNotNull(
-                tableManager.getInsertEntityPreparedStatement( entityFqn ),
-                "Insert data prepared statement does not exist." );
+//        PreparedStatement createQuery = Preconditions.checkNotNull(
+//                tableManager.getInsertEntityPreparedStatement( entityFqn ),
+//                "Insert data prepared statement does not exist." );
 
-        PreparedStatement entityIdTypenameLookupQuery = Preconditions.checkNotNull(
-                tableManager.getUpdateEntityIdTypenamePreparedStatement( entityFqn ),
-                "Entity Id typename lookup query cannot be null" );
+//        PreparedStatement entityIdTypenameLookupQuery = Preconditions.checkNotNull(
+//                tableManager.getUpdateEntityIdTypenamePreparedStatement( entityFqn ),
+//                "Entity Id typename lookup query cannot be null" );
 
         // this is dangerous, but fairly common practice.
         // best way to fix is to have large pool of generated UUIDs to pull from that can be replenished in bulk.
         UUID entityId = UUID.randomUUID();
         String typename = tableManager.getTypenameForEntityType( entityFqn );
-        BoundStatement boundQuery = createQuery.bind( entityId,
-                typename,
-                ImmutableSet.of( entitySetName ),
-                ImmutableList.of( syncId ) );
-        session.execute( boundQuery );
-        session.execute( entityIdTypenameLookupQuery.bind( typename, entityId ) );
+//        BoundStatement boundQuery = createQuery.bind( entityId,
+//                typename,
+//                ImmutableSet.of( entitySetName ),
+//                ImmutableList.of( syncId ) );
+//        session.execute( boundQuery );
+//        session.execute( entityIdTypenameLookupQuery.bind( typename, entityId ) );
         EntityType entityType = dms.getEntityType( entityFqn.getNamespace(), entityFqn.getName() );
         writeProperties( entityType,
                 entitySetName,
@@ -206,8 +207,8 @@ public class ODataStorageService {
         Object[] bindList = new Object[ 4 + cqm.mapping.size() ];
         bindList[ 0 ] = entityId;
         bindList[ 1 ] = entityType.getTypename();
-        bindList[ 2 ] = entitySetName;
-        bindList[ 3 ] = syncId;
+        bindList[ 2 ] = StringUtils.isBlank( entitySetName ) ? ImmutableSet.of() : ImmutableSet.of( entitySetName );
+        bindList[ 3 ] = ImmutableList.of( syncId );
 
         properties.forEach( property -> {
             bindList[ cqm.mapping.get( fqns.get( property ) ) ] = property.getValue();

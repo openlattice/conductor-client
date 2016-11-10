@@ -789,11 +789,11 @@ public class CassandraTableManager {
     }
 
     public void registerEntityTypesAndAssociatedPropertyTypes( EntityType entityType ) {
-        putEntityTypeInsertStatement( entityType.getFullQualifiedName() );
-        putEntityTypeUpdateStatement( entityType.getFullQualifiedName() );
-        putEntityIdToTypeUpdateStatement( entityType.getFullQualifiedName() );
-        entityType.getKey().forEach( fqn -> putPropertyIndexUpdateStatement( fqn ) );
-        entityType.getProperties().forEach( fqn -> putPropertyTypeUpdateStatement( fqn ) );
+        // putEntityTypeInsertStatement( entityType.getFullQualifiedName() );
+        // putEntityTypeUpdateStatement( entityType.getFullQualifiedName() );
+        // putEntityIdToTypeUpdateStatement( entityType.getFullQualifiedName() );
+        // entityType.getKey().forEach( fqn -> putPropertyIndexUpdateStatement( fqn ) );
+        // entityType.getProperties().forEach( fqn -> putPropertyTypeUpdateStatement( fqn ) );
     }
 
     public PreparedStatement getInsertEntityPreparedStatement( EntityType entityType ) {
@@ -848,6 +848,7 @@ public class CassandraTableManager {
                 .collect( Collectors.toSet() );
 
         String maybeTablename = null;
+        // maybeTablename = null;
         do {
             maybeTablename = getTablenameForEntityType( entityType );
             entityTableQuery = Queries.createEntityTable( keyspace,
@@ -876,11 +877,11 @@ public class CassandraTableManager {
             // getTablenameForPropertyIndex( keyPropertyType ),
             // cc -> CassandraEdmMapping.getCassandraType( keyPropertyType.getDatatype() ) ) );
 
-            putPropertyIndexUpdateStatement( fqn );
+            // putPropertyIndexUpdateStatement( fqn );
         } );
-        putEntityTypeInsertStatement( entityType.getFullQualifiedName() );
-        putEntityTypeUpdateStatement( entityType.getFullQualifiedName() );
-        putEntityIdToTypeUpdateStatement( entityType.getFullQualifiedName() );
+        // putEntityTypeInsertStatement( entityType.getFullQualifiedName() );
+        // putEntityTypeUpdateStatement( entityType.getFullQualifiedName() );
+        // putEntityIdToTypeUpdateStatement( entityType.getFullQualifiedName() );
         // Loop until table creation succeeds.
     }
 
@@ -1294,7 +1295,7 @@ public class CassandraTableManager {
     }
 
     public static String getTablename( TableType tableType, UUID aclId, String suffix ) {
-        return tableType.name() + Util.toUnhyphenatedString( aclId ) + "_" + suffix;
+        return tableType.name() + "_" + suffix;
     }
 
     public static String generateTypename() {
