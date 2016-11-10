@@ -509,7 +509,7 @@ public class PermissionsService implements PermissionsManager {
 
     @Override
     public void removePermissionsForPropertyTypeInEntityType( FullQualifiedName entityTypeFqn ) {
-        tableManager.deleteTypesFromPropertyTypesInEntityTypesAclsTable( entityTypeFqn );
+        tableManager.deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable( entityTypeFqn );
     }
 
     @Override

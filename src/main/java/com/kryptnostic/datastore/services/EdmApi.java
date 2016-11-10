@@ -168,7 +168,7 @@ public interface EdmApi {
      * @return
      */
     @GET( ENTITY_SETS_BASE_PATH )
-    Iterable<? extends EntitySet> getEntitySets( @Query( IS_OWNER ) Boolean isOwner );
+    Iterable<EntitySetWithPermissions> getEntitySets( @Query( IS_OWNER ) Boolean isOwner );
 
     @GET( ENTITY_SETS_BASE_PATH + NAME_PATH )
     EntitySet getEntitySet( @Path( NAME ) String entitySetName );
@@ -215,8 +215,10 @@ public interface EdmApi {
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> properties
     );
-
-    @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
+    
+    //Debug by Ho Chung
+    @POST( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
+//    @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
     Response removePropertyTypesFromEntityType(
             @Path( NAMESPACE ) String namespace,
             @Path( NAME ) String name,

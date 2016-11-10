@@ -149,7 +149,9 @@ public interface PermissionsApi {
      *            associated to each entity type are removed.
      * @return
      */
-    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+    //Debug by Ho Chung
+    @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+//    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
     Response removeAllPropertyTypesInEntityTypeAcls( @Body Set<FullQualifiedName> entityTypeFqns );
 
     /**
@@ -171,7 +173,9 @@ public interface PermissionsApi {
      *            them will be removed.
      * @return
      */
-    @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+    //Debug by Ho Chung
+    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+//    @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
     Response removeAllPropertyTypesInEntitySetAcls( @Body Set<String> entitySetNames );
 
     /***************************************
