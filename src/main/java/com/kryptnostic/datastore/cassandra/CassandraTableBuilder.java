@@ -155,7 +155,7 @@ public class CassandraTableBuilder {
 
         if ( clusteringValueColumns.length > 0 ) {
             query.append( ", " );
-            query.append( getPrimaryKeyDef( clustering ) );
+            query.append( getPrimaryKeyDef( clusteringValueColumns ) );
         }
 
         query.append( " ) )" );

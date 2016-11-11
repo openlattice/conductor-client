@@ -1,18 +1,21 @@
 package com.kryptnostic.datastore.cassandra;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.google.common.base.Preconditions;
 import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Tables;
@@ -244,24 +247,31 @@ public final class Queries {
             Map<FullQualifiedName, PropertyType> keyPropertyTypes,
             Collection<PropertyType> propertyTypes ) {
 
+        Set<FullQualifiedName> kfqns = keyPropertyTypes.values().stream().map( pt -> pt.getFullQualifiedName() )
+                .collect( Collectors.toSet() );
         Stream<PropertyType> streamPropertyTypes = keyPropertyTypes.values().stream();
-        
+
         Stream<ValueColumn> streamClusteringValueColumns = streamPropertyTypes
                 .map( pt -> new CassandraTableBuilder.ValueColumn(
                         fqnToColumnName( pt.getFullQualifiedName() ),
                         CassandraEdmMapping.getCassandraType( pt.getDatatype() ) ) );
-        
+
         Stream<ValueColumn> streamValueColumns = propertyTypes.stream()
-                .filter( e -> !keyPropertyTypes.containsKey( e ) )
+                .filter( e -> !kfqns.contains( e.getFullQualifiedName() ) )
                 .map( svc -> new CassandraTableBuilder.ValueColumn(
                         fqnToColumnName( svc.getFullQualifiedName() ),
                         CassandraEdmMapping.getCassandraType( svc.getDatatype() ) ) );
-        
+
         ValueColumn[] clusteringValueColumns = streamClusteringValueColumns.collect( Collectors.toSet() )
                 .toArray( new CassandraTableBuilder.ValueColumn[ 0 ] );
         ValueColumn[] valueColumns = streamValueColumns.collect( Collectors.toSet() )
                 .toArray( new CassandraTableBuilder.ValueColumn[ 0 ] );
-        //TODO: Decide if clock needs to be kept.
+        // List<ValueColumn> vcs = java.util.Arrays.asList( valueColumns ).stream()
+        // .filter( vc -> vc.cql().contains( "key" ) ).collect( Collectors.toList() );
+        //
+        // List<ValueColumn> svcs = java.util.Arrays.asList( clusteringValueColumns ).stream()
+        // .filter( vc -> vc.cql().contains( "key" ) ).collect( Collectors.toList() );
+        // TODO: Decide if clock needs to be kept.
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
                 .partitionKey( CommonColumns.ENTITYID )
@@ -273,11 +283,14 @@ public final class Queries {
     }
 
     public static String fqnToColumnName( FullQualifiedName fqn ) {
-        return fqn.getFullQualifiedNameAsString().replaceAll( "_", "--" ).replaceAll( ".", "_" );
+        Preconditions.checkState( !StringUtils.endsWith( fqn.getNamespace(), "_" ) );
+        Preconditions.checkState( !StringUtils.startsWith( fqn.getName(), "_" ) );
+        return StringUtils.replace( StringUtils.replace( fqn.getFullQualifiedNameAsString(), "_", "__" ), ".", "_" );
+        // return fqn.getFullQualifiedNameAsString().replaceAll( "_", "__" ).replaceAll( ".", "_" );
     }
 
     public static String columnNameToFqn( FullQualifiedName fqn ) {
-        return fqn.getFullQualifiedNameAsString().replaceAll( "_", "." ).replaceAll( "__", "_" );
+        return fqn.getFullQualifiedNameAsString().replaceAll( "__", "_" ).replaceAll( "_", "." );
     }
 
     public static final String createEntityTableIndex(

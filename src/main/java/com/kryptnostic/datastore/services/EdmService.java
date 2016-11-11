@@ -39,6 +39,7 @@ import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.datastore.Principal;
 import com.kryptnostic.datastore.PrincipalType;
+import com.kryptnostic.datastore.cassandra.Queries;
 import com.kryptnostic.datastore.exceptions.BadRequestException;
 import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
@@ -416,7 +417,7 @@ public class EdmService implements EdmManager {
         if ( checkedValid && doesNotExist ) {
             boolean entityCreated = false;
             // Generate the typename for this type
-            String typename = CassandraTableManager.generateTypename();
+            String typename = Queries.fqnToColumnName( entityType.getFullQualifiedName() );//CassandraTableManager.generateTypename();
             entityType.setTypename( typename );
 
             entityCreated = Util.wasLightweightTransactionApplied(
