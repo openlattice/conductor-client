@@ -17,12 +17,15 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
@@ -51,6 +54,8 @@ import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import com.kryptnostic.datastore.util.Util;
 
 public class CassandraTableManager {
+    private static final Logger logger = LoggerFactory.getLogger( CassandraTableManager.class );
+
     static enum TableType {
         entity_,
         index_,
@@ -1269,8 +1274,11 @@ public class CassandraTableManager {
                     QueryBuilder.bindMarker( Queries.fqnToColumnName( fqn ) + "_bm" ) );
             psm.mapping.put( fqn, order++ );
         }
-
-        psm.stmt = session.prepare( query );
+        try {
+            psm.stmt = session.prepare( query );
+        } catch ( InvalidQueryException e ) {
+            logger.error( "Invalid query exception: {}", query, e );
+        }
         return psm;
     }
 
@@ -1369,7 +1377,7 @@ public class CassandraTableManager {
     }
 
     public static String getTablename( TableType tableType, UUID aclId, String suffix ) {
-        return tableType.name() + "_" + suffix;
+        return tableType.name() + suffix;
     }
 
     public static String generateTypename() {
