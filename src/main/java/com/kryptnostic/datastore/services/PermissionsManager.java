@@ -83,8 +83,10 @@ public interface PermissionsManager {
     Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntityTypeAclsForUser( String username, List<String> currentRoles, FullQualifiedName entityTypeFqn );
 
     Iterable<PermissionsInfo> getEntitySetAclsForOwner( String entitySetName );
-    
-    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForOwner( String entitySetName, Principal principal );
+
+    Iterable<PermissionsInfo> getPropertyTypesInEntitySetAclsForOwner( String entitySetName, FullQualifiedName propertyTypeFqn );
+
+    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsOfPrincipalForOwner( String entitySetName, Principal principal );
     
     // Methods for requesting permissions
     

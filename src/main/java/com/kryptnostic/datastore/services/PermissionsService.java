@@ -566,7 +566,15 @@ public class PermissionsService implements PermissionsManager {
     }
     
     @Override
-    public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForOwner( String entitySetName, Principal principal ){
+    public Iterable<PermissionsInfo> getPropertyTypesInEntitySetAclsForOwner( String entitySetName, FullQualifiedName propertyTypeFqn ){
+        Iterable<PermissionsInfo> roleAcls = Iterables.transform( tableManager.getRoleAclsForPropertyTypeInEntitySetBySetAndType( entitySetName, propertyTypeFqn ), ResultSetAdapterFactory::mapRoleRowToPermissionsInfo );
+        Iterable<PermissionsInfo> userAcls = Iterables.transform( tableManager.getUserAclsForPropertyTypeInEntitySetBySetAndType( entitySetName, propertyTypeFqn ), ResultSetAdapterFactory::mapUserRowToPermissionsInfo );
+        
+        return Iterables.concat( roleAcls, userAcls );
+    }
+    
+    @Override
+    public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsOfPrincipalForOwner( String entitySetName, Principal principal ){
         EntitySet es = EdmDetailsAdapter.setEntitySetTypename( tableManager, edmStore.getEntitySet( entitySetName ) );    
         EntityType entityType = entityTypeMapper.get( es.getType().getNamespace(), es.getType().getName() );
         

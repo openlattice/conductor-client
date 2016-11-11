@@ -149,9 +149,7 @@ public interface PermissionsApi {
      *            associated to each entity type are removed.
      * @return
      */
-    //Debug by Ho Chung
-    @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
-//    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+    @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
     Response removeAllPropertyTypesInEntityTypeAcls( @Body Set<FullQualifiedName> entityTypeFqns );
 
     /**
@@ -173,9 +171,7 @@ public interface PermissionsApi {
      *            them will be removed.
      * @return
      */
-    //Debug by Ho Chung
-    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
-//    @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
+    @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH + ALL_PATH )
     Response removeAllPropertyTypesInEntitySetAcls( @Body Set<String> entitySetNames );
 
     /***************************************
@@ -236,6 +232,16 @@ public interface PermissionsApi {
      */
     @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + OWNER_PATH )
     Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForOwner( @Query( NAME ) String entitySetName, @Body Principal principal );
+
+    /**
+     * Get all permissions of one property type of an entity set. 
+     * This is a method for entity set owner to retrieve current permissions of the entity set.
+     * @param entitySetName
+     * @param propertyTypeFqn
+     * @return
+     */
+    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + OWNER_PATH + PROPERTY_TYPE_BASE_PATH )
+    Iterable<PermissionsInfo> getPropertyTypesInEntitySetAclsForOwner( @Query( NAME ) String entitySetName, @Body FullQualifiedName propertyTypeFqn );
 
     /***************************************
      * Methods for requesting permissions

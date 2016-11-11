@@ -1663,7 +1663,17 @@ public class CassandraTableManager {
     public ResultSet getUserAclsForEntitySet( String entitySetName ) {
         return session.execute( getPermissionsForEntitySetBySet.get( PrincipalType.USER ).bind( entitySetName ) );
     }
+    
+    public ResultSet getRoleAclsForPropertyTypeInEntitySetBySetAndType( String entitySetName, FullQualifiedName propertyTypeFqn ) {
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
+        return session.execute( getPermissionsForPropertyTypeInEntitySetBySetAndType.get( PrincipalType.ROLE ).bind( entitySetName, propertyTypeTypename ) );
+    }
 
+    public ResultSet getUserAclsForPropertyTypeInEntitySetBySetAndType( String entitySetName, FullQualifiedName propertyTypeFqn ) {
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
+        return session.execute( getPermissionsForPropertyTypeInEntitySetBySetAndType.get( PrincipalType.USER ).bind( entitySetName, propertyTypeTypename ) );
+    }
+    
     public EnumSet<Permission> getRolePermissionsForPropertyTypeInEntityType(
             String role,
             FullQualifiedName entityTypeFqn,
