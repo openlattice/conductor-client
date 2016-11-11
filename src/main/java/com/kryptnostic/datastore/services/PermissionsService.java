@@ -460,7 +460,7 @@ public class PermissionsService implements PermissionsManager {
             String user,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        return tableManager.getRolePermissionsForPropertyTypeInEntitySet( user,
+        return tableManager.getUserPermissionsForPropertyTypeInEntitySet( user,
                 entitySetName,
                 propertyTypeFqn );
     }
