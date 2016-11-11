@@ -215,7 +215,7 @@ public interface EdmApi {
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> properties
     );
-
+    
     @DELETE( ENTITY_TYPE_BASE_PATH + NAMESPACE_PATH + NAME_PATH + DELETE_PROPERTY_TYPES_PATH )
     Response removePropertyTypesFromEntityType(
             @Path( NAMESPACE ) String namespace,

@@ -62,7 +62,7 @@ public interface PermissionsApi {
      * - role: [String] role where access rights will be updated.
      * - action: [Enum add/set/remove] action for access rights 
      * - type: [FullQualifiedName] FullQualifiedName of entity type to be updated 
-     * - permissions: [Set<Enum discover/read/write/alter>] set of permissions to be added/set/removed, according to the action.
+     * - permissions: [Set &lt; Enum discover/read/write/alter &gt; ] set of permissions to be added/set/removed, according to the action.
      * @return
      */
     @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH )
@@ -76,7 +76,7 @@ public interface PermissionsApi {
      * - role: [String] role where access rights will be updated. 
      * - action: [Enum add/set/remove] action for access rights 
      * - name: [String] name of entity set to be updated 
-     * - permissions: [Set<Enum discover/read/write/alter>] set of permissions to be added/set/removed, according to the action.
+     * - permissions: [Set &lt; Enum discover/read/write/alter &gt; ] set of permissions to be added/set/removed, according to the action.
      * @return
      */
     @POST( CONTROLLER + ENTITY_SETS_BASE_PATH )
@@ -91,7 +91,7 @@ public interface PermissionsApi {
      * - action: [Enum add/set/remove] action for access rights 
      * - type: [FullQualifiedName] FullQualifiedName of entity type to be updated 
      * - properties: [FullQualifiedName] FullQualifiedName of property type to be updated 
-     * - permissions: [Set<Enum discover/read/write/alter>] set of permissions to be added/set/removed, according to the action.
+     * - permissions: [Set &lt; Enum discover/read/write/alter &gt; ] set of permissions to be added/set/removed, according to the action.
      * @return
      */
     @POST( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
@@ -106,7 +106,7 @@ public interface PermissionsApi {
      * - action: [Enum add/set/remove] action for access rights 
      * - name: [String] name of entity set to be updated 
      * - properties: [FullQualifiedName] FullQualifiedName of property type to be updated 
-     * - permissions: [Set<Enum discover/read/write/alter>] set of permissions to be added/set/removed, according to the action.
+     * - permissions: [Set &lt; Enum discover/read/write/alter &gt; ] set of permissions to be added/set/removed, according to the action.
      * @return
      */
     @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
@@ -137,7 +137,7 @@ public interface PermissionsApi {
      *            
      * Format of one PropertyTypeInEntityTypeAclRemovalRequest is as follows: 
      * - type: [FullQualifiedName] FullQualifiedNam of entity type 
-     * - properties: [Set<FullQualifiedName>] FullQualifiedName of properties to be removed.
+     * - properties: [Set &lt; FullQualifiedName &gt; ] FullQualifiedName of properties to be removed.
      * @return
      */
     @DELETE( CONTROLLER + ENTITY_TYPE_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
@@ -145,7 +145,7 @@ public interface PermissionsApi {
 
     /**
      * 
-     * @param requests Set of FullQualifiedName of entity types, where the access rights of all property types
+     * @param entityTypeFqns Set of FullQualifiedName of entity types, where the access rights of all property types
      *            associated to each entity type are removed.
      * @return
      */
@@ -159,7 +159,7 @@ public interface PermissionsApi {
      *            
      * Format of one PropertyTypeInEntitySetAclRemovalRequest is as follows: 
      * - name: [String] name of the entity set 
-     * - properties: [Set<FullQualifiedName>] FullQualifiedName of properties to be removed.
+     * - properties: [Set &lt; FullQualifiedName &gt; ] FullQualifiedName of properties to be removed.
      * @return
      */
     @DELETE( CONTROLLER + ENTITY_SETS_BASE_PATH + PROPERTY_TYPE_BASE_PATH )
@@ -233,6 +233,16 @@ public interface PermissionsApi {
     @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + OWNER_PATH )
     Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForOwner( @Query( NAME ) String entitySetName, @Body Principal principal );
 
+    /**
+     * Get all permissions of one property type of an entity set. 
+     * This is a method for entity set owner to retrieve current permissions of the entity set.
+     * @param entitySetName
+     * @param propertyTypeFqn
+     * @return
+     */
+    @POST( CONTROLLER + ENTITY_SETS_BASE_PATH + OWNER_PATH + PROPERTY_TYPE_BASE_PATH )
+    Iterable<PermissionsInfo> getPropertyTypesInEntitySetAclsForOwner( @Query( NAME ) String entitySetName, @Body FullQualifiedName propertyTypeFqn );
+
     /***************************************
      * Methods for requesting permissions
      ***************************************/
@@ -245,7 +255,7 @@ public interface PermissionsApi {
      * - action: [Enum request] action for requesting rights 
      * - name: [String] name of entity set whose rights to be updated 
      * - properties: [FullQualifiedName] FullQualifiedName of property type whose rights to be updated. This field can be ignored, if one wishes to request access to the entity set itself.
-     * - permissions: [Set<Enum discover/read/write/alter>] set of permissions to be requested.
+     * - permissions: [Set &lt; Enum discover/read/write/alter &gt; ] set of permissions to be requested.
      * @param requests
      * @return
      */
