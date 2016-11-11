@@ -223,7 +223,7 @@ public class EdmService implements EdmManager {
          */
         if ( checkedValid && doesNotExist ) {
             boolean propertyCreated = false;
-            propertyType.setTypename( CassandraTableManager.generateTypename() );
+            propertyType.setTypename( Queries.fqnToColumnName( propertyType.getFullQualifiedName() ) );
             propertyCreated = Util.wasLightweightTransactionApplied(
                     edmStore.createPropertyTypeIfNotExists( propertyType.getNamespace(),
                             propertyType.getName(),
