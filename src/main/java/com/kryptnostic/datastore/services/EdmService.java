@@ -239,7 +239,7 @@ public class EdmService implements EdmManager {
                                         schemaFqn.getName(),
                                         ImmutableSet.of( propertyType.getFullQualifiedName() ) ) );
 
-                tableManager.createPropertyTypeTable( propertyType );
+//                tableManager.createPropertyTypeTable( propertyType );
                 tableManager.insertToPropertyTypeLookupTable( propertyType );
             } else {
                 propertyCreated = true;
