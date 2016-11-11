@@ -7,12 +7,16 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.mapping.annotations.Column;
 import com.datastax.driver.mapping.annotations.Table;
+import com.datastax.driver.mapping.annotations.Transient;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+
+import jersey.repackaged.com.google.common.collect.Sets;
 
 @Table(
     keyspace = DatastoreConstants.KEYSPACE,
@@ -71,7 +75,7 @@ public class EntityType extends TypePK {
     public Set<FullQualifiedName> getProperties() {
         return properties;
     }
-
+    
     public EntityType setProperties( Set<FullQualifiedName> properties ) {
         this.properties = properties;
         return this;
@@ -89,7 +93,8 @@ public class EntityType extends TypePK {
 
     @Override
     public String toString() {
-        return "ObjectType [namespace=" + namespace + ", type=" + name + ", typename=" + typename + ", key=" + key
+        return "ObjectType [namespace=" + namespace + ", type=" + name + ", typename=" + typename
+                + ", key=" + key
                 + ", allowed=" + properties
                 + ", schemas=" + schemas + "]";
     }

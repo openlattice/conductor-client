@@ -1,10 +1,21 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
-import com.kryptnostic.conductor.rpc.odata.*;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
+import com.kryptnostic.conductor.rpc.odata.EntitySet;
+import com.kryptnostic.conductor.rpc.odata.EntitySetWithPermissions;
+import com.kryptnostic.conductor.rpc.odata.EntityType;
+import com.kryptnostic.conductor.rpc.odata.EntityTypeWithDetails;
+import com.kryptnostic.conductor.rpc.odata.PropertyType;
+import com.kryptnostic.conductor.rpc.odata.Schema;
+import com.kryptnostic.datastore.Permission;
+import com.kryptnostic.datastore.services.requests.GetSchemasRequest;
+import com.kryptnostic.datastore.services.requests.PutSchemaRequest;
 
 import retrofit.client.Response;
 import retrofit.http.Body;
@@ -13,6 +24,7 @@ import retrofit.http.GET;
 import retrofit.http.POST;
 import retrofit.http.PUT;
 import retrofit.http.Path;
+import retrofit.http.Query;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -29,6 +41,7 @@ public interface EdmApi {
     String PROPERTY_TYPES = "propertyTypes";
     String SCHEMA         = "schema";
     String SCHEMAS        = "schemas";
+    String IS_OWNER       = "isOwner";
 
     // {namespace}/{schema_name}/{class}/{FQN}/{FQN}
     /*
@@ -149,9 +162,23 @@ public interface EdmApi {
     @PUT( ENTITY_SETS_BASE_PATH )
     Response putEntitySets( @Body Set<EntitySet> entitySets );
 
+    /**
+     * 
+     * @param isOwner Optional. If isOwner is true, return all EntitySets user owns. If isOwner is false, return all EntitySetsWithPermissions user does not own. If isOwner is null, return all EntitySetsWithPermissions.
+     * @return
+     */
     @GET( ENTITY_SETS_BASE_PATH )
-    Iterable<EntitySet> getEntitySets();
+    Iterable<EntitySetWithPermissions> getEntitySets( @Query( IS_OWNER ) Boolean isOwner );
 
+    @GET( ENTITY_SETS_BASE_PATH + NAME_PATH )
+    EntitySet getEntitySet( @Path( NAME ) String entitySetName );
+
+    @POST( ENTITY_SETS_BASE_PATH + NAME_PATH )
+    Response assignEntityToEntitySet( @Path( NAME) String entitySetName, @Body Set<UUID> entityIds );
+
+    @DELETE( ENTITY_SETS_BASE_PATH + NAME_PATH )
+    Response deleteEntitySet( @Path( NAME ) String entitySetName );
+    
     /**
      * Creates an entity type if it doesn't already exist.
      *
@@ -195,6 +222,7 @@ public interface EdmApi {
             @Path( NAME ) String name,
             @Body Set<FullQualifiedName> properties
     );
+
 
     /**
      * Creates a property type if doesn't already exist.

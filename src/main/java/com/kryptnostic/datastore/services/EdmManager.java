@@ -5,11 +5,12 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
-import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
+import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
     void createSchema(
@@ -39,24 +40,32 @@ public interface EdmManager {
     boolean createEntitySet( String typename, String name, String title );
 
     boolean createEntitySet( EntitySet entitySet );
+    
+    boolean createEntitySet( Optional<String> username, EntitySet entitySet );
 
     void upsertEntitySet( EntitySet entitySet );
-
-    EntitySet getEntitySet( FullQualifiedName entityType, String name );
 
     EntitySet getEntitySet( String name );
 
     Iterable<EntitySet> getEntitySets();
+    
+    Iterable<EntitySet> getEntitySetsUserOwns( String username );
+
+    Iterable<String> getEntitySetNamesUserOwns( String username );
 
     void deleteEntitySet( EntitySet entitySet );
+    
+    void deleteEntitySet( String name );
 
     void createEntityType( EntityType objectType );
+    
+    void createEntityType( Optional<String> username, EntityType objectType );
 
     void assignEntityToEntitySet( UUID entityId, String entitySetName );
 
     void assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
 
-    void upsertEntityType( EntityType objectType );
+    void upsertEntityType( Optional<String> username, EntityType objectType );
 
     EntityType getEntityType( String namespace, String name );
 
@@ -85,8 +94,8 @@ public interface EdmManager {
     Iterable<PropertyType> getPropertyTypes();
 
     EntityDataModel getEntityDataModel();
-
-    boolean isExistingEntitySet( FullQualifiedName type, String name );
+    
+    boolean isExistingEntitySet( String name );
 
     EntityType getEntityType( FullQualifiedName fqn );
 
@@ -105,5 +114,4 @@ public interface EdmManager {
             Set<FullQualifiedName> properties );
 
     void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
-
 }

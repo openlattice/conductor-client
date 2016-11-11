@@ -21,19 +21,19 @@ public class EntitySet {
     @PartitionKey(
         value = 0 )
     @JsonIgnore
-    private String            typename = null;
+    protected String            typename = null;
     
     @ClusteringColumn(
         value = 0 )
-    private String            name;
+    protected String            name;
 
     @Column(
         name = "title" )
-    private String            title;
+    protected String            title;
     
     @Transient
-    private FullQualifiedName type;
-
+    protected FullQualifiedName type;
+    
     public String getName() {
         return name;
     }
@@ -80,7 +80,7 @@ public class EntitySet {
         int result = 1;
         result = prime * result + ( ( name == null ) ? 0 : name.hashCode() );
         result = prime * result + ( ( title == null ) ? 0 : title.hashCode() );
-        result = prime * result + ( ( type == null ) ? 0 : name.hashCode() );
+        result = prime * result + ( ( type == null ) ? 0 : type.hashCode() );
         return result;
     }
 

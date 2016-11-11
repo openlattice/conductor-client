@@ -69,6 +69,9 @@ public interface CassandraEdmStore {
     @Query( Queries.GET_ALL_ENTITY_SETS )
     public Result<EntitySet> getEntitySets();
     
+    @Query( Queries.GET_ALL_ENTITY_SETS_FOR_ENTITY_TYPE )
+    public Result<EntitySet> getEntitySetsForEntityType( String typename );
+    
     @Query( Queries.UPDATE_EXISTING_ENTITY_TYPE)
     public ResultSet updateExistingEntityType(
     		@Param(Queries.ParamNames.NAMESPACE) String namespace,

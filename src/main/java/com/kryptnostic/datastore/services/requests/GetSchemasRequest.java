@@ -1,4 +1,4 @@
-package com.kryptnostic.datastore.services;
+package com.kryptnostic.datastore.services.requests;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.kryptnostic.datastore.services.EdmApi;
 
 /**
  * Class specifying request options for loading schemas.

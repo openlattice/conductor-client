@@ -9,16 +9,22 @@ import com.google.common.base.Preconditions;
 
 public enum CommonColumns {
     ACLID( DataType.uuid() ),
+    ROLE( DataType.text() ),
+    USER( DataType.text() ),
     CLOCK( DataType.timestamp() ),
     DATATYPE( DataType.text() ),
-    ENTITYSETS( DataType.set( DataType.text() ) ),
+    ENTITY_SET( DataType.text() ),
+    ENTITY_SETS( DataType.set( DataType.text() ) ),
+    ENTITY_TYPE( DataType.text() ),
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
     FQN( DataType.text() ),
     KEY( DataType.set( DataType.text() ) ),
     MULTIPLICITY( DataType.bigint() ),
     NAME( DataType.text() ),
     NAMESPACE( DataType.text() ),
+    REQUESTID( DataType.uuid() ),
     ENTITYID( DataType.uuid() ),
+    PROPERTY_TYPE( DataType.text() ),
     PROPERTIES( DataType.set( DataType.text() ) ),
     SCHEMAS( DataType.set(DataType.text() ) ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
@@ -26,6 +32,7 @@ public enum CommonColumns {
     TYPENAME( DataType.text() ),
     TYPE( DataType.text() ),
     VALUE( null ),
+    PERMISSIONS ( DataType.set( DataType.text() ) ),
     PARTITION_INDEX( DataType.tinyint() ); //partition index within a table for distribution purpose
 
     private final DataType type;

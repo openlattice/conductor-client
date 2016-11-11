@@ -13,28 +13,31 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
+import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.services.GetSchemasRequest.TypeDetails;
+import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 
 public class SchemaDetailsAdapter implements Function<Row, Schema> {
-    private final SchemaFactory        schemaFactory;
-    private final Mapper<EntityType>   entityTypeMapper;
-    private final Mapper<PropertyType> propertyTypeMapper;
-    private final Set<TypeDetails>     requestedDetails;
+    private final SchemaFactory         schemaFactory;
+    private final CassandraTableManager ctb;
+    private final Mapper<EntityType>    entityTypeMapper;
+    private final Mapper<PropertyType>  propertyTypeMapper;
+    private final Set<TypeDetails>      requestedDetails;
 
     public SchemaDetailsAdapter(
-            UUID aclId,
+            CassandraTableManager ctb,
             Mapper<EntityType> entityTypeMapper,
             Mapper<PropertyType> propertyTypeMapper,
             Set<TypeDetails> requestedDetails ) {
+        this.ctb = ctb;
         this.entityTypeMapper = entityTypeMapper;
         this.propertyTypeMapper = propertyTypeMapper;
         this.requestedDetails = requestedDetails;
-        this.schemaFactory = schemaFactoryWithAclId( aclId );
+        this.schemaFactory = schemaFactoryWithAclId( ACLs.EVERYONE_ACL );
     }
 
     @Override
@@ -66,7 +69,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
     public void addPropertyTypesToSchema( Schema schema ) {
         Set<FullQualifiedName> propertyTypeNames = Sets.newHashSet();
         propertyTypeNames.addAll( schema.getPropertyTypeFqns() );
-        
+
         if ( schema.getEntityTypes().isEmpty() && !schema.getEntityTypeFqns().isEmpty() ) {
             addEntityTypesToSchema( schema );
         }
@@ -103,7 +106,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
                     } );
             Set<FullQualifiedName> propertyTypeFqns = r.get( CommonColumns.PROPERTIES.cql(),
                     new TypeToken<Set<FullQualifiedName>>() {
-						private static final long serialVersionUID = 888512488865063571L;
+                        private static final long serialVersionUID = 888512488865063571L;
                     } );
             if ( entityTypeFqns == null ) {
                 entityTypeFqns = ImmutableSet.of();
