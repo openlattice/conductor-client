@@ -14,6 +14,7 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.core.edm.primitivetype.EdmPrimitiveTypeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.SerializationUtils;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.LocalDate;
@@ -127,7 +128,7 @@ public class CassandraEdmMapping {
                 case INET:
                     return InetAddress.getByName( input.toString() );
                 case BLOB:
-                    return TypeCodec.blob().parse( input.toString() );
+                    return ByteBuffer.wrap( SerializationUtils.serialize( input ) );
                 //Jackson would already deserialize input to java.util.List, unless USE_JAVA_ARRAY_FOR_JSON_ARRAY is enabled.
                 case SET:
                     return new HashSet<Object>( (List<?>) input ); 
