@@ -31,17 +31,17 @@ public interface EdmManager {
 
     Iterable<Schema> getSchemasInNamespace( String namespace, Set<TypeDetails> requestedDetails );
 
-    Iterable<Schema> getSchema( String namespace, String name, Set<TypeDetails> requestedDetails );
+    Schema getSchema( String namespace, String name, Set<TypeDetails> requestedDetails );
 
     void deleteSchema( Schema namespaces );
 
-    boolean createEntitySet( FullQualifiedName type, String name, String title );
+    void createEntitySet( FullQualifiedName type, String name, String title );
 
-    boolean createEntitySet( String typename, String name, String title );
+    void createEntitySet( String typename, String name, String title );
 
-    boolean createEntitySet( EntitySet entitySet );
+    void createEntitySet( EntitySet entitySet );
     
-    boolean createEntitySet( Optional<String> username, EntitySet entitySet );
+    void createEntitySet( Optional<String> username, EntitySet entitySet );
 
     void upsertEntitySet( EntitySet entitySet );
 
@@ -94,8 +94,6 @@ public interface EdmManager {
     Iterable<PropertyType> getPropertyTypes();
 
     EntityDataModel getEntityDataModel();
-    
-    boolean isExistingEntitySet( String name );
 
     EntityType getEntityType( FullQualifiedName fqn );
 
@@ -114,4 +112,15 @@ public interface EdmManager {
             Set<FullQualifiedName> properties );
 
     void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
+    
+    //Helper methods to check existence
+    boolean checkPropertyTypesExist( Set<FullQualifiedName> properties );
+    
+    boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn );
+    
+    boolean checkEntityTypeExists( FullQualifiedName entityTypeFqn );
+    
+    boolean checkEntitySetExists( String name );
+    
+    boolean checkSchemaExists( String namespace, String name );
 }

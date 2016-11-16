@@ -60,20 +60,12 @@ public class ActionAuthorizationService {
 
     public boolean upsertEntityType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        }else{
             return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
-        }
     }
 
     public boolean upsertEntitySet( String entitySetName ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
-        }
     }
 
     public boolean deletePropertyType( FullQualifiedName propertyTypeFqn ) {
@@ -83,108 +75,68 @@ public class ActionAuthorizationService {
 
     public boolean deleteEntityType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
-        }
     }
 
     public boolean deleteEntitySet( String entitySetName ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
-        }
     }
 
     public boolean getEntitySet( String entitySetName ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.DISCOVER );
-        }
     }
 
     public boolean alterEntityType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
-        }
     }
 
     public boolean alterEntitySet( String entitySetName ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
-        }
     }
 
     public boolean assignEntityToEntitySet( String entitySetName ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.WRITE );
-        }
     }
 
     public boolean readPropertyTypeInEntityType( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( username, currentRoles,
                 entityTypeFqn,
                 propertyTypeFqn,
                 Permission.READ );
-        }
     }
 
     public boolean readPropertyTypeInEntitySet(
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( username, currentRoles,
                 entitySetName,
                 propertyTypeFqn,
                 Permission.READ );
-        }
     }
 
     public boolean writePropertyTypeInEntityType( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( username, currentRoles,
                 entityTypeFqn,
                 propertyTypeFqn,
                 Permission.WRITE );
-        }
     }
 
     public boolean writePropertyTypeInEntitySet(
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( username, currentRoles,
                 entitySetName,
                 propertyTypeFqn,
                 Permission.WRITE );
-        }
     }
 
     /**
@@ -193,38 +145,22 @@ public class ActionAuthorizationService {
 
     public boolean getAllEntitiesOfType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.READ );
-        }
     }
 
     public boolean getAllEntitiesOfEntitySet( String entitySetName ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.READ );
-        }
     }
 
     public boolean createEntityOfEntityType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.WRITE );
-        }
     }
 
     public boolean createEntityOfEntitySet( String entitySetName ) {
         updateUserInfo();
-        if( currentRoles.contains( Constants.ROLE_ADMIN ) ){
-            return true;
-        } else {
             return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.WRITE );
-        }
     }
 
     /**

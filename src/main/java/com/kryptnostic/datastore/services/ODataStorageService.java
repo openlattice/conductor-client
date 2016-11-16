@@ -142,7 +142,7 @@ public class ODataStorageService {
     public Entity createEntityData( UUID aclId, UUID syncId, EdmEntitySet edmEntitySet, Entity requestEntity ) {
         FullQualifiedName entityFqn = edmEntitySet.getEntityType().getFullQualifiedName();
         Preconditions.checkArgument(
-                dms.isExistingEntitySet( edmEntitySet.getName() ),
+                dms.checkEntitySetExists( edmEntitySet.getName() ),
                 "Cannot add data to non-existing entity set." );
         return createEntityData( aclId, syncId, edmEntitySet.getName(), entityFqn, requestEntity ).getRight();
     }
