@@ -4,10 +4,10 @@ import java.util.Set;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.authorization.requests.Principal;
 import com.dataloom.data.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kryptnostic.datastore.Principal;
 
 public class DerivePropertyTypeInEntityTypeAclRequest {
     protected Principal principal;

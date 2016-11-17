@@ -9,10 +9,10 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.kryptnostic.datastore.Permission;
-import com.kryptnostic.datastore.PermissionsInfo;
-import com.kryptnostic.datastore.Principal;
-import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRequest;
+import com.dataloom.authorization.requests.Permission;
+import com.dataloom.authorization.requests.PermissionsInfo;
+import com.dataloom.authorization.requests.Principal;
+import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequest;
 
 public interface PermissionsManager {
     

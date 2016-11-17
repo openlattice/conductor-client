@@ -11,6 +11,11 @@ import java.util.stream.IntStream;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.authorization.requests.Action;
+import com.dataloom.authorization.requests.PermissionsInfo;
+import com.dataloom.authorization.requests.Principal;
+import com.dataloom.authorization.requests.PrincipalType;
+import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequest;
 import com.datastax.driver.core.ColumnDefinitions;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Function;
@@ -24,12 +29,7 @@ import org.apache.olingo.commons.api.data.ValueType;
 
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
-import com.kryptnostic.datastore.PermissionsInfo;
-import com.kryptnostic.datastore.Principal;
-import com.kryptnostic.datastore.PrincipalType;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.services.requests.Action;
-import com.kryptnostic.datastore.services.requests.PropertyTypeInEntitySetAclRequest;
 
 public final class ResultSetAdapterFactory {
 

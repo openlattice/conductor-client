@@ -5,12 +5,12 @@ import java.util.EnumSet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.authorization.requests.EntitySetAclRequest;
+import com.dataloom.authorization.requests.Permission;
 import com.dataloom.data.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
-import com.kryptnostic.datastore.Permission;
-import com.kryptnostic.datastore.services.requests.EntitySetAclRequest;
 
 public class EntitySetWithPermissions extends EntitySet {
     private EnumSet<Permission> permissions;
