@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -706,6 +707,18 @@ public class EdmService implements EdmManager {
                 entityType.getKey(),
                 entityType.getProperties() );
 
+        String propertiesWithType = properties.stream().map( fqn ->
+            Queries.fqnToColumnName( fqn ) + " " + CassandraEdmMapping.getCassandraTypeName( tableManager.getPropertyType( fqn ).getDatatype() )
+        ).collect( Collectors.joining(","));
+
+        StringBuilder query = new StringBuilder( "ALTER TABLE sparks." )
+                .append( tableManager.getTablenameForEntityType( new FullQualifiedName( namespace, name ) ) )
+                .append( " ADD (" )
+                .append( propertiesWithType )
+                .append( ")" );
+
+        session.execute( query.toString() );
+
         Set<FullQualifiedName> schemas = entityType.getSchemas();
         schemas.forEach( schemaFqn -> {
             addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), newProperties );
@@ -755,6 +768,17 @@ public class EdmService implements EdmManager {
                     entityType.getKey(),
                     entityType.getProperties() );
 
+            String propertyColumnNames = properties.stream().map( fqn ->
+                    Queries.fqnToColumnName( fqn )
+            ).collect( Collectors.joining(",") );
+
+            StringBuilder query = new StringBuilder( "ALTER TABLE sparks." )
+                    .append( tableManager.getTablenameForEntityType( entityType ) )
+                    .append( " DROP (" )
+                    .append( propertyColumnNames )
+                    .append( ")" );
+
+            session.execute( query.toString() );
         }
     }
 
