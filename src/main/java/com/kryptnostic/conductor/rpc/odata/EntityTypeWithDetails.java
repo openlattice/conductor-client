@@ -1,5 +1,6 @@
 package com.kryptnostic.conductor.rpc.odata;
 
+import com.dataloom.data.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;

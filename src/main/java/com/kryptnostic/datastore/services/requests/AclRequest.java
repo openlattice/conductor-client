@@ -3,9 +3,9 @@ package com.kryptnostic.datastore.services.requests;
 import java.util.EnumSet;
 import java.util.Set;
 
+import com.dataloom.data.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 import com.kryptnostic.datastore.Permission;
 import com.kryptnostic.datastore.Principal;
 

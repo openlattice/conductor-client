@@ -1,8 +1,8 @@
 package com.kryptnostic.datastore;
 
+import com.dataloom.data.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kryptnostic.conductor.rpc.odata.SerializationConstants;
 
 public class Principal {
     

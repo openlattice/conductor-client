@@ -6,6 +6,7 @@ import java.util.function.Function;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.data.requests.LookupEntitiesRequest;
 import com.kryptnostic.conductor.rpc.odata.PropertyType;
 
 public class Lambdas implements Serializable {
