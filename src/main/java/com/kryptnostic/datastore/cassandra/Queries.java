@@ -509,4 +509,28 @@ public final class Queries {
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
+
+    public static final String addPropertyColumnsToEntityTable( String keyspace, String table, String propertiesWithType ){
+
+        return new StringBuilder( "ALTER TABLE " )
+                .append( keyspace )
+                .append( "." )
+                .append( table )
+                .append( " ADD (" )
+                .append( propertiesWithType )
+                .append( ")" )
+                .toString();
+    }
+
+    public static final String dropPropertyColumnsFromEntityTable( String keyspace, String table, String propertyColumnNames ){
+
+        return new StringBuilder( "ALTER TABLE " )
+                .append( keyspace )
+                .append( "." )
+                .append( table )
+                .append( " DROP (" )
+                .append( propertyColumnNames )
+                .append( ")" )
+                .toString();
+    }
 }

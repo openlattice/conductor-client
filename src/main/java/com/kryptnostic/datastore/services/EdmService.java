@@ -716,13 +716,10 @@ public class EdmService implements EdmManager {
             Queries.fqnToColumnName( fqn ) + " " + CassandraEdmMapping.getCassandraTypeName( tableManager.getPropertyType( fqn ).getDatatype() )
         ).collect( Collectors.joining(","));
 
-        StringBuilder query = new StringBuilder( "ALTER TABLE sparks." )
-                .append( tableManager.getTablenameForEntityType( new FullQualifiedName( namespace, name ) ) )
-                .append( " ADD (" )
-                .append( propertiesWithType )
-                .append( ")" );
-
-        session.execute( query.toString() );
+        session.execute( Queries.addPropertyColumnsToEntityTable(
+                "sparks",
+                tableManager.getTablenameForEntityType( new FullQualifiedName( namespace, name ) ),
+                propertiesWithType ) );
 
         Set<FullQualifiedName> schemas = entityType.getSchemas();
         schemas.forEach( schemaFqn -> {
@@ -779,13 +776,10 @@ public class EdmService implements EdmManager {
                     Queries.fqnToColumnName( fqn )
             ).collect( Collectors.joining(",") );
 
-            StringBuilder query = new StringBuilder( "ALTER TABLE sparks." )
-                    .append( tableManager.getTablenameForEntityType( entityType ) )
-                    .append( " DROP (" )
-                    .append( propertyColumnNames )
-                    .append( ")" );
-
-            session.execute( query.toString() );
+            session.execute( Queries.dropPropertyColumnsFromEntityTable(
+                    "sparks",
+                    tableManager.getTablenameForEntityType( entityType ),
+                    propertyColumnNames ) );
         }
     }
 
