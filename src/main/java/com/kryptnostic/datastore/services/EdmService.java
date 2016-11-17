@@ -699,7 +699,12 @@ public class EdmService implements EdmManager {
             throw new BadRequestException( "Illegal Arguments are provided." );
         }
 
-        Set<FullQualifiedName> newProperties = Sets.difference( properties, entityType.getProperties() );
+        Set<FullQualifiedName> newProperties = ImmutableSet.copyOf( Sets.difference( properties, entityType.getProperties() ) );
+
+        if( newProperties == null || newProperties.size() == 0 ){
+            return;
+        }
+
         entityType.addProperties( newProperties );
         edmStore.updateExistingEntityType(
                 entityType.getNamespace(),
@@ -707,7 +712,7 @@ public class EdmService implements EdmManager {
                 entityType.getKey(),
                 entityType.getProperties() );
 
-        String propertiesWithType = properties.stream().map( fqn ->
+        String propertiesWithType = newProperties.stream().map( fqn ->
             Queries.fqnToColumnName( fqn ) + " " + CassandraEdmMapping.getCassandraTypeName( tableManager.getPropertyType( fqn ).getDatatype() )
         ).collect( Collectors.joining(","));
 
@@ -753,12 +758,14 @@ public class EdmService implements EdmManager {
          */
         if ( checkedValid ) {
 
-            if ( properties != null && entityType.getProperties() != null ) {
+            if ( properties != null && entityType.getProperties() != null && entityType.getProperties().containsAll( properties ) ) {
                 entityType.removeProperties( properties );
                 // Acl
                 properties
                         .forEach( propertyTypeFqn -> permissionsService.removePermissionsForPropertyTypeInEntityType(
                                 entityType.getFullQualifiedName(), propertyTypeFqn ) );
+            } else {
+                throw new BadRequestException( "Not all properties are included in the EntityType" );
             }
             // TODO: Remove properties from Schema, once reference counting is implemented.
 
