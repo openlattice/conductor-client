@@ -298,7 +298,7 @@ public final class Queries {
             String table,
             FullQualifiedName fqn ) {
         String query = "CREATE CUSTOM INDEX IF NOT EXISTS ON %s.%s (%s) USING 'org.apache.cassandra.index.sasi.SASIIndex'";
-        return String.format( query, keyspace, table, fqn );
+        return String.format( query, keyspace, table, fqnToColumnName( fqn ) );
     }
 
     public static final String getCreateEntityIdToTypenameTableQuery( String keyspace ) {

@@ -941,7 +941,7 @@ public class CassandraTableManager {
                 entityType );
         final String tablename = maybeTablename;
         propertyTypes.stream()
-                .forEach( pt -> Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) );
+                .forEach( pt -> session.execute( Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) ) );
         entityType.getKey().forEach( fqn -> {
             // TODO: Use elasticsearch for maintaining index instead of maintaining in Cassandra.
             /*
