@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PermissionsInfo;
 import com.dataloom.authorization.requests.Principal;
-import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequest;
+import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 
 public interface PermissionsManager {
     

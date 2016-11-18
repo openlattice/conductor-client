@@ -14,14 +14,14 @@ import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PermissionsInfo;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
-import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequest;
+import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.ResultSetAdapterFactory;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.datastore.exceptions.BadRequestException;
 
 public class PermissionsService implements PermissionsManager {

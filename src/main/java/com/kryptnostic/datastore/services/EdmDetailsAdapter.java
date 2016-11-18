@@ -10,11 +10,11 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.spark_project.guava.collect.Sets;
 
 import com.dataloom.authorization.requests.Permission;
+import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.internal.EntityType;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Preconditions;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 /**
