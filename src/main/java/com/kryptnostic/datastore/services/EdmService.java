@@ -441,12 +441,6 @@ public class EdmService implements EdmManager {
                         Maps.asMap( entityType.getKey(),
                                 fqn -> getPropertyType( fqn ) ) );
                 tableManager.insertToEntityTypeLookupTable( entityType );
-
-                if( username.isPresent() ){
-                    createDefaultEntitySet( username.get(), entityType );
-                } else {
-                    createDefaultEntitySet( entityType );
-                }
             }
              return entityCreated;
         }
@@ -501,21 +495,6 @@ public class EdmService implements EdmManager {
         assignEntityToEntitySet( entityId, es.getName() );
     }
 
-    private void createDefaultEntitySet( EntityType entityType ) {
-        String typename = tableManager.getTypenameForEntityType( entityType.getFullQualifiedName() );
-        String name = tableManager.getNameForDefaultEntitySet( typename );
-        String title = "Default Entity Set for the entity type with typename " + typename;
-        createEntitySet( typename, name, title );
-    }
-    
-    private void createDefaultEntitySet( String username, EntityType entityType ) {
-        String typename = tableManager.getTypenameForEntityType( entityType.getFullQualifiedName() );
-        String name = tableManager.getNameForDefaultEntitySet( typename );
-        String title = "Default Entity Set for the entity type with typename " + typename;
-        createEntitySet( username, typename, name, title );
-    }
-
-
     @Override
     public boolean createEntitySet( FullQualifiedName type, String name, String title ) {
         String typename = tableManager.getTypenameForEntityType( type );
@@ -529,16 +508,6 @@ public class EdmService implements EdmManager {
         // throw new BadRequestException( "Entity set already exists." );
         // }
         return Util.wasLightweightTransactionApplied( edmStore.createEntitySetIfNotExists( typename, name, title ) );
-    }
-
-    private boolean createEntitySet( String username, String typename, String name, String title ) {
-        boolean entitySetCreated = createEntitySet( typename, name, title );
-        
-        if( entitySetCreated ){
-            tableManager.addOwnerForEntitySet( name, username );
-        }
-        
-        return entitySetCreated;
     }
     
     @Override
