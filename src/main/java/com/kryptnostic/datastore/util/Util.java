@@ -7,10 +7,10 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
 
 public final class Util {
     private static final Logger logger = LoggerFactory.getLogger( Util.class );

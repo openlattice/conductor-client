@@ -6,7 +6,8 @@ import java.util.function.Function;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
+import com.dataloom.data.requests.LookupEntitiesRequest;
+import com.dataloom.edm.internal.PropertyType;
 
 public class Lambdas implements Serializable {
     private static final long serialVersionUID = -8384320983731367620L;

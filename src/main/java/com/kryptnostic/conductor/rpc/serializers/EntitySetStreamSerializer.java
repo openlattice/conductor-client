@@ -2,9 +2,9 @@ package com.kryptnostic.conductor.rpc.serializers;
 
 import java.io.IOException;
 
+import com.dataloom.edm.internal.EntitySet;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
 import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 

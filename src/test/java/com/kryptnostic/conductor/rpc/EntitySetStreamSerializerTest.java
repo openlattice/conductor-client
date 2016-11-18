@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
+import com.dataloom.edm.internal.EntitySet;
 import com.kryptnostic.conductor.rpc.serializers.EntitySetStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
 
