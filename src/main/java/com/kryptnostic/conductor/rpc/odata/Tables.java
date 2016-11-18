@@ -1,6 +1,6 @@
 package com.kryptnostic.conductor.rpc.odata;
 
-import static com.kryptnostic.conductor.rpc.odata.DatastoreConstants.*;
+import static com.dataloom.edm.internal.DatastoreConstants.*;
 public enum Tables {
     ENTITIES( "entities" ),
     ENTITY_SETS( ENTITY_SETS_TABLE ),

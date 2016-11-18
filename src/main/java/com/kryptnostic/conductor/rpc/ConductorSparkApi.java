@@ -4,7 +4,8 @@ import java.util.List;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
+import com.dataloom.data.requests.LookupEntitiesRequest;
+import com.dataloom.edm.internal.PropertyType;
 
 public interface ConductorSparkApi {
 

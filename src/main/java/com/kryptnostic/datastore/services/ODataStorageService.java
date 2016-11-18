@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
+import com.dataloom.edm.internal.EntityType;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
@@ -44,7 +45,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.Futures;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.durableexecutor.DurableExecutorService;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
 import com.kryptnostic.datastore.cassandra.CassandraStorage;
 import com.kryptnostic.datastore.services.CassandraTableManager.PreparedStatementMapping;
 

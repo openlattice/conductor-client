@@ -20,6 +20,14 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.authorization.requests.Permission;
+import com.dataloom.authorization.requests.Principal;
+import com.dataloom.authorization.requests.PrincipalType;
+import com.dataloom.edm.internal.DatastoreConstants;
+import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.internal.Schema;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -38,15 +46,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
-import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
-import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.conductor.rpc.odata.Tables;
-import com.kryptnostic.datastore.Permission;
-import com.kryptnostic.datastore.Principal;
-import com.kryptnostic.datastore.PrincipalType;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.Queries;
@@ -941,7 +941,7 @@ public class CassandraTableManager {
                 entityType );
         final String tablename = maybeTablename;
         propertyTypes.stream()
-                .forEach( pt -> Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) );
+                .forEach( pt -> session.execute( Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) ) );
         entityType.getKey().forEach( fqn -> {
             // TODO: Use elasticsearch for maintaining index instead of maintaining in Cassandra.
             /*

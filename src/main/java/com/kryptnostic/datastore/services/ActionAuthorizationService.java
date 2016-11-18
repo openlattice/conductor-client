@@ -9,7 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.auth0.spring.security.api.Auth0UserDetails;
-import com.kryptnostic.datastore.Permission;
+import com.dataloom.authorization.requests.Permission;
 
 public class ActionAuthorizationService {
 

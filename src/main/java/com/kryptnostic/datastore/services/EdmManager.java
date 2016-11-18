@@ -5,12 +5,13 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.edm.EntityDataModel;
+import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.internal.Schema;
+import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.google.common.base.Optional;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
-import com.kryptnostic.conductor.rpc.odata.Schema;
-import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
     void createSchema(
