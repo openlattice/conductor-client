@@ -2,13 +2,13 @@ package com.kryptnostic.conductor.codecs;
 
 import java.util.EnumSet;
 
+import com.dataloom.authorization.requests.Permission;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.TypeCodec.AbstractCollectionCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
 import com.google.common.reflect.TypeParameter;
 import com.google.common.reflect.TypeToken;
-import com.kryptnostic.datastore.Permission;
 
 public class EnumSetTypeCodec<T extends Enum<T>> extends AbstractCollectionCodec<T, EnumSet<T>> {
 

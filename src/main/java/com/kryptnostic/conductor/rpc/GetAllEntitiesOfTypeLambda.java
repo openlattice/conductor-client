@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
+import com.dataloom.edm.internal.PropertyType;
 
 public class GetAllEntitiesOfTypeLambda implements Function<ConductorSparkApi, QueryResult>, Serializable {
 

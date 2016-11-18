@@ -17,6 +17,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpServerErrorException;
 
+import com.dataloom.authorization.requests.Permission;
+import com.dataloom.authorization.requests.Principal;
+import com.dataloom.authorization.requests.PrincipalType;
+import com.dataloom.edm.EntityDataModel;
+import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.internal.Schema;
+import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
@@ -32,16 +41,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
-import com.kryptnostic.conductor.rpc.odata.Schema;
-import com.kryptnostic.datastore.Permission;
-import com.kryptnostic.datastore.Principal;
-import com.kryptnostic.datastore.PrincipalType;
 import com.kryptnostic.datastore.cassandra.Queries;
 import com.kryptnostic.datastore.exceptions.BadRequestException;
-import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
