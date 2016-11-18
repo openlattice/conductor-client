@@ -58,7 +58,7 @@ dependencies {
     } else {
         logger.quiet(project.name + " using jar dependencies.")
         compile "com.kryptnostic:kryptnostic-mapstores:${mapstores_version}"
-        compile "com.dataloom:loom-api:${loom_api_version}"
+        compile "com.kryptnostic:loom-api:${loom_api_version}"
         testCompile "com.kryptnostic:rhizome:${rhizome_version}:tests"
     }
 
