@@ -1479,9 +1479,6 @@ public class CassandraTableManager {
      **************/
 
     public EnumSet<Permission> getRolePermissionsForEntityType( String role, FullQualifiedName entityTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
             Row row = session.execute( this.getPermissionsForEntityType
                     .get( PrincipalType.ROLE )
@@ -1493,7 +1490,6 @@ public class CassandraTableManager {
                 // Property Type not found in Acl table; would mean no permission for now
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForEntityType( String user, FullQualifiedName entityTypeFqn ) {
@@ -1580,9 +1576,6 @@ public class CassandraTableManager {
     }
 
     public EnumSet<Permission> getRolePermissionsForEntitySet( String role, String entitySetName ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             Row row = session.execute( this.getPermissionsForEntitySet
                     .get( PrincipalType.ROLE )
                     .bind( role, entitySetName ) )
@@ -1594,7 +1587,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForEntitySet( String user, String entitySetName ) {
@@ -1683,9 +1675,6 @@ public class CassandraTableManager {
             String role,
             FullQualifiedName entityTypeFqn,
             FullQualifiedName propertyTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
             String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType
@@ -1699,7 +1688,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForPropertyTypeInEntityType(
@@ -1844,9 +1832,6 @@ public class CassandraTableManager {
             String role,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet
                     .get( PrincipalType.ROLE )
@@ -1859,7 +1844,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForPropertyTypeInEntitySet(
