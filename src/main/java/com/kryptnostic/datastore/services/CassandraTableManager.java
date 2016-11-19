@@ -1384,10 +1384,6 @@ public class CassandraTableManager {
         return RandomStringUtils.randomAlphanumeric( 24 ).toLowerCase();
     }
 
-    public static String getNameForDefaultEntitySet( String typename ) {
-        return typename + "_" + typename;
-    }
-
     /**************
      * Table Creators
      **************/
