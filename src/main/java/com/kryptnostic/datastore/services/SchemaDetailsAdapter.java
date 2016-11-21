@@ -6,19 +6,18 @@ import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.internal.Schema;
+import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.mapping.Mapper;
 import com.google.common.base.Function;
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
-import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 import com.kryptnostic.datastore.util.Util;
 
 public class SchemaDetailsAdapter implements Function<Row, Schema> {
@@ -115,7 +114,6 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
                 propertyTypeFqns = ImmutableSet.of();
             }
             return new Schema()
-                    .setAclId( aclId )
                     .setNamespace( namespace )
                     .setName( name )
                     .setEntityTypeFqns( entityTypeFqns )

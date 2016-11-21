@@ -11,13 +11,13 @@ import java.util.stream.Stream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.edm.internal.DatastoreConstants;
+import com.dataloom.edm.internal.PropertyType;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Preconditions;
-import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CassandraTableBuilder.ValueColumn;
 
@@ -298,7 +298,7 @@ public final class Queries {
             String table,
             FullQualifiedName fqn ) {
         String query = "CREATE CUSTOM INDEX IF NOT EXISTS ON %s.%s (%s) USING 'org.apache.cassandra.index.sasi.SASIIndex'";
-        return String.format( query, keyspace, table, fqn );
+        return String.format( query, keyspace, table, fqnToColumnName( fqn ) );
     }
 
     public static final String getCreateEntityIdToTypenameTableQuery( String keyspace ) {

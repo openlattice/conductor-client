@@ -5,12 +5,13 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.edm.EntityDataModel;
+import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.internal.Schema;
+import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.google.common.base.Optional;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
-import com.kryptnostic.conductor.rpc.odata.Schema;
-import com.kryptnostic.datastore.services.requests.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
     void createSchema(
@@ -31,17 +32,17 @@ public interface EdmManager {
 
     Iterable<Schema> getSchemasInNamespace( String namespace, Set<TypeDetails> requestedDetails );
 
-    Iterable<Schema> getSchema( String namespace, String name, Set<TypeDetails> requestedDetails );
+    Schema getSchema( String namespace, String name, Set<TypeDetails> requestedDetails );
 
     void deleteSchema( Schema namespaces );
 
-    boolean createEntitySet( FullQualifiedName type, String name, String title );
+    void createEntitySet( FullQualifiedName type, String name, String title );
 
-    boolean createEntitySet( String typename, String name, String title );
+    void createEntitySet( String typename, String name, String title );
 
-    boolean createEntitySet( EntitySet entitySet );
+    void createEntitySet( EntitySet entitySet );
     
-    boolean createEntitySet( Optional<String> username, EntitySet entitySet );
+    void createEntitySet( Optional<String> username, EntitySet entitySet );
 
     void upsertEntitySet( EntitySet entitySet );
 
@@ -94,8 +95,6 @@ public interface EdmManager {
     Iterable<PropertyType> getPropertyTypes();
 
     EntityDataModel getEntityDataModel();
-    
-    boolean isExistingEntitySet( String name );
 
     EntityType getEntityType( FullQualifiedName fqn );
 
@@ -114,4 +113,15 @@ public interface EdmManager {
             Set<FullQualifiedName> properties );
 
     void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
+    
+    //Helper methods to check existence
+    boolean checkPropertyTypesExist( Set<FullQualifiedName> properties );
+    
+    boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn );
+    
+    boolean checkEntityTypeExists( FullQualifiedName entityTypeFqn );
+    
+    boolean checkEntitySetExists( String name );
+    
+    boolean checkSchemaExists( String namespace, String name );
 }

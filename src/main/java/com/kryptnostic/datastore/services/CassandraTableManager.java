@@ -20,6 +20,14 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.authorization.requests.Permission;
+import com.dataloom.authorization.requests.Principal;
+import com.dataloom.authorization.requests.PrincipalType;
+import com.dataloom.edm.internal.DatastoreConstants;
+import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.internal.Schema;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -38,15 +46,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
-import com.kryptnostic.conductor.rpc.odata.DatastoreConstants;
-import com.kryptnostic.conductor.rpc.odata.EntitySet;
-import com.kryptnostic.conductor.rpc.odata.EntityType;
-import com.kryptnostic.conductor.rpc.odata.PropertyType;
-import com.kryptnostic.conductor.rpc.odata.Schema;
 import com.kryptnostic.conductor.rpc.odata.Tables;
-import com.kryptnostic.datastore.Permission;
-import com.kryptnostic.datastore.Principal;
-import com.kryptnostic.datastore.PrincipalType;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.Queries;
@@ -941,7 +941,7 @@ public class CassandraTableManager {
                 entityType );
         final String tablename = maybeTablename;
         propertyTypes.stream()
-                .forEach( pt -> Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) );
+                .forEach( pt -> session.execute( Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) ) );
         entityType.getKey().forEach( fqn -> {
             // TODO: Use elasticsearch for maintaining index instead of maintaining in Cassandra.
             /*
@@ -1384,10 +1384,6 @@ public class CassandraTableManager {
         return RandomStringUtils.randomAlphanumeric( 24 ).toLowerCase();
     }
 
-    public static String getNameForDefaultEntitySet( String typename ) {
-        return typename + "_" + typename;
-    }
-
     /**************
      * Table Creators
      **************/
@@ -1483,9 +1479,6 @@ public class CassandraTableManager {
      **************/
 
     public EnumSet<Permission> getRolePermissionsForEntityType( String role, FullQualifiedName entityTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
             Row row = session.execute( this.getPermissionsForEntityType
                     .get( PrincipalType.ROLE )
@@ -1497,7 +1490,6 @@ public class CassandraTableManager {
                 // Property Type not found in Acl table; would mean no permission for now
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForEntityType( String user, FullQualifiedName entityTypeFqn ) {
@@ -1584,9 +1576,6 @@ public class CassandraTableManager {
     }
 
     public EnumSet<Permission> getRolePermissionsForEntitySet( String role, String entitySetName ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             Row row = session.execute( this.getPermissionsForEntitySet
                     .get( PrincipalType.ROLE )
                     .bind( role, entitySetName ) )
@@ -1598,7 +1587,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForEntitySet( String user, String entitySetName ) {
@@ -1687,9 +1675,6 @@ public class CassandraTableManager {
             String role,
             FullQualifiedName entityTypeFqn,
             FullQualifiedName propertyTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
             String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType
@@ -1703,7 +1688,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForPropertyTypeInEntityType(
@@ -1848,9 +1832,6 @@ public class CassandraTableManager {
             String role,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet
                     .get( PrincipalType.ROLE )
@@ -1863,7 +1844,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForPropertyTypeInEntitySet(
