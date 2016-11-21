@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
+import com.kryptnostic.datastore.exceptions.BadRequestException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
