@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.dataloom.edm.internal.*;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.exceptions.BadRequestException;
 import org.apache.commons.lang3.StringUtils;
@@ -21,10 +22,6 @@ import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.edm.EntityDataModel;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
@@ -678,7 +675,7 @@ public class EdmService implements EdmManager {
         ).collect( Collectors.joining(","));
 
         session.execute( Queries.addPropertyColumnsToEntityTable(
-                "sparks",
+                DatastoreConstants.KEYSPACE,
                 tableManager.getTablenameForEntityType( new FullQualifiedName( namespace, name ) ),
                 propertiesWithType ) );
 
@@ -718,7 +715,7 @@ public class EdmService implements EdmManager {
                         .forEach( propertyTypeFqn -> permissionsService.removePermissionsForPropertyTypeInEntityType(
                                 entityType.getFullQualifiedName(), propertyTypeFqn ) );
             } else {
-                throw new BadRequestException( "Not all properties are included in the EntityType" );
+                throw new IllegalArgumentException( "Not all properties are included in the EntityType" );
             }
             // TODO: Remove properties from Schema, once reference counting is implemented.
 
@@ -733,7 +730,7 @@ public class EdmService implements EdmManager {
             ).collect( Collectors.joining(",") );
 
             session.execute( Queries.dropPropertyColumnsFromEntityTable(
-                    "sparks",
+                    DatastoreConstants.KEYSPACE,
                     tableManager.getTablenameForEntityType( entityType ),
                     propertyColumnNames ) );
         }
