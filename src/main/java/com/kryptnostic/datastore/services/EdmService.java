@@ -671,7 +671,7 @@ public class EdmService implements EdmManager {
                 entityType.getProperties() );
 
         String propertiesWithType = newProperties.stream().map( fqn ->
-            Queries.fqnToColumnName( fqn ) + " " + CassandraEdmMapping.getCassandraTypeName( tableManager.getPropertyType( fqn ).getDatatype() )
+                tableManager.getTypenameForPropertyType( fqn ) + " " + CassandraEdmMapping.getCassandraTypeName( tableManager.getPropertyType( fqn ).getDatatype() )
         ).collect( Collectors.joining(","));
 
         session.execute( Queries.addPropertyColumnsToEntityTable(
