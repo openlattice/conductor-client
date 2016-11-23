@@ -184,7 +184,7 @@ public class CassandraTableManager {
 
         this.getTypenameForEntityType = session.prepare( QueryBuilder
                 .select()
-                .from( keyspace, Tables.ENTITY_TYPES.getTableName() )
+                .from( keyspace, Tables.ENTITY_TYPES.getName() )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(),
                         QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
@@ -192,7 +192,7 @@ public class CassandraTableManager {
 
         this.getTypenameForPropertyType = session.prepare( QueryBuilder
                 .select()
-                .from( keyspace, Tables.PROPERTY_TYPES.getTableName() )
+                .from( keyspace, Tables.PROPERTY_TYPES.getName() )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(),
                         QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(),
@@ -217,72 +217,72 @@ public class CassandraTableManager {
         this.countEntitySets = session.prepare( Queries.countEntitySets( keyspace ) );
 
         this.insertPropertyTypeLookup = session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getName() )
                         .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) );
 
         this.updatePropertyTypeLookup = session
-                .prepare( ( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getTableName() ) )
+                .prepare( ( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getName() ) )
                         .with( QueryBuilder.set( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.deletePropertyTypeLookup = session
-                .prepare( QueryBuilder.delete().from( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.delete().from( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.getPropertyTypeForTypename = session
-                .prepare( QueryBuilder.select().from( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.select().from( keyspace, Tables.PROPERTY_TYPE_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.insertEntityTypeLookup = session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_TYPE_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_TYPE_LOOKUP.getName() )
                         .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) );
 
         this.updateEntityTypeLookup = session
-                .prepare( ( QueryBuilder.update( keyspace, Tables.ENTITY_TYPE_LOOKUP.getTableName() ) )
+                .prepare( ( QueryBuilder.update( keyspace, Tables.ENTITY_TYPE_LOOKUP.getName() ) )
                         .with( QueryBuilder.set( CommonColumns.FQN.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.deleteEntityTypeLookup = session
-                .prepare( QueryBuilder.delete().from( keyspace, Tables.ENTITY_TYPE_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.delete().from( keyspace, Tables.ENTITY_TYPE_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.getEntityTypeForTypename = session
-                .prepare( QueryBuilder.select().from( keyspace, Tables.ENTITY_TYPE_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.select().from( keyspace, Tables.ENTITY_TYPE_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.getTypenameForEntityId = session
-                .prepare( QueryBuilder.select().from( keyspace, Tables.ENTITY_ID_TO_TYPE.getTableName() )
+                .prepare( QueryBuilder.select().from( keyspace, Tables.ENTITY_ID_TO_TYPE.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.assignEntityToEntitySet = session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_SET_MEMBERS.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_SET_MEMBERS.getName() )
                         .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.PARTITION_INDEX.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) );
 
         this.entityTypeAddSchema = session
-                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
+                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.entityTypeRemoveSchema = session
-                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getTableName() )
+                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES.getName() )
                         .with( QueryBuilder.removeAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.propertyTypeAddSchema = session
-                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES.getTableName() )
+                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.propertyTypeRemoveSchema = session
-                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES.getTableName() )
+                .prepare( QueryBuilder.update( keyspace, Tables.PROPERTY_TYPES.getName() )
                         .with( QueryBuilder.removeAll( CommonColumns.SCHEMAS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) ) );
@@ -293,13 +293,13 @@ public class CassandraTableManager {
         this.addPermissionsForEntityType = new HashMap<>();
 
         addPermissionsForEntityType.put( PrincipalType.ROLE,
-                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         addPermissionsForEntityType.put( PrincipalType.USER,
-                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName() )
+                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -307,13 +307,13 @@ public class CassandraTableManager {
         this.setPermissionsForEntityType = new HashMap<>();
 
         setPermissionsForEntityType.put( PrincipalType.ROLE,
-                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         setPermissionsForEntityType.put( PrincipalType.USER,
-                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName() )
+                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -322,13 +322,13 @@ public class CassandraTableManager {
 
         getPermissionsForEntityType.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForEntityType.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
         
@@ -336,25 +336,25 @@ public class CassandraTableManager {
 
         getPermissionsForEntityTypeByType.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForEntityTypeByType.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.deleteRowFromEntityTypesAclsTable = new HashMap<>();
 
         deleteRowFromEntityTypesAclsTable.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         deleteRowFromEntityTypesAclsTable.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
@@ -365,13 +365,13 @@ public class CassandraTableManager {
         this.addPermissionsForEntitySet = new HashMap<>();
 
         addPermissionsForEntitySet.put( PrincipalType.ROLE,
-                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName() )
+                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         addPermissionsForEntitySet.put( PrincipalType.USER,
-                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName() )
+                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -379,13 +379,13 @@ public class CassandraTableManager {
         this.setPermissionsForEntitySet = new HashMap<>();
 
         setPermissionsForEntitySet.put( PrincipalType.ROLE,
-                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName() )
+                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         setPermissionsForEntitySet.put( PrincipalType.USER,
-                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName() )
+                session.prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -394,13 +394,13 @@ public class CassandraTableManager {
 
         getPermissionsForEntitySet.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForEntitySet.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
@@ -408,25 +408,25 @@ public class CassandraTableManager {
 
         this.getPermissionsForEntitySetBySet.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.getPermissionsForEntitySetBySet.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
         
         this.deleteRowFromEntitySetsAclsTable = new HashMap<>();
 
         deleteRowFromEntitySetsAclsTable.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         deleteRowFromEntitySetsAclsTable.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
@@ -436,32 +436,32 @@ public class CassandraTableManager {
 
         this.getOwnerForEntitySet = session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_SETS_OWNER.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_OWNER.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.getEntitySetsUserOwns = session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ENTITY_SETS_OWNER_LOOKUP.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_OWNER_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.updateOwnerForEntitySet = session
-                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_OWNER.getTableName() )
+                .prepare( QueryBuilder.update( keyspace, Tables.ENTITY_SETS_OWNER.getName() )
                         .with( QueryBuilder.set( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.updateOwnerLookupForEntitySet = session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_SETS_OWNER_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.ENTITY_SETS_OWNER_LOOKUP.getName() )
                         .value( CommonColumns.USER.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) );
 
         this.deleteFromEntitySetOwnerTable = session
                 .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_SETS_OWNER.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_OWNER.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) );
 
         this.deleteFromEntitySetOwnerLookupTable = session
                 .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ENTITY_SETS_OWNER_LOOKUP.getTableName() )
+                        .from( keyspace, Tables.ENTITY_SETS_OWNER_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) );
 
@@ -473,7 +473,7 @@ public class CassandraTableManager {
 
         addPermissionsForPropertyTypeInEntityType.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
@@ -481,7 +481,7 @@ public class CassandraTableManager {
 
         addPermissionsForPropertyTypeInEntityType.put( PrincipalType.USER,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
@@ -491,7 +491,7 @@ public class CassandraTableManager {
 
         setPermissionsForPropertyTypeInEntityType.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
@@ -499,7 +499,7 @@ public class CassandraTableManager {
 
         setPermissionsForPropertyTypeInEntityType.put( PrincipalType.USER,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
@@ -509,14 +509,14 @@ public class CassandraTableManager {
 
         getPermissionsForPropertyTypeInEntityType.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForPropertyTypeInEntityType.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -525,14 +525,14 @@ public class CassandraTableManager {
 
         getPermissionsForPropertyTypeInEntityTypeByTypes.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getName() )
                         .allowFiltering()
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForPropertyTypeInEntityTypeByTypes.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getName() )
                         .allowFiltering()
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -541,26 +541,26 @@ public class CassandraTableManager {
 
         getPermissionsForPropertyTypeInEntityTypeByEntityType.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForPropertyTypeInEntityTypeByEntityType.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.deleteRowFromPropertyTypesInEntityTypesAclsTable = new HashMap<>();
 
         deleteRowFromPropertyTypesInEntityTypesAclsTable.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         deleteRowFromPropertyTypesInEntityTypesAclsTable.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -573,7 +573,7 @@ public class CassandraTableManager {
 
         addPermissionsForPropertyTypeInEntitySet.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
@@ -581,7 +581,7 @@ public class CassandraTableManager {
 
         addPermissionsForPropertyTypeInEntitySet.put( PrincipalType.USER,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getName() )
                         .with( QueryBuilder.addAll( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
@@ -591,7 +591,7 @@ public class CassandraTableManager {
 
         setPermissionsForPropertyTypeInEntitySet.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
@@ -599,7 +599,7 @@ public class CassandraTableManager {
 
         setPermissionsForPropertyTypeInEntitySet.put( PrincipalType.USER,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .update( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getName() )
                         .with( QueryBuilder.set( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
@@ -609,14 +609,14 @@ public class CassandraTableManager {
 
         getPermissionsForPropertyTypeInEntitySet.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForPropertyTypeInEntitySet.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -625,14 +625,14 @@ public class CassandraTableManager {
 
         getPermissionsForPropertyTypeInEntitySetBySetAndType.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getName() )
                         .allowFiltering()
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForPropertyTypeInEntitySetBySetAndType.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getName() )
                         .allowFiltering()
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -641,26 +641,26 @@ public class CassandraTableManager {
 
         getPermissionsForPropertyTypeInEntitySetBySet.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getPermissionsForPropertyTypeInEntitySetBySet.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.deleteRowFromPropertyTypesInEntitySetsAclsTable = new HashMap<>();
 
         deleteRowFromPropertyTypesInEntitySetsAclsTable.put( PrincipalType.ROLE,
                 session.prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ROLE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         deleteRowFromPropertyTypesInEntitySetsAclsTable.put( PrincipalType.USER,
                 session.prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName() )
+                        .from( keyspace, Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
@@ -671,7 +671,7 @@ public class CassandraTableManager {
         this.insertAclsRequest = new HashMap<>();
 
         insertAclsRequest.put( PrincipalType.ROLE, session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.ROLES_ACLS_REQUESTS.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.ROLES_ACLS_REQUESTS.getName() )
                         .value( CommonColumns.USER.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.CLOCK.cql(), QueryBuilder.bindMarker() )
@@ -681,7 +681,7 @@ public class CassandraTableManager {
                         .value( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) ) );
 
         insertAclsRequest.put( PrincipalType.USER, session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.USERS_ACLS_REQUESTS.getName() )
                         .value( CommonColumns.USER.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.CLOCK.cql(), QueryBuilder.bindMarker() )
@@ -693,14 +693,14 @@ public class CassandraTableManager {
         this.updateLookupForAclsRequest = new HashMap<>();
 
         updateLookupForAclsRequest.put( PrincipalType.ROLE, session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.ROLES_ACLS_REQUESTS_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.ROLES_ACLS_REQUESTS_LOOKUP.getName() )
                         .value( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.USER.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.CLOCK.cql(), QueryBuilder.bindMarker() ) ) );
 
         updateLookupForAclsRequest.put( PrincipalType.USER, session
-                .prepare( QueryBuilder.insertInto( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getTableName() )
+                .prepare( QueryBuilder.insertInto( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getName() )
                         .value( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.USER.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() )
@@ -710,7 +710,7 @@ public class CassandraTableManager {
 
         deleteAclsRequest.put( PrincipalType.ROLE, session
                 .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getTableName() )
+                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.CLOCK.cql(), QueryBuilder.bindMarker() ) )
@@ -718,7 +718,7 @@ public class CassandraTableManager {
 
         deleteAclsRequest.put( PrincipalType.USER, session
                 .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName() )
+                        .from( keyspace, Tables.USERS_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.CLOCK.cql(), QueryBuilder.bindMarker() ) )
@@ -728,37 +728,37 @@ public class CassandraTableManager {
 
         deleteLookupForAclsRequest.put( PrincipalType.ROLE, session
                 .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS_LOOKUP.getTableName() )
+                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         deleteLookupForAclsRequest.put( PrincipalType.USER, session
                 .prepare( QueryBuilder.delete()
-                        .from( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getTableName() )
+                        .from( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.getAclsRequestsByUsername = new HashMap<>();
 
         getAclsRequestsByUsername.put( PrincipalType.ROLE, session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getTableName() )
+                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getAclsRequestsByUsername.put( PrincipalType.USER, session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName() )
+                        .from( keyspace, Tables.USERS_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.getAclsRequestsByUsernameAndEntitySet = new HashMap<>();
 
         getAclsRequestsByUsernameAndEntitySet.put( PrincipalType.ROLE, session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getTableName() )
+                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getAclsRequestsByUsernameAndEntitySet.put( PrincipalType.USER, session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName() )
+                        .from( keyspace, Tables.USERS_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
@@ -766,24 +766,24 @@ public class CassandraTableManager {
 
         getAclsRequestsByEntitySet.put( PrincipalType.ROLE, session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getTableName() )
+                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getAclsRequestsByEntitySet.put( PrincipalType.USER, session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName() )
+                        .from( keyspace, Tables.USERS_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.getAclsRequestById = new HashMap<>();
 
         getAclsRequestById.put( PrincipalType.ROLE, session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS_LOOKUP.getTableName() )
+                        .from( keyspace, Tables.ROLES_ACLS_REQUESTS_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         getAclsRequestById.put( PrincipalType.USER, session
                 .prepare( QueryBuilder.select()
-                        .from( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getTableName() )
+                        .from( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() ) ) ) );
 
         this.propertyTypeMapper = mm.mapper( PropertyType.class );
@@ -1241,7 +1241,7 @@ public class CassandraTableManager {
     private void putEntityIdToTypeUpdateStatement( FullQualifiedName entityTypeFqn ) {
         entityIdToTypeUpdateStatements.put( entityTypeFqn,
                 session.prepare( QueryBuilder
-                        .update( keyspace, Tables.ENTITY_ID_TO_TYPE.getTableName() )
+                        .update( keyspace, Tables.ENTITY_ID_TO_TYPE.getName() )
                         .with( QueryBuilder.set( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) )
                         .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() ) ) ) );
     }
@@ -1384,10 +1384,6 @@ public class CassandraTableManager {
         return RandomStringUtils.randomAlphanumeric( 24 ).toLowerCase();
     }
 
-    public static String getNameForDefaultEntitySet( String typename ) {
-        return typename + "_" + typename;
-    }
-
     /**************
      * Table Creators
      **************/
@@ -1483,9 +1479,6 @@ public class CassandraTableManager {
      **************/
 
     public EnumSet<Permission> getRolePermissionsForEntityType( String role, FullQualifiedName entityTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
             Row row = session.execute( this.getPermissionsForEntityType
                     .get( PrincipalType.ROLE )
@@ -1497,7 +1490,6 @@ public class CassandraTableManager {
                 // Property Type not found in Acl table; would mean no permission for now
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForEntityType( String user, FullQualifiedName entityTypeFqn ) {
@@ -1584,9 +1576,6 @@ public class CassandraTableManager {
     }
 
     public EnumSet<Permission> getRolePermissionsForEntitySet( String role, String entitySetName ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             Row row = session.execute( this.getPermissionsForEntitySet
                     .get( PrincipalType.ROLE )
                     .bind( role, entitySetName ) )
@@ -1598,7 +1587,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForEntitySet( String user, String entitySetName ) {
@@ -1687,9 +1675,6 @@ public class CassandraTableManager {
             String role,
             FullQualifiedName entityTypeFqn,
             FullQualifiedName propertyTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
             String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType
@@ -1703,7 +1688,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForPropertyTypeInEntityType(
@@ -1848,9 +1832,6 @@ public class CassandraTableManager {
             String role,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        if ( role == Constants.ROLE_ADMIN ) {
-            return EnumSet.allOf( Permission.class );
-        } else {
             String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
             Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet
                     .get( PrincipalType.ROLE )
@@ -1863,7 +1844,6 @@ public class CassandraTableManager {
                 // TODO: change this, if you want default permission of a group
                 return EnumSet.noneOf( Permission.class );
             }
-        }
     }
 
     public EnumSet<Permission> getUserPermissionsForPropertyTypeInEntitySet(

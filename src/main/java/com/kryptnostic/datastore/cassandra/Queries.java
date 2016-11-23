@@ -1,7 +1,6 @@
 package com.kryptnostic.datastore.cassandra;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -19,7 +18,9 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Preconditions;
 import com.kryptnostic.conductor.rpc.odata.Tables;
-import com.kryptnostic.datastore.cassandra.CassandraTableBuilder.ValueColumn;
+import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
+import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder.ValueColumn;
+import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
 public final class Queries {
     private Queries() {}
@@ -231,7 +232,7 @@ public final class Queries {
     public static final String createPropertyTableQuery(
             String keyspace,
             String table,
-            Function<CommonColumns, DataType> typeResolver ) {
+            Function<ColumnDef, DataType> typeResolver ) {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
                 .partitionKey( CommonColumns.ENTITYID )
@@ -325,7 +326,7 @@ public final class Queries {
     public static final String CREATE_INDEX_ON_NAME               = "CREATE INDEX IF NOT EXISTS entity_sets_name_idx ON "
             + DatastoreConstants.KEYSPACE
             + "."
-            + Tables.ENTITY_SETS.getTableName()
+            + Tables.ENTITY_SETS.getName()
             + " (" + CommonColumns.NAME.cql() + ")";
     /**
      * This is the query for adding the secondary index on the entitySets column for entity table of a given type
@@ -342,51 +343,51 @@ public final class Queries {
     }
 
     public static String indexEntityTypeOnEntityTypesRolesAclsTableQuery( String keyspace ) {
-        return createIndex( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getTableName(), CommonColumns.ENTITY_TYPE.cql() );
+        return createIndex( keyspace, Tables.ENTITY_TYPES_ROLES_ACLS.getName(), CommonColumns.ENTITY_TYPE.cql() );
     }
 
     public static String indexEntityTypeOnEntityTypesUsersAclsTableQuery( String keyspace ) {
-        return createIndex( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getTableName(), CommonColumns.ENTITY_TYPE.cql() );
+        return createIndex( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getName(), CommonColumns.ENTITY_TYPE.cql() );
     }
 
     public static String indexEntitySetOnEntitySetsRolesAclsTableQuery( String keyspace ) {
-        return createIndex( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+        return createIndex( keyspace, Tables.ENTITY_SETS_ROLES_ACLS.getName(), CommonColumns.ENTITY_SET.cql() );
     }
 
     public static String indexEntitySetOnEntitySetsUsersAclsTableQuery( String keyspace ) {
-        return createIndex( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+        return createIndex( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getName(), CommonColumns.ENTITY_SET.cql() );
     }
 
     public static String indexEntityTypeOnPropertyTypesInEntityTypesRolesAclsTableQuery( String keyspace ) {
         return createIndex( keyspace,
-                Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getTableName(),
+                Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_ROLES_ACLS.getName(),
                 CommonColumns.ENTITY_TYPE.cql() );
     }
 
     public static String indexEntityTypeOnPropertyTypesInEntityTypesUsersAclsTableQuery( String keyspace ) {
         return createIndex( keyspace,
-                Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getTableName(),
+                Tables.PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS.getName(),
                 CommonColumns.ENTITY_TYPE.cql() );
     }
 
     public static String indexEntitySetOnPropertyTypesInEntitySetsRolesAclsTableQuery( String keyspace ) {
         return createIndex( keyspace,
-                Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getTableName(),
+                Tables.PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS.getName(),
                 CommonColumns.ENTITY_SET.cql() );
     }
 
     public static String indexEntitySetOnPropertyTypesInEntitySetsUsersAclsTableQuery( String keyspace ) {
         return createIndex( keyspace,
-                Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getTableName(),
+                Tables.PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS.getName(),
                 CommonColumns.ENTITY_SET.cql() );
     }
 
     public static String indexEntitySetOnRolesAclsRequestsTableQuery( String keyspace ) {
-        return createIndex( keyspace, Tables.ROLES_ACLS_REQUESTS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+        return createIndex( keyspace, Tables.ROLES_ACLS_REQUESTS.getName(), CommonColumns.ENTITY_SET.cql() );
     }
 
     public static String indexEntitySetOnUsersAclsRequestsTableQuery( String keyspace ) {
-        return createIndex( keyspace, Tables.USERS_ACLS_REQUESTS.getTableName(), CommonColumns.ENTITY_SET.cql() );
+        return createIndex( keyspace, Tables.USERS_ACLS_REQUESTS.getName(), CommonColumns.ENTITY_SET.cql() );
     }
 
     // Lightweight transactions for object insertion.
@@ -491,7 +492,7 @@ public final class Queries {
     }
 
     public static final RegularStatement countEntitySets( String keyspace ) {
-        return QueryBuilder.select().countAll().from( keyspace, Tables.ENTITY_SETS.getTableName() )
+        return QueryBuilder.select().countAll().from( keyspace, Tables.ENTITY_SETS.getName() )
                 .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
@@ -508,5 +509,29 @@ public final class Queries {
                 .with( QueryBuilder.removeAll( CommonColumns.PROPERTIES.cql(), QueryBuilder.bindMarker() ) )
                 .where( QueryBuilder.eq( CommonColumns.NAMESPACE.cql(), QueryBuilder.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
+    }
+
+    public static final String addPropertyColumnsToEntityTable( String keyspace, String table, String propertiesWithType ){
+
+        return new StringBuilder( "ALTER TABLE " )
+                .append( keyspace )
+                .append( "." )
+                .append( table )
+                .append( " ADD (" )
+                .append( propertiesWithType )
+                .append( ")" )
+                .toString();
+    }
+
+    public static final String dropPropertyColumnsFromEntityTable( String keyspace, String table, String propertyColumnNames ){
+
+        return new StringBuilder( "ALTER TABLE " )
+                .append( keyspace )
+                .append( "." )
+                .append( table )
+                .append( " DROP (" )
+                .append( propertyColumnNames )
+                .append( ")" )
+                .toString();
     }
 }

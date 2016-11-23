@@ -6,8 +6,9 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import com.datastax.driver.core.DataType;
 import com.google.common.base.Preconditions;
+import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
-public enum CommonColumns {
+public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
     ROLE( DataType.text() ),
     USER( DataType.text() ),
@@ -26,14 +27,14 @@ public enum CommonColumns {
     ENTITYID( DataType.uuid() ),
     PROPERTY_TYPE( DataType.text() ),
     PROPERTIES( DataType.set( DataType.text() ) ),
-    SCHEMAS( DataType.set(DataType.text() ) ),
+    SCHEMAS( DataType.set( DataType.text() ) ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
     TYPENAME( DataType.text() ),
     TYPE( DataType.text() ),
     VALUE( null ),
-    PERMISSIONS ( DataType.set( DataType.text() ) ),
-    PARTITION_INDEX( DataType.tinyint() ); //partition index within a table for distribution purpose
+    PERMISSIONS( DataType.set( DataType.text() ) ),
+    PARTITION_INDEX( DataType.tinyint() ); // partition index within a table for distribution purpose
 
     private final DataType type;
     private final String   bindMarker;
@@ -47,7 +48,7 @@ public enum CommonColumns {
         this.bindMarker = maybeNewMarker;
     }
 
-    public DataType getType( Function<CommonColumns, DataType> typeResolver ) {
+    public DataType getType( Function<ColumnDef, DataType> typeResolver ) {
         return type == null ? typeResolver.apply( this ) : getType();
     }
 
