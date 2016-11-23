@@ -14,6 +14,7 @@ import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PermissionsInfo;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
+import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequestWithRequestingUser;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
@@ -596,38 +597,38 @@ public class PermissionsService implements PermissionsManager {
     }
     
     @Override
-    public Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfUsername( String username ){
+    public Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfUsername( String username ){
         return Iterables.concat( getAllReceivedRequestsForPermissionsOfUsername(PrincipalType.ROLE, username), getAllReceivedRequestsForPermissionsOfUsername(PrincipalType.USER, username) );
     }
 
-    private Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfUsername( PrincipalType type, String username ){
-        return Iterables.transform( tableManager.getAllReceivedRequestsForPermissionsOfUsername( type, username ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequest( type, row) );        
+    private Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfUsername( PrincipalType type, String username ){
+        return Iterables.transform( tableManager.getAllReceivedRequestsForPermissionsOfUsername( type, username ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequestWithRequestingUser( type, row) );        
     }
 
     @Override
-    public Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName ){
+    public Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName ){
         return Iterables.concat( getAllReceivedRequestsForPermissionsOfEntitySet(PrincipalType.ROLE, entitySetName), getAllReceivedRequestsForPermissionsOfEntitySet(PrincipalType.USER, entitySetName) );
     }
     
-    private Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfEntitySet( PrincipalType type, String entitySetName ){
-        return Iterables.transform( tableManager.getAllReceivedRequestsForPermissionsOfEntitySet( type, entitySetName ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequest( type, row) );        
+    private Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfEntitySet( PrincipalType type, String entitySetName ){
+        return Iterables.transform( tableManager.getAllReceivedRequestsForPermissionsOfEntitySet( type, entitySetName ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequestWithRequestingUser( type, row) );        
     }
 
     @Override
-    public Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username ){
+    public Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( String username ){
         return Iterables.concat( getAllSentRequestsForPermissions(PrincipalType.ROLE, username), getAllSentRequestsForPermissions(PrincipalType.USER, username) );
     }
     
-    private Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( PrincipalType type, String username ){
-        return Iterables.transform( tableManager.getAllSentRequestsForPermissions( type, username ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequest( type, row) );        
+    private Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( PrincipalType type, String username ){
+        return Iterables.transform( tableManager.getAllSentRequestsForPermissions( type, username ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequestWithRequestingUser( type, row) );        
     }
 
     @Override
-    public Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username, String entitySetName ){
+    public Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( String username, String entitySetName ){
         return Iterables.concat( getAllSentRequestsForPermissions(PrincipalType.ROLE, username, entitySetName), getAllSentRequestsForPermissions(PrincipalType.USER, username, entitySetName) );
     }
     
-    private Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( PrincipalType type, String username, String entitySetName ){
-        return Iterables.transform( tableManager.getAllSentRequestsForPermissions( type, username, entitySetName ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequest( type, row) );
+    private Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( PrincipalType type, String username, String entitySetName ){
+        return Iterables.transform( tableManager.getAllSentRequestsForPermissions( type, username, entitySetName ), row -> ResultSetAdapterFactory.mapRowToPropertyTypeInEntitySetAclRequestWithRequestingUser( type, row) );
     }
 }

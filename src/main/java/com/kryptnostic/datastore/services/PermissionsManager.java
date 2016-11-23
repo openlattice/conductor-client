@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PermissionsInfo;
 import com.dataloom.authorization.requests.Principal;
+import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequestWithRequestingUser;
 import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 
 public interface PermissionsManager {
@@ -94,12 +95,12 @@ public interface PermissionsManager {
 
     void removePermissionsRequestForEntitySet( UUID id );
     
-    Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfUsername( String username );
+    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfUsername( String username );
     
-    Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName );
+    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName );
     
-    Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username );
+    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( String username );
     
-    Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username, String entitySetName );
+    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( String username, String entitySetName );
 
 }

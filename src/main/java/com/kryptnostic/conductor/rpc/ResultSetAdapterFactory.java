@@ -15,6 +15,7 @@ import com.dataloom.authorization.requests.Action;
 import com.dataloom.authorization.requests.PermissionsInfo;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
+import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequestWithRequestingUser;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.datastax.driver.core.ColumnDefinitions;
@@ -98,8 +99,8 @@ public final class ResultSetAdapterFactory {
                 .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) );
     }
     
-    public static PropertyTypeInEntitySetAclRequest mapRowToPropertyTypeInEntitySetAclRequest( PrincipalType type, Row row ){
-        return new PropertyTypeInEntitySetAclRequest()
+    public static PropertyTypeInEntitySetAclRequestWithRequestingUser mapRowToPropertyTypeInEntitySetAclRequestWithRequestingUser( PrincipalType type, Row row ){
+        PropertyTypeInEntitySetAclRequest request = new PropertyTypeInEntitySetAclRequest()
                 .setPrincipal( new Principal( type, row.getString( CommonColumns.NAME.cql() ) ) )
                 .setAction( Action.REQUEST )
                 .setName( row.getString( CommonColumns.ENTITY_SET.cql() ) )
@@ -107,5 +108,7 @@ public final class ResultSetAdapterFactory {
                 .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ))
                 .setTimestamp( row.get( CommonColumns.CLOCK.cql(), Instant.class ).toString() )
                 .setRequestId( row.getUUID( CommonColumns.REQUESTID.cql() ) );
+        String requestingUser = row.getString( CommonColumns.USER.cql() );
+        return new PropertyTypeInEntitySetAclRequestWithRequestingUser().setRequest( request ).setRequestingUser( requestingUser );
     }
 }
