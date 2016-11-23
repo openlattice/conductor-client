@@ -10,6 +10,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.dataloom.edm.internal.*;
+import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
+import com.kryptnostic.datastore.exceptions.BadRequestException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -19,10 +22,6 @@ import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.edm.EntityDataModel;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
@@ -658,13 +657,27 @@ public class EdmService implements EdmManager {
         EntityType entityType = getEntityType( namespace, name );
         Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
 
-        Set<FullQualifiedName> newProperties = Sets.difference( properties, entityType.getProperties() );
+        Set<FullQualifiedName> newProperties = ImmutableSet.copyOf( Sets.difference( properties, entityType.getProperties() ) );
+
+        if( newProperties == null || newProperties.size() == 0 ){
+            return;
+        }
+
         entityType.addProperties( newProperties );
         edmStore.updateExistingEntityType(
                 entityType.getNamespace(),
                 entityType.getName(),
                 entityType.getKey(),
                 entityType.getProperties() );
+
+        String propertiesWithType = newProperties.stream().map( fqn ->
+                tableManager.getTypenameForPropertyType( fqn ) + " " + CassandraEdmMapping.getCassandraTypeName( tableManager.getPropertyType( fqn ).getDatatype() )
+        ).collect( Collectors.joining(","));
+
+        session.execute( Queries.addPropertyColumnsToEntityTable(
+                DatastoreConstants.KEYSPACE,
+                tableManager.getTablenameForEntityType( new FullQualifiedName( namespace, name ) ),
+                propertiesWithType ) );
 
         Set<FullQualifiedName> schemas = entityType.getSchemas();
         schemas.forEach( schemaFqn -> {
@@ -694,12 +707,15 @@ public class EdmService implements EdmManager {
          * property types are checked to exist.
          */
         if ( isValid ) {
-            if ( properties != null && entityType.getProperties() != null ) {
+
+            if ( properties != null && entityType.getProperties() != null && entityType.getProperties().containsAll( properties ) ) {
                 entityType.removeProperties( properties );
                 // Acl
                 properties
                         .forEach( propertyTypeFqn -> permissionsService.removePermissionsForPropertyTypeInEntityType(
                                 entityType.getFullQualifiedName(), propertyTypeFqn ) );
+            } else {
+                throw new IllegalArgumentException( "Not all properties are included in the EntityType" );
             }
             // TODO: Remove properties from Schema, once reference counting is implemented.
 
@@ -709,6 +725,14 @@ public class EdmService implements EdmManager {
                     entityType.getKey(),
                     entityType.getProperties() );
 
+            String propertyColumnNames = properties.stream().map( fqn ->
+                    Queries.fqnToColumnName( fqn )
+            ).collect( Collectors.joining(",") );
+
+            session.execute( Queries.dropPropertyColumnsFromEntityTable(
+                    DatastoreConstants.KEYSPACE,
+                    tableManager.getTablenameForEntityType( entityType ),
+                    propertyColumnNames ) );
         }
     }
 
