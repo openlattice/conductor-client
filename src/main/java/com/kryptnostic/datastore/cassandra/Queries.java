@@ -1,6 +1,9 @@
 package com.kryptnostic.datastore.cassandra;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -263,10 +266,14 @@ public final class Queries {
                         fqnToColumnName( svc.getFullQualifiedName() ),
                         CassandraEdmMapping.getCassandraType( svc.getDatatype() ) ) );
 
-        ValueColumn[] clusteringValueColumns = streamClusteringValueColumns.collect( Collectors.toSet() )
-                .toArray( new CassandraTableBuilder.ValueColumn[ 0 ] );
-        ValueColumn[] valueColumns = streamValueColumns.collect( Collectors.toSet() )
-                .toArray( new CassandraTableBuilder.ValueColumn[ 0 ] );
+        List<ColumnDef> clusteringColsAsList = new ArrayList<>( Arrays.asList( CommonColumns.CLOCK ) );
+        List<ColumnDef> colsAsList = new ArrayList<> (Arrays.asList( CommonColumns.TYPENAME, CommonColumns.ENTITY_SETS, CommonColumns.SYNCIDS ) );
+        
+        clusteringColsAsList.addAll( streamClusteringValueColumns.collect( Collectors.toList() ) );
+        colsAsList.addAll( streamValueColumns.collect( Collectors.toList() ) );
+        
+        ColumnDef[] clusteringCols = clusteringColsAsList.toArray( new ColumnDef[ 0 ] );
+        ColumnDef[] cols = colsAsList.toArray( new ColumnDef[ 0 ] );
         // List<ValueColumn> vcs = java.util.Arrays.asList( valueColumns ).stream()
         // .filter( vc -> vc.cql().contains( "key" ) ).collect( Collectors.toList() );
         //
@@ -276,10 +283,8 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, table )
                 .ifNotExists()
                 .partitionKey( CommonColumns.ENTITYID )
-                .clusteringColumns( CommonColumns.CLOCK )
-                .clusteringColumns( clusteringValueColumns )
-                .columns( CommonColumns.TYPENAME, CommonColumns.ENTITY_SETS, CommonColumns.SYNCIDS )
-                .columns( valueColumns )
+                .clusteringColumns( clusteringCols )
+                .columns( cols )
                 .buildQuery();
     }
 
