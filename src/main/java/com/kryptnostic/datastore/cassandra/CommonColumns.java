@@ -12,6 +12,7 @@ public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
     ROLE( DataType.text() ),
     USER( DataType.text() ),
+    USERID( DataType.text() ),
     CLOCK( DataType.timestamp() ),
     DATATYPE( DataType.text() ),
     ENTITY_SET( DataType.text() ),

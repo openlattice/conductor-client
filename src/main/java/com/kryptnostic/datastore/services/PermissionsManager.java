@@ -26,7 +26,7 @@ public interface PermissionsManager {
 
 	void setPermissionsForEntityType( Principal principal, FullQualifiedName fqn, Set<Permission> permissions );
 
-    boolean checkUserHasPermissionsOnEntityType( String username, List<String> roles, FullQualifiedName fqn, Permission permission );
+    boolean checkUserHasPermissionsOnEntityType( String userId, List<String> roles, FullQualifiedName fqn, Permission permission );
 
 	void addPermissionsForEntitySet( Principal principal, String name, Set<Permission> permissions );
 
@@ -34,13 +34,13 @@ public interface PermissionsManager {
 
 	void setPermissionsForEntitySet( Principal principal, String name, Set<Permission> permissions );
 
-    boolean checkUserHasPermissionsOnEntitySet( String username, List<String> roles, String name, Permission permission );
+    boolean checkUserHasPermissionsOnEntitySet( String userId, List<String> roles, String name, Permission permission );
     
-    boolean checkIfUserIsOwnerOfEntitySet( String username, String name );
+    boolean checkIfUserIsOwnerOfEntitySet( String userId, String name );
     
-    boolean checkIfUserIsOwnerOfEntitySet( String username, UUID requestId );
+    boolean checkIfUserIsOwnerOfEntitySet( String userId, UUID requestId );
     
-    boolean checkIfUserIsOwnerOfPermissionsRequest( String username, UUID requestId );
+    boolean checkIfUserIsOwnerOfPermissionsRequest( String userId, UUID requestId );
 
 	// Permissions for a user of pair of types
     void addPermissionsForPropertyTypeInEntityType( Principal principal, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
@@ -49,7 +49,7 @@ public interface PermissionsManager {
 
     void setPermissionsForPropertyTypeInEntityType( Principal principal, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
 
-    boolean checkUserHasPermissionsOnPropertyTypeInEntityType( String username, List<String> roles, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Permission permission );
+    boolean checkUserHasPermissionsOnPropertyTypeInEntityType( String userId, List<String> roles, FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn, Permission permission );
 
     void addPermissionsForPropertyTypeInEntitySet( Principal principal, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
     
@@ -57,7 +57,7 @@ public interface PermissionsManager {
 
     void setPermissionsForPropertyTypeInEntitySet( Principal principal, String entitySetName, FullQualifiedName propertyTypeFqn, Set<Permission> permissions );
 
-    boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( String username, List<String> roles, String entitySetName, FullQualifiedName propertyTypeFqn, Permission permission );
+    boolean checkUserHasPermissionsOnPropertyTypeInEntitySet( String userId, List<String> roles, String entitySetName, FullQualifiedName propertyTypeFqn, Permission permission );
 
 	// Utility functions for removing all permission details associated to a type
 
@@ -75,13 +75,13 @@ public interface PermissionsManager {
     
     // Utility functions for retrieving permissions
 
-    EnumSet<Permission> getEntitySetAclsForUser( String username, List<String> currentRoles, String entitySetName );
+    EnumSet<Permission> getEntitySetAclsForUser( String userId, List<String> currentRoles, String entitySetName );
 
-    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForUser( String username, List<String> currentRoles, String entitySetName );
+    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForUser( String userId, List<String> currentRoles, String entitySetName );
 
-    EnumSet<Permission> getEntityTypeAclsForUser( String username, List<String> currentRoles, FullQualifiedName entityTypeFqn );
+    EnumSet<Permission> getEntityTypeAclsForUser( String userId, List<String> currentRoles, FullQualifiedName entityTypeFqn );
     
-    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntityTypeAclsForUser( String username, List<String> currentRoles, FullQualifiedName entityTypeFqn );
+    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntityTypeAclsForUser( String userId, List<String> currentRoles, FullQualifiedName entityTypeFqn );
 
     Iterable<PermissionsInfo> getEntitySetAclsForOwner( String entitySetName );
 
@@ -91,16 +91,16 @@ public interface PermissionsManager {
     
     // Methods for requesting permissions
     
-    void addPermissionsRequestForPropertyTypeInEntitySet( String username, Principal principal, String entitySetName, FullQualifiedName propertyTypeFqn, EnumSet<Permission> permissions );
+    void addPermissionsRequestForPropertyTypeInEntitySet( String userId, Principal principal, String entitySetName, FullQualifiedName propertyTypeFqn, EnumSet<Permission> permissions );
 
     void removePermissionsRequestForEntitySet( UUID id );
     
-    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfUsername( String username );
+    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfUserId( String userId );
     
     Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName );
     
-    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( String username );
+    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( String userId );
     
-    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( String username, String entitySetName );
+    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllSentRequestsForPermissions( String userId, String entitySetName );
 
 }

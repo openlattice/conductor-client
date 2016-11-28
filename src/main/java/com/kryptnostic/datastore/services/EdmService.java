@@ -145,7 +145,7 @@ public class EdmService implements EdmManager {
      * @see com.kryptnostic.types.services.EdmManager#updateObjectType(com.kryptnostic.types.ObjectType)
      */
     @Override
-    public void upsertEntityType( Optional<String> username, EntityType entityType ) {
+    public void upsertEntityType( Optional<String> userId, EntityType entityType ) {
         // This call will fail if the typename has already been set for the entity.
         ensureValidEntityType( entityType );
         if ( checkEntityTypeExists( entityType.getFullQualifiedName() ) ) {
@@ -165,7 +165,7 @@ public class EdmService implements EdmManager {
                     entityType.getName(),
                     newPropertyTypesInEntityType );
         } else {
-            createEntityType( username, entityType, true );
+            createEntityType( userId, entityType, true );
         }
     }
 
@@ -403,17 +403,17 @@ public class EdmService implements EdmManager {
 
     @Override
     public void createEntityType(
-            Optional<String> username,
+            Optional<String> userId,
             EntityType entityType ) {
         // Make sure entity type is valid
         ensureValidEntityType( entityType );
         Preconditions.checkArgument( !checkEntityTypeExists( entityType.getFullQualifiedName() ),
                 "Entity type of same name already exists." );
 
-        createEntityType( username, entityType, true );
+        createEntityType( userId, entityType, true );
     }
 
-    private boolean createEntityType( Optional<String> username, EntityType entityType, boolean isValid ) {
+    private boolean createEntityType( Optional<String> userId, EntityType entityType, boolean isValid ) {
         /**
          * Refactored by Ho Chung, so that upsertEntityType won't do duplicate checks. checkedValid means that isValid
          * is true if entity type is checked valid, and checked not already exist.
@@ -526,21 +526,21 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void createEntitySet( Optional<String> username, EntitySet entitySet ) {
+    public void createEntitySet( Optional<String> userId, EntitySet entitySet ) {
         try {
             createEntitySet( entitySet );
 
-            if ( username.isPresent() ) {
-                tableManager.addOwnerForEntitySet( entitySet.getName(), username.get() );
+            if ( userId.isPresent() ) {
+                tableManager.addOwnerForEntitySet( entitySet.getName(), userId.get() );
 
                 EntityType entityType = entityTypeMapper.get( entitySet.getType().getNamespace(),
                         entitySet.getType().getName() );
-                permissionsService.addPermissionsForEntitySet( new Principal( PrincipalType.USER, username.get() ),
+                permissionsService.addPermissionsForEntitySet( new Principal( PrincipalType.USER ).setId( userId.get() ),
                         entitySet.getName(),
                         EnumSet.allOf( Permission.class ) );
                 entityType.getProperties()
                         .forEach( propertyTypeFqn -> permissionsService.addPermissionsForPropertyTypeInEntitySet(
-                                new Principal( PrincipalType.USER, username.get() ),
+                                new Principal( PrincipalType.USER ).setId( userId.get() ),
                                 entitySet.getName(),
                                 propertyTypeFqn,
                                 EnumSet.allOf( Permission.class ) ) );
@@ -592,15 +592,15 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public Iterable<EntitySet> getEntitySetsUserOwns( String username ) {
-        return StreamSupport.stream( getEntitySetNamesUserOwns( username ).spliterator(), false )
+    public Iterable<EntitySet> getEntitySetsUserOwns( String userId ) {
+        return StreamSupport.stream( getEntitySetNamesUserOwns( userId ).spliterator(), false )
                 .map( entitySetName -> getEntitySet( entitySetName ) )
                 .collect( Collectors.toList() );
     }
 
     @Override
-    public Iterable<String> getEntitySetNamesUserOwns( String username ) {
-        return tableManager.getEntitySetsUserOwns( username );
+    public Iterable<String> getEntitySetNamesUserOwns( String userId ) {
+        return tableManager.getEntitySetsUserOwns( userId );
     }
 
     @Override

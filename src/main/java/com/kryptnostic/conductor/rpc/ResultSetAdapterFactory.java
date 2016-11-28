@@ -9,6 +9,9 @@ import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
 
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.requests.Action;
@@ -31,10 +34,21 @@ import org.apache.olingo.commons.api.data.ValueType;
 
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.services.UserDirectoryService;
 
 public final class ResultSetAdapterFactory {
-
-	private void ResultSetAdapterFactory() {}
+    
+    private void ResultSetAdapterFactory() {}
+    
+    private static UserDirectoryService uds;
+    
+    @Inject
+    private UserDirectoryService currentUds;
+    
+    @PostConstruct
+    public void init(){
+        ResultSetAdapterFactory.uds = currentUds;
+    }
 
 	/**
 	 * // Only one static method here; should be incorporated in class that
@@ -89,19 +103,33 @@ public final class ResultSetAdapterFactory {
 	
     public static PermissionsInfo mapRoleRowToPermissionsInfo( Row row ) {
         return new PermissionsInfo()
-                .setPrincipal( new Principal( PrincipalType.ROLE, row.getString( CommonColumns.ROLE.cql() ) ))
+                .setPrincipal( new Principal( PrincipalType.ROLE ).setName( row.getString( CommonColumns.ROLE.cql() ) ))
                 .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) );
     }
     
     public static PermissionsInfo mapUserRowToPermissionsInfo( Row row ) {
+        String userId = row.getString( CommonColumns.USER.cql() );
+        String username = getUsernameFromUserId( userId );
         return new PermissionsInfo()
-                .setPrincipal( new Principal( PrincipalType.USER, row.getString( CommonColumns.USER.cql() ) ))
+                .setPrincipal( new Principal( PrincipalType.USER ).setId( userId ).setName( username ) )
                 .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) );
     }
     
     public static PropertyTypeInEntitySetAclRequestWithRequestingUser mapRowToPropertyTypeInEntitySetAclRequestWithRequestingUser( PrincipalType type, Row row ){
+        Principal principal = new Principal( type );
+        switch( type ){
+            case ROLE:
+                principal = principal.setName( row.getString( CommonColumns.NAME.cql() ) );
+                break;
+            case USER:
+                String userId = row.getString( CommonColumns.USERID.cql() );
+                principal = principal.setId( userId ).setName( getUsernameFromUserId( userId ) );
+                break;
+            default:
+        }
+        
         PropertyTypeInEntitySetAclRequest request = new PropertyTypeInEntitySetAclRequest()
-                .setPrincipal( new Principal( type, row.getString( CommonColumns.NAME.cql() ) ) )
+                .setPrincipal( principal )
                 .setAction( Action.REQUEST )
                 .setName( row.getString( CommonColumns.ENTITY_SET.cql() ) )
                 .setPropertyType( row.get( CommonColumns.PROPERTY_TYPE.cql(), FullQualifiedName.class ))
@@ -110,5 +138,9 @@ public final class ResultSetAdapterFactory {
                 .setRequestId( row.getUUID( CommonColumns.REQUESTID.cql() ) );
         String requestingUser = row.getString( CommonColumns.USER.cql() );
         return new PropertyTypeInEntitySetAclRequestWithRequestingUser().setRequest( request ).setRequestingUser( requestingUser );
+    }
+    
+    private static String getUsernameFromUserId( String userId ){
+        return uds.getUser( userId ).getUsername();
     }
 }

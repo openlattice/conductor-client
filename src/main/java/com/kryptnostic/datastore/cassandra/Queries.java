@@ -165,7 +165,7 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.USER )
                 .clusteringColumns( CommonColumns.ENTITY_SET, CommonColumns.CLOCK, CommonColumns.REQUESTID )
-                .columns( CommonColumns.NAME, CommonColumns.PROPERTY_TYPE, CommonColumns.PERMISSIONS )
+                .columns( CommonColumns.USERID, CommonColumns.PROPERTY_TYPE, CommonColumns.PERMISSIONS )
                 .buildQuery();
     }
 
