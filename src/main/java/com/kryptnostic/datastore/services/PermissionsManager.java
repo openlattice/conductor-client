@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PermissionsInfo;
