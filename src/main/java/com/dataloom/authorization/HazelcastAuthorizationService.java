@@ -16,11 +16,12 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
-    public static final String                      AUTHZ_MAP = "authz";
-    private final IMap<PermissionQuery, Permission> authorizationMap;
+    public static final String                                 ACES_MAP = "aces";
+
+    private final IMap<AccessControlEntryKey, Set<Permission>> aces;
 
     public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance ) {
-        authorizationMap = hazelcastInstance.getMap( AUTHZ_MAP );
+        aces = hazelcastInstance.getMap( ACES_MAP );
     }
 
     @Override
@@ -29,8 +30,8 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             UUID objectId,
             Principal principal,
             Set<Permission> permissions ) {
-        // TODO Auto-generated method stub
-
+        //TODO: Use abstract merger
+        aces.put( new AccessControlEntryKey( objectId, objectType, principal ), permissions );
     }
 
     @Override
@@ -39,8 +40,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             UUID objectId,
             Principal principal,
             Set<Permission> permissions ) {
-        // TODO Auto-generated method stub
-
+        aces.delete( new AccessControlEntryKey( objectId, objectType, principal ) );
     }
 
     @Override
@@ -49,8 +49,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             UUID objectId,
             Principal principal,
             Set<Permission> permissions ) {
-        // TODO Auto-generated method stub
-
+        aces.put( new AccessControlEntryKey( objectId, objectType, principal ), permissions );
     }
 
     @Override
