@@ -3,9 +3,12 @@ package com.dataloom.authorization;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,64 +25,68 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 public class AuthorizationQueryService {
-    private static final Logger                                logger = LoggerFactory
+    private static final Logger                 logger = LoggerFactory
             .getLogger( AuthorizationQueryService.class );
-    private final Session                                      session;
-    private final PreparedStatement                            getAuthorizedAclKeysPrepStmt;
-    private final PreparedStatement                            getAclsForSecurableObjectPrepStmt;
-    private final IMap<AccessControlEntryKey, Set<Permission>> aces;
+    private final Session                       session;
+    private final PreparedStatement             authorizedAclKeysQuery;
+    private final PreparedStatement             aclsForSecurableObjectQuery;
+    private final IMap<AceKey, Set<Permission>> aces;
 
     public AuthorizationQueryService( Session session, HazelcastInstance hazelcastInstance ) {
         this.session = session;
         aces = hazelcastInstance.getMap( HazelcastAuthorizationService.ACES_MAP );
 
-        getAuthorizedAclKeysPrepStmt = session.prepare( QueryBuilder
-                .select( CommonColumns.SECURABLE_TYPE.cql(), CommonColumns.ID.cql() )
+        authorizedAclKeysQuery = session.prepare( QueryBuilder
+                .select( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), CommonColumns.SECURABLE_OBJECTID.cql() )
                 .from( DatastoreConstants.KEYSPACE, "authz" )
-                .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(), QueryBuilder.bindMarker( "_type" ) ) )
-                .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(), QueryBuilder.bindMarker( "_id" ) ) ) );
+                .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
+                        QueryBuilder.bindMarker( CommonColumns.PRINCIPAL_TYPE.bindMarker() ) ) )
+                .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
+                        QueryBuilder.bindMarker( CommonColumns.PRINCIPAL_ID.bindMarker() ) ) ) );
 
-        getAclsForSecurableObjectPrepStmt = session.prepare( QueryBuilder
+        aclsForSecurableObjectQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.PRINCIPAL_TYPE.cql(), CommonColumns.PRINCIPAL_ID.cql() )
                 .from( DatastoreConstants.KEYSPACE, "authz" )
-                .where( QueryBuilder.eq( CommonColumns.SECURABLE_TYPE.cql(), QueryBuilder.bindMarker( "_type" ) ) )
-                .and( QueryBuilder.eq( CommonColumns.ID.cql(), QueryBuilder.bindMarker( "_id" ) ) ) );
+                .where( QueryBuilder.eq( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
+                        QueryBuilder.bindMarker( CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) ) )
+                .and( QueryBuilder.eq( CommonColumns.SECURABLE_OBJECTID.cql(),
+                        QueryBuilder.bindMarker( CommonColumns.SECURABLE_OBJECTID.bindMarker() ) ) ) );
     }
 
     public Iterable<AclKey> getAuthorizedAclKeys( Principal principal, Set<Permission> desiredPermissions ) {
         ResultSetFuture rsf = session.executeAsync(
-                getAuthorizedAclKeysPrepStmt.bind( "_type", principal.getType(), "_id", principal.getName() ) );
-        // Initial transform concat is to defer evaluation of getUninterruptibly()
-        return Iterables.transform(
-                Iterables.concat( Iterables.transform( Arrays.asList( rsf ), frs -> frs.getUninterruptibly() ) ),
-                AuthorizationQueryService::getAclKeyFromRow );
+                authorizedAclKeysQuery.bind( CommonColumns.PRINCIPAL_TYPE.bindMarker(),
+                        principal.getType(),
+                        CommonColumns.PRINCIPAL_ID.bindMarker(),
+                        principal.getName() ) );
+        return Iterables.transform( makeLazy( rsf ), AuthorizationQueryService::getAclKeyFromRow );
     }
 
     public LazyAcl getAclsForSecurableObject( AclKey aclKey ) {
         ResultSetFuture rsf = session.executeAsync(
-                getAclsForSecurableObjectPrepStmt.bind( "_type",
+                aclsForSecurableObjectQuery.bind( "_type",
                         aclKey.getObjectType(),
                         "_id",
                         aclKey.getObjectId() ) );
-        // Initial transform concat is to defer evaluation of getUninterruptibly()
-        Iterable<Principal> principals = Iterables.transform(
-                Iterables.concat( Iterables.transform( Arrays.asList( rsf ), frs -> frs.getUninterruptibly() ) ),
+
+        Iterable<Principal> principals = Iterables.transform( makeLazy( rsf ),
                 AuthorizationQueryService::getPrincipalFromRow );
-        Iterable<LazyAce> lazyAces = Iterables.transform( principals,
-                principal -> new LazyAce( principal, aces.get(
-                        new AccessControlEntryKey( aclKey.getObjectId(), aclKey.getObjectType(), principal ) ) ) );
+                Iterables.transform( principals,
+                principal -> new AceFuture( principal, aces.getAsync(
+                        new AceKey( aclKey.getObjectId(), aclKey.getObjectType(), principal ) ) ) );
         return new LazyAcl( aclKey, lazyAces );
     }
 
     private static AclKey getAclKeyFromRow( Row row ) {
-        final String securableType = row.getString( CommonColumns.SECURABLE_TYPE.cql() );
-        final UUID objectId = checkNotNull( row.getUUID( CommonColumns.ID.cql() ),
-                "Securable object id cannot be null." );
+        final String securableType = row.getString( CommonColumns.SECURABLE_OBJECT_TYPE.cql() );
         checkState( StringUtils.isNotBlank( securableType ), "Encountered blank securable type" );
+        final UUID objectId = checkNotNull( row.getUUID( CommonColumns.SECURABLE_OBJECTID.cql() ),
+                "Securable object id cannot be null." );
         return new AclKey(
                 SecurableObjectType.valueOf( securableType ),
                 objectId );
@@ -93,6 +100,17 @@ public class AuthorizationQueryService {
         return new Principal(
                 PrincipalType.valueOf( principalType ),
                 principalId );
+    }
+
+    /**
+     * Useful adapter for {@code Iterables#transform(Iterable, com.google.common.base.Function)} that allows lazy
+     * evaluation of result set future.
+     * 
+     * @param rsf The result set future to make a lazy evaluated iterator
+     * @return The lazy evaluatable iteratable
+     */
+    private static Iterable<Row> makeLazy( ResultSetFuture rsf ) {
+        return rsf.getUninterruptibly()::iterator;
     }
 
 }

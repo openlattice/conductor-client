@@ -2,9 +2,9 @@ package com.dataloom.authorization;
 
 public class LazyAcl {
     private final AclKey            aclKey;
-    private final Iterable<LazyAce> aces;
+    private final Iterable<Ace> aces;
 
-    public LazyAcl( AclKey aclKey, Iterable<LazyAce> aces ) {
+    public LazyAcl( AclKey aclKey, Iterable<Ace> aces ) {
         this.aclKey = aclKey;
         this.aces = aces;
     }
@@ -13,7 +13,7 @@ public class LazyAcl {
         return aclKey;
     }
 
-    public Iterable<LazyAce> getAces() {
+    public Iterable<Ace> getAces() {
         return aces;
     }
 

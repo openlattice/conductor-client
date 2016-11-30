@@ -6,12 +6,16 @@ import java.util.UUID;
 
 import com.dataloom.authorization.requests.Principal;
 
-public class AccessControlEntryKey {
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt; 
+ *
+ */
+public class AceKey {
     private final UUID                objectId;
     private final SecurableObjectType objectType;
     private final Principal           principal;
 
-    public AccessControlEntryKey( UUID objectId, SecurableObjectType objectType, Principal principal ) {
+    public AceKey( UUID objectId, SecurableObjectType objectType, Principal principal ) {
         this.objectId = checkNotNull( objectId );
         this.objectType = checkNotNull( objectType );
         this.principal = checkNotNull( principal );
@@ -47,10 +51,10 @@ public class AccessControlEntryKey {
         if ( obj == null ) {
             return false;
         }
-        if ( !( obj instanceof AccessControlEntryKey ) ) {
+        if ( !( obj instanceof AceKey ) ) {
             return false;
         }
-        AccessControlEntryKey other = (AccessControlEntryKey) obj;
+        AceKey other = (AceKey) obj;
         if ( objectId == null ) {
             if ( other.objectId != null ) {
                 return false;
