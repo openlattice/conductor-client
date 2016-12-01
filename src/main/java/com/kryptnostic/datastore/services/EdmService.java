@@ -151,19 +151,31 @@ public class EdmService implements EdmManager {
         if ( checkEntityTypeExists( entityType.getFullQualifiedName() ) ) {
             // Retrieve database record of entityType
             EntityType dbRecord = getEntityType( entityType.getFullQualifiedName() );
-            // Retrieve properties known to user
+            
+            // Update properties
             Set<FullQualifiedName> currentPropertyTypes = dbRecord.getProperties();
-            // Remove the removable property types in database properly; this step takes care of removal of
-            // permissions
+            
             Set<FullQualifiedName> removablePropertyTypesInEntityType = Sets.difference( currentPropertyTypes,
                     entityType.getProperties() );
             removePropertyTypesFromEntityType( dbRecord, removablePropertyTypesInEntityType, true );
-            // Add the new property types in
+            
             Set<FullQualifiedName> newPropertyTypesInEntityType = Sets.difference( entityType.getProperties(),
                     currentPropertyTypes );
             addPropertyTypesToEntityType( entityType.getNamespace(),
                     entityType.getName(),
                     newPropertyTypesInEntityType );
+            
+            // Update Schema
+            Set<FullQualifiedName> currentSchemas = dbRecord.getSchemas();
+            
+            Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, entityType.getSchemas() );
+            removableSchemas.forEach( schema -> removeEntityTypesFromSchema( schema.getNamespace(), schema.getName(), ImmutableSet.of( entityType.getFullQualifiedName() ) ) );
+            
+            Set<FullQualifiedName> newSchemas = Sets.difference( entityType.getSchemas(), currentSchemas );
+            newSchemas.forEach( schema -> addEntityTypesToSchema( schema.getNamespace(), schema.getName(), ImmutableSet.of( entityType.getFullQualifiedName() ) ) );
+            
+            // Persist
+            entityTypeMapper.save( entityType );
         } else {
             createEntityType( username, entityType, true );
         }
@@ -178,13 +190,20 @@ public class EdmService implements EdmManager {
     public void upsertPropertyType( PropertyType propertyType ) {
         ensureValidPropertyType( propertyType );
         if ( checkPropertyTypeExists( propertyType.getFullQualifiedName() ) ) {
-            Util.wasLightweightTransactionApplied(
-                    edmStore.updatePropertyTypeIfExists(
-                            propertyType.getDatatype(),
-                            propertyType.getMultiplicity(),
-                            propertyType.getSchemas(),
-                            propertyType.getNamespace(),
-                            propertyType.getName() ) );
+            // Retrieve database record of property type
+            PropertyType dbRecord = getPropertyType( propertyType.getFullQualifiedName() );
+            
+            // Update Schema
+            Set<FullQualifiedName> currentSchemas = dbRecord.getSchemas();
+            
+            Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, propertyType.getSchemas() );
+            removableSchemas.forEach( schema -> removeEntityTypesFromSchema( schema.getNamespace(), schema.getName(), ImmutableSet.of( propertyType.getFullQualifiedName() ) ) );
+            
+            Set<FullQualifiedName> newSchemas = Sets.difference( propertyType.getSchemas(), currentSchemas );
+            newSchemas.forEach( schema -> addEntityTypesToSchema( schema.getNamespace(), schema.getName(), ImmutableSet.of( propertyType.getFullQualifiedName() ) ) ); 
+            
+            propertyTypeMapper.save( propertyType );
+            //TODO: Need to alter table?
         } else {
             createPropertyType( propertyType, true );
         }
@@ -196,6 +215,31 @@ public class EdmService implements EdmManager {
      */
     @Override
     public void upsertSchema( Schema schema ) {
+        // Retrieve database record of entityType
+        Schema dbRecord = getSchema( schema.getNamespace(),
+                schema.getNamespace(),
+                EnumSet.noneOf( TypeDetails.class ) );
+
+        // Update entity types
+        Set<FullQualifiedName> currentEntityTypes = dbRecord.getEntityTypeFqns();
+
+        Set<FullQualifiedName> removableEntityTypes = Sets.difference( currentEntityTypes, schema.getEntityTypeFqns() );
+        removeEntityTypesFromSchema( schema.getNamespace(), schema.getName(), removableEntityTypes );
+
+        Set<FullQualifiedName> newEntityTypes = Sets.difference( schema.getEntityTypeFqns(), currentEntityTypes );
+        addEntityTypesToSchema( schema.getNamespace(), schema.getName(), newEntityTypes );
+
+        // Update property types
+        Set<FullQualifiedName> currentPropertyTypes = dbRecord.getPropertyTypeFqns();
+
+        Set<FullQualifiedName> removablePropertyTypes = Sets.difference( currentPropertyTypes,
+                schema.getPropertyTypeFqns() );
+        removePropertyTypesFromSchema( schema.getNamespace(), schema.getName(), removablePropertyTypes );
+
+        Set<FullQualifiedName> newPropertyTypes = Sets.difference( schema.getPropertyTypeFqns(), currentPropertyTypes );
+        addPropertyTypesToSchema( schema.getNamespace(), schema.getName(), newPropertyTypes );
+
+        // Persist
         session.execute( tableManager.getSchemaUpsertStatement( schema.getAclId() ).bind( schema.getNamespace(),
                 schema.getName(),
                 schema.getEntityTypeFqns(),
@@ -303,6 +347,7 @@ public class EdmService implements EdmManager {
             permissionsService.removePermissionsForPropertyTypeInEntityType( entityTypeFqn );
 
             // Previous functions may need lookup to work - must delete lookup last
+            tableManager.deleteEntityTypeTable( entityType.getNamespace(), entityType.getName() );
             tableManager.deleteFromEntityTypeLookupTable( entityType );
             entityTypeMapper.delete( entityType );
         } catch ( Exception e ) {
@@ -472,7 +517,8 @@ public class EdmService implements EdmManager {
             // Acls removal
             permissionsService.removePermissionsForEntitySet( entitySetName );
             permissionsService.removePermissionsForPropertyTypeInEntitySet( entitySetName );
-
+            permissionsService.removePermissionsRequestForEntitySet( entitySetName );
+            
             entitySetMapper.delete( entitySet );
         } catch ( Exception e ) {
             throw new IllegalStateException( "Deletion of Entity Set failed." );
