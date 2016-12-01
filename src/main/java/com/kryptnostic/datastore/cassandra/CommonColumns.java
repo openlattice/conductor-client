@@ -60,10 +60,6 @@ public enum CommonColumns implements ColumnDef {
         return Preconditions.checkNotNull( type, "This column requires a type resolver." );
     }
 
-    public String bindMarker() {
-        return bindMarker;
-    }
-
     public String cql() {
         return super.name().toLowerCase();
     }

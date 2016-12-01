@@ -34,17 +34,17 @@ public class AuthorizationQueryService {
                 .select( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), CommonColumns.SECURABLE_OBJECTID.cql() )
                 .from( DatastoreConstants.KEYSPACE, "authz" )
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
-                        QueryBuilder.bindMarker( CommonColumns.PRINCIPAL_TYPE.bindMarker() ) ) )
+                        CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
-                        QueryBuilder.bindMarker( CommonColumns.PRINCIPAL_ID.bindMarker() ) ) ) );
+                        CommonColumns.PRINCIPAL_ID.bindMarker() ) ) );
 
         aclsForSecurableObjectQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.PRINCIPAL_TYPE.cql(), CommonColumns.PRINCIPAL_ID.cql() )
                 .from( DatastoreConstants.KEYSPACE, "authz" )
                 .where( QueryBuilder.eq( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
-                        QueryBuilder.bindMarker( CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) ) )
+                        CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.SECURABLE_OBJECTID.cql(),
-                        QueryBuilder.bindMarker( CommonColumns.SECURABLE_OBJECTID.bindMarker() ) ) ) );
+                        CommonColumns.SECURABLE_OBJECTID.bindMarker() ) ) );
     }
 
     public Iterable<AclKey> getAuthorizedAclKeys( Principal principal, Set<Permission> desiredPermissions ) {

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.authorization.requests.Principal;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
@@ -21,7 +22,7 @@ public interface EdmManager {
             Set<FullQualifiedName> entityTypes,
             Set<FullQualifiedName> propertyTypes );
 
-    //would attach all property types of the entityTypes to Schema
+    // would attach all property types of the entityTypes to Schema
     void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
 
     void upsertSchema( Schema namespace );
@@ -41,32 +42,28 @@ public interface EdmManager {
     void createEntitySet( String typename, String name, String title );
 
     void createEntitySet( EntitySet entitySet );
-    
-    void createEntitySet( Optional<String> username, EntitySet entitySet );
+
+    void createEntitySet( Principal principal, EntitySet entitySet );
 
     void upsertEntitySet( EntitySet entitySet );
 
     EntitySet getEntitySet( String name );
 
     Iterable<EntitySet> getEntitySets();
-    
+
     Iterable<EntitySet> getEntitySetsUserOwns( String username );
 
     Iterable<String> getEntitySetNamesUserOwns( String username );
 
     void deleteEntitySet( EntitySet entitySet );
-    
+
     void deleteEntitySet( String name );
 
-    void createEntityType( EntityType objectType );
-    
-    void createEntityType( Optional<String> username, EntityType objectType );
+    void createEntityType( Principal principal, EntityType entityType );
 
     void assignEntityToEntitySet( UUID entityId, String entitySetName );
 
     void assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
-
-    void upsertEntityType( Optional<String> username, EntityType objectType );
 
     EntityType getEntityType( String namespace, String name );
 
@@ -83,8 +80,6 @@ public interface EdmManager {
     void removePropertyTypesFromSchema( String namespace, String name, Set<FullQualifiedName> properties );
 
     void createPropertyType( PropertyType propertyType );
-
-    void upsertPropertyType( PropertyType propertyType );
 
     void deletePropertyType( FullQualifiedName propertyTypeFqn );
 
@@ -113,15 +108,17 @@ public interface EdmManager {
             Set<FullQualifiedName> properties );
 
     void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
-    
-    //Helper methods to check existence
+
+    // Helper methods to check existence
     boolean checkPropertyTypesExist( Set<FullQualifiedName> properties );
-    
+
     boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn );
-    
+
     boolean checkEntityTypeExists( FullQualifiedName entityTypeFqn );
-    
+
     boolean checkEntitySetExists( String name );
-    
+
     boolean checkSchemaExists( String namespace, String name );
+
+
 }

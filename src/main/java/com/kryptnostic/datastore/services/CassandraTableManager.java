@@ -28,6 +28,7 @@ import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -44,6 +45,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.conductor.rpc.odata.Tables;
@@ -72,7 +75,7 @@ public class CassandraTableManager {
 
     private final String                                              keyspace;
     private final Session                                             session;
-
+    private final IMap<FullQualifiedName, PropertyType>               propertyTypes;
     private final ConcurrentMap<FullQualifiedName, PreparedStatement> propertyTypeUpdateStatements;
     private final ConcurrentMap<FullQualifiedName, PreparedStatement> propertyIndexUpdateStatements;
     private final ConcurrentMap<FullQualifiedName, PreparedStatement> entityTypeInsertStatements;
@@ -158,6 +161,7 @@ public class CassandraTableManager {
     private final Mapper<EntityType>                                  entityTypeMapper;
 
     public CassandraTableManager(
+            HazelcastInstance hazelcastInstance,
             String keyspace,
             Session session,
             MappingManager mm ) {
@@ -178,7 +182,7 @@ public class CassandraTableManager {
         this.schemaAddPropertyTypes = Maps.newConcurrentMap();
         this.schemaRemovePropertyTypes = Maps.newConcurrentMap();
         this.entityIdToTypeUpdateStatements = Maps.newConcurrentMap();
-
+        this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         initCoreTables( keyspace, session );
         prepareSchemaQueries();
 
@@ -331,7 +335,7 @@ public class CassandraTableManager {
                         .from( keyspace, Tables.ENTITY_TYPES_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
-        
+
         this.getPermissionsForEntityTypeByType = new HashMap<>();
 
         getPermissionsForEntityTypeByType.put( PrincipalType.ROLE,
@@ -415,7 +419,7 @@ public class CassandraTableManager {
                 session.prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ENTITY_SETS_USERS_ACLS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
-        
+
         this.deleteRowFromEntitySetsAclsTable = new HashMap<>();
 
         deleteRowFromEntitySetsAclsTable.put( PrincipalType.ROLE,
@@ -520,7 +524,7 @@ public class CassandraTableManager {
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
-        
+
         this.getPermissionsForPropertyTypeInEntityTypeByTypes = new HashMap<>();
 
         getPermissionsForPropertyTypeInEntityTypeByTypes.put( PrincipalType.ROLE,
@@ -536,7 +540,7 @@ public class CassandraTableManager {
                         .allowFiltering()
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
-        
+
         this.getPermissionsForPropertyTypeInEntityTypeByEntityType = new HashMap<>();
 
         getPermissionsForPropertyTypeInEntityTypeByEntityType.put( PrincipalType.ROLE,
@@ -620,7 +624,7 @@ public class CassandraTableManager {
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
-        
+
         this.getPermissionsForPropertyTypeInEntitySetBySetAndType = new HashMap<>();
 
         getPermissionsForPropertyTypeInEntitySetBySetAndType.put( PrincipalType.ROLE,
@@ -636,7 +640,7 @@ public class CassandraTableManager {
                         .allowFiltering()
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() ) ) ) );
-        
+
         this.getPermissionsForPropertyTypeInEntitySetBySet = new HashMap<>();
 
         getPermissionsForPropertyTypeInEntitySetBySet.put( PrincipalType.ROLE,
@@ -941,7 +945,8 @@ public class CassandraTableManager {
                 entityType );
         final String tablename = maybeTablename;
         propertyTypes.stream()
-                .forEach( pt -> session.execute( Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) ) );
+                .forEach( pt -> session
+                        .execute( Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) ) );
         entityType.getKey().forEach( fqn -> {
             // TODO: Use elasticsearch for maintaining index instead of maintaining in Cassandra.
             /*
@@ -1479,17 +1484,17 @@ public class CassandraTableManager {
      **************/
 
     public EnumSet<Permission> getRolePermissionsForEntityType( String role, FullQualifiedName entityTypeFqn ) {
-            String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
-            Row row = session.execute( this.getPermissionsForEntityType
-                    .get( PrincipalType.ROLE )
-                    .bind( role, entityTypeTypename ) )
-                    .one();
-            if ( row != null ) {
-                return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
-            } else {
-                // Property Type not found in Acl table; would mean no permission for now
-                return EnumSet.noneOf( Permission.class );
-            }
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        Row row = session.execute( this.getPermissionsForEntityType
+                .get( PrincipalType.ROLE )
+                .bind( role, entityTypeTypename ) )
+                .one();
+        if ( row != null ) {
+            return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+        } else {
+            // Property Type not found in Acl table; would mean no permission for now
+            return EnumSet.noneOf( Permission.class );
+        }
     }
 
     public EnumSet<Permission> getUserPermissionsForEntityType( String user, FullQualifiedName entityTypeFqn ) {
@@ -1551,15 +1556,16 @@ public class CassandraTableManager {
         deleteEntityTypeFromEntityTypesAclsTable( PrincipalType.ROLE, entityTypeFqn );
         deleteEntityTypeFromEntityTypesAclsTable( PrincipalType.USER, entityTypeFqn );
     }
-    
-    private void deleteEntityTypeFromEntityTypesAclsTable( PrincipalType type, FullQualifiedName entityTypeFqn ){
+
+    private void deleteEntityTypeFromEntityTypesAclsTable( PrincipalType type, FullQualifiedName entityTypeFqn ) {
         String columnName = type.equals( PrincipalType.ROLE ) ? CommonColumns.ROLE.cql() : CommonColumns.USER.cql();
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
-        
+
         ResultSet rs = session.execute( this.getPermissionsForEntityTypeByType.get( type ).bind( entityTypeFqn ) );
         // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
-        for( Row row : rs ){
-            session.execute( this.deleteRowFromEntityTypesAclsTable.get( type ).bind( row.getString( columnName ), entityTypeTypename ) );
+        for ( Row row : rs ) {
+            session.execute( this.deleteRowFromEntityTypesAclsTable.get( type ).bind( row.getString( columnName ),
+                    entityTypeTypename ) );
         }
     }
 
@@ -1576,17 +1582,17 @@ public class CassandraTableManager {
     }
 
     public EnumSet<Permission> getRolePermissionsForEntitySet( String role, String entitySetName ) {
-            Row row = session.execute( this.getPermissionsForEntitySet
-                    .get( PrincipalType.ROLE )
-                    .bind( role, entitySetName ) )
-                    .one();
-            if ( row != null ) {
-                return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
-            } else {
-                // Property Type not found in Acl table; would mean no permission for now
-                // TODO: change this, if you want default permission of a group
-                return EnumSet.noneOf( Permission.class );
-            }
+        Row row = session.execute( this.getPermissionsForEntitySet
+                .get( PrincipalType.ROLE )
+                .bind( role, entitySetName ) )
+                .one();
+        if ( row != null ) {
+            return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+        } else {
+            // Property Type not found in Acl table; would mean no permission for now
+            // TODO: change this, if you want default permission of a group
+            return EnumSet.noneOf( Permission.class );
+        }
     }
 
     public EnumSet<Permission> getUserPermissionsForEntitySet( String user, String entitySetName ) {
@@ -1632,14 +1638,15 @@ public class CassandraTableManager {
         deleteEntitySetFromEntitySetsAclsTable( PrincipalType.ROLE, entitySetName );
         deleteEntitySetFromEntitySetsAclsTable( PrincipalType.USER, entitySetName );
     }
-    
-    private void deleteEntitySetFromEntitySetsAclsTable( PrincipalType type, String entitySetName ){
+
+    private void deleteEntitySetFromEntitySetsAclsTable( PrincipalType type, String entitySetName ) {
         String columnName = type.equals( PrincipalType.ROLE ) ? CommonColumns.ROLE.cql() : CommonColumns.USER.cql();
-        
+
         ResultSet rs = session.execute( this.getPermissionsForEntitySetBySet.get( type ).bind( entitySetName ) );
         // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
-        for( Row row : rs ){
-            session.execute( this.deleteRowFromEntitySetsAclsTable.get( type ).bind( row.getString( columnName ), entitySetName ) );
+        for ( Row row : rs ) {
+            session.execute( this.deleteRowFromEntitySetsAclsTable.get( type ).bind( row.getString( columnName ),
+                    entitySetName ) );
         }
     }
 
@@ -1660,34 +1667,40 @@ public class CassandraTableManager {
     public ResultSet getUserAclsForEntitySet( String entitySetName ) {
         return session.execute( getPermissionsForEntitySetBySet.get( PrincipalType.USER ).bind( entitySetName ) );
     }
-    
-    public ResultSet getRoleAclsForPropertyTypeInEntitySetBySetAndType( String entitySetName, FullQualifiedName propertyTypeFqn ) {
+
+    public ResultSet getRoleAclsForPropertyTypeInEntitySetBySetAndType(
+            String entitySetName,
+            FullQualifiedName propertyTypeFqn ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-        return session.execute( getPermissionsForPropertyTypeInEntitySetBySetAndType.get( PrincipalType.ROLE ).bind( entitySetName, propertyTypeTypename ) );
+        return session.execute( getPermissionsForPropertyTypeInEntitySetBySetAndType.get( PrincipalType.ROLE )
+                .bind( entitySetName, propertyTypeTypename ) );
     }
 
-    public ResultSet getUserAclsForPropertyTypeInEntitySetBySetAndType( String entitySetName, FullQualifiedName propertyTypeFqn ) {
+    public ResultSet getUserAclsForPropertyTypeInEntitySetBySetAndType(
+            String entitySetName,
+            FullQualifiedName propertyTypeFqn ) {
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-        return session.execute( getPermissionsForPropertyTypeInEntitySetBySetAndType.get( PrincipalType.USER ).bind( entitySetName, propertyTypeTypename ) );
+        return session.execute( getPermissionsForPropertyTypeInEntitySetBySetAndType.get( PrincipalType.USER )
+                .bind( entitySetName, propertyTypeTypename ) );
     }
-    
+
     public EnumSet<Permission> getRolePermissionsForPropertyTypeInEntityType(
             String role,
             FullQualifiedName entityTypeFqn,
             FullQualifiedName propertyTypeFqn ) {
-            String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
-            String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-            Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType
-                    .get( PrincipalType.ROLE )
-                    .bind( role, entityTypeTypename, propertyTypeTypename ) )
-                    .one();
-            if ( row != null ) {
-                return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
-            } else {
-                // Property Type not found in Acl table; would mean no permission for now
-                // TODO: change this, if you want default permission of a group
-                return EnumSet.noneOf( Permission.class );
-            }
+        String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
+        Row row = session.execute( this.getPermissionsForPropertyTypeInEntityType
+                .get( PrincipalType.ROLE )
+                .bind( role, entityTypeTypename, propertyTypeTypename ) )
+                .one();
+        if ( row != null ) {
+            return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+        } else {
+            // Property Type not found in Acl table; would mean no permission for now
+            // TODO: change this, if you want default permission of a group
+            return EnumSet.noneOf( Permission.class );
+        }
     }
 
     public EnumSet<Permission> getUserPermissionsForPropertyTypeInEntityType(
@@ -1792,21 +1805,22 @@ public class CassandraTableManager {
         deleteTypesFromPropertyTypesInEntityTypesAclsTable( PrincipalType.ROLE, entityTypeFqn, propertyTypeFqn );
         deleteTypesFromPropertyTypesInEntityTypesAclsTable( PrincipalType.USER, entityTypeFqn, propertyTypeFqn );
     }
-    
+
     private void deleteTypesFromPropertyTypesInEntityTypesAclsTable(
             PrincipalType type,
             FullQualifiedName entityTypeFqn,
-            FullQualifiedName propertyTypeFqn
-            ){
+            FullQualifiedName propertyTypeFqn ) {
         String columnName = type.equals( PrincipalType.ROLE ) ? CommonColumns.ROLE.cql() : CommonColumns.USER.cql();
-        
+
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-        
-        ResultSet rs = session.execute( this.getPermissionsForPropertyTypeInEntityTypeByTypes.get( type ).bind( entityTypeTypename, propertyTypeTypename ) );
+
+        ResultSet rs = session.execute( this.getPermissionsForPropertyTypeInEntityTypeByTypes.get( type )
+                .bind( entityTypeTypename, propertyTypeTypename ) );
         // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
-        for( Row row : rs ){
-            session.execute( this.deleteRowFromPropertyTypesInEntityTypesAclsTable.get( type ).bind( row.getString( columnName ), entityTypeTypename, propertyTypeTypename ) );
+        for ( Row row : rs ) {
+            session.execute( this.deleteRowFromPropertyTypesInEntityTypesAclsTable.get( type )
+                    .bind( row.getString( columnName ), entityTypeTypename, propertyTypeTypename ) );
         }
     }
 
@@ -1816,34 +1830,40 @@ public class CassandraTableManager {
         deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable( PrincipalType.USER, entityTypeFqn );
     }
 
-    private void deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable( PrincipalType type, FullQualifiedName entityTypeFqn ) {
+    private void deleteEntityTypeFromPropertyTypesInEntityTypesAclsTable(
+            PrincipalType type,
+            FullQualifiedName entityTypeFqn ) {
         String columnName = type.equals( PrincipalType.ROLE ) ? CommonColumns.ROLE.cql() : CommonColumns.USER.cql();
-        
+
         String entityTypeTypename = getTypenameForEntityType( entityTypeFqn );
-        
-        ResultSet rs = session.execute( this.getPermissionsForPropertyTypeInEntityTypeByEntityType.get( type ).bind( entityTypeTypename ) );
+
+        ResultSet rs = session.execute(
+                this.getPermissionsForPropertyTypeInEntityTypeByEntityType.get( type ).bind( entityTypeTypename ) );
         // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
-        for( Row row : rs ){
-            session.execute( this.deleteRowFromPropertyTypesInEntityTypesAclsTable.get( type ).bind( row.getString( columnName ), entityTypeTypename, row.getString( CommonColumns.PROPERTY_TYPE.cql() ) ) );
-        }  
+        for ( Row row : rs ) {
+            session.execute(
+                    this.deleteRowFromPropertyTypesInEntityTypesAclsTable.get( type ).bind( row.getString( columnName ),
+                            entityTypeTypename,
+                            row.getString( CommonColumns.PROPERTY_TYPE.cql() ) ) );
+        }
     }
-    
+
     public EnumSet<Permission> getRolePermissionsForPropertyTypeInEntitySet(
             String role,
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-            String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-            Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet
-                    .get( PrincipalType.ROLE )
-                    .bind( role, entitySetName, propertyTypeTypename ) )
-                    .one();
-            if ( row != null ) {
-                return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
-            } else {
-                // Property Type not found in Acl table; would mean no permission for now
-                // TODO: change this, if you want default permission of a group
-                return EnumSet.noneOf( Permission.class );
-            }
+        String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
+        Row row = session.execute( this.getPermissionsForPropertyTypeInEntitySet
+                .get( PrincipalType.ROLE )
+                .bind( role, entitySetName, propertyTypeTypename ) )
+                .one();
+        if ( row != null ) {
+            return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+        } else {
+            // Property Type not found in Acl table; would mean no permission for now
+            // TODO: change this, if you want default permission of a group
+            return EnumSet.noneOf( Permission.class );
+        }
     }
 
     public EnumSet<Permission> getUserPermissionsForPropertyTypeInEntitySet(
@@ -1945,34 +1965,38 @@ public class CassandraTableManager {
     private void deleteSetAndTypeFromPropertyTypesInEntitySetsAclsTable(
             PrincipalType type,
             String entitySetName,
-            FullQualifiedName propertyTypeFqn ){
+            FullQualifiedName propertyTypeFqn ) {
         String columnName = type.equals( PrincipalType.ROLE ) ? CommonColumns.ROLE.cql() : CommonColumns.USER.cql();
-        
+
         String propertyTypeTypename = getTypenameForPropertyType( propertyTypeFqn );
-        
-        ResultSet rs = session.execute( this.getPermissionsForPropertyTypeInEntitySetBySetAndType.get( type ).bind( entitySetName, propertyTypeTypename ) );
+
+        ResultSet rs = session.execute( this.getPermissionsForPropertyTypeInEntitySetBySetAndType.get( type )
+                .bind( entitySetName, propertyTypeTypename ) );
         // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
-        for( Row row : rs ){
-            session.execute( this.deleteRowFromPropertyTypesInEntitySetsAclsTable.get( type ).bind( row.getString( columnName ), entitySetName, propertyTypeTypename ) );
-        }        
+        for ( Row row : rs ) {
+            session.execute( this.deleteRowFromPropertyTypesInEntitySetsAclsTable.get( type )
+                    .bind( row.getString( columnName ), entitySetName, propertyTypeTypename ) );
+        }
     }
-    
+
     public void deleteSetFromPropertyTypesInEntitySetsAclsTable( String entitySetName ) {
         // TODO: Ho Chung: rewrite this
         deleteSetFromPropertyTypesInEntitySetsAclsTable( PrincipalType.ROLE, entitySetName );
         deleteSetFromPropertyTypesInEntitySetsAclsTable( PrincipalType.USER, entitySetName );
     }
-    
+
     private void deleteSetFromPropertyTypesInEntitySetsAclsTable(
             PrincipalType type,
-            String entitySetName ){
+            String entitySetName ) {
         String columnName = type.equals( PrincipalType.ROLE ) ? CommonColumns.ROLE.cql() : CommonColumns.USER.cql();
-        
-        ResultSet rs = session.execute( this.getPermissionsForPropertyTypeInEntitySetBySet.get( type ).bind( entitySetName ) );
+
+        ResultSet rs = session
+                .execute( this.getPermissionsForPropertyTypeInEntitySetBySet.get( type ).bind( entitySetName ) );
         // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
-        for( Row row : rs ){
-            session.execute( this.deleteRowFromPropertyTypesInEntitySetsAclsTable.get( type ).bind( row.getString( columnName ), entitySetName, row.getString( CommonColumns.PROPERTY_TYPE.cql() ) ) );
-        }        
+        for ( Row row : rs ) {
+            session.execute( this.deleteRowFromPropertyTypesInEntitySetsAclsTable.get( type ).bind(
+                    row.getString( columnName ), entitySetName, row.getString( CommonColumns.PROPERTY_TYPE.cql() ) ) );
+        }
     }
 
     /**
@@ -2173,7 +2197,7 @@ public class CassandraTableManager {
 
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
         return Preconditions.checkNotNull(
-                propertyTypeMapper.get( propertyType.getNamespace(), propertyType.getName() ),
+                propertyTypes.get( propertyType ),
                 "Property type does not exist" );
     }
 }

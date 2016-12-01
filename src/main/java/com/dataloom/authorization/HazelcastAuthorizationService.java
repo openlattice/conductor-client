@@ -96,7 +96,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAcls(
             Set<Principal> principals,
             String entitySetName ) {
-        // TODO Auto-generated method stub
+
         return null;
     }
 
@@ -105,7 +105,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             String username,
             List<String> currentRoles,
             FullQualifiedName entityTypeFqn ) {
-        // TODO Auto-generated method stub
+        
         return null;
     }
 
@@ -114,13 +114,13 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             String username,
             List<String> currentRoles,
             FullQualifiedName entityTypeFqn ) {
-        // TODO Auto-generated method stub
+        
         return null;
     }
 
     @Override
     public Iterable<PermissionsInfo> getEntitySetAclsForOwner( String entitySetName ) {
-        // TODO Auto-generated method stub
+        
         return null;
     }
 
@@ -128,7 +128,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public Iterable<PermissionsInfo> getPropertyTypesInEntitySetAclsForOwner(
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
-        // TODO Auto-generated method stub
+        
         return null;
     }
 
@@ -136,7 +136,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsOfPrincipalForOwner(
             String entitySetName,
             Principal principal ) {
-        // TODO Auto-generated method stub
+        
         return null;
     }
 
