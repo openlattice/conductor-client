@@ -1,31 +1,24 @@
-package com.dataloom.authorization;
+package com.dataloom.edm;
 
-import java.io.Serializable;
 import java.util.UUID;
 
-import com.google.common.base.Preconditions;
+import com.dataloom.authorization.SecurableObjectType;
 
-/**
- * This class is intended to be used as the key for the hazelcast map storing permission information.
- * 
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
- *
- */
-public class AclKey implements Comparable<AclKey>,Serializable {
+public class ObjectKey implements Comparable<ObjectKey> {
     private final SecurableObjectType type;
     private final UUID                id;
 
-    public AclKey( SecurableObjectType type, UUID id ) {
-        this.type = Preconditions.checkNotNull( type );
-        this.id = Preconditions.checkNotNull( id );
-    }
-
-    public UUID getId() {
-        return id;
+    public ObjectKey( SecurableObjectType type, UUID id ) {
+        this.type = type;
+        this.id = id;
     }
 
     public SecurableObjectType getType() {
         return type;
+    }
+
+    public UUID getId() {
+        return id;
     }
 
     @Override
@@ -45,10 +38,10 @@ public class AclKey implements Comparable<AclKey>,Serializable {
         if ( obj == null ) {
             return false;
         }
-        if ( !( obj instanceof AclKey ) ) {
+        if ( !( obj instanceof ObjectKey ) ) {
             return false;
         }
-        AclKey other = (AclKey) obj;
+        ObjectKey other = (ObjectKey) obj;
         if ( id == null ) {
             if ( other.id != null ) {
                 return false;
@@ -64,11 +57,11 @@ public class AclKey implements Comparable<AclKey>,Serializable {
 
     @Override
     public String toString() {
-        return "PermissionKey [objectId=" + id + ", objectType=" + type + "]";
+        return "ObjectKey [type=" + type + ", id=" + id + "]";
     }
 
     @Override
-    public int compareTo( AclKey o ) {
+    public int compareTo( ObjectKey o ) {
         int c = type.compareTo( o.getType() );
         return c == 0 ? id.compareTo( o.getId() ) : c;
     }

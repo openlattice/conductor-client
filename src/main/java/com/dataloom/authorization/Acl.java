@@ -1,15 +1,17 @@
 package com.dataloom.authorization;
 
+import java.util.List;
+
 public class Acl {
-    private final AclKey            aclKey;
+    private final List<AclKey>  aclKey;
     private final Iterable<Ace> aces;
 
-    public Acl( AclKey aclKey, Iterable<Ace> aces ) {
+    public Acl( List<AclKey> aclKey, Iterable<Ace> aces ) {
         this.aclKey = aclKey;
         this.aces = aces;
     }
 
-    public AclKey getAclKey() {
+    public List<AclKey> getAclKey() {
         return aclKey;
     }
 

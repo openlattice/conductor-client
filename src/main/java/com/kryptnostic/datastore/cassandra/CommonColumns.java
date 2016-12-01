@@ -38,7 +38,8 @@ public enum CommonColumns implements ColumnDef {
     PERMISSIONS( DataType.set( DataType.text() ) ),
     PARTITION_INDEX( DataType.tinyint() ),
     PRINCIPAL_TYPE( DataType.text() ),
-    PRINCIPAL_ID( DataType.text() ); // partition index within a table for distribution purpose
+    PRINCIPAL_ID( DataType.text() ),
+    ACL_KEYS( DataType.frozenList( DataType.text() ) ); // partition index within a table for distribution purpose
 
     private final DataType type;
     private final String   bindMarker;

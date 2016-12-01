@@ -47,6 +47,7 @@ public class EdmService implements EdmManager {
     private final IMap<FullQualifiedName, PropertyType> propertyTypes;
     private final IMap<FullQualifiedName, EntityType>   entityTypes;
     private final IMap<String, EntitySet>               entitySets;
+
     private final IMap<FullQualifiedName, String>       typenames;
     private final IMap<String, FullQualifiedName>       fqns;
 

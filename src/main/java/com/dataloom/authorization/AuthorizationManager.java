@@ -2,77 +2,47 @@ package com.dataloom.authorization;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.requests.Permission;
-import com.dataloom.authorization.requests.PermissionsInfo;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 
 public interface AuthorizationManager {
 
     void addPermission(
-            SecurableObjectType objectType,
-            UUID objectId,
+            List<AclKey> aclKey,
             Principal principal,
             Set<Permission> permissions );
 
     void removePermission(
-            SecurableObjectType objectType,
-            UUID objectId,
+            List<AclKey> aclKey,
             Principal principal,
             Set<Permission> permissions );
 
     void setPermission(
-            SecurableObjectType objectType,
-            UUID objectId,
+            List<AclKey> aclKey,
             Principal principal,
             Set<Permission> permissions );
 
     boolean checkIfHasPermissions(
-            SecurableObjectType objectType,
-            UUID objectId,
+            List<AclKey> aclKey,
             Set<Principal> principals,
-            FullQualifiedName fqn,
-            Permission permission );
+            Set<Permission> requiredPermissions );
 
-    boolean checkIfUserIsOwner( SecurableObjectType objectType, UUID objectId, Principal principal );
+    boolean checkIfUserIsOwner( List<AclKey> aclKeys, Principal principal );
 
     // Utility functions for retrieving permissions
 
     Set<Permission> getSecurableObjectPermissions(
-            SecurableObjectType objectType,
-            UUID objectId,
+            List<AclKey> aclKey,
             Set<Principal> principals );
 
-    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAcls(
-            Set<Principal> principals,
-            String entitySetName );
-
-    EnumSet<Permission> getEntityTypeAclsForUser(
-            String username,
-            List<String> currentRoles,
-            FullQualifiedName entityTypeFqn );
-
-    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntityTypeAclsForUser(
-            String username,
-            List<String> currentRoles,
-            FullQualifiedName entityTypeFqn );
-
-    Iterable<PermissionsInfo> getEntitySetAclsForOwner( String entitySetName );
-
-    Iterable<PermissionsInfo> getPropertyTypesInEntitySetAclsForOwner(
-            String entitySetName,
-            FullQualifiedName propertyTypeFqn );
-
-    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsOfPrincipalForOwner(
-            String entitySetName,
-            Principal principal );
-
+    Acl getAllSecurableObjectPermissions(
+            List<AclKey> key );
     // Methods for requesting permissions
 
     void addPermissionsRequestForPropertyTypeInEntitySet(
@@ -93,5 +63,7 @@ public interface AuthorizationManager {
     Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions(
             String username,
             String entitySetName );
+
+
 
 }

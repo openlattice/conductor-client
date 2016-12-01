@@ -1,14 +1,12 @@
 package com.dataloom.authorization.util;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.UUID;
+import java.util.List;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.AclKey;
-import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
 import com.datastax.driver.core.ResultSetFuture;
@@ -30,24 +28,11 @@ public final class CassandraMappingUtils {
 
     public static AceKey getAceKeyFromRow( Row row ) {
         Principal principal = getPrincipalFromRow( row );
-        return new AceKey( getSecurableObjectIdFromRow( row ), getSecurableObjectTypeFromRow( row ), principal );
+        return new AceKey( getAclKeysFromRow( row ), principal );
     }
 
-    public static AclKey getAclKeyFromRow( Row row ) {
-        return new AclKey(
-                getSecurableObjectTypeFromRow( row ),
-                getSecurableObjectIdFromRow( row ) );
-    }
-
-    public static SecurableObjectType getSecurableObjectTypeFromRow( Row row ) {
-        return row.get( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), SecurableObjectType.class );
-        // checkState( StringUtils.isNotBlank( securableType ), "Encountered blank securable type" );
-        // return SecurableObjectType.valueOf( securableType );
-    }
-
-    public static UUID getSecurableObjectIdFromRow( Row row ) {
-        return checkNotNull( row.getUUID( CommonColumns.SECURABLE_OBJECTID.cql() ),
-                "Securable object id cannot be null." );
+    public static List<AclKey> getAclKeysFromRow( Row row ) {
+        return row.getList( CommonColumns.ACL_KEYS.cql(), AclKey.class );
     }
 
     /**

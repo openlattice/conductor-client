@@ -1,32 +1,46 @@
 package com.dataloom.authorization;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import com.dataloom.authorization.requests.Principal;
 
 /**
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt; 
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  *
  */
-public class AceKey {
-    private final UUID                objectId;
-    private final SecurableObjectType objectType;
-    private final Principal           principal;
+public class AceKey implements Serializable {
+    private static final long serialVersionUID = 7360380787390696122L;
+    private final List<AclKey> keys;
+    private final Principal    principal;
 
     public AceKey( UUID objectId, SecurableObjectType objectType, Principal principal ) {
-        this.objectId = checkNotNull( objectId );
-        this.objectType = checkNotNull( objectType );
+        this( principal, new AclKey( checkNotNull( objectType ), checkNotNull( objectId ) ) );
+    }
+
+    /**
+     * This is a special constructor that puts the keys from a set in an canonical order
+     * 
+     * @param key Set of object key to put in canonical order
+     * @param principal The principal for this ACE
+     */
+    public AceKey( List<AclKey> key, Principal principal ) {
+        this.keys = checkNotNull( key );
         this.principal = checkNotNull( principal );
+        checkArgument( key.size() > 0, "At least one key must be provided." );
     }
 
-    public UUID getObjectId() {
-        return objectId;
+    public AceKey( Principal principal, AclKey... key ) {
+        this( Arrays.asList( key ), principal );
     }
 
-    public SecurableObjectType getObjectType() {
-        return objectType;
+    public List<AclKey> getKey() {
+        return keys;
     }
 
     public Principal getPrincipal() {
@@ -37,8 +51,7 @@ public class AceKey {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ( ( objectId == null ) ? 0 : objectId.hashCode() );
-        result = prime * result + ( ( objectType == null ) ? 0 : objectType.hashCode() );
+        result = prime * result + ( ( keys == null ) ? 0 : keys.hashCode() );
         result = prime * result + ( ( principal == null ) ? 0 : principal.hashCode() );
         return result;
     }
@@ -55,14 +68,11 @@ public class AceKey {
             return false;
         }
         AceKey other = (AceKey) obj;
-        if ( objectId == null ) {
-            if ( other.objectId != null ) {
+        if ( keys == null ) {
+            if ( other.keys != null ) {
                 return false;
             }
-        } else if ( !objectId.equals( other.objectId ) ) {
-            return false;
-        }
-        if ( objectType != other.objectType ) {
+        } else if ( !keys.equals( other.keys ) ) {
             return false;
         }
         if ( principal == null ) {
@@ -77,7 +87,6 @@ public class AceKey {
 
     @Override
     public String toString() {
-        return "AccessControlEntryKey [objectId=" + objectId + ", objectType=" + objectType + ", userId=" + principal
-                + "]";
+        return "AceKey [keys=" + keys + ", principal=" + principal + "]";
     }
 }
