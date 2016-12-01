@@ -36,23 +36,21 @@ public interface AuthorizationManager {
     boolean checkIfHasPermissions(
             SecurableObjectType objectType,
             UUID objectId,
-            Set<String> principals,
+            Set<Principal> principals,
             FullQualifiedName fqn,
             Permission permission );
 
-    boolean checkIfUserIsOwner( SecurableObjectType objectType, UUID objectId, String username );
+    boolean checkIfUserIsOwner( SecurableObjectType objectType, UUID objectId, Principal principal );
 
     // Utility functions for retrieving permissions
 
-    EnumSet<Permission> getSecurableObjectPermissiosn(
+    Set<Permission> getSecurableObjectPermissions(
             SecurableObjectType objectType,
-            String userId,
-            String objectId,
-            Set<String> currentRoles );
+            UUID objectId,
+            Set<Principal> principals );
 
-    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForUser(
-            String username,
-            List<String> currentRoles,
+    Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAcls(
+            Set<Principal> principals,
             String entitySetName );
 
     EnumSet<Permission> getEntityTypeAclsForUser(

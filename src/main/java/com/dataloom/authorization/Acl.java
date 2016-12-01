@@ -1,10 +1,10 @@
 package com.dataloom.authorization;
 
-public class LazyAcl {
+public class Acl {
     private final AclKey            aclKey;
     private final Iterable<Ace> aces;
 
-    public LazyAcl( AclKey aclKey, Iterable<Ace> aces ) {
+    public Acl( AclKey aclKey, Iterable<Ace> aces ) {
         this.aclKey = aclKey;
         this.aces = aces;
     }

@@ -1,31 +1,20 @@
 package com.dataloom.authorization;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
-import com.dataloom.authorization.requests.PrincipalType;
+import com.dataloom.authorization.util.CassandraMappingUtils;
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
@@ -64,53 +53,22 @@ public class AuthorizationQueryService {
                         principal.getType(),
                         CommonColumns.PRINCIPAL_ID.bindMarker(),
                         principal.getName() ) );
-        return Iterables.transform( makeLazy( rsf ), AuthorizationQueryService::getAclKeyFromRow );
+        return Iterables.transform( CassandraMappingUtils.makeLazy( rsf ), CassandraMappingUtils::getAclKeyFromRow );
     }
 
-    public LazyAcl getAclsForSecurableObject( AclKey aclKey ) {
+    public Acl getAclsForSecurableObject( AclKey aclKey ) {
         ResultSetFuture rsf = session.executeAsync(
-                aclsForSecurableObjectQuery.bind( "_type",
+                aclsForSecurableObjectQuery.bind( CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker(),
                         aclKey.getObjectType(),
-                        "_id",
+                        CommonColumns.SECURABLE_OBJECTID.bindMarker(),
                         aclKey.getObjectId() ) );
 
-        Iterable<Principal> principals = Iterables.transform( makeLazy( rsf ),
-                AuthorizationQueryService::getPrincipalFromRow );
-                Iterables.transform( principals,
+        Iterable<Principal> principals = Iterables.transform( CassandraMappingUtils.makeLazy( rsf ),
+                CassandraMappingUtils::getPrincipalFromRow );
+        Iterable<AceFuture> futureAces = Iterables.transform( principals,
                 principal -> new AceFuture( principal, aces.getAsync(
                         new AceKey( aclKey.getObjectId(), aclKey.getObjectType(), principal ) ) ) );
-        return new LazyAcl( aclKey, lazyAces );
-    }
-
-    private static AclKey getAclKeyFromRow( Row row ) {
-        final String securableType = row.getString( CommonColumns.SECURABLE_OBJECT_TYPE.cql() );
-        checkState( StringUtils.isNotBlank( securableType ), "Encountered blank securable type" );
-        final UUID objectId = checkNotNull( row.getUUID( CommonColumns.SECURABLE_OBJECTID.cql() ),
-                "Securable object id cannot be null." );
-        return new AclKey(
-                SecurableObjectType.valueOf( securableType ),
-                objectId );
-    }
-
-    private static Principal getPrincipalFromRow( Row row ) {
-        final String principalType = row.getString( CommonColumns.PRINCIPAL_TYPE.cql() );
-        final String principalId = row.getString( CommonColumns.PRINCIPAL_ID.cql() );
-        checkState( StringUtils.isNotBlank( principalId ), "Securable object id cannot be null." );
-        checkState( StringUtils.isNotBlank( principalType ), "Encountered blank securable type" );
-        return new Principal(
-                PrincipalType.valueOf( principalType ),
-                principalId );
-    }
-
-    /**
-     * Useful adapter for {@code Iterables#transform(Iterable, com.google.common.base.Function)} that allows lazy
-     * evaluation of result set future.
-     * 
-     * @param rsf The result set future to make a lazy evaluated iterator
-     * @return The lazy evaluatable iteratable
-     */
-    private static Iterable<Row> makeLazy( ResultSetFuture rsf ) {
-        return rsf.getUninterruptibly()::iterator;
+        return new Acl( aclKey, Iterables.transform( futureAces, futureAce -> futureAce.getUninterruptibly() ) );
     }
 
 }

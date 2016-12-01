@@ -1,27 +1,36 @@
 package com.dataloom.authorization;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.authorization.processors.PermissionMerger;
+import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PermissionsInfo;
 import com.dataloom.authorization.requests.Principal;
+import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
-    public static final String                                 ACES_MAP = "aces";
+    public static final String                  ACES_MAP = "aces";
 
     private final IMap<AceKey, Set<Permission>> aces;
+    private final AuthorizationQueryService     aqs;
 
-    public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance ) {
+    public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance, AuthorizationQueryService aqs ) {
         aces = hazelcastInstance.getMap( ACES_MAP );
+        this.aqs = checkNotNull( aqs );
     }
 
     @Override
@@ -30,8 +39,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             UUID objectId,
             Principal principal,
             Set<Permission> permissions ) {
-        //TODO: Use abstract merger
-        aces.put( new AceKey( objectId, objectType, principal ), permissions );
+        aces.executeOnKey( new AceKey( objectId, objectType, principal ), new PermissionMerger( permissions ) );
     }
 
     @Override
@@ -40,7 +48,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             UUID objectId,
             Principal principal,
             Set<Permission> permissions ) {
-        aces.delete( new AceKey( objectId, objectType, principal ) );
+        aces.executeOnKey( new AceKey( objectId, objectType, principal ), new PermissionRemover( permissions ) );
     }
 
     @Override
@@ -49,40 +57,44 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             UUID objectId,
             Principal principal,
             Set<Permission> permissions ) {
-        aces.put( new AceKey( objectId, objectType, principal ), permissions );
+        aces.set( new AceKey( objectId, objectType, principal ), permissions );
     }
 
     @Override
     public boolean checkIfHasPermissions(
             SecurableObjectType objectType,
             UUID objectId,
-            Set<String> principals,
+            Set<Principal> principals,
             FullQualifiedName fqn,
             Permission permission ) {
-        // TODO Auto-generated method stub
+
+        Set<Permission> permissions = getSecurableObjectPermissions( objectType, objectId, principals );
+        return permissions.contains( permission );
+    }
+
+    @Override
+    public boolean checkIfUserIsOwner( SecurableObjectType objectType, UUID objectId, Principal principal ) {
+        checkArgument( principal.getType().equals( PrincipalType.USER ), "A role cannot be the owner of an object" );
+        // TODO Consider using owner permission
         return false;
     }
 
     @Override
-    public boolean checkIfUserIsOwner( SecurableObjectType objectType, UUID objectId, String username ) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    @Override
-    public EnumSet<Permission> getSecurableObjectPermissiosn(
+    public Set<Permission> getSecurableObjectPermissions(
             SecurableObjectType objectType,
-            String userId,
-            String objectId,
-            Set<String> currentRoles ) {
-        // TODO Auto-generated method stub
-        return null;
+            UUID objectId,
+            Set<Principal> principals ) {
+        return aces
+                .getAll( principals.stream().map( principal -> new AceKey( objectId, objectType, principal ) )
+                        .collect( Collectors.toSet() ) )
+                .values().stream().flatMap( permissions -> permissions.stream() )
+                .collect( Collectors.toCollection( () -> EnumSet.noneOf( Permission.class ) ) );
+
     }
 
     @Override
-    public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAclsForUser(
-            String username,
-            List<String> currentRoles,
+    public Map<FullQualifiedName, EnumSet<Permission>> getPropertyTypesInEntitySetAcls(
+            Set<Principal> principals,
             String entitySetName ) {
         // TODO Auto-generated method stub
         return null;
