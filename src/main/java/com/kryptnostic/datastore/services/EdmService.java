@@ -367,7 +367,7 @@ public class EdmService implements EdmManager {
     public void deletePropertyType( FullQualifiedName propertyTypeFqn ) {
         PropertyType propertyType = getPropertyType( propertyTypeFqn );
 
-//        try {
+        try {
             propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema( schemaFqn.getNamespace(),
                     schemaFqn.getName(),
                     ImmutableSet.of( propertyTypeFqn ) ) );
@@ -378,10 +378,10 @@ public class EdmService implements EdmManager {
             tableManager.deleteFromPropertyTypeLookupTable( propertyType );
 
             propertyTypeMapper.delete( propertyType );
-/**        } catch ( Exception e ) {
+        } catch ( Exception e ) {
             throw new IllegalStateException( "Deletion of Property Type failed." );
         }
-*/    }
+    }
 
     @Override
     public void deleteSchema( Schema namespaces ) {
