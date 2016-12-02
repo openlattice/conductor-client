@@ -5,6 +5,8 @@ import java.util.function.Function;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.querybuilder.BindMarker;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Preconditions;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
@@ -56,8 +58,9 @@ public enum CommonColumns implements ColumnDef {
         return Preconditions.checkNotNull( type, "This column requires a type resolver." );
     }
 
-    public String bindMarker() {
-        return bindMarker;
+    @Override
+    public BindMarker bindMarker() {
+        return QueryBuilder.bindMarker( bindMarker );
     }
 
     public String cql() {

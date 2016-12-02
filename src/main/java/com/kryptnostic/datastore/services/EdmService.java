@@ -13,8 +13,11 @@ import java.util.stream.StreamSupport;
 import com.dataloom.edm.internal.*;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.exceptions.BadRequestException;
+
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.apache.spark.util.CollectionsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -197,13 +200,13 @@ public class EdmService implements EdmManager {
             Set<FullQualifiedName> currentSchemas = dbRecord.getSchemas();
             
             Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, propertyType.getSchemas() );
-            removableSchemas.forEach( schema -> removeEntityTypesFromSchema( schema.getNamespace(), schema.getName(), ImmutableSet.of( propertyType.getFullQualifiedName() ) ) );
+            removableSchemas.forEach( schema -> removePropertyTypesFromSchema( schema.getNamespace(), schema.getName(), ImmutableSet.of( propertyType.getFullQualifiedName() ) ) );
             
             Set<FullQualifiedName> newSchemas = Sets.difference( propertyType.getSchemas(), currentSchemas );
-            newSchemas.forEach( schema -> addEntityTypesToSchema( schema.getNamespace(), schema.getName(), ImmutableSet.of( propertyType.getFullQualifiedName() ) ) ); 
+            newSchemas.forEach( schema -> addPropertyTypesToSchema( schema.getNamespace(), schema.getName(), ImmutableSet.of( propertyType.getFullQualifiedName() ) ) ); 
             
+            propertyType.setTypename( dbRecord.getTypename() );
             propertyTypeMapper.save( propertyType );
-            //TODO: Need to alter table?
         } else {
             createPropertyType( propertyType, true );
         }
@@ -215,35 +218,41 @@ public class EdmService implements EdmManager {
      */
     @Override
     public void upsertSchema( Schema schema ) {
-        // Retrieve database record of entityType
-        Schema dbRecord = getSchema( schema.getNamespace(),
-                schema.getNamespace(),
-                EnumSet.noneOf( TypeDetails.class ) );
-
-        // Update entity types
-        Set<FullQualifiedName> currentEntityTypes = dbRecord.getEntityTypeFqns();
-
-        Set<FullQualifiedName> removableEntityTypes = Sets.difference( currentEntityTypes, schema.getEntityTypeFqns() );
-        removeEntityTypesFromSchema( schema.getNamespace(), schema.getName(), removableEntityTypes );
-
-        Set<FullQualifiedName> newEntityTypes = Sets.difference( schema.getEntityTypeFqns(), currentEntityTypes );
-        addEntityTypesToSchema( schema.getNamespace(), schema.getName(), newEntityTypes );
-
-        // Update property types
-        Set<FullQualifiedName> currentPropertyTypes = dbRecord.getPropertyTypeFqns();
-
-        Set<FullQualifiedName> removablePropertyTypes = Sets.difference( currentPropertyTypes,
-                schema.getPropertyTypeFqns() );
-        removePropertyTypesFromSchema( schema.getNamespace(), schema.getName(), removablePropertyTypes );
-
-        Set<FullQualifiedName> newPropertyTypes = Sets.difference( schema.getPropertyTypeFqns(), currentPropertyTypes );
-        addPropertyTypesToSchema( schema.getNamespace(), schema.getName(), newPropertyTypes );
-
-        // Persist
-        session.execute( tableManager.getSchemaUpsertStatement( schema.getAclId() ).bind( schema.getNamespace(),
-                schema.getName(),
-                schema.getEntityTypeFqns(),
-                schema.getPropertyTypeFqns() ) );
+        UUID aclId = (schema.getAclId() != null) ? schema.getAclId() : ACLs.EVERYONE_ACL;
+        
+        if ( checkSchemaExists( schema.getNamespace(), schema.getName() ) ) {
+            // Retrieve database record of entityType
+            Schema dbRecord = getSchema( schema.getNamespace(),
+                    schema.getNamespace(),
+                    EnumSet.noneOf( TypeDetails.class ) );
+    
+            // Update entity types
+            Set<FullQualifiedName> currentEntityTypes = dbRecord.getEntityTypeFqns();
+    
+            Set<FullQualifiedName> removableEntityTypes = Sets.difference( currentEntityTypes, schema.getEntityTypeFqns() );
+            removeEntityTypesFromSchema( schema.getNamespace(), schema.getName(), removableEntityTypes );
+    
+            Set<FullQualifiedName> newEntityTypes = Sets.difference( schema.getEntityTypeFqns(), currentEntityTypes );
+            addEntityTypesToSchema( schema.getNamespace(), schema.getName(), newEntityTypes );
+    
+            // Update property types
+            Set<FullQualifiedName> currentPropertyTypes = dbRecord.getPropertyTypeFqns();
+    
+            Set<FullQualifiedName> removablePropertyTypes = Sets.difference( currentPropertyTypes,
+                    schema.getPropertyTypeFqns() );
+            removePropertyTypesFromSchema( schema.getNamespace(), schema.getName(), removablePropertyTypes );
+    
+            Set<FullQualifiedName> newPropertyTypes = Sets.difference( schema.getPropertyTypeFqns(), currentPropertyTypes );
+            addPropertyTypesToSchema( schema.getNamespace(), schema.getName(), newPropertyTypes );
+    
+            // Persist
+            session.execute( tableManager.getSchemaUpsertStatement( aclId ).bind( schema.getNamespace(),
+                    schema.getName(),
+                    schema.getEntityTypeFqns(),
+                    schema.getPropertyTypeFqns() ) );
+        } else {
+            createSchema( schema.getNamespace(), schema.getName(), aclId, schema.getEntityTypeFqns(), schema.getPropertyTypeFqns() );            
+        }
     }
 
     @Override
@@ -347,7 +356,6 @@ public class EdmService implements EdmManager {
             permissionsService.removePermissionsForPropertyTypeInEntityType( entityTypeFqn );
 
             // Previous functions may need lookup to work - must delete lookup last
-            tableManager.deleteEntityTypeTable( entityType.getNamespace(), entityType.getName() );
             tableManager.deleteFromEntityTypeLookupTable( entityType );
             entityTypeMapper.delete( entityType );
         } catch ( Exception e ) {
@@ -359,7 +367,7 @@ public class EdmService implements EdmManager {
     public void deletePropertyType( FullQualifiedName propertyTypeFqn ) {
         PropertyType propertyType = getPropertyType( propertyTypeFqn );
 
-        try {
+//        try {
             propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema( schemaFqn.getNamespace(),
                     schemaFqn.getName(),
                     ImmutableSet.of( propertyTypeFqn ) ) );
@@ -370,10 +378,10 @@ public class EdmService implements EdmManager {
             tableManager.deleteFromPropertyTypeLookupTable( propertyType );
 
             propertyTypeMapper.delete( propertyType );
-        } catch ( Exception e ) {
-            throw new IllegalStateException( "Deletion of Entity Type failed." );
+/**        } catch ( Exception e ) {
+            throw new IllegalStateException( "Deletion of Property Type failed." );
         }
-    }
+*/    }
 
     @Override
     public void deleteSchema( Schema namespaces ) {
@@ -771,14 +779,16 @@ public class EdmService implements EdmManager {
                     entityType.getKey(),
                     entityType.getProperties() );
 
-            String propertyColumnNames = properties.stream().map( fqn ->
-                    Queries.fqnToColumnName( fqn )
-            ).collect( Collectors.joining(",") );
-
-            session.execute( Queries.dropPropertyColumnsFromEntityTable(
-                    DatastoreConstants.KEYSPACE,
-                    tableManager.getTablenameForEntityType( entityType ),
-                    propertyColumnNames ) );
+            if( !properties.isEmpty() ){
+                String propertyColumnNames = properties.stream().map( fqn ->
+                        Queries.fqnToColumnName( fqn )
+                ).collect( Collectors.joining(",") );
+                
+                session.execute( Queries.dropPropertyColumnsFromEntityTable(
+                        DatastoreConstants.KEYSPACE,
+                        tableManager.getTablenameForEntityType( entityType ),
+                        propertyColumnNames ) );
+            }
         }
     }
 
@@ -820,10 +830,10 @@ public class EdmService implements EdmManager {
      **************/
     private void ensureValidEntityType( EntityType entityType ) {
         try {
-            Preconditions.checkNotNull( entityType.getNamespace(), "Namespace for Entity Type is missing" );
-            Preconditions.checkNotNull( entityType.getName(), "Name of Entity Type is missing" );
-            Preconditions.checkNotNull( entityType.getProperties(), "Property for Entity Type is missing" );
-            Preconditions.checkNotNull( entityType.getKey(), "Key for Entity Type is missing" );
+            Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getNamespace() ), "Namespace for Entity Type is missing" );
+            Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getName() ), "Name of Entity Type is missing" );
+            Preconditions.checkArgument( CollectionUtils.isNotEmpty( entityType.getProperties() ), "Property for Entity Type is missing" );
+            Preconditions.checkArgument( CollectionUtils.isNotEmpty( entityType.getKey() ), "Key for Entity Type is missing" );
             Preconditions.checkArgument( checkPropertyTypesExist( entityType.getProperties() )
                     && entityType.getProperties().containsAll( entityType.getKey() ), "Invalid Entity Type provided" );
         } catch ( Exception e ) {
@@ -833,10 +843,9 @@ public class EdmService implements EdmManager {
 
     private void ensureValidPropertyType( PropertyType propertyType ) {
         try {
-            Preconditions.checkNotNull( propertyType.getNamespace(), "Namespace for Property Type is missing" );
-            Preconditions.checkNotNull( propertyType.getName(), "Name of Property Type is missing" );
-            Preconditions.checkNotNull( propertyType.getDatatype(), "Datatype of Property Type is missing" );
-            Preconditions.checkNotNull( propertyType.getMultiplicity(), "Multiplicity of Property Type is missing" );
+            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getNamespace() ), "Namespace for Property Type is missing" );
+            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getName() ), "Name of Property Type is missing" );
+            Preconditions.checkArgument( propertyType.getDatatype() != null, "Datatype of Property Type is missing" );
         } catch ( Exception e ) {
             throw new IllegalArgumentException( e.getMessage() );
         }
