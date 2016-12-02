@@ -34,21 +34,10 @@ import org.apache.olingo.commons.api.data.ValueType;
 
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.services.UserDirectoryService;
 
 public final class ResultSetAdapterFactory {
     
     private void ResultSetAdapterFactory() {}
-    
-    private static UserDirectoryService uds;
-    
-    @Inject
-    private UserDirectoryService currentUds;
-    
-    @PostConstruct
-    public void init(){
-        ResultSetAdapterFactory.uds = currentUds;
-    }
 
 	/**
 	 * // Only one static method here; should be incorporated in class that

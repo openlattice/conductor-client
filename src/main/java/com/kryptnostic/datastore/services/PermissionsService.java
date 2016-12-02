@@ -1,7 +1,6 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +16,6 @@ import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequestWithRequestingUser;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
@@ -46,7 +44,7 @@ public class PermissionsService implements PermissionsManager {
                 tableManager.addRolePermissionsForEntityType( principal.getName(), fqn, permissions );    
                 break;
             case USER:
-                tableManager.addUserPermissionsForEntityType( principal.getName(), fqn, permissions );          
+                tableManager.addUserPermissionsForEntityType( principal.getId(), fqn, permissions );          
                 break;
             default:
                 throw new BadRequestException("Principal has undefined type.");
@@ -73,9 +71,9 @@ public class PermissionsService implements PermissionsManager {
                 break;
             case USER:
                 if( !permissions.isEmpty() ){
-                    tableManager.setUserPermissionsForEntityType( principal.getName(), fqn, permissions );
+                    tableManager.setUserPermissionsForEntityType( principal.getId(), fqn, permissions );
                 } else {
-                    tableManager.deleteUserAndTypeFromEntityTypesAclsTable( principal.getName(), fqn );
+                    tableManager.deleteUserAndTypeFromEntityTypesAclsTable( principal.getId(), fqn );
                 }
                 break;
             default:
@@ -137,7 +135,7 @@ public class PermissionsService implements PermissionsManager {
                 tableManager.addRolePermissionsForEntitySet( principal.getName(), name, permissions );
                 break;
             case USER:
-                tableManager.addUserPermissionsForEntitySet( principal.getName(), name, permissions );          
+                tableManager.addUserPermissionsForEntitySet( principal.getId(), name, permissions );          
                 break;
             default:
                 throw new BadRequestException("Principal has undefined type.");
@@ -165,14 +163,14 @@ public class PermissionsService implements PermissionsManager {
                 if( !permissions.isEmpty() ){
                     tableManager.setRolePermissionsForEntitySet( principal.getName(), name, permissions );
                 } else {
-                    tableManager.deleteRoleAndSetFromEntitySetsAclsTable( principal.getName(), name );
+                    tableManager.deleteRoleAndSetFromEntitySetsAclsTable( principal.getId(), name );
                 }
                 break;
             case USER:
                 if( !permissions.isEmpty() ){
                     tableManager.setUserPermissionsForEntitySet( principal.getName(), name, permissions );
                 } else {
-                    tableManager.deleteUserAndSetFromEntitySetsAclsTable( principal.getName(), name );
+                    tableManager.deleteUserAndSetFromEntitySetsAclsTable( principal.getId(), name );
                 }
                 break;
             default:
@@ -232,7 +230,7 @@ public class PermissionsService implements PermissionsManager {
             case ROLE:
                 return tableManager.getRolePermissionsForEntitySet( principal.getName(), name );
             case USER:
-                return tableManager.getUserPermissionsForEntitySet( principal.getName(), name );
+                return tableManager.getUserPermissionsForEntitySet( principal.getId(), name );
             default:
                 throw new BadRequestException("Principal has undefined type.");                   
         }        
@@ -256,7 +254,7 @@ public class PermissionsService implements PermissionsManager {
                 tableManager.addRolePermissionsForPropertyTypeInEntityType( principal.getName(), entityTypeFqn, propertyTypeFqn, permissions );
                 break;
             case USER:
-                tableManager.addUserPermissionsForPropertyTypeInEntityType( principal.getName(), entityTypeFqn, propertyTypeFqn, permissions );
+                tableManager.addUserPermissionsForPropertyTypeInEntityType( principal.getId(), entityTypeFqn, propertyTypeFqn, permissions );
                 break;
             default:
                 throw new BadRequestException("Principal has undefined type.");
@@ -286,14 +284,14 @@ public class PermissionsService implements PermissionsManager {
                 if( !permissions.isEmpty() ){
                     tableManager.setRolePermissionsForPropertyTypeInEntityType( principal.getName(), entityTypeFqn, propertyTypeFqn, permissions );
                 } else {
-                    tableManager.deleteRoleAndTypesFromPropertyTypesInEntityTypesAclsTable( principal.getName(), entityTypeFqn, propertyTypeFqn );
+                    tableManager.deleteRoleAndTypesFromPropertyTypesInEntityTypesAclsTable( principal.getId(), entityTypeFqn, propertyTypeFqn );
                 }
                 break;
             case USER:
                 if( !permissions.isEmpty() ){
                     tableManager.setUserPermissionsForPropertyTypeInEntityType( principal.getName(), entityTypeFqn, propertyTypeFqn, permissions );
                 } else {
-                    tableManager.deleteUserAndTypesFromPropertyTypesInEntityTypesAclsTable( principal.getName(), entityTypeFqn, propertyTypeFqn );
+                    tableManager.deleteUserAndTypesFromPropertyTypesInEntityTypesAclsTable( principal.getId(), entityTypeFqn, propertyTypeFqn );
                 }
                 break;
             default:
@@ -344,7 +342,7 @@ public class PermissionsService implements PermissionsManager {
             case ROLE:
                 return tableManager.getRolePermissionsForPropertyTypeInEntityType( principal.getName(), entityTypeFqn, propertyTypeFqn );
             case USER:
-                return tableManager.getUserPermissionsForPropertyTypeInEntityType( principal.getName(), entityTypeFqn, propertyTypeFqn );
+                return tableManager.getUserPermissionsForPropertyTypeInEntityType( principal.getId(), entityTypeFqn, propertyTypeFqn );
             default:
                 throw new BadRequestException("Principal has undefined type.");                   
         }    
@@ -372,7 +370,7 @@ public class PermissionsService implements PermissionsManager {
                 tableManager.addRolePermissionsForPropertyTypeInEntitySet( principal.getName(), entitySetName, propertyTypeFqn, permissions );
                 break;
             case USER:
-                tableManager.addUserPermissionsForPropertyTypeInEntitySet( principal.getName(), entitySetName, propertyTypeFqn, permissions );
+                tableManager.addUserPermissionsForPropertyTypeInEntitySet( principal.getId(), entitySetName, propertyTypeFqn, permissions );
                 break;
             default:
                 throw new BadRequestException("Principal has undefined type.");
@@ -407,14 +405,14 @@ public class PermissionsService implements PermissionsManager {
                 if( !permissions.isEmpty() ){
                     tableManager.setRolePermissionsForPropertyTypeInEntitySet( principal.getName(), entitySetName, propertyTypeFqn, permissions );
                 } else {
-                    tableManager.deleteRoleAndSetFromPropertyTypesInEntitySetsAclsTable( principal.getName(), entitySetName, propertyTypeFqn );
+                    tableManager.deleteRoleAndSetFromPropertyTypesInEntitySetsAclsTable( principal.getId(), entitySetName, propertyTypeFqn );
                 }
                 break;
             case USER:
                 if( !permissions.isEmpty() ){
                     tableManager.setUserPermissionsForPropertyTypeInEntitySet( principal.getName(), entitySetName, propertyTypeFqn, permissions );
                 } else {
-                    tableManager.deleteUserAndSetFromPropertyTypesInEntitySetsAclsTable( principal.getName(), entitySetName, propertyTypeFqn );
+                    tableManager.deleteUserAndSetFromPropertyTypesInEntitySetsAclsTable( principal.getId(), entitySetName, propertyTypeFqn );
                 }
                 break;
             default:
@@ -474,7 +472,7 @@ public class PermissionsService implements PermissionsManager {
             case ROLE:
                 return tableManager.getRolePermissionsForPropertyTypeInEntitySet( principal.getName(), entitySetName, propertyTypeFqn );
             case USER:
-                return tableManager.getUserPermissionsForPropertyTypeInEntitySet( principal.getName(), entitySetName, propertyTypeFqn );
+                return tableManager.getUserPermissionsForPropertyTypeInEntitySet( principal.getId(), entitySetName, propertyTypeFqn );
             default:
                 throw new BadRequestException("Principal has undefined type.");                   
         }

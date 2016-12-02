@@ -2036,7 +2036,7 @@ public class CassandraTableManager {
                         entitySetName,
                         timestamp,
                         requestId,
-                        principal.getId(),
+                        principal.getName(),
                         propertyTypeFqn,
                         permissions ) );
                 session.execute( this.updateLookupForAclsRequest.get( PrincipalType.ROLE ).bind( requestId,

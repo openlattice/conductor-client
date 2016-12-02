@@ -25,7 +25,7 @@ public class ActionAuthorizationService {
     private void updateUserInfo() {
         Auth0UserDetails user = (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         
-        this.userId = (String) user.getAuth0Attribute( "user_id" );
+        this.userId = (String) user.getAuth0Attribute( "sub" );
         this.currentRoles = user.getAuthorities().stream()
                 .map( grantedAuthority -> grantedAuthority.getAuthority() ).collect( Collectors.toList() );
         /**
