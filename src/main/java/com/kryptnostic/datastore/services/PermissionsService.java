@@ -595,7 +595,12 @@ public class PermissionsService implements PermissionsManager {
     public void removePermissionsRequestForEntitySet( UUID id ){
         tableManager.removePermissionsRequestForEntitySet( id );
     }
-    
+
+    @Override
+    public void removePermissionsRequestForEntitySet( String entitySetName ){
+        tableManager.removePermissionsRequestForEntitySet( entitySetName );
+    }
+
     @Override
     public Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfUserId( String userId ){
         return Iterables.concat( getAllReceivedRequestsForPermissionsOfUserId(PrincipalType.ROLE, userId), getAllReceivedRequestsForPermissionsOfUserId(PrincipalType.USER, userId) );

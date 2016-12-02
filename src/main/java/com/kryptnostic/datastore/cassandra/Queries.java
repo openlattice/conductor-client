@@ -291,12 +291,15 @@ public final class Queries {
     public static String fqnToColumnName( FullQualifiedName fqn ) {
         Preconditions.checkState( !StringUtils.endsWith( fqn.getNamespace(), "_" ) );
         Preconditions.checkState( !StringUtils.startsWith( fqn.getName(), "_" ) );
-        return StringUtils.replace( StringUtils.replace( fqn.getFullQualifiedNameAsString(), "_", "__" ), ".", "_" );
+        Preconditions.checkState( !StringUtils.endsWith( fqn.getNamespace(), "-" ) );
+        Preconditions.checkState( !StringUtils.startsWith( fqn.getName(), "-" ) );
+        return StringUtils.replace( StringUtils.replace( StringUtils
+                .replace( fqn.getFullQualifiedNameAsString(), "_", "__" ), ".", "_" ), "-", "___");
         // return fqn.getFullQualifiedNameAsString().replaceAll( "_", "__" ).replaceAll( ".", "_" );
     }
 
     public static String columnNameToFqn( FullQualifiedName fqn ) {
-        return fqn.getFullQualifiedNameAsString().replaceAll( "__", "_" ).replaceAll( "_", "." );
+        return fqn.getFullQualifiedNameAsString().replaceAll( "__", "_" ).replaceAll( "_", "." ).replaceAll( "___", "-" );
     }
 
     public static final String createEntityTableIndex(

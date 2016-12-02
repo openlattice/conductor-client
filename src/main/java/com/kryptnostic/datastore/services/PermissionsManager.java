@@ -96,6 +96,10 @@ public interface PermissionsManager {
     void removePermissionsRequestForEntitySet( UUID id );
     
     Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfUserId( String userId );
+
+    void removePermissionsRequestForEntitySet( String entitySetName );
+
+    Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfUsername( String username );
     
     Iterable<PropertyTypeInEntitySetAclRequestWithRequestingUser> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName );
     

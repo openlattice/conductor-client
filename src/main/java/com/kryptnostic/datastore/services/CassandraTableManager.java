@@ -2099,6 +2099,28 @@ public class CassandraTableManager {
         session.execute( this.deleteLookupForAclsRequest.get( type ).bind( id ) );
     }
 
+    public void removePermissionsRequestForEntitySet( String entitySetName ) {
+        // TODO Ho Chung: rewrite this
+        removePermissionsRequestForEntitySet( PrincipalType.ROLE, entitySetName );
+        removePermissionsRequestForEntitySet( PrincipalType.USER, entitySetName );
+    }
+    
+    private void removePermissionsRequestForEntitySet( PrincipalType type, String entitySetName ){
+        
+        ResultSet rs = session.execute( getAclsRequestsByEntitySet.get( type ).bind( entitySetName ) );
+        // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
+        for( Row row : rs ){
+            UUID requestId = row.getUUID( CommonColumns.REQUESTID.cql() );
+            session.execute( this.deleteAclsRequest.get( type ).bind(
+                    row.getString( CommonColumns.USER.cql() ),
+                    entitySetName,
+                    row.get( CommonColumns.CLOCK.cql(), InstantCodec.instance ),
+                    requestId
+                    ) );
+            session.execute( this.deleteLookupForAclsRequest.get( type ).bind( requestId ) );            
+        }
+    }
+
     public String getEntitySetNameFromRequestId( UUID id ) {
         // Retrieve Row info by request id
         Row rowRole = session.execute( this.getAclsRequestById

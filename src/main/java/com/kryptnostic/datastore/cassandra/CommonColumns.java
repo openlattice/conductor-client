@@ -59,6 +59,7 @@ public enum CommonColumns implements ColumnDef {
         return Preconditions.checkNotNull( type, "This column requires a type resolver." );
     }
 
+    @Override
     public BindMarker bindMarker() {
         return QueryBuilder.bindMarker( bindMarker );
     }
