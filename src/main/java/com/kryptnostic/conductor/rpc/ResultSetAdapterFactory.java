@@ -109,9 +109,8 @@ public final class ResultSetAdapterFactory {
     
     public static PermissionsInfo mapUserRowToPermissionsInfo( Row row ) {
         String userId = row.getString( CommonColumns.USER.cql() );
-        String username = getUsernameFromUserId( userId );
         return new PermissionsInfo()
-                .setPrincipal( new Principal( PrincipalType.USER ).setId( userId ).setName( username ) )
+                .setPrincipal( new Principal( PrincipalType.USER ).setId( userId ) )
                 .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) );
     }
     
@@ -123,7 +122,7 @@ public final class ResultSetAdapterFactory {
                 break;
             case USER:
                 String userId = row.getString( CommonColumns.USERID.cql() );
-                principal = principal.setId( userId ).setName( getUsernameFromUserId( userId ) );
+                principal = principal.setId( userId );
                 break;
             default:
         }
@@ -138,9 +137,5 @@ public final class ResultSetAdapterFactory {
                 .setRequestId( row.getUUID( CommonColumns.REQUESTID.cql() ) );
         String requestingUser = row.getString( CommonColumns.USER.cql() );
         return new PropertyTypeInEntitySetAclRequestWithRequestingUser().setRequest( request ).setRequestingUser( requestingUser );
-    }
-    
-    private static String getUsernameFromUserId( String userId ){
-        return uds.getUser( userId ).getUsername();
     }
 }
