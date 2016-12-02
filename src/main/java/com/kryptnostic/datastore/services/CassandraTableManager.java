@@ -1075,7 +1075,7 @@ public class CassandraTableManager {
         return getTablename( TableType.entity_, aclId, typename );
     }
 
-    public Boolean assignEntityToEntitySet( UUID entityId, String typename, String name ) {
+    public boolean assignEntityToEntitySet( UUID entityId, String typename, String name ) {
         SecureRandom random = new SecureRandom();
         return Util.wasLightweightTransactionApplied(
                 session.execute(
@@ -1086,7 +1086,7 @@ public class CassandraTableManager {
                                 entityId ) ) );
     }
 
-    public Boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
+    public boolean assignEntityToEntitySet( UUID entityId, EntitySet es ) {
         String typename = getTypenameForEntitySet( es );
         SecureRandom random = new SecureRandom();
         return Util.wasLightweightTransactionApplied(
