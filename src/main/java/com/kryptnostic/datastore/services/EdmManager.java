@@ -42,7 +42,7 @@ public interface EdmManager {
 
     void createEntitySet( EntitySet entitySet );
     
-    void createEntitySet( Optional<String> username, EntitySet entitySet );
+    void createEntitySet( Optional<String> userId, EntitySet entitySet );
 
     void upsertEntitySet( EntitySet entitySet );
 
@@ -50,9 +50,9 @@ public interface EdmManager {
 
     Iterable<EntitySet> getEntitySets();
     
-    Iterable<EntitySet> getEntitySetsUserOwns( String username );
+    Iterable<EntitySet> getEntitySetsUserOwns( String userId );
 
-    Iterable<String> getEntitySetNamesUserOwns( String username );
+    Iterable<String> getEntitySetNamesUserOwns( String userId );
 
     void deleteEntitySet( EntitySet entitySet );
     
@@ -60,13 +60,13 @@ public interface EdmManager {
 
     void createEntityType( EntityType objectType );
     
-    void createEntityType( Optional<String> username, EntityType objectType );
+    void createEntityType( Optional<String> userId, EntityType objectType );
 
     void assignEntityToEntitySet( UUID entityId, String entitySetName );
 
     void assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
 
-    void upsertEntityType( Optional<String> username, EntityType objectType );
+    void upsertEntityType( Optional<String> userId, EntityType objectType );
 
     EntityType getEntityType( String namespace, String name );
 
