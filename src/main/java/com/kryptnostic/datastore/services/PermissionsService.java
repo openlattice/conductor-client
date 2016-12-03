@@ -163,12 +163,12 @@ public class PermissionsService implements PermissionsManager {
                 if( !permissions.isEmpty() ){
                     tableManager.setRolePermissionsForEntitySet( principal.getName(), name, permissions );
                 } else {
-                    tableManager.deleteRoleAndSetFromEntitySetsAclsTable( principal.getId(), name );
+                    tableManager.deleteRoleAndSetFromEntitySetsAclsTable( principal.getName(), name );
                 }
                 break;
             case USER:
                 if( !permissions.isEmpty() ){
-                    tableManager.setUserPermissionsForEntitySet( principal.getName(), name, permissions );
+                    tableManager.setUserPermissionsForEntitySet( principal.getId(), name, permissions );
                 } else {
                     tableManager.deleteUserAndSetFromEntitySetsAclsTable( principal.getId(), name );
                 }
@@ -284,12 +284,12 @@ public class PermissionsService implements PermissionsManager {
                 if( !permissions.isEmpty() ){
                     tableManager.setRolePermissionsForPropertyTypeInEntityType( principal.getName(), entityTypeFqn, propertyTypeFqn, permissions );
                 } else {
-                    tableManager.deleteRoleAndTypesFromPropertyTypesInEntityTypesAclsTable( principal.getId(), entityTypeFqn, propertyTypeFqn );
+                    tableManager.deleteRoleAndTypesFromPropertyTypesInEntityTypesAclsTable( principal.getName(), entityTypeFqn, propertyTypeFqn );
                 }
                 break;
             case USER:
                 if( !permissions.isEmpty() ){
-                    tableManager.setUserPermissionsForPropertyTypeInEntityType( principal.getName(), entityTypeFqn, propertyTypeFqn, permissions );
+                    tableManager.setUserPermissionsForPropertyTypeInEntityType( principal.getId(), entityTypeFqn, propertyTypeFqn, permissions );
                 } else {
                     tableManager.deleteUserAndTypesFromPropertyTypesInEntityTypesAclsTable( principal.getId(), entityTypeFqn, propertyTypeFqn );
                 }
@@ -405,12 +405,12 @@ public class PermissionsService implements PermissionsManager {
                 if( !permissions.isEmpty() ){
                     tableManager.setRolePermissionsForPropertyTypeInEntitySet( principal.getName(), entitySetName, propertyTypeFqn, permissions );
                 } else {
-                    tableManager.deleteRoleAndSetFromPropertyTypesInEntitySetsAclsTable( principal.getId(), entitySetName, propertyTypeFqn );
+                    tableManager.deleteRoleAndSetFromPropertyTypesInEntitySetsAclsTable( principal.getName(), entitySetName, propertyTypeFqn );
                 }
                 break;
             case USER:
                 if( !permissions.isEmpty() ){
-                    tableManager.setUserPermissionsForPropertyTypeInEntitySet( principal.getName(), entitySetName, propertyTypeFqn, permissions );
+                    tableManager.setUserPermissionsForPropertyTypeInEntitySet( principal.getId(), entitySetName, propertyTypeFqn, permissions );
                 } else {
                     tableManager.deleteUserAndSetFromPropertyTypesInEntitySetsAclsTable( principal.getId(), entitySetName, propertyTypeFqn );
                 }
