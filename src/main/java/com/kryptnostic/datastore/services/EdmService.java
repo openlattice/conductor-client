@@ -13,7 +13,9 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.Principals;
+import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.edm.EntityDataModel;
@@ -47,7 +49,7 @@ public class EdmService implements EdmManager {
     private final IMap<FullQualifiedName, PropertyType> propertyTypes;
     private final IMap<FullQualifiedName, EntityType>   entityTypes;
     private final IMap<String, EntitySet>               entitySets;
-
+    private final IMap<AclKey, FullQualifiedName>       fqnsByAclKey;
     private final IMap<FullQualifiedName, String>       typenames;
     private final IMap<String, FullQualifiedName>       fqns;
 
@@ -77,6 +79,7 @@ public class EdmService implements EdmManager {
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
         this.typenames = hazelcastInstance.getMap( HazelcastMap.TYPENAMES.name() );
+        this.fqnsByAclKey = hazelcastInstance.getMap( HazelcastMap.FQN_ACL_KEY.name() );
         this.fqns = hazelcastInstance.getMap( HazelcastMap.FQNS.name() );
         List<EntityType> objectTypes = edmStore.getEntityTypes().all();
         // Temp comment out the following two lines to avoid "Schema is out of sync." crash
@@ -172,10 +175,6 @@ public class EdmService implements EdmManager {
         /*
          * We retrieve or create the typename for the property. If the property already exists then lightweight
          * transaction will fail and return value will be correctly set.
-         */
-        /**
-         * Refactored by Ho Chung, so that upsertPropertyType won't do duplicate checks. isValid is true if property
-         * type is checked valid, and checked not already exist.
          */
         propertyType.setTypename( Queries.fqnToColumnName( propertyType.getFullQualifiedName() ) );
 
@@ -429,36 +428,30 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void createEntitySet( FullQualifiedName type, String name, String title ) {
-        String typename = tableManager.getTypenameForEntityType( type );
-        createEntitySet( typename, name, title );
+    public void createEntitySet( Principal principal, FullQualifiedName type, String name, String title ) {
+        createEntitySet( principal, new EntitySet().setType( type ).setName( name ).setTitle( title ) );
     }
 
-    @Override
-    public void createEntitySet( String typename, String name, String title ) {
-        if ( entitySets.putIfAbsent( name,
-                new EntitySet().setName( name ).setTitle( title ).setTypename( typename ) ) != null ) {
-            throw new IllegalStateException( "Entity set already exists." );
-        }
-    }
-
-    @Override
-    public void createEntitySet( EntitySet entitySet ) {
+    protected void createEntitySet( EntitySet entitySet ) {
+        Preconditions.checkNotNull( entitySet.getType(), "Entity set type cannot be null" );
         Preconditions.checkArgument( StringUtils.isBlank( entitySet.getTypename() ),
                 "Entity Set Typename should not be provided." );
 
         String typename = tableManager.getTypenameForEntityType( entitySet.getType() );
         System.out.println( "typename upon entity set creation: " + typename );
         entitySet.setTypename( typename );
+        if ( entitySets.putIfAbsent( entitySet.getName(), entitySet ) != null ) {
+        } else {
+            throw new IllegalStateException( "Entity set already exists." );
 
-        createEntitySet( typename, entitySet.getName(), entitySet.getTitle() );
+        }
     }
 
     @Override
     public void createEntitySet( Principal principal, EntitySet entitySet ) {
         try {
-            createEntitySet( entitySet );
             Principals.ensureUser( principal );
+            createEntitySet( entitySet );
             tableManager.addOwnerForEntitySet( entitySet.getName(), principal.getName() );
 
             EntityType entityType = entityTypeMapper.get( entitySet.getType().getNamespace(),

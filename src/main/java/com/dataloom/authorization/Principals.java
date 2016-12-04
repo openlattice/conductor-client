@@ -10,8 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.auth0.spring.security.api.Auth0UserDetails;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
-
-import jersey.repackaged.com.google.common.collect.Sets;
+import com.google.common.collect.Sets;
 
 public final class Principals {
     private Principals() {}
@@ -39,4 +38,5 @@ public final class Principals {
     public static Set<Principal> getCurrentPrincipals() {
         return currentPrincipalsCache.get();
     }
+
 }

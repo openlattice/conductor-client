@@ -2,6 +2,7 @@ package com.dataloom.authorization;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -43,6 +44,8 @@ public interface AuthorizationManager {
 
     Acl getAllSecurableObjectPermissions(
             List<AclKey> key );
+    
+    Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces );
     // Methods for requesting permissions
 
     void addPermissionsRequestForPropertyTypeInEntitySet(

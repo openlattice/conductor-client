@@ -50,7 +50,8 @@ public enum Tables implements TableDef {
     USERS_ACLS_REQUESTS( USERS_ACLS_REQUESTS_TABLE ),
     USERS_ACLS_REQUESTS_LOOKUP( USERS_ACLS_REQUESTS_LOOKUP_TABLE ),
     TYPENAMES( "typenames" ),
-    FQNS( "fqns" );
+    FQNS( "fqns" ),
+    FQN_ACL_KEY( "fqn_acl_key" );
     private static final String KEYSPACE = DatastoreConstants.KEYSPACE;
     private final String        tableName;
 

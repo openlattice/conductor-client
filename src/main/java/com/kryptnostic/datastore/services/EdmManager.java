@@ -12,7 +12,6 @@ import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
-import com.google.common.base.Optional;
 
 public interface EdmManager {
     void createSchema(
@@ -37,11 +36,7 @@ public interface EdmManager {
 
     void deleteSchema( Schema namespaces );
 
-    void createEntitySet( FullQualifiedName type, String name, String title );
-
-    void createEntitySet( String typename, String name, String title );
-
-    void createEntitySet( EntitySet entitySet );
+    void createEntitySet( Principal principal, FullQualifiedName type, String name, String title );
 
     void createEntitySet( Principal principal, EntitySet entitySet );
 
@@ -119,6 +114,5 @@ public interface EdmManager {
     boolean checkEntitySetExists( String name );
 
     boolean checkSchemaExists( String namespace, String name );
-
 
 }
