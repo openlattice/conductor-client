@@ -206,14 +206,17 @@ public class ActionAuthorizationService {
     }
     
     public boolean getEntitySetAclsForOwner( String entitySetName ){
+        updateUserInfo();
         return ps.checkIfUserIsOwnerOfEntitySet( userId, entitySetName );
     }
 
     public boolean removePermissionsRequestForEntitySet( UUID id ){
+        updateUserInfo();
         return ( ps.checkIfUserIsOwnerOfEntitySet( userId, id ) || ps.checkIfUserIsOwnerOfPermissionsRequest( userId, id ) );
     }
     
     public boolean getAllReceivedRequestsForPermissions( String entitySetName ){
+        updateUserInfo();
         return ps.checkIfUserIsOwnerOfEntitySet( userId, entitySetName );        
     }
 }

@@ -20,7 +20,9 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.spark.util.CollectionsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.auth0.spring.security.api.Auth0UserDetails;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
@@ -505,7 +507,14 @@ public class EdmService implements EdmManager {
 
     @Override
     public void upsertEntitySet( EntitySet entitySet ) {
-        entitySetMapper.save( entitySet );
+        if ( checkEntitySetExists( entitySet.getName() ) ) {
+            entitySetMapper.save( entitySet );
+        } else {
+            Auth0UserDetails user = (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            String userId = (String) user.getAuth0Attribute( "sub" );
+
+            createEntitySet( Optional.of( userId ), entitySet );
+        }
         // TODO: Figure out a better way to response HttpStatus code or cleanup cassandra after unit test
         // else {
         // throw new InternalError();
