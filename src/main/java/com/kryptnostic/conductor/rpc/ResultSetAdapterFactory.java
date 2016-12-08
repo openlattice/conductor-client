@@ -2,6 +2,7 @@ package com.kryptnostic.conductor.rpc;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,23 +23,37 @@ import com.dataloom.authorization.requests.PropertyTypeInEntitySetAclRequestWith
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.datastax.driver.core.ColumnDefinitions;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.DataType.Name;
 import com.datastax.driver.core.Row;
+import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
+import com.datastax.driver.extras.codecs.joda.LocalTimeCodec;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.HashMultimap; 
+import com.google.common.collect.HashMultimap;
 
+import org.apache.hadoop.hdfs.protocol.HdfsConstants.DatanodeReportType;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
 
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
+import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 public final class ResultSetAdapterFactory {
     
-    private void ResultSetAdapterFactory() {}
+    private ResultSetAdapterFactory() {}
 
+    private static final Map<DataType.Name, TypeCodec> preferredCodec = new HashMap<>();
+
+    static {
+        preferredCodec.put( DataType.Name.TIMESTAMP, TimestampDateTimeTypeCodec.getInstance() );
+    }
+    
 	/**
 	 * // Only one static method here; should be incorporated in class that
 	 * writes query result into Cassandra Table
@@ -75,12 +90,21 @@ public final class ResultSetAdapterFactory {
 	public static SetMultimap<FullQualifiedName, Object> mapRowToObject( Row row, Collection<PropertyType> properties ) {
 		SetMultimap<FullQualifiedName, Object> map = HashMultimap.create();
 		properties.forEach(property -> {
-			Object value = row.getObject( "value_" + property.getTypename() );
+			Object value = getObject( row, CassandraEdmMapping.getCassandraType( property.getDatatype() ), "value_" + property.getTypename() );
 			map.put( property.getFullQualifiedName(), value );
 		});
 		return map;
 	}
 	
+    private static Object getObject( Row row, DataType dt, String colName ) {
+        Name dtName = dt.getName();
+        if ( preferredCodec.containsKey( dtName ) ) {
+            return row.get( colName, preferredCodec.get( dtName ) );
+        } else {
+            return row.getObject( colName );
+        }
+    }
+
 	/**
 	 * 
 	 * @param row Cassandra Row object, expected to have a single column of UUID

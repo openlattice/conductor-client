@@ -19,6 +19,9 @@ import org.springframework.util.SerializationUtils;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.LocalDate;
 import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
+import com.datastax.driver.extras.codecs.joda.LocalTimeCodec;
+import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
 
 public class CassandraEdmMapping {
     private static final Logger          logger = LoggerFactory
@@ -117,11 +120,11 @@ public class CassandraEdmMapping {
                 case FLOAT:
                     return ( (Double) input).floatValue();
                 case TIMESTAMP:
-                    return TypeCodec.timestamp().parse( input.toString() );
+                    return TimestampDateTimeTypeCodec.getInstance().parse( input.toString() );
                 case DATE:
-                    return TypeCodec.date().parse( input.toString() );
+                    return LocalDateCodec.instance.parse( input.toString() );
                 case TIME:
-                    return TypeCodec.time().parse( "'" + input.toString() + "'" );
+                    return LocalTimeCodec.instance.parse( "'" + input.toString() + "'" );
                 case UUID:
                 case TIMEUUID:
                     return UUID.fromString( input.toString() );
