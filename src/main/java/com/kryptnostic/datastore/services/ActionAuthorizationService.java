@@ -13,7 +13,7 @@ import com.dataloom.authorization.requests.Permission;
 
 public class ActionAuthorizationService {
 
-    private String username;
+    private String userId;
     private List<String>             currentRoles;
 
     private final PermissionsService ps;
@@ -25,8 +25,7 @@ public class ActionAuthorizationService {
     private void updateUserInfo() {
         Auth0UserDetails user = (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         
-        //TODO: feel very worried by using username as identifier, since it will return email if exists, otherwise user_id. This means that username can potentially add emails to same identity and username will return differently. Attempts to retrieve userId so far has failed (always null).
-        this.username = user.getUsername();
+        this.userId = (String) user.getAuth0Attribute( "sub" );
         this.currentRoles = user.getAuthorities().stream()
                 .map( grantedAuthority -> grantedAuthority.getAuthority() ).collect( Collectors.toList() );
         /**
@@ -39,9 +38,9 @@ public class ActionAuthorizationService {
      * User Info 
      */
     
-    public String getUsername(){
+    public String getUserId(){
         updateUserInfo();
-        return username;
+        return userId;
     }
     
     public List<String> getRoles(){
@@ -60,12 +59,12 @@ public class ActionAuthorizationService {
 
     public boolean upsertEntityType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntityType( userId, currentRoles, entityTypeFqn, Permission.ALTER );
     }
 
     public boolean upsertEntitySet( String entitySetName ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntitySet( userId, currentRoles, entitySetName, Permission.ALTER );
     }
 
     public boolean deletePropertyType( FullQualifiedName propertyTypeFqn ) {
@@ -75,37 +74,37 @@ public class ActionAuthorizationService {
 
     public boolean deleteEntityType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntityType( userId, currentRoles, entityTypeFqn, Permission.ALTER );
     }
 
     public boolean deleteEntitySet( String entitySetName ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntitySet( userId, currentRoles, entitySetName, Permission.ALTER );
     }
 
     public boolean getEntitySet( String entitySetName ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.DISCOVER );
+            return ps.checkUserHasPermissionsOnEntitySet( userId, currentRoles, entitySetName, Permission.DISCOVER );
     }
 
     public boolean alterEntityType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntityType( userId, currentRoles, entityTypeFqn, Permission.ALTER );
     }
 
     public boolean alterEntitySet( String entitySetName ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.ALTER );
+            return ps.checkUserHasPermissionsOnEntitySet( userId, currentRoles, entitySetName, Permission.ALTER );
     }
 
     public boolean assignEntityToEntitySet( String entitySetName ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.WRITE );
+            return ps.checkUserHasPermissionsOnEntitySet( userId, currentRoles, entitySetName, Permission.WRITE );
     }
 
     public boolean readPropertyTypeInEntityType( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( username, currentRoles,
+            return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( userId, currentRoles,
                 entityTypeFqn,
                 propertyTypeFqn,
                 Permission.READ );
@@ -115,7 +114,7 @@ public class ActionAuthorizationService {
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( username, currentRoles,
+            return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( userId, currentRoles,
                 entitySetName,
                 propertyTypeFqn,
                 Permission.READ );
@@ -123,7 +122,7 @@ public class ActionAuthorizationService {
 
     public boolean writePropertyTypeInEntityType( FullQualifiedName entityTypeFqn, FullQualifiedName propertyTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( username, currentRoles,
+            return ps.checkUserHasPermissionsOnPropertyTypeInEntityType( userId, currentRoles,
                 entityTypeFqn,
                 propertyTypeFqn,
                 Permission.WRITE );
@@ -133,7 +132,7 @@ public class ActionAuthorizationService {
             String entitySetName,
             FullQualifiedName propertyTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( username, currentRoles,
+            return ps.checkUserHasPermissionsOnPropertyTypeInEntitySet( userId, currentRoles,
                 entitySetName,
                 propertyTypeFqn,
                 Permission.WRITE );
@@ -145,22 +144,22 @@ public class ActionAuthorizationService {
 
     public boolean getAllEntitiesOfType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.READ );
+            return ps.checkUserHasPermissionsOnEntityType( userId, currentRoles, entityTypeFqn, Permission.READ );
     }
 
     public boolean getAllEntitiesOfEntitySet( String entitySetName ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.READ );
+            return ps.checkUserHasPermissionsOnEntitySet( userId, currentRoles, entitySetName, Permission.READ );
     }
 
     public boolean createEntityOfEntityType( FullQualifiedName entityTypeFqn ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntityType( username, currentRoles, entityTypeFqn, Permission.WRITE );
+            return ps.checkUserHasPermissionsOnEntityType( userId, currentRoles, entityTypeFqn, Permission.WRITE );
     }
 
     public boolean createEntityOfEntitySet( String entitySetName ) {
         updateUserInfo();
-            return ps.checkUserHasPermissionsOnEntitySet( username, currentRoles, entitySetName, Permission.WRITE );
+            return ps.checkUserHasPermissionsOnEntitySet( userId, currentRoles, entitySetName, Permission.WRITE );
     }
 
     /**
@@ -207,14 +206,17 @@ public class ActionAuthorizationService {
     }
     
     public boolean getEntitySetAclsForOwner( String entitySetName ){
-        return ps.checkIfUserIsOwnerOfEntitySet( username, entitySetName );
+        updateUserInfo();
+        return ps.checkIfUserIsOwnerOfEntitySet( userId, entitySetName );
     }
 
     public boolean removePermissionsRequestForEntitySet( UUID id ){
-        return ( ps.checkIfUserIsOwnerOfEntitySet( username, id ) || ps.checkIfUserIsOwnerOfPermissionsRequest( username, id ) );
+        updateUserInfo();
+        return ( ps.checkIfUserIsOwnerOfEntitySet( userId, id ) || ps.checkIfUserIsOwnerOfPermissionsRequest( userId, id ) );
     }
     
     public boolean getAllReceivedRequestsForPermissions( String entitySetName ){
-        return ps.checkIfUserIsOwnerOfEntitySet( username, entitySetName );        
+        updateUserInfo();
+        return ps.checkIfUserIsOwnerOfEntitySet( userId, entitySetName );        
     }
 }

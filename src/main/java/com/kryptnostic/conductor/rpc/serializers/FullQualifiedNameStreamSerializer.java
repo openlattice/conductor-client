@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 
 public class FullQualifiedNameStreamSerializer implements SelfRegisteringStreamSerializer<FullQualifiedName> {
 
@@ -27,7 +27,7 @@ public class FullQualifiedNameStreamSerializer implements SelfRegisteringStreamS
 
 	@Override
 	public int getTypeId() {
-		return HazelcastSerializerTypeIds.FULL_QUALIFIED_NAME.ordinal();
+		return StreamSerializerTypeIds.FULL_QUALIFIED_NAME.ordinal();
 	}
 
 	@Override

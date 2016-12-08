@@ -152,8 +152,8 @@ public class CassandraTableManager {
     private final Map<PrincipalType, PreparedStatement>               updateLookupForAclsRequest;
     private final Map<PrincipalType, PreparedStatement>               deleteAclsRequest;
     private final Map<PrincipalType, PreparedStatement>               deleteLookupForAclsRequest;
-    private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByUsername;
-    private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByUsernameAndEntitySet;
+    private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByUserId;
+    private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByUserIdAndEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestById;
     private final Mapper<PropertyType>                                propertyTypeMapper;
@@ -690,7 +690,7 @@ public class CassandraTableManager {
                         .value( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.CLOCK.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() )
-                        .value( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() )
+                        .value( CommonColumns.USERID.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.PROPERTY_TYPE.cql(), QueryBuilder.bindMarker() )
                         .value( CommonColumns.PERMISSIONS.cql(), QueryBuilder.bindMarker() ) ) );
 
@@ -740,27 +740,27 @@ public class CassandraTableManager {
                         .from( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() ) ) ) );
 
-        this.getAclsRequestsByUsername = new HashMap<>();
+        this.getAclsRequestsByUserId = new HashMap<>();
 
-        getAclsRequestsByUsername.put( PrincipalType.ROLE, session
+        getAclsRequestsByUserId.put( PrincipalType.ROLE, session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) ) ) );
 
-        getAclsRequestsByUsername.put( PrincipalType.USER, session
+        getAclsRequestsByUserId.put( PrincipalType.USER, session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.USERS_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) ) ) );
 
-        this.getAclsRequestsByUsernameAndEntitySet = new HashMap<>();
+        this.getAclsRequestsByUserIdAndEntitySet = new HashMap<>();
 
-        getAclsRequestsByUsernameAndEntitySet.put( PrincipalType.ROLE, session
+        getAclsRequestsByUserIdAndEntitySet.put( PrincipalType.ROLE, session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.ROLES_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.ENTITY_SET.cql(), QueryBuilder.bindMarker() ) ) ) );
 
-        getAclsRequestsByUsernameAndEntitySet.put( PrincipalType.USER, session
+        getAclsRequestsByUserIdAndEntitySet.put( PrincipalType.USER, session
                 .prepare( QueryBuilder.select()
                         .from( keyspace, Tables.USERS_ACLS_REQUESTS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.USER.cql(), QueryBuilder.bindMarker() ) )
@@ -2008,23 +2008,23 @@ public class CassandraTableManager {
                 r -> r.getString( CommonColumns.USER.cql() ) );
     }
 
-    public boolean checkIfUserIsOwnerOfEntitySet( String username, String entitySetName ) {
-        String owner = getOwnerForEntitySet( entitySetName );
+    public boolean checkIfUserIsOwnerOfEntitySet( String userId, String entitySetName ) {
+        String ownerId = getOwnerForEntitySet( entitySetName );
 
-        if ( owner != null && !owner.isEmpty() ) {
-            return username.equals( owner );
+        if ( ownerId != null && !ownerId.isEmpty() ) {
+            return userId.equals( ownerId );
         }
         return false;
     }
 
-    public Iterable<String> getEntitySetsUserOwns( String username ) {
-        ResultSet rs = session.execute( this.getEntitySetsUserOwns.bind( username ) );
+    public Iterable<String> getEntitySetsUserOwns( String userId ) {
+        ResultSet rs = session.execute( this.getEntitySetsUserOwns.bind( userId ) );
         return Iterables.transform( rs, row -> row.getString( CommonColumns.ENTITY_SET.cql() ) );
     }
 
-    public void addOwnerForEntitySet( String entitySetName, String username ) {
-        session.execute( this.updateOwnerForEntitySet.bind( username, entitySetName ) );
-        session.execute( this.updateOwnerLookupForEntitySet.bind( username, entitySetName ) );
+    public void addOwnerForEntitySet( String entitySetName, String userId ) {
+        session.execute( this.updateOwnerForEntitySet.bind( userId, entitySetName ) );
+        session.execute( this.updateOwnerLookupForEntitySet.bind( userId, entitySetName ) );
     }
 
     public void deleteFromEntitySetOwnerAndLookupTable( String entitySetName ) {
@@ -2038,16 +2038,16 @@ public class CassandraTableManager {
      * Acl Requests methods
      */
 
-    public boolean checkIfUserIsOwnerOfPermissionsRequest( String username, UUID id ) {
-        String owner = getUsernameFromRequestId( id );
-        if ( owner != null && !owner.isEmpty() ) {
-            return username.equals( owner );
+    public boolean checkIfUserIsOwnerOfPermissionsRequest( String userId, UUID id ) {
+        String ownerId = getUserIdFromRequestId( id );
+        if ( ownerId != null && !ownerId.isEmpty() ) {
+            return userId.equals( ownerId );
         }
         return false;
     }
 
     public void addPermissionsRequestForPropertyTypeInEntitySet(
-            String username,
+            String userId,
             Principal principal,
             String entitySetName,
             FullQualifiedName propertyTypeFqn,
@@ -2056,7 +2056,7 @@ public class CassandraTableManager {
         Instant timestamp = Instant.now();
         switch ( principal.getType() ) {
             case ROLE:
-                session.execute( this.insertAclsRequest.get( PrincipalType.ROLE ).bind( username,
+                session.execute( this.insertAclsRequest.get( PrincipalType.ROLE ).bind( userId,
                         entitySetName,
                         timestamp,
                         requestId,
@@ -2064,20 +2064,20 @@ public class CassandraTableManager {
                         propertyTypeFqn,
                         permissions ) );
                 session.execute( this.updateLookupForAclsRequest.get( PrincipalType.ROLE ).bind( requestId,
-                        username,
+                        userId,
                         entitySetName,
                         timestamp ) );
                 break;
             case USER:
-                session.execute( this.insertAclsRequest.get( PrincipalType.USER ).bind( username,
+                session.execute( this.insertAclsRequest.get( PrincipalType.USER ).bind( userId,
                         entitySetName,
                         timestamp,
                         requestId,
-                        principal.getName(),
+                        principal.getId(),
                         propertyTypeFqn,
                         permissions ) );
                 session.execute( this.updateLookupForAclsRequest.get( PrincipalType.USER ).bind( requestId,
-                        username,
+                        userId,
                         entitySetName,
                         timestamp ) );
                 break;
@@ -2088,7 +2088,7 @@ public class CassandraTableManager {
 
     public void removePermissionsRequestForEntitySet( UUID id ) {
         PrincipalType type;
-        String username;
+        String userId;
         String entitySetName;
         Instant timestamp;
 
@@ -2099,7 +2099,7 @@ public class CassandraTableManager {
 
         if ( rowRole != null ) {
             type = PrincipalType.ROLE;
-            username = rowRole.getString( CommonColumns.USER.cql() );
+            userId = rowRole.getString( CommonColumns.USER.cql() );
             entitySetName = rowRole.getString( CommonColumns.ENTITY_SET.cql() );
             timestamp = rowRole.get( CommonColumns.CLOCK.cql(), InstantCodec.instance );
         } else {
@@ -2109,7 +2109,7 @@ public class CassandraTableManager {
 
             if ( rowUser != null ) {
                 type = PrincipalType.USER;
-                username = rowUser.getString( CommonColumns.USER.cql() );
+                userId = rowUser.getString( CommonColumns.USER.cql() );
                 entitySetName = rowUser.getString( CommonColumns.ENTITY_SET.cql() );
                 timestamp = rowUser.get( CommonColumns.CLOCK.cql(), InstantCodec.instance );
             } else {
@@ -2119,8 +2119,30 @@ public class CassandraTableManager {
         }
 
         // Actual removal
-        session.execute( this.deleteAclsRequest.get( type ).bind( username, entitySetName, timestamp, id ) );
+        session.execute( this.deleteAclsRequest.get( type ).bind( userId, entitySetName, timestamp, id ) );
         session.execute( this.deleteLookupForAclsRequest.get( type ).bind( id ) );
+    }
+
+    public void removePermissionsRequestForEntitySet( String entitySetName ) {
+        // TODO Ho Chung: rewrite this
+        removePermissionsRequestForEntitySet( PrincipalType.ROLE, entitySetName );
+        removePermissionsRequestForEntitySet( PrincipalType.USER, entitySetName );
+    }
+    
+    private void removePermissionsRequestForEntitySet( PrincipalType type, String entitySetName ){
+        
+        ResultSet rs = session.execute( getAclsRequestsByEntitySet.get( type ).bind( entitySetName ) );
+        // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
+        for( Row row : rs ){
+            UUID requestId = row.getUUID( CommonColumns.REQUESTID.cql() );
+            session.execute( this.deleteAclsRequest.get( type ).bind(
+                    row.getString( CommonColumns.USER.cql() ),
+                    entitySetName,
+                    row.get( CommonColumns.CLOCK.cql(), InstantCodec.instance ),
+                    requestId
+                    ) );
+            session.execute( this.deleteLookupForAclsRequest.get( type ).bind( requestId ) );            
+        }
     }
 
     public String getEntitySetNameFromRequestId( UUID id ) {
@@ -2144,7 +2166,7 @@ public class CassandraTableManager {
         }
     }
 
-    public String getUsernameFromRequestId( UUID id ) {
+    public String getUserIdFromRequestId( UUID id ) {
         // Retrieve Row info by request id
         Row rowRole = session.execute( this.getAclsRequestById
                 .get( PrincipalType.ROLE )
@@ -2165,8 +2187,8 @@ public class CassandraTableManager {
         }
     }
 
-    public Iterable<Row> getAllReceivedRequestsForPermissionsOfUsername( PrincipalType type, String username ) {
-        return StreamSupport.stream( getEntitySetsUserOwns( username ).spliterator(), false )
+    public Iterable<Row> getAllReceivedRequestsForPermissionsOfUserId( PrincipalType type, String userId ) {
+        return StreamSupport.stream( getEntitySetsUserOwns( userId ).spliterator(), false )
                 .map( entitySetName -> getAllReceivedRequestsForPermissionsOfEntitySet( type, entitySetName ) )
                 .flatMap( iterRow -> StreamSupport.stream( iterRow.spliterator(), false ) )
                 .collect( Collectors.toList() );
@@ -2177,14 +2199,14 @@ public class CassandraTableManager {
                 .execute( getAclsRequestsByEntitySet.get( type ).bind( entitySetName ) );
     }
 
-    public Iterable<Row> getAllSentRequestsForPermissions( PrincipalType type, String username ) {
+    public Iterable<Row> getAllSentRequestsForPermissions( PrincipalType type, String userId ) {
         return session
-                .execute( getAclsRequestsByUsername.get( type ).bind( username ) );
+                .execute( getAclsRequestsByUserId.get( type ).bind( userId ) );
     }
 
-    public Iterable<Row> getAllSentRequestsForPermissions( PrincipalType type, String username, String entitySetName ) {
+    public Iterable<Row> getAllSentRequestsForPermissions( PrincipalType type, String userId, String entitySetName ) {
         return session
-                .execute( getAclsRequestsByUsernameAndEntitySet.get( type ).bind( username, entitySetName ) );
+                .execute( getAclsRequestsByUserIdAndEntitySet.get( type ).bind( userId, entitySetName ) );
     }
 
     public EntityType getEntityType( FullQualifiedName entityTypeFqn ) {

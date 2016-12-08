@@ -40,21 +40,27 @@ public interface EdmManager {
 
     void createEntitySet( Principal principal, EntitySet entitySet );
 
+    void createEntitySet( String typename, String name, String title );
+
+    void createEntitySet( EntitySet entitySet );
+
     void upsertEntitySet( EntitySet entitySet );
 
     EntitySet getEntitySet( String name );
 
     Iterable<EntitySet> getEntitySets();
 
-    Iterable<EntitySet> getEntitySetsUserOwns( String username );
+    Iterable<EntitySet> getEntitySetsUserOwns( String userId );
 
-    Iterable<String> getEntitySetNamesUserOwns( String username );
+    Iterable<String> getEntitySetNamesUserOwns( String userId );
 
     void deleteEntitySet( EntitySet entitySet );
 
     void deleteEntitySet( String name );
 
     void createEntityType( Principal principal, EntityType entityType );
+
+    void createEntityType( EntityType objectType );
 
     void assignEntityToEntitySet( UUID entityId, String entitySetName );
 
@@ -114,5 +120,9 @@ public interface EdmManager {
     boolean checkEntitySetExists( String name );
 
     boolean checkSchemaExists( String namespace, String name );
+
+    void upsertEntityType( Principal principal, EntityType entityType );
+
+    void upsertPropertyType( PropertyType propertyType );
 
 }

@@ -12,6 +12,7 @@ public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
     ROLE( DataType.text() ),
     USER( DataType.text() ),
+    USERID( DataType.text() ),
     CLOCK( DataType.timestamp() ),
     DATATYPE( DataType.text() ),
     ENTITY_SET( DataType.text() ),
@@ -42,7 +43,6 @@ public enum CommonColumns implements ColumnDef {
     ACL_KEYS( DataType.frozenList( DataType.text() ) ); // partition index within a table for distribution purpose
 
     private final DataType type;
-    private final String   bindMarker;
 
     private CommonColumns( DataType type ) {
         this.type = type;
@@ -50,7 +50,6 @@ public enum CommonColumns implements ColumnDef {
         while ( !CommonColumnsHelper.usedBindMarkers.add( maybeNewMarker ) ) {
             maybeNewMarker = RandomStringUtils.randomAlphabetic( 8 );
         }
-        this.bindMarker = maybeNewMarker;
     }
 
     public DataType getType( Function<ColumnDef, DataType> typeResolver ) {
