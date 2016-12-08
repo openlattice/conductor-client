@@ -1,8 +1,12 @@
 package com.kryptnostic.conductor.codecs;
 
+import static com.datastax.driver.core.ParseUtils.quote;
+
 import java.nio.ByteBuffer;
 
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.ParseUtils;
@@ -16,7 +20,10 @@ import com.datastax.driver.core.exceptions.InvalidTypeException;
  *
  */
 public class TimestampDateTimeTypeCodec extends TypeCodec<DateTime> {
+    
     private static final TimestampDateTimeTypeCodec instance = new TimestampDateTimeTypeCodec();
+    
+    private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ").withZoneUTC();
     
     private TimestampDateTimeTypeCodec() {
         super(DataType.timestamp(), DateTime.class);
@@ -50,10 +57,10 @@ public class TimestampDateTimeTypeCodec extends TypeCodec<DateTime> {
     }
 
     @Override
-    public String format(DateTime value) {
-        if (value == null)
+    public String format( DateTime value ) {
+        if ( value == null )
             return "NULL";
-        return Long.toString(value.getMillis());
+        return quote( FORMATTER.print( value ) );
     }
     
     @Override
