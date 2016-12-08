@@ -96,15 +96,15 @@ public final class ResultSetAdapterFactory {
 		return map;
 	}
 	
-	private static Object getObject( Row row, DataType dt, String colName ){
-	    Name dtName = dt.getName();
-	    switch( dtName ){
-	        case TIMESTAMP:
-	            return row.get( colName, preferredCodec.get( dtName ) );
-	        default:
-	            return row.getObject( colName );
-	    }
-	}
+    private static Object getObject( Row row, DataType dt, String colName ) {
+        Name dtName = dt.getName();
+        if ( preferredCodec.containsKey( dtName ) ) {
+            return row.get( colName, preferredCodec.get( dtName ) );
+        } else {
+            return row.getObject( colName );
+        }
+    }
+
 	/**
 	 * 
 	 * @param row Cassandra Row object, expected to have a single column of UUID
