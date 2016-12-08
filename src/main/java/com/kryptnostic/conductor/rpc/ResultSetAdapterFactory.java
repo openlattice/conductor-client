@@ -1,6 +1,5 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -10,9 +9,9 @@ import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.IntStream;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-
+import org.apache.olingo.commons.api.data.Entity;
+import org.apache.olingo.commons.api.data.Property;
+import org.apache.olingo.commons.api.data.ValueType;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.requests.Action;
@@ -27,18 +26,10 @@ import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.DataType.Name;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.TypeCodec;
-import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
-import com.datastax.driver.extras.codecs.joda.LocalTimeCodec;
 import com.google.common.base.Function;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
-import com.google.common.collect.HashMultimap;
-
-import org.apache.hadoop.hdfs.protocol.HdfsConstants.DatanodeReportType;
-import org.apache.olingo.commons.api.data.Entity;
-import org.apache.olingo.commons.api.data.Property;
-import org.apache.olingo.commons.api.data.ValueType;
-
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
@@ -146,7 +137,7 @@ public final class ResultSetAdapterFactory {
                 .setName( row.getString( CommonColumns.ENTITY_SET.cql() ) )
                 .setPropertyType( row.get( CommonColumns.PROPERTY_TYPE.cql(), FullQualifiedName.class ))
                 .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ))
-                .setTimestamp( row.get( CommonColumns.CLOCK.cql(), Instant.class ).toString() )
+                .setTimestamp( row.get( CommonColumns.CLOCK.cql(), TimestampDateTimeTypeCodec.getInstance() ).toString() )
                 .setRequestId( row.getUUID( CommonColumns.REQUESTID.cql() ) );
         String requestingUser = row.getString( CommonColumns.USER.cql() );
         return new PropertyTypeInEntitySetAclRequestWithRequestingUser().setRequest( request ).setRequestingUser( requestingUser );

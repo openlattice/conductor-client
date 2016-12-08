@@ -1,7 +1,6 @@
 package com.kryptnostic.datastore.services;
 
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -17,6 +16,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import com.google.common.base.Optional;
@@ -45,6 +44,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
 import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
@@ -2029,7 +2029,7 @@ public class CassandraTableManager {
             FullQualifiedName propertyTypeFqn,
             EnumSet<Permission> permissions ) {
         UUID requestId = UUID.randomUUID();
-        Instant timestamp = Instant.now();
+        DateTime timestamp = DateTime.now();
         switch ( principal.getType() ) {
             case ROLE:
                 session.execute( this.insertAclsRequest.get( PrincipalType.ROLE ).bind( userId,
@@ -2066,7 +2066,7 @@ public class CassandraTableManager {
         PrincipalType type;
         String userId;
         String entitySetName;
-        Instant timestamp;
+        DateTime timestamp;
 
         // Retrieve Row info by request id
         Row rowRole = session.execute( this.getAclsRequestById
@@ -2077,7 +2077,7 @@ public class CassandraTableManager {
             type = PrincipalType.ROLE;
             userId = rowRole.getString( CommonColumns.USER.cql() );
             entitySetName = rowRole.getString( CommonColumns.ENTITY_SET.cql() );
-            timestamp = rowRole.get( CommonColumns.CLOCK.cql(), InstantCodec.instance );
+            timestamp = rowRole.get( CommonColumns.CLOCK.cql(), TimestampDateTimeTypeCodec.getInstance() );
         } else {
             Row rowUser = session.execute( this.getAclsRequestById
                     .get( PrincipalType.USER )
@@ -2087,7 +2087,7 @@ public class CassandraTableManager {
                 type = PrincipalType.USER;
                 userId = rowUser.getString( CommonColumns.USER.cql() );
                 entitySetName = rowUser.getString( CommonColumns.ENTITY_SET.cql() );
-                timestamp = rowUser.get( CommonColumns.CLOCK.cql(), InstantCodec.instance );
+                timestamp = rowUser.get( CommonColumns.CLOCK.cql(), TimestampDateTimeTypeCodec.getInstance() );
             } else {
                 // TODO write custom handler
                 throw new ResourceNotFoundException( "Permissions Request not found." );
@@ -2114,7 +2114,7 @@ public class CassandraTableManager {
             session.execute( this.deleteAclsRequest.get( type ).bind(
                     row.getString( CommonColumns.USER.cql() ),
                     entitySetName,
-                    row.get( CommonColumns.CLOCK.cql(), InstantCodec.instance ),
+                    row.get( CommonColumns.CLOCK.cql(), TimestampDateTimeTypeCodec.getInstance() ),
                     requestId
                     ) );
             session.execute( this.deleteLookupForAclsRequest.get( type ).bind( requestId ) );            
