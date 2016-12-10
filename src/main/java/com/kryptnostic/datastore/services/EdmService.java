@@ -49,6 +49,7 @@ public class EdmService implements EdmManager {
     private final IMap<FullQualifiedName, PropertyType> propertyTypes;
     private final IMap<FullQualifiedName, EntityType>   entityTypes;
     private final IMap<String, EntitySet>               entitySets;
+    
     private final IMap<AclKey, FullQualifiedName>       fqnsByAclKey;
     private final IMap<FullQualifiedName, String>       typenames;
     private final IMap<String, FullQualifiedName>       fqns;
@@ -492,8 +493,8 @@ public class EdmService implements EdmManager {
             // Add the new property types in
             Set<FullQualifiedName> newPropertyTypesInEntityType = Sets.difference( entityType.getProperties(),
                     currentPropertyTypes );
-            addPropertyTypesToEntityType( entityType.getNamespace(),
-                    entityType.getName(),
+            addPropertyTypesToEntityType( entityType.getFullQualifiedName().getNamespace(),
+                    entityType.getFullQualifiedName().getName(),
                     newPropertyTypesInEntityType );
         }
         return isValid;

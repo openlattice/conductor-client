@@ -76,7 +76,7 @@ public final class ResultSetAdapterFactory {
             Object value = row.getObject( property.getTypename() );
             entity.addProperty( new Property(
                     property.getFullQualifiedName().getFullQualifiedNameAsString(),
-                    property.getName(),
+                    property.getFullQualifiedName().getName(),
                     ValueType.PRIMITIVE,
                     value ) );
         } );

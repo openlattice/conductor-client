@@ -156,8 +156,6 @@ public class CassandraTableManager {
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByUserIdAndEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestById;
-    private final Mapper<PropertyType>                                propertyTypeMapper;
-    private final Mapper<EntitySet>                                   entitySetMapper;
     private final Mapper<EntityType>                                  entityTypeMapper;
 
     public CassandraTableManager(
