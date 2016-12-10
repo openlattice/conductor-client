@@ -199,10 +199,10 @@ public class ODataStorageService {
 
         propertyTypes.forEach( fqn -> nameLookup.put( fqn.getName(), fqn ) );
         Map<Property, FullQualifiedName> fqns = Maps.toMap( properties,
-                property -> resolveFqn( entityType.getFullQualifiedName(), property, nameLookup ) );
+                property -> resolveFqn( entityType.getType(), property, nameLookup ) );
 
         final PreparedStatementMapping cqm = tableManager.getInsertEntityPreparedStatement(
-                entityType.getFullQualifiedName(), fqns.values(), Optional.fromNullable( entitySetName ) );
+                entityType.getType(), fqns.values(), Optional.fromNullable( entitySetName ) );
 
         Object[] bindList = new Object[ 4 + cqm.mapping.size() ];
         bindList[ 0 ] = entityId;

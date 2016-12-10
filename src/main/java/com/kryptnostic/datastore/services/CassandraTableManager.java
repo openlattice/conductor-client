@@ -858,14 +858,14 @@ public class CassandraTableManager {
              * of available UUIDs that shifts the reads to times when cassandra is under less stress. Option (2) with a
              * fall back to random UUID generation when pool is exhausted seems like an efficient bet.
              */
-            putEntityTypeInsertStatement( et.getFullQualifiedName() );
-            putEntityTypeUpdateStatement( et.getFullQualifiedName() );
-            putEntityIdToTypeUpdateStatement( et.getFullQualifiedName() );
+            putEntityTypeInsertStatement( et.getType() );
+            putEntityTypeUpdateStatement( et.getType() );
+            putEntityIdToTypeUpdateStatement( et.getType() );
             et.getKey().forEach( fqn -> putPropertyIndexUpdateStatement( fqn ) );
         } );
 
         schema.getPropertyTypes().forEach( pt -> {
-            putPropertyTypeUpdateStatement( pt.getFullQualifiedName() );
+            putPropertyTypeUpdateStatement( pt.getType() );
         } );
     }
 
@@ -878,7 +878,7 @@ public class CassandraTableManager {
     }
 
     public PreparedStatement getInsertEntityPreparedStatement( EntityType entityType ) {
-        return getInsertEntityPreparedStatement( entityType.getFullQualifiedName() );
+        return getInsertEntityPreparedStatement( entityType.getType() );
     }
 
     public PreparedStatement getInsertEntityPreparedStatement( FullQualifiedName fqn ) {
@@ -886,7 +886,7 @@ public class CassandraTableManager {
     }
 
     public PreparedStatement getUpdateEntityPreparedStatement( EntityType entityType ) {
-        return getUpdateEntityPreparedStatement( entityType.getFullQualifiedName() );
+        return getUpdateEntityPreparedStatement( entityType.getType() );
     }
 
     public PreparedStatement getUpdateEntityPreparedStatement( FullQualifiedName fqn ) {
@@ -898,7 +898,7 @@ public class CassandraTableManager {
     }
 
     public PreparedStatement getUpdatePropertyPreparedStatement( PropertyType propertyType ) {
-        return getUpdatePropertyPreparedStatement( propertyType.getFullQualifiedName() );
+        return getUpdatePropertyPreparedStatement( propertyType.getType() );
     }
 
     public PreparedStatement getUpdatePropertyPreparedStatement( FullQualifiedName fqn ) {
@@ -944,7 +944,7 @@ public class CassandraTableManager {
         final String tablename = maybeTablename;
         propertyTypes.stream()
                 .forEach( pt -> session
-                        .execute( Queries.createEntityTableIndex( keyspace, tablename, pt.getFullQualifiedName() ) ) );
+                        .execute( Queries.createEntityTableIndex( keyspace, tablename, pt.getType() ) ) );
         entityType.getKey().forEach( fqn -> {
             // TODO: Use elasticsearch for maintaining index instead of maintaining in Cassandra.
             /*
@@ -977,7 +977,7 @@ public class CassandraTableManager {
             // Loop until table creation succeeds.
         } while ( !Util.wasLightweightTransactionApplied( session.execute( propertyTableQuery ) ) );
 
-        putPropertyTypeUpdateStatement( propertyType.getFullQualifiedName() );
+        putPropertyTypeUpdateStatement( propertyType.getType() );
     }
 
     public void deleteEntityTypeTable( String namespace, String entityName ) {
@@ -998,12 +998,12 @@ public class CassandraTableManager {
 
     public void insertToPropertyTypeLookupTable( PropertyType propertyType ) {
         session.execute(
-                insertPropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
+                insertPropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getType() ) );
     }
 
     public void updatePropertyTypeLookupTable( PropertyType propertyType ) {
         session.execute(
-                updatePropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getFullQualifiedName() ) );
+                updatePropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getType() ) );
         // TODO: reorder binding?
     }
 
@@ -1017,12 +1017,12 @@ public class CassandraTableManager {
 
     public void insertToEntityTypeLookupTable( EntityType entityType ) {
         session.execute(
-                insertEntityTypeLookup.bind( entityType.getTypename(), entityType.getFullQualifiedName() ) );
+                insertEntityTypeLookup.bind( entityType.getTypename(), entityType.getType() ) );
     }
 
     public void updateEntityTypeLookupTable( EntityType entityType ) {
         session.execute(
-                updateEntityTypeLookup.bind( entityType.getTypename(), entityType.getFullQualifiedName() ) );
+                updateEntityTypeLookup.bind( entityType.getTypename(), entityType.getType() ) );
         // TODO: reorder binding?
     }
 
@@ -1062,7 +1062,7 @@ public class CassandraTableManager {
         if ( StringUtils.isNotBlank( typename ) ) {
             return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
         }
-        return getTablenameForEntityType( entityType.getFullQualifiedName() );
+        return getTablenameForEntityType( entityType.getType() );
     }
 
     public String getTablenameForEntityType( FullQualifiedName fqn ) {
@@ -1160,7 +1160,7 @@ public class CassandraTableManager {
         if ( StringUtils.isNotBlank( typename ) ) {
             return getTablenameForPropertyValuesFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
         }
-        return getTablenameForPropertyValuesOfType( propertyType.getFullQualifiedName() );
+        return getTablenameForPropertyValuesOfType( propertyType.getType() );
     }
 
     public String getTablenameForPropertyValuesOfType( FullQualifiedName propertyFqn ) {
@@ -1177,7 +1177,7 @@ public class CassandraTableManager {
         if ( StringUtils.isNotBlank( typename ) ) {
             return getTablenameForPropertyIndexFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
         }
-        return getTablenameForPropertyIndexOfType( propertyType.getFullQualifiedName() );
+        return getTablenameForPropertyIndexOfType( propertyType.getType() );
     }
 
     public String getTablenameForPropertyIndexOfType( FullQualifiedName propertyFqn ) {

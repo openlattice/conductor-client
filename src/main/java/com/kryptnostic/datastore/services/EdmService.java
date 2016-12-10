@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -49,7 +50,7 @@ public class EdmService implements EdmManager {
     private final IMap<FullQualifiedName, PropertyType> propertyTypes;
     private final IMap<FullQualifiedName, EntityType>   entityTypes;
     private final IMap<String, EntitySet>               entitySets;
-    
+
     private final IMap<AclKey, FullQualifiedName>       fqnsByAclKey;
     private final IMap<FullQualifiedName, String>       typenames;
     private final IMap<String, FullQualifiedName>       fqns;
@@ -166,9 +167,9 @@ public class EdmService implements EdmManager {
     public void upsertEntityType( Principal principal, EntityType entityType ) {
         // This call will fail if the typename has already been set for the entity.
         ensureValidEntityType( entityType );
-        if ( checkEntityTypeExists( entityType.getFullQualifiedName() ) ) {
+        if ( checkEntityTypeExists( entityType.getType() ) ) {
             // Retrieve database record of entityType
-            EntityType dbRecord = getEntityType( entityType.getFullQualifiedName() );
+            EntityType dbRecord = getEntityType( entityType.getType() );
 
             // Update properties
             Set<FullQualifiedName> currentPropertyTypes = dbRecord.getProperties();
@@ -179,8 +180,8 @@ public class EdmService implements EdmManager {
 
             Set<FullQualifiedName> newPropertyTypesInEntityType = Sets.difference( entityType.getProperties(),
                     currentPropertyTypes );
-            addPropertyTypesToEntityType( entityType.getNamespace(),
-                    entityType.getName(),
+            addPropertyTypesToEntityType( entityType.getType().getNamespace(),
+                    entityType.getType().getName(),
                     newPropertyTypesInEntityType );
 
             // Update Schema
@@ -189,12 +190,12 @@ public class EdmService implements EdmManager {
             Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, entityType.getSchemas() );
             removableSchemas.forEach( schema -> removeEntityTypesFromSchema( schema.getNamespace(),
                     schema.getName(),
-                    ImmutableSet.of( entityType.getFullQualifiedName() ) ) );
+                    ImmutableSet.of( entityType.getType() ) ) );
 
             Set<FullQualifiedName> newSchemas = Sets.difference( entityType.getSchemas(), currentSchemas );
             newSchemas.forEach( schema -> addEntityTypesToSchema( schema.getNamespace(),
                     schema.getName(),
-                    ImmutableSet.of( entityType.getFullQualifiedName() ) ) );
+                    ImmutableSet.of( entityType.getType() ) ) );
 
             // Persist
             entityTypeMapper.save( entityType );
@@ -210,28 +211,34 @@ public class EdmService implements EdmManager {
      */
     @Override
     public void upsertPropertyType( PropertyType propertyType ) {
-        ensureValidPropertyType( propertyType );
-        if ( checkPropertyTypeExists( propertyType.getFullQualifiedName() ) ) {
-            // Retrieve database record of property type
-            PropertyType dbRecord = getPropertyType( propertyType.getFullQualifiedName() );
+        // TODO: Handle UUID mismatch / FQN change
+        /*
+         * Currently we aren't handling FQN changes properly. As FQN are used for lookup, if the FQN changes it requires
+         * deleting the old property and creating a new property. This is problematic as it results in data being
+         * deleted or having to be copied over manually from one column to another. To avoid this machinery prone to
+         * failure, we should make UUIDs required for updating property types, entity types, and entity sets.
+         */
 
+        ensureValidPropertyType( propertyType );
+
+        // Create property type if it doesn't exist.
+        PropertyType dbRecord = propertyTypes.putIfAbsent( propertyType.getType(), propertyType );
+
+        if ( dbRecord != null ) {
             // Update Schema
             Set<FullQualifiedName> currentSchemas = dbRecord.getSchemas();
 
             Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, propertyType.getSchemas() );
             removableSchemas.forEach( schema -> removePropertyTypesFromSchema( schema.getNamespace(),
                     schema.getName(),
-                    ImmutableSet.of( propertyType.getFullQualifiedName() ) ) );
+                    ImmutableSet.of( propertyType.getType() ) ) );
 
             Set<FullQualifiedName> newSchemas = Sets.difference( propertyType.getSchemas(), currentSchemas );
             newSchemas.forEach( schema -> addPropertyTypesToSchema( schema.getNamespace(),
                     schema.getName(),
-                    ImmutableSet.of( propertyType.getFullQualifiedName() ) ) );
-
-            propertyType.setTypename( dbRecord.getTypename() );
-            propertyTypeMapper.save( propertyType );
-        } else {
-            createPropertyType( propertyType );
+                    ImmutableSet.of( propertyType.getType() ) ) );
+            // Set Property type
+            propertyTypes.set( propertyType.getType(), propertyType );
         }
     }
 
@@ -291,14 +298,12 @@ public class EdmService implements EdmManager {
          * We retrieve or create the typename for the property. If the property already exists then lightweight
          * transaction will fail and return value will be correctly set.
          */
-        propertyType.setTypename( Queries.fqnToColumnName( propertyType.getFullQualifiedName() ) );
-
-        if ( propertyTypes.putIfAbsent( propertyType.getFullQualifiedName(), propertyType ) == null ) {
+        if ( propertyTypes.putIfAbsent( propertyType.getType(), propertyType ) == null ) {
             propertyType.getSchemas()
                     .forEach(
                             schemaFqn -> addPropertyTypesToSchema( schemaFqn.getNamespace(),
                                     schemaFqn.getName(),
-                                    ImmutableSet.of( propertyType.getFullQualifiedName() ) ) );
+                                    ImmutableSet.of( propertyType.getType() ) ) );
 
             tableManager.insertToPropertyTypeLookupTable( propertyType );
         } else {
@@ -458,7 +463,7 @@ public class EdmService implements EdmManager {
             EntityType entityType ) {
         // Make sure entity type is valid
         ensureValidEntityType( entityType );
-        Preconditions.checkArgument( !checkEntityTypeExists( entityType.getFullQualifiedName() ),
+        Preconditions.checkArgument( !checkEntityTypeExists( entityType.getType() ),
                 "Entity type of same name already exists." );
         createEntityType( principal, entityType, true );
     }
@@ -468,19 +473,16 @@ public class EdmService implements EdmManager {
          * Refactored by Ho Chung, so that upsertEntityType won't do duplicate checks. checkedValid means that isValid
          * is true if entity type is checked valid, and checked not already exist.
          */
-        // Generate the typename for this type
-        String typename = Queries.fqnToColumnName( entityType.getFullQualifiedName() );// CassandraTableManager.generateTypename();
-        entityType.setTypename( typename );
 
         // Only create entity table if insert transaction succeeded.
-        final EntityType existing = entityTypes.putIfAbsent( entityType.getFullQualifiedName(), entityType );
+        final EntityType existing = entityTypes.putIfAbsent( entityType.getType(), entityType );
         if ( existing == null ) {
             tableManager.createEntityTypeTable( entityType,
                     Maps.asMap( entityType.getKey(),
                             fqn -> getPropertyType( fqn ) ) );
             entityType.getSchemas().forEach( schema -> addEntityTypesToSchema( schema.getNamespace(),
                     schema.getName(),
-                    ImmutableSet.of( entityType.getFullQualifiedName() ) ) );
+                    ImmutableSet.of( entityType.getType() ) ) );
             tableManager.insertToEntityTypeLookupTable( entityType );
         } else {
             // Retrieve properties known to user
@@ -493,8 +495,8 @@ public class EdmService implements EdmManager {
             // Add the new property types in
             Set<FullQualifiedName> newPropertyTypesInEntityType = Sets.difference( entityType.getProperties(),
                     currentPropertyTypes );
-            addPropertyTypesToEntityType( entityType.getFullQualifiedName().getNamespace(),
-                    entityType.getFullQualifiedName().getName(),
+            addPropertyTypesToEntityType( entityType.getType().getNamespace(),
+                    entityType.getType().getName(),
                     newPropertyTypesInEntityType );
         }
         return isValid;
@@ -770,7 +772,7 @@ public class EdmService implements EdmManager {
                 // Acl
                 properties
                         .forEach( propertyTypeFqn -> permissionsService.removePermissionsForPropertyTypeInEntityType(
-                                entityType.getFullQualifiedName(), propertyTypeFqn ) );
+                                entityType.getType(), propertyTypeFqn ) );
             } else {
                 throw new IllegalArgumentException( "Not all properties are included in the EntityType" );
             }
@@ -918,5 +920,10 @@ public class EdmService implements EdmManager {
     public void createEntityType( EntityType objectType ) {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public Collection<PropertyType> getPropertyTypes( Set<FullQualifiedName> properties ) {
+        return propertyTypes.getAll( properties ).values();
     }
 }

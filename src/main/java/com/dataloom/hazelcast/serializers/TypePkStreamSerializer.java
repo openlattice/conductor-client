@@ -19,7 +19,7 @@ public class TypePkStreamSerializer implements SelfRegisteringStreamSerializer<T
 
     @Override
     public void write( ObjectDataOutput out, TypePK object ) throws IOException {
-        FullQualifiedName fqn = object.getFullQualifiedName();
+        FullQualifiedName fqn = object.getType();
         AbstractUUIDStreamSerializer.serialize( out, object.getId() );
         out.writeUTF( fqn.getNamespace() );
         out.writeUTF(  fqn.getName() );
