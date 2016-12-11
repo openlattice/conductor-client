@@ -31,6 +31,7 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
@@ -477,9 +478,12 @@ public class EdmService implements EdmManager {
         // Only create entity table if insert transaction succeeded.
         final EntityType existing = entityTypes.putIfAbsent( entityType.getType(), entityType );
         if ( existing == null ) {
+            Set<PropertyType> properties = ImmutableSet
+                    .copyOf( propertyTypes.getAll( entityType.getProperties() ).values() );
             tableManager.createEntityTypeTable( entityType,
                     Maps.asMap( entityType.getKey(),
-                            fqn -> getPropertyType( fqn ) ) );
+                            fqn -> getPropertyType( fqn ) ),
+                    properties );
             entityType.getSchemas().forEach( schema -> addEntityTypesToSchema( schema.getNamespace(),
                     schema.getName(),
                     ImmutableSet.of( entityType.getType() ) ) );
@@ -554,7 +558,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public void createEntitySet( Principal principal, FullQualifiedName type, String name, String title ) {
-        createEntitySet( principal, new EntitySet().setType( type ).setName( name ).setTitle( title ) );
+        createEntitySet( principal, new EntitySet(Optional.absent(),type,name, title) );
     }
 
     public void createEntitySet( EntitySet entitySet ) {

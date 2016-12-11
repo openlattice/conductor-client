@@ -156,13 +156,11 @@ public class CassandraTableManager {
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByUserIdAndEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestById;
-    private final Mapper<EntityType>                                  entityTypeMapper;
 
     public CassandraTableManager(
             HazelcastInstance hazelcastInstance,
             String keyspace,
-            Session session,
-            MappingManager mm ) {
+            Session session ) {
         this.session = session;
         this.keyspace = keyspace;
 
@@ -788,9 +786,6 @@ public class CassandraTableManager {
                         .from( keyspace, Tables.USERS_ACLS_REQUESTS_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.REQUESTID.cql(), QueryBuilder.bindMarker() ) ) ) );
 
-        this.propertyTypeMapper = mm.mapper( PropertyType.class );
-        this.entitySetMapper = mm.mapper( EntitySet.class );
-        this.entityTypeMapper = mm.mapper( EntityType.class );
     }
 
     public String getKeyspace() {
@@ -921,12 +916,9 @@ public class CassandraTableManager {
         return countEntitySets;
     }
 
-    public void createEntityTypeTable( EntityType entityType, Map<FullQualifiedName, PropertyType> keyPropertyTypes ) {
+    public void createEntityTypeTable( EntityType entityType, Map<FullQualifiedName, PropertyType> keyPropertyTypes , Set<PropertyType> propertyTypes) {
         // Ensure that type name doesn't exist
         String entityTableQuery;
-        Set<PropertyType> propertyTypes = entityType.getProperties().stream()
-                .map( this::getPropertyType )
-                .collect( Collectors.toSet() );
 
         String maybeTablename = null;
         // maybeTablename = null;
@@ -1003,7 +995,7 @@ public class CassandraTableManager {
 
     public void updatePropertyTypeLookupTable( PropertyType propertyType ) {
         session.execute(
-                updatePropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getType() ) );
+                updatePropertyTypeLookup.bind( propertyType.getTypen    ame(), propertyType.getType() ) );
         // TODO: reorder binding?
     }
 
@@ -1128,8 +1120,8 @@ public class CassandraTableManager {
         session.execute(
                 entityTypeRemoveSchema.bind(
                         ImmutableSet.of( schemaFqn ),
-                        entityType.getNamespace(),
-                        entityType.getName() ) );
+                        entityType.getType().getNamespace(),
+                        entityType.getType().getName() ) );
     }
 
     public String getTypenameForEntityId( UUID entityId ) {
@@ -2058,7 +2050,7 @@ public class CassandraTableManager {
                         entitySetName,
                         timestamp,
                         requestId,
-                        principal.getName(),
+                        principal.getId(),
                         propertyTypeFqn,
                         permissions ) );
                 session.execute( this.updateLookupForAclsRequest.get( PrincipalType.ROLE ).bind( requestId,
@@ -2126,20 +2118,19 @@ public class CassandraTableManager {
         removePermissionsRequestForEntitySet( PrincipalType.ROLE, entitySetName );
         removePermissionsRequestForEntitySet( PrincipalType.USER, entitySetName );
     }
-    
-    private void removePermissionsRequestForEntitySet( PrincipalType type, String entitySetName ){
-        
+
+    private void removePermissionsRequestForEntitySet( PrincipalType type, String entitySetName ) {
+
         ResultSet rs = session.execute( getAclsRequestsByEntitySet.get( type ).bind( entitySetName ) );
         // TODO Ho Chung: very severe concurrency issue. To be addressed after demo
-        for( Row row : rs ){
+        for ( Row row : rs ) {
             UUID requestId = row.getUUID( CommonColumns.REQUESTID.cql() );
             session.execute( this.deleteAclsRequest.get( type ).bind(
                     row.getString( CommonColumns.USER.cql() ),
                     entitySetName,
                     row.get( CommonColumns.CLOCK.cql(), InstantCodec.instance ),
-                    requestId
-                    ) );
-            session.execute( this.deleteLookupForAclsRequest.get( type ).bind( requestId ) );            
+                    requestId ) );
+            session.execute( this.deleteLookupForAclsRequest.get( type ).bind( requestId ) );
         }
     }
 
@@ -2205,14 +2196,6 @@ public class CassandraTableManager {
     public Iterable<Row> getAllSentRequestsForPermissions( PrincipalType type, String userId, String entitySetName ) {
         return session
                 .execute( getAclsRequestsByUserIdAndEntitySet.get( type ).bind( userId, entitySetName ) );
-    }
-
-    public EntityType getEntityType( FullQualifiedName entityTypeFqn ) {
-
-        return Preconditions.checkNotNull(
-                entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ),
-                "Entity type does not exist" );
-
     }
 
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
