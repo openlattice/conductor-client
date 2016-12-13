@@ -118,7 +118,9 @@ public interface EdmManager {
     boolean checkPropertyTypesExist( Set<FullQualifiedName> properties );
     
     boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn );
-    
+
+    boolean checkEntityTypesExist( Set<FullQualifiedName> entityTypes );
+
     boolean checkEntityTypeExists( FullQualifiedName entityTypeFqn );
     
     boolean checkEntitySetExists( String name );
