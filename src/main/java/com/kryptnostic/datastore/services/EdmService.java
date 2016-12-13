@@ -757,6 +757,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties ) {
+        Preconditions.checkArgument( Sets.intersection( entityType.getKey(), properties ).isEmpty(), "Cannot remove key property types from entity type." );
         ensurePropertyTypesExist( properties );
         removePropertyTypesFromEntityType( entityType, properties, true );
     }
@@ -770,9 +771,16 @@ public class EdmService implements EdmManager {
          * property types are checked to exist.
          */
         if ( isValid ) {
-            entityType.removeProperties( properties );
+            
+            Set<FullQualifiedName> removableProperties = ImmutableSet.copyOf( Sets.intersection( properties, entityType.getProperties() ) );
+
+            if( removableProperties == null || removableProperties.size() == 0 ){
+                return;
+            }
+
+            entityType.removeProperties( removableProperties );
             // Acl
-            properties
+            removableProperties
                     .forEach( propertyTypeFqn -> permissionsService.removePermissionsForPropertyTypeInEntityType(
                             entityType.getFullQualifiedName(), propertyTypeFqn ) );
             // TODO: Remove properties from Schema, once reference counting is implemented.
@@ -783,16 +791,13 @@ public class EdmService implements EdmManager {
                     entityType.getKey(),
                     entityType.getProperties() );
 
-            if( !properties.isEmpty() ){
-                String propertyColumnNames = properties.stream().map( fqn ->
-                        Queries.fqnToColumnName( fqn )
-                ).collect( Collectors.joining(",") );
-                
-                session.execute( Queries.dropPropertyColumnsFromEntityTable(
-                        DatastoreConstants.KEYSPACE,
-                        tableManager.getTablenameForEntityType( entityType ),
-                        propertyColumnNames ) );
-            }
+            String propertyColumnNames = removableProperties.stream().map( fqn -> Queries.fqnToColumnName( fqn ) )
+                    .collect( Collectors.joining( "," ) );
+
+            session.execute( Queries.dropPropertyColumnsFromEntityTable(
+                    DatastoreConstants.KEYSPACE,
+                    tableManager.getTablenameForEntityType( entityType ),
+                    propertyColumnNames ) );
         }
     }
 
