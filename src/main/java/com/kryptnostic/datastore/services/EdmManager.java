@@ -3,6 +3,7 @@ package com.kryptnostic.datastore.services;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.EntityDataModel;
@@ -12,6 +13,7 @@ import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 
 public interface EdmManager {
     void createSchema(
@@ -114,7 +116,33 @@ public interface EdmManager {
 
     void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
     
-    //Helper methods to check existence
+    //Validation methods, and Helper methods to check existence
+    public void ensureValidEntityType( EntityType entityType );
+    
+    public void ensureValidSchema( Schema schema );
+    
+    public void ensureSchemaExists( String namespace, String name );
+
+    public void ensureEntityTypesExist( Set<FullQualifiedName> entityTypes );
+
+    public void ensureEntityTypeExists( FullQualifiedName entityTypeFqn );
+    
+    public void ensureEntityTypeExists( String typename );
+
+    public void ensurePropertyTypesExist( Set<FullQualifiedName> propertyTypes );
+
+    public void ensurePropertyTypeExists( FullQualifiedName propertyTypeFqn );
+    
+    public void ensureEntitySetExists( String typename, String entitySetName );
+
+    public void ensureEntityTypeDoesNotExist( FullQualifiedName entityTypeFqn );
+    
+    public void ensurePropertyTypeDoesNotExist( FullQualifiedName propertyTypeFqn );
+
+    public void ensureSchemaDoesNotExist( String namespace, String name );
+    
+    public void ensureEntitySetDoesNotExist( String typename, String entitySetName );
+
     boolean checkPropertyTypesExist( Set<FullQualifiedName> properties );
     
     boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn );
@@ -126,4 +154,5 @@ public interface EdmManager {
     boolean checkEntitySetExists( String name );
     
     boolean checkSchemaExists( String namespace, String name );
+    
 }
