@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.requests.Principal;
@@ -110,11 +111,39 @@ public interface EdmManager {
             Set<FullQualifiedName> properties );
 
     void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
+    
+    //Validation methods, and Helper methods to check existence
+    public void ensureValidEntityType( EntityType entityType );
+    
+    public void ensureValidSchema( Schema schema );
+    
+    public void ensureSchemaExists( String namespace, String name );
 
-    // Helper methods to check existence
+    public void ensureEntityTypesExist( Set<FullQualifiedName> entityTypes );
+
+    public void ensureEntityTypeExists( FullQualifiedName entityTypeFqn );
+    
+    public void ensureEntityTypeExists( String typename );
+
+    public void ensurePropertyTypesExist( Set<FullQualifiedName> propertyTypes );
+
+    public void ensurePropertyTypeExists( FullQualifiedName propertyTypeFqn );
+    
+    public void ensureEntitySetExists( String typename, String entitySetName );
+
+    public void ensureEntityTypeDoesNotExist( FullQualifiedName entityTypeFqn );
+    
+    public void ensurePropertyTypeDoesNotExist( FullQualifiedName propertyTypeFqn );
+
+    public void ensureSchemaDoesNotExist( String namespace, String name );
+    
+    public void ensureEntitySetDoesNotExist( String typename, String entitySetName );
+
     boolean checkPropertyTypesExist( Set<FullQualifiedName> properties );
 
     boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn );
+
+    boolean checkEntityTypesExist( Set<FullQualifiedName> entityTypes );
 
     boolean checkEntityTypeExists( FullQualifiedName entityTypeFqn );
 

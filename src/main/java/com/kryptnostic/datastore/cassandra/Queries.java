@@ -310,6 +310,11 @@ public final class Queries {
         return String.format( query, keyspace, table, fqnToColumnName( fqn ) );
     }
 
+    public static final String dropEntityTableIndex( String keyspace, String table, FullQualifiedName fqn ) {
+        String query = "DROP INDEX IF EXISTS %s.%s_%s_idx";
+        return String.format( query, keyspace, table, fqnToColumnName( fqn ) );
+    }
+
     public static final String getCreateEntityIdToTypenameTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_ID_TO_TYPE )
                 .ifNotExists()

@@ -111,7 +111,7 @@ public class PermissionsService implements PermissionsManager {
             case ROLE:
                 return tableManager.getRolePermissionsForEntityType( principal.getName(), fqn );
             case USER:
-                return tableManager.getUserPermissionsForEntityType( principal.getName(), fqn );
+                return tableManager.getUserPermissionsForEntityType( principal.getId(), fqn );
             default:
                 throw new BadRequestException("Principal has undefined type.");                   
         }
