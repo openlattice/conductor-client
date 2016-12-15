@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
@@ -153,4 +154,7 @@ public interface EdmManager {
     void upsertEntityType( Principal principal, EntityType entityType );
 
     void upsertPropertyType( PropertyType propertyType );
+
+    Collection<PropertyType> getPropertyTypes( Set<FullQualifiedName> properties );
+
 }

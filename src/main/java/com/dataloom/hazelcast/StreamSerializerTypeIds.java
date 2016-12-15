@@ -7,6 +7,7 @@ public enum StreamSerializerTypeIds {
     EMPLOYEE,
     ENTITY_SET,
     FULL_QUALIFIED_NAME,
-    QUERY_RESULT
+    QUERY_RESULT,
+    TYPE_PK
 
 }

@@ -58,7 +58,7 @@ public class AuthorizationQueryService {
                         principal.getType(),
                         PrincipalType.class ).setString(
                                 CommonColumns.PRINCIPAL_ID.cql(),
-                                principal.getName() )
+                                principal.getId() )
                         .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
         return Iterables.transform( CassandraMappingUtils.makeLazy( rsf ), CassandraMappingUtils::getAclKeysFromRow );
     }

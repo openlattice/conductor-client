@@ -75,8 +75,8 @@ public final class ResultSetAdapterFactory {
         properties.forEach( property -> {
             Object value = row.getObject( property.getTypename() );
             entity.addProperty( new Property(
-                    property.getFullQualifiedName().getFullQualifiedNameAsString(),
-                    property.getName(),
+                    property.getType().getFullQualifiedNameAsString(),
+                    property.getType().getName(),
                     ValueType.PRIMITIVE,
                     value ) );
         } );
@@ -91,7 +91,7 @@ public final class ResultSetAdapterFactory {
             Object value = getObject( row,
                     CassandraEdmMapping.getCassandraType( property.getDatatype() ),
                     "value_" + property.getTypename() );
-            map.put( property.getFullQualifiedName(), value );
+            map.put( property.getType(), value );
         } );
         return map;
     }

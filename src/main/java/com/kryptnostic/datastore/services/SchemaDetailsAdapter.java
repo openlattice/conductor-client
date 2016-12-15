@@ -1,7 +1,6 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -16,7 +15,6 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
-import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.util.Util;
 
@@ -36,7 +34,7 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
         this.entityTypeMapper = entityTypeMapper;
         this.propertyTypeMapper = propertyTypeMapper;
         this.requestedDetails = requestedDetails;
-        this.schemaFactory = schemaFactoryWithAclId( ACLs.EVERYONE_ACL );
+        this.schemaFactory = schemaFactory();
     }
 
     @Override
@@ -85,17 +83,11 @@ public class SchemaDetailsAdapter implements Function<Row, Schema> {
         schema.addPropertyTypes( propertyTypes );
     }
 
-    private SchemaFactory schemaFactoryWithAclId( UUID aclId ) {
-        return new SchemaFactory( aclId );
+    private SchemaFactory schemaFactory() {
+        return new SchemaFactory();
     }
 
     private static final class SchemaFactory {
-        private final UUID aclId;
-
-        SchemaFactory( UUID aclId ) {
-            this.aclId = aclId;
-        }
-
         public Schema fromRow( Row r ) {
             String namespace = r.getString( CommonColumns.NAMESPACE.cql() );
             String name = r.getString( CommonColumns.NAME.cql() );

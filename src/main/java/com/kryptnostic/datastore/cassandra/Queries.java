@@ -251,19 +251,19 @@ public final class Queries {
             Map<FullQualifiedName, PropertyType> keyPropertyTypes,
             Collection<PropertyType> propertyTypes ) {
 
-        Set<FullQualifiedName> kfqns = keyPropertyTypes.values().stream().map( pt -> pt.getFullQualifiedName() )
+        Set<FullQualifiedName> kfqns = keyPropertyTypes.values().stream().map( pt -> pt.getType() )
                 .collect( Collectors.toSet() );
         Stream<PropertyType> streamPropertyTypes = keyPropertyTypes.values().stream();
 
         Stream<ValueColumn> streamClusteringValueColumns = streamPropertyTypes
                 .map( pt -> new CassandraTableBuilder.ValueColumn(
-                        fqnToColumnName( pt.getFullQualifiedName() ),
+                        fqnToColumnName( pt.getType() ),
                         CassandraEdmMapping.getCassandraType( pt.getDatatype() ) ) );
 
         Stream<ValueColumn> streamValueColumns = propertyTypes.stream()
-                .filter( e -> !kfqns.contains( e.getFullQualifiedName() ) )
+                .filter( e -> !kfqns.contains( e.getType() ) )
                 .map( svc -> new CassandraTableBuilder.ValueColumn(
-                        fqnToColumnName( svc.getFullQualifiedName() ),
+                        fqnToColumnName( svc.getType() ),
                         CassandraEdmMapping.getCassandraType( svc.getDatatype() ) ) );
 
         List<ColumnDef> clusteringColsAsList = new ArrayList<>( Arrays.asList( CommonColumns.CLOCK ) );

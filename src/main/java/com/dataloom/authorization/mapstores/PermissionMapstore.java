@@ -28,14 +28,14 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
     protected BoundStatement bind( AceKey key, BoundStatement bs ) {
         return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), AclKey.class )
                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), key.getPrincipal().getType(), PrincipalType.class )
-                .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getName() );
+                .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getId() );
     }
 
     @Override
     protected BoundStatement bind( AceKey key, EnumSet<Permission> permissions, BoundStatement bs ) {
         return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), AclKey.class )
                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), key.getPrincipal().getType(), PrincipalType.class )
-                .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getName() )
+                .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getId() )
                 .set( CommonColumns.PERMISSIONS.cql(),
                         permissions,
                         EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
