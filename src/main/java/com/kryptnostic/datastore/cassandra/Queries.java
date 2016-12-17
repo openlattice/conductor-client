@@ -189,9 +189,9 @@ public final class Queries {
     public static final String getCreateEntitySetsTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS )
                 .ifNotExists()
-                .partitionKey( CommonColumns.TYPENAME )
-                .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.TITLE )
+                .partitionKey( CommonColumns.ID )
+                .clusteringColumns( CommonColumns.TYPE , CommonColumns.NAME )
+                .columns( CommonColumns.TITLE  )
                 .buildQuery();
     }
 
@@ -267,11 +267,12 @@ public final class Queries {
                         CassandraEdmMapping.getCassandraType( svc.getDatatype() ) ) );
 
         List<ColumnDef> clusteringColsAsList = new ArrayList<>( Arrays.asList( CommonColumns.CLOCK ) );
-        List<ColumnDef> colsAsList = new ArrayList<> (Arrays.asList( CommonColumns.TYPENAME, CommonColumns.ENTITY_SETS, CommonColumns.SYNCIDS ) );
-        
+        List<ColumnDef> colsAsList = new ArrayList<>(
+                Arrays.asList( CommonColumns.TYPENAME, CommonColumns.ENTITY_SETS, CommonColumns.SYNCIDS ) );
+
         clusteringColsAsList.addAll( streamClusteringValueColumns.collect( Collectors.toList() ) );
         colsAsList.addAll( streamValueColumns.collect( Collectors.toList() ) );
-        
+
         ColumnDef[] clusteringCols = clusteringColsAsList.toArray( new ColumnDef[ 0 ] );
         ColumnDef[] cols = colsAsList.toArray( new ColumnDef[ 0 ] );
         // List<ValueColumn> vcs = java.util.Arrays.asList( valueColumns ).stream()
@@ -294,12 +295,13 @@ public final class Queries {
         Preconditions.checkState( !StringUtils.endsWith( fqn.getNamespace(), "-" ) );
         Preconditions.checkState( !StringUtils.startsWith( fqn.getName(), "-" ) );
         return StringUtils.replace( StringUtils.replace( StringUtils
-                .replace( fqn.getFullQualifiedNameAsString(), "_", "__" ), ".", "_" ), "-", "___");
+                .replace( fqn.getFullQualifiedNameAsString(), "_", "__" ), ".", "_" ), "-", "___" );
         // return fqn.getFullQualifiedNameAsString().replaceAll( "_", "__" ).replaceAll( ".", "_" );
     }
 
     public static String columnNameToFqn( FullQualifiedName fqn ) {
-        return fqn.getFullQualifiedNameAsString().replaceAll( "__", "_" ).replaceAll( "_", "." ).replaceAll( "___", "-" );
+        return fqn.getFullQualifiedNameAsString().replaceAll( "__", "_" ).replaceAll( "_", "." ).replaceAll( "___",
+                "-" );
     }
 
     public static final String createEntityTableIndex(
@@ -432,7 +434,7 @@ public final class Queries {
     public static final String GET_ALL_ENTITY_SETS                 = "select * from sparks."
             + DatastoreConstants.ENTITY_SETS_TABLE;
     public static final String GET_ALL_ENTITY_SETS_FOR_ENTITY_TYPE = "select * from sparks."
-            + DatastoreConstants.ENTITY_SETS_TABLE + " where typename = ?";
+            + DatastoreConstants.ENTITY_SETS_TABLE + " where type = ?";
     public static final String GET_ENTITY_SET_BY_NAME              = "select * from sparks."
             + DatastoreConstants.ENTITY_SETS_TABLE + " where name = ?";
     public static final String GET_ALL_ENTITY_TYPES_QUERY          = "select * from sparks."
@@ -519,7 +521,10 @@ public final class Queries {
                 .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
     }
 
-    public static final String addPropertyColumnsToEntityTable( String keyspace, String table, String propertiesWithType ){
+    public static final String addPropertyColumnsToEntityTable(
+            String keyspace,
+            String table,
+            String propertiesWithType ) {
 
         return new StringBuilder( "ALTER TABLE " )
                 .append( keyspace )
@@ -531,7 +536,10 @@ public final class Queries {
                 .toString();
     }
 
-    public static final String dropPropertyColumnsFromEntityTable( String keyspace, String table, String propertyColumnNames ){
+    public static final String dropPropertyColumnsFromEntityTable(
+            String keyspace,
+            String table,
+            String propertyColumnNames ) {
 
         return new StringBuilder( "ALTER TABLE " )
                 .append( keyspace )
@@ -542,4 +550,5 @@ public final class Queries {
                 .append( ")" )
                 .toString();
     }
+
 }

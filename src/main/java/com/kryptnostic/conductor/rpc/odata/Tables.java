@@ -16,6 +16,7 @@ import static com.dataloom.edm.internal.DatastoreConstants.PROPERTY_TYPES_IN_ENT
 import static com.dataloom.edm.internal.DatastoreConstants.PROPERTY_TYPES_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.ROLES_ACLS_REQUESTS_LOOKUP_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.ROLES_ACLS_REQUESTS_TABLE;
+import static com.dataloom.edm.internal.DatastoreConstants.SCHEMAS_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.SCHEMAS_ACLS_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.USERS_ACLS_REQUESTS_LOOKUP_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.USERS_ACLS_REQUESTS_TABLE;
@@ -44,6 +45,7 @@ public enum Tables implements TableDef {
     PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS( PROPERTY_TYPES_IN_ENTITY_TYPES_USERS_ACLS_TABLE ),
     PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS( PROPERTY_TYPES_IN_ENTITY_SETS_ROLES_ACLS_TABLE ),
     PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS( PROPERTY_TYPES_IN_ENTITY_SETS_USERS_ACLS_TABLE ),
+    SCHEMAS( SCHEMAS_TABLE ),
     SCHEMAS_ACLS( SCHEMAS_ACLS_TABLE ),
     ROLES_ACLS_REQUESTS( ROLES_ACLS_REQUESTS_TABLE ),
     ROLES_ACLS_REQUESTS_LOOKUP( ROLES_ACLS_REQUESTS_LOOKUP_TABLE ),

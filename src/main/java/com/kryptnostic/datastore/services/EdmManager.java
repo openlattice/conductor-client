@@ -41,10 +41,6 @@ public interface EdmManager {
 
     void createEntitySet( Principal principal, EntitySet entitySet );
 
-    void createEntitySet( String typename, String name, String title );
-
-    void createEntitySet( EntitySet entitySet );
-
     void upsertEntitySet( EntitySet entitySet );
 
     EntitySet getEntitySet( String name );
@@ -58,8 +54,6 @@ public interface EdmManager {
     void deleteEntitySet( EntitySet entitySet );
 
     void deleteEntitySet( String name );
-
-    void createEntityType( Principal principal, EntityType entityType );
 
     void createEntityType( EntityType objectType );
 
