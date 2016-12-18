@@ -1275,9 +1275,6 @@ public class CassandraTableManager {
 
     private void prepareSchemaQuery( UUID aclId ) {
         String table = Tables.SCHEMAS.getName();
-        schemaSelectAllStatements.put( aclId, session.prepare( Queries.getAllSchemasQuery( keyspace, table ) ) );
-        schemaSelectAllInNamespaceStatements.put( aclId,
-                session.prepare( Queries.getAllSchemasInNamespaceQuery( keyspace, table ) ) );
         schemaSelectStatements.put( aclId, session.prepare( Queries.getSchemaQuery( keyspace, table ) ) );
         schemaInsertStatements.put( aclId, session.prepare( Queries.insertSchemaQueryIfNotExists( keyspace, table ) ) );
         schemaUpsertStatements.put( aclId, session.prepare( Queries.insertSchemaQuery( keyspace, table ) ) );

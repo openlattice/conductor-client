@@ -190,8 +190,8 @@ public final class Queries {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS )
                 .ifNotExists()
                 .partitionKey( CommonColumns.ID )
-                .clusteringColumns( CommonColumns.TYPE , CommonColumns.NAME )
-                .columns( CommonColumns.TITLE  )
+                .clusteringColumns( CommonColumns.TYPE, CommonColumns.NAME )
+                .columns( CommonColumns.TITLE )
                 .buildQuery();
     }
 
@@ -550,5 +550,4 @@ public final class Queries {
                 .append( ")" )
                 .toString();
     }
-
 }

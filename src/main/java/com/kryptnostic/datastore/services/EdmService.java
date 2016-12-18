@@ -133,6 +133,10 @@ public class EdmService implements EdmManager {
 
     @Override
     public Schema getSchema( String namespace, String name, Set<TypeDetails> requestedDetails ) {
+        /*
+         * First retrieve the schema and then query property types, entity types, and entity sets for relevant schemas.
+         * This avoids synchronization issues when trying to figure out what schemas types belong to.
+         */
         Preconditions.checkArgument( StringUtils.isNotBlank( namespace ), "Schema namespace cannot be blank." );
         Preconditions.checkArgument( StringUtils.isNotBlank( name ), "Schema name cannot be blank." );
 
