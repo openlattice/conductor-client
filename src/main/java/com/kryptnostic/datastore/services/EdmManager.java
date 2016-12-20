@@ -27,12 +27,6 @@ public interface EdmManager {
 
     void upsertSchema( Schema namespace );
 
-    Iterable<Schema> getSchemas();
-
-    Iterable<Schema> getSchemas( Set<TypeDetails> requestedDetails );
-
-    Iterable<Schema> getSchemasInNamespace( String namespace, Set<TypeDetails> requestedDetails );
-
     Schema getSchema( String namespace, String name, Set<TypeDetails> requestedDetails );
 
     void deleteSchema( Schema namespaces );

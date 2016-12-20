@@ -159,7 +159,6 @@ public class CassandraTableManager {
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestsByEntitySet;
     private final Map<PrincipalType, PreparedStatement>               getAclsRequestById;
 
-
     public CassandraTableManager(
             HazelcastInstance hazelcastInstance,
             String keyspace,
@@ -844,35 +843,6 @@ public class CassandraTableManager {
         return schemaRemovePropertyTypes.get( aclId );
     }
 
-    public void registerSchema( Schema schema ) {
-        Preconditions.checkArgument( schema.getEntityTypeFqns().size() == schema.getEntityTypes().size(),
-                "Schema is out of sync." );
-        schema.getEntityTypes().forEach( et -> {
-            // TODO: Solve ID generation
-            /*
-             * While unlikely it's possible to have a UUID collision when creating an object. Two possible solutions:
-             * (1) Use Hazelcast and perform a read prior to every write (2) Maintain a self-refreshing in-memory pool
-             * of available UUIDs that shifts the reads to times when cassandra is under less stress. Option (2) with a
-             * fall back to random UUID generation when pool is exhausted seems like an efficient bet.
-             */
-            putEntityTypeInsertStatement( et.getType() );
-            putEntityTypeUpdateStatement( et.getType() );
-            putEntityIdToTypeUpdateStatement( et.getType() );
-        } );
-
-        schema.getPropertyTypes().forEach( pt -> {
-            putPropertyTypeUpdateStatement( pt.getType() );
-        } );
-    }
-
-    public void registerEntityTypesAndAssociatedPropertyTypes( EntityType entityType ) {
-        // putEntityTypeInsertStatement( entityType.getFullQualifiedName() );
-        // putEntityTypeUpdateStatement( entityType.getFullQualifiedName() );
-        // putEntityIdToTypeUpdateStatement( entityType.getFullQualifiedName() );
-        // entityType.getKey().forEach( fqn -> putPropertyIndexUpdateStatement( fqn ) );
-        // entityType.getProperties().forEach( fqn -> putPropertyTypeUpdateStatement( fqn ) );
-    }
-
     public PreparedStatement getInsertEntityPreparedStatement( EntityType entityType ) {
         return getInsertEntityPreparedStatement( entityType.getType() );
     }
@@ -999,7 +969,9 @@ public class CassandraTableManager {
 
     public void updatePropertyTypeLookupTable( PropertyType propertyType ) {
         session.execute(
-                updatePropertyTypeLookup.bind( propertyType.getTypen    ame(), propertyType.getType() ) );
+                updatePropertyTypeLookup.bind(
+
+    propertyType.getTypen    ame(), propertyType.getType() ) );
         // TODO: reorder binding?
     }
 
@@ -1016,54 +988,16 @@ public class CassandraTableManager {
                 insertEntityTypeLookup.bind( entityType.getTypename(), entityType.getType() ) );
     }
 
-    public void updateEntityTypeLookupTable( EntityType entityType ) {
-        session.execute(
-                updateEntityTypeLookup.bind( entityType.getTypename(), entityType.getType() ) );
-        // TODO: reorder binding?
-    }
-
-    public void deleteFromEntityTypeLookupTable( EntityType entityType ) {
-        FullQualifiedName fqn = getEntityTypeForTypename( entityType.getTypename() );
-        if ( fqn != null ) {
-            session.execute(
-                    deleteEntityTypeLookup.bind( entityType.getTypename() ) );
-        }
-    }
-
     /**
      * Name getters for Entity Type
      */
 
-    public String getTypenameForEntityType( EntityType entityType ) {
-        return getTypenameForEntityType( entityType.getNamespace(), entityType.getName() );
-    }
-
-    public String getTypenameForEntityType( FullQualifiedName fullQualifiedName ) {
-        return getTypenameForEntityType( fullQualifiedName.getNamespace(), fullQualifiedName.getName() );
-    }
-
-    public String getTypenameForEntityType( String namespace, String name ) {
-        return Util.transformSafely( session.execute( this.getTypenameForEntityType.bind( namespace, name ) ).one(),
-                r -> r.getString( CommonColumns.TYPENAME.cql() ) );
-    }
-
-    // this shall only be called the first time when entitySet is created
-    public String getTypenameForEntitySet( EntitySet entitySet ) {
-        return getTypenameForEntityType( entitySet.getType() );
-    }
-
     public String getTablenameForEntityType( EntityType entityType ) {
-        return getTablename( TableType.entity_, entityType );
-        // `If type name is provided then just directly return the table name
-        final String typename = entityType.getTypename();
-        if ( StringUtils.isNotBlank( typename ) ) {
-            return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, typename );
-        }
         return getTablenameForEntityType( entityType.getType() );
     }
 
     public String getTablenameForEntityType( FullQualifiedName fqn ) {
-        return getTablenameForEntityTypeFromTypenameAndAclId( ACLs.EVERYONE_ACL, getTypenameForEntityType( fqn ) );
+        return getTablename( TableType.entity_, fqn );
     }
 
     public boolean assignEntityToEntitySet( UUID entityId, String typename, String name ) {
@@ -1089,42 +1023,6 @@ public class CassandraTableManager {
                                 entityId ) ) );
     }
 
-    public void entityTypeAddSchema( EntityType entityType, String schemaNamespace, String schemaName ) {
-        entityTypeAddSchema( entityType.getNamespace(),
-                entityType.getName(),
-                new FullQualifiedName( schemaNamespace, schemaName ) );
-    }
-
-    public void entityTypeAddSchema( EntityType entityType, FullQualifiedName schemaFqn ) {
-        entityTypeAddSchema( entityType.getNamespace(), entityType.getName(), schemaFqn );
-    }
-
-    public void entityTypeAddSchema( FullQualifiedName entityTypeFqn, String schemaNamespace, String schemaName ) {
-        entityTypeAddSchema( entityTypeFqn.getNamespace(),
-                entityTypeFqn.getName(),
-                new FullQualifiedName( schemaNamespace, schemaName ) );
-    }
-
-    public void entityTypeAddSchema( String entityTypeNamespace, String entityTypeName, FullQualifiedName schemaFqn ) {
-        session.execute(
-                entityTypeAddSchema.bind(
-                        ImmutableSet.of( schemaFqn ),
-                        entityTypeNamespace,
-                        entityTypeName ) );
-    }
-
-    public void entityTypeRemoveSchema( EntityType entityType, String schemaNamespace, String schemaName ) {
-        entityTypeRemoveSchema( entityType, new FullQualifiedName( schemaNamespace, schemaName ) );
-    }
-
-    public void entityTypeRemoveSchema( EntityType entityType, FullQualifiedName schemaFqn ) {
-        session.execute(
-                entityTypeRemoveSchema.bind(
-                        ImmutableSet.of( schemaFqn ),
-                        entityType.getType().getNamespace(),
-                        entityType.getType().getName() ) );
-    }
-
     public String getTypenameForEntityId( UUID entityId ) {
         return Util.transformSafely( session.execute( this.getTypenameForEntityId.bind( entityId ) ).one(),
                 r -> r.getString( CommonColumns.TYPENAME.cql() ) );
@@ -1133,40 +1031,6 @@ public class CassandraTableManager {
     /*************************
      * Getters for Property Type
      *************************/
-
-    public void propertyTypeAddSchema( FullQualifiedName propertyTypeFqn, String schemaNamespace, String schemaName ) {
-        propertyTypeAddSchema( propertyTypeFqn.getNamespace(),
-                propertyTypeFqn.getName(),
-                new FullQualifiedName( schemaNamespace, schemaName ) );
-    }
-
-    public void propertyTypeAddSchema(
-            String propertyTypeNamespace,
-            String propertyTypeName,
-            FullQualifiedName schemaFqn ) {
-        session.execute(
-                propertyTypeAddSchema.bind(
-                        ImmutableSet.of( schemaFqn ),
-                        propertyTypeNamespace,
-                        propertyTypeName ) );
-    }
-
-    public void propertyTypeRemoveSchema( FullQualifiedName propertyType, String schemaNamespace, String schemaName ) {
-        propertyTypeRemoveSchema( propertyType.getNamespace(),
-                propertyType.getName(),
-                new FullQualifiedName( schemaNamespace, schemaName ) );
-    }
-
-    public void propertyTypeRemoveSchema(
-            String propertyTypeNamespace,
-            String propertyTypeName,
-            FullQualifiedName schemaFqn ) {
-        session.execute(
-                propertyTypeRemoveSchema.bind(
-                        ImmutableSet.of( schemaFqn ),
-                        propertyTypeNamespace,
-                        propertyTypeName ) );
-    }
 
     public Map<String, FullQualifiedName> getPropertyTypesForTypenames( Iterable<String> typenames ) {
         return Maps.toMap( typenames, this::getPropertyTypeForTypename );
@@ -1305,7 +1169,11 @@ public class CassandraTableManager {
     }
 
     public static String getTablename( TableType tableType, TypePK type ) {
-        return getTablename( tableType, type.getType().getFullQualifiedNameAsString() );
+        return getTablename( tableType, type.getType() );
+    }
+
+    public static String getTablename( TableType tableType, FullQualifiedName fqn ) {
+        return getTablename( tableType, fqn.getFullQualifiedNameAsString() );
     }
 
     public static String getTablename( TableType tableType, String fqn ) {

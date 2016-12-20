@@ -39,4 +39,14 @@ public final class RowAdapters {
         Set<FullQualifiedName> properties = row.getSet( CommonColumns.PROPERTIES.cql(), FullQualifiedName.class );
         return new EntityType( id, type, schemas, key, properties );
     }
+
+    public static FullQualifiedName splitFqn( Row row ) {
+        String namespace = row.getString( CommonColumns.NAMESPACE.cql() );
+        String name = row.getString( CommonColumns.NAME.cql() );
+        return new FullQualifiedName( namespace, name );
+    }
+
+    public static FullQualifiedName fqn( Row row ) {
+        return row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+    }
 }

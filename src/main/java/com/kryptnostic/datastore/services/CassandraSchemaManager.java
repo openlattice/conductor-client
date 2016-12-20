@@ -12,6 +12,7 @@ import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.dataloom.edm.schemas.processors.AddSchemasToType;
+import com.dataloom.edm.schemas.processors.RemoveSchemasFromType;
 import com.dataloom.edm.schemas.processors.SchemaMerger;
 import com.dataloom.edm.schemas.processors.SchemaRemover;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -20,9 +21,9 @@ import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.odata.Tables;
@@ -48,29 +49,30 @@ public class CassandraSchemaManager {
         entityTypesInSchemaQuery = session.prepare( getEntityTypesInSchema( keyspace ) );
     }
 
-    public void addSchemasToEntityTypes( SetMultimap<FullQualifiedName, FullQualifiedName> entityTypesToSchemas ) {
-        entityTypesToSchemas.asMap().entrySet().forEach(
-                entry -> entityTypes.submitToKey( entry.getKey(),
-                        new AddSchemasToType<EntityType>( entry.getValue() ) ) );
+    public void upsertSchema( Schema schema ) {
+        upsertSchemas( ImmutableSet.of( schema.getFqn() ) );
+
     }
 
-    public void addSchemasToPropertyTypes( SetMultimap<FullQualifiedName, FullQualifiedName> propertyTypesToSchemas ) {
-        propertyTypesToSchemas.asMap().entrySet().forEach(
-                entry -> propertyTypes.submitToKey( entry.getKey(),
-                        new AddSchemasToType<PropertyType>( entry.getValue() ) ) );
+    public void addEntityTypesToSchema( Set<FullQualifiedName> entityTypeFqns, FullQualifiedName schemaName ) {
+        AddSchemasToType<EntityType> ep = new AddSchemasToType<EntityType>( ImmutableList.of( schemaName ) );
+        entityTypes.executeOnKeys( entityTypeFqns, ep );
     }
 
-    public void removeSchemasFromEntityTypes( SetMultimap<FullQualifiedName, FullQualifiedName> entityTypesToSchemas ) {
-        entityTypesToSchemas.asMap().entrySet().forEach(
-                entry -> entityTypes.submitToKey( entry.getKey(),
-                        new AddSchemasToType<EntityType>( entry.getValue() ) ) );
+    public void addPropertyTypesToSchema( Set<FullQualifiedName> propertyTypeFqns, FullQualifiedName schemaName ) {
+        AddSchemasToType<PropertyType> ep = new AddSchemasToType<PropertyType>( ImmutableList.of( schemaName ) );
+        propertyTypes.executeOnKeys( propertyTypeFqns, ep );
     }
 
-    public void removeSchemasFromPropertyTypes(
-            SetMultimap<FullQualifiedName, FullQualifiedName> propertyTypesToSchemas ) {
-        propertyTypesToSchemas.asMap().entrySet().forEach(
-                entry -> propertyTypes.submitToKey( entry.getKey(),
-                        new AddSchemasToType<PropertyType>( entry.getValue() ) ) );
+    public void removeEntityTypesToSchema( Set<FullQualifiedName> entityTypeFqns, FullQualifiedName schemaName ) {
+        RemoveSchemasFromType<EntityType> ep = new RemoveSchemasFromType<EntityType>( ImmutableList.of( schemaName ) );
+        entityTypes.executeOnKeys( entityTypeFqns, ep );
+    }
+
+    public void removePropertyTypesToSchema( Set<FullQualifiedName> propertyTypeFqns, FullQualifiedName schemaName ) {
+        RemoveSchemasFromType<PropertyType> ep = new RemoveSchemasFromType<PropertyType>(
+                ImmutableList.of( schemaName ) );
+        propertyTypes.executeOnKeys( propertyTypeFqns, ep );
     }
 
     public void upsertSchemas( Set<FullQualifiedName> schemaNames ) {
@@ -101,29 +103,45 @@ public class CassandraSchemaManager {
                 getAllPropertyTypesInSchema( schemaName ) );
     }
 
-    private Set<PropertyType> getAllPropertyTypesInSchema( FullQualifiedName schemaName ) {
+    private Set<FullQualifiedName> getAllPropertyTypesInSchema( FullQualifiedName schemaName ) {
         ResultSet propertyTypes = session.execute(
                 propertyTypesInSchemaQuery.bind()
                         .setString( CommonColumns.NAMESPACE.cql(), schemaName.getNamespace() )
                         .setString( CommonColumns.NAME.cql(), schemaName.getName() ) );
-        return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::propertyType ) );
+        return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::splitFqn ) );
     }
 
-    private Set<EntityType> getAllEntityTypesInSchema( FullQualifiedName schemaName ) {
+    private Set<FullQualifiedName> getAllEntityTypesInSchema( FullQualifiedName schemaName ) {
         ResultSet propertyTypes = session.execute(
                 entityTypesInSchemaQuery.bind()
                         .setString( CommonColumns.NAMESPACE.cql(), schemaName.getNamespace() )
                         .setString( CommonColumns.NAME.cql(), schemaName.getName() ) );
-        return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::entityType ) );
+        return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::splitFqn ) );
     }
 
     private static RegularStatement getPropertyTypesInSchema( String keyspace ) {
-        return QueryBuilder.select().all().from( keyspace, Tables.PROPERTY_TYPES.getName() )
+        return QueryBuilder
+                .select( CommonColumns.NAMESPACE.cql(), CommonColumns.NAME.cql() )
+                .distinct()
+                .from( keyspace, Tables.PROPERTY_TYPES.getName() )
                 .where( QueryBuilder.contains( CommonColumns.SCHEMAS.cql(), CommonColumns.SCHEMAS.bindMarker() ) );
     }
 
     private static RegularStatement getEntityTypesInSchema( String keyspace ) {
-        return QueryBuilder.select().all().from( keyspace, Tables.ENTITY_TYPES.getName() )
+        return QueryBuilder
+                .select( CommonColumns.NAMESPACE.cql(), CommonColumns.NAME.cql() )
+                .distinct()
+                .from( keyspace, Tables.ENTITY_TYPES.getName() )
                 .where( QueryBuilder.contains( CommonColumns.SCHEMAS.cql(), CommonColumns.SCHEMAS.bindMarker() ) );
+    }
+
+    public Iterable<Schema> getAllSchemas() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public Iterable<Schema> getSchemasInNamespace( String namespace ) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }
