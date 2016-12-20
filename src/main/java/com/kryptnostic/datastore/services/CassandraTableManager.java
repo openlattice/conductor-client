@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -27,21 +26,17 @@ import com.dataloom.edm.internal.DatastoreConstants;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.internal.TypePK;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -54,7 +49,6 @@ import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.Queries;
-import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import com.kryptnostic.datastore.util.Util;
 
@@ -1067,7 +1061,7 @@ public class CassandraTableManager {
     public PreparedStatementMapping getInsertEntityPreparedStatement(
             FullQualifiedName entityTypeFqn,
             Collection<FullQualifiedName> writableProperties,
-            Optional<String> entitySetName ) {
+            String entitySetName ) {
         PreparedStatementMapping psm = new PreparedStatementMapping();
         psm.mapping = Maps.newHashMapWithExpectedSize( writableProperties.size() );
 
@@ -1076,7 +1070,6 @@ public class CassandraTableManager {
                 .value( CommonColumns.ENTITYID.cql(), QueryBuilder.bindMarker() )
                 .value( CommonColumns.CLOCK.cql(),
                         QueryBuilder.fcall( "toTimestamp", QueryBuilder.now() ) )
-                .value( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() )
                 .value( CommonColumns.ENTITY_SETS.cql(), QueryBuilder.bindMarker() )
                 .value( CommonColumns.SYNCIDS.cql(), QueryBuilder.bindMarker() );
 
