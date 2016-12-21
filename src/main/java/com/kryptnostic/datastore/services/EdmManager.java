@@ -112,7 +112,7 @@ public interface EdmManager {
 
     void upsertEntityType( Principal principal, EntityType entityType );
 
-    void upsertPropertyType( PropertyType propertyType );
+    void createPropertyTypeIfNotExists( PropertyType propertyType );
 
     Collection<PropertyType> getPropertyTypes( Set<FullQualifiedName> properties );
 

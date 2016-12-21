@@ -64,12 +64,12 @@ public class CassandraSchemaManager {
         propertyTypes.executeOnKeys( propertyTypeFqns, ep );
     }
 
-    public void removeEntityTypesToSchema( Set<FullQualifiedName> entityTypeFqns, FullQualifiedName schemaName ) {
+    public void removeEntityTypesFromSchema( Set<FullQualifiedName> entityTypeFqns, FullQualifiedName schemaName ) {
         RemoveSchemasFromType<EntityType> ep = new RemoveSchemasFromType<EntityType>( ImmutableList.of( schemaName ) );
         entityTypes.executeOnKeys( entityTypeFqns, ep );
     }
 
-    public void removePropertyTypesToSchema( Set<FullQualifiedName> propertyTypeFqns, FullQualifiedName schemaName ) {
+    public void removePropertyTypesFromSchema( Set<FullQualifiedName> propertyTypeFqns, FullQualifiedName schemaName ) {
         RemoveSchemasFromType<PropertyType> ep = new RemoveSchemasFromType<PropertyType>(
                 ImmutableList.of( schemaName ) );
         propertyTypes.executeOnKeys( propertyTypeFqns, ep );

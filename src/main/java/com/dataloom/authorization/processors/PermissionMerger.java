@@ -1,6 +1,6 @@
 package com.dataloom.authorization.processors;
 
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Set;
 
 import com.dataloom.authorization.AceKey;
@@ -16,6 +16,6 @@ public class PermissionMerger extends AbstractMerger<AceKey, Set<Permission>, Pe
 
     @Override
     protected Set<Permission> newEmptyCollection() {
-        return new HashSet<>();
+        return EnumSet.noneOf( Permission.class );
     }
 }

@@ -3,7 +3,6 @@ package com.kryptnostic.datastore.services;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,17 +24,13 @@ import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
+import com.dataloom.edm.internal.TypePK;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.mapping.Mapper;
-import com.datastax.driver.mapping.MappingManager;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
@@ -44,28 +39,30 @@ import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.Queries;
 import com.kryptnostic.datastore.util.Util;
+import static com.google.common.base.Preconditions.checkState;
 
 public class EdmService implements EdmManager {
-    private static final Logger                         logger = LoggerFactory.getLogger( EdmService.class );
-    private final IMap<FullQualifiedName, PropertyType> propertyTypes;
-    private final IMap<FullQualifiedName, EntityType>   entityTypes;
-    private final IMap<String, EntitySet>               entitySets;
-    private final IMap<AclKey, FullQualifiedName>       fqnsByAclKey;
-    private final IMap<FullQualifiedName, String>       typenames;
-    private final IMap<String, FullQualifiedName>       fqns;
+    private static final Logger                   logger = LoggerFactory.getLogger( EdmService.class );
+    private final IMap<UUID, PropertyType>        propertyTypes;
+    private final IMap<UUID, EntityType>          entityTypes;
+    private final IMap<String, EntitySet>         entitySets;
+    private final IMap<FullQualifiedName, AclKey> fqns;
+    private final IMap<AclKey, FullQualifiedName> uuids;
 
-    private final Session                               session;
+    private final Session                         session;
 
-    private final CassandraEdmStore                     edmStore;
-    private final CassandraEntitySetManager             entitySetManager;
-    private final CassandraTableManager                 tableManager;
-    private final PermissionsService                    permissionsService;
+    private final CassandraEdmStore               edmStore;
+    private final CassandraEntitySetManager       entitySetManager;
+    private final CassandraSchemaManager          schemaManager;
+    private final CassandraTableManager           tableManager;
+    private final PermissionsService              permissionsService;
 
     public EdmService(
             Session session,
             HazelcastInstance hazelcastInstance,
             CassandraTableManager tableManager,
             CassandraEntitySetManager entitySetManager,
+            CassandraSchemaManager cassandraSchemaManager,
             PermissionsService permissionsService ) {
         this.session = session;
         this.tableManager = tableManager;
@@ -74,61 +71,37 @@ public class EdmService implements EdmManager {
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
-        this.typenames = hazelcastInstance.getMap( HazelcastMap.TYPENAMES.name() );
-        this.fqnsByAclKey = hazelcastInstance.getMap( HazelcastMap.FQN_ACL_KEY.name() );
+        this.uuids = hazelcastInstance.getMap( HazelcastMap.UUIDS.name() );
         this.fqns = hazelcastInstance.getMap( HazelcastMap.FQNS.name() );
-        List<EntityType> objectTypes = edmStore.getEntityTypes().all();
+
         // Temp comment out the following two lines to avoid "Schema is out of sync." crash
         // and NPE for the PreparedStatement. Need to engineer it.
         // schemas.forEach( schema -> logger.info( "Namespace loaded: {}", schema ) );
         // schemas.forEach( tableManager::registerSchema );
-        objectTypes.forEach( objectType -> logger.info( "Object read: {}", objectType ) );
-        objectTypes.forEach( tableManager::registerEntityTypesAndAssociatedPropertyTypes );
+        entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
+        propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.kryptnostic.types.services.EdmManager#updateObjectType(com.kryptnostic.types.ObjectType)
-     */
-    @Override
-    public void upsertEntityType( Principal principal, EntityType entityType ) {
-        // This call will fail if the typename has already been set for the entity.
-        ensureValidEntityType( entityType );
-        if ( checkEntityTypeExists( entityType.getType() ) ) {
-            // Retrieve database record of entityType
-            EntityType dbRecord = getEntityType( entityType.getType() );
-
-            // Update properties
-            Set<FullQualifiedName> currentPropertyTypes = dbRecord.getProperties();
-
-            Set<FullQualifiedName> removablePropertyTypesInEntityType = Sets.difference( currentPropertyTypes,
-                    entityType.getProperties() );
-            removePropertyTypesFromEntityType( dbRecord, removablePropertyTypesInEntityType, true );
-
-            Set<FullQualifiedName> newPropertyTypesInEntityType = Sets.difference( entityType.getProperties(),
-                    currentPropertyTypes );
-            addPropertyTypesToEntityType( entityType.getType().getNamespace(),
-                    entityType.getType().getName(),
-                    newPropertyTypesInEntityType );
-
-            // Update Schema
-            Set<FullQualifiedName> currentSchemas = dbRecord.getSchemas();
-
-            Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, entityType.getSchemas() );
-            removableSchemas.forEach( schema -> removeEntityTypesFromSchema( schema.getNamespace(),
-                    schema.getName(),
-                    ImmutableSet.of( entityType.getType() ) ) );
-
-            Set<FullQualifiedName> newSchemas = Sets.difference( entityType.getSchemas(), currentSchemas );
-            newSchemas.forEach( schema -> addEntityTypesToSchema( schema.getNamespace(),
-                    schema.getName(),
-                    ImmutableSet.of( entityType.getType() ) ) );
-
-            // Persist
-            entityTypeMapper.save( entityType );
+    public void acquireUuidAndValidateType( TypePK type ) {
+        final FullQualifiedName fqn = uuids.putIfAbsent( type.getId(), type.getType() );
+        final AclKey existingId;
+        if ( fqn == null ) {
+            /*
+             * UUID didn't exist and is now associated with type. Let's validate type isn't associated with other UUID
+             * by perform a putIfAbsent to create association only if doesn't already exist.
+             */
+             existingId = fqns.putIfAbsent( type.getType(), type.getAclKey() );
         } else {
-            createEntityType( entityType );
+            /*
+             * UUID is associated with type. Make sure it is associated with correct type. While it would be nice to
+             * just try associating with a different UUID, we can't distinguish between bad front-end has bad state or
+             * generating an existing UUID. Impact is that user may have to retry property and entity type creation a
+             * few times in the life time of the universe.
+             */
+            existingId = fqns.get( fqn );
         }
+        checkState( type.getId().equals( existingId ), "UUID is already associated with different FQN." );
+        checkState( id != null && type.getId().equals( id ), "FQN is already associated with different UUID." );
     }
 
     /*
@@ -147,6 +120,14 @@ public class EdmService implements EdmManager {
          */
 
         ensureValidPropertyType( propertyType );
+
+        UUID propertyId = fqns.putIfAbsent( propertyType.getType(), propertyType.getId() );
+
+        if ( propertyId == null ) {
+            if ( propertyId == null ) {
+
+            }
+        }
 
         // Create property type if it doesn't exist.
         PropertyType dbRecord = propertyTypes.putIfAbsent( propertyType.getType(), propertyType );
@@ -236,44 +217,6 @@ public class EdmService implements EdmManager {
         } else {
             throw new IllegalStateException( "Failed to create property type." );
         }
-    }
-
-    @Override
-    public void createSchema(
-            String namespace,
-            String name,
-            UUID aclId,
-            Set<FullQualifiedName> entityTypes,
-            Set<FullQualifiedName> propertyTypes ) {
-        boolean created = false;
-        tableManager.createSchemaTableForAclId( aclId );
-
-        entityTypes.stream()
-                .forEach( entityTypeFqn -> tableManager.entityTypeAddSchema( entityTypeFqn, namespace, name ) );
-
-        propertyTypes.stream()
-                .forEach( propertyTypeFqn -> tableManager.propertyTypeAddSchema( propertyTypeFqn, namespace, name ) );
-
-        created = Util.wasLightweightTransactionApplied(
-                session.execute(
-                        tableManager.getSchemaInsertStatement( aclId )
-
-                                .bind( namespace, name, entityTypes, propertyTypes ) ) );
-        if ( !created ) {
-            throw new IllegalStateException( "Failed to create schema." );
-        }
-    }
-
-    @Override
-    public void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes ) {
-        Set<FullQualifiedName> propertyTypes = entityTypes.stream()
-                .map( entityTypeFqn -> entityTypeMapper.get( entityTypeFqn.getNamespace(), entityTypeFqn.getName() ) )
-                .map( entityType -> entityType.getProperties() )
-                .reduce( ( left, right ) -> {
-                    left.addAll( right );
-                    return left;
-                } ).get();
-        createSchema( namespace, name, aclId, entityTypes, propertyTypes );
     }
 
     @Override
@@ -384,6 +327,22 @@ public class EdmService implements EdmManager {
         }
     }
 
+    /*
+     * (non-Javadoc)
+     * @see com.kryptnostic.types.services.EdmManager#updateObjectType(com.kryptnostic.types.ObjectType)
+     */
+    @Override
+    public void upsertEntityType( Principal principal, EntityType entityType ) {
+        // This call will fail if the typename has already been set for the entity.
+        ensureValidEntityType( entityType );
+        if ( checkEntityTypeExists( entityType.getType() ) ) {
+            // Retrieve database record of entityType
+
+        } else {
+            createEntityType( entityType );
+        }
+    }
+
     public void createEntityType( EntityType entityType ) {
         /*
          * This is really create or replace and should be noted as such.
@@ -416,6 +375,17 @@ public class EdmService implements EdmManager {
             addPropertyTypesToEntityType( entityType.getType().getNamespace(),
                     entityType.getType().getName(),
                     newPropertyTypesInEntityType );
+
+            // Update Schema
+            final Set<FullQualifiedName> currentSchemas = existing.getSchemas();
+            final Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, entityType.getSchemas() );
+            final Set<FullQualifiedName> entityTypeSingleton = ImmutableSet.of( existing.getType() );
+
+            removableSchemas
+                    .forEach( schema -> schemaManager.removeEntityTypesFromSchema( entityTypeSingleton, schema ) );
+
+            Set<FullQualifiedName> newSchemas = Sets.difference( entityType.getSchemas(), currentSchemas );
+            newSchemas.forEach( schema -> schemaManager.addEntityTypesToSchema( entityTypeSingleton, schema ) );
         }
     }
 
