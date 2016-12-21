@@ -19,6 +19,8 @@ import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.edm.EntityDataModel;
+import com.dataloom.edm.exceptions.AclKeyConflictException;
+import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
@@ -40,6 +42,7 @@ import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.Queries;
 import com.kryptnostic.datastore.util.Util;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class EdmService implements EdmManager {
     private static final Logger                   logger = LoggerFactory.getLogger( EdmService.class );
@@ -82,26 +85,48 @@ public class EdmService implements EdmManager {
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
     }
 
-    public void acquireUuidAndValidateType( TypePK type ) {
-        final FullQualifiedName fqn = uuids.putIfAbsent( type.getId(), type.getType() );
-        final AclKey existingId;
-        if ( fqn == null ) {
+    public void acquireAclKeyAndValidateType( TypePK type ) {
+        final FullQualifiedName fqn = uuids.putIfAbsent( type.getAclKey(), type.getType() );
+        final boolean fqnMatches = type.getType().equals( fqn );
+
+        if ( fqn == null || fqnMatches ) {
             /*
-             * UUID didn't exist and is now associated with type. Let's validate type isn't associated with other UUID
-             * by perform a putIfAbsent to create association only if doesn't already exist.
+             * AclKey <-> Type association exists and is correct. Safe to try and register AclKey for type.
              */
-             existingId = fqns.putIfAbsent( type.getType(), type.getAclKey() );
+            final AclKey existingAclKey = fqns.putIfAbsent( type.getType(), type.getAclKey() );
+            final boolean aclKeyMatches = type.getAclKey().equals( existingAclKey );
+
+            
+            /*
+             * Even if aclKey matches, letting two threads go through type creation creates potential problems when
+             * entity types and entity sets are created using property types that have not quiesced. Easier for now to
+             * just let one thread win and simplifies code path a lot.
+             */
+
+            
+            if ( existingAclKey != null ) {
+                throw new TypeExistsException( "Type " + type.toString() + "already exists." );
+            }
+
+//            if ( !aclKeyMatches ) {
+//                /*
+//                 * FQN already exists and it's AclKey does not match the one associated with the current type. We need
+//                 * to release AclKey and throw. Delete is safe, since other threads with similar acl-key mismatch are
+//                 * also invalid and will end up in the same place. This occurs when two people try to create the same
+//                 * type at the same time or the front-end submits a bad request. In the future we can leverage
+//                 * TypePK#wasIdPresent() to determine whether request came with bad id from front end.
+//                 */
+//
+//                uuids.delete( type.getAclKey() );
+//                throw new AclKeyConflictException( "FQN is already associated with a different AclKey." );
+//            }
+
+            /*
+             * AclKey <-> Type association exists and is correct. Type <-> AclKey association exists and is correct. Only a single thread should ever reach here.
+             */
         } else {
-            /*
-             * UUID is associated with type. Make sure it is associated with correct type. While it would be nice to
-             * just try associating with a different UUID, we can't distinguish between bad front-end has bad state or
-             * generating an existing UUID. Impact is that user may have to retry property and entity type creation a
-             * few times in the life time of the universe.
-             */
-            existingId = fqns.get( fqn );
+            throw new AclKeyConflictException( "AclKey is already associated with different FQN." );
         }
-        checkState( type.getId().equals( existingId ), "UUID is already associated with different FQN." );
-        checkState( id != null && type.getId().equals( id ), "FQN is already associated with different UUID." );
     }
 
     /*
