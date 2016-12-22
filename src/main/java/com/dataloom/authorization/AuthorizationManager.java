@@ -42,7 +42,7 @@ public interface AuthorizationManager {
             List<AclKey> aclKey,
             Set<Principal> principals );
 
-    Acl getAllSecurableObjectPermissions(
+    Iterable<Ace> getAllSecurableObjectPermissions(
             List<AclKey> key );
     
     Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces );

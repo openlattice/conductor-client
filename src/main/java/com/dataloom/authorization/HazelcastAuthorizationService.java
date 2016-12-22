@@ -86,7 +86,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public AclData getAllSecurableObjectPermissions( List<AclKey> key ) {
+    public Iterable<Ace> getAllSecurableObjectPermissions( List<AclKey> key ) {
         return aqs.getAclsForSecurableObject( key );
     }
 
