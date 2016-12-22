@@ -2,7 +2,7 @@ package com.kryptnostic.datastore.services;
 
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -28,6 +28,7 @@ import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.internal.TypePK;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
+import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
@@ -41,31 +42,30 @@ import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.Queries;
 import com.kryptnostic.datastore.util.Util;
-import static com.google.common.base.Preconditions.checkState;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class EdmService implements EdmManager {
     private static final Logger                   logger = LoggerFactory.getLogger( EdmService.class );
     private final IMap<UUID, PropertyType>        propertyTypes;
     private final IMap<UUID, EntityType>          entityTypes;
     private final IMap<String, EntitySet>         entitySets;
-    private final IMap<FullQualifiedName, AclKey> fqns;
-    private final IMap<AclKey, FullQualifiedName> uuids;
+    private final IMap<FullQualifiedName, AclKey> aclKeys;
+    private final IMap<AclKey, FullQualifiedName> fqns;
 
     private final Session                         session;
 
     private final CassandraEdmStore               edmStore;
     private final CassandraEntitySetManager       entitySetManager;
-    private final CassandraSchemaManager          schemaManager;
+    private final HazelcastSchemaManager          schemaManager;
     private final CassandraTableManager           tableManager;
     private final PermissionsService              permissionsService;
 
     public EdmService(
+            String keyspace,
             Session session,
             HazelcastInstance hazelcastInstance,
             CassandraTableManager tableManager,
             CassandraEntitySetManager entitySetManager,
-            CassandraSchemaManager cassandraSchemaManager,
+            HazelcastSchemaManager cassandraSchemaManager,
             PermissionsService permissionsService ) {
         this.session = session;
         this.tableManager = tableManager;
@@ -74,8 +74,8 @@ public class EdmService implements EdmManager {
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
-        this.uuids = hazelcastInstance.getMap( HazelcastMap.UUIDS.name() );
         this.fqns = hazelcastInstance.getMap( HazelcastMap.FQNS.name() );
+        this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
 
         // Temp comment out the following two lines to avoid "Schema is out of sync." crash
         // and NPE for the PreparedStatement. Need to engineer it.
@@ -85,93 +85,28 @@ public class EdmService implements EdmManager {
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
     }
 
-    public void acquireAclKeyAndValidateType( TypePK type ) {
-        final FullQualifiedName fqn = uuids.putIfAbsent( type.getAclKey(), type.getType() );
-        final boolean fqnMatches = type.getType().equals( fqn );
-
-        if ( fqn == null || fqnMatches ) {
-            /*
-             * AclKey <-> Type association exists and is correct. Safe to try and register AclKey for type.
-             */
-            final AclKey existingAclKey = fqns.putIfAbsent( type.getType(), type.getAclKey() );
-            final boolean aclKeyMatches = type.getAclKey().equals( existingAclKey );
-
-            
-            /*
-             * Even if aclKey matches, letting two threads go through type creation creates potential problems when
-             * entity types and entity sets are created using property types that have not quiesced. Easier for now to
-             * just let one thread win and simplifies code path a lot.
-             */
-
-            
-            if ( existingAclKey != null ) {
-                throw new TypeExistsException( "Type " + type.toString() + "already exists." );
-            }
-
-//            if ( !aclKeyMatches ) {
-//                /*
-//                 * FQN already exists and it's AclKey does not match the one associated with the current type. We need
-//                 * to release AclKey and throw. Delete is safe, since other threads with similar acl-key mismatch are
-//                 * also invalid and will end up in the same place. This occurs when two people try to create the same
-//                 * type at the same time or the front-end submits a bad request. In the future we can leverage
-//                 * TypePK#wasIdPresent() to determine whether request came with bad id from front end.
-//                 */
-//
-//                uuids.delete( type.getAclKey() );
-//                throw new AclKeyConflictException( "FQN is already associated with a different AclKey." );
-//            }
-
-            /*
-             * AclKey <-> Type association exists and is correct. Type <-> AclKey association exists and is correct. Only a single thread should ever reach here.
-             */
-        } else {
-            throw new AclKeyConflictException( "AclKey is already associated with different FQN." );
-        }
-    }
-
     /*
      * (non-Javadoc)
      * @see com.kryptnostic.types.services.EdmManager#createPropertyType(com.kryptnostic.types.PropertyType) update
      * propertyType (and return true upon success) if exists, return false otherwise
      */
     @Override
-    public void upsertPropertyType( PropertyType propertyType ) {
-        // TODO: Handle UUID mismatch / FQN change
-        /*
-         * Currently we aren't handling FQN changes properly. As FQN are used for lookup, if the FQN changes it requires
-         * deleting the old property and creating a new property. This is problematic as it results in data being
-         * deleted or having to be copied over manually from one column to another. To avoid this machinery prone to
-         * failure, we should make UUIDs required for updating property types, entity types, and entity sets.
-         */
-
+    public void createPropertyTypeIfNotExists( PropertyType propertyType ) {
         ensureValidPropertyType( propertyType );
-
-        UUID propertyId = fqns.putIfAbsent( propertyType.getType(), propertyType.getId() );
-
-        if ( propertyId == null ) {
-            if ( propertyId == null ) {
-
-            }
-        }
+        reserveAclKeyAndValidateType( propertyType );
 
         // Create property type if it doesn't exist.
-        PropertyType dbRecord = propertyTypes.putIfAbsent( propertyType.getType(), propertyType );
+        PropertyType dbRecord = propertyTypes.putIfAbsent( propertyType.getId(), propertyType );
 
         if ( dbRecord != null ) {
             // Update Schema
             Set<FullQualifiedName> currentSchemas = dbRecord.getSchemas();
-
             Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, propertyType.getSchemas() );
-            removableSchemas.forEach( schema -> removePropertyTypesFromSchema( schema.getNamespace(),
-                    schema.getName(),
-                    ImmutableSet.of( propertyType.getType() ) ) );
-
+            removableSchemas.forEach( schemaManager.entityTypesSchemaRemover( propertyType.getId() ) );
             Set<FullQualifiedName> newSchemas = Sets.difference( propertyType.getSchemas(), currentSchemas );
-            newSchemas.forEach( schema -> addPropertyTypesToSchema( schema.getNamespace(),
-                    schema.getName(),
-                    ImmutableSet.of( propertyType.getType() ) ) );
+            newSchemas.forEach( schemaManager.propertyTypesSchemaAdder( propertyType.getId() ) );
             // Set Property type
-            propertyTypes.set( propertyType.getType(), propertyType );
+            propertyTypes.set( propertyType.getId(), propertyType );
         }
     }
 
@@ -225,29 +160,12 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void createPropertyType( PropertyType propertyType ) {
-        ensureValidPropertyType( propertyType );
-        /*
-         * We retrieve or create the typename for the property. If the property already exists then lightweight
-         * transaction will fail and return value will be correctly set.
-         */
-        if ( propertyTypes.putIfAbsent( propertyType.getType(), propertyType ) == null ) {
-            propertyType.getSchemas()
-                    .forEach(
-                            schemaFqn -> addPropertyTypesToSchema( schemaFqn.getNamespace(),
-                                    schemaFqn.getName(),
-                                    ImmutableSet.of( propertyType.getType() ) ) );
-
-            tableManager.insertToPropertyTypeLookupTable( propertyType );
-        } else {
-            throw new IllegalStateException( "Failed to create property type." );
-        }
-    }
-
-    @Override
     public void deleteEntityType( FullQualifiedName entityTypeFqn ) {
-
         EntityType entityType = getEntityType( entityTypeFqn );
+
+        // UUID entityTypeId = uuids.get( entityTypeFqn );
+
+        entityTypes.delete( entityTypeId );
 
         try {
             entityType.getSchemas().forEach(
@@ -294,62 +212,6 @@ public class EdmService implements EdmManager {
     @Override
     public void deleteSchema( Schema namespaces ) {
         // TODO: Implement delete schema
-    }
-
-    @Override
-    public void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
-        Preconditions.checkNotNull( getSchema( namespace, name, ImmutableSet.of() ), "Schema does not exist." );
-        for ( FullQualifiedName fqn : entityTypes ) {
-            Preconditions.checkNotNull( checkEntityTypeExists( fqn ), "Entity Type " + fqn + " does not exist." );
-        }
-        Set<FullQualifiedName> propertyTypes = new HashSet<>();
-
-        entityTypes.stream()
-                .map( entityTypeFqn -> getEntityType( entityTypeFqn ) )
-                .forEach( entityType -> {
-                    // Get all properties for each entity type
-                    propertyTypes.addAll( entityType.getProperties() );
-                    // Update Schema column for each Entity Type
-                    tableManager.entityTypeAddSchema( entityType, namespace, name );
-                } );
-
-        addPropertyTypesToSchema( namespace, name, propertyTypes );
-
-        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
-            session.executeAsync(
-                    tableManager.getSchemaAddEntityTypeStatement( aclId )
-                            .bind( entityTypes, propertyTypes, namespace, name ) );
-        }
-    }
-
-    @Override
-    public void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes ) {
-        Preconditions.checkNotNull( checkSchemaExists( namespace, name ), "Schema does not exist." );
-        for ( FullQualifiedName fqn : entityTypes ) {
-            Preconditions.checkNotNull( checkEntityTypeExists( fqn ), "Entity Type " + fqn + " does not exist." );
-        }
-        // TODO: propertyTypes not removed From Schema table when Entity Types are removed. Need reference counting on
-        // propertyTypes to do so.
-        Set<FullQualifiedName> propertyTypes = new HashSet<>();
-
-        entityTypes.stream()
-                .map( entityTypeFqn -> getEntityType( entityTypeFqn ) )
-                .forEach( entityType -> {
-                    // Get all properties for each entity type
-                    propertyTypes.addAll( entityType.getProperties() );
-                    // Update Schema column for each Entity Type
-                    tableManager.entityTypeRemoveSchema( entityType, namespace, name );
-                } );
-
-        // removePropertyTypesFromSchema( namespace, name, propertyTypes );
-        propertyTypes.stream()
-                .forEach(
-                        propertyTypeFqn -> tableManager.propertyTypeRemoveSchema( propertyTypeFqn, namespace, name ) );
-
-        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
-            session.executeAsync(
-                    tableManager.getSchemaRemoveEntityTypeStatement( aclId ).bind( entityTypes, namespace, name ) );
-        }
     }
 
     /*
@@ -696,39 +558,6 @@ public class EdmService implements EdmManager {
         }
     }
 
-    @Override
-    public void addPropertyTypesToSchema( String namespace, String name, Set<FullQualifiedName> properties ) {
-        Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
-        Preconditions.checkArgument( checkSchemaExists( namespace, name ), "Schema does not exist." );
-
-        properties.stream()
-                .forEach(
-                        propertyTypeFqn -> tableManager.propertyTypeAddSchema( propertyTypeFqn, namespace, name ) );
-
-        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
-            session.executeAsync(
-                    tableManager.getSchemaAddPropertyTypeStatement( aclId ).bind( properties, namespace, name ) );
-        }
-    }
-
-    @Override
-    public void removePropertyTypesFromSchema( String namespace, String name, Set<FullQualifiedName> properties ) {
-        Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
-        Preconditions.checkArgument( checkSchemaExists( namespace, name ), "Schema does not exist." );
-
-        properties.stream()
-                .forEach( propertyTypeFqn -> tableManager.propertyTypeRemoveSchema( propertyTypeFqn,
-                        namespace,
-                        name ) );
-
-        for ( UUID aclId : AclContextService.getCurrentContextAclIds() ) {
-            session.executeAsync(
-                    tableManager.getSchemaRemovePropertyTypeStatement( aclId ).bind( properties,
-                            namespace,
-                            name ) );
-        }
-    }
-
     /**************
      * Validation
      **************/
@@ -805,6 +634,45 @@ public class EdmService implements EdmManager {
 
     @Override
     public Collection<PropertyType> getPropertyTypes( Set<FullQualifiedName> properties ) {
-        return propertyTypes.getAll( properties ).values();
+        Map<FullQualifiedName, AclKey> propertyAclKeys = aclKeys.getAll( properties );
+        Set<UUID> propertyIds = propertyAclKeys.values().stream().map( AclKey::getId ).collect( Collectors.toSet() );
+        return propertyTypes.getAll( propertyIds ).values();
+    }
+
+    /**
+     * This function reserves a UUID for a SecurableObject based on AclKey. It throws unchecked exception
+     * {@link TypeExistsException} if the type already exists or {@link AclKeyConflictException} if a different AclKey
+     * is already associated with the type.
+     * 
+     * @param type The type for which to reserve an FQN and UUID.
+     */
+    public void reserveAclKeyAndValidateType( TypePK type ) {
+        final FullQualifiedName fqn = fqns.putIfAbsent( type.getAclKey(), type.getType() );
+        final boolean fqnMatches = type.getType().equals( fqn );
+
+        if ( fqn == null || fqnMatches ) {
+            /*
+             * AclKey <-> Type association exists and is correct. Safe to try and register AclKey for type.
+             */
+            final AclKey existingAclKey = aclKeys.putIfAbsent( type.getType(), type.getAclKey() );
+            final boolean aclKeyMatches = type.getAclKey().equals( existingAclKey );
+
+            /*
+             * Even if aclKey matches, letting two threads go through type creation creates potential problems when
+             * entity types and entity sets are created using property types that have not quiesced. Easier for now to
+             * just let one thread win and simplifies code path a lot.
+             */
+
+            if ( existingAclKey != null ) {
+                throw new TypeExistsException( "Type " + type.toString() + "already exists." );
+            }
+
+            /*
+             * AclKey <-> Type association exists and is correct. Type <-> AclKey association exists and is correct.
+             * Only a single thread should ever reach here.
+             */
+        } else {
+            throw new AclKeyConflictException( "AclKey is already associated with different FQN." );
+        }
     }
 }
