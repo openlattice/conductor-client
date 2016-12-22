@@ -12,24 +12,24 @@ import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
-import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 
 public interface EdmManager {
-    void createSchema(
-            String namespace,
-            String name,
-            UUID aclId,
-            Set<FullQualifiedName> entityTypes,
-            Set<FullQualifiedName> propertyTypes );
+    EntityDataModel getEntityDataModel();
+
+    PropertyType getPropertyType( FullQualifiedName prop );
+
+    void createPropertyTypeIfNotExists( PropertyType propertyType );
+
+    void deletePropertyType( FullQualifiedName propertyTypeFqn );
+
+    Iterable<PropertyType> getPropertyTypesInNamespace( String namespace );
+
+    Iterable<PropertyType> getPropertyTypes();
 
     // would attach all property types of the entityTypes to Schema
     void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
 
-    void upsertSchema( Schema namespace );
 
-    Schema getSchema( String namespace, String name, Set<TypeDetails> requestedDetails );
-
-    void deleteSchema( Schema namespaces );
 
     void createEntitySet( Principal principal, FullQualifiedName type, String name, String title );
 
@@ -60,26 +60,6 @@ public interface EdmManager {
     Iterable<EntityType> getEntityTypes();
 
     void deleteEntityType( FullQualifiedName entityTypeFqn );
-
-    void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );
-
-    void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );
-
-    void addPropertyTypesToSchema( String namespace, String name, Set<FullQualifiedName> properties );
-
-    void removePropertyTypesFromSchema( String namespace, String name, Set<FullQualifiedName> properties );
-
-    void createPropertyType( PropertyType propertyType );
-
-    void deletePropertyType( FullQualifiedName propertyTypeFqn );
-
-    PropertyType getPropertyType( FullQualifiedName prop );
-
-    Iterable<PropertyType> getPropertyTypesInNamespace( String namespace );
-
-    Iterable<PropertyType> getPropertyTypes();
-
-    EntityDataModel getEntityDataModel();
 
     EntityType getEntityType( FullQualifiedName fqn );
 
@@ -112,8 +92,6 @@ public interface EdmManager {
 
     void upsertEntityType( Principal principal, EntityType entityType );
 
-    void createPropertyTypeIfNotExists( PropertyType propertyType );
 
     Collection<PropertyType> getPropertyTypes( Set<FullQualifiedName> properties );
-
 }

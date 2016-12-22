@@ -956,32 +956,6 @@ public class CassandraTableManager {
      * Operations on Typename to (user-friendly) FullQualifiedName Lookup Tables
      */
 
-    public void insertToPropertyTypeLookupTable( PropertyType propertyType ) {
-        session.execute(
-                insertPropertyTypeLookup.bind( propertyType.getTypename(), propertyType.getType() ) );
-    }
-
-    public void updatePropertyTypeLookupTable( PropertyType propertyType ) {
-        session.execute(
-                updatePropertyTypeLookup.bind(
-
-    propertyType.getTypen    ame(), propertyType.getType() ) );
-        // TODO: reorder binding?
-    }
-
-    public void deleteFromPropertyTypeLookupTable( PropertyType propertyType ) {
-        FullQualifiedName fqn = getPropertyTypeForTypename( propertyType.getTypename() );
-        if ( fqn != null ) {
-            session.execute(
-                    deletePropertyTypeLookup.bind( propertyType.getTypename() ) );
-        }
-    }
-
-    public void insertToEntityTypeLookupTable( EntityType entityType ) {
-        session.execute(
-                insertEntityTypeLookup.bind( entityType.getTypename(), entityType.getType() ) );
-    }
-
     /**
      * Name getters for Entity Type
      */

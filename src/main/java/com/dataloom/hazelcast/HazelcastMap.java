@@ -7,8 +7,8 @@ public enum HazelcastMap {
     ENTITY_TYPES( Tables.ENTITY_TYPES ),
     ENTITY_SETS( Tables.ENTITY_SETS ),
     TYPENAMES( Tables.TYPENAMES ),
-    FQNS( Tables.FQNS ),
-    UUIDS( Tables.FQN_ACL_KEY ),
+    ACL_KEYS( Tables.FQNS ),
+    FQNS( Tables.FQN_ACL_KEY ),
     SCHEMAS( Tables.SCHEMAS );
 
     private final Tables table;
