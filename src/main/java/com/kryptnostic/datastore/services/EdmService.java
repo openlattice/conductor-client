@@ -21,19 +21,20 @@ import com.dataloom.authorization.requests.Principal;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.exceptions.AclKeyConflictException;
 import com.dataloom.edm.exceptions.TypeExistsException;
+import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
-import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
-import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
+import com.dataloom.edm.properties.CassandraEntityTypeManager;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
@@ -55,6 +56,7 @@ public class EdmService implements EdmManager {
 
     private final CassandraEdmStore               edmStore;
     private final CassandraEntitySetManager       entitySetManager;
+    private final CassandraEntityTypeManager      entityTypeManager;
     private final HazelcastSchemaManager          schemaManager;
     private final CassandraTableManager           tableManager;
     private final PermissionsService              permissionsService;
@@ -65,11 +67,13 @@ public class EdmService implements EdmManager {
             HazelcastInstance hazelcastInstance,
             CassandraTableManager tableManager,
             CassandraEntitySetManager entitySetManager,
+            CassandraEntityTypeManager entityTypeManager,
             HazelcastSchemaManager cassandraSchemaManager,
             PermissionsService permissionsService ) {
         this.session = session;
         this.tableManager = tableManager;
         this.entitySetManager = entitySetManager;
+        this.entityTypeManager = entityTypeManager;
         this.permissionsService = permissionsService;
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
@@ -110,55 +114,26 @@ public class EdmService implements EdmManager {
         }
     }
 
-    
     @Override
     public void deleteEntityType( FullQualifiedName entityTypeFqn ) {
+        /*
+         * Entity types should only be deleted if there are now entity sets of that type in the system.
+         */
         EntityType entityType = getEntityType( entityTypeFqn );
-
-        // UUID entityTypeId = uuids.get( entityTypeFqn );
-
-        entityTypes.delete( entityTypeId );
-
-        try {
-            entityType.getSchemas().forEach(
-                    schemaFqn -> removeEntityTypesFromSchema( schemaFqn.getNamespace(),
-                            schemaFqn.getName(),
-                            ImmutableSet.of( entityTypeFqn ) ) );
-            // TODO: remove property types from schema using reference counting
-
-            // Remove all entity sets of the type
-            getEntitySetsForEntityType( entityTypeFqn ).forEach( entitySet -> {
-                deleteEntitySet( entitySet.getName() );
-            } );
-            permissionsService.removePermissionsForEntityType( entityTypeFqn );
-            permissionsService.removePermissionsForPropertyTypeInEntityType( entityTypeFqn );
-
-            // Previous functions may need lookup to work - must delete lookup last
-            tableManager.deleteFromEntityTypeLookupTable( entityType );
-            entityTypeMapper.delete( entityType );
-        } catch ( Exception e ) {
-            throw new IllegalStateException( "Deletion of Entity Type failed." );
+        if ( Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( entityTypeFqn ) ) ) {
+            AclKey entityTypeKey = aclKeys.get( entityTypeFqn );
+            entityTypes.delete( entityTypeKey.getId() );
         }
     }
 
     @Override
     public void deletePropertyType( FullQualifiedName propertyTypeFqn ) {
-        PropertyType propertyType = getPropertyType( propertyTypeFqn );
-        
-        
-        try {
-            propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema( schemaFqn.getNamespace(),
-                    schemaFqn.getName(),
-                    ImmutableSet.of( propertyTypeFqn ) ) );
-            getEntityTypes().forEach( entityType -> {
-                removePropertyTypesFromEntityType( entityType, ImmutableSet.of( propertyTypeFqn ) );
-            } );
-
-            tableManager.deleteFromPropertyTypeLookupTable( propertyType );
-
-            propertyTypeMapper.delete( propertyType );
-        } catch ( Exception e ) {
-            throw new IllegalStateException( "Deletion of Property Type failed." );
+        Set<EntityType> entityTypes = entityTypeManager
+                .getEntityTypesContainingPropertyTypes( ImmutableSet.of( propertyTypeFqn ) );
+        if ( entityTypes.stream()
+                .allMatch( et -> Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( et.getType() ) ) ) ) {
+            AclKey propertyKey = aclKeys.get( propertyTypeFqn );
+            propertyTypes.delete( propertyKey );
         }
     }
 
@@ -614,8 +589,8 @@ public class EdmService implements EdmManager {
              */
 
             if ( existingAclKey != null ) {
-                if( fqn == null ) {
-                    //We need to remove UUID reservation
+                if ( fqn == null ) {
+                    // We need to remove UUID reservation
                     fqns.delete( type.getAclKey() );
                 }
                 throw new TypeExistsException( "Type " + type.toString() + "already exists." );
