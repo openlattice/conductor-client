@@ -11,11 +11,10 @@ import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
-import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
-import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.dataloom.edm.schemas.SchemaQueryService;
 import com.dataloom.edm.schemas.processors.AddSchemasToType;
 import com.dataloom.edm.schemas.processors.RemoveSchemasFromType;
@@ -134,7 +133,7 @@ public class HazelcastSchemaManager {
         schemas.executeOnKeys( namespaces, new SchemaRemover( names ) );
     }
 
-    public Schema getSchema( String namespace, String name, Set<TypeDetails> requestedDetails ) {
+    public Schema getSchema( String namespace, String name ) {
         FullQualifiedName schemaName = new FullQualifiedName( namespace, name );
         return new Schema(
                 schemaName,

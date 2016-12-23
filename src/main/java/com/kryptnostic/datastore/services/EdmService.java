@@ -30,6 +30,7 @@ import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.properties.CassandraEntityTypeManager;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -43,6 +44,7 @@ import com.kryptnostic.conductor.rpc.UUIDs.ACLs;
 import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.Queries;
 import com.kryptnostic.datastore.util.Util;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class EdmService implements EdmManager {
     private static final Logger                   logger = LoggerFactory.getLogger( EdmService.class );
@@ -253,7 +255,7 @@ public class EdmService implements EdmManager {
     }
 
     private void createEntitySet( EntitySet entitySet ) {
-        Preconditions.checkNotNull( entitySet.getType(), "Entity set type cannot be null" );
+        checkNotNull( entitySet.getType(), "Entity set type cannot be null" );
         if ( entitySets.putIfAbsent( entitySet.getName(), entitySet ) != null ) {
             throw new IllegalStateException( "Entity set already exists." );
         }
@@ -298,9 +300,12 @@ public class EdmService implements EdmManager {
 
     @Override
     public EntityType getEntityType( FullQualifiedName entityTypeFqn ) {
-
+        AclKey aclKey = aclKeys.get( entityTypeFqn );
+        Preconditions.checkNotNull( aclKey,
+                "Entity type %s does not exist.",
+                entityTypeFqn.getFullQualifiedNameAsString() );
         return Preconditions.checkNotNull(
-                entityTypes.get( entityTypeFqn ),
+                HazelcastUtils.typedGet( entityTypes, aclKey.getId() ),
                 "Entity type does not exist" );
 
     }
@@ -369,14 +374,14 @@ public class EdmService implements EdmManager {
 
     @Override
     public EntityDataModel getEntityDataModel() {
-        Iterable<Schema> schemas = getSchemas();
+        Iterable<Schema> schemas = schemaManager.getAllSchemas();
         Iterable<EntityType> entityTypes = getEntityTypes();
         Iterable<PropertyType> propertyTypes = getPropertyTypes();
         Iterable<EntitySet> entitySets = getEntitySets();
         final Set<String> namespaces = Sets.newHashSet();
 
-        entityTypes.forEach( entityType -> namespaces.add( entityType.getNamespace() ) );
-        propertyTypes.forEach( propertyType -> namespaces.add( propertyType.getNamespace() ) );
+        entityTypes.forEach( entityType -> namespaces.add( entityType.getType().getNamespace() ) );
+        propertyTypes.forEach( propertyType -> namespaces.add( propertyType.getType().getNamespace() ) );
 
         return new EntityDataModel(
                 namespaces,
@@ -387,9 +392,9 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void addPropertyTypesToEntityType( String namespace, String name, Set<FullQualifiedName> properties ) {
+    public void addPropertyTypesToEntityType( FullQualifiedName entityTypeFqn, Set<FullQualifiedName> properties ) {
 
-        EntityType entityType = getEntityType( namespace, name );
+        EntityType entityType = getEntityType( entityTypeFqn );
         Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
 
         Set<FullQualifiedName> newProperties = ImmutableSet
@@ -416,11 +421,6 @@ public class EdmService implements EdmManager {
                 DatastoreConstants.KEYSPACE,
                 tableManager.getTablenameForEntityType( new FullQualifiedName( namespace, name ) ),
                 propertiesWithType ) );
-
-        Set<FullQualifiedName> schemas = entityType.getSchemas();
-        schemas.forEach( schemaFqn -> {
-            addPropertyTypesToSchema( schemaFqn.getNamespace(), schemaFqn.getName(), newProperties );
-        } );
     }
 
     @Override
@@ -520,13 +520,14 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn ) {
-        return propertyTypes.containsKey( propertyTypeFqn );
+        AclKey propertyKey = aclKeys.get( propertyTypeFqn );
+        return propertyKey == null ? false : propertyTypes.containsKey( propertyKey );
     }
 
     @Override
     public boolean checkEntityTypeExists( FullQualifiedName entityTypeFqn ) {
-        String typename = tableManager.getTypenameForEntityType( entityTypeFqn );
-        return StringUtils.isNotBlank( typename );
+        AclKey entityKey = aclKeys.get( entityTypeFqn );
+        return entityKey == null ? false : entityTypes.containsKey( entityKey );
     }
 
     @Override
