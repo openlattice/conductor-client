@@ -67,7 +67,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public boolean checkIfUserIsOwner( List<AclKey> aclKeys, Principal principal ) {
+    public boolean checkIfUserIsOwner( List<AclKey> aclkey, Principal principal ) {
         checkArgument( principal.getType().equals( PrincipalType.USER ), "A role cannot be the owner of an object" );
         // TODO Consider using owner permission
         return false;
@@ -82,11 +82,10 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                         .collect( Collectors.toSet() ) )
                 .values().stream().flatMap( permissions -> permissions.stream() )
                 .collect( Collectors.toCollection( () -> EnumSet.noneOf( Permission.class ) ) );
-
     }
 
     @Override
-    public Iterable<Ace> getAllSecurableObjectPermissions( List<AclKey> key ) {
+    public Acl getAllSecurableObjectPermissions( List<AclKey> key ) {
         return aqs.getAclsForSecurableObject( key );
     }
 
