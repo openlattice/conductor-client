@@ -14,7 +14,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
-import com.dataloom.edm.internal.TypePK;
+import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.dataloom.edm.schemas.SchemaQueryService;
 import com.dataloom.edm.schemas.processors.AddSchemasToType;
@@ -98,7 +98,7 @@ public class HazelcastSchemaManager {
         return schema -> removeEntityTypesFromSchema( ImmutableSet.copyOf( entityTypeUuids ), schema );
     }
 
-    private <T extends TypePK> void addTypesToSchema(
+    private <T extends AbstractSchemaAssociatedSecurableType> void addTypesToSchema(
             IMap<UUID, T> m,
             Set<UUID> typeUuids,
             Collection<FullQualifiedName> schemaNames ) {
@@ -106,7 +106,7 @@ public class HazelcastSchemaManager {
         m.executeOnKeys( typeUuids, ep );
     }
 
-    private <T extends TypePK> void removeTypesFromSchema(
+    private <T extends AbstractSchemaAssociatedSecurableType> void removeTypesFromSchema(
             IMap<UUID, T> m,
             Set<UUID> typeUuids,
             Collection<FullQualifiedName> schemaNames ) {

@@ -9,7 +9,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.TypePK;
+import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
@@ -18,7 +18,7 @@ import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcesso
  *
  * @param <T> The Edm category type to be modified. Either {@link PropertyType} or {@link EntityType}
  */
-public class AddSchemasToType extends AbstractRhizomeEntryProcessor<UUID, TypePK, Void> {
+public class AddSchemasToType extends AbstractRhizomeEntryProcessor<UUID, AbstractSchemaAssociatedSecurableType, Void> {
     private static final long                   serialVersionUID = 7905367675743576380L;
     private final Collection<FullQualifiedName> schemas;
 
@@ -27,8 +27,8 @@ public class AddSchemasToType extends AbstractRhizomeEntryProcessor<UUID, TypePK
     }
 
     @Override
-    public Void process( Entry<UUID, TypePK> entry ) {
-        TypePK propertyType = entry.getValue();
+    public Void process( Entry<UUID, AbstractSchemaAssociatedSecurableType> entry ) {
+        AbstractSchemaAssociatedSecurableType propertyType = entry.getValue();
         if ( propertyType != null ) {
             Set<FullQualifiedName> schemas = entry.getValue().getSchemas();
             schemas.addAll( schemas );

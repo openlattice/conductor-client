@@ -26,7 +26,7 @@ import com.dataloom.edm.internal.DatastoreConstants;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.TypePK;
+import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.PreparedStatement;
@@ -1135,7 +1135,7 @@ public class CassandraTableManager {
         createSchemaTableForAclId( ACLs.EVERYONE_ACL );
     }
 
-    public static String getTablename( TableType tableType, TypePK type ) {
+    public static String getTablename( TableType tableType, AbstractSchemaAssociatedSecurableType type ) {
         return getTablename( tableType, type.getType() );
     }
 

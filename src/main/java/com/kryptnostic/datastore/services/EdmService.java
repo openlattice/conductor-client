@@ -26,7 +26,7 @@ import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
-import com.dataloom.edm.internal.TypePK;
+import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -110,55 +110,7 @@ public class EdmService implements EdmManager {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * @see com.kryptnostic.types.services.EdmManager#createNamespace(com.kryptnostic.types.Namespace)
-     */
-    @Override
-    public void upsertSchema( Schema schema ) {
-        UUID aclId = ( schema.getAclId() != null ) ? schema.getAclId() : ACLs.EVERYONE_ACL;
-
-        if ( checkSchemaExists( schema.getNamespace(), schema.getName() ) ) {
-            // Retrieve database record of entityType
-            Schema dbRecord = getSchema( schema.getNamespace(),
-                    schema.getNamespace(),
-                    EnumSet.noneOf( TypeDetails.class ) );
-
-            // Update entity types
-            Set<FullQualifiedName> currentEntityTypes = dbRecord.getEntityTypeFqns();
-
-            Set<FullQualifiedName> removableEntityTypes = Sets.difference( currentEntityTypes,
-                    schema.getEntityTypeFqns() );
-            removeEntityTypesFromSchema( schema.getNamespace(), schema.getName(), removableEntityTypes );
-
-            Set<FullQualifiedName> newEntityTypes = Sets.difference( schema.getEntityTypeFqns(), currentEntityTypes );
-            addEntityTypesToSchema( schema.getNamespace(), schema.getName(), newEntityTypes );
-
-            // Update property types
-            Set<FullQualifiedName> currentPropertyTypes = dbRecord.getPropertyTypeFqns();
-
-            Set<FullQualifiedName> removablePropertyTypes = Sets.difference( currentPropertyTypes,
-                    schema.getPropertyTypeFqns() );
-            removePropertyTypesFromSchema( schema.getNamespace(), schema.getName(), removablePropertyTypes );
-
-            Set<FullQualifiedName> newPropertyTypes = Sets.difference( schema.getPropertyTypeFqns(),
-                    currentPropertyTypes );
-            addPropertyTypesToSchema( schema.getNamespace(), schema.getName(), newPropertyTypes );
-
-            // Persist
-            session.execute( tableManager.getSchemaUpsertStatement( aclId ).bind( schema.getNamespace(),
-                    schema.getName(),
-                    schema.getEntityTypeFqns(),
-                    schema.getPropertyTypeFqns() ) );
-        } else {
-            createSchema( schema.getNamespace(),
-                    schema.getName(),
-                    aclId,
-                    schema.getEntityTypeFqns(),
-                    schema.getPropertyTypeFqns() );
-        }
-    }
-
+    
     @Override
     public void deleteEntityType( FullQualifiedName entityTypeFqn ) {
         EntityType entityType = getEntityType( entityTypeFqn );
@@ -192,7 +144,8 @@ public class EdmService implements EdmManager {
     @Override
     public void deletePropertyType( FullQualifiedName propertyTypeFqn ) {
         PropertyType propertyType = getPropertyType( propertyTypeFqn );
-
+        
+        
         try {
             propertyType.getSchemas().forEach( schemaFqn -> removePropertyTypesFromSchema( schemaFqn.getNamespace(),
                     schemaFqn.getName(),
@@ -207,11 +160,6 @@ public class EdmService implements EdmManager {
         } catch ( Exception e ) {
             throw new IllegalStateException( "Deletion of Property Type failed." );
         }
-    }
-
-    @Override
-    public void deleteSchema( Schema namespaces ) {
-        // TODO: Implement delete schema
     }
 
     /*
@@ -646,7 +594,10 @@ public class EdmService implements EdmManager {
      * 
      * @param type The type for which to reserve an FQN and UUID.
      */
-    public void reserveAclKeyAndValidateType( TypePK type ) {
+    public void reserveAclKeyAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
+        /*
+         * Template this call and make wrappers that directly insert into type maps making fqns redundant.
+         */
         final FullQualifiedName fqn = fqns.putIfAbsent( type.getAclKey(), type.getType() );
         final boolean fqnMatches = type.getType().equals( fqn );
 
@@ -655,7 +606,6 @@ public class EdmService implements EdmManager {
              * AclKey <-> Type association exists and is correct. Safe to try and register AclKey for type.
              */
             final AclKey existingAclKey = aclKeys.putIfAbsent( type.getType(), type.getAclKey() );
-            final boolean aclKeyMatches = type.getAclKey().equals( existingAclKey );
 
             /*
              * Even if aclKey matches, letting two threads go through type creation creates potential problems when
@@ -664,6 +614,10 @@ public class EdmService implements EdmManager {
              */
 
             if ( existingAclKey != null ) {
+                if( fqn == null ) {
+                    //We need to remove UUID reservation
+                    fqns.delete( type.getAclKey() );
+                }
                 throw new TypeExistsException( "Type " + type.toString() + "already exists." );
             }
 

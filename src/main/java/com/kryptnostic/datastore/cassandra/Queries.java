@@ -198,9 +198,9 @@ public final class Queries {
     public static final String getCreateEntityTypesTableQuery( String keyspace ) {
         return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES )
                 .ifNotExists()
-                .partitionKey( CommonColumns.NAMESPACE )
-                .clusteringColumns( CommonColumns.NAME )
-                .columns( CommonColumns.TYPENAME, CommonColumns.KEY, CommonColumns.PROPERTIES, CommonColumns.SCHEMAS )
+                .partitionKey( CommonColumns.ID )
+                .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
+                .columns( CommonColumns.KEY, CommonColumns.PROPERTIES, CommonColumns.SCHEMAS )
                 .buildQuery();
     }
 

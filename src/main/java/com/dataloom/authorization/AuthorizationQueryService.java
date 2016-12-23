@@ -73,7 +73,7 @@ public class AuthorizationQueryService {
         Iterable<AceFuture> futureAces = Iterables.transform( principals,
                 principal -> new AceFuture( principal, aces.getAsync(
                         new AceKey( aclKey, principal ) ) ) );
-        return new Acl( aclKey, Iterables.transform( futureAces, futureAce -> futureAce.getUninterruptibly() ) );
+        return new Acl( aclKey, Iterables.transform( futureAces, AceFuture::getUninterruptibly ) );
     }
 
 }
