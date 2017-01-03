@@ -34,7 +34,7 @@ public interface AuthorizationManager {
             Set<Principal> principals,
             Set<Permission> requiredPermissions );
 
-    boolean checkIfUserIsOwner( List<AclKey> aclKeys, Principal principal );
+    boolean checkIfUserIsOwner( List<AclKey> aclkey, Principal principal );
 
     // Utility functions for retrieving permissions
 
@@ -46,6 +46,7 @@ public interface AuthorizationManager {
             List<AclKey> key );
     
     Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces );
+    
     // Methods for requesting permissions
 
     void addPermissionsRequestForPropertyTypeInEntitySet(
