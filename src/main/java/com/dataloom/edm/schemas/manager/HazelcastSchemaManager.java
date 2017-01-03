@@ -29,11 +29,11 @@ import com.hazelcast.core.IMap;
 
 public class HazelcastSchemaManager {
     // map( namespace -> set<name> )
-    private final IMap<String, Set<String>>   schemas;
-    private final IMap<UUID, PropertyType>    propertyTypes;
-    private final IMap<UUID, EntityType>      entityTypes;
+    private final IMap<String, Set<String>> schemas;
+    private final IMap<UUID, PropertyType>  propertyTypes;
+    private final IMap<UUID, EntityType>    entityTypes;
 
-    private final SchemaQueryService schemaQueryService;
+    private final SchemaQueryService        schemaQueryService;
 
     public HazelcastSchemaManager(
             String keyspace,
@@ -114,6 +114,9 @@ public class HazelcastSchemaManager {
     }
 
     public void upsertSchemas( Set<FullQualifiedName> schemaNames ) {
+        /*
+         * We can probably optimize this a bit, since not every partition needs all the names, but this works for now.
+         */
         Set<String> namespaces = schemaNames.stream()
                 .map( FullQualifiedName::getNamespace )
                 .collect( Collectors.toSet() );

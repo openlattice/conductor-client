@@ -27,6 +27,7 @@ public enum CommonColumns implements ColumnDef {
     REQUESTID( DataType.uuid() ),
     ENTITYID( DataType.uuid() ),
     PROPERTY_TYPE( DataType.text() ),
+    PROPERTY_TYPE_ID( DataType.uuid() ),
     PROPERTIES( DataType.set( DataType.text() ) ),
     SCHEMAS( DataType.set( DataType.text() ) ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),

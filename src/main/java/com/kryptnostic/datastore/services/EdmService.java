@@ -299,6 +299,11 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public Set<AclKey> getAclKeys( Set<FullQualifiedName> fqns ) {
+        return ImmutableSet.copyOf( aclKeys.getAll( fqns ).values() );
+    }
+
+    @Override
     public EntityType getEntityType( FullQualifiedName entityTypeFqn ) {
         AclKey aclKey = aclKeys.get( entityTypeFqn );
         Preconditions.checkNotNull( aclKey,

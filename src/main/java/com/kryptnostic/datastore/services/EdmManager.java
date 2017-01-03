@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.internal.EntitySet;
@@ -27,7 +28,6 @@ public interface EdmManager {
 
     // would attach all property types of the entityTypes to Schema
     void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
-
 
 
     void createEntitySet( Principal principal, FullQualifiedName type, String name, String title );
@@ -93,4 +93,6 @@ public interface EdmManager {
 
 
     Collection<PropertyType> getPropertyTypes( Set<FullQualifiedName> properties );
+
+    Set<AclKey> getAclKeys( Set<FullQualifiedName> fqns );
 }

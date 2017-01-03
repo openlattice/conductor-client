@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.cassandra;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -9,10 +10,31 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.SetMultimap;
 
 public final class RowAdapters {
     private RowAdapters() {}
+
+    public static SetMultimap<FullQualifiedName, Object> entity(
+            ResultSet rs,
+            Map<UUID, CassandraPropertyReader> propertyReaders ) {
+        final SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
+        for ( Row row : rs ) {
+            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+            if ( propertyTypeId != null ) {
+                CassandraPropertyReader propertyReader = propertyReaders.get( propertyTypeId );
+                m.put( propertyReader.getType(), propertyReader.apply( row ) );
+            }
+        }
+        return m;
+    }
+
+    public static String entityId( Row row ) {
+        return row.getString( CommonColumns.ENTITYID.cql() );
+    }
 
     public static EntitySet entitySet( Row row ) {
         // TODO: Validate data read from Cassandra and log errors for invalid entries.
