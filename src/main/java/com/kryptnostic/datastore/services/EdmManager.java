@@ -11,7 +11,6 @@ import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.Schema;
 
 public interface EdmManager {
     EntityDataModel getEntityDataModel();

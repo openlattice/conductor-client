@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.edm.internal.TypePK;
+import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -15,10 +15,10 @@ import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerialize
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
-public class TypePkStreamSerializer implements SelfRegisteringStreamSerializer<TypePK>{
+public class TypePkStreamSerializer implements SelfRegisteringStreamSerializer<AbstractSchemaAssociatedSecurableType>{
 
     @Override
-    public void write( ObjectDataOutput out, TypePK object ) throws IOException {
+    public void write( ObjectDataOutput out, AbstractSchemaAssociatedSecurableType object ) throws IOException {
         FullQualifiedName fqn = object.getType();
         AbstractUUIDStreamSerializer.serialize( out, object.getId() );
         out.writeUTF( fqn.getNamespace() );
@@ -27,13 +27,13 @@ public class TypePkStreamSerializer implements SelfRegisteringStreamSerializer<T
     }
 
     @Override
-    public TypePK read( ObjectDataInput in ) throws IOException {
+    public AbstractSchemaAssociatedSecurableType read( ObjectDataInput in ) throws IOException {
         UUID id = AbstractUUIDStreamSerializer.deserialize( in );
         String namespace = in.readUTF();
         String name = in.readUTF();
         
         Set<FullQualifiedName> schemas = SetStreamSerializers.deserialize( in, FullQualifiedNameStreamSerializer::deserialize );
-        return new TypePK( id,new FullQualifiedName( namespace, name ) , schemas );
+        return new AbstractSchemaAssociatedSecurableType( id,new FullQualifiedName( namespace, name ) , schemas );
     }
 
     @Override
@@ -46,8 +46,8 @@ public class TypePkStreamSerializer implements SelfRegisteringStreamSerializer<T
     }
 
     @Override
-    public Class<TypePK> getClazz() {
-        return TypePK.class;
+    public Class<AbstractSchemaAssociatedSecurableType> getClazz() {
+        return AbstractSchemaAssociatedSecurableType.class;
     }
 
 }
