@@ -21,6 +21,7 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
         FullQualifiedNameStreamSerializer.serialize( out, object.getType() );
         out.writeUTF( object.getName() );
         out.writeUTF( object.getTitle() );
+        out.writeUTF( object.getDescription() );
     }
 
     @Override
@@ -29,11 +30,13 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
         String name = in.readUTF();
         FullQualifiedName fqn = FullQualifiedNameStreamSerializer.deserialize( in );
         String title = in.readUTF();
+        String description = in.readUTF();
         EntitySet es = new EntitySet(
                 id,
                 fqn,
                 name,
-                title );
+                title,
+                description );
         return es;
     }
 

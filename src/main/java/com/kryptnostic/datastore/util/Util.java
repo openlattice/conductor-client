@@ -11,6 +11,7 @@ import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.hazelcast.core.IMap;
 
 public final class Util {
     private static final Logger logger = LoggerFactory.getLogger( Util.class );
@@ -58,5 +59,9 @@ public final class Util {
             return null;
         }
         return f.apply( row );
+    }
+
+    public static <K, V> V getSafely( IMap<K, V> m, K key ) {
+        return m.get( key );
     }
 }

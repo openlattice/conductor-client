@@ -1,6 +1,8 @@
 package com.kryptnostic.datastore.services;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.UUID;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.clearspring.analytics.util.Preconditions;
@@ -17,7 +19,6 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.Queries;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CassandraEntitySetManager {
     private final Session           session;
@@ -25,6 +26,7 @@ public class CassandraEntitySetManager {
 
     private final PreparedStatement getEntities;
     private final PreparedStatement assignEntity;
+    private final PreparedStatement evictEntity;
     private final PreparedStatement getEntitySetsByType;
     private final Select            getAllEntitySets;
 
@@ -49,6 +51,12 @@ public class CassandraEntitySetManager {
                         .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) )
                         .with( QueryBuilder.add( CommonColumns.ENTITY_SETS.cql(),
                                 CommonColumns.ENTITY_SETS.bindMarker() ) ) );
+        this.evictEntity = session.prepare(
+                QueryBuilder
+                        .update( keyspace, Tables.ENTITIES.getName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) )
+                        .with( QueryBuilder.remove( CommonColumns.ENTITY_SETS.cql(),
+                                CommonColumns.ENTITY_SETS.bindMarker() ) ) );
     }
 
     public Iterable<String> getEntitiesInEntitySet( String entitySetName ) {
@@ -63,10 +71,17 @@ public class CassandraEntitySetManager {
                         .setString( CommonColumns.ENTITYID.cql(), entityId )
                         .setString( CommonColumns.ENTITY_SETS.cql(), entitySetName ) );
     }
+    
+    public void evictEntityFromEntitySet( String entityId, String entitySetName ) {
+        session.execute(
+                evictEntity.bind()
+                        .setString( CommonColumns.ENTITYID.cql(), entityId )
+                        .setString( CommonColumns.ENTITY_SETS.cql(), entitySetName ) );
+    }
 
-    public Iterable<EntitySet> getAllEntitySetsForType( FullQualifiedName type ) {
+    public Iterable<EntitySet> getAllEntitySetsForType( UUID typeId ) {
         ResultSetFuture rsf = session.executeAsync(
-                getEntitySetsByType.bind().set( CommonColumns.TYPE.cql(), type, FullQualifiedName.class ) );
+                getEntitySetsByType.bind().setUUID( CommonColumns.TYPE_ID.cql(), typeId ) );
         return Iterables.transform( rsf.getUninterruptibly(), RowAdapters::entitySet );
     }
 

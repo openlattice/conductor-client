@@ -42,7 +42,9 @@ public enum CommonColumns implements ColumnDef {
     PRINCIPAL_TYPE( DataType.text() ),
     PRINCIPAL_ID( DataType.text() ),
     ACL_KEYS( DataType.frozenList( DataType.text() ) ), // partition index within a table for distribution purpose
-    ID( DataType.uuid() );
+    ID( DataType.uuid() ),
+    TYPE_ID( DataType.uuid() ),
+    DESCRIPTION( DataType.text() );
 
     private final DataType type;
 

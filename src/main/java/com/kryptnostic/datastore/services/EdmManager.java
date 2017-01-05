@@ -20,21 +20,13 @@ public interface EdmManager {
 
     void createPropertyTypeIfNotExists( PropertyType propertyType );
 
-    void deletePropertyType( FullQualifiedName propertyTypeFqn );
+    void deletePropertyType( UUID propertyTypeId );
 
     Iterable<PropertyType> getPropertyTypesInNamespace( String namespace );
 
     Iterable<PropertyType> getPropertyTypes();
 
-    // would attach all property types of the entityTypes to Schema
-    void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
-
-
-    void createEntitySet( Principal principal, FullQualifiedName type, String name, String title );
-
     void createEntitySet( Principal principal, EntitySet entitySet );
-
-    void upsertEntitySet( EntitySet entitySet );
 
     EntitySet getEntitySet( String name );
 
@@ -58,9 +50,9 @@ public interface EdmManager {
 
     Iterable<EntityType> getEntityTypes();
 
-    void deleteEntityType( FullQualifiedName entityTypeFqn );
+    void deleteEntityType( UUID entityTypeId );
 
-    EntityType getEntityType( FullQualifiedName fqn );
+    EntityType getEntityType( UUID entityTypeId );
 
     FullQualifiedName getPropertyTypeFullQualifiedName( String typename );
 
@@ -92,7 +84,15 @@ public interface EdmManager {
     void upsertEntityType( Principal principal, EntityType entityType );
 
 
-    Collection<PropertyType> getPropertyTypes( Set<FullQualifiedName> properties );
+    Collection<PropertyType> getPropertyTypes( Set<UUID> properties );
 
     Set<AclKey> getAclKeys( Set<FullQualifiedName> fqns );
+
+    AclKey getTypeAclKey( FullQualifiedName fqns );
+
+    Set<UUID> getEntityTypeUuids( Set<FullQualifiedName> fqns );
+
+    Set<UUID> getPropertyTypeUuids( Set<FullQualifiedName> fqns );
+
+    EntityType getEntityType( FullQualifiedName type );
 }

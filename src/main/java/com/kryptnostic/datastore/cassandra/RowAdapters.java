@@ -35,14 +35,19 @@ public final class RowAdapters {
     public static String entityId( Row row ) {
         return row.getString( CommonColumns.ENTITYID.cql() );
     }
+    
+    public static UUID id( Row row ) {
+        return row.getUUID( CommonColumns.ID.cql() );
+    }
 
     public static EntitySet entitySet( Row row ) {
         // TODO: Validate data read from Cassandra and log errors for invalid entries.
-        UUID id = row.getUUID( CommonColumns.ID.cql() );
+        UUID id = id( row );
         FullQualifiedName type = row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
         String name = row.getString( CommonColumns.NAME.cql() );
         String title = row.getString( CommonColumns.TITLE.cql() );
-        return new EntitySet( id, type, name, title );
+        String description = row.getString( CommonColumns.DESCRIPTION.cql() );
+        return new EntitySet( id, type, name, title , description );
     }
 
     public static PropertyType propertyType( Row row ) {
@@ -57,8 +62,8 @@ public final class RowAdapters {
         UUID id = row.getUUID( CommonColumns.ID.cql() );
         FullQualifiedName type = row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
-        Set<FullQualifiedName> key = row.getSet( CommonColumns.KEY.cql(), FullQualifiedName.class );
-        Set<FullQualifiedName> properties = row.getSet( CommonColumns.PROPERTIES.cql(), FullQualifiedName.class );
+        Set<UUID> key = row.getSet( CommonColumns.KEY.cql(), UUID.class );
+        Set<UUID> properties = row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
         return new EntityType( id, type, schemas, key, properties );
     }
 

@@ -28,7 +28,8 @@ public class EdmAuthorizationHelper {
     public Set<FullQualifiedName> getAuthorizedPropertiesOnEntitySet(
             EntitySet entitySet,
             Set<Permission> requiredPermissions ) {
-        EntityType entityType = edm.getEntityType( entitySet.getType() );
+        AclKey entityTypeAclKey = edm.getTypeAclKey( entitySet.getType() );
+        EntityType entityType = edm.getEntityType( entityTypeAclKey.getId() );
         Collection<PropertyType> propertyType = edm.getPropertyTypes( entityType.getProperties() );
         return propertyType.stream()
                 .filter( pt -> authz.checkIfHasPermissions( Arrays.asList( entitySet.getAclKey(),
