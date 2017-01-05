@@ -12,12 +12,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.spark_project.guava.collect.Iterables;
 
 import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
+import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
@@ -82,6 +84,15 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                         .collect( Collectors.toSet() ) )
                 .values().stream().flatMap( permissions -> permissions.stream() )
                 .collect( Collectors.toCollection( () -> EnumSet.noneOf( Permission.class ) ) );
+    }
+
+    @Override
+    public Iterable<AclKey> getAuthorizedObjectsOfType(
+            Principal principal,
+            SecurableObjectType objectType,
+            EnumSet<Permission> aces ) {
+        return Iterables.transform( aqs.getAuthorizedAclKeys( principal, objectType, aces ),
+                AuthorizationUtils::getLastAclKeySafely );
     }
 
     @Override

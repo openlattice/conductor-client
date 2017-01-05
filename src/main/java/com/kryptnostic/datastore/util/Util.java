@@ -64,4 +64,8 @@ public final class Util {
     public static <K, V> V getSafely( IMap<K, V> m, K key ) {
         return m.get( key );
     }
+
+    public static <K, V> Function<K, V> getSafeMapper( IMap<K, V> m ) {
+        return m::get;
+    }
 }

@@ -50,7 +50,7 @@ public class EdmService implements EdmManager {
     private static final Logger                   logger = LoggerFactory.getLogger( EdmService.class );
     private final IMap<UUID, PropertyType>        propertyTypes;
     private final IMap<UUID, EntityType>          entityTypes;
-    private final IMap<String, EntitySet>         entitySets;
+    private final IMap<UUID, EntitySet>           entitySets;
     private final IMap<FullQualifiedName, AclKey> aclKeys;
     private final IMap<AclKey, FullQualifiedName> fqns;
 
@@ -141,7 +141,6 @@ public class EdmService implements EdmManager {
         }
     }
 
-
     public void createEntityType( EntityType entityType ) {
         /*
          * This is really create or replace and should be noted as such.
@@ -224,7 +223,7 @@ public class EdmService implements EdmManager {
 
     private void createEntitySet( EntitySet entitySet ) {
         checkNotNull( entitySet.getType(), "Entity set type cannot be null" );
-        if ( entitySets.putIfAbsent( entitySet.getName(), entitySet ) != null ) {
+        if ( entitySets.putIfAbsent( entitySet.getId(), entitySet ) != null ) {
             throw new IllegalStateException( "Entity set already exists." );
         }
     }
@@ -300,8 +299,8 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public EntitySet getEntitySet( String name ) {
-        return Util.getSafely( entitySets, name );
+    public EntitySet getEntitySet( UUID entitySetId ) {
+        return Util.getSafely( entitySets, entitySetId );
     }
 
     @Override
@@ -310,20 +309,20 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public Iterable<EntitySet> getEntitySetsUserOwns( String userId ) {
-        return StreamSupport.stream( getEntitySetNamesUserOwns( userId ).spliterator(), false )
-                .map( entitySetName -> getEntitySet( entitySetName ) )
+    public Iterable<EntitySet> getEntitySetsOwnedByPrincipal( Principal principal ) {
+        Iterable<AclKey> aclKeys = authorizations.getAuthorizedObjectsOfType( principal,
+                SecurableObjectType.EntitySet,
+                EnumSet.of( Permission.OWNER ) );
+        return StreamSupport.stream( aclKeys.spliterator(), false )
+                .map( AclKey::getId )
+                .map( Util.getSafeMapper( entitySets ) )
                 .collect( Collectors.toList() );
     }
 
     @Override
-    public Iterable<String> getEntitySetNamesUserOwns( String userId ) {
-        return tableManager.getEntitySetsUserOwns( userId );
-    }
-
-    @Override
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
-        return Preconditions.checkNotNull( propertyTypes.get( propertyType ), "Property type does not exist" );
+        return Preconditions.checkNotNull( Util.getSafely( propertyTypes, aclKeys.get( propertyType ).getId() ),
+                "Property type does not exist" );
     }
 
     @Override

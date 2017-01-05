@@ -7,14 +7,15 @@ import java.util.List;
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.AclKey;
+import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
-public final class CassandraMappingUtils {
-    private CassandraMappingUtils() {}
+public final class AuthorizationUtils {
+    private AuthorizationUtils() {}
 
     public static Principal getPrincipalFromRow( Row row ) {
         final String principalType = row.getString( CommonColumns.PRINCIPAL_TYPE.cql() );
@@ -44,6 +45,16 @@ public final class CassandraMappingUtils {
      */
     public static Iterable<Row> makeLazy( ResultSetFuture rsf ) {
         return rsf.getUninterruptibly()::iterator;
+    }
+
+    public static SecurableObjectType extractObjectType( AceKey key ) {
+        AclKey aclKey = getLastAclKeySafely( key.getKey() );
+        //TODO: Do something better than return null.
+        return aclKey == null ? null : aclKey.getType();
+    }
+
+    public static AclKey getLastAclKeySafely( List<AclKey> aclKeys ) {
+        return aclKeys.isEmpty() ? aclKeys.get( aclKeys.size() - 1 ) : null;
     }
 
 }

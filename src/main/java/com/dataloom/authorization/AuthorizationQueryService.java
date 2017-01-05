@@ -11,7 +11,7 @@ import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
-import com.dataloom.authorization.util.CassandraMappingUtils;
+import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
@@ -74,7 +74,7 @@ public class AuthorizationQueryService {
                         .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
                         .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
                         .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
-        return Iterables.transform( CassandraMappingUtils.makeLazy( rsf ), CassandraMappingUtils::getAclKeysFromRow );
+        return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
     }
 
     public Iterable<List<AclKey>> getAuthorizedAclKeys( Principal principal, EnumSet<Permission> desiredPermissions ) {
@@ -83,7 +83,7 @@ public class AuthorizationQueryService {
                         .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
                         .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
                         .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
-        return Iterables.transform( CassandraMappingUtils.makeLazy( rsf ), CassandraMappingUtils::getAclKeysFromRow );
+        return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
     }
 
     public Acl getAclsForSecurableObject( List<AclKey> aclKey ) {
@@ -91,8 +91,8 @@ public class AuthorizationQueryService {
                 aclsForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
                         aclKey ) );
 
-        Iterable<Principal> principals = Iterables.transform( CassandraMappingUtils.makeLazy( rsf ),
-                CassandraMappingUtils::getPrincipalFromRow );
+        Iterable<Principal> principals = Iterables.transform( AuthorizationUtils.makeLazy( rsf ),
+                AuthorizationUtils::getPrincipalFromRow );
         Iterable<AceFuture> futureAces = Iterables.transform( principals,
                 principal -> new AceFuture( principal, aces.getAsync(
                         new AceKey( aclKey, principal ) ) ) );

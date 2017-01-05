@@ -44,8 +44,13 @@ public interface AuthorizationManager {
     Acl getAllSecurableObjectPermissions(
             List<AclKey> key );
 
+    Iterable<AclKey> getAuthorizedObjectsOfType(
+            Principal principal,
+            SecurableObjectType objectType,
+            EnumSet<Permission> aces );
+
     Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces );
-    
+
     // Methods for requesting permissions
 
     void addPermissionsRequestForPropertyTypeInEntitySet(
@@ -66,7 +71,5 @@ public interface AuthorizationManager {
     Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions(
             String username,
             String entitySetName );
-
-
 
 }

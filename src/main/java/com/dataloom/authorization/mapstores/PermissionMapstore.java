@@ -1,14 +1,13 @@
 package com.dataloom.authorization.mapstores;
 
 import java.util.EnumSet;
-import java.util.List;
 
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PrincipalType;
-import com.dataloom.authorization.util.CassandraMappingUtils;
+import com.dataloom.authorization.util.AuthorizationUtils;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -16,6 +15,8 @@ import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
+
+import static com.dataloom.authorization.util.AuthorizationUtils.extractObjectType;
 
 public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceKey, EnumSet<Permission>> {
     public static final String MAP_NAME = "authorizations";
@@ -46,7 +47,7 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
 
     @Override
     protected AceKey mapKey( Row row ) {
-        return CassandraMappingUtils.getAceKeyFromRow( row );
+        return AuthorizationUtils.getAceKeyFromRow( row );
     }
 
     @Override
@@ -64,11 +65,5 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
     public EnumSet<Permission> generateTestValue() throws Exception {
         // TODO Auto-generated method stub
         return null;
-    }
-
-    private static SecurableObjectType extractObjectType( AceKey key ) {
-        final List<AclKey> aclKeys = key.getKey();
-        final int aclKeyCount = aclKeys.size();
-        return aclKeyCount > 0 ? aclKeys.get( aclKeyCount - 1 ).getType() : null;
     }
 }

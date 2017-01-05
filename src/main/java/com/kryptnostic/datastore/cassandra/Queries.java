@@ -191,7 +191,7 @@ public final class Queries {
                 .ifNotExists()
                 .partitionKey( CommonColumns.ID )
                 .clusteringColumns( CommonColumns.TYPE, CommonColumns.NAME )
-                .columns( CommonColumns.TITLE )
+                .columns( CommonColumns.TITLE, CommonColumns.DESCRIPTION )
                 .buildQuery();
     }
 

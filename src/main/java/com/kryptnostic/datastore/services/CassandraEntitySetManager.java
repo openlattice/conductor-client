@@ -10,6 +10,7 @@ import com.dataloom.edm.internal.EntitySet;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
@@ -28,6 +29,7 @@ public class CassandraEntitySetManager {
     private final PreparedStatement assignEntity;
     private final PreparedStatement evictEntity;
     private final PreparedStatement getEntitySetsByType;
+    private final PreparedStatement getEntitySet;
     private final Select            getAllEntitySets;
 
     public CassandraEntitySetManager( Session session, String keyspace ) {
@@ -35,10 +37,19 @@ public class CassandraEntitySetManager {
         createEntitySetsTableIfNotExists( keyspace, checkNotNull( session ) );
         this.session = session;
         this.keyspace = keyspace;
+
+        this.getEntitySet = session
+                .prepare( QueryBuilder.select()
+                        .from( this.keyspace, Tables.ENTITY_SETS.getName() )
+                        .where( QueryBuilder.eq( CommonColumns.NAME.cql(), CommonColumns.NAME.bindMarker() ) ) );
+
         this.getEntitySetsByType = session
-                .prepare( QueryBuilder.select().from( this.keyspace, Tables.ENTITY_SETS.getName() )
+                .prepare( QueryBuilder.select()
+                        .from( this.keyspace, Tables.ENTITY_SETS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPE.cql(), CommonColumns.TYPE.bindMarker() ) ) );
+
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Tables.ENTITY_SETS.getName() );
+
         this.getEntities = session
                 .prepare( QueryBuilder.select().all()
                         .from( keyspace, Tables.ENTITIES.getName() )
@@ -59,6 +70,11 @@ public class CassandraEntitySetManager {
                                 CommonColumns.ENTITY_SETS.bindMarker() ) ) );
     }
 
+    public EntitySet getEntitySet( String entitySetName ) {
+        Row row = session.execute( getEntitySet.bind().setString( CommonColumns.NAME.cql(), entitySetName ) ).one();
+        return row == null ? null : RowAdapters.entitySet( row );
+    }
+
     public Iterable<String> getEntitiesInEntitySet( String entitySetName ) {
         ResultSet rs = session
                 .execute( getEntities.bind().setString( CommonColumns.ENTITY_SETS.cql(), entitySetName ) );
@@ -71,7 +87,7 @@ public class CassandraEntitySetManager {
                         .setString( CommonColumns.ENTITYID.cql(), entityId )
                         .setString( CommonColumns.ENTITY_SETS.cql(), entitySetName ) );
     }
-    
+
     public void evictEntityFromEntitySet( String entityId, String entitySetName ) {
         session.execute(
                 evictEntity.bind()
