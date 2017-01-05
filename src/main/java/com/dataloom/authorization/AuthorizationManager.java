@@ -35,7 +35,6 @@ public interface AuthorizationManager {
             Set<Permission> requiredPermissions );
 
     boolean checkIfUserIsOwner( List<AclKey> aclkey, Principal principal );
-
     // Utility functions for retrieving permissions
 
     Set<Permission> getSecurableObjectPermissions(

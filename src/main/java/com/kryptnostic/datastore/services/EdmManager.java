@@ -16,7 +16,9 @@ import com.dataloom.edm.internal.PropertyType;
 public interface EdmManager {
     EntityDataModel getEntityDataModel();
 
-    PropertyType getPropertyType( FullQualifiedName prop );
+    PropertyType getPropertyType( FullQualifiedName propertyTypeFqn );
+
+    PropertyType getPropertyType( UUID propertyTypeId );
 
     void createPropertyTypeIfNotExists( PropertyType propertyType );
 
@@ -42,9 +44,9 @@ public interface EdmManager {
 
     void createEntityType( EntityType objectType );
 
-    void assignEntityToEntitySet( UUID entityId, String entitySetName );
+    void assignEntityToEntitySet( String entityId, String name );
 
-    void assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
+    void assignEntityToEntitySet( String entityId, EntitySet es );
 
     EntityType getEntityType( String namespace, String name );
 
@@ -58,31 +60,18 @@ public interface EdmManager {
 
     FullQualifiedName getEntityTypeFullQualifiedName( String typename );
 
-    void addPropertyTypesToEntityType(
-            String entityTypeNamespace,
-            String entityTypeName,
-            Set<FullQualifiedName> properties );
+    void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
-    void removePropertyTypesFromEntityType(
-            String entityTypeNamespace,
-            String entityTypeName,
-            Set<FullQualifiedName> properties );
-
-    void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
+    void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     // Helper methods to check existence
-    boolean checkPropertyTypesExist( Set<FullQualifiedName> properties );
+    boolean checkPropertyTypesExist( Set<UUID> properties );
 
-    boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn );
+    boolean checkPropertyTypeExists( UUID propertyTypeId );
 
-    boolean checkEntityTypeExists( FullQualifiedName entityTypeFqn );
+    boolean checkEntityTypeExists( UUID entityTypeId );
 
     boolean checkEntitySetExists( String name );
-
-    boolean checkSchemaExists( String namespace, String name );
-
-    void upsertEntityType( Principal principal, EntityType entityType );
-
 
     Collection<PropertyType> getPropertyTypes( Set<UUID> properties );
 
@@ -95,4 +84,7 @@ public interface EdmManager {
     Set<UUID> getPropertyTypeUuids( Set<FullQualifiedName> fqns );
 
     EntityType getEntityType( FullQualifiedName type );
+
+
+
 }

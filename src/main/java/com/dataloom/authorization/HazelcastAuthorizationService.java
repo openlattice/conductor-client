@@ -19,6 +19,7 @@ import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
+import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
@@ -67,10 +68,9 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public boolean checkIfUserIsOwner( List<AclKey> aclkey, Principal principal ) {
+    public boolean checkIfUserIsOwner( List<AclKey> aclKey, Principal principal ) {
         checkArgument( principal.getType().equals( PrincipalType.USER ), "A role cannot be the owner of an object" );
-        // TODO Consider using owner permission
-        return false;
+        return checkIfHasPermissions( aclKey, ImmutableSet.of( principal ), EnumSet.of( Permission.OWNER ) );
     }
 
     @Override
@@ -90,7 +90,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     public Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces ) {
-        //Map acl keys into nested format based on length   
+        // Map acl keys into nested format based on length
         //
         aces.entrySet().stream().map( e -> aqs.getAuthorizedAclKeys( e.getKey(), e.getValue() ) ).collect( HashSet::new,
                 ( s, v ) -> v.forEach( aclKey -> s.add( aclKey ) ),
