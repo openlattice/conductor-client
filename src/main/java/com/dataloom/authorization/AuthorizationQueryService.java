@@ -27,13 +27,13 @@ public class AuthorizationQueryService {
             .getLogger( AuthorizationQueryService.class );
     private final Session                       session;
     private final PreparedStatement             authorizedAclKeysQuery;
+    private final PreparedStatement             authorizedAclKeysForObjectTypeQuery;
     private final PreparedStatement             aclsForSecurableObjectQuery;
     private final IMap<AceKey, Set<Permission>> aces;
 
     public AuthorizationQueryService( Session session, HazelcastInstance hazelcastInstance ) {
         this.session = session;
         aces = hazelcastInstance.getMap( HazelcastAuthorizationService.ACES_MAP );
-
         authorizedAclKeysQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.ACL_KEYS.cql() )
                 .from( DatastoreConstants.KEYSPACE, PermissionMapstore.MAP_NAME ).allowFiltering()
@@ -41,6 +41,18 @@ public class AuthorizationQueryService {
                         CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
                         CommonColumns.PRINCIPAL_ID.bindMarker() ) )
+                .and( QueryBuilder.contains( CommonColumns.PERMISSIONS.cql(),
+                        CommonColumns.PERMISSIONS.bindMarker() ) ) );
+
+        authorizedAclKeysForObjectTypeQuery = session.prepare( QueryBuilder
+                .select( CommonColumns.ACL_KEYS.cql() )
+                .from( DatastoreConstants.KEYSPACE, PermissionMapstore.MAP_NAME ).allowFiltering()
+                .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
+                        CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
+                        CommonColumns.PRINCIPAL_ID.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
+                        CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) )
                 .and( QueryBuilder.contains( CommonColumns.PERMISSIONS.cql(),
                         CommonColumns.PERMISSIONS.bindMarker() ) ) );
 
@@ -52,13 +64,24 @@ public class AuthorizationQueryService {
 
     }
 
+    public Iterable<List<AclKey>> getAuthorizedAclKeys(
+            Principal principal,
+            SecurableObjectType objectType,
+            EnumSet<Permission> desiredPermissions ) {
+        ResultSetFuture rsf = session.executeAsync(
+                authorizedAclKeysForObjectTypeQuery.bind()
+                        .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                        .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
+                        .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
+                        .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
+        return Iterables.transform( CassandraMappingUtils.makeLazy( rsf ), CassandraMappingUtils::getAclKeysFromRow );
+    }
+
     public Iterable<List<AclKey>> getAuthorizedAclKeys( Principal principal, EnumSet<Permission> desiredPermissions ) {
         ResultSetFuture rsf = session.executeAsync(
-                authorizedAclKeysQuery.bind().set( CommonColumns.PRINCIPAL_TYPE.cql(),
-                        principal.getType(),
-                        PrincipalType.class ).setString(
-                                CommonColumns.PRINCIPAL_ID.cql(),
-                                principal.getId() )
+                authorizedAclKeysQuery.bind()
+                        .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                        .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
                         .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
         return Iterables.transform( CassandraMappingUtils.makeLazy( rsf ), CassandraMappingUtils::getAclKeysFromRow );
     }

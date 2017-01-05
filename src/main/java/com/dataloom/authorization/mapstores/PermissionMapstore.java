@@ -1,9 +1,11 @@
 package com.dataloom.authorization.mapstores;
 
 import java.util.EnumSet;
+import java.util.List;
 
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.AclKey;
+import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.authorization.util.CassandraMappingUtils;
@@ -36,6 +38,7 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
         return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), AclKey.class )
                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), key.getPrincipal().getType(), PrincipalType.class )
                 .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getId() )
+                .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), extractObjectType( key ), SecurableObjectType.class )
                 .set( CommonColumns.PERMISSIONS.cql(),
                         permissions,
                         EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
@@ -61,5 +64,11 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
     public EnumSet<Permission> generateTestValue() throws Exception {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    private static SecurableObjectType extractObjectType( AceKey key ) {
+        final List<AclKey> aclKeys = key.getKey();
+        final int aclKeyCount = aclKeys.size();
+        return aclKeyCount > 0 ? aclKeys.get( aclKeyCount - 1 ).getType() : null;
     }
 }

@@ -43,7 +43,7 @@ public interface AuthorizationManager {
 
     Acl getAllSecurableObjectPermissions(
             List<AclKey> key );
-    
+
     Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces );
     
     // Methods for requesting permissions

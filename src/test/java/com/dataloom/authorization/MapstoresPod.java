@@ -18,12 +18,12 @@ import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 
 @Configuration
-@Import(CassandraPod.class)
+@Import( CassandraPod.class )
 public class MapstoresPod {
 
     @Inject
     Session session;
-    
+
     @Bean
     public SelfRegisteringMapStore<AceKey, EnumSet<Permission>> permissionMapstore() {
         return new PermissionMapstore(
@@ -32,6 +32,6 @@ public class MapstoresPod {
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
-                        .columns( CommonColumns.PERMISSIONS ) );
+                        .columns( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.PERMISSIONS ) );
     }
 }
