@@ -27,7 +27,6 @@ import com.dataloom.edm.internal.EntityType;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.mapping.MappingManager;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
@@ -37,8 +36,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.durableexecutor.DurableExecutorService;
-import com.kryptnostic.datastore.cassandra.CassandraStorage;
-import com.kryptnostic.datastore.services.CassandraTableManager.PreparedStatementMapping;
 
 public class ODataStorageService {
     @Deprecated
