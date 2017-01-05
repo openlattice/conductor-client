@@ -54,8 +54,6 @@ public class EdmService implements EdmManager {
     private final IMap<FullQualifiedName, AclKey> aclKeys;
     private final IMap<AclKey, FullQualifiedName> fqns;
 
-    private final Session                         session;
-
     private final AuthorizationManager            authorizations;
     private final CassandraEntitySetManager       entitySetManager;
     private final CassandraEntityTypeManager      entityTypeManager;
@@ -69,7 +67,6 @@ public class EdmService implements EdmManager {
             CassandraEntitySetManager entitySetManager,
             CassandraEntityTypeManager entityTypeManager,
             HazelcastSchemaManager schemaManager ) {
-        this.session = session;
         this.authorizations = authorizations;
         this.entitySetManager = entitySetManager;
         this.entityTypeManager = entityTypeManager;
@@ -296,6 +293,11 @@ public class EdmService implements EdmManager {
     @Override
     public EntitySet getEntitySet( UUID entitySetId ) {
         return Util.getSafely( entitySets, entitySetId );
+    }
+
+    @Override
+    public EntitySet getEntitySet( String entitySetName ) {
+        return entitySetManager.getEntitySet( entitySetName );
     }
 
     @Override

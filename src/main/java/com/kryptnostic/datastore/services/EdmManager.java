@@ -77,4 +77,6 @@ public interface EdmManager {
 
     EntityType getEntityType( FullQualifiedName type );
 
+    EntitySet getEntitySet( String entitySetName );
+
 }

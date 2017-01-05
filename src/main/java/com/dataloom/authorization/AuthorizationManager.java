@@ -15,32 +15,32 @@ import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 public interface AuthorizationManager {
 
     void addPermission(
-            List<AclKey> aclKey,
+            List<AclKey> aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
     void removePermission(
-            List<AclKey> aclKey,
+            List<AclKey> aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
     void setPermission(
-            List<AclKey> aclKey,
+            List<AclKey> aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
     void deletePermissions( List<AclKey> aceKey );
 
     boolean checkIfHasPermissions(
-            List<AclKey> aclKey,
+            List<AclKey> aclKeys,
             Set<Principal> principals,
             Set<Permission> requiredPermissions );
 
-    boolean checkIfUserIsOwner( List<AclKey> aclkey, Principal principal );
+    boolean checkIfUserIsOwner( List<AclKey> aclkeys, Principal principal );
     // Utility functions for retrieving permissions
 
     Set<Permission> getSecurableObjectPermissions(
-            List<AclKey> aclKey,
+            List<AclKey> aclKeys,
             Set<Principal> principals );
 
     Acl getAllSecurableObjectPermissions(
