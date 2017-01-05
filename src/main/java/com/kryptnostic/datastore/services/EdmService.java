@@ -60,26 +60,20 @@ public class EdmService implements EdmManager {
     private final CassandraEntitySetManager       entitySetManager;
     private final CassandraEntityTypeManager      entityTypeManager;
     private final HazelcastSchemaManager          schemaManager;
-    private final CassandraTableManager           tableManager;
-    private final PermissionsService              permissionsService;
 
     public EdmService(
             String keyspace,
             Session session,
             HazelcastInstance hazelcastInstance,
             AuthorizationManager authorizations,
-            CassandraTableManager tableManager,
             CassandraEntitySetManager entitySetManager,
             CassandraEntityTypeManager entityTypeManager,
-            HazelcastSchemaManager schemaManager,
-            PermissionsService permissionsService ) {
+            HazelcastSchemaManager schemaManager ) {
         this.session = session;
         this.authorizations = authorizations;
-        this.tableManager = tableManager;
         this.entitySetManager = entitySetManager;
         this.entityTypeManager = entityTypeManager;
         this.schemaManager = schemaManager;
-        this.permissionsService = permissionsService;
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
@@ -190,25 +184,26 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void deleteEntitySet( EntitySet entitySet ) {
-        String entitySetName = entitySet.getName();
-        try {
-            // Acls removal
-            permissionsService.removePermissionsForEntitySet( entitySetName );
-            permissionsService.removePermissionsForPropertyTypeInEntitySet( entitySetName );
-            permissionsService.removePermissionsRequestForEntitySet( entitySetName );
+    public void deleteEntitySet( UUID entitySetId ) {
+        /*
+         * A side-effect of entity set inheriting from the base securable type class is that it's actual type is only
+         * stored as a FQN and not a UUID. At some point, we should fix this so that the UUID of it's underlying entity
+         * type is actually stored. BACKEND-612
+         */
+        final EntitySet entitySet = Util.getSafely( entitySets, entitySetId );
+        final EntityType entityType = getEntityType( entitySet.getType() );
 
-            entitySetManager.getEntitiesInEntitySet( entitySetName )
-                    .forEach( entityId -> entitySetManager.assignEntityToEntitySet( entityId, entitySetName ) );
-        } catch ( Exception e ) {
-            throw new IllegalStateException( "Deletion of Entity Set failed." );
-        }
-    }
+        /*
+         * We cleanup permissions first as this will make entity set unavailable, even if delete fails.
+         */
+        final AclKey entitySetAclKey = new AclKey( SecurableObjectType.EntitySet, entitySetId );
+        authorizations.deletePermissions( ImmutableList.of( entitySetAclKey ) );
+        entityType.getProperties().stream()
+                .map( propertyTypeId -> ImmutableList.of( entitySetAclKey,
+                        new AclKey( SecurableObjectType.PropertyTypeInEntitySet, propertyTypeId ) ) )
+                .forEach( authorizations::deletePermissions );
 
-    @Override
-    public void deleteEntitySet( String entitySetName ) {
-        EntitySet entitySet = getEntitySet( entitySetName );
-        deleteEntitySet( entitySet );
+        Util.deleteSafely( entitySets, entitySetId );
     }
 
     @Override
@@ -333,18 +328,6 @@ public class EdmService implements EdmManager {
     @Override
     public Iterable<PropertyType> getPropertyTypes() {
         return entityTypeManager.getPropertyTypes();
-    }
-
-    @Override
-    public FullQualifiedName getPropertyTypeFullQualifiedName( String typename ) {
-        FullQualifiedName fqn = tableManager.getPropertyTypeForTypename( typename );
-        return Preconditions.checkNotNull( fqn );
-    }
-
-    @Override
-    public FullQualifiedName getEntityTypeFullQualifiedName( String typename ) {
-        FullQualifiedName fqn = tableManager.getEntityTypeForTypename( typename );
-        return Preconditions.checkNotNull( fqn );
     }
 
     @Override

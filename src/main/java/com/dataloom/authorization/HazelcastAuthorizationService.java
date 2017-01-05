@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.spark_project.guava.collect.Iterables;
@@ -24,6 +25,7 @@ import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
     public static final String                  ACES_MAP = "aces";
@@ -58,6 +60,16 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             Set<Permission> permissions ) {
         aces.set( new AceKey( key, principal ), permissions );
+    }
+
+    @Override
+    public void deletePermissions( List<AclKey> aclKeys ) {
+        Iterable<Principal> principals = aqs.getPrincipalsForSecurableObject( aclKeys );
+
+        StreamSupport
+                .stream( principals.spliterator(), false )
+                .map( principal -> new AceKey( aclKeys, principal ) )
+                .forEach( Util.safeDeleter( aces ) );
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.kryptnostic.datastore.util;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -65,7 +66,15 @@ public final class Util {
         return m.get( key );
     }
 
+    public static <K, V> void deleteSafely( IMap<K, V> m, K key ) {
+        m.delete( key );
+    }
+
     public static <K, V> Function<K, V> getSafeMapper( IMap<K, V> m ) {
         return m::get;
+    }
+
+    public static <K, V> Consumer<? super K> safeDeleter( IMap<K, V> m ) {
+        return m::delete;
     }
 }

@@ -29,6 +29,8 @@ public interface AuthorizationManager {
             Principal principal,
             Set<Permission> permissions );
 
+    void deletePermissions( List<AclKey> aceKey );
+
     boolean checkIfHasPermissions(
             List<AclKey> aclKey,
             Set<Principal> principals,
@@ -71,5 +73,6 @@ public interface AuthorizationManager {
     Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions(
             String username,
             String entitySetName );
+
 
 }

@@ -86,17 +86,22 @@ public class AuthorizationQueryService {
         return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
     }
 
-    public Acl getAclsForSecurableObject( List<AclKey> aclKey ) {
+    public Iterable<Principal> getPrincipalsForSecurableObject( List<AclKey> aclKeys ) {
         ResultSetFuture rsf = session.executeAsync(
                 aclsForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
-                        aclKey ) );
-
+                        aclKeys ) );
+        
         Iterable<Principal> principals = Iterables.transform( AuthorizationUtils.makeLazy( rsf ),
                 AuthorizationUtils::getPrincipalFromRow );
+        return principals;
+    }
+    
+    public Acl getAclsForSecurableObject( List<AclKey> aclKeys ) {
+        Iterable<Principal> principals = getPrincipalsForSecurableObject( aclKeys );
         Iterable<AceFuture> futureAces = Iterables.transform( principals,
                 principal -> new AceFuture( principal, aces.getAsync(
-                        new AceKey( aclKey, principal ) ) ) );
-        return new Acl( aclKey, Iterables.transform( futureAces, AceFuture::getUninterruptibly ) );
+                        new AceKey( aclKeys, principal ) ) ) );
+        return new Acl( aclKeys, Iterables.transform( futureAces, AceFuture::getUninterruptibly ) );
     }
 
 }
