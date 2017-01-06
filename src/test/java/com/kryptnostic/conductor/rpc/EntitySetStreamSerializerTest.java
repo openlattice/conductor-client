@@ -14,7 +14,7 @@ public class EntitySetStreamSerializerTest extends BaseSerializerTest<EntitySetS
 
     @Override
     protected EntitySet createInput() {
-        EntitySet es = new EntitySet( new FullQualifiedName( "bar", "baz" ), "foo", "yay" );
+        EntitySet es = new EntitySet( new FullQualifiedName( "bar", "baz" ), "foo", "yay" , "the most foo bar baz boo");
         return es;
     }
 
