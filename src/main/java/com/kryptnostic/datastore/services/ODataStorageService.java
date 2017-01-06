@@ -148,7 +148,7 @@ public class ODataStorageService {
         // this is dangerous, but fairly common practice.
         // best way to fix is to have large pool of generated UUIDs to pull from that can be replenished in bulk.
         UUID entityId = UUID.randomUUID();
-        String typename = tableManager.getTypenameForEntityType( entityFqn );
+        String typename = "";
         // BoundStatement boundQuery = createQuery.bind( entityId,
         // typename,
         // ImmutableSet.of( entitySetName ),
@@ -177,29 +177,30 @@ public class ODataStorageService {
             List<Property> properties ) {
 
         final UUID entityId = UUID.randomUUID();
-        final Set<FullQualifiedName> key = entityType.getKey();
-        final Set<FullQualifiedName> propertyTypes = entityType.getProperties();
+        final Set<UUID> key = entityType.getKey();
+        final Set<UUID> propertyTypes = entityType.getProperties();
         final SetMultimap<String, FullQualifiedName> nameLookup = HashMultimap.create();
 
-        propertyTypes.forEach( fqn -> nameLookup.put( fqn.getName(), fqn ) );
-        Map<Property, FullQualifiedName> fqns = Maps.toMap( properties,
-                property -> resolveFqn( entityType.getType(), property, nameLookup ) );
-
-        final PreparedStatementMapping cqm = tableManager.getInsertEntityPreparedStatement(
-                entityType.getType(), fqns.values(), Optional.fromNullable( entitySetName ) );
-
-        Object[] bindList = new Object[ 4 + cqm.mapping.size() ];
-        bindList[ 0 ] = entityId;
-        bindList[ 1 ] = entityType.getTypename();
-        bindList[ 2 ] = StringUtils.isBlank( entitySetName ) ? ImmutableSet.of() : ImmutableSet.of( entitySetName );
-        bindList[ 3 ] = ImmutableList.of( syncId );
-
-        properties.forEach( property -> {
-            bindList[ cqm.mapping.get( fqns.get( property ) ) ] = property.getValue();
-        } );
-
-        BoundStatement bq = cqm.stmt.bind( bindList );
-        return session.executeAsync( bq );
+//        propertyTypes.forEach( fqn -> nameLookup.put( fqn.getName(), fqn ) );
+//        Map<Property, FullQualifiedName> fqns = Maps.toMap( properties,
+//                property -> resolveFqn( entityType.getType(), property, nameLookup ) );
+//
+//        final PreparedStatementMapping cqm = tableManager.getInsertEntityPreparedStatement(
+//                entityType.getType(), fqns.values(), Optional.fromNullable( entitySetName ) );
+//
+//        Object[] bindList = new Object[ 4 + cqm.mapping.size() ];
+//        bindList[ 0 ] = entityId;
+//        bindList[ 1 ] = entityType.getTypename();
+//        bindList[ 2 ] = StringUtils.isBlank( entitySetName ) ? ImmutableSet.of() : ImmutableSet.of( entitySetName );
+//        bindList[ 3 ] = ImmutableList.of( syncId );
+//
+//        properties.forEach( property -> {
+//            bindList[ cqm.mapping.get( fqns.get( property ) ) ] = property.getValue();
+//        } );
+//
+//        BoundStatement bq = cqm.stmt.bind( bindList );
+//        return session.executeAsync( bq );
+        return null;
         /*
          * Iterable<List<ResultSetFuture>> propertyInsertion = properties.parallelStream().map( property -> {
          * FullQualifiedName fqn = resolveFqn( entityType.getFullQualifiedName(), property, nameLookup ); if ( fqn ==

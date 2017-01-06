@@ -56,7 +56,7 @@ public class EdmService implements EdmManager {
 
     private final AuthorizationManager            authorizations;
     private final CassandraEntitySetManager       entitySetManager;
-    private final CassandraTypeManager      entityTypeManager;
+    private final CassandraTypeManager            entityTypeManager;
     private final HazelcastSchemaManager          schemaManager;
 
     public EdmService(
@@ -470,8 +470,17 @@ public class EdmService implements EdmManager {
 
     @Override
     public PropertyType getPropertyType( UUID propertyTypeId ) {
-        // TODO Auto-generated method stub
-        return null;
+        return Util.getSafely( propertyTypes, propertyTypeId );
+    }
+
+    @Override
+    public FullQualifiedName getPropertyTypeFqn( UUID propertyTypeId ) {
+        return Util.getSafely( fqns, new AclKey( SecurableObjectType.PropertyTypeInEntitySet, propertyTypeId ) );
+    }
+
+    @Override
+    public FullQualifiedName getEntityTypeFqn( UUID entityTypeId ) {
+        return Util.getSafely( fqns, new AclKey( SecurableObjectType.PropertyTypeInEntitySet, entityTypeId ) );
     }
 
 }

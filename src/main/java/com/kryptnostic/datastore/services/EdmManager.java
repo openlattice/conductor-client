@@ -79,4 +79,8 @@ public interface EdmManager {
 
     EntitySet getEntitySet( String entitySetName );
 
+    FullQualifiedName getPropertyTypeFqn( UUID propertyTypeId );
+
+    FullQualifiedName getEntityTypeFqn( UUID entityTypeId );
+
 }
