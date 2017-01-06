@@ -18,7 +18,7 @@ import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 
-public class CassandraEntityTypeManager {
+public class CassandraTypeManager {
     private final Session           session;
     private final PreparedStatement entityTypesContainPropertyType;
     private final Select            getEntityTypeIds;
@@ -27,7 +27,7 @@ public class CassandraEntityTypeManager {
     private final Select            getPropertyTypes;
     private final PreparedStatement getPropertyTypesInNamespace;
 
-    public CassandraEntityTypeManager( String keyspace, Session session ) {
+    public CassandraTypeManager( String keyspace, Session session ) {
         this.session = session;
         this.entityTypesContainPropertyType = session.prepare(
                 QueryBuilder.select().all()

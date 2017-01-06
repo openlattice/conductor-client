@@ -29,7 +29,7 @@ import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.Schema;
-import com.dataloom.edm.properties.CassandraEntityTypeManager;
+import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
@@ -56,7 +56,7 @@ public class EdmService implements EdmManager {
 
     private final AuthorizationManager            authorizations;
     private final CassandraEntitySetManager       entitySetManager;
-    private final CassandraEntityTypeManager      entityTypeManager;
+    private final CassandraTypeManager      entityTypeManager;
     private final HazelcastSchemaManager          schemaManager;
 
     public EdmService(
@@ -65,7 +65,7 @@ public class EdmService implements EdmManager {
             HazelcastInstance hazelcastInstance,
             AuthorizationManager authorizations,
             CassandraEntitySetManager entitySetManager,
-            CassandraEntityTypeManager entityTypeManager,
+            CassandraTypeManager entityTypeManager,
             HazelcastSchemaManager schemaManager ) {
         this.authorizations = authorizations;
         this.entitySetManager = entitySetManager;
