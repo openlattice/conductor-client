@@ -138,10 +138,15 @@ public class HazelcastSchemaManager {
 
     public Schema getSchema( String namespace, String name ) {
         FullQualifiedName schemaName = new FullQualifiedName( namespace, name );
+        Collection<PropertyType> pts = propertyTypes
+                .getAll( schemaQueryService.getAllPropertyTypesInSchema( schemaName ) ).values();
+
+        Collection<EntityType> ets = entityTypes
+                .getAll( schemaQueryService.getAllEntityTypesInSchema( schemaName ) ).values();
         return new Schema(
                 schemaName,
-                schemaQueryService.getAllEntityTypesInSchema( schemaName ),
-                schemaQueryService.getAllPropertyTypesInSchema( schemaName ) );
+                pts,
+                ets );
     }
 
     public Iterable<Schema> getAllSchemas() {
@@ -150,5 +155,13 @@ public class HazelcastSchemaManager {
 
     public Iterable<Schema> getSchemasInNamespace( String namespace ) {
         return null;
+    }
+
+    public Set<UUID> getAllEntityTypesInSchema( FullQualifiedName schemaName ) {
+        return schemaQueryService.getAllEntityTypesInSchema( schemaName );
+    }
+
+    public Set<UUID> getAllPropertyTypesInSchema( FullQualifiedName schemaName ) {
+        return schemaQueryService.getAllPropertyTypesInSchema( schemaName );
     }
 }

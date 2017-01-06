@@ -1,13 +1,14 @@
 package com.dataloom.edm.schemas;
 
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 public interface SchemaQueryService {
 
-    Set<FullQualifiedName> getAllPropertyTypesInSchema( FullQualifiedName schemaName );
+    Set<UUID> getAllPropertyTypesInSchema( FullQualifiedName schemaName );
 
-    Set<FullQualifiedName> getAllEntityTypesInSchema( FullQualifiedName schemaName );
+    Set<UUID> getAllEntityTypesInSchema( FullQualifiedName schemaName );
 
 }
