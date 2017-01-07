@@ -7,8 +7,6 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
@@ -16,9 +14,9 @@ import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcesso
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  *
- * @param <T> The Edm category type to be modified. Either {@link PropertyType} or {@link EntityType}
  */
-public class RemoveSchemasFromType extends AbstractRhizomeEntryProcessor<UUID, AbstractSchemaAssociatedSecurableType, Void> {
+public class RemoveSchemasFromType
+        extends AbstractRhizomeEntryProcessor<UUID, AbstractSchemaAssociatedSecurableType, Void> {
     private static final long                   serialVersionUID = 7905367675743576380L;
     private final Collection<FullQualifiedName> schemas;
 
