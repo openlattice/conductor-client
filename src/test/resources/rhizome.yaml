@@ -7,8 +7,9 @@ enable-persistence:  false
 session-clustering-enabled: false
 
 cassandra:
+    ssl-enabled: false
     keyspace: "sparks"
-    replication-factor: 2
+    replication-factor: 1
     seed-nodes:
         - "localhost"
 
@@ -17,4 +18,4 @@ hazelcast:
     group: "local"
     password: "kryptodoge4life"
     seed-nodes: 
-        - "conductor"
+        - "localhost"

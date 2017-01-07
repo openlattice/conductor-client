@@ -1,127 +1,86 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.authorization.AclKey;
+import com.dataloom.authorization.requests.Principal;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.Schema;
-import com.dataloom.edm.requests.GetSchemasRequest.TypeDetails;
-import com.google.common.base.Optional;
 
 public interface EdmManager {
-    void createSchema(
-            String namespace,
-            String name,
-            UUID aclId,
-            Set<FullQualifiedName> entityTypes,
-            Set<FullQualifiedName> propertyTypes );
+    EntityDataModel getEntityDataModel();
 
-    //would attach all property types of the entityTypes to Schema
-    void createSchema( String namespace, String name, UUID aclId, Set<FullQualifiedName> entityTypes );
+    PropertyType getPropertyType( FullQualifiedName propertyTypeFqn );
 
-    void upsertSchema( Schema namespace );
+    PropertyType getPropertyType( UUID propertyTypeId );
 
-    Iterable<Schema> getSchemas();
+    void createPropertyTypeIfNotExists( PropertyType propertyType );
 
-    Iterable<Schema> getSchemas( Set<TypeDetails> requestedDetails );
-
-    Iterable<Schema> getSchemasInNamespace( String namespace, Set<TypeDetails> requestedDetails );
-
-    Schema getSchema( String namespace, String name, Set<TypeDetails> requestedDetails );
-
-    void deleteSchema( Schema namespaces );
-
-    void createEntitySet( FullQualifiedName type, String name, String title );
-
-    void createEntitySet( String typename, String name, String title );
-
-    void createEntitySet( EntitySet entitySet );
-    
-    void createEntitySet( Optional<String> userId, EntitySet entitySet );
-
-    void upsertEntitySet( EntitySet entitySet );
-
-    EntitySet getEntitySet( String name );
-
-    Iterable<EntitySet> getEntitySets();
-    
-    Iterable<EntitySet> getEntitySetsUserOwns( String userId );
-
-    Iterable<String> getEntitySetNamesUserOwns( String userId );
-
-    void deleteEntitySet( EntitySet entitySet );
-    
-    void deleteEntitySet( String name );
-
-    void createEntityType( EntityType objectType );
-    
-    void createEntityType( Optional<String> userId, EntityType objectType );
-
-    void assignEntityToEntitySet( UUID entityId, String entitySetName );
-
-    void assignEntityToEntitySet( UUID entityId, EntitySet entitySet );
-
-    void upsertEntityType( Optional<String> userId, EntityType objectType );
-
-    EntityType getEntityType( String namespace, String name );
-
-    Iterable<EntityType> getEntityTypes();
-
-    void deleteEntityType( FullQualifiedName entityTypeFqn );
-
-    void addEntityTypesToSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );
-
-    void removeEntityTypesFromSchema( String namespace, String name, Set<FullQualifiedName> entityTypes );
-
-    void addPropertyTypesToSchema( String namespace, String name, Set<FullQualifiedName> properties );
-
-    void removePropertyTypesFromSchema( String namespace, String name, Set<FullQualifiedName> properties );
-
-    void createPropertyType( PropertyType propertyType );
-
-    void upsertPropertyType( PropertyType propertyType );
-
-    void deletePropertyType( FullQualifiedName propertyTypeFqn );
-
-    PropertyType getPropertyType( FullQualifiedName prop );
+    void deletePropertyType( UUID propertyTypeId );
 
     Iterable<PropertyType> getPropertyTypesInNamespace( String namespace );
 
     Iterable<PropertyType> getPropertyTypes();
 
-    EntityDataModel getEntityDataModel();
+    void createEntitySet( Principal principal, EntitySet entitySet );
 
-    EntityType getEntityType( FullQualifiedName fqn );
+    EntitySet getEntitySet( UUID entitySetId );
 
-    FullQualifiedName getPropertyTypeFullQualifiedName( String typename );
+    Iterable<EntitySet> getEntitySets();
 
-    FullQualifiedName getEntityTypeFullQualifiedName( String typename );
+    Iterable<EntitySet> getEntitySetsOwnedByPrincipal( Principal principal );
 
-    void addPropertyTypesToEntityType(
-            String entityTypeNamespace,
-            String entityTypeName,
-            Set<FullQualifiedName> properties );
+    void deleteEntitySet( UUID entitySetId );
 
-    void removePropertyTypesFromEntityType(
-            String entityTypeNamespace,
-            String entityTypeName,
-            Set<FullQualifiedName> properties );
+    void createEntityType( EntityType objectType );
 
-    void removePropertyTypesFromEntityType( EntityType entityType, Set<FullQualifiedName> properties );
-    
-    //Helper methods to check existence
-    boolean checkPropertyTypesExist( Set<FullQualifiedName> properties );
-    
-    boolean checkPropertyTypeExists( FullQualifiedName propertyTypeFqn );
-    
-    boolean checkEntityTypeExists( FullQualifiedName entityTypeFqn );
-    
+    void assignEntityToEntitySet( String entityId, String name );
+
+    void assignEntityToEntitySet( String entityId, EntitySet es );
+
+    EntityType getEntityType( String namespace, String name );
+
+    Iterable<EntityType> getEntityTypes();
+
+    void deleteEntityType( UUID entityTypeId );
+
+    EntityType getEntityType( UUID entityTypeId );
+
+    void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+
+    void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+
+    // Helper methods to check existence
+    boolean checkPropertyTypesExist( Set<UUID> properties );
+
+    boolean checkPropertyTypeExists( UUID propertyTypeId );
+
+    boolean checkEntityTypeExists( UUID entityTypeId );
+
     boolean checkEntitySetExists( String name );
-    
-    boolean checkSchemaExists( String namespace, String name );
+
+    Collection<PropertyType> getPropertyTypes( Set<UUID> properties );
+
+    Set<AclKey> getAclKeys( Set<FullQualifiedName> fqns );
+
+    AclKey getTypeAclKey( FullQualifiedName fqns );
+
+    Set<UUID> getEntityTypeUuids( Set<FullQualifiedName> fqns );
+
+    Set<UUID> getPropertyTypeUuids( Set<FullQualifiedName> fqns );
+
+    EntityType getEntityType( FullQualifiedName type );
+
+    EntitySet getEntitySet( String entitySetName );
+
+    FullQualifiedName getPropertyTypeFqn( UUID propertyTypeId );
+
+    FullQualifiedName getEntityTypeFqn( UUID entityTypeId );
+
 }

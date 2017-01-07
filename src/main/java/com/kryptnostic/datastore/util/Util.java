@@ -2,6 +2,7 @@ package com.kryptnostic.datastore.util;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.hazelcast.core.IMap;
 
 public final class Util {
     private static final Logger logger = LoggerFactory.getLogger( Util.class );
@@ -58,5 +60,21 @@ public final class Util {
             return null;
         }
         return f.apply( row );
+    }
+
+    public static <K, V> V getSafely( IMap<K, V> m, K key ) {
+        return m.get( key );
+    }
+
+    public static <K, V> void deleteSafely( IMap<K, V> m, K key ) {
+        m.delete( key );
+    }
+
+    public static <K, V> Function<K, V> getSafeMapper( IMap<K, V> m ) {
+        return m::get;
+    }
+
+    public static <K, V> Consumer<? super K> safeDeleter( IMap<K, V> m ) {
+        return m::delete;
     }
 }

@@ -2,13 +2,10 @@ package com.kryptnostic.datastore.services;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.data.Entity;
@@ -28,25 +25,17 @@ import org.slf4j.LoggerFactory;
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.edm.internal.EntityType;
 import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.mapping.MappingManager;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
-import com.google.common.util.concurrent.Futures;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.durableexecutor.DurableExecutorService;
-import com.kryptnostic.datastore.cassandra.CassandraStorage;
-import com.kryptnostic.datastore.services.CassandraTableManager.PreparedStatementMapping;
 
 public class ODataStorageService {
     @Deprecated
@@ -55,7 +44,6 @@ public class ODataStorageService {
     private static final Logger          logger           = LoggerFactory
             .getLogger( ODataStorageService.class );
     private final EdmManager             dms;
-    private final CassandraTableManager  tableManager;
     private final Session                session;
     private final String                 keyspace;
     private final DurableExecutorService executor;
@@ -64,12 +52,8 @@ public class ODataStorageService {
             String keyspace,
             HazelcastInstance hazelcast,
             EdmManager dms,
-            Session session,
-            CassandraTableManager tableManager,
-            CassandraStorage storage,
-            MappingManager mm ) {
+            Session session ) {
         this.dms = dms;
-        this.tableManager = tableManager;
         this.session = session;
         this.keyspace = keyspace;
         // TODO: Configure executor service.
@@ -153,24 +137,24 @@ public class ODataStorageService {
             String entitySetName,
             FullQualifiedName entityFqn,
             Entity requestEntity ) {
-//        PreparedStatement createQuery = Preconditions.checkNotNull(
-//                tableManager.getInsertEntityPreparedStatement( entityFqn ),
-//                "Insert data prepared statement does not exist." );
+        // PreparedStatement createQuery = Preconditions.checkNotNull(
+        // tableManager.getInsertEntityPreparedStatement( entityFqn ),
+        // "Insert data prepared statement does not exist." );
 
-//        PreparedStatement entityIdTypenameLookupQuery = Preconditions.checkNotNull(
-//                tableManager.getUpdateEntityIdTypenamePreparedStatement( entityFqn ),
-//                "Entity Id typename lookup query cannot be null" );
+        // PreparedStatement entityIdTypenameLookupQuery = Preconditions.checkNotNull(
+        // tableManager.getUpdateEntityIdTypenamePreparedStatement( entityFqn ),
+        // "Entity Id typename lookup query cannot be null" );
 
         // this is dangerous, but fairly common practice.
         // best way to fix is to have large pool of generated UUIDs to pull from that can be replenished in bulk.
         UUID entityId = UUID.randomUUID();
-        String typename = tableManager.getTypenameForEntityType( entityFqn );
-//        BoundStatement boundQuery = createQuery.bind( entityId,
-//                typename,
-//                ImmutableSet.of( entitySetName ),
-//                ImmutableList.of( syncId ) );
-//        session.execute( boundQuery );
-//        session.execute( entityIdTypenameLookupQuery.bind( typename, entityId ) );
+        String typename = "";
+        // BoundStatement boundQuery = createQuery.bind( entityId,
+        // typename,
+        // ImmutableSet.of( entitySetName ),
+        // ImmutableList.of( syncId ) );
+        // session.execute( boundQuery );
+        // session.execute( entityIdTypenameLookupQuery.bind( typename, entityId ) );
         EntityType entityType = dms.getEntityType( entityFqn.getNamespace(), entityFqn.getName() );
         writeProperties( entityType,
                 entitySetName,
@@ -193,29 +177,30 @@ public class ODataStorageService {
             List<Property> properties ) {
 
         final UUID entityId = UUID.randomUUID();
-        final Set<FullQualifiedName> key = entityType.getKey();
-        final Set<FullQualifiedName> propertyTypes = entityType.getProperties();
+        final Set<UUID> key = entityType.getKey();
+        final Set<UUID> propertyTypes = entityType.getProperties();
         final SetMultimap<String, FullQualifiedName> nameLookup = HashMultimap.create();
 
-        propertyTypes.forEach( fqn -> nameLookup.put( fqn.getName(), fqn ) );
-        Map<Property, FullQualifiedName> fqns = Maps.toMap( properties,
-                property -> resolveFqn( entityType.getFullQualifiedName(), property, nameLookup ) );
-
-        final PreparedStatementMapping cqm = tableManager.getInsertEntityPreparedStatement(
-                entityType.getFullQualifiedName(), fqns.values(), Optional.fromNullable( entitySetName ) );
-
-        Object[] bindList = new Object[ 4 + cqm.mapping.size() ];
-        bindList[ 0 ] = entityId;
-        bindList[ 1 ] = entityType.getTypename();
-        bindList[ 2 ] = StringUtils.isBlank( entitySetName ) ? ImmutableSet.of() : ImmutableSet.of( entitySetName );
-        bindList[ 3 ] = ImmutableList.of( syncId );
-
-        properties.forEach( property -> {
-            bindList[ cqm.mapping.get( fqns.get( property ) ) ] = property.getValue();
-        } );
-
-        BoundStatement bq = cqm.stmt.bind( bindList );
-        return session.executeAsync( bq );
+//        propertyTypes.forEach( fqn -> nameLookup.put( fqn.getName(), fqn ) );
+//        Map<Property, FullQualifiedName> fqns = Maps.toMap( properties,
+//                property -> resolveFqn( entityType.getType(), property, nameLookup ) );
+//
+//        final PreparedStatementMapping cqm = tableManager.getInsertEntityPreparedStatement(
+//                entityType.getType(), fqns.values(), Optional.fromNullable( entitySetName ) );
+//
+//        Object[] bindList = new Object[ 4 + cqm.mapping.size() ];
+//        bindList[ 0 ] = entityId;
+//        bindList[ 1 ] = entityType.getTypename();
+//        bindList[ 2 ] = StringUtils.isBlank( entitySetName ) ? ImmutableSet.of() : ImmutableSet.of( entitySetName );
+//        bindList[ 3 ] = ImmutableList.of( syncId );
+//
+//        properties.forEach( property -> {
+//            bindList[ cqm.mapping.get( fqns.get( property ) ) ] = property.getValue();
+//        } );
+//
+//        BoundStatement bq = cqm.stmt.bind( bindList );
+//        return session.executeAsync( bq );
+        return null;
         /*
          * Iterable<List<ResultSetFuture>> propertyInsertion = properties.parallelStream().map( property -> {
          * FullQualifiedName fqn = resolveFqn( entityType.getFullQualifiedName(), property, nameLookup ); if ( fqn ==

@@ -5,15 +5,15 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
-import com.google.common.base.Optional;
+import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.conductor.rpc.QueryResult;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import com.kryptnostic.services.v1.serialization.UUIDStreamSerializer;
-import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 
 public class QueryResultStreamSerializer implements SelfRegisteringStreamSerializer<QueryResult> {
 	private Session session;
@@ -27,7 +27,7 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 	public void write(ObjectDataOutput out, QueryResult object) throws IOException {
 		out.writeUTF( object.getKeyspace() );
 		out.writeUTF( object.getTableName() );
-		UUIDStreamSerializer.serialize( out, object.getQueryId() );
+		AbstractUUIDStreamSerializer.serialize( out, object.getQueryId() );
 		out.writeUTF( object.getSessionId() );
 	}
 
@@ -35,14 +35,14 @@ public class QueryResultStreamSerializer implements SelfRegisteringStreamSeriali
 	public QueryResult read(ObjectDataInput in) throws IOException {
 		String keyspace = in.readUTF();
 		String tableName = in.readUTF();
-		UUID queryId = UUIDStreamSerializer.deserialize( in );
+		UUID queryId = AbstractUUIDStreamSerializer.deserialize( in );
 		String sessionId = in.readUTF();
 		return new QueryResult( keyspace, tableName, queryId, sessionId, Optional.fromNullable( session ) );
 	}
 
 	@Override
 	public int getTypeId() {
-		return HazelcastSerializerTypeIds.QUERY_RESULT.ordinal();
+		return StreamSerializerTypeIds.QUERY_RESULT.ordinal();
 	}
 
 	@Override

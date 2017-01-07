@@ -36,7 +36,7 @@ import com.kryptnostic.datastore.cassandra.CassandraEdmMapping;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 public final class ResultSetAdapterFactory {
-    
+
     private ResultSetAdapterFactory() {}
 
     private static final Map<DataType.Name, TypeCodec> preferredCodec = new HashMap<>();
@@ -44,49 +44,57 @@ public final class ResultSetAdapterFactory {
     static {
         preferredCodec.put( DataType.Name.TIMESTAMP, TimestampDateTimeTypeCodec.getInstance() );
     }
-    
-	/**
-	 * // Only one static method here; should be incorporated in class that
-	 * writes query result into Cassandra Table
-	 * 
-	 * @param mapTypenameToFullQualifiedName a Map that sends Typename to FullQualifiedName
-	 * @return a Function that converts Row to SetMultimap, which has FullQualifiedName as a key and Row value as the corresponding value.
-	 */
-	public static Function< Row, SetMultimap<FullQualifiedName, Object> > toSetMultimap(
-			final Map<String, FullQualifiedName> mapTypenameToFullQualifiedName) {
-		return (Row row) -> {			
+
+    /**
+     * // Only one static method here; should be incorporated in class that writes query result into Cassandra Table
+     * 
+     * @param mapTypenameToFullQualifiedName a Map that sends Typename to FullQualifiedName
+     * @return a Function that converts Row to SetMultimap, which has FullQualifiedName as a key and Row value as the
+     *         corresponding value.
+     */
+    public static Function<Row, SetMultimap<FullQualifiedName, Object>> toSetMultimap(
+            final Map<String, FullQualifiedName> mapTypenameToFullQualifiedName ) {
+        return ( Row row ) -> {
             List<ColumnDefinitions.Definition> definitions = row.getColumnDefinitions().asList();
             int numOfColumns = definitions.size();
 
-            return IntStream.range(0, numOfColumns).boxed().collect(
-			        Collector.of(
-			                ImmutableSetMultimap.Builder<FullQualifiedName, Object>::new,
-			                ( builder, index ) -> builder.put( mapTypenameToFullQualifiedName.get( definitions.get(index).getName() ) , row.getObject(index) ),
-			                ( lhs, rhs ) -> lhs.putAll( rhs.build() ),
-			                builder -> builder.build()
-			                )
-			        );
-		};
-	}
-	
-	public static Entity mapRowToEntity( Row row, Set<PropertyType> properties ) {
-		Entity entity = new Entity();
-		properties.forEach(property -> {
-			Object value = row.getObject( property.getTypename() );
-			entity.addProperty( new Property( property.getFullQualifiedName().getFullQualifiedNameAsString(), property.getName(), ValueType.PRIMITIVE, value ) );
-		});
-		return entity;
-	}
-	
-	public static SetMultimap<FullQualifiedName, Object> mapRowToObject( Row row, Collection<PropertyType> properties ) {
-		SetMultimap<FullQualifiedName, Object> map = HashMultimap.create();
-		properties.forEach(property -> {
-			Object value = getObject( row, CassandraEdmMapping.getCassandraType( property.getDatatype() ), "value_" + property.getTypename() );
-			map.put( property.getFullQualifiedName(), value );
-		});
-		return map;
-	}
-	
+            return IntStream.range( 0, numOfColumns ).boxed().collect(
+                    Collector.of(
+                            ImmutableSetMultimap.Builder<FullQualifiedName, Object>::new,
+                            ( builder, index ) -> builder.put(
+                                    mapTypenameToFullQualifiedName.get( definitions.get( index ).getName() ),
+                                    row.getObject( index ) ),
+                            ( lhs, rhs ) -> lhs.putAll( rhs.build() ),
+                            builder -> builder.build() ) );
+        };
+    }
+
+    public static Entity mapRowToEntity( Row row, Set<PropertyType> properties ) {
+        Entity entity = new Entity();
+        properties.forEach( property -> {
+            Object value = row.getObject( property.getType().getFullQualifiedNameAsString() );
+            entity.addProperty( new Property(
+                    property.getType().getFullQualifiedNameAsString(),
+                    property.getType().getName(),
+                    ValueType.PRIMITIVE,
+                    value ) );
+        } );
+        return entity;
+    }
+
+    public static SetMultimap<FullQualifiedName, Object> mapRowToObject(
+            Row row,
+            Collection<PropertyType> properties ) {
+        SetMultimap<FullQualifiedName, Object> map = HashMultimap.create();
+        properties.forEach( property -> {
+            Object value = getObject( row,
+                    CassandraEdmMapping.getCassandraType( property.getDatatype() ),
+                    "value_" + property.getType().getFullQualifiedNameAsString() );
+            map.put( property.getType(), value );
+        } );
+        return map;
+    }
+
     private static Object getObject( Row row, DataType dt, String colName ) {
         Name dtName = dt.getName();
         if ( preferredCodec.containsKey( dtName ) ) {
@@ -96,50 +104,59 @@ public final class ResultSetAdapterFactory {
         }
     }
 
-	/**
-	 * 
-	 * @param row Cassandra Row object, expected to have a single column of UUID
-	 * @return UUID
-	 */
-	public static UUID mapRowToUUID( Row row) {
-		return row.getUUID(0);
-	}
-	
+    /**
+     * 
+     * @param row Cassandra Row object, expected to have a single column of UUID
+     * @return UUID
+     */
+    public static UUID mapRowToUUID( Row row ) {
+        return row.getUUID( 0 );
+    }
+
+    // TODO: Evaluate merging the next two functions.
+
     public static PermissionsInfo mapRoleRowToPermissionsInfo( Row row ) {
         return new PermissionsInfo()
-                .setPrincipal( new Principal( PrincipalType.ROLE ).setName( row.getString( CommonColumns.ROLE.cql() ) ))
-                .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) );
+                .setPrincipal( new Principal( PrincipalType.ROLE, row.getString( CommonColumns.ROLE.cql() ) ) )
+                .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(),
+                        EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) );
     }
-    
+
     public static PermissionsInfo mapUserRowToPermissionsInfo( Row row ) {
         String userId = row.getString( CommonColumns.USER.cql() );
         return new PermissionsInfo()
-                .setPrincipal( new Principal( PrincipalType.USER ).setId( userId ) )
-                .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) );
+                .setPrincipal( new Principal( PrincipalType.USER, userId ) )
+                .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(),
+                        EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) );
     }
-    
-    public static PropertyTypeInEntitySetAclRequestWithRequestingUser mapRowToPropertyTypeInEntitySetAclRequestWithRequestingUser( PrincipalType type, Row row ){
-        Principal principal = new Principal( type );
-        switch( type ){
+
+    public static PropertyTypeInEntitySetAclRequestWithRequestingUser mapRowToPropertyTypeInEntitySetAclRequestWithRequestingUser(
+            PrincipalType type,
+            Row row ) {
+        Principal principal = null;
+        switch ( type ) {
             case ROLE:
-                principal = principal.setName( row.getString( CommonColumns.NAME.cql() ) );
+                principal = new Principal( type, row.getString( CommonColumns.NAME.cql() ) );
                 break;
             case USER:
                 String userId = row.getString( CommonColumns.USERID.cql() );
-                principal = principal.setId( userId );
+                principal = new Principal( type, userId );
                 break;
             default:
         }
-        
+
         PropertyTypeInEntitySetAclRequest request = new PropertyTypeInEntitySetAclRequest()
                 .setPrincipal( principal )
                 .setAction( Action.REQUEST )
                 .setName( row.getString( CommonColumns.ENTITY_SET.cql() ) )
-                .setPropertyType( row.get( CommonColumns.PROPERTY_TYPE.cql(), FullQualifiedName.class ))
-                .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ))
-                .setTimestamp( row.get( CommonColumns.CLOCK.cql(), TimestampDateTimeTypeCodec.getInstance() ).toString() )
+                .setPropertyType( row.get( CommonColumns.PROPERTY_TYPE.cql(), FullQualifiedName.class ) )
+                .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(),
+                        EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) )
+                .setTimestamp(
+                        row.get( CommonColumns.CLOCK.cql(), TimestampDateTimeTypeCodec.getInstance() ).toString() )
                 .setRequestId( row.getUUID( CommonColumns.REQUESTID.cql() ) );
         String requestingUser = row.getString( CommonColumns.USER.cql() );
-        return new PropertyTypeInEntitySetAclRequestWithRequestingUser().setRequest( request ).setRequestingUser( requestingUser );
+        return new PropertyTypeInEntitySetAclRequestWithRequestingUser().setRequest( request )
+                .setRequestingUser( requestingUser );
     }
 }

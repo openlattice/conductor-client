@@ -2,10 +2,10 @@ package com.kryptnostic.conductor.rpc.serializers;
 
 import java.io.IOException;
 
+import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.conductor.rpc.Employee;
-import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 public class EmployeeStreamSerializer implements SelfRegisteringStreamSerializer<Employee> {
@@ -30,7 +30,7 @@ public class EmployeeStreamSerializer implements SelfRegisteringStreamSerializer
 
     @Override
     public int getTypeId() {
-        return HazelcastSerializerTypeIds.EMPLOYEE.ordinal();
+        return StreamSerializerTypeIds.EMPLOYEE.ordinal();
     }
 
     @Override

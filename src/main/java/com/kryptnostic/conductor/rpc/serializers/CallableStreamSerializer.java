@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
 
+import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -15,7 +16,6 @@ import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.conductor.rpc.Lambdas;
-import com.kryptnostic.mapstores.v1.constants.HazelcastSerializerTypeIds;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @SuppressWarnings( "rawtypes" )
@@ -61,7 +61,7 @@ public class CallableStreamSerializer implements SelfRegisteringStreamSerializer
 
     @Override
     public int getTypeId() {
-        return HazelcastSerializerTypeIds.CALLABLE.ordinal();
+        return StreamSerializerTypeIds.CALLABLE.ordinal();
     }
 
     @Override

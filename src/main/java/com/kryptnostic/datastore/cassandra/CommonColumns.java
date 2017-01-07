@@ -5,8 +5,6 @@ import java.util.function.Function;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.querybuilder.BindMarker;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Preconditions;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
@@ -29,6 +27,7 @@ public enum CommonColumns implements ColumnDef {
     REQUESTID( DataType.uuid() ),
     ENTITYID( DataType.uuid() ),
     PROPERTY_TYPE( DataType.text() ),
+    PROPERTY_TYPE_ID( DataType.uuid() ),
     PROPERTIES( DataType.set( DataType.text() ) ),
     SCHEMAS( DataType.set( DataType.text() ) ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
@@ -36,11 +35,18 @@ public enum CommonColumns implements ColumnDef {
     TYPENAME( DataType.text() ),
     TYPE( DataType.text() ),
     VALUE( null ),
+    SECURABLE_OBJECT_TYPE( DataType.text() ),
+    SECURABLE_OBJECTID( DataType.uuid() ),
     PERMISSIONS( DataType.set( DataType.text() ) ),
-    PARTITION_INDEX( DataType.tinyint() ); // partition index within a table for distribution purpose
+    PARTITION_INDEX( DataType.tinyint() ),
+    PRINCIPAL_TYPE( DataType.text() ),
+    PRINCIPAL_ID( DataType.text() ),
+    ACL_KEYS( DataType.frozenList( DataType.text() ) ), // partition index within a table for distribution purpose
+    ID( DataType.uuid() ),
+    TYPE_ID( DataType.uuid() ),
+    DESCRIPTION( DataType.text() );
 
     private final DataType type;
-    private final String   bindMarker;
 
     private CommonColumns( DataType type ) {
         this.type = type;
@@ -48,7 +54,6 @@ public enum CommonColumns implements ColumnDef {
         while ( !CommonColumnsHelper.usedBindMarkers.add( maybeNewMarker ) ) {
             maybeNewMarker = RandomStringUtils.randomAlphabetic( 8 );
         }
-        this.bindMarker = maybeNewMarker;
     }
 
     public DataType getType( Function<ColumnDef, DataType> typeResolver ) {
@@ -57,11 +62,6 @@ public enum CommonColumns implements ColumnDef {
 
     public DataType getType() {
         return Preconditions.checkNotNull( type, "This column requires a type resolver." );
-    }
-
-    @Override
-    public BindMarker bindMarker() {
-        return QueryBuilder.bindMarker( bindMarker );
     }
 
     public String cql() {
