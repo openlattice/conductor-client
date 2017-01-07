@@ -1,6 +1,5 @@
 package com.kryptnostic.conductor.rpc;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -153,7 +152,8 @@ public final class ResultSetAdapterFactory {
                 .setPropertyType( row.get( CommonColumns.PROPERTY_TYPE.cql(), FullQualifiedName.class ) )
                 .setPermissions( row.get( CommonColumns.PERMISSIONS.cql(),
                         EnumSetTypeCodec.getTypeTokenForEnumSetPermission() ) )
-                .setTimestamp( row.get( CommonColumns.CLOCK.cql(), Instant.class ).toString() )
+                .setTimestamp(
+                        row.get( CommonColumns.CLOCK.cql(), TimestampDateTimeTypeCodec.getInstance() ).toString() )
                 .setRequestId( row.getUUID( CommonColumns.REQUESTID.cql() ) );
         String requestingUser = row.getString( CommonColumns.USER.cql() );
         return new PropertyTypeInEntitySetAclRequestWithRequestingUser().setRequest( request )
