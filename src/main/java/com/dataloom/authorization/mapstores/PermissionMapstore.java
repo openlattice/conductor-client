@@ -8,6 +8,7 @@ import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.requests.Permission;
 import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.authorization.util.AuthorizationUtils;
+import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -19,12 +20,18 @@ import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMa
 import static com.dataloom.authorization.util.AuthorizationUtils.extractObjectType;
 
 public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceKey, EnumSet<Permission>> {
-    public static final String MAP_NAME = "authorizations";
+    public static final String         MAP_NAME = "authorizations";
+    public static final CassandraTableBuilder TABLE    = new CassandraTableBuilder(
+            DatastoreConstants.KEYSPACE,
+            PermissionMapstore.MAP_NAME )
+                    .ifNotExists()
+                    .partitionKey( CommonColumns.ACL_KEYS )
+                    .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
+                    .columns( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.PERMISSIONS )
+                    .secondaryIndex( CommonColumns.PERMISSIONS, CommonColumns.SECURABLE_OBJECT_TYPE );
 
-    public PermissionMapstore(
-            Session session,
-            CassandraTableBuilder tableBuilder ) {
-        super( MAP_NAME, session, tableBuilder );
+    public PermissionMapstore( Session session ) {
+        super( MAP_NAME, session, TABLE );
     }
 
     @Override
