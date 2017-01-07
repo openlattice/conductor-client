@@ -1,13 +1,14 @@
 package com.kryptnostic.datastore.services;
 
+import java.util.Map;
+import java.util.Set;
+
 import com.dataloom.directory.pojo.Auth0UserBasic;
-import org.json.simple.JSONObject;
+
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.PATCH;
 import retrofit2.http.Path;
-
-import java.util.Set;
 
 // Internal use only! Do NOT add to JDK
 public interface Auth0ManagementApi {
@@ -25,5 +26,5 @@ public interface Auth0ManagementApi {
     Auth0UserBasic getUser( @Path( USER_ID ) String userId );
 
     @PATCH( USERS + "/" + USER_ID_PATH )
-    Void resetRolesOfUser( @Path( USER_ID ) String userId, @Body JSONObject app_metadata );
+    Void resetRolesOfUser( @Path( USER_ID ) String userId, @Body Map<String,Object> app_metadata );
 }
