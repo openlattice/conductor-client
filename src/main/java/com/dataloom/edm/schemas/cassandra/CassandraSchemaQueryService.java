@@ -3,6 +3,7 @@ package com.dataloom.edm.schemas.cassandra;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -31,7 +32,7 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
 
     private static RegularStatement getPropertyTypesInSchema( String keyspace ) {
         return QueryBuilder
-                .select( CommonColumns.NAMESPACE.cql(), CommonColumns.NAME.cql() )
+                .select( CommonColumns.ID.cql() )
                 .distinct()
                 .from( keyspace, Tables.PROPERTY_TYPES.getName() )
                 .where( QueryBuilder.contains( CommonColumns.SCHEMAS.cql(), CommonColumns.SCHEMAS.bindMarker() ) );
@@ -39,7 +40,7 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
 
     private static RegularStatement getEntityTypesInSchema( String keyspace ) {
         return QueryBuilder
-                .select( CommonColumns.NAMESPACE.cql(), CommonColumns.NAME.cql() )
+                .select( CommonColumns.ID.cql() )
                 .distinct()
                 .from( keyspace, Tables.ENTITY_TYPES.getName() )
                 .where( QueryBuilder.contains( CommonColumns.SCHEMAS.cql(), CommonColumns.SCHEMAS.bindMarker() ) );
@@ -49,23 +50,23 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
      * @see com.dataloom.edm.schemas.cassandra.SchemaQueryService#getAllPropertyTypesInSchema(org.apache.olingo.commons.api.edm.FullQualifiedName)
      */
     @Override
-    public Set<FullQualifiedName> getAllPropertyTypesInSchema( FullQualifiedName schemaName ) {
+    public Set<UUID> getAllPropertyTypesInSchema( FullQualifiedName schemaName ) {
         ResultSet propertyTypes = session.execute(
                 propertyTypesInSchemaQuery.bind()
                         .setString( CommonColumns.NAMESPACE.cql(), schemaName.getNamespace() )
                         .setString( CommonColumns.NAME.cql(), schemaName.getName() ) );
-        return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::splitFqn ) );
+        return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::id ) );
     }
 
     /* (non-Javadoc)
      * @see com.dataloom.edm.schemas.cassandra.SchemaQueryService#getAllEntityTypesInSchema(org.apache.olingo.commons.api.edm.FullQualifiedName)
      */
     @Override
-    public Set<FullQualifiedName> getAllEntityTypesInSchema( FullQualifiedName schemaName ) {
+    public Set<UUID> getAllEntityTypesInSchema( FullQualifiedName schemaName ) {
         ResultSet propertyTypes = session.execute(
                 entityTypesInSchemaQuery.bind()
                         .setString( CommonColumns.NAMESPACE.cql(), schemaName.getNamespace() )
                         .setString( CommonColumns.NAME.cql(), schemaName.getName() ) );
-        return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::splitFqn ) );
+        return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::id ) );
     }
 }
