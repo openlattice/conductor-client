@@ -26,6 +26,7 @@ import com.kryptnostic.rhizome.cassandra.TableDef;
 
 public enum Tables implements TableDef {
     DATA( "data" ),
+    ENTITY_ID_LOOKUP( "data_entity_id_lookup" ),
     ENTITIES( "entities" ),
     ENTITY_SETS( ENTITY_SETS_TABLE ),
     ENTITY_TYPES( ENTITY_TYPES_TABLE ),
