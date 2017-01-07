@@ -18,15 +18,15 @@ import com.google.common.collect.SetMultimap;
 public final class RowAdapters {
     private RowAdapters() {}
 
-    public static SetMultimap<FullQualifiedName, Object> entity(
+    public static SetMultimap<UUID, Object> entity(
             ResultSet rs,
             Map<UUID, CassandraPropertyReader> propertyReaders ) {
-        final SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
+        final SetMultimap<UUID, Object> m = HashMultimap.create();
         for ( Row row : rs ) {
             UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
             if ( propertyTypeId != null ) {
                 CassandraPropertyReader propertyReader = propertyReaders.get( propertyTypeId );
-                m.put( propertyReader.getType(), propertyReader.apply( row ) );
+                m.put( propertyTypeId, propertyReader.apply( row ) );
             }
         }
         return m;

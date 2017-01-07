@@ -5,6 +5,8 @@ import java.util.function.Function;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.querybuilder.BindMarker;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Preconditions;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
@@ -16,6 +18,7 @@ public enum CommonColumns implements ColumnDef {
     CLOCK( DataType.timestamp() ),
     DATATYPE( DataType.text() ),
     ENTITY_SET( DataType.text() ),
+    ENTITY_SET_ID( DataType.uuid() ),
     ENTITY_SETS( DataType.set( DataType.text() ) ),
     ENTITY_TYPE( DataType.text() ),
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
@@ -25,11 +28,12 @@ public enum CommonColumns implements ColumnDef {
     NAME( DataType.text() ),
     NAMESPACE( DataType.text() ),
     REQUESTID( DataType.uuid() ),
-    ENTITYID( DataType.uuid() ),
+    ENTITYID( DataType.text() ),
     PROPERTY_TYPE( DataType.text() ),
     PROPERTY_TYPE_ID( DataType.uuid() ),
     PROPERTIES( DataType.set( DataType.text() ) ),
     SCHEMAS( DataType.set( DataType.text() ) ),
+    SYNCID( DataType.uuid() ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
     TYPENAME( DataType.text() ),
@@ -72,5 +76,10 @@ public enum CommonColumns implements ColumnDef {
     @Deprecated
     public String toString() {
         return cql();
+    }
+    
+    @Override
+    public BindMarker bindMarker(){
+        return QueryBuilder.bindMarker( cql() );
     }
 }
