@@ -25,6 +25,7 @@ import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
@@ -32,18 +33,27 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     private final IMap<AceKey, Set<Permission>> aces;
     private final AuthorizationQueryService     aqs;
+    private final DurableExecutorService        executor;
 
     public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance, AuthorizationQueryService aqs ) {
         aces = hazelcastInstance.getMap( ACES_MAP );
         this.aqs = checkNotNull( aqs );
+        this.executor = hazelcastInstance.getDurableExecutorService( "default" );
     }
-
+    
+    private void submitNewPermissionsToElasticsearch( List<AclKey> key, Principal principal ) {
+    	Set<Permission> permissions = aces.get( new AceKey( key, principal ) );
+    	// executor.submit ... updateEntitySetAclsInElasticsearch( entitySetId, principal, permissions)
+    	// entitySet.permissions.<principal.type>
+    }
+    
     @Override
     public void addPermission(
             List<AclKey> key,
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionMerger( permissions ) );
+        submitNewPermissionsToElasticsearch( key, principal );
     }
 
     @Override
@@ -52,6 +62,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionRemover( permissions ) );
+        submitNewPermissionsToElasticsearch( key, principal );
     }
 
     @Override
@@ -60,6 +71,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             Set<Permission> permissions ) {
         aces.set( new AceKey( key, principal ), permissions );
+        submitNewPermissionsToElasticsearch( key, principal );
     }
 
     @Override
