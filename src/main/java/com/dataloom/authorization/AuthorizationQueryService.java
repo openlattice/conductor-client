@@ -64,7 +64,7 @@ public class AuthorizationQueryService {
 
     }
 
-    public Iterable<List<AclKey>> getAuthorizedAclKeys(
+    public Iterable<List<AclKeyPathFragment>> getAuthorizedAclKeys(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
@@ -77,7 +77,7 @@ public class AuthorizationQueryService {
         return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
     }
 
-    public Iterable<List<AclKey>> getAuthorizedAclKeys( Principal principal, EnumSet<Permission> desiredPermissions ) {
+    public Iterable<List<AclKeyPathFragment>> getAuthorizedAclKeys( Principal principal, EnumSet<Permission> desiredPermissions ) {
         ResultSetFuture rsf = session.executeAsync(
                 authorizedAclKeysQuery.bind()
                         .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
@@ -86,7 +86,7 @@ public class AuthorizationQueryService {
         return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
     }
 
-    public Iterable<Principal> getPrincipalsForSecurableObject( List<AclKey> aclKeys ) {
+    public Iterable<Principal> getPrincipalsForSecurableObject( List<AclKeyPathFragment> aclKeys ) {
         ResultSetFuture rsf = session.executeAsync(
                 aclsForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
                         aclKeys ) );
@@ -96,7 +96,7 @@ public class AuthorizationQueryService {
         return principals;
     }
     
-    public Acl getAclsForSecurableObject( List<AclKey> aclKeys ) {
+    public Acl getAclsForSecurableObject( List<AclKeyPathFragment> aclKeys ) {
         Iterable<Principal> principals = getPrincipalsForSecurableObject( aclKeys );
         Iterable<AceFuture> futureAces = Iterables.transform( principals,
                 principal -> new AceFuture( principal, aces.getAsync(

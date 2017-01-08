@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spark_project.guava.collect.Iterables;
 
 import com.dataloom.authorization.processors.PermissionMerger;
@@ -28,6 +30,7 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
+    private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
     public static final String                  ACES_MAP = "aces";
 
     private final IMap<AceKey, Set<Permission>> aces;
@@ -40,7 +43,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public void addPermission(
-            List<AclKey> key,
+            List<AclKeyPathFragment> key,
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionMerger( permissions ) );
@@ -48,7 +51,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public void removePermission(
-            List<AclKey> key,
+            List<AclKeyPathFragment> key,
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionRemover( permissions ) );
@@ -56,14 +59,14 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public void setPermission(
-            List<AclKey> key,
+            List<AclKeyPathFragment> key,
             Principal principal,
             Set<Permission> permissions ) {
         aces.set( new AceKey( key, principal ), permissions );
     }
 
     @Override
-    public void deletePermissions( List<AclKey> aclKeys ) {
+    public void deletePermissions( List<AclKeyPathFragment> aclKeys ) {
         Iterable<Principal> principals = aqs.getPrincipalsForSecurableObject( aclKeys );
 
         StreamSupport
@@ -74,7 +77,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public boolean checkIfHasPermissions(
-            List<AclKey> key,
+            List<AclKeyPathFragment> key,
             Set<Principal> principals,
             Set<Permission> requiredPermissions ) {
         Set<Permission> permissions = getSecurableObjectPermissions( key, principals );
@@ -82,14 +85,14 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public boolean checkIfUserIsOwner( List<AclKey> aclKey, Principal principal ) {
+    public boolean checkIfUserIsOwner( List<AclKeyPathFragment> aclKey, Principal principal ) {
         checkArgument( principal.getType().equals( PrincipalType.USER ), "A role cannot be the owner of an object" );
         return checkIfHasPermissions( aclKey, ImmutableSet.of( principal ), EnumSet.of( Permission.OWNER ) );
     }
 
     @Override
     public Set<Permission> getSecurableObjectPermissions(
-            List<AclKey> key,
+            List<AclKeyPathFragment> key,
             Set<Principal> principals ) {
         return aces
                 .getAll( principals.stream().map( principal -> new AceKey( key, principal ) )
@@ -99,7 +102,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public Iterable<AclKey> getAuthorizedObjectsOfType(
+    public Iterable<AclKeyPathFragment> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
@@ -108,7 +111,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public Acl getAllSecurableObjectPermissions( List<AclKey> key ) {
+    public Acl getAllSecurableObjectPermissions( List<AclKeyPathFragment> key ) {
         return aqs.getAclsForSecurableObject( key );
     }
 
