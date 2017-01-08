@@ -18,15 +18,15 @@ import com.google.common.collect.SetMultimap;
 public final class RowAdapters {
     private RowAdapters() {}
 
-    public static SetMultimap<UUID, Object> entity(
+    public static SetMultimap<FullQualifiedName, Object> entity(
             ResultSet rs,
             Map<UUID, CassandraPropertyReader> propertyReaders ) {
-        final SetMultimap<UUID, Object> m = HashMultimap.create();
+        final SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
         for ( Row row : rs ) {
             UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
             if ( propertyTypeId != null ) {
                 CassandraPropertyReader propertyReader = propertyReaders.get( propertyTypeId );
-                m.put( propertyTypeId, propertyReader.apply( row ) );
+                m.put( propertyReader.getType(), propertyReader.apply( row ) );
             }
         }
         return m;
@@ -35,7 +35,7 @@ public final class RowAdapters {
     public static String entityId( Row row ) {
         return row.getString( CommonColumns.ENTITYID.cql() );
     }
-    
+
     public static UUID id( Row row ) {
         return row.getUUID( CommonColumns.ID.cql() );
     }
@@ -47,7 +47,7 @@ public final class RowAdapters {
         String name = row.getString( CommonColumns.NAME.cql() );
         String title = row.getString( CommonColumns.TITLE.cql() );
         String description = row.getString( CommonColumns.DESCRIPTION.cql() );
-        return new EntitySet( id, type, name, title , description );
+        return new EntitySet( id, type, name, title, description );
     }
 
     public static PropertyType propertyType( Row row ) {
