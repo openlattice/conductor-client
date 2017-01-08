@@ -4,5 +4,5 @@ import java.util.List;
 import java.util.Map;
 
 public class AclKeyTree {
-    Map<List<AclKey>, AclKeyTree> children;
+    Map<List<AclKeyPathFragment>, AclKeyTree> children;
 }

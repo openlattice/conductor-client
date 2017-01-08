@@ -1,6 +1,7 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -14,7 +15,12 @@ public class EntitySetStreamSerializerTest extends BaseSerializerTest<EntitySetS
 
     @Override
     protected EntitySet createInput() {
-        EntitySet es = new EntitySet( new FullQualifiedName( "bar", "baz" ), "foo", "yay" , "the most foo bar baz boo");
+        EntitySet es = new EntitySet(
+                UUID.randomUUID(),
+                new FullQualifiedName( "bar", "baz" ),
+                "foo",
+                "yay",
+                "the most foo bar baz boo" );
         return es;
     }
 

@@ -40,10 +40,10 @@ public class EdmAuthorizationHelper {
             UUID entitySetId,
             Set<UUID> selectedProperties,
             EnumSet<Permission> requiredPermissions ) {
-        AclKey esKey = new AclKey( SecurableObjectType.EntitySet, entitySetId );
+        AclKeyPathFragment esKey = new AclKeyPathFragment( SecurableObjectType.EntitySet, entitySetId );
         return selectedProperties.stream()
                 .filter( ptId -> authz.checkIfHasPermissions( Arrays.asList( esKey,
-                        new AclKey( SecurableObjectType.PropertyTypeInEntitySet, ptId ) ),
+                        new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, ptId ) ),
                         Principals.getCurrentPrincipals(),
                         requiredPermissions ) )
                 .collect( Collectors.toSet() );
@@ -62,8 +62,8 @@ public class EdmAuthorizationHelper {
      * Static helper methods for List &lt; AclKey &gt; creation.
      */
     
-    public static List<AclKey> getSecurableObjectPath( SecurableObjectType objType, UUID objId ){
-        return Arrays.asList( new AclKey( objType, objId ) );
+    public static List<AclKeyPathFragment> getSecurableObjectPath( SecurableObjectType objType, UUID objId ){
+        return Arrays.asList( new AclKeyPathFragment( objType, objId ) );
     }
     
 }

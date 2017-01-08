@@ -16,8 +16,8 @@ import static com.dataloom.edm.internal.DatastoreConstants.PROPERTY_TYPES_IN_ENT
 import static com.dataloom.edm.internal.DatastoreConstants.PROPERTY_TYPES_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.ROLES_ACLS_REQUESTS_LOOKUP_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.ROLES_ACLS_REQUESTS_TABLE;
-import static com.dataloom.edm.internal.DatastoreConstants.SCHEMAS_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.SCHEMAS_ACLS_TABLE;
+import static com.dataloom.edm.internal.DatastoreConstants.SCHEMAS_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.USERS_ACLS_REQUESTS_LOOKUP_TABLE;
 import static com.dataloom.edm.internal.DatastoreConstants.USERS_ACLS_REQUESTS_TABLE;
 
@@ -55,7 +55,8 @@ public enum Tables implements TableDef {
     USERS_ACLS_REQUESTS_LOOKUP( USERS_ACLS_REQUESTS_LOOKUP_TABLE ),
     TYPENAMES( "typenames" ),
     FQNS( "fqns" ),
-    FQN_ACL_KEY( "fqn_acl_key" );
+    FQN_ACL_KEY( "fqn_acl_key" ),
+    ORGANIZATIONS( "organizations" );
     private static final String KEYSPACE = DatastoreConstants.KEYSPACE;
     private final String        tableName;
 

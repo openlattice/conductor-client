@@ -1,21 +1,21 @@
 package com.kryptnostic.datastore.cassandra;
 
-import java.util.UUID;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.datastax.driver.core.Row;
 import com.google.common.base.Function;
 
 public class CassandraPropertyReader implements Function<Row, Object> {
-    private final UUID                  typeId;
+    private final FullQualifiedName     type;
     private final Function<Row, Object> reader;
 
-    public CassandraPropertyReader( UUID typeId, Function<Row, Object> reader ) {
-        this.typeId = typeId;
+    public CassandraPropertyReader( FullQualifiedName type, Function<Row, Object> reader ) {
+        this.type = type;
         this.reader = reader;
     }
 
-    public UUID getTypeId() {
-        return typeId;
+    public FullQualifiedName getType() {
+        return type;
     }
 
     @Override

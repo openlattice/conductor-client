@@ -37,7 +37,7 @@ public class HzAuthzTest {
 
     @Test
     public void testAddEntitySetPermission() {
-        AclKey key = new AclKey( SecurableObjectType.EntitySet, UUID.randomUUID() );
+        AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
@@ -49,20 +49,20 @@ public class HzAuthzTest {
     
     @Test
     public void testTypeMistmatchPermission() {
-        AclKey key = new AclKey( SecurableObjectType.EntitySet, UUID.randomUUID() );
+        AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
         hzAuthz.addPermission( ImmutableList.of( key ), p, permissions );
-        AclKey badkey = new AclKey( SecurableObjectType.Datasource, UUID.randomUUID() );
+        AclKeyPathFragment badkey = new AclKeyPathFragment( SecurableObjectType.Datasource, UUID.randomUUID() );
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( badkey ), ImmutableSet.of( p ), permissions ) );
     }
     
     @Test
     public void testRemovePermissions() {
-        AclKey key = new AclKey( SecurableObjectType.EntitySet, UUID.randomUUID() );
+        AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
@@ -77,7 +77,7 @@ public class HzAuthzTest {
     
     @Test
     public void testSetPermissions() {
-        AclKey key = new AclKey( SecurableObjectType.EntitySet, UUID.randomUUID() );
+        AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ  );
         EnumSet<Permission> badPermissions = EnumSet.of( Permission.DISCOVER, Permission.READ ,Permission.LINK);

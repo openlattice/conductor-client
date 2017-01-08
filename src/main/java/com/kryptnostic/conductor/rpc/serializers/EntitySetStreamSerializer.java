@@ -27,8 +27,8 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
     @Override
     public EntitySet read( ObjectDataInput in ) throws IOException {
         UUID id = AbstractUUIDStreamSerializer.deserialize( in );
-        String name = in.readUTF();
         FullQualifiedName fqn = FullQualifiedNameStreamSerializer.deserialize( in );
+        String name = in.readUTF();
         String title = in.readUTF();
         String description = in.readUTF();
         EntitySet es = new EntitySet(
