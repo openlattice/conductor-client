@@ -41,7 +41,7 @@ public class TypeCodecsPod {
     }
     
     @Bean
-    public TypeCodec<AclKey> aclKeyCodec() {
+    public TypeCodec<AclKeyPathFragment> aclKeyCodec() {
         return new AclKeyTypeCodec();
     }
     

@@ -4,21 +4,21 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
-import com.dataloom.authorization.AclKey;
+import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.SecurableObjectType;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.exceptions.InvalidTypeException;
 
-public class AclKeyTypeCodec extends TypeCodec<AclKey> {
+public class AclKeyTypeCodec extends TypeCodec<AclKeyPathFragment> {
 
     public AclKeyTypeCodec() {
-        super( DataType.text(), AclKey.class );
+        super( DataType.text(), AclKeyPathFragment.class );
     }
 
     @Override
-    public AclKey deserialize( ByteBuffer bytes, ProtocolVersion ver ) throws InvalidTypeException {
+    public AclKeyPathFragment deserialize( ByteBuffer bytes, ProtocolVersion ver ) throws InvalidTypeException {
         if ( bytes == null ) {
             return null;
         }
@@ -27,25 +27,25 @@ public class AclKeyTypeCodec extends TypeCodec<AclKey> {
         long lsb = dup.getLong();
         long msb = dup.getLong();
         dup.get( b );
-        return new AclKey(
+        return new AclKeyPathFragment(
                 SecurableObjectType.valueOf( new String( b, StandardCharsets.UTF_8 ) ),
                 new UUID( msb, lsb ) );
     }
 
     @Override
-    public String format( AclKey value ) throws InvalidTypeException {
+    public String format( AclKeyPathFragment value ) throws InvalidTypeException {
         return value.getType() + "," + value.getId().toString();
 
     }
 
     @Override
-    public AclKey parse( String value ) throws InvalidTypeException {
+    public AclKeyPathFragment parse( String value ) throws InvalidTypeException {
         String[] parts = value.split( "," );
-        return new AclKey( SecurableObjectType.valueOf( parts[ 0 ] ), UUID.fromString( parts[ 1 ] ) );
+        return new AclKeyPathFragment( SecurableObjectType.valueOf( parts[ 0 ] ), UUID.fromString( parts[ 1 ] ) );
     }
 
     @Override
-    public ByteBuffer serialize( AclKey value, ProtocolVersion ver ) throws InvalidTypeException {
+    public ByteBuffer serialize( AclKeyPathFragment value, ProtocolVersion ver ) throws InvalidTypeException {
         if ( value == null ) {
             return null;
         }

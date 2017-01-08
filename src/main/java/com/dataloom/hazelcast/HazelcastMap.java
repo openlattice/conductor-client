@@ -9,7 +9,14 @@ public enum HazelcastMap {
     TYPENAMES( Tables.TYPENAMES ),
     ACL_KEYS( Tables.FQNS ),
     FQNS( Tables.FQN_ACL_KEY ),
-    SCHEMAS( Tables.SCHEMAS );
+    SCHEMAS( Tables.SCHEMAS ),
+    TRUSTED_ORGANIZATIONS( Tables.ORGANIZATIONS ),
+    VISIBILITY( Tables.ORGANIZATIONS ),
+    TITLES( Tables.ORGANIZATIONS ),
+    DESCRIPTIONS( Tables.ORGANIZATIONS ),
+    ALLOWED_EMAIL_DOMAINS( Tables.ORGANIZATIONS ),
+    MEMBERS( Tables.ORGANIZATIONS ),
+    ROLES( Tables.ORGANIZATIONS );
 
     private final Tables table;
 

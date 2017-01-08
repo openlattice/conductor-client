@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.AclKey;
+import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.requests.Principal;
 import com.dataloom.authorization.requests.PrincipalType;
@@ -32,8 +32,8 @@ public final class AuthorizationUtils {
         return new AceKey( getAclKeysFromRow( row ), principal );
     }
 
-    public static List<AclKey> getAclKeysFromRow( Row row ) {
-        return row.getList( CommonColumns.ACL_KEYS.cql(), AclKey.class );
+    public static List<AclKeyPathFragment> getAclKeysFromRow( Row row ) {
+        return row.getList( CommonColumns.ACL_KEYS.cql(), AclKeyPathFragment.class );
     }
 
     /**
@@ -48,12 +48,12 @@ public final class AuthorizationUtils {
     }
 
     public static SecurableObjectType extractObjectType( AceKey key ) {
-        AclKey aclKey = getLastAclKeySafely( key.getKey() );
+        AclKeyPathFragment aclKey = getLastAclKeySafely( key.getKey() );
         //TODO: Do something better than return null.
         return aclKey == null ? null : aclKey.getType();
     }
 
-    public static AclKey getLastAclKeySafely( List<AclKey> aclKeys ) {
+    public static AclKeyPathFragment getLastAclKeySafely( List<AclKeyPathFragment> aclKeys ) {
         return aclKeys.isEmpty() ? aclKeys.get( aclKeys.size() - 1 ) : null;
     }
 
