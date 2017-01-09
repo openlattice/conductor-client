@@ -3,14 +3,15 @@
 * 	version is defined in kryptnostic-gradles/kryptnostic.gradle
 */
 
+plugins {
+    id "java"
+    id "eclipse"
+    id "idea"
+    id "jacoco"
+}
 description = "Kryptnostic Conductor Client"
 group = "com.kryptnostic"
 ext.projectName = "kryptnostic-conductor-client"
-
-apply plugin: "java"
-apply plugin: "eclipse"
-apply plugin: "idea"
-apply plugin: "jacoco"
 
 apply from: "https://raw.githubusercontent.com/kryptnostic/gradles/master/kryptnostic.gradle"
 
