@@ -12,6 +12,7 @@ import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
 public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
+    ACL_KEYS( DataType.frozenList( DataType.text() ) ), // partition index within a table for distribution purpose
     ROLE( DataType.text() ),
     USER( DataType.text() ),
     USERID( DataType.text() ),
@@ -45,10 +46,10 @@ public enum CommonColumns implements ColumnDef {
     PARTITION_INDEX( DataType.tinyint() ),
     PRINCIPAL_TYPE( DataType.text() ),
     PRINCIPAL_ID( DataType.text() ),
-    ACL_KEYS( DataType.frozenList( DataType.text() ) ), // partition index within a table for distribution purpose
     ID( DataType.uuid() ),
     TYPE_ID( DataType.uuid() ),
-    DESCRIPTION( DataType.text() );
+    DESCRIPTION( DataType.text() ),
+    ENTITY_TYPE_ID( DataType.uuid() );
 
     private final DataType type;
 
@@ -77,9 +78,9 @@ public enum CommonColumns implements ColumnDef {
     public String toString() {
         return cql();
     }
-    
+
     @Override
-    public BindMarker bindMarker(){
+    public BindMarker bindMarker() {
         return QueryBuilder.bindMarker( cql() );
     }
 }

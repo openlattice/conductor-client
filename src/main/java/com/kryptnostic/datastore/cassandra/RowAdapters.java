@@ -12,6 +12,7 @@ import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
+import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 
@@ -36,35 +37,56 @@ public final class RowAdapters {
         return row.getString( CommonColumns.ENTITYID.cql() );
     }
 
+    public static String name( Row row ) {
+        return row.getString( CommonColumns.NAME.cql() );
+    }
+
+    public static String title( Row row ) {
+        return row.getString( CommonColumns.TITLE.cql() );
+    }
+
+    public static Optional<String> description( Row row ) {
+        return Optional.fromNullable( row.getString( CommonColumns.DESCRIPTION.cql() ) );
+    }
+
     public static UUID id( Row row ) {
         return row.getUUID( CommonColumns.ID.cql() );
+    }
+
+    public static UUID entityTypeId( Row row ) {
+        return row.getUUID( CommonColumns.ENTITY_TYPE_ID.cql() );
     }
 
     public static EntitySet entitySet( Row row ) {
         // TODO: Validate data read from Cassandra and log errors for invalid entries.
         UUID id = id( row );
-        FullQualifiedName type = row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
-        String name = row.getString( CommonColumns.NAME.cql() );
-        String title = row.getString( CommonColumns.TITLE.cql() );
-        String description = row.getString( CommonColumns.DESCRIPTION.cql() );
-        return new EntitySet( id, type, name, title, description );
+        FullQualifiedName type = fqn( row );
+        UUID entityTypeId = entityTypeId( row );
+        String name = name( row );
+        String title = title( row );
+        Optional<String> description = description( row );
+        return new EntitySet( id, type, entityTypeId, name, title, description );
     }
 
     public static PropertyType propertyType( Row row ) {
         UUID id = row.getUUID( CommonColumns.ID.cql() );
         FullQualifiedName type = row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+        String title = title( row );
+        Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
         EdmPrimitiveTypeKind dataType = row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class );
-        return new PropertyType( id, type, schemas, dataType );
+        return new PropertyType( id, type, title, description, schemas, dataType );
     }
 
     public static EntityType entityType( Row row ) {
         UUID id = row.getUUID( CommonColumns.ID.cql() );
         FullQualifiedName type = row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+        String title = title( row );
+        Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
         Set<UUID> key = row.getSet( CommonColumns.KEY.cql(), UUID.class );
         Set<UUID> properties = row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
-        return new EntityType( id, type, schemas, key, properties );
+        return new EntityType( id, type, title, description, schemas, key, properties );
     }
 
     public static FullQualifiedName splitFqn( Row row ) {
