@@ -1,11 +1,9 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.io.Serializable;
-import java.util.UUID;
-
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.internal.TestDataFactory;
 import com.kryptnostic.conductor.rpc.serializers.EntitySetStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
 
@@ -15,13 +13,7 @@ public class EntitySetStreamSerializerTest extends BaseSerializerTest<EntitySetS
 
     @Override
     protected EntitySet createInput() {
-        EntitySet es = new EntitySet(
-                UUID.randomUUID(),
-                new FullQualifiedName( "bar", "baz" ),
-                "foo",
-                "yay",
-                "the most foo bar baz boo" );
-        return es;
+        return TestDataFactory.entitySet();
     }
 
     @Override

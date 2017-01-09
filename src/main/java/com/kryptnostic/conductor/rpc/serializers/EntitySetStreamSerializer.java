@@ -7,6 +7,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
@@ -18,6 +19,7 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
     public void write( ObjectDataOutput out, EntitySet object )
             throws IOException {
         AbstractUUIDStreamSerializer.serialize( out, object.getId() );
+        AbstractUUIDStreamSerializer.serialize( out, object.getEntityTypeId() );
         FullQualifiedNameStreamSerializer.serialize( out, object.getType() );
         out.writeUTF( object.getName() );
         out.writeUTF( object.getTitle() );
@@ -27,13 +29,15 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
     @Override
     public EntitySet read( ObjectDataInput in ) throws IOException {
         UUID id = AbstractUUIDStreamSerializer.deserialize( in );
+        UUID entityTypeId = AbstractUUIDStreamSerializer.deserialize( in );
         FullQualifiedName fqn = FullQualifiedNameStreamSerializer.deserialize( in );
         String name = in.readUTF();
         String title = in.readUTF();
-        String description = in.readUTF();
+        Optional<String> description = Optional.of( in.readUTF() );
         EntitySet es = new EntitySet(
                 id,
                 fqn,
+                entityTypeId,
                 name,
                 title,
                 description );
