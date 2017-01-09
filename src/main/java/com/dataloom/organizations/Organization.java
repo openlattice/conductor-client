@@ -1,12 +1,9 @@
 package com.dataloom.organizations;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Set;
 import java.util.UUID;
-
-import org.apache.commons.lang3.StringUtils;
 
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.requests.Principal;
@@ -21,8 +18,6 @@ import com.google.common.base.Optional;
 public class Organization extends AbstractSecurableObject {
 
     private static final long    serialVersionUID = -669072251620432197L;
-    private final String         title;
-    private final String         description;
     private final Visibility     visibility;
     private final Set<UUID>      trustedOrganizations;
     private final Set<String>    autoApprovedEmails;
@@ -39,14 +34,7 @@ public class Organization extends AbstractSecurableObject {
             @JsonProperty( SerializationConstants.EMAILS_FIELD ) Set<String> autoApprovedEmails,
             @JsonProperty( SerializationConstants.MEMBERS_FIELD ) Set<Principal> members,
             @JsonProperty( SerializationConstants.ROLES ) Set<Principal> roles ) {
-        super( id.or( UUID::randomUUID ), id.isPresent() );
-        /*
-         * There is no logical requirement that the title not be blank, it would just be very confusing to have a bunch
-         * of organizations with no title whatsoever. This can be relaxed in the future.
-         */
-        checkArgument( StringUtils.isNotBlank( title ), "Title cannot be blank." );
-        this.title = title;
-        this.description = description.or( "" );
+        super( id , title, description );
         this.visibility = checkNotNull( visibility );
         this.trustedOrganizations = checkNotNull( trustedOrganizations );
         this.autoApprovedEmails = checkNotNull( autoApprovedEmails );

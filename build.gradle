@@ -15,7 +15,6 @@ apply plugin: "jacoco"
 apply from: "https://raw.githubusercontent.com/kryptnostic/gradles/master/kryptnostic.gradle"
 
 sourceCompatibility=JavaVersion.VERSION_1_8
-ext.guava_version='19.0'
 
 dependencies { 
     /*
@@ -54,12 +53,17 @@ dependencies {
         logger.quiet(project.name + " using project dependencies.")
         compile project(":loom-api")
         compile project(":rhizome")
+        testCompile( project(path: ":loom-api", configuration: "tests"))
         testCompile( project(path: ":rhizome", configuration: "tests"))
+        testCompile( project(path: ":rhizome-client", configuration: "tests"))
     } else {
         logger.quiet(project.name + " using jar dependencies.")
         compile "com.kryptnostic:loom-api:${loom_api_version}"
         compile "com.kryptnostic:rhizome:${rhizome_version}"
+        //testCompile "com.kryptnostic:rhizome:${rhizome_version}:tests"
+        testCompile "com.kryptnostic:loom-api:${loom_api_version}:tests"
         testCompile "com.kryptnostic:rhizome:${rhizome_version}:tests"
+        testCompile "com.kryptnostic:rhizome-client:${rhizome_client_version}:tests"
     }
 
     /*
