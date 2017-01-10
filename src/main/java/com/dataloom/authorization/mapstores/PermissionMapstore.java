@@ -1,12 +1,14 @@
 package com.dataloom.authorization.mapstores;
 
+import static com.dataloom.authorization.util.AuthorizationUtils.extractObjectType;
+
 import java.util.EnumSet;
 
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.AclKeyPathFragment;
+import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.SecurableObjectType;
-import com.dataloom.authorization.requests.Permission;
-import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.BoundStatement;
@@ -16,8 +18,6 @@ import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
-
-import static com.dataloom.authorization.util.AuthorizationUtils.extractObjectType;
 
 public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceKey, EnumSet<Permission>> {
     public static final String         MAP_NAME = "authorizations";

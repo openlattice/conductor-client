@@ -5,8 +5,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Set;
 import java.util.UUID;
 
+import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.SecurableObjectType;
-import com.dataloom.authorization.requests.Principal;
 import com.dataloom.data.SerializationConstants;
 import com.dataloom.edm.internal.AbstractSecurableObject;
 import com.dataloom.organizations.HazelcastOrganizationService.Visibility;

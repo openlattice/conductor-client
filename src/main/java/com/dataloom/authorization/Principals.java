@@ -8,8 +8,6 @@ import java.util.stream.Collectors;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.auth0.spring.security.api.Auth0UserDetails;
-import com.dataloom.authorization.requests.Principal;
-import com.dataloom.authorization.requests.PrincipalType;
 import com.google.common.collect.Sets;
 
 public final class Principals {

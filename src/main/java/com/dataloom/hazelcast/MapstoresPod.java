@@ -9,8 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import com.dataloom.authorization.AceKey;
+import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
-import com.dataloom.authorization.requests.Permission;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
