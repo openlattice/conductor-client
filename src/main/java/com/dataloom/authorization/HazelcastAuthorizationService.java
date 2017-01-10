@@ -19,11 +19,7 @@ import org.spark_project.guava.collect.Iterables;
 
 import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
-import com.dataloom.authorization.requests.Permission;
-import com.dataloom.authorization.requests.Principal;
-import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.authorization.util.AuthorizationUtils;
-import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -151,34 +147,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public void removePermissionsRequestForEntitySet( UUID id ) {
         // TODO Auto-generated method stub
 
-    }
-
-    @Override
-    public Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfUsername(
-            String username ) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfEntitySet(
-            String entitySetName ) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username ) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions(
-            String username,
-            String entitySetName ) {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 }

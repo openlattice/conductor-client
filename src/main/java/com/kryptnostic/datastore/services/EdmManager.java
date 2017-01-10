@@ -7,7 +7,7 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.AclKeyPathFragment;
-import com.dataloom.authorization.requests.Principal;
+import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
