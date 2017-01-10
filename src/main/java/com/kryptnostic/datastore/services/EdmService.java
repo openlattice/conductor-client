@@ -40,9 +40,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.durableexecutor.DurableExecutorService;
+import com.kryptnostic.conductor.rpc.ConductorCall;
+import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
@@ -58,6 +62,8 @@ public class EdmService implements EdmManager {
     private final CassandraEntitySetManager         entitySetManager;
     private final CassandraTypeManager              entityTypeManager;
     private final HazelcastSchemaManager            schemaManager;
+    
+    private DurableExecutorService executor;
 
     public EdmService(
             String keyspace,
@@ -78,6 +84,7 @@ public class EdmService implements EdmManager {
         this.fqns = hazelcastInstance.getMap( HazelcastMap.FQNS.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
         this.aclKeyReservations = aclKeyReservations;
+        this.executor = hazelcastInstance.getDurableExecutorService( "default" );
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
     }
@@ -239,6 +246,11 @@ public class EdmService implements EdmManager {
                             ImmutableList.of( entitySet.getAclKeyPathFragment(), propertyTypeAclKey ),
                             principal,
                             EnumSet.allOf( Permission.class ) ) );
+            executor.submit( ConductorCall
+            		.wrap( Lambdas.submitEntitySetToElasticsearch(
+            				entitySet,
+            				Lists.newArrayList( propertyTypes.getAll( entityType.getProperties() ).values() ),
+            				principal ) ) );
         } catch ( Exception e ) {
             throw new IllegalStateException( "Entity Set not created." );
         }

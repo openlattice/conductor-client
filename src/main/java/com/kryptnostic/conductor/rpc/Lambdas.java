@@ -8,8 +8,6 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
@@ -44,10 +42,9 @@ public class Lambdas implements Serializable {
                 .getAllEntitiesOfEntitySet( entityFqn, entitySetName, authorizedProperties );
     }
     
-    public static Function<ConductorSparkApi, Boolean> submitEntitySetToElasticsearch( EntitySet entitySet, Set<PropertyType> propertyTypes ) {
-    	Set<Principal> principals = Principals.getCurrentPrincipals();
+    public static Function<ConductorSparkApi, Boolean> submitEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal ) {
     	return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
-    			.submitEntitySetToElasticsearch( entitySet, propertyTypes );
+    			.submitEntitySetToElasticsearch( entitySet, propertyTypes, principal );
     }
     
     public static Function<ConductorSparkApi, List<Map<String, Object>>> executeElasticsearchMetadataQuery(

@@ -37,7 +37,7 @@ public interface ConductorElasticsearchApi {
 
 	void initializeEntitySetDataModelIndex();
 	
-	void saveEntitySetToElasticsearch( EntitySet entitySet, Set<PropertyType> propertyTypes );
+	void saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 	
 	List<Map<String, Object>> executeEntitySetDataModelKeywordSearch(
 			String searchTerm,
