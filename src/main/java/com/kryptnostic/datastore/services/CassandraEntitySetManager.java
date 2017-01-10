@@ -106,10 +106,12 @@ public class CassandraEntitySetManager {
         return Iterables.transform( rsf.getUninterruptibly(), RowAdapters::entitySet );
     }
 
+    //TODO: Remove this as well will create all tables at service startup.
+    @Deprecated
     private static void createEntitySetsTableIfNotExists( String keyspace, Session session ) {
         session.execute( Queries.getCreateEntitySetsTableQuery( keyspace ) );
         session.execute( Queries.CREATE_INDEX_ON_NAME );
-        session.execute( entitiesTable( keyspace ).buildQuery() );
+        session.execute( entitiesTable( keyspace ).buildCreateTableQuery() );
     }
 
     private static CassandraTableBuilder entitiesTable( String keyspace ) {

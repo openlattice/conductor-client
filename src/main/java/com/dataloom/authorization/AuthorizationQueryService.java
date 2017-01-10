@@ -17,6 +17,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 public class AuthorizationQueryService {
@@ -33,7 +34,7 @@ public class AuthorizationQueryService {
         aces = hazelcastInstance.getMap( HazelcastAuthorizationService.ACES_MAP );
         authorizedAclKeysQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.ACL_KEYS.cql() )
-                .from( DatastoreConstants.KEYSPACE, PermissionMapstore.MAP_NAME ).allowFiltering()
+                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
                         CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
@@ -43,7 +44,7 @@ public class AuthorizationQueryService {
 
         authorizedAclKeysForObjectTypeQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.ACL_KEYS.cql() )
-                .from( DatastoreConstants.KEYSPACE, PermissionMapstore.MAP_NAME ).allowFiltering()
+                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
                         CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
@@ -55,7 +56,7 @@ public class AuthorizationQueryService {
 
         aclsForSecurableObjectQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.PRINCIPAL_TYPE.cql(), CommonColumns.PRINCIPAL_ID.cql() )
-                .from( DatastoreConstants.KEYSPACE, PermissionMapstore.MAP_NAME ).allowFiltering()
+                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
                         CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) ) );
 
