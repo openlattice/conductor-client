@@ -8,10 +8,7 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.authorization.requests.Permission;
-import com.dataloom.authorization.requests.Principal;
 import com.dataloom.edm.exceptions.AclKeyConflictException;
-import com.dataloom.edm.requests.PropertyTypeInEntitySetAclRequest;
 
 /**
  * The authorization manager manages permissions for all securable objects in the system.
@@ -95,15 +92,4 @@ public interface AuthorizationManager {
             EnumSet<Permission> permissions );
 
     void removePermissionsRequestForEntitySet( UUID id );
-
-    Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfUsername( String username );
-
-    Iterable<PropertyTypeInEntitySetAclRequest> getAllReceivedRequestsForPermissionsOfEntitySet( String entitySetName );
-
-    Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions( String username );
-
-    Iterable<PropertyTypeInEntitySetAclRequest> getAllSentRequestsForPermissions(
-            String username,
-            String entitySetName );
-
 }

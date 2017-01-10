@@ -7,9 +7,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.dataloom.authorization.requests.Permission;
-import com.dataloom.authorization.requests.Principal;
-import com.dataloom.authorization.requests.PrincipalType;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

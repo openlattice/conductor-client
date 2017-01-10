@@ -1,19 +1,14 @@
 package com.dataloom.authorization;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import com.dataloom.authorization.requests.Permission;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.datastore.services.EdmManager;
 

@@ -1,26 +1,27 @@
 package com.dataloom.organizations;
 
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spark_project.guava.collect.Iterables;
+
 import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
+import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.SecurableObjectType;
-import com.dataloom.authorization.requests.Permission;
-import com.dataloom.authorization.requests.Principal;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spark_project.guava.collect.Iterables;
-
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class HazelcastOrganizationService {
     private static final Logger logger = LoggerFactory.getLogger( HazelcastOrganizationService.class );

@@ -4,7 +4,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.requests.Permission;
+import com.dataloom.authorization.Permission;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractMerger;
 
 public class PermissionMerger extends AbstractMerger<AceKey, Set<Permission>, Permission >{

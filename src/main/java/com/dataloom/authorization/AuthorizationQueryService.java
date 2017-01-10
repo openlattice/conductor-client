@@ -8,9 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.mapstores.PermissionMapstore;
-import com.dataloom.authorization.requests.Permission;
-import com.dataloom.authorization.requests.Principal;
-import com.dataloom.authorization.requests.PrincipalType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.PreparedStatement;
