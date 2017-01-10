@@ -2,15 +2,18 @@ package com.kryptnostic.conductor.rpc;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 
+import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
-import com.dataloom.authorization.requests.Principal;
 import com.dataloom.data.requests.LookupEntitiesRequest;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.PropertyType;
@@ -47,12 +50,17 @@ public class Lambdas implements Serializable {
     			.submitEntitySetToElasticsearch( entitySet, propertyTypes );
     }
     
-    public static Function<ConductorSparkApi, Object> executeElasticsearchMetadataQuery(
+    public static Function<ConductorSparkApi, List<Map<String, Object>>> executeElasticsearchMetadataQuery(
     		String query,
-			Optional<FullQualifiedName> optionalEntityType,
-			Optional<Set<FullQualifiedName>> optionalPropertyTypes ) {
+			Optional<UUID> optionalEntityType,
+			Optional<Set<UUID>> optionalPropertyTypes ) {
     	Set<Principal> principals = Principals.getCurrentPrincipals();
-    	return (Function<ConductorSparkApi, Object> & Serializable) ( api ) -> api
+    	return (Function<ConductorSparkApi, List<Map<String, Object>>> & Serializable) ( api ) -> api
                 .executeElasticsearchMetadataQuery( query, optionalEntityType, optionalPropertyTypes, principals );
+    }
+    
+    public static Function<ConductorSparkApi, Boolean> updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions ) {
+    	return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
+    			.updateEntitySetPermissions( entitySetId, principal, permissions );
     }
 }

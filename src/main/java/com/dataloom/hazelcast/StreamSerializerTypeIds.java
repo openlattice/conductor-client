@@ -1,6 +1,7 @@
 package com.dataloom.hazelcast;
 
 public enum StreamSerializerTypeIds {
+	STREAM_SERIALIZER_TYPE_IDS_MUST_BE_POSTIVE,
     RUNNABLE,
     CALLABLE,
     CONDUCTOR_CALL,
