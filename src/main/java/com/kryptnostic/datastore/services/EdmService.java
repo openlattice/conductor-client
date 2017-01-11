@@ -5,11 +5,9 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -207,13 +205,13 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void assignEntityToEntitySet( String entityId, String name ) {
-        entitySetManager.assignEntityToEntitySet( entityId, name );
+    public void assignEntityToEntitySet( UUID syncId, String entityId, String name ) {
+        entitySetManager.assignEntityToEntitySet( syncId, entityId, name );
     }
 
     @Override
-    public void assignEntityToEntitySet( String entityId, EntitySet es ) {
-        assignEntityToEntitySet( entityId, es.getName() );
+    public void assignEntityToEntitySet( UUID syncId, String entityId, EntitySet es ) {
+        assignEntityToEntitySet( syncId, entityId, es.getName() );
     }
 
     private void createEntitySet( EntitySet entitySet ) {
@@ -304,9 +302,9 @@ public class EdmService implements EdmManager {
     @Override
     public Iterable<EntitySet> getEntitySets() {
         return entitySetManager.getAllEntitySets();
-//        return StreamSupport
-//                .stream( entitySetIds.spliterator(), false )
-//                .map( Util.getSafeMapper( entitySets ) )::iterator;
+        // return StreamSupport
+        // .stream( entitySetIds.spliterator(), false )
+        // .map( Util.getSafeMapper( entitySets ) )::iterator;
     }
 
     @Override
@@ -330,7 +328,7 @@ public class EdmService implements EdmManager {
         Iterable<Schema> schemas = schemaManager.getAllSchemas();
         Iterable<EntityType> entityTypes = getEntityTypes();
         Iterable<PropertyType> propertyTypes = getPropertyTypes();
-        Iterable<EntitySet> entitySets = getEntitySets( );
+        Iterable<EntitySet> entitySets = getEntitySets();
         final Set<String> namespaces = Sets.newHashSet();
 
         entityTypes.forEach( entityType -> namespaces.add( entityType.getType().getNamespace() ) );
