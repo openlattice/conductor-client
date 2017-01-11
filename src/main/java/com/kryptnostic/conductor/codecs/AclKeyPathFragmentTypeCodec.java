@@ -11,10 +11,10 @@ import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.exceptions.InvalidTypeException;
 
-public class AclKeyTypeCodec extends TypeCodec<AclKeyPathFragment> {
+public class AclKeyPathFragmentTypeCodec extends TypeCodec<AclKeyPathFragment> {
 
-    public AclKeyTypeCodec() {
-        super( DataType.text(), AclKeyPathFragment.class );
+    public AclKeyPathFragmentTypeCodec() {
+        super( DataType.blob(), AclKeyPathFragment.class );
     }
 
     @Override
@@ -24,9 +24,9 @@ public class AclKeyTypeCodec extends TypeCodec<AclKeyPathFragment> {
         }
         byte[] b = new byte[ bytes.remaining() - ( Long.BYTES << 1 ) ];
         ByteBuffer dup = bytes.duplicate();
+        dup.get( b );
         long lsb = dup.getLong();
         long msb = dup.getLong();
-        dup.get( b );
         return new AclKeyPathFragment(
                 SecurableObjectType.valueOf( new String( b, StandardCharsets.UTF_8 ) ),
                 new UUID( msb, lsb ) );
@@ -52,9 +52,11 @@ public class AclKeyTypeCodec extends TypeCodec<AclKeyPathFragment> {
         final byte[] fqnBytes = value.getType().name().getBytes( StandardCharsets.UTF_8 );
         final ByteBuffer buf = ByteBuffer.allocate( fqnBytes.length + ( Long.BYTES << 1 ) );
         final UUID id = value.getId();
+        buf.put( fqnBytes );
         buf.putLong( id.getLeastSignificantBits() );
         buf.putLong( id.getMostSignificantBits() );
-        buf.put( fqnBytes );
+        buf.rewind();
+        buf.clear();
         return buf;
     }
 

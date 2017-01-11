@@ -20,6 +20,7 @@ import org.spark_project.guava.collect.Iterables;
 import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.authorization.util.AuthorizationUtils;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -27,13 +28,12 @@ import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
     private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
-    public static final String                  ACES_MAP = "aces";
 
     private final IMap<AceKey, Set<Permission>> aces;
     private final AuthorizationQueryService     aqs;
 
     public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance, AuthorizationQueryService aqs ) {
-        aces = hazelcastInstance.getMap( ACES_MAP );
+        aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         this.aqs = checkNotNull( aqs );
     }
 
@@ -105,7 +105,16 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return Iterables.transform( aqs.getAuthorizedAclKeys( principal, objectType, aces ),
                 AuthorizationUtils::getLastAclKeySafely );
     }
-
+    
+    @Override
+    public Iterable<AclKeyPathFragment> getAuthorizedObjectsOfType(
+            Set<Principal> principal,
+            SecurableObjectType objectType,
+            EnumSet<Permission> aces ) {
+        return Iterables.transform( aqs.getAuthorizedAclKeys( principal, objectType, aces ),
+                AuthorizationUtils::getLastAclKeySafely );
+    }
+    
     @Override
     public Acl getAllSecurableObjectPermissions( List<AclKeyPathFragment> key ) {
         return aqs.getAclsForSecurableObject( key );

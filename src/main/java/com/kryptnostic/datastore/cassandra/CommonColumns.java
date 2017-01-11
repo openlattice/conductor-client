@@ -12,7 +12,7 @@ import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
 public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
-    ACL_KEYS( DataType.frozenList( DataType.text() ) ), // partition index within a table for distribution purpose
+    ACL_KEYS( DataType.frozenList( DataType.blob() ) ), // partition index within a table for distribution purpose
     ROLE( DataType.text() ),
     USER( DataType.text() ),
     USERID( DataType.text() ),
@@ -32,12 +32,12 @@ public enum CommonColumns implements ColumnDef {
     ENTITYID( DataType.text() ),
     PROPERTY_TYPE( DataType.text() ),
     PROPERTY_TYPE_ID( DataType.uuid() ),
+    PROPERTY_VALUE( DataType.blob() ),
     PROPERTIES( DataType.set( DataType.text() ) ),
     SCHEMAS( DataType.set( DataType.text() ) ),
     SYNCID( DataType.uuid() ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
-    TYPENAME( DataType.text() ),
     TYPE( DataType.text() ),
     VALUE( null ),
     SECURABLE_OBJECT_TYPE( DataType.text() ),
@@ -49,7 +49,8 @@ public enum CommonColumns implements ColumnDef {
     ID( DataType.uuid() ),
     TYPE_ID( DataType.uuid() ),
     DESCRIPTION( DataType.text() ),
-    ENTITY_TYPE_ID( DataType.uuid() );
+    ENTITY_TYPE_ID( DataType.uuid() ),
+    PRINCIPAL( DataType.text() );
 
     private final DataType type;
 
