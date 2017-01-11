@@ -12,7 +12,6 @@ import com.kryptnostic.rhizome.cassandra.TableDef;
 public enum Tables implements TableDef {
     ACL_KEYS,
     DATA,
-    ENTITIES,
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
@@ -54,25 +53,25 @@ public enum Tables implements TableDef {
                 return new CassandraTableBuilder(ENTITY_ID_LOOKUP )
                         .ifNotExists()
                         .partitionKey( CommonColumns.SYNCID, CommonColumns.ENTITY_SET_ID )
-                        .clusteringColumns( CommonColumns.ENTITYID );
+                        .clusteringColumns( CommonColumns.ENTITYID )
+                        .secondaryIndex( CommonColumns.ENTITY_SET_ID )
+                        ;
             case DATA:
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ENTITYID )
-                        .clusteringColumns( CommonColumns.SYNCID, CommonColumns.PROPERTY_TYPE_ID, CommonColumns.PROPERTY_VALUE );
-            case ENTITIES:
-                return new CassandraTableBuilder( ENTITIES )
-                        .ifNotExists()
-                        .partitionKey( CommonColumns.SYNCID, CommonColumns.ENTITY_SET, CommonColumns.ENTITY_SET_ID )
-                        .clusteringColumns( CommonColumns.PROPERTY_TYPE_ID, CommonColumns.PROPERTY_VALUE );
+                        .clusteringColumns( CommonColumns.SYNCID, CommonColumns.PROPERTY_TYPE_ID, CommonColumns.PROPERTY_VALUE )
+                        ;
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ID )
-                        .clusteringColumns( CommonColumns.TYPE, CommonColumns.NAME )
-                        .columns( CommonColumns.ENTITY_TYPE_ID, CommonColumns.TITLE, CommonColumns.DESCRIPTION );
+                        .clusteringColumns(  CommonColumns.NAME )
+                        .columns( CommonColumns.TYPE, CommonColumns.ENTITY_TYPE_ID, CommonColumns.TITLE, CommonColumns.DESCRIPTION )
+                        .secondaryIndex( CommonColumns.TYPE, CommonColumns.NAME )
+                        ;
             case ENTITY_TYPES:
-                return new CassandraTableBuilder( ENTITY_SETS )
+                return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ID )
                         .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
@@ -80,7 +79,8 @@ public enum Tables implements TableDef {
                                 CommonColumns.DESCRIPTION,
                                 CommonColumns.KEY,
                                 CommonColumns.PROPERTIES,
-                                CommonColumns.SCHEMAS );
+                                CommonColumns.SCHEMAS )
+                        .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
             case FQNS:
                 return new CassandraTableBuilder( FQNS )
                         .ifNotExists()
@@ -101,7 +101,8 @@ public enum Tables implements TableDef {
                         .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
                         .columns( CommonColumns.TITLE,
                                 CommonColumns.DESCRIPTION,
-                                CommonColumns.SCHEMAS );
+                                CommonColumns.SCHEMAS )
+                        .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
             case PERMISSIONS:
                 return new CassandraTableBuilder( PERMISSIONS )
                         .ifNotExists()

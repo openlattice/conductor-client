@@ -1,14 +1,10 @@
 package com.kryptnostic.datastore.services;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.util.Set;
 import java.util.UUID;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.clearspring.analytics.util.Preconditions;
 import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.authorization.Principal;
 import com.dataloom.edm.internal.EntitySet;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -20,9 +16,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.cassandra.Queries;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
 public class CassandraEntitySetManager {
     private final String               keyspace;
@@ -38,12 +32,11 @@ public class CassandraEntitySetManager {
 
     public CassandraEntitySetManager( String keyspace, Session session, AuthorizationManager authorizations ) {
         Preconditions.checkArgument( StringUtils.isNotBlank( keyspace ), "Keyspace cannot be blank." );
-        createEntitySetsTableIfNotExists( keyspace, checkNotNull( session ) );
         this.session = session;
         this.keyspace = keyspace;
         this.authorizations = authorizations;
         this.getEntitySet = session
-                .prepare( QueryBuilder.select( ).all()
+                .prepare( QueryBuilder.select().all()
                         .from( this.keyspace, Tables.ENTITY_SETS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.NAME.cql(), CommonColumns.NAME.bindMarker() ) ) );
 
@@ -55,22 +48,25 @@ public class CassandraEntitySetManager {
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Tables.ENTITY_SETS.getName() );
         this.getEntities = session
                 .prepare( QueryBuilder.select().all()
-                        .from( keyspace, Tables.ENTITIES.getName() )
-                        .where(
-                                QueryBuilder.contains( CommonColumns.ENTITY_SETS.cql(),
-                                        CommonColumns.ENTITY_SETS.bindMarker() ) ) );
+                        .from( keyspace, Tables.ENTITY_ID_LOOKUP.getName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
+                                CommonColumns.ENTITY_SET_ID.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
         this.assignEntity = session.prepare(
                 QueryBuilder
-                        .update( keyspace, Tables.ENTITIES.getName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) )
-                        .with( QueryBuilder.add( CommonColumns.ENTITY_SETS.cql(),
-                                CommonColumns.ENTITY_SETS.bindMarker() ) ) );
+                        .insertInto( keyspace, Tables.ENTITY_ID_LOOKUP.getName() )
+                        .value( CommonColumns.ENTITY_SET_ID.cql(),
+                                CommonColumns.ENTITY_SET_ID.bindMarker() )
+                        .value( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() )
+                        .value( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) );
         this.evictEntity = session.prepare(
                 QueryBuilder
-                        .update( keyspace, Tables.ENTITIES.getName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) )
-                        .with( QueryBuilder.remove( CommonColumns.ENTITY_SETS.cql(),
-                                CommonColumns.ENTITY_SETS.bindMarker() ) ) );
+                        .delete().all()
+                        .from( keyspace, Tables.ENTITY_ID_LOOKUP.getName() )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
+                                CommonColumns.ENTITY_SET_ID.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) ) );
     }
 
     public EntitySet getEntitySet( String entitySetName ) {
@@ -78,24 +74,29 @@ public class CassandraEntitySetManager {
         return row == null ? null : RowAdapters.entitySet( row );
     }
 
-    public Iterable<String> getEntitiesInEntitySet( String entitySetName ) {
+    public Iterable<String> getEntitiesInEntitySet( UUID syncId, String entitySetName ) {
         ResultSet rs = session
-                .execute( getEntities.bind().setString( CommonColumns.ENTITY_SETS.cql(), entitySetName ) );
+                .execute( getEntities.bind()
+                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(),
+                                getEntitySet( entitySetName ).getId() ) );
         return Iterables.transform( rs, row -> row.getString( CommonColumns.ENTITYID.cql() ) );
     }
 
-    public void assignEntityToEntitySet( String entityId, String entitySetName ) {
+    public void assignEntityToEntitySet( UUID syncId, String entityId, String entitySetName ) {
         session.execute(
                 assignEntity.bind()
+                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
                         .setString( CommonColumns.ENTITYID.cql(), entityId )
-                        .setString( CommonColumns.ENTITY_SETS.cql(), entitySetName ) );
+                        .setString( CommonColumns.ENTITY_SET_ID.cql(), entitySetName ) );
     }
 
-    public void evictEntityFromEntitySet( String entityId, String entitySetName ) {
+    public void evictEntityFromEntitySet( UUID syncId, String entityId, String entitySetName ) {
         session.execute(
                 evictEntity.bind()
+                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
                         .setString( CommonColumns.ENTITYID.cql(), entityId )
-                        .setString( CommonColumns.ENTITY_SETS.cql(), entitySetName ) );
+                        .setString( CommonColumns.ENTITY_SET_ID.cql(), entitySetName ) );
     }
 
     public Iterable<EntitySet> getAllEntitySetsForType( UUID typeId ) {
@@ -107,19 +108,5 @@ public class CassandraEntitySetManager {
     public Iterable<EntitySet> getAllEntitySets() {
         ResultSetFuture rsf = session.executeAsync( getAllEntitySets );
         return Iterables.transform( rsf.getUninterruptibly(), RowAdapters::entitySet );
-    }
-
-    // TODO: Remove this as well will create all tables at service startup.
-    @Deprecated
-    private static void createEntitySetsTableIfNotExists( String keyspace, Session session ) {
-        session.execute( Queries.getCreateEntitySetsTableQuery( keyspace ) );
-        session.execute( Queries.CREATE_INDEX_ON_NAME );
-        session.execute( entitiesTable( keyspace ).buildCreateTableQuery() );
-    }
-
-    private static CassandraTableBuilder entitiesTable( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.ENTITIES.getName() )
-                .partitionKey( CommonColumns.ENTITYID )
-                .columns( CommonColumns.ENTITY_SETS );
     }
 }
