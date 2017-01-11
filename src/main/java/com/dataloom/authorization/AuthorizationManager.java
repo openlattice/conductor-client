@@ -78,8 +78,13 @@ public interface AuthorizationManager {
     Iterable<AclKeyPathFragment> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
-            EnumSet<Permission> aces );
+            EnumSet<Permission> permissions );
 
+    Iterable<AclKeyPathFragment> getAuthorizedObjectsOfType(
+            Set<Principal> principal,
+            SecurableObjectType objectType,
+            EnumSet<Permission> permissions );
+    
     Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces );
 
     // Methods for requesting permissions
@@ -92,4 +97,5 @@ public interface AuthorizationManager {
             EnumSet<Permission> permissions );
 
     void removePermissionsRequestForEntitySet( UUID id );
+
 }

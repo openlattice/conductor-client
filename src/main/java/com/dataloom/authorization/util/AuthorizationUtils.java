@@ -2,7 +2,10 @@ package com.dataloom.authorization.util;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.authorization.AceKey;
@@ -10,6 +13,7 @@ import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.SecurableObjectType;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -44,17 +48,19 @@ public final class AuthorizationUtils {
      * @return The lazy evaluatable iteratable
      */
     public static Iterable<Row> makeLazy( ResultSetFuture rsf ) {
-        return rsf.getUninterruptibly()::iterator;
+        Stream<ResultSet> srs = Arrays.asList( rsf ).stream().map( ResultSetFuture::getUninterruptibly );
+        Stream<Row> rows = srs.flatMap( rs -> StreamSupport.stream( rs.spliterator(), false ) );
+        return rows::iterator;
     }
 
     public static SecurableObjectType extractObjectType( AceKey key ) {
         AclKeyPathFragment aclKey = getLastAclKeySafely( key.getKey() );
-        //TODO: Do something better than return null.
+        // TODO: Do something better than return null.
         return aclKey == null ? null : aclKey.getType();
     }
 
     public static AclKeyPathFragment getLastAclKeySafely( List<AclKeyPathFragment> aclKeys ) {
-        return aclKeys.isEmpty() ? aclKeys.get( aclKeys.size() - 1 ) : null;
+        return aclKeys.isEmpty() ? null : aclKeys.get( aclKeys.size() - 1 );
     }
 
 }

@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,20 +51,20 @@ import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
-    private static final Logger                     logger = LoggerFactory.getLogger( EdmService.class );
-    private final IMap<UUID, PropertyType>          propertyTypes;
-    private final IMap<UUID, EntityType>            entityTypes;
-    private final IMap<UUID, EntitySet>             entitySets;
-    private final IMap<FullQualifiedName, AclKeyPathFragment>   aclKeys;
-    private final IMap<AclKeyPathFragment, FullQualifiedName>   fqns;
+	
+    private static final Logger                               logger = LoggerFactory.getLogger( EdmService.class );
+    private final IMap<UUID, PropertyType>                    propertyTypes;
+    private final IMap<UUID, EntityType>                      entityTypes;
+    private final IMap<UUID, EntitySet>                       entitySets;
+    private final IMap<FullQualifiedName, AclKeyPathFragment> aclKeys;
+    private final IMap<AclKeyPathFragment, FullQualifiedName> fqns;
 
-    private final HazelcastAclKeyReservationService aclKeyReservations;
-    private final AuthorizationManager              authorizations;
-    private final CassandraEntitySetManager         entitySetManager;
-    private final CassandraTypeManager              entityTypeManager;
-    private final HazelcastSchemaManager            schemaManager;
-    
-    private DurableExecutorService executor;
+    private final HazelcastAclKeyReservationService           aclKeyReservations;
+    private final AuthorizationManager                        authorizations;
+    private final CassandraEntitySetManager                   entitySetManager;
+    private final CassandraTypeManager                        entityTypeManager;
+    private final HazelcastSchemaManager                      schemaManager;
+    private final DurableExecutorService					  executor;
 
     public EdmService(
             String keyspace,
@@ -160,7 +161,8 @@ public class EdmService implements EdmManager {
             /*
              * Only allow updates if entity type is not already in use.
              */
-            if ( Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( entityType.getAclKeyPathFragment().getId() ) ) ) {
+            if ( Iterables.isEmpty(
+                    entitySetManager.getAllEntitySetsForType( entityType.getAclKeyPathFragment().getId() ) ) ) {
                 // Retrieve properties known to user
                 Set<UUID> currentPropertyTypes = existing.getProperties();
                 // Remove the removable property types in database properly; this step takes care of removal of
@@ -243,7 +245,9 @@ public class EdmService implements EdmManager {
                     principal,
                     EnumSet.allOf( Permission.class ) );
             entityType.getProperties().stream()
-                    .map( propertyTypeId -> new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, propertyTypeId ) )
+                    .map( propertyTypeId -> new AclKeyPathFragment(
+                            SecurableObjectType.PropertyTypeInEntitySet,
+                            propertyTypeId ) )
                     .forEach( propertyTypeAclKey -> authorizations.addPermission(
                             ImmutableList.of( entitySet.getAclKeyPathFragment(), propertyTypeAclKey ),
                             principal,
@@ -312,24 +316,11 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public EntitySet getEntitySet( String entitySetName ) {
-        return entitySetManager.getEntitySet( entitySetName );
-    }
-
-    @Override
     public Iterable<EntitySet> getEntitySets() {
         return entitySetManager.getAllEntitySets();
-    }
-
-    @Override
-    public Iterable<EntitySet> getEntitySetsOwnedByPrincipal( Principal principal ) {
-        Iterable<AclKeyPathFragment> aclKeys = authorizations.getAuthorizedObjectsOfType( principal,
-                SecurableObjectType.EntitySet,
-                EnumSet.of( Permission.OWNER ) );
-        return StreamSupport.stream( aclKeys.spliterator(), false )
-                .map( AclKeyPathFragment::getId )
-                .map( Util.getSafeMapper( entitySets ) )
-                .collect( Collectors.toList() );
+//        return StreamSupport
+//                .stream( entitySetIds.spliterator(), false )
+//                .map( Util.getSafeMapper( entitySets ) )::iterator;
     }
 
     @Override
@@ -353,7 +344,7 @@ public class EdmService implements EdmManager {
         Iterable<Schema> schemas = schemaManager.getAllSchemas();
         Iterable<EntityType> entityTypes = getEntityTypes();
         Iterable<PropertyType> propertyTypes = getPropertyTypes();
-        Iterable<EntitySet> entitySets = getEntitySets();
+        Iterable<EntitySet> entitySets = getEntitySets( );
         final Set<String> namespaces = Sets.newHashSet();
 
         entityTypes.forEach( entityType -> namespaces.add( entityType.getType().getNamespace() ) );
@@ -441,19 +432,21 @@ public class EdmService implements EdmManager {
         return Util.getSafely( aclKeys, type );
     }
 
-        @Override
+    @Override
     public PropertyType getPropertyType( UUID propertyTypeId ) {
         return Util.getSafely( propertyTypes, propertyTypeId );
     }
 
     @Override
     public FullQualifiedName getPropertyTypeFqn( UUID propertyTypeId ) {
-        return Util.getSafely( fqns, new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, propertyTypeId ) );
+        return Util.getSafely( fqns,
+                new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, propertyTypeId ) );
     }
 
     @Override
     public FullQualifiedName getEntityTypeFqn( UUID entityTypeId ) {
-        return Util.getSafely( fqns, new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, entityTypeId ) );
+        return Util.getSafely( fqns,
+                new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, entityTypeId ) );
     }
 
 }

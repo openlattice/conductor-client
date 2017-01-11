@@ -46,10 +46,7 @@ public class EdmAuthorizationHelper {
 
     public Set<UUID> getAllPropertiesOnEntitySet( UUID entitySetId ) {
         EntitySet es = edm.getEntitySet( entitySetId );
-        // TODO Fix after BACKEND-612
-        // EntityType et = dms.getEntityType( es.getTypeId() );
-        EntityType et = edm.getEntityType( es.getType() );
-        
+        EntityType et = edm.getEntityType( es.getEntityTypeId() );
         return et.getProperties();
     }
     
