@@ -69,8 +69,9 @@ public enum Tables implements TableDef {
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ID )
-                        .clusteringColumns( CommonColumns.TYPE, CommonColumns.NAME )
-                        .columns( CommonColumns.ENTITY_TYPE_ID, CommonColumns.TITLE, CommonColumns.DESCRIPTION );
+                        .clusteringColumns(  CommonColumns.NAME )
+                        .columns( CommonColumns.TYPE, CommonColumns.ENTITY_TYPE_ID, CommonColumns.TITLE, CommonColumns.DESCRIPTION )
+                        .secondaryIndex( CommonColumns.TYPE, CommonColumns.NAME );
             case ENTITY_TYPES:
                 return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
