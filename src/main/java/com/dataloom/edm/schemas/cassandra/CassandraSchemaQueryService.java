@@ -33,16 +33,14 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
     private static RegularStatement getPropertyTypesInSchema( String keyspace ) {
         return QueryBuilder
                 .select( CommonColumns.ID.cql() )
-                .distinct()
-                .from( keyspace, Tables.PROPERTY_TYPES.getName() )
+                .from( keyspace, Tables.PROPERTY_TYPES.getName() ).allowFiltering()
                 .where( QueryBuilder.contains( CommonColumns.SCHEMAS.cql(), CommonColumns.SCHEMAS.bindMarker() ) );
     }
 
     private static RegularStatement getEntityTypesInSchema( String keyspace ) {
         return QueryBuilder
                 .select( CommonColumns.ID.cql() )
-                .distinct()
-                .from( keyspace, Tables.ENTITY_TYPES.getName() )
+                .from( keyspace, Tables.ENTITY_TYPES.getName() ).allowFiltering()
                 .where( QueryBuilder.contains( CommonColumns.SCHEMAS.cql(), CommonColumns.SCHEMAS.bindMarker() ) );
     }
 

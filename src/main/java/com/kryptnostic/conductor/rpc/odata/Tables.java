@@ -72,7 +72,7 @@ public enum Tables implements TableDef {
                         .clusteringColumns( CommonColumns.TYPE, CommonColumns.NAME )
                         .columns( CommonColumns.ENTITY_TYPE_ID, CommonColumns.TITLE, CommonColumns.DESCRIPTION );
             case ENTITY_TYPES:
-                return new CassandraTableBuilder( ENTITY_SETS )
+                return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ID )
                         .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
@@ -80,7 +80,8 @@ public enum Tables implements TableDef {
                                 CommonColumns.DESCRIPTION,
                                 CommonColumns.KEY,
                                 CommonColumns.PROPERTIES,
-                                CommonColumns.SCHEMAS );
+                                CommonColumns.SCHEMAS )
+                        .secondaryIndex( CommonColumns.SCHEMAS );
             case FQNS:
                 return new CassandraTableBuilder( FQNS )
                         .ifNotExists()
@@ -101,7 +102,8 @@ public enum Tables implements TableDef {
                         .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
                         .columns( CommonColumns.TITLE,
                                 CommonColumns.DESCRIPTION,
-                                CommonColumns.SCHEMAS );
+                                CommonColumns.SCHEMAS )
+                        .secondaryIndex( CommonColumns.SCHEMAS );
             case PERMISSIONS:
                 return new CassandraTableBuilder( PERMISSIONS )
                         .ifNotExists()
