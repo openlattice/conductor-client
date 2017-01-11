@@ -54,7 +54,8 @@ public enum Tables implements TableDef {
                         .ifNotExists()
                         .partitionKey( CommonColumns.SYNCID, CommonColumns.ENTITY_SET_ID )
                         .clusteringColumns( CommonColumns.ENTITYID )
-                        .secondaryIndex( CommonColumns.ENTITY_SET_ID );
+                        .secondaryIndex( CommonColumns.ENTITY_SET_ID )
+                        ;
             case DATA:
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
@@ -67,7 +68,8 @@ public enum Tables implements TableDef {
                         .partitionKey( CommonColumns.ID )
                         .clusteringColumns(  CommonColumns.NAME )
                         .columns( CommonColumns.TYPE, CommonColumns.ENTITY_TYPE_ID, CommonColumns.TITLE, CommonColumns.DESCRIPTION )
-                        .secondaryIndex( CommonColumns.TYPE, CommonColumns.NAME );
+                        .secondaryIndex( CommonColumns.TYPE, CommonColumns.NAME )
+                        ;
             case ENTITY_TYPES:
                 return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
@@ -78,7 +80,7 @@ public enum Tables implements TableDef {
                                 CommonColumns.KEY,
                                 CommonColumns.PROPERTIES,
                                 CommonColumns.SCHEMAS )
-                        .secondaryIndex( CommonColumns.SCHEMAS );
+                        .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
             case FQNS:
                 return new CassandraTableBuilder( FQNS )
                         .ifNotExists()
@@ -100,7 +102,7 @@ public enum Tables implements TableDef {
                         .columns( CommonColumns.TITLE,
                                 CommonColumns.DESCRIPTION,
                                 CommonColumns.SCHEMAS )
-                        .secondaryIndex( CommonColumns.SCHEMAS );
+                        .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
             case PERMISSIONS:
                 return new CassandraTableBuilder( PERMISSIONS )
                         .ifNotExists()

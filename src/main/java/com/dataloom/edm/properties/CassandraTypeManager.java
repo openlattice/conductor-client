@@ -46,7 +46,7 @@ public class CassandraTypeManager {
                 QueryBuilder.select().all()
                         .from( keyspace, Tables.PROPERTY_TYPES.getName() )
                         .where( QueryBuilder
-                                .contains( CommonColumns.NAMESPACE.cql(), CommonColumns.NAMESPACE.bindMarker() ) ) );
+                                .eq( CommonColumns.NAMESPACE.cql(), CommonColumns.NAMESPACE.bindMarker() ) ) );
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
