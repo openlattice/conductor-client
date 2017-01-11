@@ -26,7 +26,9 @@ public interface ConductorElasticsearchApi {
 	final String NUM_REPLICAS = "index.number_of_replicas";
 	
 	// entity set field consts
+	final String TYPE_FIELD = "_type";
 	final String ENTITY_SET = "entitySet";
+	final String ENTITY_SET_ID = "entitySetId";
 	final String PROPERTY_TYPES = "propertyTypes";
 	final String ACLS = "acls";
 	final String NAME = "name";
@@ -38,6 +40,8 @@ public interface ConductorElasticsearchApi {
 	void initializeEntitySetDataModelIndex();
 	
 	void saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
+	
+	Boolean deleteEntitySet( UUID entitySetId );
 	
 	List<Map<String, Object>> executeEntitySetDataModelKeywordSearch(
 			String searchTerm,

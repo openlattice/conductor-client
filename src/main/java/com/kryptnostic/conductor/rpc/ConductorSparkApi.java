@@ -42,6 +42,8 @@ public interface ConductorSparkApi {
     QueryResult getFilterEntities( LookupEntitiesRequest request );
 
 	Boolean submitEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
+	
+	Boolean deleteEntitySet( UUID entitySetId );
 
 	Boolean submitEntitySetDataToElasticsearch( EntitySet entitySet, Dataset<Row> entitySetData );
 	

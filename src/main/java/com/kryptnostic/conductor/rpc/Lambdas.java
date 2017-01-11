@@ -60,4 +60,9 @@ public class Lambdas implements Serializable {
     	return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
     			.updateEntitySetPermissions( entitySetId, principal, permissions );
     }
+    
+    public static Function<ConductorSparkApi, Boolean> deleteEntitySet( UUID entitySetId ) {
+    	return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
+    			.deleteEntitySet( entitySetId );
+    }
 }

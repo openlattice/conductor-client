@@ -209,6 +209,8 @@ public class EdmService implements EdmManager {
                 .forEach( authorizations::deletePermissions );
 
         Util.deleteSafely( entitySets, entitySetId );
+        executor.submit( ConductorCall
+        		.wrap( Lambdas.deleteEntitySet( entitySetId ) ) );
     }
 
     @Override
