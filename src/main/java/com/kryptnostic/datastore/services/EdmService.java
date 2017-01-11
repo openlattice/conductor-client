@@ -435,4 +435,9 @@ public class EdmService implements EdmManager {
                 new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, entityTypeId ) );
     }
 
+    @Override
+    public EntitySet getEntitySet( String entitySetName ) {
+        return entitySetManager.getEntitySet( entitySetName );
+    }
+
 }
