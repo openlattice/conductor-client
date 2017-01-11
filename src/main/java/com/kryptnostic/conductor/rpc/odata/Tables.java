@@ -5,46 +5,61 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
 
 public enum Tables implements TableDef {
     ACL_KEYS,
+    DATA,
     ENTITIES,
+    ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
     FQNS,
     ORGANIZATIONS,
     PERMISSIONS,
     PROPERTY_TYPES,
-    SCHEMAS;
+    SCHEMAS, 
+    ;
 
-    private static final Logger         logger = LoggerFactory.getLogger( Tables.class );
-    private final CassandraTableBuilder builder;
-
-    private Tables() {
-        this.builder = getTableDefinition( this );
-    }
+    private static final Logger logger = LoggerFactory.getLogger( Tables.class );
 
     public String getName() {
-        return builder.getName();
+        return name();
     }
 
     public String getKeyspace() {
-        return builder.getKeyspace().or( DatastoreConstants.KEYSPACE );
+        CassandraTableBuilder builder = getBuilder();
+        return builder == null ? Util.getSafely( TablesHelper.keyspaces, this )
+                : builder.getKeyspace().or( DatastoreConstants.KEYSPACE );
     }
 
     public CassandraTableBuilder getBuilder() {
-        return builder;
+        return Util.getSafely( TablesHelper.builders, this );
     }
 
-    private static CassandraTableBuilder getTableDefinition( Tables table ) {
+    public TableDef asTableDef() {
+        return this;
+    }
+
+    static CassandraTableBuilder getTableDefinition( Tables table ) {
         switch ( table ) {
             case ACL_KEYS:
                 return new CassandraTableBuilder( ACL_KEYS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.FQN )
                         .columns( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.SECURABLE_OBJECTID );
+            case ENTITY_ID_LOOKUP:
+                return new CassandraTableBuilder(ENTITY_ID_LOOKUP )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.SYNCID, CommonColumns.ENTITY_SET_ID )
+                        .clusteringColumns( CommonColumns.ENTITYID );
+            case DATA:
+                return new CassandraTableBuilder( DATA )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.ENTITYID )
+                        .clusteringColumns( CommonColumns.SYNCID, CommonColumns.PROPERTY_TYPE_ID, CommonColumns.PROPERTY_VALUE );
             case ENTITIES:
                 return new CassandraTableBuilder( ENTITIES )
                         .ifNotExists()
@@ -92,10 +107,11 @@ public enum Tables implements TableDef {
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
-                        .columns( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.PERMISSIONS )
-                        .secondaryIndex( CommonColumns.PERMISSIONS, CommonColumns.SECURABLE_OBJECT_TYPE );
+                        .columns( CommonColumns.SECURABLE_OBJECT_TYPE,CommonColumns.PERMISSIONS )
+                        .secondaryIndex( CommonColumns.PERMISSIONS )
+                        .sasi( CommonColumns.SECURABLE_OBJECT_TYPE );
             case SCHEMAS:
-                new CassandraTableBuilder( SCHEMAS )
+                return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.NAMESPACE )
                         .clusteringColumns( CommonColumns.NAME );

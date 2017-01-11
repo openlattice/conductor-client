@@ -23,6 +23,16 @@ public class TypeCodecsPod {
     public EnumNameCodec<EdmPrimitiveTypeKind> edmPrimitiveTypeKindCodec() {
         return new EnumNameCodec<>( EdmPrimitiveTypeKind.class );
     }
+    
+    @Bean
+    public EnumNameCodec<SecurableObjectType> securableObjectTypeCodec() {
+        return new EnumNameCodec<>( SecurableObjectType.class );
+    }
+    
+    @Bean
+    public EnumNameCodec<PrincipalType> principalType() {
+        return new EnumNameCodec<>( PrincipalType.class );
+    }
 
     @Bean
     public TypeCodec<Set<String>> setStringCodec() {

@@ -13,4 +13,5 @@ public final class EdmUtil {
     public static boolean isNonNullEntityTypeAclKey( AclKeyPathFragment aclKey ) {
         return aclKey!=null && aclKey.getType().equals( SecurableObjectType.EntityType );
     }
+    
 }

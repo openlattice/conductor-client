@@ -34,8 +34,6 @@ public interface EdmManager {
 
     Iterable<EntitySet> getEntitySets();
 
-    Iterable<EntitySet> getEntitySetsOwnedByPrincipal( Principal principal );
-
     void deleteEntitySet( UUID entitySetId );
 
     void createEntityType( EntityType objectType );
@@ -77,10 +75,11 @@ public interface EdmManager {
 
     EntityType getEntityType( FullQualifiedName type );
 
-    EntitySet getEntitySet( String entitySetName );
-
     FullQualifiedName getPropertyTypeFqn( UUID propertyTypeId );
 
     FullQualifiedName getEntityTypeFqn( UUID entityTypeId );
+
+
+
 
 }
