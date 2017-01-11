@@ -12,7 +12,6 @@ import com.kryptnostic.rhizome.cassandra.TableDef;
 public enum Tables implements TableDef {
     ACL_KEYS,
     DATA,
-    ENTITIES,
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
@@ -54,17 +53,14 @@ public enum Tables implements TableDef {
                 return new CassandraTableBuilder(ENTITY_ID_LOOKUP )
                         .ifNotExists()
                         .partitionKey( CommonColumns.SYNCID, CommonColumns.ENTITY_SET_ID )
-                        .clusteringColumns( CommonColumns.ENTITYID );
+                        .clusteringColumns( CommonColumns.ENTITYID )
+                        .secondaryIndex( CommonColumns.ENTITY_SET_ID );
             case DATA:
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ENTITYID )
-                        .clusteringColumns( CommonColumns.SYNCID, CommonColumns.PROPERTY_TYPE_ID, CommonColumns.PROPERTY_VALUE );
-            case ENTITIES:
-                return new CassandraTableBuilder( ENTITIES )
-                        .ifNotExists()
-                        .partitionKey( CommonColumns.SYNCID, CommonColumns.ENTITY_SET, CommonColumns.ENTITY_SET_ID )
-                        .clusteringColumns( CommonColumns.PROPERTY_TYPE_ID, CommonColumns.PROPERTY_VALUE );
+                        .clusteringColumns( CommonColumns.SYNCID, CommonColumns.PROPERTY_TYPE_ID, CommonColumns.PROPERTY_VALUE )
+                        ;
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()

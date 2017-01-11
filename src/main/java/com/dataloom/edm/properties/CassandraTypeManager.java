@@ -31,7 +31,7 @@ public class CassandraTypeManager {
         this.session = session;
         this.entityTypesContainPropertyType = session.prepare(
                 QueryBuilder.select().all()
-                        .from( keyspace, Tables.ENTITY_TYPES.getName() )
+                        .from( keyspace, Tables.ENTITY_TYPES.getName() ).allowFiltering()
                         .where( QueryBuilder
                                 .contains( CommonColumns.PROPERTIES.cql(), CommonColumns.PROPERTIES.bindMarker() ) ) );
         this.getEntityTypeIds = QueryBuilder.select( CommonColumns.ID.cql() ).distinct().from( keyspace,
