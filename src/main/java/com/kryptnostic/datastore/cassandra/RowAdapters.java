@@ -1,5 +1,6 @@
 package com.kryptnostic.datastore.cassandra;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -7,6 +8,8 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.authorization.AclKeyPathFragment;
+import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
@@ -97,5 +100,17 @@ public final class RowAdapters {
 
     public static FullQualifiedName fqn( Row row ) {
         return row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+    }
+
+    public static SecurableObjectType securableObjectType( Row row ) {
+        return row.get( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), SecurableObjectType.class );
+    }
+
+    public static AclKeyPathFragment akpf( Row row ) {
+        return new AclKeyPathFragment( securableObjectType( row ), id( row ) );
+    }
+
+    public static List<AclKeyPathFragment> aclKey( Row row ) {
+        return row.getList( CommonColumns.ACL_KEYS.cql(), AclKeyPathFragment.class );
     }
 }

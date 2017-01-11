@@ -11,6 +11,7 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
+import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 
@@ -23,7 +24,11 @@ public class HzAuthzTest {
 
     @BeforeClass
     public static void init() {
-        testServer = new RhizomeApplicationServer( MapstoresPod.class, CassandraPod.class, TypeCodecsPod.class );
+        testServer = new RhizomeApplicationServer(
+                MapstoresPod.class,
+                CassandraPod.class,
+                TypeCodecsPod.class,
+                CassandraTablesPod.class );
         testServer.sprout( "local", CassandraPod.CASSANDRA_PROFILE );
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
         session = testServer.getContext().getBean( Session.class );
@@ -43,7 +48,7 @@ public class HzAuthzTest {
         Assert.assertTrue(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
     }
-    
+
     @Test
     public void testTypeMistmatchPermission() {
         AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
@@ -56,7 +61,7 @@ public class HzAuthzTest {
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( badkey ), ImmutableSet.of( p ), permissions ) );
     }
-    
+
     @Test
     public void testRemovePermissions() {
         AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
@@ -71,13 +76,13 @@ public class HzAuthzTest {
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
     }
-    
+
     @Test
     public void testSetPermissions() {
         AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
-        EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ  );
-        EnumSet<Permission> badPermissions = EnumSet.of( Permission.DISCOVER, Permission.READ ,Permission.LINK);
+        EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
+        EnumSet<Permission> badPermissions = EnumSet.of( Permission.DISCOVER, Permission.READ, Permission.LINK );
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
         hzAuthz.setPermission( ImmutableList.of( key ), p, permissions );

@@ -10,28 +10,19 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.util.AuthorizationUtils;
-import com.dataloom.edm.internal.DatastoreConstants;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
 public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceKey, EnumSet<Permission>> {
-    public static final String         MAP_NAME = "authorizations";
-    public static final CassandraTableBuilder TABLE    = new CassandraTableBuilder(
-            DatastoreConstants.KEYSPACE,
-            PermissionMapstore.MAP_NAME )
-                    .ifNotExists()
-                    .partitionKey( CommonColumns.ACL_KEYS )
-                    .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
-                    .columns( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.PERMISSIONS )
-                    .secondaryIndex( CommonColumns.PERMISSIONS, CommonColumns.SECURABLE_OBJECT_TYPE );
-
     public PermissionMapstore( Session session ) {
-        super( MAP_NAME, session, TABLE );
+        super( HazelcastMap.PERMISSIONS.name(), session, Tables.PERMISSIONS.getBuilder() );
     }
 
     @Override
@@ -58,8 +49,10 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
     }
 
     @Override
-    protected EnumSet<Permission> mapValue( Row row ) {
-        return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+    protected EnumSet<Permission> mapValue( ResultSet rs ) {
+        Row row = rs.one();
+        return row == null ? null
+                : row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
     }
 
     @Override

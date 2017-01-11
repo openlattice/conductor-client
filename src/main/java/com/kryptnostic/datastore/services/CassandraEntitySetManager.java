@@ -2,10 +2,13 @@ package com.kryptnostic.datastore.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Set;
 import java.util.UUID;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.clearspring.analytics.util.Preconditions;
+import com.dataloom.authorization.AuthorizationManager;
+import com.dataloom.authorization.Principal;
 import com.dataloom.edm.internal.EntitySet;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -22,34 +25,34 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
 public class CassandraEntitySetManager {
-    private final Session           session;
-    private final String            keyspace;
+    private final String               keyspace;
+    private final Session              session;
+    private final AuthorizationManager authorizations;
 
-    private final PreparedStatement getEntities;
-    private final PreparedStatement assignEntity;
-    private final PreparedStatement evictEntity;
-    private final PreparedStatement getEntitySetsByType;
-    private final PreparedStatement getEntitySet;
-    private final Select            getAllEntitySets;
+    private final PreparedStatement    getEntities;
+    private final PreparedStatement    assignEntity;
+    private final PreparedStatement    evictEntity;
+    private final PreparedStatement    getEntitySetsByType;
+    private final PreparedStatement    getEntitySet;
+    private final Select               getAllEntitySets;
 
-    public CassandraEntitySetManager( Session session, String keyspace ) {
+    public CassandraEntitySetManager( String keyspace, Session session, AuthorizationManager authorizations ) {
         Preconditions.checkArgument( StringUtils.isNotBlank( keyspace ), "Keyspace cannot be blank." );
         createEntitySetsTableIfNotExists( keyspace, checkNotNull( session ) );
         this.session = session;
         this.keyspace = keyspace;
-
+        this.authorizations = authorizations;
         this.getEntitySet = session
-                .prepare( QueryBuilder.select()
+                .prepare( QueryBuilder.select( ).all()
                         .from( this.keyspace, Tables.ENTITY_SETS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.NAME.cql(), CommonColumns.NAME.bindMarker() ) ) );
 
         this.getEntitySetsByType = session
-                .prepare( QueryBuilder.select()
+                .prepare( QueryBuilder.select().all()
                         .from( this.keyspace, Tables.ENTITY_SETS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.TYPE.cql(), CommonColumns.TYPE.bindMarker() ) ) );
 
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Tables.ENTITY_SETS.getName() );
-
         this.getEntities = session
                 .prepare( QueryBuilder.select().all()
                         .from( keyspace, Tables.ENTITIES.getName() )
@@ -106,10 +109,12 @@ public class CassandraEntitySetManager {
         return Iterables.transform( rsf.getUninterruptibly(), RowAdapters::entitySet );
     }
 
+    // TODO: Remove this as well will create all tables at service startup.
+    @Deprecated
     private static void createEntitySetsTableIfNotExists( String keyspace, Session session ) {
         session.execute( Queries.getCreateEntitySetsTableQuery( keyspace ) );
         session.execute( Queries.CREATE_INDEX_ON_NAME );
-        session.execute( entitiesTable( keyspace ).buildQuery() );
+        session.execute( entitiesTable( keyspace ).buildCreateTableQuery() );
     }
 
     private static CassandraTableBuilder entitiesTable( String keyspace ) {
