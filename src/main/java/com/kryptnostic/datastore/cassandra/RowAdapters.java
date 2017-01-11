@@ -227,7 +227,6 @@ public final class RowAdapters {
                     return mapper.readValue( Bytes.getArray( bytes ), Object.class );
                 } catch ( IOException e ) {
                     logger.error( "Deserialization error when reading entity " + entityId );
-                    e.printStackTrace();
                     return null;
                 }
         }
