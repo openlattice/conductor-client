@@ -60,7 +60,7 @@ public final class AuthorizationUtils {
     }
 
     public static AclKeyPathFragment getLastAclKeySafely( List<AclKeyPathFragment> aclKeys ) {
-        return aclKeys.isEmpty() ? aclKeys.get( aclKeys.size() - 1 ) : null;
+        return aclKeys.isEmpty() ? null : aclKeys.get( aclKeys.size() - 1 );
     }
 
 }

@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
 import com.datastax.driver.extras.codecs.jdk8.InstantCodec;
-import com.kryptnostic.conductor.codecs.AclKeyTypeCodec;
+import com.kryptnostic.conductor.codecs.AclKeyPathFragmentTypeCodec;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.codecs.FullQualifiedNameTypeCodec;
 
@@ -51,7 +51,7 @@ public class TypeCodecsPod {
     
     @Bean
     public TypeCodec<AclKeyPathFragment> aclKeyCodec() {
-        return new AclKeyTypeCodec();
+        return new AclKeyPathFragmentTypeCodec();
     }
     
     @Bean
@@ -68,5 +68,4 @@ public class TypeCodecsPod {
     public TypeCodec<EnumSet<Permission>> enumSetPermissionCodec() {
         return new EnumSetTypeCodec<Permission>( permissionCodec() );
     }
-
 }

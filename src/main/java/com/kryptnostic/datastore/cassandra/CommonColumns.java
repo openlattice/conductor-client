@@ -12,7 +12,7 @@ import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
 public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
-    ACL_KEYS( DataType.frozenList( DataType.text() ) ), // partition index within a table for distribution purpose
+    ACL_KEYS( DataType.frozenList( DataType.blob() ) ), // partition index within a table for distribution purpose
     ROLE( DataType.text() ),
     USER( DataType.text() ),
     USERID( DataType.text() ),
