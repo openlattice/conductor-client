@@ -23,11 +23,12 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
     private final Session           session;
     private final PreparedStatement propertyTypesInSchemaQuery;
     private final PreparedStatement entityTypesInSchemaQuery;
-
+    private final RegularStatement getNamespaces;
     public CassandraSchemaQueryService( String keyspace, Session session ) {
         this.session = checkNotNull( session, "Session cannot be null." );
         propertyTypesInSchemaQuery = session.prepare( getPropertyTypesInSchema( keyspace ) );
         entityTypesInSchemaQuery = session.prepare( getEntityTypesInSchema( keyspace ) );
+        getNamespaces = QueryBuilder.select().all().distinct().from( Tables.SCHEMAS.getKeyspace() , Tables.SCHEMAS.getName() );
     }
 
     private static RegularStatement getPropertyTypesInSchema( String keyspace ) {
@@ -66,5 +67,13 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
                         .setString( CommonColumns.NAMESPACE.cql(), schemaName.getNamespace() )
                         .setString( CommonColumns.NAME.cql(), schemaName.getName() ) );
         return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::id ) );
+    }
+    
+    /* (non-Javadoc)
+     * @see com.dataloom.edm.schemas.SchemaQueryService#getNamespaces()
+     */
+    @Override
+    public Iterable<String> getNamespaces() {
+        return Iterables.transform( session.execute( getNamespaces ), RowAdapters::namespace );
     }
 }
