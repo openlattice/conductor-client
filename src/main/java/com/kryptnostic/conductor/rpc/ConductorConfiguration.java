@@ -18,21 +18,25 @@ public class ConductorConfiguration implements Configuration {
     private static final String           REPORT_EMAIL_ADDRESS_FIELD = "reportEmailAddress";
     private static final String           SPARK_JARS_FIELD           = "sparkJars";
     private static final String           SPARK_MASTERS_FIELD        = "sparkMasters";
+    private static final String			  SEARCH_CONFIGURATION_FIELD = "searchConfiguration";
 
     private final String                  reportEmailAddress;
     private final List<String>            sparkMasters;
     private final String[]                sparkJars;
+    private final SearchConfiguration     searchConfiguration;
 
     @JsonCreator
     public ConductorConfiguration(
             @JsonProperty( REPORT_EMAIL_ADDRESS_FIELD ) String reportEmailAddress,
             @JsonProperty( SPARK_MASTERS_FIELD ) List<String> sparkMasters,
-            @JsonProperty( SPARK_JARS_FIELD ) List<String> sparkJars ) {
+            @JsonProperty( SPARK_JARS_FIELD ) List<String> sparkJars,
+            @JsonProperty( SEARCH_CONFIGURATION_FIELD ) SearchConfiguration searchConfiguration ) {
         this.reportEmailAddress = reportEmailAddress;
         // Filter out files that don't exist
         this.sparkMasters = sparkMasters;
         this.sparkJars = sparkJars.stream().filter( fp -> new File( fp ).exists() ).collect( Collectors.toList() )
                 .toArray( new String[] {} );
+        this.searchConfiguration = searchConfiguration;
     }
 
     @JsonProperty( SPARK_MASTERS_FIELD )
@@ -43,6 +47,11 @@ public class ConductorConfiguration implements Configuration {
     @JsonProperty( REPORT_EMAIL_ADDRESS_FIELD )
     public String getReportEmailAddress() {
         return reportEmailAddress;
+    }
+    
+    @JsonProperty( SEARCH_CONFIGURATION_FIELD )
+    public SearchConfiguration getSearchConfiguration() {
+    	return searchConfiguration;
     }
 
     @Override
