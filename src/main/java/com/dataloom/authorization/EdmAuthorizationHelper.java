@@ -15,9 +15,9 @@ import com.kryptnostic.datastore.services.EdmManager;
 public class EdmAuthorizationHelper {
 
     private final EdmManager                    edm;
-    private final HazelcastAuthorizationService authz;
+    private final AuthorizationManager authz;
 
-    public EdmAuthorizationHelper( EdmManager edm, HazelcastAuthorizationService authz ) {
+    public EdmAuthorizationHelper( EdmManager edm, AuthorizationManager authz ) {
         this.edm = Preconditions.checkNotNull( edm );
         this.authz = Preconditions.checkNotNull( authz );
     }
