@@ -8,6 +8,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -26,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastSchemaManager {
     // map( namespace -> set<name> )
@@ -137,11 +140,11 @@ public class HazelcastSchemaManager {
     }
 
     public Schema getSchema( String namespace, String name ) {
-        FullQualifiedName schemaName = new FullQualifiedName( namespace, name );
-        Collection<PropertyType> pts = propertyTypes
+        final FullQualifiedName schemaName = new FullQualifiedName( namespace, name );
+        final Collection<PropertyType> pts = propertyTypes
                 .getAll( schemaQueryService.getAllPropertyTypesInSchema( schemaName ) ).values();
 
-        Collection<EntityType> ets = entityTypes
+        final Collection<EntityType> ets = entityTypes
                 .getAll( schemaQueryService.getAllEntityTypesInSchema( schemaName ) ).values();
         return new Schema(
                 schemaName,
@@ -150,11 +153,19 @@ public class HazelcastSchemaManager {
     }
 
     public Iterable<Schema> getAllSchemas() {
-        return null;
+
+        final Stream<Schema> loadedSchemas = namespaces()
+                .flatMap( namespace -> Util.getSafely( schemas, namespace )
+                        .stream()
+                        .map( name -> getSchema( namespace, name ) ) );
+        return loadedSchemas::iterator;
     }
 
     public Iterable<Schema> getSchemasInNamespace( String namespace ) {
-        return null;
+        return Util
+                .getSafely( schemas, namespace )
+                .stream()
+                .map( name -> getSchema( namespace, name ) )::iterator;
     }
 
     public Set<UUID> getAllEntityTypesInSchema( FullQualifiedName schemaName ) {
@@ -163,5 +174,9 @@ public class HazelcastSchemaManager {
 
     public Set<UUID> getAllPropertyTypesInSchema( FullQualifiedName schemaName ) {
         return schemaQueryService.getAllPropertyTypesInSchema( schemaName );
+    }
+
+    private Stream<String> namespaces() {
+        return StreamSupport.stream( schemaQueryService.getNamespaces().spliterator(), false );
     }
 }
