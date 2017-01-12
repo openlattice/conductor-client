@@ -62,6 +62,10 @@ public final class RowAdapters {
         return row.getString( CommonColumns.NAME.cql() );
     }
 
+    public static String namespace( Row row ) {
+        return row.getString( CommonColumns.NAMESPACE.cql() );
+    }
+
     public static String title( Row row ) {
         return row.getString( CommonColumns.TITLE.cql() );
     }
