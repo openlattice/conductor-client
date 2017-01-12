@@ -37,9 +37,9 @@ public interface ConductorElasticsearchApi {
 	final String ENTITY_TYPE_ID = "entityTypeId";
 	final String ID = "id";
 
-	void initializeEntitySetDataModelIndex();
+	Boolean initializeEntitySetDataModelIndex();
 	
-	void saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
+	Boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 	
 	Boolean deleteEntitySet( UUID entitySetId );
 	
@@ -51,6 +51,6 @@ public interface ConductorElasticsearchApi {
 	
 	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
 	
-	void updatePropertyTypesInEntitySet( UUID entitySetId, Set<PropertyType> newPropertyTypes );
+	Boolean updatePropertyTypesInEntitySet( UUID entitySetId, Set<PropertyType> newPropertyTypes );
 	
 }
