@@ -17,7 +17,7 @@ public interface ConductorElasticsearchApi {
 	final String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
 	final String ENTITY_SET_TYPE = "entity_set";
 	final String ES_PROPERTIES = "properties";
-	final String PARENT = "parent";
+	final String PARENT = "_parent";
 	final String TYPE = "type";
 	final String OBJECT = "object";
 	final String NESTED = "nested";
