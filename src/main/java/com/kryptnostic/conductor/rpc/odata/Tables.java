@@ -18,8 +18,10 @@ public enum Tables implements TableDef {
     FQNS,
     ORGANIZATIONS,
     PERMISSIONS,
+    PERMISSIONS_REQUESTS_UNRESOLVED,
+    PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
-    SCHEMAS, 
+    SCHEMAS,
     ;
 
     private static final Logger logger = LoggerFactory.getLogger( Tables.class );
@@ -50,26 +52,28 @@ public enum Tables implements TableDef {
                         .partitionKey( CommonColumns.FQN )
                         .columns( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.SECURABLE_OBJECTID );
             case ENTITY_ID_LOOKUP:
-                return new CassandraTableBuilder(ENTITY_ID_LOOKUP )
+                return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
                         .partitionKey( CommonColumns.SYNCID, CommonColumns.ENTITY_SET_ID )
                         .clusteringColumns( CommonColumns.ENTITYID )
-                        .secondaryIndex( CommonColumns.ENTITY_SET_ID )
-                        ;
+                        .secondaryIndex( CommonColumns.ENTITY_SET_ID );
             case DATA:
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ENTITYID )
-                        .clusteringColumns( CommonColumns.SYNCID, CommonColumns.PROPERTY_TYPE_ID, CommonColumns.PROPERTY_VALUE )
-                        ;
+                        .clusteringColumns( CommonColumns.SYNCID,
+                                CommonColumns.PROPERTY_TYPE_ID,
+                                CommonColumns.PROPERTY_VALUE );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ID )
-                        .clusteringColumns(  CommonColumns.NAME )
-                        .columns( CommonColumns.TYPE, CommonColumns.ENTITY_TYPE_ID, CommonColumns.TITLE, CommonColumns.DESCRIPTION )
-                        .secondaryIndex( CommonColumns.TYPE, CommonColumns.NAME )
-                        ;
+                        .clusteringColumns( CommonColumns.NAME )
+                        .columns( CommonColumns.TYPE,
+                                CommonColumns.ENTITY_TYPE_ID,
+                                CommonColumns.TITLE,
+                                CommonColumns.DESCRIPTION )
+                        .secondaryIndex( CommonColumns.TYPE, CommonColumns.NAME );
             case ENTITY_TYPES:
                 return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
@@ -108,9 +112,24 @@ public enum Tables implements TableDef {
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
-                        .columns( CommonColumns.SECURABLE_OBJECT_TYPE,CommonColumns.PERMISSIONS )
+                        .columns( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.PERMISSIONS )
                         .secondaryIndex( CommonColumns.PERMISSIONS )
                         .sasi( CommonColumns.SECURABLE_OBJECT_TYPE );
+            case PERMISSIONS_REQUESTS_UNRESOLVED:
+                return new CassandraTableBuilder( PERMISSIONS_REQUESTS_UNRESOLVED )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.ACL_ROOT )
+                        .clusteringColumns( CommonColumns.PRINCIPAL_ID )
+                        .columns( CommonColumns.ACL_CHILDREN_PERMISSIONS, CommonColumns.STATUS )
+                        .sasi( CommonColumns.STATUS );
+            case PERMISSIONS_REQUESTS_RESOLVED:
+                return new CassandraTableBuilder( PERMISSIONS_REQUESTS_RESOLVED )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.PRINCIPAL_ID )
+                        .clusteringColumns( CommonColumns.REQUESTID )
+                        .columns( CommonColumns.ACL_ROOT, CommonColumns.ACL_CHILDREN_PERMISSIONS, CommonColumns.STATUS )
+                        .secondaryIndex( CommonColumns.ACL_ROOT )
+                        .sasi( CommonColumns.STATUS );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()

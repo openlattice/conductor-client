@@ -50,7 +50,10 @@ public enum CommonColumns implements ColumnDef {
     TYPE_ID( DataType.uuid() ),
     DESCRIPTION( DataType.text() ),
     ENTITY_TYPE_ID( DataType.uuid() ),
-    PRINCIPAL( DataType.text() );
+    PRINCIPAL( DataType.text() ),
+    ACL_ROOT( DataType.frozenList( DataType.blob() ) ),
+    ACL_CHILDREN_PERMISSIONS( DataType.map( ACL_ROOT.getType(), PERMISSIONS.getType() )),
+    STATUS( DataType.text() );
 
     private final DataType type;
 

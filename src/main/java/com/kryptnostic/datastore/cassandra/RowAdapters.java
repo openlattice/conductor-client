@@ -17,6 +17,7 @@ import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -134,6 +135,14 @@ public final class RowAdapters {
 
     public static List<AclKeyPathFragment> aclKey( Row row ) {
         return row.getList( CommonColumns.ACL_KEYS.cql(), AclKeyPathFragment.class );
+    }
+
+    public static List<AclKeyPathFragment> aclRoot( Row row ) {
+        return row.getList( CommonColumns.ACL_ROOT.cql(), AclKeyPathFragment.class );
+    }
+
+    public static RequestStatus status( Row row ) {
+        return row.get( CommonColumns.STATUS.cql(), RequestStatus.class );
     }
 
     /**
