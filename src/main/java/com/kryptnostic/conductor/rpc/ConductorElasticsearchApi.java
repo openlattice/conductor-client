@@ -44,7 +44,7 @@ public interface ConductorElasticsearchApi {
 	Boolean deleteEntitySet( UUID entitySetId );
 	
 	List<Map<String, Object>> executeEntitySetDataModelKeywordSearch(
-			String searchTerm,
+			Optional<String> optionalSearchTerm,
 			Optional<UUID> optionalEntityType,
 			Optional<Set<UUID>> optionalPropertyTypes,
 			Set<Principal> principals );

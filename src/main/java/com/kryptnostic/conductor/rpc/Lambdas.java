@@ -48,12 +48,12 @@ public class Lambdas implements Serializable {
     }
     
     public static Function<ConductorSparkApi, List<Map<String, Object>>> executeElasticsearchMetadataQuery(
-    		String query,
+    		Optional<String> optionalQuery,
 			Optional<UUID> optionalEntityType,
 			Optional<Set<UUID>> optionalPropertyTypes ) {
     	Set<Principal> principals = Principals.getCurrentPrincipals();
     	return (Function<ConductorSparkApi, List<Map<String, Object>>> & Serializable) ( api ) -> api
-                .executeElasticsearchMetadataQuery( query, optionalEntityType, optionalPropertyTypes, principals );
+                .executeElasticsearchMetadataQuery( optionalQuery, optionalEntityType, optionalPropertyTypes, principals );
     }
     
     public static Function<ConductorSparkApi, Boolean> updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions ) {

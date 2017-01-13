@@ -48,7 +48,7 @@ public interface ConductorSparkApi {
 	Boolean submitEntitySetDataToElasticsearch( EntitySet entitySet, Dataset<Row> entitySetData );
 	
 	List<Map<String, Object>> executeElasticsearchMetadataQuery(
-			String query,
+			Optional<String> query,
 			Optional<UUID> optionalEntityType,
 			Optional<Set<UUID>> optionalPropertyTypes,
 			Set<Principal> principals );
