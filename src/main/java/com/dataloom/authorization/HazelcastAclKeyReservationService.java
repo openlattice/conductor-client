@@ -46,6 +46,21 @@ public class HazelcastAclKeyReservationService {
         this.fqns = hazelcast.getMap( HazelcastMap.FQNS.name() );
     }
 
+    public void renameReservation( FullQualifiedName oldFqn, FullQualifiedName newFqn ) {
+        /*
+         * Attempt to associated newFqn with existing aclKey
+         */
+        final AclKeyPathFragment existingAclKey = aclKeys.putIfAbsent( newFqn, Util.getSafely( aclKeys, oldFqn ) );
+
+        if ( existingAclKey == null ) {
+            aclKeys.delete( oldFqn );
+        } else {
+            throw new TypeExistsException(
+                    "Cannot rename " + oldFqn.getFullQualifiedNameAsString() + " to existing type "
+                            + newFqn.getFullQualifiedNameAsString() );
+        }
+    }
+
     /**
      * This function reserves a UUID for a SecurableObject based on AclKey. It throws unchecked exception
      * {@link TypeExistsException} if the type already exists or {@link AclKeyConflictException} if a different AclKey
@@ -64,7 +79,8 @@ public class HazelcastAclKeyReservationService {
             /*
              * AclKey <-> Type association exists and is correct. Safe to try and register AclKey for type.
              */
-            final AclKeyPathFragment existingAclKey = aclKeys.putIfAbsent( type.getType(), type.getAclKeyPathFragment() );
+            final AclKeyPathFragment existingAclKey = aclKeys.putIfAbsent( type.getType(),
+                    type.getAclKeyPathFragment() );
 
             /*
              * Even if aclKey matches, letting two threads go through type creation creates potential problems when
@@ -101,13 +117,14 @@ public class HazelcastAclKeyReservationService {
         /*
          * Template this call and make wrappers that directly insert into type maps making fqns redundant.
          */
-        final FullQualifiedName fqn = fqns.putIfAbsent( type.getAclKeyPathFragment(), Util.getSafely( FQNS, type.getCategory() ) );
+        final FullQualifiedName fqn = fqns.putIfAbsent( type.getAclKeyPathFragment(),
+                Util.getSafely( FQNS, type.getCategory() ) );
 
         /*
          * We don't care if FQN matches in this case as it provides us no additional validation information.
          */
 
-        if( fqn!= null ) {
+        if ( fqn != null ) {
             throw new AclKeyConflictException( "AclKey is already associated with different FQN." );
         }
     }
