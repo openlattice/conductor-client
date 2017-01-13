@@ -20,6 +20,7 @@ public class AddPropertyTypesToEntityTypeProcessor extends AbstractRhizomeEntryP
         EntityType et = entry.getValue();
         if ( et != null ) {
             et.addPropertyTypes( propertyTypeIds );
+            entry.setValue( et );
         }
         return null;
     }

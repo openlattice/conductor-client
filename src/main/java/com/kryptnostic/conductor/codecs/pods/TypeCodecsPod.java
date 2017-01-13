@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 
 import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.SecurableObjectType;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
 import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
@@ -64,6 +66,16 @@ public class TypeCodecsPod {
     @Bean
     public EnumNameCodec<Permission> permissionCodec() {
         return new EnumNameCodec<>( Permission.class );
+    }
+
+    @Bean
+    public EnumNameCodec<PrincipalType> principalTypeCodec() {
+        return new EnumNameCodec<>( PrincipalType.class );
+    }
+    
+    @Bean
+    public EnumNameCodec<SecurableObjectType> securableObjectTypeCodec() {
+        return new EnumNameCodec<>( SecurableObjectType.class );
     }
 
     @Bean

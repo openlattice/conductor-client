@@ -29,6 +29,7 @@ public class AddSchemasToType extends AbstractRhizomeEntryProcessor<UUID, Abstra
         if ( propertyType != null ) {
             Set<FullQualifiedName> schemas = entry.getValue().getSchemas();
             schemas.addAll( schemas );
+            entry.setValue( propertyType );
         }
         return null;
     }

@@ -94,17 +94,11 @@ public class EdmService implements EdmManager {
         /*
          * Create property type if it doesn't exist. The reserveAclKeyAndValidateType call should ensure that
          */
+
         PropertyType dbRecord = propertyTypes.putIfAbsent( propertyType.getId(), propertyType );
 
-        if ( dbRecord != null ) {
-            // Update Schema
-            Set<FullQualifiedName> currentSchemas = dbRecord.getSchemas();
-            Set<FullQualifiedName> removableSchemas = Sets.difference( currentSchemas, propertyType.getSchemas() );
-            removableSchemas.forEach( schemaManager.entityTypesSchemaRemover( propertyType.getId() ) );
-            Set<FullQualifiedName> newSchemas = Sets.difference( propertyType.getSchemas(), currentSchemas );
-            newSchemas.forEach( schemaManager.propertyTypesSchemaAdder( propertyType.getId() ) );
-            // Set Property type
-            propertyTypes.set( propertyType.getId(), propertyType );
+        if ( dbRecord == null ) {
+            propertyType.getSchemas().forEach( schemaManager.propertyTypesSchemaAdder( propertyType.getId() ) );
         } else {
             logger.error(
                     "Inconsistency encountered in database. Verify that existing property types have all their acl keys reserved." );
@@ -224,12 +218,11 @@ public class EdmService implements EdmManager {
 
     @Override
     public void createEntitySet( Principal principal, EntitySet entitySet ) {
-        try {
             Principals.ensureUser( principal );
 
             createEntitySet( entitySet );
 
-            EntityType entityType = entityTypes.get( entitySet.getType() );
+            EntityType entityType = checkNotNull( entityTypes.get( entitySet.getEntityTypeId() ), "Entity type does not exist." );
             authorizations.addPermission( ImmutableList.of( entitySet.getAclKeyPathFragment() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
@@ -241,9 +234,7 @@ public class EdmService implements EdmManager {
                             ImmutableList.of( entitySet.getAclKeyPathFragment(), propertyTypeAclKey ),
                             principal,
                             EnumSet.allOf( Permission.class ) ) );
-        } catch ( Exception e ) {
-            throw new IllegalStateException( "Entity Set not created." );
-        }
+
     }
 
     @Override
@@ -277,10 +268,9 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public EntityType getEntityType( UUID entityTypeFqn ) {
-        AclKeyPathFragment aclKey = aclKeys.get( entityTypeFqn );
+    public EntityType getEntityType( UUID entityTypeId ) {
         return Preconditions.checkNotNull(
-                HazelcastUtils.typedGet( entityTypes, aclKey.getId() ),
+                HazelcastUtils.typedGet( entityTypes, entityTypeId ),
                 "Entity type does not exist" );
 
     }
@@ -403,7 +393,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean checkEntitySetExists( String name ) {
-        return entitySets.containsKey( name );
+        return getEntitySet( name ) != null ;
     }
 
     @Override

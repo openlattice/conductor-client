@@ -101,7 +101,8 @@ public enum Tables implements TableDef {
                         .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
                         .columns( CommonColumns.TITLE,
                                 CommonColumns.DESCRIPTION,
-                                CommonColumns.SCHEMAS )
+                                CommonColumns.SCHEMAS,
+                                CommonColumns.DATATYPE )
                         .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
             case PERMISSIONS:
                 return new CassandraTableBuilder( PERMISSIONS )
