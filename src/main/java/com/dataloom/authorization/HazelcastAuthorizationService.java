@@ -39,20 +39,13 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         this.aqs = checkNotNull( aqs );
         this.executor = hazelcastInstance.getDurableExecutorService( "default" );
     }
-    
-    private void submitNewPermissionsToElasticsearch( List<AclKeyPathFragment> key, Principal principal ) {
-    	Set<Permission> permissions = aces.get( new AceKey( key, principal ) );
-    	// executor.submit ... updateEntitySetAclsInElasticsearch( entitySetId, principal, permissions)
-    	// entitySet.permissions.<principal.type>
-    }
-    
+
     @Override
     public void addPermission(
             List<AclKeyPathFragment> key,
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionMerger( permissions ) );
-        submitNewPermissionsToElasticsearch( key, principal );
     }
 
     @Override
@@ -61,7 +54,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionRemover( permissions ) );
-        submitNewPermissionsToElasticsearch( key, principal );
     }
 
     @Override
@@ -70,7 +62,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             Set<Permission> permissions ) {
         aces.set( new AceKey( key, principal ), permissions );
-        submitNewPermissionsToElasticsearch( key, principal );
     }
 
     @Override
