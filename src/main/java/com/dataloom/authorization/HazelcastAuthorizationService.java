@@ -24,6 +24,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
@@ -31,10 +32,12 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     private final IMap<AceKey, Set<Permission>> aces;
     private final AuthorizationQueryService     aqs;
+    private final DurableExecutorService        executor;
 
     public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance, AuthorizationQueryService aqs ) {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         this.aqs = checkNotNull( aqs );
+        this.executor = hazelcastInstance.getDurableExecutorService( "default" );
     }
 
     @Override
