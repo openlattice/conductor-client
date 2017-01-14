@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -23,6 +25,8 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.edm.EntityDataModel;
+import com.dataloom.edm.events.EntitySetCreatedEvent;
+import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
@@ -39,12 +43,18 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.durableexecutor.DurableExecutorService;
+import com.kryptnostic.conductor.rpc.ConductorCall;
+import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
+	
     private static final Logger                               logger = LoggerFactory.getLogger( EdmService.class );
     private final IMap<UUID, PropertyType>                    propertyTypes;
     private final IMap<UUID, EntityType>                      entityTypes;
@@ -57,6 +67,10 @@ public class EdmService implements EdmManager {
     private final CassandraEntitySetManager                   entitySetManager;
     private final CassandraTypeManager                        entityTypeManager;
     private final HazelcastSchemaManager                      schemaManager;
+    private final DurableExecutorService					  executor;
+    
+    @Inject
+    private EventBus eventBus;
 
     public EdmService(
             String keyspace,
@@ -77,6 +91,7 @@ public class EdmService implements EdmManager {
         this.fqns = hazelcastInstance.getMap( HazelcastMap.FQNS.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
         this.aclKeyReservations = aclKeyReservations;
+        this.executor = hazelcastInstance.getDurableExecutorService( "default" );
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
     }
@@ -196,6 +211,7 @@ public class EdmService implements EdmManager {
                 .forEach( authorizations::deletePermissions );
 
         Util.deleteSafely( entitySets, entitySetId );
+        eventBus.post( new EntitySetDeletedEvent( entitySetId ) );
     }
 
     @Override
@@ -218,6 +234,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public void createEntitySet( Principal principal, EntitySet entitySet ) {
+        try {
             Principals.ensureUser( principal );
 
             createEntitySet( entitySet );
@@ -234,7 +251,10 @@ public class EdmService implements EdmManager {
                             ImmutableList.of( entitySet.getAclKeyPathFragment(), propertyTypeAclKey ),
                             principal,
                             EnumSet.allOf( Permission.class ) ) );
-
+            eventBus.post( new EntitySetCreatedEvent( entitySet, Lists.newArrayList( propertyTypes.getAll( entityType.getProperties() ).values() ), principal ) );
+        } catch ( Exception e ) {
+            throw new IllegalStateException( "Entity Set not created." );
+        }
     }
 
     @Override
