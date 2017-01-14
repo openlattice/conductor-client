@@ -30,6 +30,7 @@ public class RemoveSchemasFromType
         if ( propertyType != null ) {
             Set<FullQualifiedName> schemas = entry.getValue().getSchemas();
             schemas.removeAll( schemas );
+            entry.setValue( propertyType );
         }
         return null;
     }

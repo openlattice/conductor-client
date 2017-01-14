@@ -30,8 +30,6 @@ import com.google.common.collect.SetMultimap;
 
 public final class RowAdapters {
     private static final Logger logger            = LoggerFactory.getLogger( RowAdapters.class );
-    // Need to match CassandraDataManager
-    public static final String  VALUE_COLUMN_NAME = "value";
 
     private RowAdapters() {}
 
@@ -48,7 +46,7 @@ public final class RowAdapters {
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 m.put( pt.getType(),
-                        deserializeValue( mapper, row.getBytes( VALUE_COLUMN_NAME ), pt.getDatatype(), entityId ) );
+                        deserializeValue( mapper, row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ), pt.getDatatype(), entityId ) );
             }
         }
         return m;
@@ -85,7 +83,7 @@ public final class RowAdapters {
     public static EntitySet entitySet( Row row ) {
         // TODO: Validate data read from Cassandra and log errors for invalid entries.
         UUID id = id( row );
-        FullQualifiedName type = fqn( row );
+        FullQualifiedName type = type( row );
         UUID entityTypeId = entityTypeId( row );
         String name = name( row );
         String title = title( row );
@@ -93,9 +91,9 @@ public final class RowAdapters {
         return new EntitySet( id, type, entityTypeId, name, title, description );
     }
 
-    public static PropertyType propertyType( Row row ) {
-        UUID id = row.getUUID( CommonColumns.ID.cql() );
-        FullQualifiedName type = row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+    public static PropertyType propertyType( Row row ) {        
+        UUID id = id( row );
+        FullQualifiedName type = new FullQualifiedName( namespace(row), name(row) );
         String title = title( row );
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
@@ -104,8 +102,8 @@ public final class RowAdapters {
     }
 
     public static EntityType entityType( Row row ) {
-        UUID id = row.getUUID( CommonColumns.ID.cql() );
-        FullQualifiedName type = row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+        UUID id = id( row );
+        FullQualifiedName type = new FullQualifiedName( namespace(row), name(row) );
         String title = title( row );
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
@@ -122,6 +120,10 @@ public final class RowAdapters {
 
     public static FullQualifiedName fqn( Row row ) {
         return row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+    }
+
+    public static FullQualifiedName type( Row row ) {
+        return row.get( CommonColumns.TYPE.cql(), FullQualifiedName.class );
     }
 
     public static SecurableObjectType securableObjectType( Row row ) {

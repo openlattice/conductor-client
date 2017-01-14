@@ -1,10 +1,12 @@
 package com.dataloom.edm.types.processors;
 
 import java.util.Map.Entry;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 import com.dataloom.edm.internal.EntityType;
+import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class RemovePropertyTypesFromEntityTypeProcessor extends AbstractRhizomeEntryProcessor<UUID, EntityType, Object> {
@@ -20,6 +22,7 @@ public class RemovePropertyTypesFromEntityTypeProcessor extends AbstractRhizomeE
         EntityType et = entry.getValue();
         if ( et != null ) {
             et.removePropertyTypes( propertyTypeIds );
+            entry.setValue( et );
         }
         return null;
     }
