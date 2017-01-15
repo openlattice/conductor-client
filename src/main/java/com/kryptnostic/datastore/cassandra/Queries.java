@@ -25,7 +25,7 @@ public final class Queries {
     }
 
     // Keyspace setup
-    public static final String CREATE_KEYSPACE = "CREATE KEYSPACE IF NOT EXISTS sparks WITH REPLICATION={ 'class' : 'SimpleStrategy', 'replication_factor' : 1 } AND DURABLE_WRITES=true";
+
 
 
     public static final String getCreateEntitySetsTableQuery( String keyspace ) {
