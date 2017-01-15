@@ -1,11 +1,20 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 
+import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
 import com.dataloom.data.requests.LookupEntitiesRequest;
+import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.PropertyType;
+import com.google.common.base.Optional;
 
 public interface ConductorSparkApi {
 
@@ -31,4 +40,19 @@ public interface ConductorSparkApi {
      * @return QueryResult of UUID's matching the lookup request
      */
     QueryResult getFilterEntities( LookupEntitiesRequest request );
+
+	Boolean submitEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
+	
+	Boolean deleteEntitySet( UUID entitySetId );
+
+	Boolean submitEntitySetDataToElasticsearch( EntitySet entitySet, Dataset<Row> entitySetData );
+	
+	List<Map<String, Object>> executeElasticsearchMetadataQuery(
+			Optional<String> query,
+			Optional<UUID> optionalEntityType,
+			Optional<Set<UUID>> optionalPropertyTypes,
+			Set<Principal> principals );
+	
+	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
+	
 }

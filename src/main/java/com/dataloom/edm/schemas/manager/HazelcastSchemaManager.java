@@ -23,6 +23,7 @@ import com.dataloom.edm.schemas.processors.RemoveSchemasFromType;
 import com.dataloom.edm.schemas.processors.SchemaMerger;
 import com.dataloom.edm.schemas.processors.SchemaRemover;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -53,51 +54,71 @@ public class HazelcastSchemaManager {
     }
 
     public void addPropertyTypesToSchema( Set<UUID> propertyTypeUuids, FullQualifiedName schemaName ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeUuids ), "Some properties do not exist." );
+        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema does not exist.");
         addTypesToSchema( propertyTypes, propertyTypeUuids, ImmutableList.of( schemaName ) );
     }
 
     public void addEntityTypesToSchema( Set<UUID> entityTypeUuids, FullQualifiedName schemaName ) {
+        Preconditions.checkArgument( checkEntityTypesExist( entityTypeUuids ), "Some entity types do not exist." );
+        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema does not exist." );
         addTypesToSchema( entityTypes, entityTypeUuids, ImmutableList.of( schemaName ) );
     }
 
     public void removePropertyTypesFromSchema( Set<UUID> propertyTypeUuids, FullQualifiedName schemaName ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeUuids ), "Some properties do not exist." );
+        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema does not exist.");
         removeTypesFromSchema( propertyTypes, propertyTypeUuids, ImmutableList.of( schemaName ) );
     }
 
     public void removeEntityTypesFromSchema( Set<UUID> entityTypeUuids, FullQualifiedName schemaName ) {
+        Preconditions.checkArgument( checkEntityTypesExist( entityTypeUuids ), "Some entity types do not exist." );
+        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema does not exist." );
         removeTypesFromSchema( entityTypes, entityTypeUuids, ImmutableList.of( schemaName ) );
     }
 
     public Consumer<FullQualifiedName> propertyTypesSchemaAdder( Set<UUID> propertyTypeUuids ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeUuids ), "Some properties do not exist." );
         return schema -> addPropertyTypesToSchema( propertyTypeUuids, schema );
     }
 
     public Consumer<FullQualifiedName> entityTypesSchemaAdder( Set<UUID> entityTypeUuids ) {
+        Preconditions.checkArgument( checkEntityTypesExist( entityTypeUuids ), "Some entity types do not exist." );
         return schema -> addPropertyTypesToSchema( entityTypeUuids, schema );
     }
 
     public Consumer<FullQualifiedName> propertyTypesSchemaAdder( UUID... propertyTypeUuids ) {
-        return schema -> addPropertyTypesToSchema( ImmutableSet.copyOf( propertyTypeUuids ), schema );
+        Set<UUID> properties = ImmutableSet.copyOf( propertyTypeUuids );
+        Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
+        return schema -> addPropertyTypesToSchema( properties, schema );
     }
 
     public Consumer<FullQualifiedName> entityTypesSchemaAdder( UUID... entityTypeUuids ) {
-        return schema -> addEntityTypesToSchema( ImmutableSet.copyOf( entityTypeUuids ), schema );
+        Set<UUID> types = ImmutableSet.copyOf( entityTypeUuids );
+        Preconditions.checkArgument( checkEntityTypesExist( types ), "Some entity types do not exist." );
+        return schema -> addEntityTypesToSchema( types, schema );
     }
 
     public Consumer<FullQualifiedName> propertyTypesSchemaRemover( Set<UUID> propertyTypeUuids ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeUuids ), "Some properties do not exist." );
         return schema -> removePropertyTypesFromSchema( propertyTypeUuids, schema );
     }
 
     public Consumer<FullQualifiedName> entityTypesSchemaRemover( Set<UUID> entityTypeUuids ) {
+        Preconditions.checkArgument( checkEntityTypesExist( entityTypeUuids ), "Some entity types do not exist." );
         return schema -> removePropertyTypesFromSchema( entityTypeUuids, schema );
     }
 
     public Consumer<FullQualifiedName> propertyTypesSchemaRemover( UUID... propertyTypeUuids ) {
-        return schema -> removePropertyTypesFromSchema( ImmutableSet.copyOf( propertyTypeUuids ), schema );
+        Set<UUID> properties = ImmutableSet.copyOf( propertyTypeUuids );
+        Preconditions.checkArgument( checkPropertyTypesExist( properties ), "Some properties do not exist." );
+        return schema -> removePropertyTypesFromSchema( properties, schema );
     }
 
     public Consumer<FullQualifiedName> entityTypesSchemaRemover( UUID... entityTypeUuids ) {
-        return schema -> removeEntityTypesFromSchema( ImmutableSet.copyOf( entityTypeUuids ), schema );
+        Set<UUID> types = ImmutableSet.copyOf( entityTypeUuids );
+        Preconditions.checkArgument( checkEntityTypesExist( types ), "Some entity types do not exist." );
+        return schema -> removeEntityTypesFromSchema( types, schema );
     }
 
     private <T extends AbstractSchemaAssociatedSecurableType> void addTypesToSchema(
@@ -179,4 +200,31 @@ public class HazelcastSchemaManager {
     private Stream<String> namespaces() {
         return StreamSupport.stream( schemaQueryService.getNamespaces().spliterator(), false );
     }
+    
+    /**
+     * Basic Validation. 
+     * TODO Unify this and the validation in EdmService into a microservice
+     */
+    
+    public boolean checkSchemaExists( FullQualifiedName schemaName ){
+        Set<String> names = schemas.get( schemaName.getNamespace() );
+        return names == null ? false : names.contains( schemaName.getName() );
+    }
+    
+    public boolean checkPropertyTypesExist( Set<UUID> properties ) {
+        return properties.stream().allMatch( propertyTypes::containsKey );
+    }
+
+    public boolean checkPropertyTypeExists( UUID propertyTypeId ) {
+        return propertyTypes.containsKey( propertyTypeId );
+    }
+
+    public boolean checkEntityTypesExist( Set<UUID> types ) {
+        return types.stream().allMatch( entityTypes::containsKey );
+    }
+    
+    public boolean checkEntityTypeExists( UUID entityTypeId ) {
+        return entityTypes.containsKey( entityTypeId );
+    }
+
 }

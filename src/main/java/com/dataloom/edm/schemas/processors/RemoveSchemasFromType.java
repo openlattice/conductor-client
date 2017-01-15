@@ -2,7 +2,6 @@ package com.dataloom.edm.schemas.processors;
 
 import java.util.Collection;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -28,8 +27,8 @@ public class RemoveSchemasFromType
     public Void process( Entry<UUID, AbstractSchemaAssociatedSecurableType> entry ) {
         AbstractSchemaAssociatedSecurableType propertyType = entry.getValue();
         if ( propertyType != null ) {
-            Set<FullQualifiedName> schemas = entry.getValue().getSchemas();
-            schemas.removeAll( schemas );
+            propertyType.removeFromSchemas( schemas );
+            entry.setValue( propertyType );
         }
         return null;
     }

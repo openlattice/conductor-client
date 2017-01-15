@@ -12,6 +12,9 @@ plugins {
 description = "Kryptnostic Conductor Client"
 group = "com.kryptnostic"
 ext.projectName = "kryptnostic-conductor-client"
+ext.scmUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
+ext.connectionUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
+ext.developerConnectionUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
 
 apply from: "https://raw.githubusercontent.com/kryptnostic/gradles/master/kryptnostic.gradle"
 
@@ -70,6 +73,7 @@ dependencies {
     /*
      * TESTING
      */
+    testCompile "org.cassandraunit:cassandra-unit:3.1.1.0"
     testCompile "junit:junit:${junit_version}"
     testCompile( "org.mockito:mockito-all:${mockito_version}" ) {
         exclude module : 'hamcrest'

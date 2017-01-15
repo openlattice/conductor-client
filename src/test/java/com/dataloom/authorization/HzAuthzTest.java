@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.datastax.driver.core.Session;
+import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
@@ -15,7 +16,7 @@ import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 
-public class HzAuthzTest {
+public class HzAuthzTest extends CassandraBootstrap {
     private static RhizomeApplicationServer      testServer;
     private static HazelcastInstance             hazelcastInstance;
     private static Session                       session;
