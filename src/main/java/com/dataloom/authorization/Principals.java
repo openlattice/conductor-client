@@ -11,6 +11,8 @@ import com.auth0.spring.security.api.Auth0UserDetails;
 import com.google.common.collect.Sets;
 
 public final class Principals {
+    private static final String USER_ID_ATTRIBUTE = "user_id";
+
     private Principals() {}
 
     private static final ThreadLocal<Set<Principal>> currentPrincipalsCache = new ThreadLocal<Set<Principal>>() {
@@ -30,7 +32,7 @@ public final class Principals {
         return new Principal(
                 PrincipalType.USER,
                 ( (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal() )
-                        .getUsername() );
+                        .getAuth0Attribute( USER_ID_ATTRIBUTE ).toString() );
     }
 
     public static Set<Principal> getCurrentPrincipals() {
