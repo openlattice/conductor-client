@@ -6,7 +6,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
