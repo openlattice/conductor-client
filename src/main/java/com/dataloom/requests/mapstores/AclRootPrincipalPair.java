@@ -4,22 +4,24 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
-public class AclRootUserIdPair implements Serializable {
+import com.dataloom.authorization.Principal;
+
+public class AclRootPrincipalPair implements Serializable {
     private static final long serialVersionUID = -1687486728573254618L;
     private List<UUID>        aclRoot;
-    private String            userId;
+    private Principal         user;
 
-    public AclRootUserIdPair( List<UUID> aclRoot, String userId ) {
+    public AclRootPrincipalPair( List<UUID> aclRoot, Principal user ) {
         this.aclRoot = aclRoot;
-        this.userId = userId;
+        this.user = user;
     }
 
     public List<UUID> getAclRoot() {
         return aclRoot;
     }
 
-    public String getUserId() {
-        return userId;
+    public Principal getUser() {
+        return user;
     }
 
     @Override
@@ -27,7 +29,7 @@ public class AclRootUserIdPair implements Serializable {
         final int prime = 31;
         int result = 1;
         result = prime * result + ( ( aclRoot == null ) ? 0 : aclRoot.hashCode() );
-        result = prime * result + ( ( userId == null ) ? 0 : userId.hashCode() );
+        result = prime * result + ( ( user == null ) ? 0 : user.hashCode() );
         return result;
     }
 
@@ -36,19 +38,19 @@ public class AclRootUserIdPair implements Serializable {
         if ( this == obj ) return true;
         if ( obj == null ) return false;
         if ( getClass() != obj.getClass() ) return false;
-        AclRootUserIdPair other = (AclRootUserIdPair) obj;
+        AclRootPrincipalPair other = (AclRootPrincipalPair) obj;
         if ( aclRoot == null ) {
             if ( other.aclRoot != null ) return false;
         } else if ( !aclRoot.equals( other.aclRoot ) ) return false;
-        if ( userId == null ) {
-            if ( other.userId != null ) return false;
-        } else if ( !userId.equals( other.userId ) ) return false;
+        if ( user == null ) {
+            if ( other.user != null ) return false;
+        } else if ( !user.equals( other.user ) ) return false;
         return true;
     }
 
     @Override
     public String toString() {
-        return "AclRootUserIdPair [aclRoot=" + aclRoot + ", userId=" + userId + "]";
+        return "AclRootPrincipalPair [aclRoot=" + aclRoot + ", principal=" + user + "]";
     }
 
 }

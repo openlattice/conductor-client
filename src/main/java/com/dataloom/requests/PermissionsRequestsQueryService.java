@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.edm.internal.DatastoreConstants;
-import com.dataloom.requests.util.PermissionsRequestUtils;
+import com.dataloom.requests.util.PermissionsRequestsUtils;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
@@ -21,56 +21,52 @@ import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
-public class PermissionsRequestQueryService {
+public class PermissionsRequestsQueryService {
     private static final Logger     logger = LoggerFactory
-            .getLogger( PermissionsRequestQueryService.class );
+            .getLogger( PermissionsRequestsQueryService.class );
 
     private final Session           session;
     private final PreparedStatement unresolvedPRsQuery;
     private final PreparedStatement unresolvedPRsQueryByStatus;
     private final PreparedStatement resolvedPRsQuery;
 
-    public PermissionsRequestQueryService( Session session ) {
+    public PermissionsRequestsQueryService( Session session ) {
         this.session = session;
-        unresolvedPRsQuery = session.prepare( QueryBuilder.select().all()
-                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS_REQUESTS_UNRESOLVED.getName() )
+        unresolvedPRsQuery = session.prepare( Tables.PERMISSIONS_REQUESTS_UNRESOLVED.getBuilder().buildLoadAllQuery()
                 .where( QueryBuilder.eq( CommonColumns.ACL_ROOT.cql(), CommonColumns.ACL_ROOT.bindMarker() ) ) );
-        unresolvedPRsQueryByStatus = session.prepare( QueryBuilder.select().all()
-                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS_REQUESTS_UNRESOLVED.getName() )
+        unresolvedPRsQueryByStatus = session.prepare( Tables.PERMISSIONS_REQUESTS_UNRESOLVED.getBuilder().buildLoadAllQuery()
                 .where( QueryBuilder.eq( CommonColumns.ACL_ROOT.cql(), CommonColumns.ACL_ROOT.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.STATUS.cql(), CommonColumns.STATUS.bindMarker() ) ) );
-        resolvedPRsQuery = session.prepare( QueryBuilder.select().all()
-                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS_REQUESTS_RESOLVED.getName() )
+        resolvedPRsQuery = session.prepare( Tables.PERMISSIONS_REQUESTS_RESOLVED.getBuilder().buildLoadAllQuery()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(), CommonColumns.PRINCIPAL_ID.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.ACL_ROOT.cql(), CommonColumns.ACL_ROOT.bindMarker() ) ) );
     }
 
-    public Iterable<PermissionsRequest> getAllUnresolvedRequests(
+    public Iterable<PermissionsRequest> getAllUnresolvedRequestsOfAdmin(
             List<UUID> aclRoot ) {
         ResultSetFuture rsf = session.executeAsync( unresolvedPRsQuery.bind()
                 .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, UUID.class ) );
-        return Iterables.transform( PermissionsRequestUtils.makeLazy( rsf ), PermissionsRequestUtils::getPRFromRow );
+        return Iterables.transform( PermissionsRequestsUtils.makeLazy( rsf ), PermissionsRequestsUtils::getPRFromRow )::iterator;
     }
 
-    public Iterable<PermissionsRequest> getAllUnresolvedRequests(
+    public Iterable<PermissionsRequest> getAllUnresolvedRequestsOfAdmin(
             List<UUID> aclRoot,
             EnumSet<RequestStatus> status ) {
         Stream<ResultSetFuture> rsfs = status.stream()
                 .map( st -> session.executeAsync( unresolvedPRsQueryByStatus.bind()
                         .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, UUID.class )
                         .set( CommonColumns.STATUS.cql(), st, RequestStatus.class ) ) );
-        return PermissionsRequestUtils.getRowsAndFlatten( rsfs )
-                .map( PermissionsRequestUtils::getPRFromRow )
-                .collect( Collectors.toList() );
+        return PermissionsRequestsUtils.getRowsAndFlatten( rsfs )
+                .map( PermissionsRequestsUtils::getPRFromRow )::iterator;
     }
 
-    public Iterable<PermissionsRequest> getResolvedRequests(
-            Principal principal,
-            List<UUID> aclRoot ) {
+    public Iterable<PermissionsRequest> getResolvedRequestsOfUser(
+            List<UUID> aclRoot,
+            Principal principal ) {
         ResultSetFuture rsf = session.executeAsync( resolvedPRsQuery.bind()
                 .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
                 .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, UUID.class ) );
-        return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), PermissionsRequestUtils::getPRFromRow );
+        return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), PermissionsRequestsUtils::getPRFromRow )::iterator;
     }
 
 }

@@ -16,6 +16,7 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.odata.Tables;
@@ -92,7 +93,7 @@ public class AuthorizationQueryService {
                         principal,
                         objectType,
                         desiredPermissions ) );
-        return Iterables.concat( authorizedAclKeys );
+        return Sets.newHashSet( Iterables.concat( authorizedAclKeys ) );
     }
 
     public Iterable<List<UUID>> getAuthorizedAclKeys(
@@ -104,6 +105,16 @@ public class AuthorizationQueryService {
                         .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
                         .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
         return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
+    }
+    
+    public Iterable<List<UUID>> getAuthorizedAclKeys(
+            Set<Principal> principals,
+            EnumSet<Permission> desiredPermissions ) {
+        Iterable<Iterable<List<UUID>>> authorizedAclKeys = Iterables.transform( principals,
+                principal -> getAuthorizedAclKeys(
+                        principal,
+                        desiredPermissions ) );
+        return Sets.newHashSet( Iterables.concat( authorizedAclKeys ) );
     }
 
     public Iterable<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {

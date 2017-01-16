@@ -8,19 +8,18 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
+import com.dataloom.authorization.PrincipalType;
 import com.dataloom.requests.PermissionsRequest;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
-import com.google.common.reflect.TypeToken;
-import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 
-public class PermissionsRequestUtils {
-    private PermissionsRequestUtils() {}
-    
+public class PermissionsRequestsUtils {
+    private PermissionsRequestsUtils() {}
+
     /**
      * Useful adapter for {@code Iterables#transform(Iterable, com.google.common.base.Function)} that allows lazy
      * evaluation of result set future. See the same function in AuthorizationUtils as well.
@@ -33,15 +32,16 @@ public class PermissionsRequestUtils {
     }
 
     public static Stream<Row> getRowsAndFlatten( Stream<ResultSetFuture> stream ) {
-        return stream.map( ResultSetFuture::getUninterruptibly ).flatMap( rs -> StreamSupport.stream( rs.spliterator(), false ) );
+        return stream.map( ResultSetFuture::getUninterruptibly )
+                .flatMap( rs -> StreamSupport.stream( rs.spliterator(), false ) );
     }
-    
-    public static PermissionsRequest getPRFromRow( Row row ){
+
+    public static PermissionsRequest getPRFromRow( Row row ) {
         final List<UUID> aclRoot = RowAdapters.aclRoot( row );
-        final String userId = row.getString( CommonColumns.PRINCIPAL_ID.cql() );
-        Map<UUID, EnumSet<Permission>> permissions = row.getMap( CommonColumns.ACL_CHILDREN_PERMISSIONS.cql(), TypeToken.of( UUID.class ), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+        final Principal user = new Principal( PrincipalType.USER, RowAdapters.principalId( row ) );
+        Map<UUID, EnumSet<Permission>> permissions = RowAdapters.aclChildrenPermissions( row );
         RequestStatus status = RowAdapters.status( row );
-        return new PermissionsRequest( aclRoot, userId, new PermissionsRequestDetails( permissions, status )  );
+        return new PermissionsRequest( aclRoot, user, new PermissionsRequestDetails( permissions, status ) );
     }
 
 }

@@ -2,6 +2,7 @@ package com.kryptnostic.datastore.cassandra;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -12,6 +13,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
@@ -27,6 +29,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import com.google.common.reflect.TypeToken;
+import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 
 public final class RowAdapters {
     private static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
@@ -141,8 +145,20 @@ public final class RowAdapters {
         return row.getList( CommonColumns.ACL_ROOT.cql(), UUID.class );
     }
 
+    public static Map<UUID, EnumSet<Permission>> aclChildrenPermissions( Row row ) {
+        return row.getMap( CommonColumns.ACL_CHILDREN_PERMISSIONS.cql(), TypeToken.of( UUID.class ), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+    }
+
     public static RequestStatus status( Row row ) {
         return row.get( CommonColumns.STATUS.cql(), RequestStatus.class );
+    }
+    
+    public static String principalId( Row row ) {
+        return row.getString( CommonColumns.PRINCIPAL_ID.cql());
+    }
+
+    public static UUID requestId( Row row ) {
+        return row.getUUID( CommonColumns.REQUESTID.cql());
     }
 
     /**

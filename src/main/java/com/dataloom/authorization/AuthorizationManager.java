@@ -83,16 +83,8 @@ public interface AuthorizationManager {
             Set<Principal> principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
+
+    Iterable<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
     
-    // Methods for requesting permissions
-
-    void addPermissionsRequestForPropertyTypeInEntitySet(
-            String username,
-            Principal principal,
-            String entitySetName,
-            FullQualifiedName propertyTypeFqn,
-            EnumSet<Permission> permissions );
-
-    void removePermissionsRequestForEntitySet( UUID id );
-
+    Iterable<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
 }

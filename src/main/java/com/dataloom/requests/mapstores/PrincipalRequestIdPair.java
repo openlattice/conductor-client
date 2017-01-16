@@ -3,19 +3,21 @@ package com.dataloom.requests.mapstores;
 import java.io.Serializable;
 import java.util.UUID;
 
-public class UserIdRequestIdPair implements Serializable {
+import com.dataloom.authorization.Principal;
+
+public class PrincipalRequestIdPair implements Serializable {
     private static final long serialVersionUID = -8095855430605074329L;
 
-    private String              userId;
+    private Principal         user;
     private UUID              requestId;
 
-    public UserIdRequestIdPair( String userId, UUID requestId ) {
-        this.userId = userId;
+    public PrincipalRequestIdPair( Principal user, UUID requestId ) {
+        this.user = user;
         this.requestId = requestId;
     }
 
-    public String getUserId() {
-        return userId;
+    public Principal getUser() {
+        return user;
     }
 
     public UUID getRequestId() {
@@ -27,7 +29,7 @@ public class UserIdRequestIdPair implements Serializable {
         final int prime = 31;
         int result = 1;
         result = prime * result + ( ( requestId == null ) ? 0 : requestId.hashCode() );
-        result = prime * result + ( ( userId == null ) ? 0 : userId.hashCode() );
+        result = prime * result + ( ( user == null ) ? 0 : user.hashCode() );
         return result;
     }
 
@@ -36,19 +38,19 @@ public class UserIdRequestIdPair implements Serializable {
         if ( this == obj ) return true;
         if ( obj == null ) return false;
         if ( getClass() != obj.getClass() ) return false;
-        UserIdRequestIdPair other = (UserIdRequestIdPair) obj;
+        PrincipalRequestIdPair other = (PrincipalRequestIdPair) obj;
         if ( requestId == null ) {
             if ( other.requestId != null ) return false;
         } else if ( !requestId.equals( other.requestId ) ) return false;
-        if ( userId == null ) {
-            if ( other.userId != null ) return false;
-        } else if ( !userId.equals( other.userId ) ) return false;
+        if ( user == null ) {
+            if ( other.user != null ) return false;
+        } else if ( !user.equals( other.user ) ) return false;
         return true;
     }
 
     @Override
     public String toString() {
-        return "UserIdRequestIdPair [userId=" + userId + ", requestId=" + requestId + "]";
+        return "PrincipalRequestIdPair [principal=" + user + ", requestId=" + requestId + "]";
     }
 
 }
