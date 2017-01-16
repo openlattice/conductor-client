@@ -4,15 +4,14 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.SecurableObjectType;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
@@ -36,8 +35,8 @@ public final class AuthorizationUtils {
         return new AceKey( getAclKeysFromRow( row ), principal );
     }
 
-    public static List<AclKeyPathFragment> getAclKeysFromRow( Row row ) {
-        return row.getList( CommonColumns.ACL_KEYS.cql(), AclKeyPathFragment.class );
+    public static List<UUID> getAclKeysFromRow( Row row ) {
+        return row.getList( CommonColumns.ACL_KEYS.cql(), UUID.class );
     }
 
     /**
@@ -53,13 +52,7 @@ public final class AuthorizationUtils {
         return rows::iterator;
     }
 
-    public static SecurableObjectType extractObjectType( AceKey key ) {
-        AclKeyPathFragment aclKey = getLastAclKeySafely( key.getKey() );
-        // TODO: Do something better than return null.
-        return aclKey == null ? null : aclKey.getType();
-    }
-
-    public static AclKeyPathFragment getLastAclKeySafely( List<AclKeyPathFragment> aclKeys ) {
+    public static UUID getLastAclKeySafely( List<UUID> aclKeys ) {
         return aclKeys.isEmpty() ? null : aclKeys.get( aclKeys.size() - 1 );
     }
 

@@ -9,7 +9,6 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.SecurableObjectType;
@@ -45,7 +44,7 @@ public class TypeCodecsPod {
     }
 
     @Bean
-    public TypeCodec<AclKeyPathFragment> aclKeyCodec() {
+    public TypeCodec<UUID> aclKeyCodec() {
         return new AclKeyPathFragmentTypeCodec();
     }
 
@@ -72,7 +71,7 @@ public class TypeCodecsPod {
     public EnumNameCodec<PrincipalType> principalTypeCodec() {
         return new EnumNameCodec<>( PrincipalType.class );
     }
-    
+
     @Bean
     public EnumNameCodec<SecurableObjectType> securableObjectTypeCodec() {
         return new EnumNameCodec<>( SecurableObjectType.class );

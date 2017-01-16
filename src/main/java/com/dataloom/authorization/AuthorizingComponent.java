@@ -3,6 +3,7 @@ package com.dataloom.authorization;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import com.dataloom.edm.internal.AbstractSecurableObject;
@@ -15,30 +16,30 @@ public interface AuthorizingComponent {
             Permission requiredPermission,
             Permission... requiredPermissions ) {
         return abs -> isAuthorized( requiredPermission, requiredPermissions )
-                .test( ImmutableList.of( abs.getAclKeyPathFragment() ) );
+                .test( ImmutableList.of( abs.getId() ) );
     }
 
-    default Predicate<List<AclKeyPathFragment>> isAuthorized(
+    default Predicate<List<UUID>> isAuthorized(
             Permission requiredPermission,
             Permission... requiredPermissions ) {
         return isAuthorized( EnumSet.of( requiredPermission, requiredPermissions ) );
     }
 
-    default Predicate<List<AclKeyPathFragment>> isAuthorized( Set<Permission> requiredPermissions ) {
+    default Predicate<List<UUID>> isAuthorized( Set<Permission> requiredPermissions ) {
         return aclKey -> getAuthorizationManager().checkIfHasPermissions( aclKey,
                 Principals.getCurrentPrincipals(),
                 requiredPermissions );
     }
 
-    default void ensureReadAccess( List<AclKeyPathFragment> aclKey ) {
+    default void ensureReadAccess( List<UUID> aclKey ) {
         accessCheck( aclKey, EnumSet.of( Permission.READ ) );
     }
 
-    default void ensureWriteAccess( List<AclKeyPathFragment> aclKey ) {
+    default void ensureWriteAccess( List<UUID> aclKey ) {
         accessCheck( aclKey, EnumSet.of( Permission.WRITE ) );
     }
 
-    default void accessCheck( List<AclKeyPathFragment> aclKey, Set<Permission> requiredPermissions ) {
+    default void accessCheck( List<UUID> aclKey, Set<Permission> requiredPermissions ) {
         if ( !getAuthorizationManager().checkIfHasPermissions(
                 aclKey,
                 Principals.getCurrentPrincipals(),

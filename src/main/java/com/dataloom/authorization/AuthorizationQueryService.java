@@ -3,6 +3,7 @@ package com.dataloom.authorization;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ public class AuthorizationQueryService {
     private final PreparedStatement             authorizedAclKeysQuery;
     private final PreparedStatement             authorizedAclKeysForObjectTypeQuery;
     private final PreparedStatement             aclsForSecurableObjectQuery;
+    private final PreparedStatement             setObjectType;
     private final IMap<AceKey, Set<Permission>> aces;
 
     public AuthorizationQueryService( Session session, HazelcastInstance hazelcastInstance ) {
@@ -60,9 +62,15 @@ public class AuthorizationQueryService {
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
                         CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) ) );
 
+        setObjectType = session.prepare( QueryBuilder
+                .update( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS.getName() )
+                .with( QueryBuilder.set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
+                        CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) )
+                .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(), CommonColumns.ACL_KEYS.bindMarker() ) ) );
+
     }
 
-    public Iterable<List<AclKeyPathFragment>> getAuthorizedAclKeys(
+    public Iterable<List<UUID>> getAuthorizedAclKeys(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
@@ -75,11 +83,11 @@ public class AuthorizationQueryService {
         return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
     }
 
-    public Iterable<List<AclKeyPathFragment>> getAuthorizedAclKeys(
+    public Iterable<List<UUID>> getAuthorizedAclKeys(
             Set<Principal> principals,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
-        Iterable<Iterable<List<AclKeyPathFragment>>> authorizedAclKeys = Iterables.transform( principals,
+        Iterable<Iterable<List<UUID>>> authorizedAclKeys = Iterables.transform( principals,
                 principal -> getAuthorizedAclKeys(
                         principal,
                         objectType,
@@ -87,7 +95,7 @@ public class AuthorizationQueryService {
         return Iterables.concat( authorizedAclKeys );
     }
 
-    public Iterable<List<AclKeyPathFragment>> getAuthorizedAclKeys(
+    public Iterable<List<UUID>> getAuthorizedAclKeys(
             Principal principal,
             EnumSet<Permission> desiredPermissions ) {
         ResultSetFuture rsf = session.executeAsync(
@@ -98,7 +106,7 @@ public class AuthorizationQueryService {
         return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
     }
 
-    public Iterable<Principal> getPrincipalsForSecurableObject( List<AclKeyPathFragment> aclKeys ) {
+    public Iterable<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {
         ResultSetFuture rsf = session.executeAsync(
                 aclsForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
                         aclKeys ) );
@@ -108,7 +116,7 @@ public class AuthorizationQueryService {
         return principals;
     }
 
-    public Acl getAclsForSecurableObject( List<AclKeyPathFragment> aclKeys ) {
+    public Acl getAclsForSecurableObject( List<UUID> aclKeys ) {
         Iterable<Principal> principals = getPrincipalsForSecurableObject( aclKeys );
         Iterable<AceFuture> futureAces = Iterables.transform( principals,
                 principal -> new AceFuture( principal, aces.getAsync(
@@ -116,4 +124,7 @@ public class AuthorizationQueryService {
         return new Acl( aclKeys, Iterables.transform( futureAces, AceFuture::getUninterruptibly ) );
     }
 
+//    public void setObjectType( List<UUID> aclKey, SecurableObjectType objectType ) {
+//        setObjectType.bind().set( CommonColumns.ACL_KEYS.cql(), );
+//    }
 }
