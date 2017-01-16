@@ -30,7 +30,7 @@ public final class Principals {
         return new Principal(
                 PrincipalType.USER,
                 ( (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal() )
-                        .getUsername() );
+                        .getAuth0Attribute("user_id").toString() );
     }
 
     public static Set<Principal> getCurrentPrincipals() {
