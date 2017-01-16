@@ -111,6 +111,7 @@ public enum Tables implements TableDef {
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
+                        .columns( CommonColumns.PERMISSIONS )
                         .staticColumns( CommonColumns.SECURABLE_OBJECT_TYPE )
                         .secondaryIndex( CommonColumns.PERMISSIONS )
                         .sasi( CommonColumns.SECURABLE_OBJECT_TYPE );
