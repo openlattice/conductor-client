@@ -229,11 +229,11 @@ public class EdmService implements EdmManager {
     public void createEntitySet( Principal principal, EntitySet entitySet ) {
         try {
             Principals.ensureUser( principal );
-
-            createEntitySet( entitySet );
-
             EntityType entityType = checkNotNull( entityTypes.get( entitySet.getEntityTypeId() ),
                     "Entity type does not exist." );
+            
+            createEntitySet( entitySet );
+
             authorizations.addPermission( ImmutableList.of( entitySet.getId() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
