@@ -14,7 +14,7 @@ import com.kryptnostic.datastore.services.EdmManager;
 
 public class EdmAuthorizationHelper {
 
-    private final EdmManager                    edm;
+    private final EdmManager           edm;
     private final AuthorizationManager authz;
 
     public EdmAuthorizationHelper( EdmManager edm, AuthorizationManager authz ) {
@@ -30,15 +30,14 @@ public class EdmAuthorizationHelper {
                 getAllPropertiesOnEntitySet( entitySetId ),
                 requiredPermissions );
     }
-    
+
     public Set<UUID> getAuthorizedPropertiesOnEntitySet(
             UUID entitySetId,
             Set<UUID> selectedProperties,
             EnumSet<Permission> requiredPermissions ) {
-        AclKeyPathFragment esKey = new AclKeyPathFragment( SecurableObjectType.EntitySet, entitySetId );
         return selectedProperties.stream()
-                .filter( ptId -> authz.checkIfHasPermissions( Arrays.asList( esKey,
-                        new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, ptId ) ),
+                .filter( ptId -> authz.checkIfHasPermissions( Arrays.asList( entitySetId,
+                        ptId ),
                         Principals.getCurrentPrincipals(),
                         requiredPermissions ) )
                 .collect( Collectors.toSet() );
@@ -49,13 +48,13 @@ public class EdmAuthorizationHelper {
         EntityType et = edm.getEntityType( es.getEntityTypeId() );
         return et.getProperties();
     }
-    
+
     /**
      * Static helper methods for List &lt; AclKey &gt; creation.
      */
-    
-    public static List<AclKeyPathFragment> getSecurableObjectPath( SecurableObjectType objType, UUID objId ){
+
+    public static List<AclKeyPathFragment> getSecurableObjectPath( SecurableObjectType objType, UUID objId ) {
         return Arrays.asList( new AclKeyPathFragment( objType, objId ) );
     }
-    
+
 }

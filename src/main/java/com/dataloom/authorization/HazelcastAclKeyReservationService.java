@@ -1,19 +1,21 @@
 package com.dataloom.authorization;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.UUID;
 
-import com.dataloom.edm.internal.AbstractSecurableObject;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.exceptions.AclKeyConflictException;
 import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
+import com.dataloom.edm.internal.AbstractSecurableObject;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
-import static com.google.common.base.Preconditions.*;
 
 public class HazelcastAclKeyReservationService {
     /**
@@ -38,8 +40,8 @@ public class HazelcastAclKeyReservationService {
         }
     }
 
-    private final IMap<FullQualifiedName, AclKeyPathFragment> aclKeys;
-    private final IMap<AclKeyPathFragment, FullQualifiedName> fqns;
+    private final IMap<FullQualifiedName, UUID> aclKeys;
+    private final IMap<UUID, FullQualifiedName> fqns;
 
     public HazelcastAclKeyReservationService( HazelcastInstance hazelcast ) {
         this.aclKeys = hazelcast.getMap( HazelcastMap.ACL_KEYS.name() );
@@ -50,7 +52,7 @@ public class HazelcastAclKeyReservationService {
         /*
          * Attempt to associated newFqn with existing aclKey
          */
-        final AclKeyPathFragment existingAclKey = aclKeys.putIfAbsent( newFqn, Util.getSafely( aclKeys, oldFqn ) );
+        final UUID existingAclKey = aclKeys.putIfAbsent( newFqn, Util.getSafely( aclKeys, oldFqn ) );
 
         if ( existingAclKey == null ) {
             aclKeys.delete( oldFqn );
@@ -72,15 +74,14 @@ public class HazelcastAclKeyReservationService {
         /*
          * Template this call and make wrappers that directly insert into type maps making fqns redundant.
          */
-        final FullQualifiedName fqn = fqns.putIfAbsent( type.getAclKeyPathFragment(), type.getType() );
+        final FullQualifiedName fqn = fqns.putIfAbsent( type.getId(), type.getType() );
         final boolean fqnMatches = type.getType().equals( fqn );
 
         if ( fqn == null || fqnMatches ) {
             /*
              * AclKey <-> Type association exists and is correct. Safe to try and register AclKey for type.
              */
-            final AclKeyPathFragment existingAclKey = aclKeys.putIfAbsent( type.getType(),
-                    type.getAclKeyPathFragment() );
+            final UUID existingAclKey = aclKeys.putIfAbsent( type.getType(), type.getId() );
 
             /*
              * Even if aclKey matches, letting two threads go through type creation creates potential problems when
@@ -91,7 +92,7 @@ public class HazelcastAclKeyReservationService {
             if ( existingAclKey != null ) {
                 if ( fqn == null ) {
                     // We need to remove UUID reservation
-                    fqns.delete( type.getAclKeyPathFragment() );
+                    fqns.delete( type.getId() );
                 }
                 throw new TypeExistsException( "Type " + type.toString() + "already exists." );
             }
@@ -117,7 +118,7 @@ public class HazelcastAclKeyReservationService {
         /*
          * Template this call and make wrappers that directly insert into type maps making fqns redundant.
          */
-        final FullQualifiedName fqn = fqns.putIfAbsent( type.getAclKeyPathFragment(),
+        final FullQualifiedName fqn = fqns.putIfAbsent( type.getId(),
                 Util.getSafely( FQNS, type.getCategory() ) );
 
         /*

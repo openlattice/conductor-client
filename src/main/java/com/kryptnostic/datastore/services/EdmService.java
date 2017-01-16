@@ -49,12 +49,10 @@ import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.durableexecutor.DurableExecutorService;
-import com.kryptnostic.conductor.rpc.ConductorCall;
-import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
-	
+
     private static final Logger                               logger = LoggerFactory.getLogger( EdmService.class );
     private final IMap<UUID, PropertyType>                    propertyTypes;
     private final IMap<UUID, EntityType>                      entityTypes;
@@ -67,10 +65,10 @@ public class EdmService implements EdmManager {
     private final CassandraEntitySetManager                   entitySetManager;
     private final CassandraTypeManager                        entityTypeManager;
     private final HazelcastSchemaManager                      schemaManager;
-    private final DurableExecutorService					  executor;
-    
+    private final DurableExecutorService                      executor;
+
     @Inject
-    private EventBus eventBus;
+    private EventBus                                          eventBus;
 
     public EdmService(
             String keyspace,
@@ -162,7 +160,7 @@ public class EdmService implements EdmManager {
              * Only allow updates if entity type is not already in use.
              */
             if ( Iterables.isEmpty(
-                    entitySetManager.getAllEntitySetsForType( entityType.getAclKeyPathFragment().getId() ) ) ) {
+                    entitySetManager.getAllEntitySetsForType( entityType.getId() ) ) ) {
                 // Retrieve properties known to user
                 Set<UUID> currentPropertyTypes = existing.getProperties();
                 // Remove the removable property types in database properly; this step takes care of removal of
@@ -203,11 +201,9 @@ public class EdmService implements EdmManager {
         /*
          * We cleanup permissions first as this will make entity set unavailable, even if delete fails.
          */
-        final AclKeyPathFragment entitySetAclKey = new AclKeyPathFragment( SecurableObjectType.EntitySet, entitySetId );
-        authorizations.deletePermissions( ImmutableList.of( entitySetAclKey ) );
+        authorizations.deletePermissions( ImmutableList.of( entitySetId ) );
         entityType.getProperties().stream()
-                .map( propertyTypeId -> ImmutableList.of( entitySetAclKey,
-                        new AclKeyPathFragment( SecurableObjectType.PropertyTypeInEntitySet, propertyTypeId ) ) )
+                .map( propertyTypeId -> ImmutableList.of( entitySetId, propertyTypeId ) )
                 .forEach( authorizations::deletePermissions );
 
         Util.deleteSafely( entitySets, entitySetId );
@@ -239,19 +235,21 @@ public class EdmService implements EdmManager {
 
             createEntitySet( entitySet );
 
-            EntityType entityType = checkNotNull( entityTypes.get( entitySet.getEntityTypeId() ), "Entity type does not exist." );
-            authorizations.addPermission( ImmutableList.of( entitySet.getAclKeyPathFragment() ),
+            EntityType entityType = checkNotNull( entityTypes.get( entitySet.getEntityTypeId() ),
+                    "Entity type does not exist." );
+            authorizations.addPermission( ImmutableList.of( entitySet.getId() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
             entityType.getProperties().stream()
-                    .map( propertyTypeId -> new AclKeyPathFragment(
-                            SecurableObjectType.PropertyTypeInEntitySet,
-                            propertyTypeId ) )
-                    .forEach( propertyTypeAclKey -> authorizations.addPermission(
-                            ImmutableList.of( entitySet.getAclKeyPathFragment(), propertyTypeAclKey ),
+                    .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
+                    .forEach( aclKey -> authorizations.addPermission(
+                            aclKey,
                             principal,
                             EnumSet.allOf( Permission.class ) ) );
-            eventBus.post( new EntitySetCreatedEvent( entitySet, Lists.newArrayList( propertyTypes.getAll( entityType.getProperties() ).values() ), principal ) );
+            eventBus.post( new EntitySetCreatedEvent(
+                    entitySet,
+                    Lists.newArrayList( propertyTypes.getAll( entityType.getProperties() ).values() ),
+                    principal ) );
         } catch ( Exception e ) {
             throw new IllegalStateException( "Entity Set not created." );
         }
@@ -413,7 +411,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean checkEntitySetExists( String name ) {
-        return getEntitySet( name ) != null ;
+        return getEntitySet( name ) != null;
     }
 
     @Override
