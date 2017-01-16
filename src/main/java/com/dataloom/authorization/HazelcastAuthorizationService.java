@@ -4,9 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -121,15 +119,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     @Override
     public Acl getAllSecurableObjectPermissions( List<UUID> key ) {
         return aqs.getAclsForSecurableObject( key );
-    }
-
-    public Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces ) {
-        // Map acl keys into nested format based on length
-        //
-        aces.entrySet().stream().map( e -> aqs.getAuthorizedAclKeys( e.getKey(), e.getValue() ) ).collect( HashSet::new,
-                ( s, v ) -> v.forEach( aclKey -> s.add( aclKey ) ),
-                ( lhs, rhs ) -> lhs.addAll( rhs ) );
-        return null;
     }
 
     @Override

@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.internal.EntitySet;
@@ -65,9 +64,9 @@ public interface EdmManager {
 
     Collection<PropertyType> getPropertyTypes( Set<UUID> properties );
 
-    Set<AclKeyPathFragment> getAclKeys( Set<FullQualifiedName> fqns );
+    Set<UUID> getAclKeys( Set<FullQualifiedName> fqns );
 
-    AclKeyPathFragment getTypeAclKey( FullQualifiedName fqns );
+    UUID getTypeAclKey( FullQualifiedName fqns );
 
     Set<UUID> getEntityTypeUuids( Set<FullQualifiedName> fqns );
 

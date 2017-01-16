@@ -48,7 +48,7 @@ public enum Tables implements TableDef {
                 return new CassandraTableBuilder( ACL_KEYS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.FQN )
-                        .columns( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.SECURABLE_OBJECTID );
+                        .columns( CommonColumns.SECURABLE_OBJECTID );
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
@@ -86,7 +86,7 @@ public enum Tables implements TableDef {
             case FQNS:
                 return new CassandraTableBuilder( FQNS )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.SECURABLE_OBJECT_TYPE, CommonColumns.SECURABLE_OBJECTID )
+                        .partitionKey( CommonColumns.SECURABLE_OBJECTID )
                         .columns( CommonColumns.FQN );
             case ORGANIZATIONS:
                 return new CassandraTableBuilder( ORGANIZATIONS )

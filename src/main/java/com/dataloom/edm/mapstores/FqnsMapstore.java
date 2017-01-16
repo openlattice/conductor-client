@@ -1,9 +1,10 @@
 package com.dataloom.edm.mapstores;
 
+import java.util.UUID;
+
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;
@@ -16,7 +17,7 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
 public class FqnsMapstore
-        extends AbstractStructuredCassandraPartitionKeyValueStore<AclKeyPathFragment, FullQualifiedName> {
+        extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, FullQualifiedName> {
     private static final CassandraTableBuilder ctb = Tables.FQNS.getBuilder();
 
     public FqnsMapstore( Session session ) {
@@ -24,22 +25,21 @@ public class FqnsMapstore
     }
 
     @Override
-    protected BoundStatement bind( AclKeyPathFragment key, BoundStatement bs ) {
-        return bs                .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), key.getType(), SecurableObjectType.class )
-                .setUUID( CommonColumns.SECURABLE_OBJECTID.cql(), key.getId() );
+    protected BoundStatement bind( UUID key, BoundStatement bs ) {
+        return bs
+                .setUUID( CommonColumns.SECURABLE_OBJECTID.cql(), key );
     }
 
     @Override
-    protected BoundStatement bind( AclKeyPathFragment key, FullQualifiedName value, BoundStatement bs ) {
-        return bs.set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), key.getType(), SecurableObjectType.class )
-                .setUUID( CommonColumns.SECURABLE_OBJECTID.cql(), key.getId() )
+    protected BoundStatement bind( UUID key, FullQualifiedName value, BoundStatement bs ) {
+        return bs
+                .setUUID( CommonColumns.SECURABLE_OBJECTID.cql(), key )
                 .set( CommonColumns.FQN.cql(), value, FullQualifiedName.class );
     }
 
     @Override
-    protected AclKeyPathFragment mapKey( Row rs ) {
-        return rs == null ? null : new AclKeyPathFragment( rs.get( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), SecurableObjectType.class ),
-                rs.getUUID( CommonColumns.SECURABLE_OBJECTID.cql() ) );
+    protected UUID mapKey( Row rs ) {
+        return rs == null ? null : rs.getUUID( CommonColumns.SECURABLE_OBJECTID.cql() );
     }
 
     @Override
@@ -49,7 +49,7 @@ public class FqnsMapstore
     }
 
     @Override
-    public AclKeyPathFragment generateTestKey() {
+    public UUID generateTestKey() {
         throw new NotImplementedException( "GENERATION OF TEST KEY NOT IMPLEMENTED FOR ACL KEY MAPSTORE." );
     }
 

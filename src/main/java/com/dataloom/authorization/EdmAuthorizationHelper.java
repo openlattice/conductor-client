@@ -2,7 +2,6 @@ package com.dataloom.authorization;
 
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -47,14 +46,6 @@ public class EdmAuthorizationHelper {
         EntitySet es = edm.getEntitySet( entitySetId );
         EntityType et = edm.getEntityType( es.getEntityTypeId() );
         return et.getProperties();
-    }
-
-    /**
-     * Static helper methods for List &lt; AclKey &gt; creation.
-     */
-
-    public static List<AclKeyPathFragment> getSecurableObjectPath( SecurableObjectType objType, UUID objId ) {
-        return Arrays.asList( new AclKeyPathFragment( objType, objId ) );
     }
 
 }

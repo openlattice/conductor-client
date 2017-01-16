@@ -12,7 +12,6 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
@@ -29,7 +28,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 
 public final class RowAdapters {
-    private static final Logger logger            = LoggerFactory.getLogger( RowAdapters.class );
+    private static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
 
     private RowAdapters() {}
 
@@ -46,7 +45,10 @@ public final class RowAdapters {
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 m.put( pt.getType(),
-                        deserializeValue( mapper, row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ), pt.getDatatype(), entityId ) );
+                        deserializeValue( mapper,
+                                row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                                pt.getDatatype(),
+                                entityId ) );
             }
         }
         return m;
@@ -91,9 +93,9 @@ public final class RowAdapters {
         return new EntitySet( id, type, entityTypeId, name, title, description );
     }
 
-    public static PropertyType propertyType( Row row ) {        
+    public static PropertyType propertyType( Row row ) {
         UUID id = id( row );
-        FullQualifiedName type = new FullQualifiedName( namespace(row), name(row) );
+        FullQualifiedName type = new FullQualifiedName( namespace( row ), name( row ) );
         String title = title( row );
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
@@ -103,7 +105,7 @@ public final class RowAdapters {
 
     public static EntityType entityType( Row row ) {
         UUID id = id( row );
-        FullQualifiedName type = new FullQualifiedName( namespace(row), name(row) );
+        FullQualifiedName type = new FullQualifiedName( namespace( row ), name( row ) );
         String title = title( row );
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
@@ -130,12 +132,8 @@ public final class RowAdapters {
         return row.get( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), SecurableObjectType.class );
     }
 
-    public static AclKeyPathFragment akpf( Row row ) {
-        return new AclKeyPathFragment( securableObjectType( row ), id( row ) );
-    }
-
-    public static List<AclKeyPathFragment> aclKey( Row row ) {
-        return row.getList( CommonColumns.ACL_KEYS.cql(), AclKeyPathFragment.class );
+    public static List<UUID> aclKey( Row row ) {
+        return row.getList( CommonColumns.ACL_KEYS.cql(), UUID.class );
     }
 
     /**
