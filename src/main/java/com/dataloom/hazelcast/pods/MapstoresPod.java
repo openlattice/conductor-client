@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.edm.internal.EntitySet;
@@ -54,12 +53,12 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<FullQualifiedName, AclKeyPathFragment> aclKeysMapstore() {
+    public SelfRegisteringMapStore<FullQualifiedName, UUID> aclKeysMapstore() {
         return new AclKeysMapstore( session );
     }
 
     @Bean
-    public SelfRegisteringMapStore<AclKeyPathFragment, FullQualifiedName> fqnsMapstore() {
+    public SelfRegisteringMapStore<UUID, FullQualifiedName> fqnsMapstore() {
         return new FqnsMapstore( session );
     }
 

@@ -23,12 +23,12 @@ public class TypeCodecsPod {
     public EnumNameCodec<EdmPrimitiveTypeKind> edmPrimitiveTypeKindCodec() {
         return new EnumNameCodec<>( EdmPrimitiveTypeKind.class );
     }
-    
+
     @Bean
     public EnumNameCodec<SecurableObjectType> securableObjectTypeCodec() {
         return new EnumNameCodec<>( SecurableObjectType.class );
     }
-    
+
     @Bean
     public EnumNameCodec<PrincipalType> principalType() {
         return new EnumNameCodec<>( PrincipalType.class );
@@ -48,12 +48,12 @@ public class TypeCodecsPod {
     public TypeCodec<FullQualifiedName> fqnCodec() {
         return new FullQualifiedNameTypeCodec();
     }
-    
+
     @Bean
-    public TypeCodec<AclKeyPathFragment> aclKeyCodec() {
+    public TypeCodec<UUID> aclKeyCodec() {
         return new AclKeyPathFragmentTypeCodec();
     }
-    
+
     @Bean
     public TypeCodec<Instant> instantCodec() {
         return InstantCodec.instance;

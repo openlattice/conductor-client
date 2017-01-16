@@ -40,7 +40,7 @@ public class HzAuthzTest extends CassandraBootstrap {
 
     @Test
     public void testAddEntitySetPermission() {
-        AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
+        UUID key = UUID.randomUUID();
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
@@ -52,20 +52,20 @@ public class HzAuthzTest extends CassandraBootstrap {
 
     @Test
     public void testTypeMistmatchPermission() {
-        AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
+        UUID key = UUID.randomUUID();
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
         hzAuthz.addPermission( ImmutableList.of( key ), p, permissions );
-        AclKeyPathFragment badkey = new AclKeyPathFragment( SecurableObjectType.Datasource, UUID.randomUUID() );
+        UUID badkey = UUID.randomUUID();
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( badkey ), ImmutableSet.of( p ), permissions ) );
     }
 
     @Test
     public void testRemovePermissions() {
-        AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
+        UUID key = UUID.randomUUID();
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
@@ -80,7 +80,7 @@ public class HzAuthzTest extends CassandraBootstrap {
 
     @Test
     public void testSetPermissions() {
-        AclKeyPathFragment key = new AclKeyPathFragment( SecurableObjectType.EntitySet, UUID.randomUUID() );
+        UUID key = UUID.randomUUID();
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         EnumSet<Permission> badPermissions = EnumSet.of( Permission.DISCOVER, Permission.READ, Permission.LINK );

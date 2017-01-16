@@ -1,14 +1,11 @@
 package com.dataloom.authorization.mapstores;
 
-import static com.dataloom.authorization.util.AuthorizationUtils.extractObjectType;
-
 import java.util.EnumSet;
+import java.util.UUID;
 
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;
@@ -27,17 +24,16 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
 
     @Override
     protected BoundStatement bind( AceKey key, BoundStatement bs ) {
-        return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), AclKeyPathFragment.class )
+        return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), UUID.class )
                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), key.getPrincipal().getType(), PrincipalType.class )
                 .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getId() );
     }
 
     @Override
     protected BoundStatement bind( AceKey key, EnumSet<Permission> permissions, BoundStatement bs ) {
-        return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), AclKeyPathFragment.class )
+        return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), UUID.class )
                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), key.getPrincipal().getType(), PrincipalType.class )
                 .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getId() )
-                .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), extractObjectType( key ), SecurableObjectType.class )
                 .set( CommonColumns.PERMISSIONS.cql(),
                         permissions,
                         EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );

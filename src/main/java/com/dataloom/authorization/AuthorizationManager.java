@@ -2,7 +2,6 @@ package com.dataloom.authorization;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,49 +43,47 @@ public interface AuthorizationManager {
      */
 //    void reserveOwnershipIfNotExists( List<AclKey> aclKeys, Principal principal ) throws AclKeyConflictException;
     void addPermission(
-            List<AclKeyPathFragment> aclKeys,
+            List<UUID> aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
     void removePermission(
-            List<AclKeyPathFragment> aclKeys,
+            List<UUID> aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
     void setPermission(
-            List<AclKeyPathFragment> aclKeys,
+            List<UUID> aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
-    void deletePermissions( List<AclKeyPathFragment> aceKey );
+    void deletePermissions( List<UUID> aceKey );
 
     boolean checkIfHasPermissions(
-            List<AclKeyPathFragment> aclKeys,
+            List<UUID> aclKeys,
             Set<Principal> principals,
             Set<Permission> requiredPermissions );
 
-    boolean checkIfUserIsOwner( List<AclKeyPathFragment> aclkeys, Principal principal );
+    boolean checkIfUserIsOwner( List<UUID> aclkeys, Principal principal );
     // Utility functions for retrieving permissions
 
     Set<Permission> getSecurableObjectPermissions(
-            List<AclKeyPathFragment> aclKeys,
+            List<UUID> aclKeys,
             Set<Principal> principals );
 
     Acl getAllSecurableObjectPermissions(
-            List<AclKeyPathFragment> key );
+            List<UUID> key );
 
-    Iterable<AclKeyPathFragment> getAuthorizedObjectsOfType(
+    Iterable<UUID> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
 
-    Iterable<AclKeyPathFragment> getAuthorizedObjectsOfType(
+    Iterable<UUID> getAuthorizedObjectsOfType(
             Set<Principal> principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
     
-    Map<String, AclKeyInfo> getAuthorizedObjects( Map<Principal, EnumSet<Permission>> aces );
-
     // Methods for requesting permissions
 
     void addPermissionsRequestForPropertyTypeInEntitySet(
