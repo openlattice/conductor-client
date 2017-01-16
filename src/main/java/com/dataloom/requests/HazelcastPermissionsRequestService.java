@@ -3,11 +3,11 @@ package com.dataloom.requests;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.requests.mapstores.AclRootRequestDetailsPair;
@@ -40,9 +40,9 @@ public class HazelcastPermissionsRequestService implements PermissionsRequestMan
 
     @Override
     public void upsertRequest(
-            List<AclKeyPathFragment> aclRoot,
+            List<UUID> aclRoot,
             Principal principal,
-            Map<AclKeyPathFragment, EnumSet<Permission>> permissions ) {
+            Map<UUID, EnumSet<Permission>> permissions ) {
         unresolvedPRs.put( new AclRootUserIdPair( aclRoot, principal.getId() ), new PermissionsRequestDetails(
                 permissions,
                 RequestStatus.SUBMITTED ) );
@@ -50,7 +50,7 @@ public class HazelcastPermissionsRequestService implements PermissionsRequestMan
     }
 
     @Override
-    public void updateRequestStatus( List<AclKeyPathFragment> aclRoot, Principal principal, RequestStatus status ) {
+    public void updateRequestStatus( List<UUID> aclRoot, Principal principal, RequestStatus status ) {
         switch ( status ) {
             case APPROVED:
             case DECLINED:
@@ -63,7 +63,7 @@ public class HazelcastPermissionsRequestService implements PermissionsRequestMan
         }
     }
 
-    private void resolveRequest( List<AclKeyPathFragment> aclRoot, Principal principal, RequestStatus status ) {
+    private void resolveRequest( List<UUID> aclRoot, Principal principal, RequestStatus status ) {
         PermissionsRequestDetails details = unresolvedPRs.remove( new AclRootUserIdPair( aclRoot, principal.getId() ) );
         Preconditions.checkNotNull( details, "Permissions request does not exist." );
         details.setStatus( status );
@@ -73,7 +73,7 @@ public class HazelcastPermissionsRequestService implements PermissionsRequestMan
 
     @Override
     public PermissionsRequest getUnresolvedRequest(
-            List<AclKeyPathFragment> aclRoot,
+            List<UUID> aclRoot,
             Principal principal ) {
         PermissionsRequestDetails details = unresolvedPRs.get( new AclRootUserIdPair( aclRoot, principal.getId() ) );
         Preconditions.checkNotNull( details, "No outstanding permission requests for this object." );
@@ -82,7 +82,7 @@ public class HazelcastPermissionsRequestService implements PermissionsRequestMan
 
     @Override
     public Iterable<PermissionsRequest> getAllUnresolvedRequests(
-            List<AclKeyPathFragment> aclRoot,
+            List<UUID> aclRoot,
             EnumSet<RequestStatus> status ) {
         return prqs.getAllUnresolvedRequests( aclRoot, status );
     }
@@ -90,7 +90,7 @@ public class HazelcastPermissionsRequestService implements PermissionsRequestMan
     @Override
     public Iterable<PermissionsRequest> getResolvedRequests(
             Principal principal,
-            List<AclKeyPathFragment> aclRoot) {
+            List<UUID> aclRoot) {
         return prqs.getResolvedRequests( principal, aclRoot );
     }
 

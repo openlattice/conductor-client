@@ -2,13 +2,13 @@ package com.dataloom.requests;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.edm.internal.DatastoreConstants;
@@ -46,18 +46,18 @@ public class PermissionsRequestQueryService {
     }
 
     public Iterable<PermissionsRequest> getAllUnresolvedRequests(
-            List<AclKeyPathFragment> aclRoot ) {
+            List<UUID> aclRoot ) {
         ResultSetFuture rsf = session.executeAsync( unresolvedPRsQuery.bind()
-                .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, AclKeyPathFragment.class ) );
+                .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, UUID.class ) );
         return Iterables.transform( PermissionsRequestUtils.makeLazy( rsf ), PermissionsRequestUtils::getPRFromRow );
     }
 
     public Iterable<PermissionsRequest> getAllUnresolvedRequests(
-            List<AclKeyPathFragment> aclRoot,
+            List<UUID> aclRoot,
             EnumSet<RequestStatus> status ) {
         Stream<ResultSetFuture> rsfs = status.stream()
                 .map( st -> session.executeAsync( unresolvedPRsQueryByStatus.bind()
-                        .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, AclKeyPathFragment.class )
+                        .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, UUID.class )
                         .set( CommonColumns.STATUS.cql(), st, RequestStatus.class ) ) );
         return PermissionsRequestUtils.getRowsAndFlatten( rsfs )
                 .map( PermissionsRequestUtils::getPRFromRow )
@@ -66,10 +66,10 @@ public class PermissionsRequestQueryService {
 
     public Iterable<PermissionsRequest> getResolvedRequests(
             Principal principal,
-            List<AclKeyPathFragment> aclRoot ) {
+            List<UUID> aclRoot ) {
         ResultSetFuture rsf = session.executeAsync( resolvedPRsQuery.bind()
                 .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
-                .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, AclKeyPathFragment.class ) );
+                .setList( CommonColumns.ACL_ROOT.cql(), aclRoot, UUID.class ) );
         return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), PermissionsRequestUtils::getPRFromRow );
     }
 

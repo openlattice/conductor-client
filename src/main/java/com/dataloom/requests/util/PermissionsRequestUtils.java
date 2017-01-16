@@ -3,10 +3,10 @@ package com.dataloom.requests.util;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import com.dataloom.authorization.AclKeyPathFragment;
 import com.dataloom.authorization.Permission;
 import com.dataloom.requests.PermissionsRequest;
 import com.dataloom.requests.PermissionsRequestDetails;
@@ -37,9 +37,9 @@ public class PermissionsRequestUtils {
     }
     
     public static PermissionsRequest getPRFromRow( Row row ){
-        final List<AclKeyPathFragment> aclRoot = RowAdapters.aclRoot( row );
+        final List<UUID> aclRoot = RowAdapters.aclRoot( row );
         final String userId = row.getString( CommonColumns.PRINCIPAL_ID.cql() );
-        Map<AclKeyPathFragment, EnumSet<Permission>> permissions = row.getMap( CommonColumns.ACL_CHILDREN_PERMISSIONS.cql(), TypeToken.of( AclKeyPathFragment.class ), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+        Map<UUID, EnumSet<Permission>> permissions = row.getMap( CommonColumns.ACL_CHILDREN_PERMISSIONS.cql(), TypeToken.of( UUID.class ), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
         RequestStatus status = RowAdapters.status( row );
         return new PermissionsRequest( aclRoot, userId, new PermissionsRequestDetails( permissions, status )  );
     }

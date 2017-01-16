@@ -2,20 +2,19 @@ package com.dataloom.requests.mapstores;
 
 import java.io.Serializable;
 import java.util.List;
-
-import com.dataloom.authorization.AclKeyPathFragment;
+import java.util.UUID;
 
 public class AclRootUserIdPair implements Serializable {
-    private static final long        serialVersionUID = -1687486728573254618L;
-    private List<AclKeyPathFragment> aclRoot;
-    private String                     userId;
+    private static final long serialVersionUID = -1687486728573254618L;
+    private List<UUID>        aclRoot;
+    private String            userId;
 
-    public AclRootUserIdPair( List<AclKeyPathFragment> aclRoot, String userId ) {
+    public AclRootUserIdPair( List<UUID> aclRoot, String userId ) {
         this.aclRoot = aclRoot;
         this.userId = userId;
     }
 
-    public List<AclKeyPathFragment> getAclRoot() {
+    public List<UUID> getAclRoot() {
         return aclRoot;
     }
 

@@ -137,8 +137,8 @@ public final class RowAdapters {
         return row.getList( CommonColumns.ACL_KEYS.cql(), UUID.class );
     }
 
-    public static List<AclKeyPathFragment> aclRoot( Row row ) {
-        return row.getList( CommonColumns.ACL_ROOT.cql(), AclKeyPathFragment.class );
+    public static List<UUID> aclRoot( Row row ) {
+        return row.getList( CommonColumns.ACL_ROOT.cql(), UUID.class );
     }
 
     public static RequestStatus status( Row row ) {
