@@ -32,6 +32,9 @@ public final class Principals {
     public static Principal getCurrentUser() {
         Auth0UserDetails details = (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
+        if ( details == null ) {
+            throw new ForbiddenException( "No authentication found when authentication expected" );
+        }
         Object principalId = details.getAuth0Attribute( USER_ID_ATTRIBUTE );
         if ( principalId == null ) {
             principalId = details.getAuth0Attribute( SUBJECT_ATTRIBUTE );
