@@ -16,7 +16,6 @@ import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
 import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
 import com.datastax.driver.extras.codecs.joda.LocalTimeCodec;
-import com.kryptnostic.conductor.codecs.AclKeyPathFragmentTypeCodec;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.codecs.FullQualifiedNameTypeCodec;
 import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
@@ -41,11 +40,6 @@ public class TypeCodecsPod {
     @Bean
     public TypeCodec<FullQualifiedName> fqnCodec() {
         return new FullQualifiedNameTypeCodec();
-    }
-
-    @Bean
-    public TypeCodec<UUID> aclKeyCodec() {
-        return new AclKeyPathFragmentTypeCodec();
     }
 
     public TimestampDateTimeTypeCodec timestampDateTimeTypeCodec() {

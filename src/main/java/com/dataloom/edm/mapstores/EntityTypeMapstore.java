@@ -7,6 +7,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -66,12 +67,12 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
 
     @Override
     public UUID generateTestKey() {
-        throw new NotImplementedException( "GENERATION OF TEST KEY NOT IMPLEMENTED FOR ENTITY TYPE MAPSTORE." );
+        return UUID.randomUUID();
     }
 
     @Override
-    public EntityType generateTestValue() throws Exception {
-        throw new NotImplementedException( "GENERATION OF TEST VALUE NOT IMPLEMENTED FOR ENTITY TYPE MAPSTORE." );
+    public EntityType generateTestValue() {
+        return TestDataFactory.entityType();
     }
 
 }

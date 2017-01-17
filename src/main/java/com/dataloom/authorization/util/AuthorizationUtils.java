@@ -56,4 +56,8 @@ public final class AuthorizationUtils {
         return aclKeys.isEmpty() ? null : aclKeys.get( aclKeys.size() - 1 );
     }
 
+    public static Stream<Row> makeStream( Iterable<Row> rs ) {
+        return StreamSupport.stream( rs.spliterator(), false );
+    }
+
 }

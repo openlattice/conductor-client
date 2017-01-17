@@ -16,6 +16,7 @@ import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.Organization;
 import com.dataloom.organizations.processors.EmailDomainsMerger;
@@ -50,9 +51,9 @@ public class HazelcastOrganizationService {
             HazelcastInstance hazelcastInstance,
             HazelcastAclKeyReservationService reservations,
             AuthorizationManager authorizations ) {
-        this.trustedOrgsOf = hazelcastInstance.getMap( HazelcastMap.TRUSTED_ORGANIZATIONS.name() );
         this.titles = hazelcastInstance.getMap( HazelcastMap.TITLES.name() );
         this.descriptions = hazelcastInstance.getMap( HazelcastMap.DESCRIPTIONS.name() );
+        this.trustedOrgsOf = hazelcastInstance.getMap( HazelcastMap.TRUSTED_ORGANIZATIONS.name() );
         this.autoApprovedEmailDomainsOf = hazelcastInstance.getMap( HazelcastMap.ALLOWED_EMAIL_DOMAINS.name() );
         this.membersOf = hazelcastInstance.getMap( HazelcastMap.MEMBERS.name() );
         this.rolesOf = hazelcastInstance.getMap( HazelcastMap.ROLES.name() );
@@ -71,6 +72,7 @@ public class HazelcastOrganizationService {
         authorizations.addPermission( ImmutableList.of( organization.getId() ),
                 principal,
                 EnumSet.allOf( Permission.class ) );
+        authorizations.createEmptyAcl( ImmutableList.of( organization.getId() ), SecurableObjectType.Organization );
         UUID organizationId = organization.getId();
         titles.set( organizationId, organization.getTitle() );
         descriptions.set( organizationId, organization.getDescription() );
@@ -93,8 +95,8 @@ public class HazelcastOrganizationService {
             return new Organization(
                     Optional.of( organizationId ),
                     title.get(),
-                    Optional.of( description.get() ),
-                    trustedOrgs.get(),
+                    Optional.fromNullable( description.get() ),
+                    Optional.fromNullable( trustedOrgs.get() ),
                     autoApprovedEmailDomains.get(),
                     members.get(),
                     roles.get() );

@@ -92,10 +92,12 @@ public enum Tables implements TableDef {
                 return new CassandraTableBuilder( ORGANIZATIONS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ID )
-                        .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
                         .columns( CommonColumns.TITLE,
                                 CommonColumns.DESCRIPTION,
-                                CommonColumns.SCHEMAS );
+                                CommonColumns.TRUSTED_ORGANIZATIONS,
+                                CommonColumns.ALLOWED_EMAIL_DOMAINS,
+                                CommonColumns.MEMBERS,
+                                CommonColumns.ROLES );
             case PROPERTY_TYPES:
                 return new CassandraTableBuilder( PROPERTY_TYPES )
                         .ifNotExists()
@@ -107,14 +109,14 @@ public enum Tables implements TableDef {
                                 CommonColumns.DATATYPE )
                         .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
             case PERMISSIONS:
+                // TODO: Once Cassandra fixes SASI + Collection column inde
                 return new CassandraTableBuilder( PERMISSIONS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS )
                         .staticColumns( CommonColumns.SECURABLE_OBJECT_TYPE )
-                        .secondaryIndex( CommonColumns.PERMISSIONS )
-                        .sasi( CommonColumns.SECURABLE_OBJECT_TYPE );
+                        .secondaryIndex( CommonColumns.PERMISSIONS, CommonColumns.SECURABLE_OBJECT_TYPE );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()

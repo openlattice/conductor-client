@@ -36,7 +36,7 @@ public class AuthorizationQueryService {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         authorizedAclKeysQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.ACL_KEYS.cql() )
-                .from( keyspace , Tables.PERMISSIONS.getName() ).allowFiltering()
+                .from( keyspace, Tables.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
                         CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
@@ -74,13 +74,19 @@ public class AuthorizationQueryService {
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
-        ResultSetFuture rsf = session.executeAsync(
-                authorizedAclKeysForObjectTypeQuery.bind()
-                        .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                        .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
-                        .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
-                        .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
-        return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
+        return desiredPermissions
+                .stream()
+                .map( desiredPermission -> session.executeAsync(
+                        authorizedAclKeysForObjectTypeQuery.bind()
+                                .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                                .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
+                                .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
+                                .set( CommonColumns.PERMISSIONS.cql(),
+                                        desiredPermission,
+                                        Permission.class ) ) )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( AuthorizationUtils::makeStream )
+                .map( AuthorizationUtils::getAclKeysFromRow )::iterator;
     }
 
     public Iterable<List<UUID>> getAuthorizedAclKeys(
