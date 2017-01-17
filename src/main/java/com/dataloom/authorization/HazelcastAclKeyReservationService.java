@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -13,6 +14,7 @@ import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.edm.internal.AbstractSecurableObject;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
@@ -23,6 +25,8 @@ public class HazelcastAclKeyReservationService {
      */
     private static final EnumMap<SecurableObjectType, FullQualifiedName> FQNS                 = new EnumMap<SecurableObjectType, FullQualifiedName>(
             SecurableObjectType.class );
+    private static final Set<FullQualifiedName>                          STATIC_FQNS          = ImmutableSet
+            .copyOf( FQNS.values() );
     /*
      * List of FQN associated types. Roughly things that extend AbstractSchemaAssociatedSecurableType.
      */
@@ -49,9 +53,13 @@ public class HazelcastAclKeyReservationService {
     }
 
     public void renameReservation( FullQualifiedName oldFqn, FullQualifiedName newFqn ) {
+        checkArgument( !STATIC_FQNS.contains( newFqn ), "Cannot rename to a reserved FQN" );
+        checkArgument( !STATIC_FQNS.contains( oldFqn ), "Cannot rename a reserved FQN" );
+
         /*
          * Attempt to associated newFqn with existing aclKey
          */
+        
         final UUID existingAclKey = aclKeys.putIfAbsent( newFqn, Util.getSafely( aclKeys, oldFqn ) );
 
         if ( existingAclKey == null ) {
@@ -70,7 +78,7 @@ public class HazelcastAclKeyReservationService {
      * 
      * @param type The type for which to reserve an FQN and UUID.
      */
-    public void reserveAclKeyAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
+    public void reserveIdAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
         /*
          * Template this call and make wrappers that directly insert into type maps making fqns redundant.
          */
@@ -113,7 +121,7 @@ public class HazelcastAclKeyReservationService {
      * 
      * @param type
      */
-    public void reserveAclKey( AbstractSecurableObject type ) {
+    public void reserveId( AbstractSecurableObject type ) {
         checkArgument( FQNS.containsKey( type.getCategory() ), "Unsupported securable type for reservation" );
         /*
          * Template this call and make wrappers that directly insert into type maps making fqns redundant.
@@ -137,6 +145,11 @@ public class HazelcastAclKeyReservationService {
      */
     public void release( UUID id ) {
         FullQualifiedName fqn = Util.removeSafely( fqns, id );
+        
+        /*
+         * We always issue the delete, even if sometimes there is no aclKey registered for that FQN. 
+         */
+        
         aclKeys.delete( fqn );
     }
 }

@@ -4,27 +4,28 @@ import java.util.EnumSet;
 import java.util.UUID;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.dataloom.hazelcast.pods.MapstoresPod;
 import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
+import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 
 public class HzAuthzTest extends CassandraBootstrap {
-    private static RhizomeApplicationServer      testServer;
-    private static HazelcastInstance             hazelcastInstance;
-    private static Session                       session;
-    private static AuthorizationQueryService     aqs;
-    private static HazelcastAuthorizationService hzAuthz;
+    private static final RhizomeApplicationServer      testServer;
+    private static final HazelcastInstance             hazelcastInstance;
+    private static final Session                       session;
+    private static final CassandraConfiguration        cc;
+    private static final AuthorizationQueryService     aqs;
+    private static final HazelcastAuthorizationService hzAuthz;
 
-    @BeforeClass
-    public static void init() {
+    static {
         testServer = new RhizomeApplicationServer(
                 MapstoresPod.class,
                 CassandraPod.class,
@@ -33,7 +34,8 @@ public class HzAuthzTest extends CassandraBootstrap {
         testServer.sprout( "local", CassandraPod.CASSANDRA_PROFILE );
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
         session = testServer.getContext().getBean( Session.class );
-        aqs = new AuthorizationQueryService( session, hazelcastInstance );
+        cc = testServer.getContext().getBean( CassandraConfiguration.class );
+        aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
         hzAuthz = new HazelcastAuthorizationService( hazelcastInstance, aqs );
 
     }

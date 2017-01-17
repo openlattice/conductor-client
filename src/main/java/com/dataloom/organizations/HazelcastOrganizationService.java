@@ -67,7 +67,7 @@ public class HazelcastOrganizationService {
     }
 
     public void createOrganization( Principal principal, Organization organization ) {
-        reservations.reserveAclKey( organization );
+        reservations.reserveId( organization );
         authorizations.addPermission( ImmutableList.of( organization.getId() ),
                 principal,
                 EnumSet.allOf( Permission.class ) );
