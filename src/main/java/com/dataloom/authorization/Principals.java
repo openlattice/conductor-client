@@ -35,9 +35,11 @@ public final class Principals {
         if ( details == null ) {
             throw new ForbiddenException( "No authentication found when authentication expected" );
         }
-        Object principalId = details.getAuth0Attribute( USER_ID_ATTRIBUTE );
+        
+        Object principalId = details.getAuth0Attribute( SUBJECT_ATTRIBUTE );
+        
         if ( principalId == null ) {
-            principalId = details.getAuth0Attribute( SUBJECT_ATTRIBUTE );
+            principalId = details.getAuth0Attribute( USER_ID_ATTRIBUTE );
         }
 
         return new Principal(
