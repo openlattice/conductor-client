@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.requests.mapstores.AclRootRequestDetailsPair;
 import com.dataloom.requests.mapstores.AclRootPrincipalPair;
 import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
 import com.dataloom.requests.processors.UpdateRequestStatusProcessor;

@@ -130,7 +130,7 @@ public enum Tables implements TableDef {
                         .partitionKey( CommonColumns.PRINCIPAL_ID )
                         .clusteringColumns( CommonColumns.REQUESTID )
                         .columns( CommonColumns.ACL_ROOT, CommonColumns.ACL_CHILDREN_PERMISSIONS, CommonColumns.STATUS )
-                        .secondaryIndex( CommonColumns.ACL_ROOT )
+                        .fullCollectionIndex( CommonColumns.ACL_ROOT )
                         .sasi( CommonColumns.STATUS );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
