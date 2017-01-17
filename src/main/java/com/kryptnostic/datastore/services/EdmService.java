@@ -25,6 +25,7 @@ import com.dataloom.authorization.Principals;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
+import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
@@ -230,23 +231,30 @@ public class EdmService implements EdmManager {
         try {
             Principals.ensureUser( principal );
 
+            EntityType entityType = entityTypes.get( entitySet.getEntityTypeId() );
+
+            if ( entityType == null ) {
+                throw new TypeNotFoundException( "Cannot create an entity set for a non-existent type." );
+            }
+
             createEntitySet( entitySet );
 
-            EntityType entityType = checkNotNull( entityTypes.get( entitySet.getEntityTypeId() ),
-                    "Entity type does not exist." );
             authorizations.addPermission( ImmutableList.of( entitySet.getId() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
+
             entityType.getProperties().stream()
                     .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
                     .forEach( aclKey -> authorizations.addPermission(
                             aclKey,
                             principal,
                             EnumSet.allOf( Permission.class ) ) );
+
             eventBus.post( new EntitySetCreatedEvent(
                     entitySet,
                     Lists.newArrayList( propertyTypes.getAll( entityType.getProperties() ).values() ),
                     principal ) );
+
         } catch ( Exception e ) {
             throw new IllegalStateException( "Entity Set not created." );
         }
