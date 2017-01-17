@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -429,6 +430,21 @@ public class EdmService implements EdmManager {
     @Override
     public EntitySet getEntitySet( String entitySetName ) {
         return entitySetManager.getEntitySet( entitySetName );
+    }
+
+    @Override
+    public Map<UUID, PropertyType> getPropertyTypesAsMap( Set<UUID> propertyTypeIds ) {
+        return propertyTypes.getAll( propertyTypeIds );
+    }
+
+    @Override
+    public Map<UUID, EntityType> getEntityTypesAsMap( Set<UUID> entityTypeIds ) {
+        return entityTypes.getAll( entityTypeIds );
+    }
+
+    @Override
+    public Map<UUID, EntitySet> getEntitySetsAsMap( Set<UUID> entitySetIds ) {
+        return entitySets.getAll( entitySetIds );
     }
 
 }
