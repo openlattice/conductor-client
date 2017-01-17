@@ -123,8 +123,8 @@ public class AuthorizationQueryService {
                         new AceKey( aclKeys, principal ) ) ) );
         return new Acl( aclKeys, Iterables.transform( futureAces, AceFuture::getUninterruptibly ) );
     }
-
-//    public void setObjectType( List<UUID> aclKey, SecurableObjectType objectType ) {
-//        setObjectType.bind().set( CommonColumns.ACL_KEYS.cql(), );
-//    }
+    
+    public void setObjectType( List<UUID> aclKey, SecurableObjectType objectType ) {
+        setObjectType.bind().set( CommonColumns.ACL_KEYS.cql(), );
+    }
 }

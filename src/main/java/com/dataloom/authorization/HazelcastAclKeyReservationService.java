@@ -130,4 +130,13 @@ public class HazelcastAclKeyReservationService {
         }
     }
 
+    /**
+     * Releases a reserved id.
+     * 
+     * @param id The id to release.
+     */
+    public void release( UUID id ) {
+        FullQualifiedName fqn = Util.removeSafely( fqns, id );
+        aclKeys.delete( fqn );
+    }
 }
