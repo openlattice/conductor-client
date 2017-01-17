@@ -85,8 +85,7 @@ public class AuthorizationQueryService {
                                         desiredPermission,
                                         Permission.class ) ) )
                 .map( ResultSetFuture::getUninterruptibly )
-                .flatMap( AuthorizationUtils::wrap )
-//                .flatMap( AuthorizationUtils::makeStream )
+                .flatMap( AuthorizationUtils::makeStream )
                 .map( AuthorizationUtils::getAclKeysFromRow )::iterator;
     }
 
