@@ -2,11 +2,10 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -50,12 +49,12 @@ public class FqnsMapstore
 
     @Override
     public UUID generateTestKey() {
-        throw new NotImplementedException( "GENERATION OF TEST KEY NOT IMPLEMENTED FOR ACL KEY MAPSTORE." );
+        return UUID.randomUUID();
     }
 
     @Override
-    public FullQualifiedName generateTestValue() throws Exception {
-        throw new NotImplementedException( "GENERATION OF TEST VALUE NOT IMPLEMENTED FOR ACL KEY MAPSTORE." );
+    public FullQualifiedName generateTestValue() {
+        return TestDataFactory.fqn();
     }
 
 }

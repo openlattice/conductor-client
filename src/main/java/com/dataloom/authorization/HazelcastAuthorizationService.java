@@ -22,20 +22,22 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.durableexecutor.DurableExecutorService;
 import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
-    private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
+    private static final Logger                 logger = LoggerFactory.getLogger( AuthorizationManager.class );
 
     private final IMap<AceKey, Set<Permission>> aces;
     private final AuthorizationQueryService     aqs;
-    private final DurableExecutorService        executor;
 
     public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance, AuthorizationQueryService aqs ) {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         this.aqs = checkNotNull( aqs );
-        this.executor = hazelcastInstance.getDurableExecutorService( "default" );
+    }
+
+    @Override
+    public void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType ) {
+        aqs.createEmptyAcl( aclKey, objectType );
     }
 
     @Override
@@ -92,9 +94,14 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             List<UUID> key,
             Set<Principal> principals ) {
         return aces
-                .getAll( principals.stream().map( principal -> new AceKey( key, principal ) )
+                .getAll( principals
+                        .stream()
+                        .map( principal -> new AceKey( key, principal ) )
                         .collect( Collectors.toSet() ) )
-                .values().stream().flatMap( permissions -> permissions.stream() )
+                .values()
+                .stream()
+//                .peek( ps -> logger.info( "Implementing class: {}", ps.getClass().getCanonicalName() ) )
+                .flatMap( permissions -> permissions.stream() )
                 .collect( Collectors.toCollection( () -> EnumSet.noneOf( Permission.class ) ) );
     }
 
@@ -106,7 +113,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return Iterables.transform( aqs.getAuthorizedAclKeys( principal, objectType, aces ),
                 AuthorizationUtils::getLastAclKeySafely );
     }
-    
+
     @Override
     public Iterable<UUID> getAuthorizedObjectsOfType(
             Set<Principal> principal,
@@ -115,7 +122,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return Iterables.transform( aqs.getAuthorizedAclKeys( principal, objectType, aces ),
                 AuthorizationUtils::getLastAclKeySafely );
     }
-    
+
     @Override
     public Acl getAllSecurableObjectPermissions( List<UUID> key ) {
         return aqs.getAclsForSecurableObject( key );

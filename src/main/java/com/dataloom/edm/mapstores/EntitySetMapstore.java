@@ -2,12 +2,11 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -18,10 +17,9 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
-
 public class EntitySetMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, EntitySet> {
     private static final CassandraTableBuilder ctb = Tables.ENTITY_SETS.getBuilder();
-    
+
     public EntitySetMapstore( Session session ) {
         super( HazelcastMap.ENTITY_SETS.name(), session, ctb );
     }
@@ -60,16 +58,15 @@ public class EntitySetMapstore extends AbstractStructuredCassandraPartitionKeyVa
                 row.getString( CommonColumns.TITLE.cql() ),
                 Optional.of( row.getString( CommonColumns.DESCRIPTION.cql() ) ) );
     }
-    
+
     @Override
     public UUID generateTestKey() {
-        throw new NotImplementedException( "GENERATION OF TEST KEY NOT IMPLEMENTED FOR ENTITY SET MAPSTORE." );
+        return UUID.randomUUID();
     }
 
     @Override
-    public EntitySet generateTestValue() throws Exception {
-        throw new NotImplementedException( "GENERATION OF TEST VALUE NOT IMPLEMENTED FOR ENTITY SET MAPSTORE." );
+    public EntitySet generateTestValue() {
+        return TestDataFactory.entitySet();
     }
 
-    
 }
