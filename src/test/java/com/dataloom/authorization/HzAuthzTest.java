@@ -12,18 +12,19 @@ import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
+import com.kryptnostic.conductor.codecs.pods.TypeCodecsPod;
 import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 
 public class HzAuthzTest extends CassandraBootstrap {
-    private static final RhizomeApplicationServer      testServer;
-    private static final HazelcastInstance             hazelcastInstance;
-    private static final Session                       session;
-    private static final CassandraConfiguration        cc;
-    private static final AuthorizationQueryService     aqs;
-    private static final HazelcastAuthorizationService hzAuthz;
+    protected static final RhizomeApplicationServer      testServer;
+    protected static final HazelcastInstance             hazelcastInstance;
+    protected static final Session                       session;
+    protected static final CassandraConfiguration        cc;
+    protected static final AuthorizationQueryService     aqs;
+    protected static final HazelcastAuthorizationService hzAuthz;
 
     static {
         testServer = new RhizomeApplicationServer(

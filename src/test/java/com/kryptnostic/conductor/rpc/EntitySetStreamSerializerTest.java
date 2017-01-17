@@ -3,7 +3,7 @@ package com.kryptnostic.conductor.rpc;
 import java.io.Serializable;
 
 import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.TestDataFactory;
+import com.dataloom.mapstores.TestDataFactory;
 import com.kryptnostic.conductor.rpc.serializers.EntitySetStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
 

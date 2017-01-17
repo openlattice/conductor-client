@@ -94,9 +94,14 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             List<UUID> key,
             Set<Principal> principals ) {
         return aces
-                .getAll( principals.stream().map( principal -> new AceKey( key, principal ) )
+                .getAll( principals
+                        .stream()
+                        .map( principal -> new AceKey( key, principal ) )
                         .collect( Collectors.toSet() ) )
-                .values().stream().flatMap( permissions -> permissions.stream() )
+                .values()
+                .stream()
+//                .peek( ps -> logger.info( "Implementing class: {}", ps.getClass().getCanonicalName() ) )
+                .flatMap( permissions -> permissions.stream() )
                 .collect( Collectors.toCollection( () -> EnumSet.noneOf( Permission.class ) ) );
     }
 

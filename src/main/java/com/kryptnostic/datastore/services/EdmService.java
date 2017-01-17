@@ -22,14 +22,13 @@ import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
-import com.dataloom.edm.EntityDataModel;
+import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.Schema;
 import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
@@ -243,12 +242,16 @@ public class EdmService implements EdmManager {
                     principal,
                     EnumSet.allOf( Permission.class ) );
 
+            authorizations.createEmptyAcl( ImmutableList.of( entitySet.getId() ), SecurableObjectType.EntitySet );
+
             entityType.getProperties().stream()
                     .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
-                    .forEach( aclKey -> authorizations.addPermission(
+                    .peek( aclKey -> authorizations.addPermission(
                             aclKey,
                             principal,
-                            EnumSet.allOf( Permission.class ) ) );
+                            EnumSet.allOf( Permission.class ) ) )
+                    .forEach( aclKey -> authorizations.createEmptyAcl( aclKey,
+                            SecurableObjectType.PropertyTypeInEntitySet ) );
 
             eventBus.post( new EntitySetCreatedEvent(
                     entitySet,
@@ -332,25 +335,6 @@ public class EdmService implements EdmManager {
     @Override
     public Iterable<PropertyType> getPropertyTypes() {
         return entityTypeManager.getPropertyTypes();
-    }
-
-    @Override
-    public EntityDataModel getEntityDataModel() {
-        Iterable<Schema> schemas = schemaManager.getAllSchemas();
-        Iterable<EntityType> entityTypes = getEntityTypes();
-        Iterable<PropertyType> propertyTypes = getPropertyTypes();
-        Iterable<EntitySet> entitySets = getEntitySets();
-        final Set<String> namespaces = Sets.newHashSet();
-
-        entityTypes.forEach( entityType -> namespaces.add( entityType.getType().getNamespace() ) );
-        propertyTypes.forEach( propertyType -> namespaces.add( propertyType.getType().getNamespace() ) );
-
-        return new EntityDataModel(
-                namespaces,
-                schemas,
-                entityTypes,
-                propertyTypes,
-                entitySets );
     }
 
     @Override
