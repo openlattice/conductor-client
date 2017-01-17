@@ -100,7 +100,7 @@ public class EdmService implements EdmManager {
     @Override
     public void createPropertyTypeIfNotExists( PropertyType propertyType ) {
         ensureValidPropertyType( propertyType );
-        aclKeyReservations.reserveAclKeyAndValidateType( propertyType );
+        aclKeyReservations.reserveIdAndValidateType( propertyType );
 
         /*
          * Create property type if it doesn't exist. The reserveAclKeyAndValidateType call should ensure that
@@ -142,7 +142,7 @@ public class EdmService implements EdmManager {
          * This is really create or replace and should be noted as such.
          */
         ensureValidEntityType( entityType );
-        aclKeyReservations.reserveAclKeyAndValidateType( entityType );
+        aclKeyReservations.reserveIdAndValidateType( entityType );
         // Only create entity table if insert transaction succeeded.
         final EntityType existing = entityTypes.putIfAbsent( entityType.getId(), entityType );
         if ( existing == null ) {
