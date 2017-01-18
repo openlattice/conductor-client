@@ -12,6 +12,7 @@ import com.google.common.collect.Sets;
 
 public final class Principals {
     private static final String USER_ID_ATTRIBUTE = "user_id";
+    private static final String SUBJECT_ATTRIBUTE = "sub";
 
     private Principals() {}
 
@@ -29,10 +30,21 @@ public final class Principals {
     }
 
     public static Principal getCurrentUser() {
+        Auth0UserDetails details = (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+        if ( details == null ) {
+            throw new ForbiddenException( "No authentication found when authentication expected" );
+        }
+        
+        Object principalId = details.getAuth0Attribute( SUBJECT_ATTRIBUTE );
+        
+        if ( principalId == null ) {
+            principalId = details.getAuth0Attribute( USER_ID_ATTRIBUTE );
+        }
+
         return new Principal(
                 PrincipalType.USER,
-                ( (Auth0UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal() )
-                        .getAuth0Attribute( USER_ID_ATTRIBUTE ).toString() );
+                principalId.toString() );
     }
 
     public static Set<Principal> getCurrentPrincipals() {

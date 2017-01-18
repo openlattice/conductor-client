@@ -66,11 +66,11 @@ public final class Util {
     public static <K, V> V getSafely( IMap<K, V> m, K key ) {
         return m.get( key );
     }
-    
+
     public static <K, V> V getSafely( Map<K, V> m, K key ) {
         return m.get( key );
     }
-    
+
     public static <K, V> void deleteSafely( IMap<K, V> m, K key ) {
         m.delete( key );
     }
@@ -81,5 +81,11 @@ public final class Util {
 
     public static <K, V> Consumer<? super K> safeDeleter( IMap<K, V> m ) {
         return m::delete;
+    }
+
+    public static <K, V> V removeSafely(
+            IMap<K, V> fqns,
+            K organizationId ) {
+        return fqns.remove( organizationId );
     }
 }

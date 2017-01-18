@@ -3,8 +3,11 @@ package com.dataloom.authorization.mapstores;
 import java.util.EnumSet;
 import java.util.UUID;
 
+import org.apache.commons.lang3.RandomStringUtils;
+
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -12,6 +15,7 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -53,13 +57,13 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
 
     @Override
     public AceKey generateTestKey() {
-        // TODO Auto-generated method stub
-        return null;
+        return new AceKey(
+                ImmutableList.of( UUID.randomUUID() ),
+                new Principal( PrincipalType.USER, RandomStringUtils.randomAlphanumeric( 5 ) ) );
     }
 
     @Override
-    public EnumSet<Permission> generateTestValue() throws Exception {
-        // TODO Auto-generated method stub
-        return null;
+    public EnumSet<Permission> generateTestValue() {
+        return EnumSet.of( Permission.READ, Permission.WRITE );
     }
 }

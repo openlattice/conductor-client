@@ -1,6 +1,7 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -13,8 +14,6 @@ import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 
 public interface EdmManager {
-    EntityDataModel getEntityDataModel();
-
     PropertyType getPropertyType( FullQualifiedName propertyTypeFqn );
 
     PropertyType getPropertyType( UUID propertyTypeId );
@@ -79,5 +78,11 @@ public interface EdmManager {
     FullQualifiedName getPropertyTypeFqn( UUID propertyTypeId );
 
     FullQualifiedName getEntityTypeFqn( UUID entityTypeId );
+    
+    Map<UUID, PropertyType> getPropertyTypesAsMap( Set<UUID> propertyTypeIds );
+
+    Map<UUID, EntityType> getEntityTypesAsMap( Set<UUID> entityTypeIds );
+
+    Map<UUID, EntitySet> getEntitySetsAsMap( Set<UUID> entitySetIds );
 
 }

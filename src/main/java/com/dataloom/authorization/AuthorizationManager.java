@@ -5,43 +5,29 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import com.dataloom.edm.exceptions.AclKeyConflictException;
-
 /**
  * The authorization manager manages permissions for all securable objects in the system.
  * 
- * Authorization behavior is summarized below: 
+ * Authorization behavior is summarized below:
  * <ul>
- * <li> No inheritance and that all permissions are explicitly set.</li>
- * <li> For permissions that are present we follow a least restrictive model for determining access </li>
- * <li> If no relevant permissions are present for Principal set, access is denied.   </li>
+ * <li>No inheritance and that all permissions are explicitly set.</li>
+ * <li>For permissions that are present we follow a least restrictive model for determining access</li>
+ * <li>If no relevant permissions are present for Principal set, access is denied.</li>
  * </ul>
+ * 
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  *
  */
 public interface AuthorizationManager {
 
     /**
-     * This is a high performance version of {@link AuthorizationManager#reserveOwnershipIfNotExists(List, Principal)}
-     * that does not throw and instead returns a boolean status. Prefer this method for tight performance loops were
-     * exceptions can wreck perf. Unless debug is enabled, reasons for failure will be swallowed.
+     * Creates an empty acl.
      * 
-     * @param aclKeys The list of aclKeys that uniquely identify the object in the hierarchy.
-     * @param principal The user for whom to reserve ownership.
-     * @return True if reservations was successful, false otherwise.
+     * @param aclKey The key for the object whose acl is being created.
+     * @param objectType The type of the object for lookup purposes.
      */
-//    boolean tryReserveOwnershipIfNotExists( List<AclKey> aclKeys, Principal principal );
+    void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType );
 
-    /**
-     * Reserves a permission entry with the specified principal as owner.
-     * 
-     * @param aclKeys The list of aclKeys that uniquely identify the object in the hierarchy.
-     * @param principal The user for whom to reserve ownership.
-     * @throws AclKeyConflictException If this aclKey has already been reserved.
-     */
-//    void reserveOwnershipIfNotExists( List<AclKey> aclKeys, Principal principal ) throws AclKeyConflictException;
     void addPermission(
             List<UUID> aclKeys,
             Principal principal,
@@ -85,6 +71,6 @@ public interface AuthorizationManager {
             EnumSet<Permission> permissions );
 
     Iterable<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
-    
+
     Iterable<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
 }

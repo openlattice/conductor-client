@@ -51,4 +51,13 @@ public interface AuthorizingComponent {
             throw new ForbiddenException( "Object " + aclKey.toString() + " is not accessible." );
         }
     }
+
+    default Iterable<UUID> getAccessibleObjects(
+            SecurableObjectType securableObjectType,
+            EnumSet<Permission> requiredPermissions ) {
+        return getAuthorizationManager().getAuthorizedObjectsOfType(
+                Principals.getCurrentPrincipals(),
+                securableObjectType,
+                requiredPermissions );
+    }
 }

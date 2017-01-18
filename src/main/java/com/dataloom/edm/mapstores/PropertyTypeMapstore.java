@@ -8,6 +8,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -18,10 +19,9 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
-
 public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, PropertyType> {
     private static final CassandraTableBuilder ctb = Tables.PROPERTY_TYPES.getBuilder();
-    
+
     public PropertyTypeMapstore( Session session ) {
         super( HazelcastMap.PROPERTY_TYPES.name(), session, ctb );
     }
@@ -63,16 +63,15 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
                 row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class ),
                 row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class ) );
     }
-    
+
     @Override
     public UUID generateTestKey() {
-        throw new NotImplementedException( "GENERATION OF TEST KEY NOT IMPLEMENTED FOR PROPERTY TYPE MAPSTORE." );
+        return UUID.randomUUID();
     }
 
     @Override
-    public PropertyType generateTestValue() throws Exception {
-        throw new NotImplementedException( "GENERATION OF TEST VALUE NOT IMPLEMENTED FOR PROPERTY TYPE MAPSTORE." );
+    public PropertyType generateTestValue() {
+        return TestDataFactory.propertyType();
     }
 
-    
 }

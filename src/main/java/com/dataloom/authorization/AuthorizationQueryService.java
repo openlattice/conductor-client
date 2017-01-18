@@ -9,8 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.util.AuthorizationUtils;
-import com.dataloom.edm.internal.DatastoreConstants;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
@@ -32,12 +32,12 @@ public class AuthorizationQueryService {
     private final PreparedStatement             setObjectType;
     private final IMap<AceKey, Set<Permission>> aces;
 
-    public AuthorizationQueryService( Session session, HazelcastInstance hazelcastInstance ) {
+    public AuthorizationQueryService( String keyspace, Session session, HazelcastInstance hazelcastInstance ) {
         this.session = session;
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         authorizedAclKeysQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.ACL_KEYS.cql() )
-                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS.getName() ).allowFiltering()
+                .from( keyspace, Tables.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
                         CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
@@ -47,7 +47,7 @@ public class AuthorizationQueryService {
 
         authorizedAclKeysForObjectTypeQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.ACL_KEYS.cql() )
-                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS.getName() ).allowFiltering()
+                .from( keyspace, Tables.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
                         CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
@@ -59,12 +59,12 @@ public class AuthorizationQueryService {
 
         aclsForSecurableObjectQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.PRINCIPAL_TYPE.cql(), CommonColumns.PRINCIPAL_ID.cql() )
-                .from( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS.getName() ).allowFiltering()
+                .from( keyspace, Tables.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
                         CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) ) );
 
         setObjectType = session.prepare( QueryBuilder
-                .update( DatastoreConstants.KEYSPACE, Tables.PERMISSIONS.getName() )
+                .update( keyspace, Tables.PERMISSIONS.getName() )
                 .with( QueryBuilder.set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
                         CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) )
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(), CommonColumns.ACL_KEYS.bindMarker() ) ) );
@@ -75,13 +75,19 @@ public class AuthorizationQueryService {
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
-        ResultSetFuture rsf = session.executeAsync(
-                authorizedAclKeysForObjectTypeQuery.bind()
-                        .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                        .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
-                        .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
-                        .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
-        return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
+        return desiredPermissions
+                .stream()
+                .map( desiredPermission -> session.executeAsync(
+                        authorizedAclKeysForObjectTypeQuery.bind()
+                                .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                                .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
+                                .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
+                                .set( CommonColumns.PERMISSIONS.cql(),
+                                        desiredPermission,
+                                        Permission.class ) ) )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( AuthorizationUtils::makeStream )
+                .map( AuthorizationUtils::getAclKeysFromRow )::iterator;
     }
 
     public Iterable<List<UUID>> getAuthorizedAclKeys(
@@ -135,7 +141,11 @@ public class AuthorizationQueryService {
         return new Acl( aclKeys, Iterables.transform( futureAces, AceFuture::getUninterruptibly ) );
     }
 
-//    public void setObjectType( List<UUID> aclKey, SecurableObjectType objectType ) {
-//        setObjectType.bind().set( CommonColumns.ACL_KEYS.cql(), );
-//    }
+    public void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType ) {
+        BoundStatement bs = setObjectType.bind()
+                .setList( CommonColumns.ACL_KEYS.cql(), aclKey )
+                .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class );
+        session.execute( bs );
+        logger.info( "Created empty acl with key {} and type {}", aclKey, objectType );
+    }
 }

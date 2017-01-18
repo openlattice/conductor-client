@@ -1,6 +1,7 @@
 package com.dataloom.hazelcast.pods;
 
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Import;
 
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
@@ -21,6 +23,12 @@ import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.FqnsMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.organizations.mapstores.RoleSetMapstore;
+import com.dataloom.organizations.mapstores.StringMapstore;
+import com.dataloom.organizations.mapstores.StringSetMapstore;
+import com.dataloom.organizations.mapstores.UUIDSetMapstore;
+import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.requests.AclRootRequestDetailsPair;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.mapstores.AclRootPrincipalPair;
@@ -28,6 +36,8 @@ import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
 import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
 import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
+import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 
@@ -78,4 +88,63 @@ public class MapstoresPod {
         return new ResolvedPermissionsRequestsMapstore( session );
     }
 
+    @Bean
+    public SelfRegisteringMapStore<UUID, String> orgTitlesMapstore() {
+        return new StringMapstore(
+                HazelcastMap.TITLES,
+                session,
+                Tables.ORGANIZATIONS,
+                CommonColumns.ID,
+                CommonColumns.TITLE );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, String> orgDescsMapstore() {
+        return new StringMapstore(
+                HazelcastMap.DESCRIPTIONS,
+                session,
+                Tables.ORGANIZATIONS,
+                CommonColumns.ID,
+                CommonColumns.DESCRIPTION );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, Set<UUID>> trustedOrgsMapstore() {
+        return new UUIDSetMapstore(
+                HazelcastMap.TRUSTED_ORGANIZATIONS,
+                session,
+                Tables.ORGANIZATIONS,
+                CommonColumns.ID,
+                CommonColumns.TRUSTED_ORGANIZATIONS );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, Set<String>> aaEmailDomainsMapstore() {
+        return new StringSetMapstore(
+                HazelcastMap.ALLOWED_EMAIL_DOMAINS,
+                session,
+                Tables.ORGANIZATIONS,
+                CommonColumns.ID,
+                CommonColumns.ALLOWED_EMAIL_DOMAINS );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, Set<Principal>> rolesMapstore() {
+        return new RoleSetMapstore(
+                HazelcastMap.ROLES,
+                session,
+                Tables.ORGANIZATIONS,
+                CommonColumns.ID,
+                CommonColumns.ROLES );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, Set<Principal>> membersMapstore() {
+        return new UserSetMapstore(
+                HazelcastMap.MEMBERS,
+                session,
+                Tables.ORGANIZATIONS,
+                CommonColumns.ID,
+                CommonColumns.MEMBERS );
+    }
 }
