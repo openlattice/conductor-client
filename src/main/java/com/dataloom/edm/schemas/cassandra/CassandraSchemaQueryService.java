@@ -57,8 +57,7 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
     public Set<UUID> getAllPropertyTypesInSchema( FullQualifiedName schemaName ) {
         ResultSet propertyTypes = session.execute(
                 propertyTypesInSchemaQuery.bind()
-                        .setString( CommonColumns.NAMESPACE.cql(), schemaName.getNamespace() )
-                        .setString( CommonColumns.NAME.cql(), schemaName.getName() ) );
+                        .set( CommonColumns.SCHEMAS.cql(), schemaName, FullQualifiedName.class ) );
         return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::id ) );
     }
 
@@ -72,8 +71,7 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
     public Set<UUID> getAllEntityTypesInSchema( FullQualifiedName schemaName ) {
         ResultSet propertyTypes = session.execute(
                 entityTypesInSchemaQuery.bind()
-                        .setString( CommonColumns.NAMESPACE.cql(), schemaName.getNamespace() )
-                        .setString( CommonColumns.NAME.cql(), schemaName.getName() ) );
+                        .set( CommonColumns.SCHEMAS.cql(), schemaName, FullQualifiedName.class ) );
         return ImmutableSet.copyOf( Iterables.transform( propertyTypes, RowAdapters::id ) );
     }
 
