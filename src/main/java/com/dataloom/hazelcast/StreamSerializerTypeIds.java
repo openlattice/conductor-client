@@ -16,6 +16,8 @@ public enum StreamSerializerTypeIds {
     CONDUCTOR_CALL,
     EMPLOYEE,
     ENTITY_SET,
+    ENTITY_TYPE,
+    PROPERTY_TYPE,
     FULL_QUALIFIED_NAME,
     QUERY_RESULT,
     TYPE_PK
