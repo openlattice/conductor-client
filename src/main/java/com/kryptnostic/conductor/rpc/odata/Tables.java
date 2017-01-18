@@ -121,7 +121,7 @@ public enum Tables implements TableDef {
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.NAMESPACE )
-                        .clusteringColumns( CommonColumns.NAME );
+                        .columns( CommonColumns.NAME_SET );
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );
