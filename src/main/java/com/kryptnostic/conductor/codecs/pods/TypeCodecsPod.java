@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
 import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
@@ -74,6 +75,11 @@ public class TypeCodecsPod {
     @Bean
     public TypeCodec<EnumSet<Permission>> enumSetPermissionCodec() {
         return new EnumSetTypeCodec<Permission>( permissionCodec() );
+    }
+
+    @Bean
+    public EnumNameCodec<RequestStatus> requestStatusCodec() {
+        return new EnumNameCodec<>( RequestStatus.class );
     }
 
 }

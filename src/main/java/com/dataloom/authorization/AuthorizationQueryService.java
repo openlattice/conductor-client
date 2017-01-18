@@ -105,12 +105,16 @@ public class AuthorizationQueryService {
     public Iterable<List<UUID>> getAuthorizedAclKeys(
             Principal principal,
             EnumSet<Permission> desiredPermissions ) {
-        ResultSetFuture rsf = session.executeAsync(
-                authorizedAclKeysQuery.bind()
-                        .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                        .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
-                        .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
-        return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
+        return desiredPermissions
+                .stream()
+                .map( desiredPermission -> session.executeAsync(
+                        authorizedAclKeysQuery.bind()
+                                .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                                .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
+                                .set( CommonColumns.PERMISSIONS.cql(), desiredPermission, Permission.class ) ) )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( AuthorizationUtils::makeStream )
+                .map( AuthorizationUtils::getAclKeysFromRow )::iterator;
     }
     
     public Iterable<List<UUID>> getAuthorizedAclKeys(

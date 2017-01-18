@@ -55,7 +55,7 @@ public enum CommonColumns implements ColumnDef {
     ENTITY_TYPE_ID( DataType.uuid() ),
     PRINCIPAL( DataType.text() ),
     ACL_ROOT( DataType.frozenList( DataType.uuid() ) ),
-    ACL_CHILDREN_PERMISSIONS( DataType.map( ACL_ROOT.getType(), FROZEN_PERMISSIONS.getType() )),
+    ACL_CHILDREN_PERMISSIONS( DataType.map( DataType.uuid(), FROZEN_PERMISSIONS.getType() )),
     STATUS( DataType.text() ),
     TRUSTED_ORGANIZATIONS( DataType.set( DataType.uuid() ) ),
     ALLOWED_EMAIL_DOMAINS( DataType.set( DataType.text() ) );

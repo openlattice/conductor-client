@@ -7,6 +7,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.BoundStatement;
@@ -64,14 +65,12 @@ public class UnresolvedPermissionsRequestsMapstore
 
     @Override
     public AclRootPrincipalPair generateTestKey() {
-        throw new NotImplementedException(
-                "GENERATION OF TEST KEY NOT IMPLEMENTED FOR UNRESOLVED PERMISSIONS REQUEST MAPSTORE." );
+        return new AclRootPrincipalPair( TestDataFactory.aclKey(), TestDataFactory.userPrincipal() );
     }
 
     @Override
-    public PermissionsRequestDetails generateTestValue() throws Exception {
-        throw new NotImplementedException(
-                "GENERATION OF TEST VALUE NOT IMPLEMENTED FOR UNRESOLVED PERMISSIONS REQUEST MAPSTORE." );
+    public PermissionsRequestDetails generateTestValue() {
+        return TestDataFactory.resolvedPRDetails();
     }
 }
 
