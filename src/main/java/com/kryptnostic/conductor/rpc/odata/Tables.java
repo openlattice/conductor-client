@@ -1,11 +1,12 @@
 package com.kryptnostic.conductor.rpc.odata;
 
+import java.util.EnumMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
 
@@ -22,20 +23,21 @@ public enum Tables implements TableDef {
     SCHEMAS,
     ;
 
-    private static final Logger logger = LoggerFactory.getLogger( Tables.class );
+    private static final Logger                                 logger   = LoggerFactory
+            .getLogger( Tables.class );
+    private static final EnumMap<Tables, CassandraTableBuilder> cache    = new EnumMap<>( Tables.class );
+    private static String                                       keyspace = DatastoreConstants.KEYSPACE;
 
     public String getName() {
         return name();
     }
 
     public String getKeyspace() {
-        CassandraTableBuilder builder = getBuilder();
-        return builder == null ? Util.getSafely( TablesHelper.keyspaces, this )
-                : builder.getKeyspace().or( DatastoreConstants.KEYSPACE );
+        return keyspace;
     }
 
     public CassandraTableBuilder getBuilder() {
-        return Util.getSafely( TablesHelper.builders, this );
+        return getTableDefinition( this );
     }
 
     public TableDef asTableDef() {
@@ -43,6 +45,15 @@ public enum Tables implements TableDef {
     }
 
     static CassandraTableBuilder getTableDefinition( Tables table ) {
+        CassandraTableBuilder ctb = cache.get( table );
+        if ( ctb == null ) {
+            ctb = createTableDefinition( table );
+            cache.put( table, ctb );
+        }
+        return ctb;
+    }
+
+    static CassandraTableBuilder createTableDefinition( Tables table ) {
         switch ( table ) {
             case ACL_KEYS:
                 return new CassandraTableBuilder( ACL_KEYS )
