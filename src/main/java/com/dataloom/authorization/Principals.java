@@ -13,9 +13,28 @@ import com.auth0.spring.security.api.Auth0UserDetails;
 import com.google.common.collect.Sets;
 
 public final class Principals {
-    private static final Logger logger = LoggerFactory.getLogger( Principals.class ) ;
+    private static final Logger logger            = LoggerFactory.getLogger( Principals.class );
     private static final String USER_ID_ATTRIBUTE = "user_id";
     private static final String SUBJECT_ATTRIBUTE = "sub";
+
+    public static enum Role {
+        ADMIN( "admin" ),
+        USER( "user" ),
+        AUTHENTICATED_USER( "AuthenticatedUser" );
+        private final Principal principal;
+
+        private Role( String principalId ) {
+            this.principal = new Principal( PrincipalType.ROLE, principalId );
+        }
+
+        public Principal getPrincipal() {
+            return principal;
+        }
+
+    };
+
+    private Principals() {}
+
     private static final ThreadLocal<Set<Principal>> currentPrincipalsCache = new ThreadLocal<Set<Principal>>() {
         protected Set<Principal> initialValue() {
             return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
@@ -24,8 +43,6 @@ public final class Principals {
 
         }
     };
-
-    private Principals() {}
 
     public static void ensureUser( Principal principal ) {
         checkState( principal.getType().equals( PrincipalType.USER ), "Only user principal type allowed." );
@@ -57,6 +74,10 @@ public final class Principals {
 
     public static Set<Principal> getCurrentPrincipals() {
         return currentPrincipalsCache.get();
+    }
+
+    public static Principal getAdminRole() {
+        return Role.ADMIN.getPrincipal();
     }
 
 }
