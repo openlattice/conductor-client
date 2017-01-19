@@ -28,25 +28,6 @@ public final class Queries {
 
 
 
-    public static final String getCreateEntitySetsTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.ENTITY_SETS )
-                .ifNotExists()
-                .partitionKey( CommonColumns.ID )
-                .clusteringColumns( CommonColumns.TYPE, CommonColumns.NAME )
-                .columns( CommonColumns.ENTITY_TYPE_ID, CommonColumns.TITLE, CommonColumns.DESCRIPTION )
-                .buildCreateTableQuery();
-    }
-
-    public static final String getCreateEntityTypesTableQuery( String keyspace ) {
-        return new CassandraTableBuilder( keyspace, Tables.ENTITY_TYPES )
-                .ifNotExists()
-                .partitionKey( CommonColumns.ID )
-                .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                .columns( CommonColumns.KEY, CommonColumns.PROPERTIES, CommonColumns.SCHEMAS )
-                .buildCreateTableQuery();
-    }
-
-
     // Index creation
     /*
      * HOW DOES SOFTWARE EVEN WORK? https://issues.apache.org/jira/browse/CASSANDRA-11331 Need to remove specific index
