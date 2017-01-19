@@ -1,5 +1,8 @@
 package com.dataloom.organizations;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.security.InvalidParameterException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +20,7 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.Organization;
 import com.dataloom.organizations.processors.EmailDomainsMerger;
@@ -37,10 +41,11 @@ public class HazelcastOrganizationService {
 
     private final AuthorizationManager              authorizations;
     private final HazelcastAclKeyReservationService reservations;
+    private final UserDirectoryService              principals;
     private final IMap<UUID, String>                titles;
     private final IMap<UUID, String>                descriptions;
     private final IMap<UUID, DelegatedUUIDSet>      trustedOrgsOf;
-    private final IMap<UUID, EmailDomains>          autoApprovedEmailDomainsOf;
+    private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
     private final IMap<UUID, PrincipalSet>          membersOf;
     private final IMap<UUID, PrincipalSet>          rolesOf;
     private final List<IMap<UUID, ?>>               allMaps;
@@ -50,7 +55,8 @@ public class HazelcastOrganizationService {
             Session session,
             HazelcastInstance hazelcastInstance,
             HazelcastAclKeyReservationService reservations,
-            AuthorizationManager authorizations ) {
+            AuthorizationManager authorizations,
+            UserDirectoryService principals ) {
         this.titles = hazelcastInstance.getMap( HazelcastMap.TITLES.name() );
         this.descriptions = hazelcastInstance.getMap( HazelcastMap.DESCRIPTIONS.name() );
         this.trustedOrgsOf = hazelcastInstance.getMap( HazelcastMap.TRUSTED_ORGANIZATIONS.name() );
@@ -65,6 +71,7 @@ public class HazelcastOrganizationService {
                 autoApprovedEmailDomainsOf,
                 membersOf,
                 rolesOf );
+        this.principals = checkNotNull( principals );
     }
 
     public void createOrganization( Principal principal, Organization organization ) {
@@ -77,7 +84,8 @@ public class HazelcastOrganizationService {
         titles.set( organizationId, organization.getTitle() );
         descriptions.set( organizationId, organization.getDescription() );
         trustedOrgsOf.set( organizationId, DelegatedUUIDSet.wrap( organization.getTrustedOrganizations() ) );
-        autoApprovedEmailDomainsOf.set( organizationId, EmailDomains.wrap( organization.getAutoApprovedEmails() ) );
+        autoApprovedEmailDomainsOf.set( organizationId,
+                DelegatedStringSet.wrap( organization.getAutoApprovedEmails() ) );
         membersOf.set( organizationId, PrincipalSet.wrap( organization.getMembers() ) );
         rolesOf.set( organizationId, PrincipalSet.wrap( organization.getRoles() ) );
 
@@ -88,7 +96,7 @@ public class HazelcastOrganizationService {
         Future<String> description = descriptions.getAsync( organizationId );
         Future<DelegatedUUIDSet> trustedOrgs = trustedOrgsOf.getAsync( organizationId );
         Future<PrincipalSet> members = membersOf.getAsync( organizationId );
-        Future<EmailDomains> autoApprovedEmailDomains = autoApprovedEmailDomainsOf.getAsync( organizationId );
+        Future<DelegatedStringSet> autoApprovedEmailDomains = autoApprovedEmailDomainsOf.getAsync( organizationId );
         Future<PrincipalSet> roles = rolesOf.getAsync( organizationId );
 
         try {
@@ -124,7 +132,7 @@ public class HazelcastOrganizationService {
     }
 
     public void setAutoApprovedEmailDomains( UUID organizationId, Set<String> emailDomains ) {
-        autoApprovedEmailDomainsOf.set( organizationId, EmailDomains.wrap( emailDomains ) );
+        autoApprovedEmailDomainsOf.set( organizationId, DelegatedStringSet.wrap( emailDomains ) );
     }
 
     public void addAutoApprovedEmailDomains( UUID organizationId, Set<String> emailDomains ) {
@@ -172,6 +180,7 @@ public class HazelcastOrganizationService {
 
     public void addMembers( UUID organizationId, Set<Principal> members ) {
         membersOf.submitToKey( organizationId, new PrincipalMerger( members ) );
+        addOrganizationRoleToMembers( organizationId, members );
     }
 
     public void setPrincipals( UUID organizationId, Set<Principal> principals ) {
@@ -196,7 +205,21 @@ public class HazelcastOrganizationService {
     }
 
     public void setMembers( UUID organizationId, Set<Principal> members ) {
+        Set<Principal> current = Util.getSafely( membersOf, organizationId );
+        Set<Principal> removed = current
+                .stream()
+                .filter( member -> !members.contains( member ) && current.contains( member ) )
+                .collect( Collectors.toSet() );
+        
+        Set<Principal> added = current
+                .stream()
+                .filter( member -> members.contains( member ) && !current.contains( member ) )
+                .collect( Collectors.toSet() );
+
         membersOf.set( organizationId, PrincipalSet.wrap( members ) );
+        
+        addOrganizationRoleToMembers( organizationId, added );
+        removeOrganizationRoleFromMembers( organizationId, removed );
     }
 
     public void removePrincipals( UUID organizationId, Set<Principal> principals ) {
@@ -222,5 +245,22 @@ public class HazelcastOrganizationService {
 
     public void removeMembers( UUID organizationId, Set<Principal> members ) {
         membersOf.submitToKey( organizationId, new PrincipalRemover( members ) );
+        removeOrganizationRoleFromMembers( organizationId, members );
+    }
+
+    private void addOrganizationRoleToMembers( UUID organizationId, Set<Principal> members ) {
+        if ( members.stream().map( Principal::getType ).allMatch( PrincipalType.USER::equals ) ) {
+            members.forEach( member -> principals.addOrganizationToUser( member.getId(), organizationId ) );
+        } else {
+            throw new InvalidParameterException( "Cannot add a non-user role as a member of an organization." );
+        }
+    }
+
+    private void removeOrganizationRoleFromMembers( UUID organizationId, Set<Principal> members ) {
+        if ( members.stream().map( Principal::getType ).allMatch( PrincipalType.USER::equals ) ) {
+            members.forEach( member -> principals.removeOrganizationFromUser( member.getId(), organizationId ) );
+        } else {
+            throw new InvalidParameterException( "Cannot add a non-user role as a member of an organization." );
+        }
     }
 }

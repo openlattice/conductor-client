@@ -18,7 +18,8 @@ public enum HazelcastMap {
     DESCRIPTIONS( Tables.ORGANIZATIONS ),
     ALLOWED_EMAIL_DOMAINS( Tables.ORGANIZATIONS ),
     MEMBERS( Tables.ORGANIZATIONS ),
-    ROLES( Tables.ORGANIZATIONS );
+    ROLES( Tables.ORGANIZATIONS ), 
+    USERS( null );
 
     private final Tables table;
 

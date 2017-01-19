@@ -9,16 +9,16 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class EmailDomains implements Set<String>, Serializable {
+public class DelegatedStringSet implements Set<String>, Serializable {
     private static final long serialVersionUID = 1595791228332993996L;
     private final Set<String> emailDomains;
 
-    public EmailDomains( Set<String> emailDomains ) {
+    public DelegatedStringSet( Set<String> emailDomains ) {
         this.emailDomains = emailDomains;
     }
 
-    public static EmailDomains wrap( Set<String> emailDomains ) {
-        return new EmailDomains( emailDomains );
+    public static DelegatedStringSet wrap( Set<String> emailDomains ) {
+        return new DelegatedStringSet( emailDomains );
     }
 
     public Set<String> unwrap() {
