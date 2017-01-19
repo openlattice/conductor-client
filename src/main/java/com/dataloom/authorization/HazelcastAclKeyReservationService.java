@@ -20,6 +20,7 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastAclKeyReservationService {
+    public static final String LOOM_NAMESPACE = "loom";
     /**
      * This keeps mapping between SecurableObjectTypes that aren't FQN associated and their placeholder FQN.
      */
@@ -39,7 +40,7 @@ public class HazelcastAclKeyReservationService {
          */
         for ( SecurableObjectType objectType : SecurableObjectType.values() ) {
             if ( !FQN_ASSOCIATED_TYPES.contains( objectType ) ) {
-                FQNS.put( objectType, new FullQualifiedName( "loom", objectType.name() ) );
+                FQNS.put( objectType, new FullQualifiedName( LOOM_NAMESPACE, objectType.name() ) );
             }
         }
     }
