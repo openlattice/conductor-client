@@ -11,7 +11,6 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
@@ -19,7 +18,7 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
 
     @Override
     public void write( ObjectDataOutput out, EntityType object ) throws IOException {
-        AbstractUUIDStreamSerializer.serialize( out, object.getId() );
+        UUIDStreamSerializer.serialize( out, object.getId() );
         FullQualifiedNameStreamSerializer.serialize( out, object.getType() );
         out.writeUTF( object.getTitle() );
         out.writeUTF( object.getDescription() );
@@ -27,16 +26,16 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
             FullQualifiedNameStreamSerializer.serialize( out, schema );
         } );
         SetStreamSerializers.serialize( out, object.getKey(), ( UUID key ) -> {
-            AbstractUUIDStreamSerializer.serialize( out, key );
+            UUIDStreamSerializer.serialize( out, key );
         } );
         SetStreamSerializers.serialize( out, object.getProperties(), ( UUID property ) -> {
-            AbstractUUIDStreamSerializer.serialize( out, property );
+            UUIDStreamSerializer.serialize( out, property );
         } );
     }
 
     @Override
     public EntityType read( ObjectDataInput in ) throws IOException {
-        UUID id = AbstractUUIDStreamSerializer.deserialize( in );
+        UUID id = UUIDStreamSerializer.deserialize( in );
         FullQualifiedName type = FullQualifiedNameStreamSerializer.deserialize( in );
         String title = in.readUTF();
         Optional<String> description = Optional.of( in.readUTF() );
@@ -44,10 +43,10 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
             return FullQualifiedNameStreamSerializer.deserialize( dataInput );
         } );
         Set<UUID> keys = SetStreamSerializers.deserialize( in, ( ObjectDataInput dataInput ) -> {
-            return AbstractUUIDStreamSerializer.deserialize( dataInput );
+            return UUIDStreamSerializer.deserialize( dataInput );
         } );
         Set<UUID> properties = SetStreamSerializers.deserialize( in, ( ObjectDataInput dataInput ) -> {
-            return AbstractUUIDStreamSerializer.deserialize( dataInput );
+            return UUIDStreamSerializer.deserialize( dataInput );
         } );
         return new EntityType( id, type, title, description, schemas, keys, properties );
     }

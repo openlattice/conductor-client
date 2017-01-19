@@ -10,7 +10,6 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 public class EntitySetStreamSerializer implements SelfRegisteringStreamSerializer<EntitySet> {
@@ -18,8 +17,8 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
     @Override
     public void write( ObjectDataOutput out, EntitySet object )
             throws IOException {
-        AbstractUUIDStreamSerializer.serialize( out, object.getId() );
-        AbstractUUIDStreamSerializer.serialize( out, object.getEntityTypeId() );
+        UUIDStreamSerializer.serialize( out, object.getId() );
+        UUIDStreamSerializer.serialize( out, object.getEntityTypeId() );
         FullQualifiedNameStreamSerializer.serialize( out, object.getType() );
         out.writeUTF( object.getName() );
         out.writeUTF( object.getTitle() );
@@ -28,8 +27,8 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
 
     @Override
     public EntitySet read( ObjectDataInput in ) throws IOException {
-        UUID id = AbstractUUIDStreamSerializer.deserialize( in );
-        UUID entityTypeId = AbstractUUIDStreamSerializer.deserialize( in );
+        UUID id = UUIDStreamSerializer.deserialize( in );
+        UUID entityTypeId = UUIDStreamSerializer.deserialize( in );
         FullQualifiedName fqn = FullQualifiedNameStreamSerializer.deserialize( in );
         String name = in.readUTF();
         String title = in.readUTF();

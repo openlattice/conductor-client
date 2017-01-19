@@ -12,7 +12,6 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
@@ -22,7 +21,7 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
 
     @Override
     public void write( ObjectDataOutput out, PropertyType object ) throws IOException {
-        AbstractUUIDStreamSerializer.serialize( out, object.getId() );
+        UUIDStreamSerializer.serialize( out, object.getId() );
         FullQualifiedNameStreamSerializer.serialize( out, object.getType() );
         out.writeUTF( object.getTitle() );
         out.writeUTF( object.getDescription() );
@@ -34,7 +33,7 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
 
     @Override
     public PropertyType read( ObjectDataInput in ) throws IOException {
-        UUID id = AbstractUUIDStreamSerializer.deserialize( in );
+        UUID id = UUIDStreamSerializer.deserialize( in );
         FullQualifiedName type = FullQualifiedNameStreamSerializer.deserialize( in );
         String title = in.readUTF();
         Optional<String> description = Optional.of( in.readUTF() );

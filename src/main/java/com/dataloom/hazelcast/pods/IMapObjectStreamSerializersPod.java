@@ -7,9 +7,14 @@ import com.kryptnostic.conductor.rpc.serializers.EntitySetStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.EntityTypeStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.FullQualifiedNameStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.PropertyTypeStreamSerializer;
+import com.kryptnostic.conductor.rpc.serializers.UUIDStreamSerializer;
 
 @Configuration
 public class IMapObjectStreamSerializersPod {
+    
+    @Bean UUIDStreamSerializer uuidss(){
+        return new UUIDStreamSerializer();
+    }
     
     @Bean
     public EntitySetStreamSerializer esss() {
