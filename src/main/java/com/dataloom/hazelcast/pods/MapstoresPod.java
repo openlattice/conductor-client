@@ -23,6 +23,7 @@ import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.FqnsMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
+import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.mapstores.RoleSetMapstore;
 import com.dataloom.organizations.mapstores.StringMapstore;
@@ -66,6 +67,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, EntitySet> entitySetMapstore() {
         return new EntitySetMapstore( session );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<String, Set<String>> schemaMapstore() {
+        return new SchemaMapstore( session );
     }
 
     @Bean

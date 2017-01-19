@@ -43,7 +43,7 @@ public class CassandraEntitySetManager {
         this.getEntitySetsByType = session
                 .prepare( QueryBuilder.select().all()
                         .from( this.keyspace, Tables.ENTITY_SETS.getName() )
-                        .where( QueryBuilder.eq( CommonColumns.TYPE.cql(), CommonColumns.TYPE.bindMarker() ) ) );
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE_ID.cql(), CommonColumns.ENTITY_TYPE_ID.bindMarker() ) ) );
 
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Tables.ENTITY_SETS.getName() );
         this.getEntities = session
@@ -101,7 +101,7 @@ public class CassandraEntitySetManager {
 
     public Iterable<EntitySet> getAllEntitySetsForType( UUID typeId ) {
         ResultSetFuture rsf = session.executeAsync(
-                getEntitySetsByType.bind().setUUID( CommonColumns.TYPE_ID.cql(), typeId ) );
+                getEntitySetsByType.bind().setUUID( CommonColumns.ENTITY_TYPE_ID.cql(), typeId ) );
         return Iterables.transform( rsf.getUninterruptibly(), RowAdapters::entitySet );
     }
 

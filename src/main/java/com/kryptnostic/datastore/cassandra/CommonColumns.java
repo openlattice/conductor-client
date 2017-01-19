@@ -29,6 +29,7 @@ public enum CommonColumns implements ColumnDef {
     KEY( DataType.set( DataType.uuid() ) ),
     MULTIPLICITY( DataType.bigint() ),
     NAME( DataType.text() ),
+    NAME_SET( DataType.set( DataType.text() ) ),
     NAMESPACE( DataType.text() ),
     REQUESTID( DataType.uuid() ),
     ENTITYID( DataType.text() ),
