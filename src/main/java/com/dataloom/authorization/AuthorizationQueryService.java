@@ -23,14 +23,14 @@ import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 public class AuthorizationQueryService {
-    private static final Logger                 logger = LoggerFactory
+    private static final Logger                        logger = LoggerFactory
             .getLogger( AuthorizationQueryService.class );
-    private final Session                       session;
-    private final PreparedStatement             authorizedAclKeysQuery;
-    private final PreparedStatement             authorizedAclKeysForObjectTypeQuery;
-    private final PreparedStatement             aclsForSecurableObjectQuery;
-    private final PreparedStatement             setObjectType;
-    private final IMap<AceKey, Set<Permission>> aces;
+    private final Session                              session;
+    private final PreparedStatement                    authorizedAclKeysQuery;
+    private final PreparedStatement                    authorizedAclKeysForObjectTypeQuery;
+    private final PreparedStatement                    aclsForSecurableObjectQuery;
+    private final PreparedStatement                    setObjectType;
+    private final IMap<AceKey, DelegatedPermissionSet> aces;
 
     public AuthorizationQueryService( String keyspace, Session session, HazelcastInstance hazelcastInstance ) {
         this.session = session;
@@ -116,7 +116,7 @@ public class AuthorizationQueryService {
                 .flatMap( AuthorizationUtils::makeStream )
                 .map( AuthorizationUtils::getAclKeysFromRow )::iterator;
     }
-    
+
     public Iterable<List<UUID>> getAuthorizedAclKeys(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions ) {

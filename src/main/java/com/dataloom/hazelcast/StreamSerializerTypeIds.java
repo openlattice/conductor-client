@@ -21,6 +21,9 @@ public enum StreamSerializerTypeIds {
     FULL_QUALIFIED_NAME,
     QUERY_RESULT,
     TYPE_PK,
-    UUID
+    UUID,
+    ACE_KEY,
+    PRINCIPAL,
+    STRING_SET
 
 }
