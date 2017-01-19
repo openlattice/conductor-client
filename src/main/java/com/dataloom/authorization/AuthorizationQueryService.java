@@ -16,6 +16,7 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.odata.Tables;
@@ -98,18 +99,32 @@ public class AuthorizationQueryService {
                         principal,
                         objectType,
                         desiredPermissions ) );
-        return Iterables.concat( authorizedAclKeys );
+        return Sets.newHashSet( Iterables.concat( authorizedAclKeys ) );
     }
 
     public Iterable<List<UUID>> getAuthorizedAclKeys(
             Principal principal,
             EnumSet<Permission> desiredPermissions ) {
-        ResultSetFuture rsf = session.executeAsync(
-                authorizedAclKeysQuery.bind()
-                        .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                        .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
-                        .setSet( CommonColumns.PERMISSIONS.cql(), desiredPermissions ) );
-        return Iterables.transform( AuthorizationUtils.makeLazy( rsf ), AuthorizationUtils::getAclKeysFromRow );
+        return desiredPermissions
+                .stream()
+                .map( desiredPermission -> session.executeAsync(
+                        authorizedAclKeysQuery.bind()
+                                .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                                .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
+                                .set( CommonColumns.PERMISSIONS.cql(), desiredPermission, Permission.class ) ) )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( AuthorizationUtils::makeStream )
+                .map( AuthorizationUtils::getAclKeysFromRow )::iterator;
+    }
+    
+    public Iterable<List<UUID>> getAuthorizedAclKeys(
+            Set<Principal> principals,
+            EnumSet<Permission> desiredPermissions ) {
+        Iterable<Iterable<List<UUID>>> authorizedAclKeys = Iterables.transform( principals,
+                principal -> getAuthorizedAclKeys(
+                        principal,
+                        desiredPermissions ) );
+        return Sets.newHashSet( Iterables.concat( authorizedAclKeys ) );
     }
 
     public Iterable<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {

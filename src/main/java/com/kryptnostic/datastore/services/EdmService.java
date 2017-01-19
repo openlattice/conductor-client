@@ -347,6 +347,9 @@ public class EdmService implements EdmManager {
     @Override
     public void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
+        if( !Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty() ){
+            throw new IllegalArgumentException("Key property types cannot be removed.");
+        }
         entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
     }
 

@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
 /**
  * The authorization manager manages permissions for all securable objects in the system.
  * 
@@ -72,15 +70,7 @@ public interface AuthorizationManager {
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
 
-    // Methods for requesting permissions
+    Iterable<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
 
-    void addPermissionsRequestForPropertyTypeInEntitySet(
-            String username,
-            Principal principal,
-            String entitySetName,
-            FullQualifiedName propertyTypeFqn,
-            EnumSet<Permission> permissions );
-
-    void removePermissionsRequestForEntitySet( UUID id );
-
+    Iterable<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
 }
