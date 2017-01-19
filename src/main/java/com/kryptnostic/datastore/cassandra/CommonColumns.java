@@ -46,6 +46,7 @@ public enum CommonColumns implements ColumnDef {
     SECURABLE_OBJECT_TYPE( DataType.text() ),
     SECURABLE_OBJECTID( DataType.uuid() ),
     PERMISSIONS( DataType.set( DataType.text() ) ),
+    FROZEN_PERMISSIONS( DataType.frozenSet( DataType.text() )),
     PARTITION_INDEX( DataType.tinyint() ),
     PRINCIPAL_TYPE( DataType.text() ),
     PRINCIPAL_ID( DataType.text() ),
@@ -54,6 +55,9 @@ public enum CommonColumns implements ColumnDef {
     DESCRIPTION( DataType.text() ),
     ENTITY_TYPE_ID( DataType.uuid() ),
     PRINCIPAL( DataType.text() ),
+    ACL_ROOT( DataType.frozenList( DataType.uuid() ) ),
+    ACL_CHILDREN_PERMISSIONS( DataType.map( DataType.uuid(), FROZEN_PERMISSIONS.getType() )),
+    STATUS( DataType.text() ),
     TRUSTED_ORGANIZATIONS( DataType.set( DataType.uuid() ) ),
     ALLOWED_EMAIL_DOMAINS( DataType.set( DataType.text() ) );
 

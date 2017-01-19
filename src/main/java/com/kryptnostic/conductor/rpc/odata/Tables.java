@@ -19,6 +19,8 @@ public enum Tables implements TableDef {
     FQNS,
     ORGANIZATIONS,
     PERMISSIONS,
+    PERMISSIONS_REQUESTS_UNRESOLVED,
+    PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
     SCHEMAS,
     ;
@@ -128,6 +130,21 @@ public enum Tables implements TableDef {
                         .columns( CommonColumns.PERMISSIONS )
                         .staticColumns( CommonColumns.SECURABLE_OBJECT_TYPE )
                         .secondaryIndex( CommonColumns.PERMISSIONS, CommonColumns.SECURABLE_OBJECT_TYPE );
+            case PERMISSIONS_REQUESTS_UNRESOLVED:
+                return new CassandraTableBuilder( PERMISSIONS_REQUESTS_UNRESOLVED )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.ACL_ROOT )
+                        .clusteringColumns( CommonColumns.PRINCIPAL_ID )
+                        .columns( CommonColumns.ACL_CHILDREN_PERMISSIONS, CommonColumns.STATUS )
+                        .sasi( CommonColumns.STATUS );
+            case PERMISSIONS_REQUESTS_RESOLVED:
+                return new CassandraTableBuilder( PERMISSIONS_REQUESTS_RESOLVED )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.PRINCIPAL_ID )
+                        .clusteringColumns( CommonColumns.REQUESTID )
+                        .columns( CommonColumns.ACL_ROOT, CommonColumns.ACL_CHILDREN_PERMISSIONS, CommonColumns.STATUS )
+                        .fullCollectionIndex( CommonColumns.ACL_ROOT )
+                        .sasi( CommonColumns.STATUS );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()

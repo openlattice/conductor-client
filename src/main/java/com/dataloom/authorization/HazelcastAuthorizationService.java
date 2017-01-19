@@ -129,20 +129,13 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public void addPermissionsRequestForPropertyTypeInEntitySet(
-            String username,
-            Principal principal,
-            String entitySetName,
-            FullQualifiedName propertyTypeFqn,
-            EnumSet<Permission> permissions ) {
-        // TODO Auto-generated method stub
-
+    public Iterable<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions ) {
+        return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
     @Override
-    public void removePermissionsRequestForEntitySet( UUID id ) {
-        // TODO Auto-generated method stub
-
+    public Iterable<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions ) {
+        return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
 }

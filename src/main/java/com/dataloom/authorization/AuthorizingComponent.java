@@ -39,6 +39,11 @@ public interface AuthorizingComponent {
         accessCheck( aclKey, EnumSet.of( Permission.WRITE ) );
     }
 
+
+    default void ensureOwnerAccess( List<UUID> aclKey ) {
+        accessCheck( aclKey, EnumSet.of( Permission.OWNER ) );
+    }
+  
     default void ensureAdminAccess() {
         if ( !Principals.getCurrentPrincipals().contains( Principals.getAdminRole() ) ) {
             throw new ForbiddenException( "Only admins are allowed to perform this action." );

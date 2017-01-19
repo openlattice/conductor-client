@@ -30,6 +30,12 @@ import com.dataloom.organizations.mapstores.StringMapstore;
 import com.dataloom.organizations.mapstores.StringSetMapstore;
 import com.dataloom.organizations.mapstores.UUIDSetMapstore;
 import com.dataloom.organizations.mapstores.UserSetMapstore;
+import com.dataloom.requests.AclRootRequestDetailsPair;
+import com.dataloom.requests.PermissionsRequestDetails;
+import com.dataloom.requests.mapstores.AclRootPrincipalPair;
+import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
+import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
+import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -76,6 +82,16 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, FullQualifiedName> fqnsMapstore() {
         return new FqnsMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<AclRootPrincipalPair, PermissionsRequestDetails> unresolvedRequestsMapstore() {
+        return new UnresolvedPermissionsRequestsMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<PrincipalRequestIdPair, AclRootRequestDetailsPair> resolvedRequestsMapstore() {
+        return new ResolvedPermissionsRequestsMapstore( session );
     }
 
     @Bean
