@@ -71,7 +71,7 @@ public enum Tables implements TableDef {
                                 CommonColumns.ENTITY_TYPE_ID,
                                 CommonColumns.TITLE,
                                 CommonColumns.DESCRIPTION )
-                        .secondaryIndex( CommonColumns.TYPE, CommonColumns.NAME );
+                        .secondaryIndex( CommonColumns.ENTITY_TYPE_ID, CommonColumns.NAME );
             case ENTITY_TYPES:
                 return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()

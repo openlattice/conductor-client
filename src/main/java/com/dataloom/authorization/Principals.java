@@ -13,6 +13,9 @@ import com.google.common.collect.Sets;
 public final class Principals {
     private static final String USER_ID_ATTRIBUTE = "user_id";
     private static final String SUBJECT_ATTRIBUTE = "sub";
+    
+    private static final String ROLE_ADMIN_NAME = "admin";
+    private static final Principal ROLE_ADMIN = new Principal( PrincipalType.ROLE, ROLE_ADMIN_NAME );
 
     private Principals() {}
 
@@ -49,6 +52,10 @@ public final class Principals {
 
     public static Set<Principal> getCurrentPrincipals() {
         return currentPrincipalsCache.get();
+    }
+    
+    public static Principal getAdminRole(){
+        return ROLE_ADMIN;
     }
 
 }
