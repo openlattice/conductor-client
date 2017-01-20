@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.lang.invoke.SerializedLambda;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
+import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;
@@ -16,6 +17,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class LambdaStreamSerializer implements SelfRegisteringStreamSerializer<Runnable> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
@@ -40,8 +42,6 @@ public class LambdaStreamSerializer implements SelfRegisteringStreamSerializer<R
             return kryo;
         }
     };
-
-    public LambdaStreamSerializer() {}
 
     @Override
     public void write( ObjectDataOutput out, Runnable object ) throws IOException {

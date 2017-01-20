@@ -5,8 +5,6 @@ import java.util.Map.Entry;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.RequestStatus;
 import com.dataloom.requests.mapstores.AclRootPrincipalPair;
-import com.google.common.base.Preconditions;
-import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class UpdateRequestStatusProcessor

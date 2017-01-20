@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
 
 public class EntitySetCreatedEvent {

@@ -3,7 +3,6 @@ package com.dataloom.requests;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -11,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.util.AuthorizationUtils;
-import com.dataloom.edm.internal.DatastoreConstants;
 import com.dataloom.requests.util.PermissionsRequestsUtils;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;

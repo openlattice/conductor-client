@@ -10,6 +10,7 @@ import java.util.function.Function;
 import javax.inject.Inject;
 
 import org.objenesis.strategy.StdInstantiatorStrategy;
+import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;
@@ -26,6 +27,8 @@ import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@SuppressWarnings( "rawtypes" )
+@Component
 public class ConductorCallStreamSerializer implements SelfRegisteringStreamSerializer<ConductorCall> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
@@ -59,11 +62,6 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     private ConductorSparkApi              api;
 
-    @Inject
-    public ConductorCallStreamSerializer( ConductorSparkApi api ) {
-        this.api = api;
-    }
-
     @Override
     public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
         AbstractUUIDStreamSerializer.serialize( out, object.getUserId() );
@@ -72,6 +70,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
         output.flush();
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
     public ConductorCall read( ObjectDataInput in ) throws IOException {
         UUID userId = AbstractUUIDStreamSerializer.deserialize( in );
@@ -90,7 +89,8 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     public void destroy() {
 
     }
-
+    
+    @Inject
     public synchronized void setConductorSparkApi( ConductorSparkApi api ) {
         Preconditions.checkState( this.api == null, "Api can only be set once" );
         this.api = Preconditions.checkNotNull( api );

@@ -3,8 +3,6 @@ package com.kryptnostic.datastore.cassandra;
 import java.math.BigDecimal;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.text.DateFormat;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -17,8 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.SerializationUtils;
 
 import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.LocalDate;
-import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
 import com.datastax.driver.extras.codecs.joda.LocalTimeCodec;
 import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;

@@ -5,7 +5,6 @@ import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.kryptnostic.conductor.rpc.odata.Tables;
-import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
 public final class Queries {
     private Queries() {}

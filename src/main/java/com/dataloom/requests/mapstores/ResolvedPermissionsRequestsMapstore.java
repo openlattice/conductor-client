@@ -2,8 +2,6 @@ package com.dataloom.requests.mapstores;
 
 import java.util.UUID;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;

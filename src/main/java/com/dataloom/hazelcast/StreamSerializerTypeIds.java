@@ -18,6 +18,6 @@ public enum StreamSerializerTypeIds {
     ENTITY_SET,
     FULL_QUALIFIED_NAME,
     QUERY_RESULT,
-    TYPE_PK
+    EDM_PRIMITIVE_TYPE_KIND
 
 }

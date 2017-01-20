@@ -3,7 +3,7 @@ package com.kryptnostic.conductor.rpc.serializers;
 import java.io.IOException;
 import java.util.UUID;
 
-import javax.inject.Inject;
+import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.datastax.driver.core.Session;
@@ -15,10 +15,10 @@ import com.kryptnostic.conductor.rpc.QueryResult;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class QueryResultStreamSerializer implements SelfRegisteringStreamSerializer<QueryResult> {
 	private Session session;
 	
-	@Inject
 	public QueryResultStreamSerializer( Session session ) {
 		this.session = session;
 	}
