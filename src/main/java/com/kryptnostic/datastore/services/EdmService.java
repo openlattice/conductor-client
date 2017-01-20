@@ -258,6 +258,7 @@ public class EdmService implements EdmManager {
                     principal ) );
 
         } catch ( Exception e ) {
+            logger.error( "Unable to create entity set {} for principal {}", entitySet, principal, e );
             throw new IllegalStateException( "Entity Set not created." );
         }
     }
@@ -345,8 +346,8 @@ public class EdmService implements EdmManager {
     @Override
     public void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
-        if( !Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty() ){
-            throw new IllegalArgumentException("Key property types cannot be removed.");
+        if ( !Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty() ) {
+            throw new IllegalArgumentException( "Key property types cannot be removed." );
         }
         entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
     }
@@ -447,11 +448,11 @@ public class EdmService implements EdmManager {
     public Map<UUID, EntitySet> getEntitySetsAsMap( Set<UUID> entitySetIds ) {
         return entitySets.getAll( entitySetIds );
     }
-    
+
     @SuppressWarnings( "unchecked" )
     @Override
-    public <V> Map<UUID, V> fromPropertyTypes( Set<UUID> propertyTypeIds, EntryProcessor<UUID,PropertyType> ep ) {
-        return (Map<UUID, V>) propertyTypes.executeOnKeys( propertyTypeIds , ep );
+    public <V> Map<UUID, V> fromPropertyTypes( Set<UUID> propertyTypeIds, EntryProcessor<UUID, PropertyType> ep ) {
+        return (Map<UUID, V>) propertyTypes.executeOnKeys( propertyTypeIds, ep );
     }
 
 }

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.requests.mapstores.AclRootPrincipalPair;
@@ -11,6 +13,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class AclRootPrincipalPairStreamSerializer implements SelfRegisteringStreamSerializer<AclRootPrincipalPair> {
     @Override
     public void write( ObjectDataOutput out, AclRootPrincipalPair object )

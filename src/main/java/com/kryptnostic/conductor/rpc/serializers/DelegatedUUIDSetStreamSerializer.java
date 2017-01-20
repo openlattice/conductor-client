@@ -3,6 +3,8 @@ package com.kryptnostic.conductor.rpc.serializers;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.collect.Sets;
 import com.hazelcast.nio.ObjectDataInput;
@@ -10,6 +12,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 
+@Component
 public class DelegatedUUIDSetStreamSerializer extends SetStreamSerializer<DelegatedUUIDSet, UUID> {
 
     public DelegatedUUIDSetStreamSerializer() {

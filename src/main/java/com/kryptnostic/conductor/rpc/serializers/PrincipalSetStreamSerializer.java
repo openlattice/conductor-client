@@ -2,6 +2,8 @@ package com.kryptnostic.conductor.rpc.serializers;
 
 import java.io.IOException;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.organizations.PrincipalSet;
@@ -10,6 +12,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 
+@Component
 public class PrincipalSetStreamSerializer extends SetStreamSerializer<PrincipalSet, Principal> {
 
     public PrincipalSetStreamSerializer() {

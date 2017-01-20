@@ -1,15 +1,12 @@
 package com.dataloom.requests.mapstores;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 import com.dataloom.authorization.Principal;
 
-public class PrincipalRequestIdPair implements Serializable {
-    private static final long serialVersionUID = -8095855430605074329L;
-
-    private Principal         user;
+public class PrincipalRequestIdPair {
     private UUID              requestId;
+    private Principal         user;
 
     public PrincipalRequestIdPair( Principal user, UUID requestId ) {
         this.user = user;
