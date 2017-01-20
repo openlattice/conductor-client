@@ -61,7 +61,7 @@ public class AuthorizationQueryService {
                 .select( CommonColumns.PRINCIPAL_TYPE.cql(), CommonColumns.PRINCIPAL_ID.cql() )
                 .from( keyspace, Tables.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
-                        CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) ) );
+                        CommonColumns.ACL_KEYS.bindMarker() ) ) );
 
         setObjectType = session.prepare( QueryBuilder
                 .update( keyspace, Tables.PERMISSIONS.getName() )
@@ -142,7 +142,8 @@ public class AuthorizationQueryService {
         Iterable<AceFuture> futureAces = Iterables.transform( principals,
                 principal -> new AceFuture( principal, aces.getAsync(
                         new AceKey( aclKeys, principal ) ) ) );
-        return new Acl( aclKeys, Iterables.transform( futureAces, AceFuture::getUninterruptibly ) );
+        return new Acl( aclKeys, Iterables.transform( futureAces, AceFuture::getUninterruptibly )::iterator );
+
     }
 
     public void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType ) {
