@@ -7,13 +7,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.dataloom.hazelcast.pods.MapstoresPod;
+import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.conductor.codecs.pods.TypeCodecsPod;
-import com.kryptnostic.conductor.rpc.serializers.SharedStreamSerializers;
 import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
@@ -32,7 +32,7 @@ public class HzAuthzTest extends CassandraBootstrap {
                 MapstoresPod.class,
                 CassandraPod.class,
                 TypeCodecsPod.class,
-                SharedStreamSerializers.class,
+                SharedStreamSerializersPod.class,
                 CassandraTablesPod.class );
         testServer.sprout( "local", CassandraPod.CASSANDRA_PROFILE );
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
