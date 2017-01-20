@@ -26,7 +26,7 @@ import com.kryptnostic.datastore.util.Util;
 public class HazelcastAuthorizationService implements AuthorizationManager {
     private static final Logger                 logger = LoggerFactory.getLogger( AuthorizationManager.class );
 
-    private final IMap<AceKey, Set<Permission>> aces;
+    private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
     private final AuthorizationQueryService     aqs;
 
     public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance, AuthorizationQueryService aqs ) {
@@ -60,7 +60,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             List<UUID> key,
             Principal principal,
             Set<Permission> permissions ) {
-        aces.set( new AceKey( key, principal ), permissions );
+        aces.set( new AceKey( key, principal ), DelegatedPermissionEnumSet.wrap( permissions ) );
     }
 
     @Override

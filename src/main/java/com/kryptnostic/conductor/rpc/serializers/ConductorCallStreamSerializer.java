@@ -24,7 +24,6 @@ import com.kryptnostic.conductor.rpc.ConductorCall;
 import com.kryptnostic.conductor.rpc.ConductorSparkApi;
 import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import com.kryptnostic.conductor.rpc.Lambdas;
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @SuppressWarnings( "rawtypes" )
@@ -64,7 +63,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
-        AbstractUUIDStreamSerializer.serialize( out, object.getUserId() );
+        UUIDStreamSerializer.serialize( out, object.getUserId() );
         Output output = new Output( (OutputStream) out );
         kryoThreadLocal.get().writeClassAndObject( output, object.getFunction() );
         output.flush();
@@ -73,7 +72,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     @SuppressWarnings( "unchecked" )
     @Override
     public ConductorCall read( ObjectDataInput in ) throws IOException {
-        UUID userId = AbstractUUIDStreamSerializer.deserialize( in );
+        UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
         Function<ConductorSparkApi, ?> f = (Function<ConductorSparkApi, ?>) kryoThreadLocal.get()
                 .readClassAndObject( input );

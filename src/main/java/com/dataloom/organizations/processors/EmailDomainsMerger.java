@@ -2,7 +2,7 @@ package com.dataloom.organizations.processors;
 
 import java.util.UUID;
 
-import com.dataloom.organizations.DelegatedStringSet;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractMerger;
 
 import jersey.repackaged.com.google.common.collect.Sets;
