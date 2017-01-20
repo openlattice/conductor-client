@@ -9,7 +9,6 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 public class AceKeyStreamSerializer implements SelfRegisteringStreamSerializer<AceKey> {
@@ -17,7 +16,7 @@ public class AceKeyStreamSerializer implements SelfRegisteringStreamSerializer<A
     @Override
     public void write( ObjectDataOutput out, AceKey object )
             throws IOException {
-        SetStreamSerializers.serializeFromList( out, object.getKey(), ( UUID key ) -> {
+        StreamSerializerUtils.serializeFromList( out, object.getKey(), ( UUID key ) -> {
             UUIDStreamSerializer.serialize( out, key );
         } );
         PrincipalStreamSerializer.serialize( out, object.getPrincipal() );
@@ -25,7 +24,7 @@ public class AceKeyStreamSerializer implements SelfRegisteringStreamSerializer<A
 
     @Override
     public AceKey read( ObjectDataInput in ) throws IOException {
-        List<UUID> keys = SetStreamSerializers.deserializeToList( in, ( ObjectDataInput dataInput ) -> {
+        List<UUID> keys = StreamSerializerUtils.deserializeToList( in, ( ObjectDataInput dataInput ) -> {
             return UUIDStreamSerializer.deserialize( dataInput );
         } );
         Principal principal = PrincipalStreamSerializer.deserialize( in );

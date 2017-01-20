@@ -1,6 +1,5 @@
 package com.dataloom.hazelcast.pods;
 
-import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -12,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.edm.internal.EntitySet;
@@ -39,6 +38,7 @@ import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 
@@ -50,7 +50,7 @@ public class MapstoresPod {
     Session session;
 
     @Bean
-    public SelfRegisteringMapStore<AceKey, EnumSet<Permission>> permissionMapstore() {
+    public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
         return new PermissionMapstore( session );
     }
 
@@ -70,7 +70,7 @@ public class MapstoresPod {
     }
     
     @Bean
-    public SelfRegisteringMapStore<String, Set<String>> schemaMapstore() {
+    public SelfRegisteringMapStore<String, DelegatedStringSet> schemaMapstore() {
         return new SchemaMapstore( session );
     }
 

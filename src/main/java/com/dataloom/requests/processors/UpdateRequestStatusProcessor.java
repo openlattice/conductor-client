@@ -6,7 +6,6 @@ import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.RequestStatus;
 import com.dataloom.requests.mapstores.AclRootPrincipalPair;
 import com.google.common.base.Preconditions;
-import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class UpdateRequestStatusProcessor
@@ -21,11 +20,9 @@ public class UpdateRequestStatusProcessor
 
     @Override
     public Void process( Entry<AclRootPrincipalPair, PermissionsRequestDetails> entry ) {
-        /**
         PermissionsRequestDetails details = entry.getValue();
         Preconditions.checkNotNull( details, "Permissions Request does not exist." );
         details.setStatus( status );
-        */
         return null;
     }
 

@@ -15,9 +15,9 @@ import com.hazelcast.core.ICompletableFuture;
 public class AceFuture implements ListenableFuture<Ace> {
     private static final Logger                              logger = LoggerFactory.getLogger( AceFuture.class );
     private final Principal                                  principal;
-    private final ICompletableFuture<DelegatedPermissionSet> futurePermissions;
+    private final ICompletableFuture<DelegatedPermissionEnumSet> futurePermissions;
 
-    public AceFuture( Principal principal, ICompletableFuture<DelegatedPermissionSet> futurePermissions ) {
+    public AceFuture( Principal principal, ICompletableFuture<DelegatedPermissionEnumSet> futurePermissions ) {
         this.principal = principal;
         this.futurePermissions = futurePermissions;
     }
@@ -58,10 +58,10 @@ public class AceFuture implements ListenableFuture<Ace> {
 
     @Override
     public void addListener( Runnable listener, Executor executor ) {
-        futurePermissions.andThen( new ExecutionCallback<DelegatedPermissionSet>() {
+        futurePermissions.andThen( new ExecutionCallback<DelegatedPermissionEnumSet>() {
 
             @Override
-            public void onResponse( DelegatedPermissionSet response ) {
+            public void onResponse( DelegatedPermissionEnumSet response ) {
                 listener.run();
             }
 

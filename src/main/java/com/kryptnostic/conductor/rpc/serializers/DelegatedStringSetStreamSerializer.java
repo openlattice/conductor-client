@@ -11,8 +11,8 @@ import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 
 public class DelegatedStringSetStreamSerializer extends SetStreamSerializer<DelegatedStringSet, String> {
 
-    protected DelegatedStringSetStreamSerializer( Class<DelegatedStringSet> clazz ) {
-        super( clazz );
+    public DelegatedStringSetStreamSerializer( ) {
+        super( DelegatedStringSet.class );
     }
 
     @Override
@@ -22,7 +22,7 @@ public class DelegatedStringSetStreamSerializer extends SetStreamSerializer<Dele
 
     @Override
     protected DelegatedStringSet newInstanceWithExpectedSize( int size ) {
-        return new DelegatedStringSet( Sets.newHashSetWithExpectedSize( size ) );
+        return DelegatedStringSet.wrap( Sets.newHashSetWithExpectedSize( size ) );
     }
 
     @Override

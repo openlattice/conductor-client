@@ -30,7 +30,7 @@ public class AuthorizationQueryService {
     private final PreparedStatement                    authorizedAclKeysForObjectTypeQuery;
     private final PreparedStatement                    aclsForSecurableObjectQuery;
     private final PreparedStatement                    setObjectType;
-    private final IMap<AceKey, DelegatedPermissionSet> aces;
+    private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
 
     public AuthorizationQueryService( String keyspace, Session session, HazelcastInstance hazelcastInstance ) {
         this.session = session;
