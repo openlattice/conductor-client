@@ -43,33 +43,40 @@ public final class Principals {
 
         }
     };
+    
+    private static final ThreadLocal<Principal> currentUserCache = new ThreadLocal<Principal>() {
+        protected Principal initialValue() {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            final Auth0UserDetails details;
+
+            if ( principal != null && Auth0UserDetails.class.isAssignableFrom( principal.getClass() ) ) {
+                details = (Auth0UserDetails) principal;
+            } else {
+                if ( principal != null ) {
+                    logger.error( "Encountered unexpected principal: {}", principal );
+                }
+                throw new ForbiddenException( "No authentication found when authentication expected" );
+            }
+
+            Object principalId = details.getAuth0Attribute( SUBJECT_ATTRIBUTE );
+
+            if ( principalId == null ) {
+                principalId = details.getAuth0Attribute( USER_ID_ATTRIBUTE );
+            }
+
+            return new Principal(
+                    PrincipalType.USER,
+                    principalId.toString() );
+
+        }
+    };
 
     public static void ensureUser( Principal principal ) {
         checkState( principal.getType().equals( PrincipalType.USER ), "Only user principal type allowed." );
     }
 
     public static Principal getCurrentUser() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        final Auth0UserDetails details;
-
-        if ( principal != null && Auth0UserDetails.class.isAssignableFrom( principal.getClass() ) ) {
-            details = (Auth0UserDetails) principal;
-        } else {
-            if ( principal != null ) {
-                logger.error( "Encountered unexpected principal: {}", principal );
-            }
-            throw new ForbiddenException( "No authentication found when authentication expected" );
-        }
-
-        Object principalId = details.getAuth0Attribute( SUBJECT_ATTRIBUTE );
-
-        if ( principalId == null ) {
-            principalId = details.getAuth0Attribute( USER_ID_ATTRIBUTE );
-        }
-
-        return new Principal(
-                PrincipalType.USER,
-                principalId.toString() );
+       return currentUserCache.get();
     }
 
     public static Set<Principal> getCurrentPrincipals() {
