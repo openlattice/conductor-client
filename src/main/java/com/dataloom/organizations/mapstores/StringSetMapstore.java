@@ -1,6 +1,5 @@
 package com.dataloom.organizations.mapstores;
 
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang.RandomStringUtils;
@@ -13,8 +12,9 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 
-public class StringSetMapstore extends UUIDKeyMapstore<Set<String>> {
+public class StringSetMapstore extends UUIDKeyMapstore<DelegatedStringSet> {
     private final ColumnDef valueCol;
 
     public StringSetMapstore(
@@ -28,23 +28,23 @@ public class StringSetMapstore extends UUIDKeyMapstore<Set<String>> {
     }
 
     @Override
-    public Set<String> generateTestValue() {
-        return ImmutableSet.of( RandomStringUtils.random( 10 ),
+    public DelegatedStringSet generateTestValue() {
+        return DelegatedStringSet.wrap( ImmutableSet.of( RandomStringUtils.random( 10 ),
                 RandomStringUtils.random( 10 ),
-                RandomStringUtils.random( 10 ) );
+                RandomStringUtils.random( 10 ) ) );
     }
 
     @Override
-    protected BoundStatement bind( UUID key, Set<String> value, BoundStatement bs ) {
+    protected BoundStatement bind( UUID key, DelegatedStringSet value, BoundStatement bs ) {
         return bs
                 .setUUID( keyCol.cql(), key )
                 .setSet( valueCol.cql(), value, String.class );
     }
 
     @Override
-    protected Set<String> mapValue( ResultSet rs ) {
+    protected DelegatedStringSet mapValue( ResultSet rs ) {
         Row r = rs.one();
-        return r == null ? null : r.getSet( valueCol.cql(), String.class );
+        return r == null ? null : DelegatedStringSet.wrap( r.getSet( valueCol.cql(), String.class ) );
     }
 
 }

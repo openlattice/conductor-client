@@ -30,10 +30,11 @@ import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 
 public class HazelcastSchemaManager {
     // map( namespace -> set<name> )
-    private final IMap<String, Set<String>> schemas;
+    private final IMap<String, DelegatedStringSet> schemas;
     private final IMap<UUID, PropertyType>  propertyTypes;
     private final IMap<UUID, EntityType>    entityTypes;
 

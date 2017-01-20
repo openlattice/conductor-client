@@ -13,9 +13,10 @@ import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
-public class SchemaMapstore extends AbstractStructuredCassandraMapstore<String, Set<String>> {
+public class SchemaMapstore extends AbstractStructuredCassandraMapstore<String, DelegatedStringSet> {
     private static final CassandraTableBuilder ctb = Tables.SCHEMAS.getBuilder();
 
     public SchemaMapstore( Session session ) {
@@ -28,7 +29,7 @@ public class SchemaMapstore extends AbstractStructuredCassandraMapstore<String, 
     }
 
     @Override
-    protected BoundStatement bind( String key, Set<String> value, BoundStatement bs ) {
+    protected BoundStatement bind( String key, DelegatedStringSet value, BoundStatement bs ) {
         return bs.setString( CommonColumns.NAMESPACE.cql(), key )
                 .setSet( CommonColumns.NAME_SET.cql(), value, String.class );
     }
@@ -39,12 +40,12 @@ public class SchemaMapstore extends AbstractStructuredCassandraMapstore<String, 
     }
 
     @Override
-    protected Set<String> mapValue( ResultSet rs ) {
+    protected DelegatedStringSet mapValue( ResultSet rs ) {
         Row row = rs.one();
         if ( row == null ) {
             return null;
         }
-        return row.getSet( CommonColumns.NAME_SET.cql(), String.class );
+        return DelegatedStringSet.wrap( row.getSet( CommonColumns.NAME_SET.cql(), String.class ) );
     }
 
     @Override
@@ -53,8 +54,8 @@ public class SchemaMapstore extends AbstractStructuredCassandraMapstore<String, 
     }
 
     @Override
-    public Set<String> generateTestValue() {
-        return ImmutableSet.of( RandomStringUtils.randomAlphanumeric( 5 ), RandomStringUtils.randomAlphanumeric( 5 ) );
+    public DelegatedStringSet generateTestValue() {
+        return DelegatedStringSet.wrap( ImmutableSet.of( RandomStringUtils.randomAlphanumeric( 5 ), RandomStringUtils.randomAlphanumeric( 5 ) ) );
     }
 
 }

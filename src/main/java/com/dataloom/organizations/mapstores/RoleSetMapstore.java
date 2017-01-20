@@ -8,6 +8,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.organizations.PrincipalSet;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -22,20 +23,22 @@ public class RoleSetMapstore extends PrincipalSetMapstore {
     }
 
     @Override
-    protected Set<Principal> mapValue( ResultSet rs ) {
+    protected PrincipalSet mapValue( ResultSet rs ) {
         Row r = rs.one();
         if ( r == null ) {
             return null;
         }
         Set<String> roles = r.getSet( valueCol.cql(), String.class );
-        return roles.stream().map( role -> new Principal( PrincipalType.ROLE, role ) ).collect( Collectors.toSet() );
+        return PrincipalSet.wrap(
+                roles.stream().map( role -> new Principal( PrincipalType.ROLE, role ) ).collect( Collectors.toSet() ) );
     }
 
     @Override
-    public Set<Principal> generateTestValue() {
-        return ImmutableSet.of( new Principal( PrincipalType.ROLE, RandomStringUtils.randomAlphanumeric( 5 ) ),
-                new Principal( PrincipalType.ROLE, RandomStringUtils.randomAlphanumeric( 5 ) ),
-                new Principal( PrincipalType.ROLE, RandomStringUtils.randomAlphanumeric( 5 ) ) );
+    public PrincipalSet generateTestValue() {
+        return PrincipalSet
+                .wrap( ImmutableSet.of( new Principal( PrincipalType.ROLE, RandomStringUtils.randomAlphanumeric( 5 ) ),
+                        new Principal( PrincipalType.ROLE, RandomStringUtils.randomAlphanumeric( 5 ) ),
+                        new Principal( PrincipalType.ROLE, RandomStringUtils.randomAlphanumeric( 5 ) ) ) );
     }
 
 }

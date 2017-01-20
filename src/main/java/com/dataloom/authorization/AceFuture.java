@@ -1,6 +1,5 @@
 package com.dataloom.authorization;
 
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -14,11 +13,11 @@ import com.hazelcast.core.ExecutionCallback;
 import com.hazelcast.core.ICompletableFuture;
 
 public class AceFuture implements ListenableFuture<Ace> {
-    private static final Logger                       logger = LoggerFactory.getLogger( AceFuture.class );
-    private final Principal                           principal;
-    private final ICompletableFuture<Set<Permission>> futurePermissions;
+    private static final Logger                              logger = LoggerFactory.getLogger( AceFuture.class );
+    private final Principal                                  principal;
+    private final ICompletableFuture<DelegatedPermissionEnumSet> futurePermissions;
 
-    public AceFuture( Principal principal, ICompletableFuture<Set<Permission>> futurePermissions ) {
+    public AceFuture( Principal principal, ICompletableFuture<DelegatedPermissionEnumSet> futurePermissions ) {
         this.principal = principal;
         this.futurePermissions = futurePermissions;
     }
@@ -59,10 +58,10 @@ public class AceFuture implements ListenableFuture<Ace> {
 
     @Override
     public void addListener( Runnable listener, Executor executor ) {
-        futurePermissions.andThen( new ExecutionCallback<Set<Permission>>() {
+        futurePermissions.andThen( new ExecutionCallback<DelegatedPermissionEnumSet>() {
 
             @Override
-            public void onResponse( Set<Permission> response ) {
+            public void onResponse( DelegatedPermissionEnumSet response ) {
                 listener.run();
             }
 
