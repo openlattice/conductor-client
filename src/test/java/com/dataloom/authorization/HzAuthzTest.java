@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.dataloom.hazelcast.pods.MapstoresPod;
+import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
@@ -31,6 +32,7 @@ public class HzAuthzTest extends CassandraBootstrap {
                 MapstoresPod.class,
                 CassandraPod.class,
                 TypeCodecsPod.class,
+                SharedStreamSerializersPod.class,
                 CassandraTablesPod.class );
         testServer.sprout( "local", CassandraPod.CASSANDRA_PROFILE );
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );

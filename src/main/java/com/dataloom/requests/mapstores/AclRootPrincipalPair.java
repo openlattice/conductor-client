@@ -1,15 +1,13 @@
 package com.dataloom.requests.mapstores;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
 import com.dataloom.authorization.Principal;
 
-public class AclRootPrincipalPair implements Serializable {
-    private static final long serialVersionUID = -1687486728573254618L;
-    private List<UUID>        aclRoot;
-    private Principal         user;
+public class AclRootPrincipalPair {
+    private List<UUID> aclRoot;
+    private Principal  user;
 
     public AclRootPrincipalPair( List<UUID> aclRoot, Principal user ) {
         this.aclRoot = aclRoot;

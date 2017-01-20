@@ -1,4 +1,4 @@
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.pods;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

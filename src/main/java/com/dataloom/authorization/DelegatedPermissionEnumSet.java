@@ -1,6 +1,5 @@
 package com.dataloom.authorization;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -10,8 +9,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class DelegatedPermissionEnumSet implements Set<Permission>, Serializable {
-    private static final long         serialVersionUID = -1614439154999058363L;
+public class DelegatedPermissionEnumSet implements Set<Permission> {
     private final EnumSet<Permission> permissions;
 
     public DelegatedPermissionEnumSet( EnumSet<Permission> permissions ) {

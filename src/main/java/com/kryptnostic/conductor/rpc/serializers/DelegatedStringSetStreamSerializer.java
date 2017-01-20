@@ -2,6 +2,8 @@ package com.kryptnostic.conductor.rpc.serializers;
 
 import java.io.IOException;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.collect.Sets;
 import com.hazelcast.nio.ObjectDataInput;
@@ -9,6 +11,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 
+@Component
 public class DelegatedStringSetStreamSerializer extends SetStreamSerializer<DelegatedStringSet, String> {
 
     public DelegatedStringSetStreamSerializer( ) {

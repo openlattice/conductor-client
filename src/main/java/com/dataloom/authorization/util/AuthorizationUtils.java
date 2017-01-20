@@ -23,8 +23,8 @@ public final class AuthorizationUtils {
     public static Principal getPrincipalFromRow( Row row ) {
         final String principalType = row.getString( CommonColumns.PRINCIPAL_TYPE.cql() );
         final String principalId = row.getString( CommonColumns.PRINCIPAL_ID.cql() );
-        checkState( StringUtils.isNotBlank( principalId ), "Securable object id cannot be null." );
-        checkState( StringUtils.isNotBlank( principalType ), "Encountered blank securable type" );
+        checkState( StringUtils.isNotBlank( principalId ), "Principal id cannot be null." );
+        checkState( StringUtils.isNotBlank( principalType ), "Encountered blank principal type" );
         return new Principal(
                 PrincipalType.valueOf( principalType ),
                 principalId );

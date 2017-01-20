@@ -1,7 +1,8 @@
 package com.kryptnostic.conductor.rpc.serializers;
 
 import java.io.IOException;
-import java.util.EnumSet;
+
+import org.springframework.stereotype.Component;
 
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.Permission;
@@ -10,12 +11,13 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class DelegatedPermissionEnumSetStreamSerializer
         implements SelfRegisteringStreamSerializer<DelegatedPermissionEnumSet> {
 
     private static final Permission[] permissions = Permission.values();
 
-    @Override
+    @Override   
     public void write( ObjectDataOutput out, DelegatedPermissionEnumSet object ) throws IOException {
         serialize( out, object );
     }

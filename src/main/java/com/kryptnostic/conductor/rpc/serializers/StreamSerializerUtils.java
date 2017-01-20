@@ -96,6 +96,7 @@ public class StreamSerializerUtils {
     public static EnumSet<Permission> deserializeToPermissionEnumSet( ObjectDataInput in ) throws IOException {
         int size = in.readInt();
         EnumSet<Permission> set = EnumSet.noneOf( Permission.class );
+        
         for ( int i = 0; i < size; ++i ) {
             set.add( permissions[ in.readInt() ] );
         }

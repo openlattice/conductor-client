@@ -1,17 +1,5 @@
 package com.kryptnostic.conductor.rpc.serializers;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.invoke.SerializedLambda;
-import java.util.UUID;
-import java.util.function.Function;
-
-import javax.inject.Inject;
-
-import org.objenesis.strategy.StdInstantiatorStrategy;
-import org.springframework.stereotype.Component;
-
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
@@ -25,41 +13,51 @@ import com.kryptnostic.conductor.rpc.ConductorSparkApi;
 import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import org.objenesis.strategy.StdInstantiatorStrategy;
+import org.springframework.stereotype.Component;
+
+import javax.inject.Inject;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.invoke.SerializedLambda;
+import java.util.UUID;
+import java.util.function.Function;
 
 @SuppressWarnings( "rawtypes" )
 @Component
 public class ConductorCallStreamSerializer implements SelfRegisteringStreamSerializer<ConductorCall> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
-                                                               @Override
-                                                               protected Kryo initialValue() {
-                                                                   Kryo kryo = new Kryo();
-                                                                   // Stuff from
-                                                                   // https://github.com/EsotericSoftware/kryo/blob/master/test/com/esotericsoftware/kryo/serializers/Java8ClosureSerializerTest.java
-                                                                   kryo.setInstantiatorStrategy(
-                                                                           new Kryo.DefaultInstantiatorStrategy(
-                                                                                   new StdInstantiatorStrategy() ) );
-                                                                   kryo.register( Object[].class );
-                                                                   kryo.register( java.lang.Class.class );
+        @Override
+        protected Kryo initialValue() {
+            Kryo kryo = new Kryo();
 
-                                                                   // Shared Lambdas
-                                                                   kryo.register( Lambdas.class );
-                                                                   kryo.register( GetAllEntitiesOfTypeLambda.class );
-                                                                   kryo.register( SerializedLambda.class );
+            // https://github.com/EsotericSoftware/kryo/blob/master/test/com/esotericsoftware/kryo/serializers/Java8ClosureSerializerTest.java
+            kryo.setInstantiatorStrategy(
+                    new Kryo.DefaultInstantiatorStrategy(
+                            new StdInstantiatorStrategy() ) );
+            kryo.register( Object[].class );
+            kryo.register( java.lang.Class.class );
 
-                                                                   // always needed for closure serialization, also if
-                                                                   // registrationRequired=false
-                                                                   kryo.register( ClosureSerializer.Closure.class,
-                                                                           new ClosureSerializer() );
+            // Shared Lambdas
+            kryo.register( Lambdas.class );
+            kryo.register( GetAllEntitiesOfTypeLambda.class );
+            kryo.register( SerializedLambda.class );
 
-                                                                   kryo.register( Function.class,
-                                                                           new ClosureSerializer() );
+            // always needed for closure serialization, also if
+            // registrationRequired=false
+            kryo.register( ClosureSerializer.Closure.class,
+                    new ClosureSerializer() );
 
-                                                                   return kryo;
-                                                               }
-                                                           };
+            kryo.register( Function.class,
+                    new ClosureSerializer() );
 
-    private ConductorSparkApi              api;
+            return kryo;
+        }
+    };
+
+    private ConductorSparkApi api;
 
     @Override
     public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
@@ -88,8 +86,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     public void destroy() {
 
     }
-    
-    @Inject
+
     public synchronized void setConductorSparkApi( ConductorSparkApi api ) {
         Preconditions.checkState( this.api == null, "Api can only be set once" );
         this.api = Preconditions.checkNotNull( api );

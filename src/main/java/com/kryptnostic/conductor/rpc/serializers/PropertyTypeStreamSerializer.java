@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.stereotype.Component;
 
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
@@ -15,6 +16,7 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerializer<PropertyType> {
 
     private static final EdmPrimitiveTypeKind[] edmTypes = EdmPrimitiveTypeKind.values();

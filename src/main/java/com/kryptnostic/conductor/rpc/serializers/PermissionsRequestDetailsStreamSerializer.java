@@ -5,6 +5,8 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.authorization.Permission;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.requests.PermissionsRequestDetails;
@@ -13,6 +15,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class PermissionsRequestDetailsStreamSerializer
         implements SelfRegisteringStreamSerializer<PermissionsRequestDetails> {
 
