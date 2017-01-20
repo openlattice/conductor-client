@@ -46,7 +46,7 @@ import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.durableexecutor.DurableExecutorService;
+import com.hazelcast.map.EntryProcessor;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
@@ -63,7 +63,6 @@ public class EdmService implements EdmManager {
     private final CassandraEntitySetManager         entitySetManager;
     private final CassandraTypeManager              entityTypeManager;
     private final HazelcastSchemaManager            schemaManager;
-    private final DurableExecutorService            executor;
 
     @Inject
     private EventBus                                eventBus;
@@ -87,7 +86,6 @@ public class EdmService implements EdmManager {
         this.fqns = hazelcastInstance.getMap( HazelcastMap.FQNS.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
         this.aclKeyReservations = aclKeyReservations;
-        this.executor = hazelcastInstance.getDurableExecutorService( "default" );
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
     }
@@ -448,6 +446,12 @@ public class EdmService implements EdmManager {
     @Override
     public Map<UUID, EntitySet> getEntitySetsAsMap( Set<UUID> entitySetIds ) {
         return entitySets.getAll( entitySetIds );
+    }
+    
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public <V> Map<UUID, V> fromPropertyTypes( Set<UUID> propertyTypeIds, EntryProcessor<UUID,PropertyType> ep ) {
+        return (Map<UUID, V>) propertyTypes.executeOnKeys( propertyTypeIds , ep );
     }
 
 }

@@ -2,7 +2,6 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 

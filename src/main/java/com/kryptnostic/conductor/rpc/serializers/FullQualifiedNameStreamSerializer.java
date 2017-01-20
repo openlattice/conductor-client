@@ -3,12 +3,14 @@ package com.kryptnostic.conductor.rpc.serializers;
 import java.io.IOException;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class FullQualifiedNameStreamSerializer implements SelfRegisteringStreamSerializer<FullQualifiedName> {
 
 	@Override

@@ -5,6 +5,8 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
@@ -14,8 +16,9 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.conductor.rpc.QueryResult;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class QueryResultStreamSerializer implements SelfRegisteringStreamSerializer<QueryResult> {
-    private Session session;
+	private Session session;
 
     @Inject
     public QueryResultStreamSerializer( Session session ) {

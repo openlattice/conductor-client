@@ -10,18 +10,20 @@ import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.rpc.serializers.ConductorCallStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
 
+@SuppressWarnings( "rawtypes" )
 public class ConductorStreamSerializerTest extends BaseSerializerTest<ConductorCallStreamSerializer, ConductorCall>
         implements Serializable {
     private static final long serialVersionUID = -8844481298074343953L;
 
     @Override
     protected ConductorCallStreamSerializer createSerializer() {
-        return new ConductorCallStreamSerializer(null);
+        return new ConductorCallStreamSerializer();
     }
 
     @Override
     protected ConductorCall createInput() {
-        return ConductorCall.wrap( Lambdas.getAllEntitiesOfType( new FullQualifiedName( "abc","def" ), ImmutableList.of() ) );
+        return ConductorCall
+                .wrap( Lambdas.getAllEntitiesOfType( new FullQualifiedName( "abc", "def" ), ImmutableList.of() ) );
     }
 
     @Override

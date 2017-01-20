@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.stereotype.Component;
 
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
@@ -12,6 +13,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class EntitySetStreamSerializer implements SelfRegisteringStreamSerializer<EntitySet> {
 
     @Override

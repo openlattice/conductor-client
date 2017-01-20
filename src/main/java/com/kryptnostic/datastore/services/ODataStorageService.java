@@ -3,7 +3,6 @@ package com.kryptnostic.datastore.services;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,17 +21,11 @@ import org.apache.olingo.server.api.uri.UriParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.edm.internal.EntityType;
-import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.durableexecutor.DurableExecutorService;

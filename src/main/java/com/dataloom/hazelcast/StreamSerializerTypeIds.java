@@ -20,7 +20,7 @@ public enum StreamSerializerTypeIds {
     PROPERTY_TYPE,
     FULL_QUALIFIED_NAME,
     QUERY_RESULT,
-    TYPE_PK,
+    EDM_PRIMITIVE_TYPE_KIND,
     UUID,
     ACE_KEY,
     PRINCIPAL,
@@ -32,5 +32,4 @@ public enum StreamSerializerTypeIds {
     ACLROOT_REQUEST_DETAILS_PAIR,
     UUID_SET,
     PRINCIPAL_SET
-
 }
