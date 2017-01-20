@@ -1,17 +1,17 @@
 package com.dataloom.organizations.mapstores;
 
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.organizations.PrincipalSet;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
-public abstract class PrincipalSetMapstore extends UUIDKeyMapstore<Set<Principal>> {
+public abstract class PrincipalSetMapstore extends UUIDKeyMapstore<PrincipalSet> {
     protected final ColumnDef valueCol;
 
     public PrincipalSetMapstore(
@@ -25,7 +25,7 @@ public abstract class PrincipalSetMapstore extends UUIDKeyMapstore<Set<Principal
     }
 
     @Override
-    protected BoundStatement bind( UUID key, Set<Principal> value, BoundStatement bs ) {
+    protected BoundStatement bind( UUID key, PrincipalSet value, BoundStatement bs ) {
         return bs
                 .setUUID( keyCol.cql(), key )
                 .setSet( valueCol.cql(),

@@ -8,11 +8,13 @@ import com.kryptnostic.conductor.rpc.serializers.AclRootPrincipalPairStreamSeria
 import com.kryptnostic.conductor.rpc.serializers.AclRootRequestDetailsPairStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.DelegatedPermissionEnumSetStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.DelegatedStringSetStreamSerializer;
+import com.kryptnostic.conductor.rpc.serializers.DelegatedUUIDSetStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.EntitySetStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.EntityTypeStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.FullQualifiedNameStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.PermissionsRequestDetailsStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.PrincipalRequestIdPairStreamSerializer;
+import com.kryptnostic.conductor.rpc.serializers.PrincipalSetStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.PrincipalStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.PropertyTypeStreamSerializer;
 import com.kryptnostic.conductor.rpc.serializers.UUIDStreamSerializer;
@@ -56,8 +58,18 @@ public class IMapObjectStreamSerializersPod {
     }
 
     @Bean
+    public DelegatedUUIDSetStreamSerializer duuidsss() {
+        return new DelegatedUUIDSetStreamSerializer();
+    }
+
+    @Bean
     public DelegatedPermissionEnumSetStreamSerializer dpesss() {
         return new DelegatedPermissionEnumSetStreamSerializer();
+    }
+
+    @Bean
+    public PrincipalSetStreamSerializer psss() {
+        return new PrincipalSetStreamSerializer();
     }
 
     @Bean
