@@ -133,7 +133,7 @@ public class AuthorizationQueryService {
                         aclKeys ) );
 
         Iterable<Principal> principals = Iterables.transform( AuthorizationUtils.makeLazy( rsf ),
-                AuthorizationUtils::getPrincipalFromRow )::iterator;
+                AuthorizationUtils::getPrincipalFromRow );
         return principals;
     }
 
