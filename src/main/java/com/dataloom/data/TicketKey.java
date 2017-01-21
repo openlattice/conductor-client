@@ -8,7 +8,7 @@ public class TicketKey {
 
     public TicketKey( String principalId, UUID ticket ) {
         this.principalId = principalId;
-        this.ticket = UUID.randomUUID();
+        this.ticket = ticket;
     }
 
     public TicketKey( String principalId ) {
