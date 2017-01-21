@@ -80,8 +80,7 @@ public enum Tables implements TableDef {
                         .ifNotExists()
                         .partitionKey( CommonColumns.ID )
                         .clusteringColumns( CommonColumns.NAME )
-                        .columns( CommonColumns.TYPE,
-                                CommonColumns.ENTITY_TYPE_ID,
+                        .columns( CommonColumns.ENTITY_TYPE_ID,
                                 CommonColumns.TITLE,
                                 CommonColumns.DESCRIPTION )
                         .secondaryIndex( CommonColumns.ENTITY_TYPE_ID, CommonColumns.NAME );

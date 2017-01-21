@@ -186,13 +186,8 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deleteEntitySet( UUID entitySetId ) {
-        /*
-         * A side-effect of entity set inheriting from the base securable type class is that it's actual type is only
-         * stored as a FQN and not a UUID. At some point, we should fix this so that the UUID of it's underlying entity
-         * type is actually stored. BACKEND-612
-         */
         final EntitySet entitySet = Util.getSafely( entitySets, entitySetId );
-        final EntityType entityType = getEntityType( entitySet.getType() );
+        final EntityType entityType = getEntityType( entitySet.getEntityTypeId() );
 
         /*
          * We cleanup permissions first as this will make entity set unavailable, even if delete fails.
@@ -217,7 +212,7 @@ public class EdmService implements EdmManager {
     }
 
     private void createEntitySet( EntitySet entitySet ) {
-        checkNotNull( entitySet.getType(), "Entity set type cannot be null" );
+        checkNotNull( entitySet.getEntityTypeId(), "Entity set type cannot be null" );
         checkState( entitySetManager.getEntitySet( entitySet.getName() ) == null, "Entity set already exists." );
         if ( entitySets.putIfAbsent( entitySet.getId(), entitySet ) != null ) {
             throw new IllegalStateException( "Entity set already exists." );
