@@ -3,12 +3,15 @@ package com.kryptnostic.conductor.rpc.serializers;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.data.TicketKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class TicketKeyStreamSerializer implements SelfRegisteringStreamSerializer<TicketKey> {
 
     @Override
