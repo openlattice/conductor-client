@@ -18,8 +18,10 @@ public enum HazelcastMap {
     DESCRIPTIONS( Tables.ORGANIZATIONS ),
     ALLOWED_EMAIL_DOMAINS( Tables.ORGANIZATIONS ),
     MEMBERS( Tables.ORGANIZATIONS ),
-    ROLES( Tables.ORGANIZATIONS ), 
-    USERS( null );
+    ROLES( Tables.ORGANIZATIONS ),
+    USERS( null ),
+    ENTITY_SET_TICKETS( null ),
+    ENTITY_SET_PROPERTIES_TICKETS(null);
 
     private final Tables table;
 
