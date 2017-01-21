@@ -3,20 +3,18 @@ package com.dataloom.authorization;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import com.auth0.spring.security.api.Auth0UserDetails;
-import com.google.common.collect.Sets;
+import com.dataloom.authentication.LoomAuthentication;
 
 public final class Principals {
     private static final Logger logger            = LoggerFactory.getLogger( Principals.class );
-    private static final String USER_ID_ATTRIBUTE = "user_id";
-    private static final String SUBJECT_ATTRIBUTE = "sub";
-
     public static enum Role {
         ADMIN( "admin" ),
         USER( "user" ),
@@ -35,52 +33,27 @@ public final class Principals {
 
     private Principals() {}
 
-    private static final ThreadLocal<Set<Principal>> currentPrincipalsCache = new ThreadLocal<Set<Principal>>() {
-        protected Set<Principal> initialValue() {
-            return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
-                    .map( authority -> new Principal( PrincipalType.ROLE, authority.getAuthority() ) )
-                    .collect( Collectors.toCollection( () -> Sets.newHashSet( getCurrentUser() ) ) );
-
-        }
-    };
-    
-    private static final ThreadLocal<Principal> currentUserCache = new ThreadLocal<Principal>() {
-        protected Principal initialValue() {
-            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            final Auth0UserDetails details;
-
-            if ( principal != null && Auth0UserDetails.class.isAssignableFrom( principal.getClass() ) ) {
-                details = (Auth0UserDetails) principal;
-            } else {
-                if ( principal != null ) {
-                    logger.error( "Encountered unexpected principal: {}", principal );
-                }
-                throw new ForbiddenException( "No authentication found when authentication expected" );
-            }
-
-            Object principalId = details.getAuth0Attribute( SUBJECT_ATTRIBUTE );
-
-            if ( principalId == null ) {
-                principalId = details.getAuth0Attribute( USER_ID_ATTRIBUTE );
-            }
-
-            return new Principal(
-                    PrincipalType.USER,
-                    principalId.toString() );
-
-        }
-    };
-
     public static void ensureUser( Principal principal ) {
         checkState( principal.getType().equals( PrincipalType.USER ), "Only user principal type allowed." );
     }
 
-    public static Principal getCurrentUser() {
-       return currentUserCache.get();
+    /**
+     * This will retrieve the current user. If auth information isn't present an NPE is thrown (by design). If the wrong
+     * type of auth is present a ClassCast exception will be thrown (by design).
+     * 
+     * @return The principal for the current request.
+     */
+    public static @Nonnull Principal getCurrentUser() {
+        return getLoomAuthentication().getLoomPrincipal();
     }
 
     public static Set<Principal> getCurrentPrincipals() {
-        return currentPrincipalsCache.get();
+        return getLoomAuthentication().getLoomPrincipals();
+    }
+    
+    public static LoomAuthentication getLoomAuthentication() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return ( (LoomAuthentication) auth );
     }
 
     public static Principal getAdminRole() {
