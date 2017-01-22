@@ -6,12 +6,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spark_project.guava.collect.Sets;
 
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
+import com.dataloom.authorization.events.AclUpdateEvent;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.requests.mapstores.AclRootPrincipalPair;
@@ -19,10 +23,15 @@ import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
 import com.dataloom.requests.processors.UpdateRequestStatusProcessor;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Preconditions;
+import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
 public class HazelcastPermissionsRequestsService implements PermissionsRequestsManager {
+    
+    @Inject
+    private EventBus                                       eventBus;
+    
     private static final Logger                                           logger = LoggerFactory
             .getLogger( PermissionsRequestsManager.class );
     private final PermissionsRequestsQueryService                         prqs;
@@ -79,6 +88,7 @@ public class HazelcastPermissionsRequestsService implements PermissionsRequestsM
         if ( objectId != null && permissions.containsKey( objectId ) ) {
             authorizations.addPermission( aclRoot, principal, permissions.get( objectId ) );
             permissions.remove( objectId );
+            eventBus.post( new AclUpdateEvent( aclRoot, Sets.newHashSet( principal ) ) );
         }
         // When permissions of children of aclRoot is requested
         for ( Map.Entry<UUID, EnumSet<Permission>> entry : permissions.entrySet() ) {
