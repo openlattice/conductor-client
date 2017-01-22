@@ -90,12 +90,11 @@ public final class RowAdapters {
     public static EntitySet entitySet( Row row ) {
         // TODO: Validate data read from Cassandra and log errors for invalid entries.
         UUID id = id( row );
-        FullQualifiedName type = type( row );
         UUID entityTypeId = entityTypeId( row );
         String name = name( row );
         String title = title( row );
         Optional<String> description = description( row );
-        return new EntitySet( id, type, entityTypeId, name, title, description );
+        return new EntitySet( id, entityTypeId, name, title, description );
     }
 
     public static PropertyType propertyType( Row row ) {

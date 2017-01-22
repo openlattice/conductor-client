@@ -63,7 +63,7 @@ public interface EdmManager {
 
     Collection<PropertyType> getPropertyTypes( Set<UUID> properties );
 
-    Set<UUID> getAclKeys( Set<FullQualifiedName> fqns );
+    Set<UUID> getAclKeys( Set<?> fqnsOrNames );
 
     UUID getTypeAclKey( FullQualifiedName fqns );
 

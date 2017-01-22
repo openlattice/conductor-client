@@ -33,7 +33,6 @@ public class EntitySetMapstore extends AbstractStructuredCassandraPartitionKeyVa
     protected BoundStatement bind( UUID key, EntitySet value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ID.cql(), key )
                 .setString( CommonColumns.NAME.cql(), value.getName() )
-                .set( CommonColumns.TYPE.cql(), value.getType(), FullQualifiedName.class )
                 .setUUID( CommonColumns.ENTITY_TYPE_ID.cql(), value.getEntityTypeId() )
                 .setString( CommonColumns.TITLE.cql(), value.getTitle() )
                 .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() );
@@ -52,7 +51,6 @@ public class EntitySetMapstore extends AbstractStructuredCassandraPartitionKeyVa
         }
         return new EntitySet(
                 row.getUUID( CommonColumns.ID.cql() ),
-                row.get( CommonColumns.TYPE.cql(), FullQualifiedName.class ),
                 row.getUUID( CommonColumns.ENTITY_TYPE_ID.cql() ),
                 row.getString( CommonColumns.NAME.cql() ),
                 row.getString( CommonColumns.TITLE.cql() ),

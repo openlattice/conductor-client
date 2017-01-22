@@ -21,7 +21,6 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
             throws IOException {
         UUIDStreamSerializer.serialize( out, object.getId() );
         UUIDStreamSerializer.serialize( out, object.getEntityTypeId() );
-        FullQualifiedNameStreamSerializer.serialize( out, object.getType() );
         out.writeUTF( object.getName() );
         out.writeUTF( object.getTitle() );
         out.writeUTF( object.getDescription() );
@@ -31,13 +30,11 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
     public EntitySet read( ObjectDataInput in ) throws IOException {
         UUID id = UUIDStreamSerializer.deserialize( in );
         UUID entityTypeId = UUIDStreamSerializer.deserialize( in );
-        FullQualifiedName fqn = FullQualifiedNameStreamSerializer.deserialize( in );
         String name = in.readUTF();
         String title = in.readUTF();
         Optional<String> description = Optional.of( in.readUTF() );
         EntitySet es = new EntitySet(
                 id,
-                fqn,
                 entityTypeId,
                 name,
                 title,

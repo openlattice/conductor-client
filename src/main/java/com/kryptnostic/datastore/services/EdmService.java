@@ -1,7 +1,6 @@
 package com.kryptnostic.datastore.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -55,8 +54,8 @@ public class EdmService implements EdmManager {
     private final IMap<UUID, PropertyType>          propertyTypes;
     private final IMap<UUID, EntityType>            entityTypes;
     private final IMap<UUID, EntitySet>             entitySets;
-    private final IMap<FullQualifiedName, UUID>     aclKeys;
-    private final IMap<UUID, FullQualifiedName>     fqns;
+    private final IMap<String, UUID>                aclKeys;
+    private final IMap<UUID, String>                names;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -83,7 +82,7 @@ public class EdmService implements EdmManager {
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
-        this.fqns = hazelcastInstance.getMap( HazelcastMap.FQNS.name() );
+        this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
         this.aclKeyReservations = aclKeyReservations;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
@@ -186,13 +185,8 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deleteEntitySet( UUID entitySetId ) {
-        /*
-         * A side-effect of entity set inheriting from the base securable type class is that it's actual type is only
-         * stored as a FQN and not a UUID. At some point, we should fix this so that the UUID of it's underlying entity
-         * type is actually stored. BACKEND-612
-         */
         final EntitySet entitySet = Util.getSafely( entitySets, entitySetId );
-        final EntityType entityType = getEntityType( entitySet.getType() );
+        final EntityType entityType = getEntityType( entitySet.getEntityTypeId() );
 
         /*
          * We cleanup permissions first as this will make entity set unavailable, even if delete fails.
@@ -217,8 +211,10 @@ public class EdmService implements EdmManager {
     }
 
     private void createEntitySet( EntitySet entitySet ) {
-        checkNotNull( entitySet.getType(), "Entity set type cannot be null" );
-        checkState( entitySetManager.getEntitySet( entitySet.getName() ) == null, "Entity set already exists." );
+        checkNotNull( entitySet.getEntityTypeId(), "Entity set type cannot be null" );
+
+        aclKeyReservations.reserveIdAndValidateType( entitySet );
+
         if ( entitySets.putIfAbsent( entitySet.getId(), entitySet ) != null ) {
             throw new IllegalStateException( "Entity set already exists." );
         }
@@ -263,21 +259,35 @@ public class EdmService implements EdmManager {
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
-    public Set<UUID> getAclKeys( Set<FullQualifiedName> fqns ) {
-        return ImmutableSet.copyOf( aclKeys.getAll( fqns ).values() );
+    public Set<UUID> getAclKeys( Set<?> fqnsOrNames ) {
+        if ( fqnsOrNames.isEmpty() ) {
+            return ImmutableSet.of();
+        }
+
+        Object o = fqnsOrNames.iterator().next();
+        Set<String> names;
+        if ( String.class.isAssignableFrom( o.getClass() ) ) {
+            names = (Set<String>) fqnsOrNames;
+        } else if ( FullQualifiedName.class.isAssignableFrom( o.getClass() ) ) {
+            names = Util.fqnToString( (Set<FullQualifiedName>) fqnsOrNames );
+        } else {
+            throw new IllegalArgumentException( "Unable to retrieve Acl Keys for this type." );
+        }
+        return ImmutableSet.copyOf( aclKeys.getAll( names ).values() );
     }
 
     @Override
     public Set<UUID> getEntityTypeUuids( Set<FullQualifiedName> fqns ) {
-        return aclKeys.getAll( fqns ).values().stream()
+        return aclKeys.getAll( Util.fqnToString( fqns ) ).values().stream()
                 .filter( id -> id != null )
                 .collect( Collectors.toSet() );
     }
 
     @Override
     public Set<UUID> getPropertyTypeUuids( Set<FullQualifiedName> fqns ) {
-        return aclKeys.getAll( fqns ).values().stream()
+        return aclKeys.getAll( Util.fqnToString( fqns ) ).values().stream()
                 .filter( id -> id != null )
                 .collect( Collectors.toSet() );
     }
@@ -323,7 +333,8 @@ public class EdmService implements EdmManager {
 
     @Override
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
-        return Preconditions.checkNotNull( Util.getSafely( propertyTypes, aclKeys.get( propertyType ) ),
+        return Preconditions.checkNotNull(
+                Util.getSafely( propertyTypes, aclKeys.get( Util.fqnToString( propertyType ) ) ),
                 "Property type does not exist" );
     }
 
@@ -401,7 +412,12 @@ public class EdmService implements EdmManager {
 
     @Override
     public boolean checkEntitySetExists( String name ) {
-        return getEntitySet( name ) != null;
+        UUID id = Util.getSafely( aclKeys, name );
+        if ( id == null ) {
+            return false;
+        } else {
+            return entitySets.containsKey( id );
+        }
     }
 
     @Override
@@ -411,7 +427,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public UUID getTypeAclKey( FullQualifiedName type ) {
-        return Util.getSafely( aclKeys, type );
+        return Util.getSafely( aclKeys, Util.fqnToString( type ) );
     }
 
     @Override
@@ -421,17 +437,22 @@ public class EdmService implements EdmManager {
 
     @Override
     public FullQualifiedName getPropertyTypeFqn( UUID propertyTypeId ) {
-        return Util.getSafely( fqns, propertyTypeId );
+        return Util.stringToFqn( Util.getSafely( names, propertyTypeId ) );
     }
 
     @Override
     public FullQualifiedName getEntityTypeFqn( UUID entityTypeId ) {
-        return Util.getSafely( fqns, entityTypeId );
+        return Util.stringToFqn( Util.getSafely( names, entityTypeId ) );
     }
 
     @Override
     public EntitySet getEntitySet( String entitySetName ) {
-        return entitySetManager.getEntitySet( entitySetName );
+        UUID id = Util.getSafely( aclKeys, entitySetName );
+        if( id == null ){
+            return null;
+        } else {
+            return getEntitySet( id );
+        }
     }
 
     @Override
