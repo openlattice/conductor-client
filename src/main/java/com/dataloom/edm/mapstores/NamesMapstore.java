@@ -2,8 +2,6 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
@@ -15,12 +13,12 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
-public class FqnsMapstore
-        extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, FullQualifiedName> {
-    private static final CassandraTableBuilder ctb = Tables.FQNS.getBuilder();
+public class NamesMapstore
+        extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, String> {
+    private static final CassandraTableBuilder ctb = Tables.NAMES.getBuilder();
 
-    public FqnsMapstore( Session session ) {
-        super( HazelcastMap.FQNS.name(), session, ctb );
+    public NamesMapstore( Session session ) {
+        super( HazelcastMap.NAMES.name(), session, ctb );
     }
 
     @Override
@@ -30,10 +28,10 @@ public class FqnsMapstore
     }
 
     @Override
-    protected BoundStatement bind( UUID key, FullQualifiedName value, BoundStatement bs ) {
+    protected BoundStatement bind( UUID key, String value, BoundStatement bs ) {
         return bs
                 .setUUID( CommonColumns.SECURABLE_OBJECTID.cql(), key )
-                .set( CommonColumns.FQN.cql(), value, FullQualifiedName.class );
+                .setString( CommonColumns.NAME.cql(), value );
     }
 
     @Override
@@ -42,9 +40,9 @@ public class FqnsMapstore
     }
 
     @Override
-    protected FullQualifiedName mapValue( ResultSet rs ) {
+    protected String mapValue( ResultSet rs ) {
         Row row = rs.one();
-        return row == null ? null : row.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+        return row == null ? null : row.getString( CommonColumns.NAME.cql() );
     }
 
     @Override
@@ -53,8 +51,8 @@ public class FqnsMapstore
     }
 
     @Override
-    public FullQualifiedName generateTestValue() {
-        return TestDataFactory.fqn();
+    public String generateTestValue() {
+        return TestDataFactory.name();
     }
 
 }

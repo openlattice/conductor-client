@@ -1,11 +1,14 @@
 package com.kryptnostic.datastore.util;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,5 +90,17 @@ public final class Util {
             IMap<K, V> fqns,
             K organizationId ) {
         return fqns.remove( organizationId );
+    }
+    
+    public static String fqnToString( FullQualifiedName fqn ){
+        return fqn.getFullQualifiedNameAsString();
+    }
+    
+    public static FullQualifiedName stringToFqn( String string ){
+        return new FullQualifiedName( string );
+    }
+
+    public static Set<String> fqnToString( Set<FullQualifiedName> fqns ){
+        return fqns.stream().map( Util::fqnToString ).collect( Collectors.toSet() );
     }
 }

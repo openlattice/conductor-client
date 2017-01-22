@@ -18,7 +18,7 @@ import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
-import com.dataloom.edm.mapstores.FqnsMapstore;
+import com.dataloom.edm.mapstores.NamesMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -75,13 +75,13 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<FullQualifiedName, UUID> aclKeysMapstore() {
+    public SelfRegisteringMapStore<String, UUID> aclKeysMapstore() {
         return new AclKeysMapstore( session );
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, FullQualifiedName> fqnsMapstore() {
-        return new FqnsMapstore( session );
+    public SelfRegisteringMapStore<UUID, String> namesMapstore() {
+        return new NamesMapstore( session );
     }
 
     @Bean
