@@ -1,6 +1,7 @@
 package com.kryptnostic.conductor.rpc.serializers;
 
 import java.io.IOException;
+import java.util.EnumSet;
 
 import org.springframework.stereotype.Component;
 
@@ -17,14 +18,14 @@ public class DelegatedPermissionEnumSetStreamSerializer
 
     private static final Permission[] permissions = Permission.values();
 
-    @Override   
+    @Override
     public void write( ObjectDataOutput out, DelegatedPermissionEnumSet object ) throws IOException {
-        serialize( out, object );
+        serialize( out, object.unwrap() );
     }
 
     @Override
     public DelegatedPermissionEnumSet read( ObjectDataInput in ) throws IOException {
-        return deserialize( in );
+        return DelegatedPermissionEnumSet.wrap( deserialize( in ) );
     }
 
     @Override
@@ -40,16 +41,16 @@ public class DelegatedPermissionEnumSetStreamSerializer
         return DelegatedPermissionEnumSet.class;
     }
 
-    public static void serialize( ObjectDataOutput out, DelegatedPermissionEnumSet object ) throws IOException {
+    public static void serialize( ObjectDataOutput out, EnumSet<Permission> object ) throws IOException {
         out.writeInt( object.size() );
         for ( Permission permission : object ) {
             out.writeInt( permission.ordinal() );
         }
     }
 
-    public static DelegatedPermissionEnumSet deserialize( ObjectDataInput in ) throws IOException {
+    public static EnumSet<Permission> deserialize( ObjectDataInput in ) throws IOException {
         int size = in.readInt();
-        DelegatedPermissionEnumSet set = new DelegatedPermissionEnumSet();
+        EnumSet<Permission> set = EnumSet.noneOf( Permission.class );
         for ( int i = 0; i < size; ++i ) {
             set.add( permissions[ in.readInt() ] );
         }

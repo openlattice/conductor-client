@@ -145,20 +145,23 @@ public final class RowAdapters {
     }
 
     public static Map<UUID, EnumSet<Permission>> aclChildrenPermissions( Row row ) {
-        return row.getMap( CommonColumns.ACL_CHILDREN_PERMISSIONS.cql(), TypeToken.of( UUID.class ), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+        return row.getMap( CommonColumns.ACL_CHILDREN_PERMISSIONS.cql(),
+                TypeToken.of( UUID.class ),
+                EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
     }
 
-    public static RequestStatus status( Row row ) {
+    public static RequestStatus reqStatus( Row row ) {
         return row.get( CommonColumns.STATUS.cql(), RequestStatus.class );
     }
     
     public static String principalId( Row row ) {
-        return row.getString( CommonColumns.PRINCIPAL_ID.cql());
+        return row.getString( CommonColumns.PRINCIPAL_ID.cql() );
     }
 
     public static UUID requestId( Row row ) {
-        return row.getUUID( CommonColumns.REQUESTID.cql());
+        return row.getUUID( CommonColumns.REQUESTID.cql() );
     }
+
 
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
