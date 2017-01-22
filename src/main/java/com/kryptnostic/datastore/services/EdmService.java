@@ -294,7 +294,7 @@ public class EdmService implements EdmManager {
     @Override
     public EntityType getEntityType( UUID entityTypeId ) {
         return Preconditions.checkNotNull(
-                HazelcastUtils.typedGet( entityTypes, entityTypeId ),
+                Util.getSafely( entityTypes, entityTypeId ),
                 "Entity type does not exist" );
 
     }
