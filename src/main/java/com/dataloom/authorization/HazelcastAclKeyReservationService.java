@@ -6,7 +6,7 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 import com.dataloom.edm.exceptions.AclKeyConflictException;
 import com.dataloom.edm.exceptions.TypeExistsException;
@@ -14,6 +14,7 @@ import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.edm.internal.AbstractSecurableObject;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -52,23 +53,6 @@ public class HazelcastAclKeyReservationService {
     private final IMap<String, UUID> aclKeys;
     private final IMap<UUID, String> names;
 
-    public static class Namers {
-        private Namers() {};
-
-        private static final Function<AbstractSchemaAssociatedSecurableType, String> asast = (
-                AbstractSchemaAssociatedSecurableType type ) -> Util.fqnToString( type.getType() );
-        private static final Function<EntitySet, String>                             es    = (
-                EntitySet entitySet ) -> entitySet.getName();
-
-        public static Function<AbstractSchemaAssociatedSecurableType, String> asast() {
-            return asast;
-        }
-
-        public static Function<EntitySet, String> es() {
-            return es;
-        }
-    }
-
     public HazelcastAclKeyReservationService( HazelcastInstance hazelcast ) {
         this.aclKeys = hazelcast.getMap( HazelcastMap.ACL_KEYS.name() );
         this.names = hazelcast.getMap( HazelcastMap.NAMES.name() );
@@ -101,11 +85,11 @@ public class HazelcastAclKeyReservationService {
      * @param type The type for which to reserve an FQN and UUID.
      */
     public void reserveIdAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
-        reserveIdAndValidateType( type, Namers.asast );
+        reserveIdAndValidateType( type, Suppliers.compose( Util::fqnToString, type::getType )::get );
     }
 
     public void reserveIdAndValidateType( EntitySet entitySet ) {
-        reserveIdAndValidateType( entitySet, Namers.es );
+        reserveIdAndValidateType( entitySet, entitySet::getName );
     }
 
     /**
@@ -116,11 +100,11 @@ public class HazelcastAclKeyReservationService {
      * @param type
      * @param namer
      */
-    public <T extends AbstractSecurableObject> void reserveIdAndValidateType( T type, Function<T, String> namer ) {
+    public <T extends AbstractSecurableObject> void reserveIdAndValidateType( T type, Supplier<String> namer ) {
         /*
          * Template this call and make wrappers that directly insert into type maps making fqns redundant.
          */
-        final String proposedName = namer.apply( type );
+        final String proposedName = namer.get();
         final String currentName = names.putIfAbsent( type.getId(), proposedName );
 
         if ( currentName == null || proposedName.equals( currentName ) ) {
