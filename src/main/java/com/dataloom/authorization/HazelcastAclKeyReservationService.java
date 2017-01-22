@@ -115,7 +115,6 @@ public class HazelcastAclKeyReservationService {
      * 
      * @param type
      * @param namer
-     * @return
      */
     public <T extends AbstractSecurableObject> void reserveIdAndValidateType( T type, Function<T, String> namer ) {
         /*
