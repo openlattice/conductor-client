@@ -1,8 +1,10 @@
 package com.dataloom.authorization.util;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -10,23 +12,25 @@ import java.util.stream.StreamSupport;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.authorization.AceKey;
+import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
+import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 public final class AuthorizationUtils {
     private AuthorizationUtils() {}
 
     public static Principal getPrincipalFromRow( Row row ) {
-        final String principalType = row.getString( CommonColumns.PRINCIPAL_TYPE.cql() );
+        final PrincipalType principalType = row.get( CommonColumns.PRINCIPAL_TYPE.cql(), PrincipalType.class );
         final String principalId = row.getString( CommonColumns.PRINCIPAL_ID.cql() );
         checkState( StringUtils.isNotBlank( principalId ), "Principal id cannot be null." );
-        checkState( StringUtils.isNotBlank( principalType ), "Encountered blank principal type" );
+        checkNotNull( principalType, "Encountered null principal type" );
         return new Principal(
-                PrincipalType.valueOf( principalType ),
+                principalType,
                 principalId );
     }
 
@@ -37,6 +41,10 @@ public final class AuthorizationUtils {
 
     public static List<UUID> getAclKeysFromRow( Row row ) {
         return row.getList( CommonColumns.ACL_KEYS.cql(), UUID.class );
+    }
+
+    public static EnumSet<Permission> permissions( Row row ) {
+        return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
     }
 
     /**

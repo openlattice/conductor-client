@@ -40,7 +40,7 @@ public class PermissionsRequestsUtils {
         final List<UUID> aclRoot = RowAdapters.aclRoot( row );
         final Principal user = new Principal( PrincipalType.USER, RowAdapters.principalId( row ) );
         Map<UUID, EnumSet<Permission>> permissions = RowAdapters.aclChildrenPermissions( row );
-        RequestStatus status = RowAdapters.status( row );
+        RequestStatus status = RowAdapters.reqStatus( row );
         return new PermissionsRequest( aclRoot, user, new PermissionsRequestDetails( permissions, status ) );
     }
 

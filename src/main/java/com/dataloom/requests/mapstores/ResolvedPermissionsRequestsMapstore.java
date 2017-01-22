@@ -64,7 +64,7 @@ public class ResolvedPermissionsRequestsMapstore
                 RowAdapters.aclRoot( row ),
                 new PermissionsRequestDetails(
                         RowAdapters.aclChildrenPermissions( row ),
-                        RowAdapters.status( row ) ) );
+                        RowAdapters.reqStatus( row ) ) );
     }
 
     @Override
