@@ -56,25 +56,25 @@ public class HazelcastSchemaManager {
 
     public void addPropertyTypesToSchema( Set<UUID> propertyTypeUuids, FullQualifiedName schemaName ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeUuids ), "Some properties do not exist." );
-        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema does not exist.");
+        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema %s does not exist.", schemaName.getFullQualifiedNameAsString() );
         addTypesToSchema( propertyTypes, propertyTypeUuids, ImmutableList.of( schemaName ) );
     }
 
     public void addEntityTypesToSchema( Set<UUID> entityTypeUuids, FullQualifiedName schemaName ) {
         Preconditions.checkArgument( checkEntityTypesExist( entityTypeUuids ), "Some entity types do not exist." );
-        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema does not exist." );
+        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema %s does not exist.", schemaName.getFullQualifiedNameAsString() );
         addTypesToSchema( entityTypes, entityTypeUuids, ImmutableList.of( schemaName ) );
     }
 
     public void removePropertyTypesFromSchema( Set<UUID> propertyTypeUuids, FullQualifiedName schemaName ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeUuids ), "Some properties do not exist." );
-        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema does not exist.");
+        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema %s does not exist.", schemaName.getFullQualifiedNameAsString() );
         removeTypesFromSchema( propertyTypes, propertyTypeUuids, ImmutableList.of( schemaName ) );
     }
 
     public void removeEntityTypesFromSchema( Set<UUID> entityTypeUuids, FullQualifiedName schemaName ) {
         Preconditions.checkArgument( checkEntityTypesExist( entityTypeUuids ), "Some entity types do not exist." );
-        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema does not exist." );
+        Preconditions.checkArgument( checkSchemaExists( schemaName ), "Schema %s does not exist.", schemaName.getFullQualifiedNameAsString() );
         removeTypesFromSchema( entityTypes, entityTypeUuids, ImmutableList.of( schemaName ) );
     }
 

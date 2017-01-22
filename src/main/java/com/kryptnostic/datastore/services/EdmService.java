@@ -1,6 +1,8 @@
 package com.kryptnostic.datastore.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -211,33 +213,26 @@ public class EdmService implements EdmManager {
     }
 
     private void createEntitySet( EntitySet entitySet ) {
-        checkNotNull( entitySet.getEntityTypeId(), "Entity set type cannot be null" );
-
+        ensureValidEntitySet( entitySet );
+        
         aclKeyReservations.reserveIdAndValidateType( entitySet );
 
-        if ( entitySets.putIfAbsent( entitySet.getId(), entitySet ) != null ) {
-            throw new IllegalStateException( "Entity set already exists." );
-        }
+        checkState( entitySets.putIfAbsent( entitySet.getId(), entitySet ) != null, "Entity set already exists." );
     }
 
     @Override
     public void createEntitySet( Principal principal, EntitySet entitySet ) {
+        Principals.ensureUser( principal );
+        createEntitySet( entitySet );
+
         try {
-            Principals.ensureUser( principal );
-
-            EntityType entityType = entityTypes.get( entitySet.getEntityTypeId() );
-
-            if ( entityType == null ) {
-                throw new TypeNotFoundException( "Cannot create an entity set for a non-existent type." );
-            }
-
-            createEntitySet( entitySet );
-
             authorizations.addPermission( ImmutableList.of( entitySet.getId() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
 
             authorizations.createEmptyAcl( ImmutableList.of( entitySet.getId() ), SecurableObjectType.EntitySet );
+
+            EntityType entityType = entityTypes.get( entitySet.getEntityTypeId() );
 
             entityType.getProperties().stream()
                     .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
@@ -255,7 +250,8 @@ public class EdmService implements EdmManager {
 
         } catch ( Exception e ) {
             logger.error( "Unable to create entity set {} for principal {}", entitySet, principal, e );
-            throw new IllegalStateException( "Entity Set not created." );
+            Util.deleteSafely( entitySets, entitySet.getId() );
+            throw new IllegalStateException( "Unable to create entity set: " + entitySet.getId() );
         }
     }
 
@@ -273,7 +269,7 @@ public class EdmService implements EdmManager {
         } else if ( FullQualifiedName.class.isAssignableFrom( o.getClass() ) ) {
             names = Util.fqnToString( (Set<FullQualifiedName>) fqnsOrNames );
         } else {
-            throw new IllegalArgumentException( "Unable to retrieve Acl Keys for this type." );
+            throw new IllegalArgumentException( "Unable to retrieve Acl Keys for this type: " + o.getClass().getSimpleName() );
         }
         return ImmutableSet.copyOf( aclKeys.getAll( names ).values() );
     }
@@ -305,8 +301,8 @@ public class EdmService implements EdmManager {
     public EntityType getEntityType( UUID entityTypeId ) {
         return Preconditions.checkNotNull(
                 Util.getSafely( entityTypes, entityTypeId ),
-                "Entity type does not exist" );
-
+                "Entity type of id %s does not exist.",
+                entityTypeId.toString() );
     }
 
     public Iterable<EntityType> getEntityTypes() {
@@ -334,8 +330,8 @@ public class EdmService implements EdmManager {
     @Override
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
         return Preconditions.checkNotNull(
-                Util.getSafely( propertyTypes, aclKeys.get( Util.fqnToString( propertyType ) ) ),
-                "Property type does not exist" );
+                Util.getSafely( propertyTypes, Util.getSafely( aclKeys, Util.fqnToString( propertyType ) ) ),
+                "Property type %s does not exist", propertyType.getFullQualifiedNameAsString() );
     }
 
     @Override
@@ -357,9 +353,7 @@ public class EdmService implements EdmManager {
     @Override
     public void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
-        if ( !Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty() ) {
-            throw new IllegalArgumentException( "Key property types cannot be removed." );
-        }
+        Preconditions.checkArgument( Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty(), "Key property types cannot be removed." );
         entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
     }
 
@@ -367,32 +361,41 @@ public class EdmService implements EdmManager {
      * Validation
      **************/
     private void ensureValidEntityType( EntityType entityType ) {
-        try {
-            Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getType().getNamespace() ),
-                    "Namespace for Entity Type is missing" );
-            Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getType().getName() ),
-                    "Name of Entity Type is missing" );
-            Preconditions.checkArgument( CollectionUtils.isNotEmpty( entityType.getProperties() ),
-                    "Property for Entity Type is missing" );
-            Preconditions.checkArgument( CollectionUtils.isNotEmpty( entityType.getKey() ),
-                    "Key for Entity Type is missing" );
-            Preconditions.checkArgument( checkPropertyTypesExist( entityType.getProperties() )
-                    && entityType.getProperties().containsAll( entityType.getKey() ), "Invalid Entity Type provided" );
-        } catch ( Exception e ) {
-            throw new IllegalArgumentException( e.getMessage() );
-        }
+        Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getType().getNamespace() ),
+                "Namespace for Entity Type is missing" );
+        Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getType().getName() ),
+                "Name of Entity Type is missing" );
+        Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getTitle() ),
+                "Title of Entity Type is missing" );
+        Preconditions.checkArgument( CollectionUtils.isNotEmpty( entityType.getProperties() ),
+                "Properties for Entity Type is missing" );
+        Preconditions.checkArgument( CollectionUtils.isNotEmpty( entityType.getKey() ),
+                "Key for Entity Type is missing" );
+        Preconditions.checkArgument( checkPropertyTypesExist( entityType.getProperties() ),
+                "Some properties do not exist" );
+        Preconditions.checkArgument( entityType.getProperties().containsAll( entityType.getKey() ),
+                "Properties must include all the key property types" );
     }
 
     private void ensureValidPropertyType( PropertyType propertyType ) {
-        try {
             Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getNamespace() ),
                     "Namespace for Property Type is missing" );
             Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getName() ),
                     "Name of Property Type is missing" );
+            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getTitle() ),
+                    "Title of Property Type is missing" );
             Preconditions.checkArgument( propertyType.getDatatype() != null, "Datatype of Property Type is missing" );
-        } catch ( Exception e ) {
-            throw new IllegalArgumentException( e.getMessage() );
-        }
+    }
+
+    private void ensureValidEntitySet( EntitySet entitySet ) {
+        Preconditions.checkArgument( StringUtils.isNotBlank( entitySet.getName() ),
+                "Name of Entity Set is missing." );
+        Preconditions.checkArgument( StringUtils.isNotBlank( entitySet.getTitle() ),
+                "Title of Entity Set is missing." );
+        Preconditions.checkArgument( entitySet.getEntityTypeId() != null,
+                "Entity Type Id of Entity Set is missing." );
+        Preconditions.checkArgument( checkEntityTypeExists( entitySet.getEntityTypeId() ),
+                "Entity Set Type does not exist." );
     }
 
     @Override
@@ -448,7 +451,7 @@ public class EdmService implements EdmManager {
     @Override
     public EntitySet getEntitySet( String entitySetName ) {
         UUID id = Util.getSafely( aclKeys, entitySetName );
-        if( id == null ){
+        if ( id == null ) {
             return null;
         } else {
             return getEntitySet( id );
