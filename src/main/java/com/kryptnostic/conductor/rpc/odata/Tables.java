@@ -16,7 +16,7 @@ public enum Tables implements TableDef {
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
-    FQNS,
+    NAMES,
     ORGANIZATIONS,
     PERMISSIONS,
     PERMISSIONS_REQUESTS_UNRESOLVED,
@@ -60,7 +60,7 @@ public enum Tables implements TableDef {
             case ACL_KEYS:
                 return new CassandraTableBuilder( ACL_KEYS )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.FQN )
+                        .partitionKey( CommonColumns.NAME )
                         .columns( CommonColumns.SECURABLE_OBJECTID );
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
@@ -95,11 +95,11 @@ public enum Tables implements TableDef {
                                 CommonColumns.PROPERTIES,
                                 CommonColumns.SCHEMAS )
                         .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
-            case FQNS:
-                return new CassandraTableBuilder( FQNS )
+            case NAMES:
+                return new CassandraTableBuilder( NAMES )
                         .ifNotExists()
                         .partitionKey( CommonColumns.SECURABLE_OBJECTID )
-                        .columns( CommonColumns.FQN );
+                        .columns( CommonColumns.NAME );
             case ORGANIZATIONS:
                 return new CassandraTableBuilder( ORGANIZATIONS )
                         .ifNotExists()

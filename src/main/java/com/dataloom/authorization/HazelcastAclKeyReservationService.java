@@ -6,13 +6,13 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
-
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import java.util.function.Function;
 
 import com.dataloom.edm.exceptions.AclKeyConflictException;
 import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.edm.internal.AbstractSecurableObject;
+import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
@@ -20,55 +20,76 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastAclKeyReservationService {
-    public static final String LOOM_NAMESPACE = "loom";
+    public static final String                                LOOM_NAMESPACE        = "loom";
     /**
-     * This keeps mapping between SecurableObjectTypes that aren't FQN associated and their placeholder FQN.
+     * This keeps mapping between SecurableObjectTypes that aren't associated to names and their placeholder names.
      */
-    private static final EnumMap<SecurableObjectType, FullQualifiedName> FQNS                 = new EnumMap<SecurableObjectType, FullQualifiedName>(
+    private static final EnumMap<SecurableObjectType, String> RESERVED_NAMES_AS_MAP = new EnumMap<SecurableObjectType, String>(
             SecurableObjectType.class );
-    private static final Set<FullQualifiedName>                          STATIC_FQNS          = ImmutableSet
-            .copyOf( FQNS.values() );
+    private static final Set<String>                          RESERVED_NAMES        = ImmutableSet
+            .copyOf( RESERVED_NAMES_AS_MAP.values() );
+
+    private static String getPlaceholder( String objName ) {
+        return LOOM_NAMESPACE + "." + objName;
+    }
+
     /*
-     * List of FQN associated types. Roughly things that extend AbstractSchemaAssociatedSecurableType.
+     * List of name associated types.
      */
-    private static final EnumSet<SecurableObjectType>                    FQN_ASSOCIATED_TYPES = EnumSet
-            .of( SecurableObjectType.EntityType, SecurableObjectType.PropertyTypeInEntitySet );
+    private static final EnumSet<SecurableObjectType> NAME_ASSOCIATED_TYPES = EnumSet
+            .of( SecurableObjectType.EntityType,
+                    SecurableObjectType.PropertyTypeInEntitySet,
+                    SecurableObjectType.EntitySet );
 
     static {
-        /*
-         * 
-         */
         for ( SecurableObjectType objectType : SecurableObjectType.values() ) {
-            if ( !FQN_ASSOCIATED_TYPES.contains( objectType ) ) {
-                FQNS.put( objectType, new FullQualifiedName( LOOM_NAMESPACE, objectType.name() ) );
+            if ( !NAME_ASSOCIATED_TYPES.contains( objectType ) ) {
+                RESERVED_NAMES_AS_MAP.put( objectType, getPlaceholder( objectType.name() ) );
             }
         }
     }
 
-    private final IMap<FullQualifiedName, UUID> aclKeys;
-    private final IMap<UUID, FullQualifiedName> fqns;
+    private final IMap<String, UUID> aclKeys;
+    private final IMap<UUID, String> names;
+
+    public static class Namers {
+        private Namers() {};
+
+        private static final Function<AbstractSchemaAssociatedSecurableType, String> asast = (
+                AbstractSchemaAssociatedSecurableType type ) -> Util.fqnToString( type.getType() );
+        private static final Function<EntitySet, String>                             es    = (
+                EntitySet entitySet ) -> entitySet.getName();
+
+        public static Function<AbstractSchemaAssociatedSecurableType, String> asast() {
+            return asast;
+        }
+
+        public static Function<EntitySet, String> es() {
+            return es;
+        }
+    }
 
     public HazelcastAclKeyReservationService( HazelcastInstance hazelcast ) {
         this.aclKeys = hazelcast.getMap( HazelcastMap.ACL_KEYS.name() );
-        this.fqns = hazelcast.getMap( HazelcastMap.FQNS.name() );
+        this.names = hazelcast.getMap( HazelcastMap.NAMES.name() );
     }
 
-    public void renameReservation( FullQualifiedName oldFqn, FullQualifiedName newFqn ) {
-        checkArgument( !STATIC_FQNS.contains( newFqn ), "Cannot rename to a reserved FQN" );
-        checkArgument( !STATIC_FQNS.contains( oldFqn ), "Cannot rename a reserved FQN" );
+    public void renameReservation( String oldName, String newName ) {
+        checkArgument( !RESERVED_NAMES.contains( newName ), "Cannot rename to a reserved name" );
+        checkArgument( !RESERVED_NAMES.contains( oldName ), "Cannot rename a reserved name" );
 
         /*
-         * Attempt to associated newFqn with existing aclKey
+         * Attempt to associated newName with existing aclKey
          */
-        
-        final UUID existingAclKey = aclKeys.putIfAbsent( newFqn, Util.getSafely( aclKeys, oldFqn ) );
+
+        final UUID existingAclKey = aclKeys.putIfAbsent( newName, Util.getSafely( aclKeys, oldName ) );
 
         if ( existingAclKey == null ) {
-            aclKeys.delete( oldFqn );
+            aclKeys.delete( oldName );
         } else {
             throw new TypeExistsException(
-                    "Cannot rename " + oldFqn.getFullQualifiedNameAsString() + " to existing type "
-                            + newFqn.getFullQualifiedNameAsString() );
+                    "Cannot rename " + oldName + " to existing type "
+                            + newName );
         }
     }
 
@@ -80,17 +101,34 @@ public class HazelcastAclKeyReservationService {
      * @param type The type for which to reserve an FQN and UUID.
      */
     public void reserveIdAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
+        reserveIdAndValidateType( type, Namers.asast );
+    }
+
+    public void reserveIdAndValidateType( EntitySet entitySet ) {
+        reserveIdAndValidateType( entitySet, Namers.es );
+    }
+
+    /**
+     * This function reserves an {@code AclKey} for a SecurableObject that has a name. It throws unchecked exceptions
+     * {@link TypeExistsException} if the type already exists with the same name or {@link AclKeyConflictException} if a
+     * different AclKey is already associated with the type.
+     * 
+     * @param type
+     * @param namer
+     * @return
+     */
+    public <T extends AbstractSecurableObject> void reserveIdAndValidateType( T type, Function<T, String> namer ) {
         /*
          * Template this call and make wrappers that directly insert into type maps making fqns redundant.
          */
-        final FullQualifiedName fqn = fqns.putIfAbsent( type.getId(), type.getType() );
-        final boolean fqnMatches = type.getType().equals( fqn );
+        final String proposedName = namer.apply( type );
+        final String currentName = names.putIfAbsent( type.getId(), proposedName );
 
-        if ( fqn == null || fqnMatches ) {
+        if ( currentName == null || proposedName.equals( currentName ) ) {
             /*
              * AclKey <-> Type association exists and is correct. Safe to try and register AclKey for type.
              */
-            final UUID existingAclKey = aclKeys.putIfAbsent( type.getType(), type.getId() );
+            final UUID existingAclKey = aclKeys.putIfAbsent( proposedName, type.getId() );
 
             /*
              * Even if aclKey matches, letting two threads go through type creation creates potential problems when
@@ -99,11 +137,11 @@ public class HazelcastAclKeyReservationService {
              */
 
             if ( existingAclKey != null ) {
-                if ( fqn == null ) {
+                if ( currentName == null ) {
                     // We need to remove UUID reservation
-                    fqns.delete( type.getId() );
+                    names.delete( type.getId() );
                 }
-                throw new TypeExistsException( "Type " + type.toString() + "already exists." );
+                throw new TypeExistsException( "Type " + proposedName + "already exists." );
             }
 
             /*
@@ -111,7 +149,7 @@ public class HazelcastAclKeyReservationService {
              * Only a single thread should ever reach here.
              */
         } else {
-            throw new AclKeyConflictException( "AclKey is already associated with different FQN." );
+            throw new AclKeyConflictException( "AclKey is already associated with different type." );
         }
     }
 
@@ -123,19 +161,20 @@ public class HazelcastAclKeyReservationService {
      * @param type
      */
     public void reserveId( AbstractSecurableObject type ) {
-        checkArgument( FQNS.containsKey( type.getCategory() ), "Unsupported securable type for reservation" );
+        checkArgument( RESERVED_NAMES_AS_MAP.containsKey( type.getCategory() ),
+                "Unsupported securable type for reservation" );
         /*
          * Template this call and make wrappers that directly insert into type maps making fqns redundant.
          */
-        final FullQualifiedName fqn = fqns.putIfAbsent( type.getId(),
-                Util.getSafely( FQNS, type.getCategory() ) );
+        final String name = names.putIfAbsent( type.getId(),
+                Util.getSafely( RESERVED_NAMES_AS_MAP, type.getCategory() ) );
 
         /*
          * We don't care if FQN matches in this case as it provides us no additional validation information.
          */
 
-        if ( fqn != null ) {
-            throw new AclKeyConflictException( "AclKey is already associated with different FQN." );
+        if ( name != null ) {
+            throw new AclKeyConflictException( "AclKey is already associated with different name." );
         }
     }
 
@@ -145,12 +184,12 @@ public class HazelcastAclKeyReservationService {
      * @param id The id to release.
      */
     public void release( UUID id ) {
-        FullQualifiedName fqn = Util.removeSafely( fqns, id );
-        
+        String name = Util.removeSafely( names, id );
+
         /*
-         * We always issue the delete, even if sometimes there is no aclKey registered for that FQN. 
+         * We always issue the delete, even if sometimes there is no aclKey registered for that FQN.
          */
-        
-        aclKeys.delete( fqn );
+
+        aclKeys.delete( name );
     }
 }

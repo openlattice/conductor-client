@@ -2,8 +2,6 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
@@ -16,7 +14,7 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
 public class AclKeysMapstore
-        extends AbstractStructuredCassandraPartitionKeyValueStore<FullQualifiedName, UUID> {
+        extends AbstractStructuredCassandraPartitionKeyValueStore<String, UUID> {
     private static final CassandraTableBuilder ctb = Tables.ACL_KEYS.getBuilder();
 
     public AclKeysMapstore( Session session ) {
@@ -24,20 +22,20 @@ public class AclKeysMapstore
     }
 
     @Override
-    protected BoundStatement bind( FullQualifiedName key, BoundStatement bs ) {
-        return bs.set( CommonColumns.FQN.cql(), key, FullQualifiedName.class );
+    protected BoundStatement bind( String key, BoundStatement bs ) {
+        return bs.setString( CommonColumns.NAME.cql(), key );
     }
 
     @Override
-    protected BoundStatement bind( FullQualifiedName key, UUID value, BoundStatement bs ) {
+    protected BoundStatement bind( String key, UUID value, BoundStatement bs ) {
         return bs
-                .set( CommonColumns.FQN.cql(), key, FullQualifiedName.class )
+                .setString( CommonColumns.NAME.cql(), key )
                 .setUUID( CommonColumns.SECURABLE_OBJECTID.cql(), value );
     }
 
     @Override
-    protected FullQualifiedName mapKey( Row rs ) {
-        return rs == null ? null : rs.get( CommonColumns.FQN.cql(), FullQualifiedName.class );
+    protected String mapKey( Row rs ) {
+        return rs == null ? null : rs.getString( CommonColumns.NAME.cql() );
     }
 
     @Override
@@ -50,8 +48,8 @@ public class AclKeysMapstore
     }
 
     @Override
-    public FullQualifiedName generateTestKey() {
-        return TestDataFactory.fqn();
+    public String generateTestKey() {
+        return TestDataFactory.name();
     }
 
     @Override

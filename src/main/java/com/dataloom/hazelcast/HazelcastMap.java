@@ -10,7 +10,7 @@ public enum HazelcastMap {
     ENTITY_TYPES( Tables.ENTITY_TYPES ),
     ENTITY_SETS( Tables.ENTITY_SETS ),
     ACL_KEYS( Tables.ACL_KEYS ),
-    FQNS( Tables.FQNS ),
+    NAMES( Tables.NAMES ),
     SCHEMAS( Tables.SCHEMAS ),
     TRUSTED_ORGANIZATIONS( Tables.ORGANIZATIONS ),
     VISIBILITY( Tables.ORGANIZATIONS ),
