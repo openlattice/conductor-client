@@ -1,11 +1,6 @@
 package com.dataloom.requests.mapstores;
 
-import java.util.UUID;
-
-import org.apache.commons.lang3.RandomStringUtils;
-
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -17,13 +12,16 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
+import java.util.UUID;
+
 public class RequestMapstore extends AbstractStructuredCassandraMapstore<AceKey, Status> {
+    private final Status TEST_STATUS = TestDataFactory.status();
+
     public RequestMapstore( Session session ) {
         super( HazelcastMap.REQUESTS.name(), session, Tables.REQUESTS.getBuilder() );
     }
@@ -43,7 +41,7 @@ public class RequestMapstore extends AbstractStructuredCassandraMapstore<AceKey,
                 .set( CommonColumns.PERMISSIONS.cql(),
                         status.getPermissions(),
                         EnumSetTypeCodec.getTypeTokenForEnumSetPermission() )
-                .set( CommonColumns.STATUS.cql() , status.getStatus() , RequestStatus.class );
+                .set( CommonColumns.STATUS.cql(), status.getStatus(), RequestStatus.class );
     }
 
     @Override
@@ -60,13 +58,11 @@ public class RequestMapstore extends AbstractStructuredCassandraMapstore<AceKey,
 
     @Override
     public AceKey generateTestKey() {
-        return new AceKey(
-                ImmutableList.of( UUID.randomUUID() ),
-                new Principal( PrincipalType.USER, RandomStringUtils.randomAlphanumeric( 5 ) ) );
+        return RequestUtil.aceKey( TEST_STATUS );
     }
 
     @Override
     public Status generateTestValue() {
-        return TestDataFactory.status();
+        return TEST_STATUS;
     }
 }
