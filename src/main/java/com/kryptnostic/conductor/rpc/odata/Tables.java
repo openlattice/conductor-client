@@ -1,14 +1,13 @@
 package com.kryptnostic.conductor.rpc.odata;
 
-import java.util.EnumMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.EnumMap;
 
 public enum Tables implements TableDef {
     ACL_KEYS,
@@ -23,7 +22,7 @@ public enum Tables implements TableDef {
     PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
     SCHEMAS,
-    ;
+    REQUESTS;
 
     private static final Logger                                 logger   = LoggerFactory
             .getLogger( Tables.class );
@@ -144,6 +143,15 @@ public enum Tables implements TableDef {
                         .columns( CommonColumns.ACL_ROOT, CommonColumns.ACL_CHILDREN_PERMISSIONS, CommonColumns.STATUS )
                         .fullCollectionIndex( CommonColumns.ACL_ROOT )
                         .sasi( CommonColumns.STATUS );
+            case REQUESTS:
+                return new CassandraTableBuilder( REQUESTS )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.ACL_KEYS )
+                        .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
+                        .columns( CommonColumns.PERMISSIONS, CommonColumns.STATUS )
+                        .sasi( CommonColumns.PRINCIPAL_TYPE,
+                                CommonColumns.PRINCIPAL_ID,
+                                CommonColumns.STATUS );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()

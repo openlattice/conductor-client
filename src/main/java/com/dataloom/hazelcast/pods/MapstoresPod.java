@@ -4,7 +4,6 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -30,8 +29,10 @@ import com.dataloom.organizations.mapstores.UUIDSetMapstore;
 import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.requests.AclRootRequestDetailsPair;
 import com.dataloom.requests.PermissionsRequestDetails;
+import com.dataloom.requests.Status;
 import com.dataloom.requests.mapstores.AclRootPrincipalPair;
 import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
+import com.dataloom.requests.mapstores.RequestMapstore;
 import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
 import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
@@ -68,7 +69,7 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<UUID, EntitySet> entitySetMapstore() {
         return new EntitySetMapstore( session );
     }
-    
+
     @Bean
     public SelfRegisteringMapStore<String, DelegatedStringSet> schemaMapstore() {
         return new SchemaMapstore( session );
@@ -92,6 +93,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<PrincipalRequestIdPair, AclRootRequestDetailsPair> resolvedRequestsMapstore() {
         return new ResolvedPermissionsRequestsMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<AceKey, Status> requestMapstore() {
+        return new RequestMapstore( session );
     }
 
     @Bean

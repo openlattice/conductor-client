@@ -33,5 +33,7 @@ public enum StreamSerializerTypeIds {
     ACLROOT_REQUEST_DETAILS_PAIR,
     UUID_SET,
     PRINCIPAL_SET,
-    TICKET_KEY
+    TICKET_KEY,
+    REQUEST_STATUS,
+    STATUS
 }

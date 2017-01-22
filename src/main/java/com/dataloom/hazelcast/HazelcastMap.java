@@ -21,7 +21,8 @@ public enum HazelcastMap {
     ROLES( Tables.ORGANIZATIONS ),
     USERS( null ),
     ENTITY_SET_TICKETS( null ),
-    ENTITY_SET_PROPERTIES_TICKETS(null);
+    ENTITY_SET_PROPERTIES_TICKETS( null ),
+    REQUESTS( Tables.REQUESTS );
 
     private final Tables table;
 
