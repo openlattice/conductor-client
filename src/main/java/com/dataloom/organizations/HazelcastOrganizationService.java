@@ -1,24 +1,6 @@
 package com.dataloom.organizations;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.authorization.HazelcastAclKeyReservationService;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.authorization.*;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.Organization;
@@ -34,9 +16,21 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastOrganizationService {
-    private static final Logger                     logger = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( HazelcastOrganizationService.class );
 
     private final AuthorizationManager              authorizations;
@@ -210,14 +204,14 @@ public class HazelcastOrganizationService {
                 .stream()
                 .filter( member -> !members.contains( member ) && current.contains( member ) )
                 .collect( Collectors.toSet() );
-        
+
         Set<Principal> added = current
                 .stream()
                 .filter( member -> members.contains( member ) && !current.contains( member ) )
                 .collect( Collectors.toSet() );
 
         membersOf.set( organizationId, PrincipalSet.wrap( members ) );
-        
+
         addOrganizationRoleToMembers( organizationId, added );
         removeOrganizationRoleFromMembers( organizationId, removed );
     }
@@ -245,7 +239,17 @@ public class HazelcastOrganizationService {
 
     public void removeMembers( UUID organizationId, Set<Principal> members ) {
         membersOf.submitToKey( organizationId, new PrincipalRemover( members ) );
+        removeRolesFromMembers( Util.getSafely( rolesOf, organizationId ), members );
         removeOrganizationRoleFromMembers( organizationId, members );
+    }
+
+    private void removeRolesFromMembers( Set<Principal> roles, Set<Principal> members ) {
+        if ( members.stream().map( Principal::getType ).allMatch( PrincipalType.USER::equals ) ) {
+            members.forEach( member -> roles
+                    .forEach( role -> principals.removeRoleFromUser( member.getId(), role.getId() ) ) );
+        } else {
+            throw new IllegalArgumentException( "Cannot remove a non-user role from member of an organization." );
+        }
     }
 
     private void addOrganizationRoleToMembers( UUID organizationId, Set<Principal> members ) {
