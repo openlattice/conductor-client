@@ -136,10 +136,6 @@ public final class RowAdapters {
         return row.get( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), SecurableObjectType.class );
     }
 
-    public static List<UUID> aclKey( Row row ) {
-        return row.getList( CommonColumns.ACL_KEYS.cql(), UUID.class );
-    }
-
     public static List<UUID> aclRoot( Row row ) {
         return row.getList( CommonColumns.ACL_ROOT.cql(), UUID.class );
     }

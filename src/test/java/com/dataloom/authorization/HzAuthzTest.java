@@ -1,13 +1,8 @@
 package com.dataloom.authorization;
 
-import java.util.EnumSet;
-import java.util.UUID;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.dataloom.hazelcast.pods.MapstoresPod;
 import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
+import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
@@ -19,6 +14,14 @@ import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.kryptnostic.rhizome.pods.CassandraPod;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.EnumSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class HzAuthzTest extends CassandraBootstrap {
     protected static final RhizomeApplicationServer      testServer;
@@ -40,7 +43,9 @@ public class HzAuthzTest extends CassandraBootstrap {
         session = testServer.getContext().getBean( Session.class );
         cc = testServer.getContext().getBean( CassandraConfiguration.class );
         aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
-        hzAuthz = new HazelcastAuthorizationService( hazelcastInstance, aqs , testServer.getContext().getBean( EventBus.class ) );
+        hzAuthz = new HazelcastAuthorizationService( hazelcastInstance,
+                aqs,
+                testServer.getContext().getBean( EventBus.class ) );
 
     }
 
@@ -97,5 +102,49 @@ public class HzAuthzTest extends CassandraBootstrap {
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), badPermissions ) );
         Assert.assertTrue(
                 hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
+    }
+
+    @Test
+    public void testListSecurableObjects() {
+        UUID key = UUID.randomUUID();
+        Principal p1 = TestDataFactory.userPrincipal();
+        Principal p2 = TestDataFactory.userPrincipal();
+
+        EnumSet<Permission> permissions1 = EnumSet.of( Permission.DISCOVER, Permission.READ );
+        EnumSet<Permission> permissions2 = EnumSet
+                .of( Permission.DISCOVER, Permission.READ, Permission.WRITE, Permission.OWNER );
+
+        Assert.assertFalse(
+                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p1 ), permissions1 ) );
+        Assert.assertFalse(
+                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p2 ), permissions2 ) );
+
+        hzAuthz.addPermission( ImmutableList.of( key ), p1, permissions1 );
+        hzAuthz.addPermission( ImmutableList.of( key ), p2, permissions2 );
+        hzAuthz.createEmptyAcl( ImmutableList.of( key ), SecurableObjectType.EntitySet );
+
+        Assert.assertTrue(
+                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p1 ), permissions1 ) );
+
+        Assert.assertFalse( hzAuthz.checkIfHasPermissions( ImmutableList.of( key ),
+                ImmutableSet.of( p1 ),
+                EnumSet.of( Permission.WRITE, Permission.OWNER ) ) );
+
+        Assert.assertTrue(
+                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p2 ), permissions2 ) );
+
+        Stream<UUID> p1Owned = hzAuthz.getAuthorizedObjectsOfType( ImmutableSet.of( p1 ),
+                SecurableObjectType.EntitySet,
+                EnumSet.of( Permission.OWNER ) );
+
+        Stream<UUID> p2Owned = hzAuthz.getAuthorizedObjectsOfType( ImmutableSet.of( p1 ),
+                SecurableObjectType.EntitySet,
+                EnumSet.of( Permission.OWNER ) );
+
+        Set<UUID> p1s = p1Owned.collect( Collectors.toSet() );
+        Set<UUID> p2s = p2Owned.collect( Collectors.toSet() );
+        Assert.assertTrue( p1s.isEmpty() );
+        Assert.assertEquals( 1, p2s.size() );
+        Assert.assertTrue( p2s.contains( key ) );
     }
 }

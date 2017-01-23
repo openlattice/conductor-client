@@ -1,6 +1,6 @@
 package com.dataloom.requests.util;
 
-import static com.dataloom.authorization.util.AuthorizationUtils.getAclKeysFromRow;
+import static com.dataloom.authorization.util.AuthorizationUtils.aclKey;
 import static com.dataloom.authorization.util.AuthorizationUtils.getPrincipalFromRow;
 import static com.dataloom.authorization.util.AuthorizationUtils.permissions;
 
@@ -39,7 +39,7 @@ public final class RequestUtil {
 
     public static Status status( Row row ) {
         return new Status(
-                getAclKeysFromRow( row ),
+                aclKey( row ),
                 getPrincipalFromRow( row ),
                 permissions( row ),
                 RowAdapters.reqStatus( row ) );

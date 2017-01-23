@@ -46,7 +46,7 @@ public class RequestMapstore extends AbstractStructuredCassandraMapstore<AceKey,
 
     @Override
     protected AceKey mapKey( Row row ) {
-        return AuthorizationUtils.getAceKeyFromRow( row );
+        return AuthorizationUtils.aceKey( row );
     }
 
     @Override

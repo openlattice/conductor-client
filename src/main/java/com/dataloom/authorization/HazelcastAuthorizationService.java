@@ -12,14 +12,13 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.spark_project.guava.collect.Iterables;
 
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -71,10 +70,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public void deletePermissions( List<UUID> aclKeys ) {
-        Iterable<Principal> principals = aqs.getPrincipalsForSecurableObject( aclKeys );
-
-        StreamSupport
-                .stream( principals.spliterator(), false )
+        aqs.getPrincipalsForSecurableObject( aclKeys )
                 .map( principal -> new AceKey( aclKeys, principal ) )
                 .forEach( Util.safeDeleter( aces ) );
     }
@@ -113,21 +109,22 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public Iterable<UUID> getAuthorizedObjectsOfType(
+    public Stream<UUID> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
-        return Iterables.transform( aqs.getAuthorizedAclKeys( principal, objectType, aces ),
-                AuthorizationUtils::getLastAclKeySafely );
+        return aqs.getAuthorizedAclKeys( principal, objectType, aces )
+                .map( AuthorizationUtils::getLastAclKeySafely );
     }
 
     @Override
-    public Iterable<UUID> getAuthorizedObjectsOfType(
-            Set<Principal> principal,
+    public Stream<UUID> getAuthorizedObjectsOfType(
+            Set<Principal> principals,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
-        return Iterables.transform( aqs.getAuthorizedAclKeys( principal, objectType, aces ),
-                AuthorizationUtils::getLastAclKeySafely );
+        return aqs.getAuthorizedAclKeys( principals, objectType, aces )
+                .stream()
+                .map( AuthorizationUtils::getLastAclKeySafely );
     }
 
     @Override
@@ -136,13 +133,13 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public Iterable<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions ) {
+    public Stream<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions ) {
         return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
     @Override
-    public Iterable<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions ) {
-        return aqs.getAuthorizedAclKeys( principal, permissions );
+    public Stream<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions ) {
+        return aqs.getAuthorizedAclKeys( principal, permissions ).stream();
     }
 
 }

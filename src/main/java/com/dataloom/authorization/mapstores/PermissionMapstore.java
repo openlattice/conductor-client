@@ -46,7 +46,7 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
 
     @Override
     protected AceKey mapKey( Row row ) {
-        return AuthorizationUtils.getAceKeyFromRow( row );
+        return AuthorizationUtils.aceKey( row );
     }
 
     @Override

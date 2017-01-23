@@ -34,12 +34,12 @@ public final class AuthorizationUtils {
                 principalId );
     }
 
-    public static AceKey getAceKeyFromRow( Row row ) {
+    public static AceKey aceKey( Row row ) {
         Principal principal = getPrincipalFromRow( row );
-        return new AceKey( getAclKeysFromRow( row ), principal );
+        return new AceKey( aclKey( row ), principal );
     }
 
-    public static List<UUID> getAclKeysFromRow( Row row ) {
+    public static List<UUID> aclKey( Row row ) {
         return row.getList( CommonColumns.ACL_KEYS.cql(), UUID.class );
     }
 

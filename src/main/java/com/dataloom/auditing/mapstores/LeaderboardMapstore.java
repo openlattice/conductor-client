@@ -4,6 +4,7 @@ import com.auth0.jwt.internal.org.apache.commons.lang3.RandomUtils;
 import com.dataloom.auditing.AuditMetric;
 import com.dataloom.auditing.util.AuditUtil;
 import com.dataloom.authorization.AclKey;
+import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.*;
@@ -54,7 +55,7 @@ public class LeaderboardMapstore extends AbstractStructuredCassandraPartitionKey
     }
 
     @Override protected AclKey mapKey( Row row ) {
-        return AclKey.wrap( RowAdapters.aclKey( row ) );
+        return AclKey.wrap( AuthorizationUtils.aclKey( row ) );
     }
 
     @Override protected AuditMetric mapValue( ResultSet rs ) {
