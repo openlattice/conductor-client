@@ -1,6 +1,7 @@
 package com.dataloom.auditing.util;
 
 import com.dataloom.auditing.AuditMetric;
+import com.dataloom.authorization.util.AuthorizationUtils;
 import com.datastax.driver.core.Row;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
@@ -14,6 +15,6 @@ public final class AuditUtil {
 
     public static AuditMetric auditMetric( Row row ) {
         long count = row.getLong( CommonColumns.COUNT.cql() );
-        return new AuditMetric( count, RowAdapters.aclKey( row ) );
+        return new AuditMetric( count, AuthorizationUtils.aclKey( row ) );
     }
 }

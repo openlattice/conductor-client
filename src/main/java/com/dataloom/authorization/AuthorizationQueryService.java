@@ -1,35 +1,35 @@
 package com.dataloom.authorization;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class AuthorizationQueryService {
-    private static final Logger                        logger = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( AuthorizationQueryService.class );
-    private final Session                              session;
-    private final PreparedStatement                    authorizedAclKeysQuery;
-    private final PreparedStatement                    authorizedAclKeysForObjectTypeQuery;
-    private final PreparedStatement                    aclsForSecurableObjectQuery;
-    private final PreparedStatement                    setObjectType;
+    private final Session                                  session;
+    private final PreparedStatement                        authorizedAclKeysQuery;
+    private final PreparedStatement                        authorizedAclKeysForObjectTypeQuery;
+    private final PreparedStatement                        aclsForSecurableObjectQuery;
+    private final PreparedStatement                        setObjectType;
     private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
 
     public AuthorizationQueryService( String keyspace, Session session, HazelcastInstance hazelcastInstance ) {
@@ -71,38 +71,40 @@ public class AuthorizationQueryService {
 
     }
 
-    public Iterable<List<UUID>> getAuthorizedAclKeys(
+    public Stream<List<UUID>> getAuthorizedAclKeys(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
         return desiredPermissions
                 .stream()
-                .map( desiredPermission -> session.executeAsync(
+                .map( desiredPermission ->
                         authorizedAclKeysForObjectTypeQuery.bind()
                                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
                                 .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
                                 .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
                                 .set( CommonColumns.PERMISSIONS.cql(),
                                         desiredPermission,
-                                        Permission.class ) ) )
+                                        Permission.class ) )
+//                .peek( q -> logger.info( "Executing query: {}", q.preparedStatement().getQueryString() ) )
+                .map( session::executeAsync )
                 .map( ResultSetFuture::getUninterruptibly )
-                .flatMap( AuthorizationUtils::makeStream )
-                .map( AuthorizationUtils::getAclKeysFromRow )::iterator;
+                .flatMap( StreamUtil::stream )
+                .map( AuthorizationUtils::aclKey );
     }
 
-    public Iterable<List<UUID>> getAuthorizedAclKeys(
+    public Set<List<UUID>> getAuthorizedAclKeys(
             Set<Principal> principals,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
-        Iterable<Iterable<List<UUID>>> authorizedAclKeys = Iterables.transform( principals,
-                principal -> getAuthorizedAclKeys(
+        return principals
+                .stream()
+                .flatMap( principal -> getAuthorizedAclKeys(
                         principal,
                         objectType,
-                        desiredPermissions ) );
-        return Sets.newHashSet( Iterables.concat( authorizedAclKeys ) );
+                        desiredPermissions ) ).collect( Collectors.toSet() );
     }
 
-    public Iterable<List<UUID>> getAuthorizedAclKeys(
+    public Stream<List<UUID>> getAuthorizedAclKeys(
             Principal principal,
             EnumSet<Permission> desiredPermissions ) {
         return desiredPermissions
@@ -113,42 +115,42 @@ public class AuthorizationQueryService {
                                 .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
                                 .set( CommonColumns.PERMISSIONS.cql(), desiredPermission, Permission.class ) ) )
                 .map( ResultSetFuture::getUninterruptibly )
-                .flatMap( AuthorizationUtils::makeStream )
-                .map( AuthorizationUtils::getAclKeysFromRow )::iterator;
+                .flatMap( StreamUtil::stream )
+                .map( AuthorizationUtils::aclKey );
     }
 
-    public Iterable<List<UUID>> getAuthorizedAclKeys(
+    public Set<List<UUID>> getAuthorizedAclKeys(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions ) {
-        Iterable<Iterable<List<UUID>>> authorizedAclKeys = Iterables.transform( principals,
-                principal -> getAuthorizedAclKeys(
+        return principals
+                .stream()
+                .flatMap( principal -> getAuthorizedAclKeys(
                         principal,
-                        desiredPermissions ) );
-        return Sets.newHashSet( Iterables.concat( authorizedAclKeys ) );
+                        desiredPermissions ) )
+                .collect( Collectors.toSet() );
     }
 
-    public Iterable<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {
-        ResultSetFuture rsf = session.executeAsync(
+    public Stream<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {
+        return Stream.of( session.executeAsync(
                 aclsForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
-                        aclKeys ) );
-
-        Iterable<Principal> principals = Iterables.transform( AuthorizationUtils.makeLazy( rsf ),
-                AuthorizationUtils::getPrincipalFromRow );
-        return principals;
+                        aclKeys, UUID.class ) ) )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( StreamUtil::stream )
+                .map( AuthorizationUtils::getPrincipalFromRow );
     }
 
     public Acl getAclsForSecurableObject( List<UUID> aclKeys ) {
-        Iterable<Principal> principals = getPrincipalsForSecurableObject( aclKeys );
-        Iterable<AceFuture> futureAces = Iterables.transform( principals,
-                principal -> new AceFuture( principal, aces.getAsync(
-                        new AceKey( aclKeys, principal ) ) ) );
-        return new Acl( aclKeys, Iterables.transform( futureAces, AceFuture::getUninterruptibly )::iterator );
+        Stream<Ace> accessControlEntries = getPrincipalsForSecurableObject( aclKeys )
+                .map( principal -> new AceKey( aclKeys, principal ) )
+                .map( aceKey -> new AceFuture( aceKey.getPrincipal(), aces.getAsync( aceKey ) ) )
+                .map( AceFuture::getUninterruptibly );
+        return new Acl( aclKeys, accessControlEntries::iterator );
 
     }
 
     public void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType ) {
         BoundStatement bs = setObjectType.bind()
-                .setList( CommonColumns.ACL_KEYS.cql(), aclKey )
+                .setList( CommonColumns.ACL_KEYS.cql(), aclKey, UUID.class )
                 .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class );
         session.execute( bs );
         logger.info( "Created empty acl with key {} and type {}", aclKey, objectType );

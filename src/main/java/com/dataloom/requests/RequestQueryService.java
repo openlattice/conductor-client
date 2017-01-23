@@ -1,7 +1,6 @@
 package com.dataloom.requests;
 
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_KEYS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
@@ -73,7 +72,7 @@ public class RequestQueryService {
                         .set( PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
                         .setString( PRINCIPAL_ID.cql(), principal.getId() ) );
         return StreamUtil.stream( rs )
-                .map( AuthorizationUtils::getAclKeysFromRow )
+                .map( AuthorizationUtils::aclKey )
                 .map( aclKey -> new AceKey( aclKey, principal ) );
     }
 
@@ -85,7 +84,7 @@ public class RequestQueryService {
                         .setString( PRINCIPAL_ID.cql(), principal.getId() )
                         .set( STATUS.cql(), requestStatus, RequestStatus.class ) );
         return StreamUtil.stream( rs )
-                .map( AuthorizationUtils::getAclKeysFromRow )
+                .map( AuthorizationUtils::aclKey )
                 .map( aclKey -> new AceKey( aclKey, principal ) );
     }
 
@@ -94,7 +93,7 @@ public class RequestQueryService {
                 .bind()
                 .setList( ACL_KEYS.cql(), aclKey, UUID.class ) );
         return StreamUtil.stream( rs )
-                .map( AuthorizationUtils::getAceKeyFromRow );
+                .map( AuthorizationUtils::aceKey );
     }
 
     public Stream<AceKey> getRequestKeys( List<UUID> aclKey, RequestStatus requestStatus ) {
@@ -103,6 +102,6 @@ public class RequestQueryService {
                 .setList( ACL_KEYS.cql(), aclKey, UUID.class )
                 .set( STATUS.cql(), requestStatus, RequestStatus.class ) );
         return StreamUtil.stream( rs )
-                .map( AuthorizationUtils::getAceKeyFromRow );
+                .map( AuthorizationUtils::aceKey );
     }
 }

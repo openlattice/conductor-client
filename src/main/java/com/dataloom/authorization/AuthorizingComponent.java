@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import com.dataloom.edm.internal.AbstractSecurableObject;
 import com.google.common.collect.ImmutableList;
@@ -62,7 +63,7 @@ public interface AuthorizingComponent {
         }
     }
 
-    default Iterable<UUID> getAccessibleObjects(
+    default Stream<List<UUID>> getAccessibleObjects(
             SecurableObjectType securableObjectType,
             EnumSet<Permission> requiredPermissions ) {
         return getAuthorizationManager().getAuthorizedObjectsOfType(

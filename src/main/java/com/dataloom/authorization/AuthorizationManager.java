@@ -4,6 +4,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * The authorization manager manages permissions for all securable objects in the system.
@@ -60,17 +61,17 @@ public interface AuthorizationManager {
     Acl getAllSecurableObjectPermissions(
             List<UUID> key );
 
-    Iterable<UUID> getAuthorizedObjectsOfType(
+    Stream<List<UUID>> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
 
-    Iterable<UUID> getAuthorizedObjectsOfType(
+    Stream<List<UUID>> getAuthorizedObjectsOfType(
             Set<Principal> principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
 
-    Iterable<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
+    Stream<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
 
-    Iterable<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
+    Stream<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
 }
