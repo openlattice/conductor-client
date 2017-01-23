@@ -124,7 +124,7 @@ public class HazelcastAclKeyReservationService {
                     // We need to remove UUID reservation
                     names.delete( type.getId() );
                 }
-                throw new TypeExistsException( "Type " + proposedName + "already exists." );
+                throw new TypeExistsException( "Type " + proposedName + " already exists." );
             }
 
             /*

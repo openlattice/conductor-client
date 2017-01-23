@@ -2,7 +2,6 @@ package com.dataloom.organizations;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.security.InvalidParameterException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -253,7 +252,7 @@ public class HazelcastOrganizationService {
         if ( members.stream().map( Principal::getType ).allMatch( PrincipalType.USER::equals ) ) {
             members.forEach( member -> principals.addOrganizationToUser( member.getId(), organizationId ) );
         } else {
-            throw new InvalidParameterException( "Cannot add a non-user role as a member of an organization." );
+            throw new IllegalArgumentException( "Cannot add a non-user role as a member of an organization." );
         }
     }
 
@@ -261,7 +260,7 @@ public class HazelcastOrganizationService {
         if ( members.stream().map( Principal::getType ).allMatch( PrincipalType.USER::equals ) ) {
             members.forEach( member -> principals.removeOrganizationFromUser( member.getId(), organizationId ) );
         } else {
-            throw new InvalidParameterException( "Cannot add a non-user role as a member of an organization." );
+            throw new IllegalArgumentException( "Cannot add a non-user role as a member of an organization." );
         }
     }
 }
