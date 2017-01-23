@@ -3,7 +3,6 @@ package com.dataloom.authorization;
 import com.dataloom.auditing.AuditableEvent;
 import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
-import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
@@ -109,22 +108,20 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public Stream<UUID> getAuthorizedObjectsOfType(
+    public Stream<List<UUID>> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
-        return aqs.getAuthorizedAclKeys( principal, objectType, aces )
-                .map( AuthorizationUtils::getLastAclKeySafely );
+        return aqs.getAuthorizedAclKeys( principal, objectType, aces );
     }
 
     @Override
-    public Stream<UUID> getAuthorizedObjectsOfType(
+    public Stream<List<UUID>> getAuthorizedObjectsOfType(
             Set<Principal> principals,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
         return aqs.getAuthorizedAclKeys( principals, objectType, aces )
-                .stream()
-                .map( AuthorizationUtils::getLastAclKeySafely );
+                .stream();
     }
 
     @Override

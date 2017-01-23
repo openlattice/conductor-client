@@ -129,7 +129,7 @@ public enum Tables implements TableDef {
                         .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS )
                         .staticColumns( SECURABLE_OBJECT_TYPE )
-                        .secondaryIndex( CommonColumns.PERMISSIONS, SECURABLE_OBJECT_TYPE );
+                        .secondaryIndex( PRINCIPAL_TYPE, PRINCIPAL_ID, CommonColumns.PERMISSIONS, SECURABLE_OBJECT_TYPE );
             case PERMISSIONS_REQUESTS_UNRESOLVED:
                 return new CassandraTableBuilder( PERMISSIONS_REQUESTS_UNRESOLVED )
                         .ifNotExists()

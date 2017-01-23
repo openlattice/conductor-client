@@ -61,12 +61,12 @@ public interface AuthorizationManager {
     Acl getAllSecurableObjectPermissions(
             List<UUID> key );
 
-    Stream<UUID> getAuthorizedObjectsOfType(
+    Stream<List<UUID>> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
 
-    Stream<UUID> getAuthorizedObjectsOfType(
+    Stream<List<UUID>> getAuthorizedObjectsOfType(
             Set<Principal> principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );

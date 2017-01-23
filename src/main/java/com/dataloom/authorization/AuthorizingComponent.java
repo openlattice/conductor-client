@@ -63,7 +63,7 @@ public interface AuthorizingComponent {
         }
     }
 
-    default Stream<UUID> getAccessibleObjects(
+    default Stream<List<UUID>> getAccessibleObjects(
             SecurableObjectType securableObjectType,
             EnumSet<Permission> requiredPermissions ) {
         return getAuthorizationManager().getAuthorizedObjectsOfType(

@@ -85,7 +85,7 @@ public class AuthorizationQueryService {
                                 .set( CommonColumns.PERMISSIONS.cql(),
                                         desiredPermission,
                                         Permission.class ) )
-                .peek( q -> logger.info( "Executing query: {}", q.toString() ) )
+//                .peek( q -> logger.info( "Executing query: {}", q.preparedStatement().getQueryString() ) )
                 .map( session::executeAsync )
                 .map( ResultSetFuture::getUninterruptibly )
                 .flatMap( StreamUtil::stream )
