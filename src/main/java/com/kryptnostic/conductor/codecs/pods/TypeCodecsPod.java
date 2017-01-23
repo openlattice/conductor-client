@@ -4,6 +4,7 @@ import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 
+import com.dataloom.auditing.AuditableEventKey;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +21,8 @@ import com.datastax.driver.extras.codecs.joda.LocalTimeCodec;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.codecs.FullQualifiedNameTypeCodec;
 import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
+
+import static com.dataloom.auditing.AuditableEventKey.*;
 
 @Configuration
 public class TypeCodecsPod {
@@ -67,6 +70,10 @@ public class TypeCodecsPod {
         return new EnumNameCodec<>( PrincipalType.class );
     }
 
+    @Bean
+    public EnumNameCodec<AuditableEventType> auditableEventTypeCodec() {
+        return new EnumNameCodec<>( AuditableEventType.class );
+    }
     @Bean
     public EnumNameCodec<SecurableObjectType> securableObjectTypeCodec() {
         return new EnumNameCodec<>( SecurableObjectType.class );

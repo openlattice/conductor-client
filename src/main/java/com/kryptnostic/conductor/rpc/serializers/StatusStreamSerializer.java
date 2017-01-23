@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
+import com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.authorization.Permission;
@@ -32,7 +33,7 @@ public class StatusStreamSerializer implements SelfRegisteringStreamSerializer<S
     @Override
     public Status read( ObjectDataInput in ) throws IOException {
         Principal principal = PrincipalStreamSerializer.deserialize( in );
-        List<UUID> aclKey = SetStreamSerializers.fastUUIDListDeserialize( in );
+        List<UUID> aclKey = ListStreamSerializers.fastUUIDListDeserialize( in );
         EnumSet<Permission> permissions = DelegatedPermissionEnumSetStreamSerializer.deserialize( in );
         RequestStatus requestStatus = RequestStatusStreamSerializer.deserialize( in );
         return new Status( aclKey, principal, permissions, requestStatus );

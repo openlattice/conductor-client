@@ -9,8 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.EnumMap;
 
+import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
+
 public enum Tables implements TableDef {
     ACL_KEYS,
+    AUDIT_EVENTS,
+    AUDIT_METRICS,
     DATA,
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
@@ -27,23 +31,7 @@ public enum Tables implements TableDef {
     private static final Logger                                 logger   = LoggerFactory
             .getLogger( Tables.class );
     private static final EnumMap<Tables, CassandraTableBuilder> cache    = new EnumMap<>( Tables.class );
-    private static String                                       keyspace = DatastoreConstants.KEYSPACE;
-
-    public String getName() {
-        return name();
-    }
-
-    public String getKeyspace() {
-        return keyspace;
-    }
-
-    public CassandraTableBuilder getBuilder() {
-        return getTableDefinition( this );
-    }
-
-    public TableDef asTableDef() {
-        return this;
-    }
+    private static       String                                 keyspace = DatastoreConstants.KEYSPACE;
 
     static CassandraTableBuilder getTableDefinition( Tables table ) {
         CassandraTableBuilder ctb = cache.get( table );
@@ -59,108 +47,138 @@ public enum Tables implements TableDef {
             case ACL_KEYS:
                 return new CassandraTableBuilder( ACL_KEYS )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.NAME )
-                        .columns( CommonColumns.SECURABLE_OBJECTID );
+                        .partitionKey( NAME )
+                        .columns( SECURABLE_OBJECTID );
+            case AUDIT_EVENTS:
+                return new CassandraTableBuilder( AUDIT_EVENTS )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.ACL_KEYS )
+                        .clusteringColumns( TIME_ID, PRINCIPAL_TYPE, PRINCIPAL_ID )
+                        .columns( CommonColumns.PERMISSIONS, AUDIT_EVENT_DETAILS, BLOCK )
+                        .staticColumns( SECURABLE_OBJECT_TYPE )
+                        .sasi( PRINCIPAL_TYPE, PRINCIPAL_ID );
+            case AUDIT_METRICS:
+                return new CassandraTableBuilder( AUDIT_METRICS )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.ACL_KEYS )
+                        .clusteringColumns( COUNT, ACL_KEY_VALUE )
+                        .withDescendingOrder( COUNT );
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.SYNCID, CommonColumns.ENTITY_SET_ID )
-                        .clusteringColumns( CommonColumns.ENTITYID )
-                        .secondaryIndex( CommonColumns.ENTITY_SET_ID );
+                        .partitionKey( SYNCID, ENTITY_SET_ID )
+                        .clusteringColumns( ENTITYID )
+                        .secondaryIndex( ENTITY_SET_ID );
             case DATA:
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.ENTITYID )
-                        .clusteringColumns( CommonColumns.SYNCID,
-                                CommonColumns.PROPERTY_TYPE_ID,
-                                CommonColumns.PROPERTY_VALUE );
+                        .partitionKey( ENTITYID )
+                        .clusteringColumns( SYNCID,
+                                PROPERTY_TYPE_ID,
+                                PROPERTY_VALUE );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.ID )
-                        .clusteringColumns( CommonColumns.NAME )
-                        .columns( CommonColumns.ENTITY_TYPE_ID,
-                                CommonColumns.TITLE,
-                                CommonColumns.DESCRIPTION )
-                        .secondaryIndex( CommonColumns.ENTITY_TYPE_ID, CommonColumns.NAME );
+                        .partitionKey( ID )
+                        .clusteringColumns( NAME )
+                        .columns( ENTITY_TYPE_ID,
+                                TITLE,
+                                DESCRIPTION )
+                        .secondaryIndex( ENTITY_TYPE_ID, NAME );
             case ENTITY_TYPES:
                 return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.ID )
-                        .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                        .columns( CommonColumns.TITLE,
-                                CommonColumns.DESCRIPTION,
-                                CommonColumns.KEY,
-                                CommonColumns.PROPERTIES,
+                        .partitionKey( ID )
+                        .clusteringColumns( NAMESPACE, NAME )
+                        .columns( TITLE,
+                                DESCRIPTION,
+                                KEY,
+                                PROPERTIES,
                                 CommonColumns.SCHEMAS )
-                        .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
+                        .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.SECURABLE_OBJECTID )
-                        .columns( CommonColumns.NAME );
+                        .partitionKey( SECURABLE_OBJECTID )
+                        .columns( NAME );
             case ORGANIZATIONS:
                 return new CassandraTableBuilder( ORGANIZATIONS )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.ID )
-                        .columns( CommonColumns.TITLE,
-                                CommonColumns.DESCRIPTION,
-                                CommonColumns.TRUSTED_ORGANIZATIONS,
-                                CommonColumns.ALLOWED_EMAIL_DOMAINS,
-                                CommonColumns.MEMBERS,
-                                CommonColumns.ROLES );
+                        .partitionKey( ID )
+                        .columns( TITLE,
+                                DESCRIPTION,
+                                TRUSTED_ORGANIZATIONS,
+                                ALLOWED_EMAIL_DOMAINS,
+                                MEMBERS,
+                                ROLES );
             case PROPERTY_TYPES:
                 return new CassandraTableBuilder( PROPERTY_TYPES )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.ID )
-                        .clusteringColumns( CommonColumns.NAMESPACE, CommonColumns.NAME )
-                        .columns( CommonColumns.TITLE,
-                                CommonColumns.DESCRIPTION,
+                        .partitionKey( ID )
+                        .clusteringColumns( NAMESPACE, NAME )
+                        .columns( TITLE,
+                                DESCRIPTION,
                                 CommonColumns.SCHEMAS,
-                                CommonColumns.DATATYPE )
-                        .secondaryIndex( CommonColumns.NAMESPACE, CommonColumns.SCHEMAS );
+                                DATATYPE )
+                        .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case PERMISSIONS:
                 // TODO: Once Cassandra fixes SASI + Collection column inde
                 return new CassandraTableBuilder( PERMISSIONS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
-                        .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
+                        .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS )
-                        .staticColumns( CommonColumns.SECURABLE_OBJECT_TYPE )
-                        .secondaryIndex( CommonColumns.PERMISSIONS, CommonColumns.SECURABLE_OBJECT_TYPE );
+                        .staticColumns( SECURABLE_OBJECT_TYPE )
+                        .secondaryIndex( CommonColumns.PERMISSIONS, SECURABLE_OBJECT_TYPE );
             case PERMISSIONS_REQUESTS_UNRESOLVED:
                 return new CassandraTableBuilder( PERMISSIONS_REQUESTS_UNRESOLVED )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.ACL_ROOT )
-                        .clusteringColumns( CommonColumns.PRINCIPAL_ID )
-                        .columns( CommonColumns.ACL_CHILDREN_PERMISSIONS, CommonColumns.STATUS )
-                        .sasi( CommonColumns.STATUS );
+                        .partitionKey( ACL_ROOT )
+                        .clusteringColumns( PRINCIPAL_ID )
+                        .columns( ACL_CHILDREN_PERMISSIONS, STATUS )
+                        .sasi( STATUS );
             case PERMISSIONS_REQUESTS_RESOLVED:
                 return new CassandraTableBuilder( PERMISSIONS_REQUESTS_RESOLVED )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.PRINCIPAL_ID )
-                        .clusteringColumns( CommonColumns.REQUESTID )
-                        .columns( CommonColumns.ACL_ROOT, CommonColumns.ACL_CHILDREN_PERMISSIONS, CommonColumns.STATUS )
-                        .fullCollectionIndex( CommonColumns.ACL_ROOT )
-                        .sasi( CommonColumns.STATUS );
+                        .partitionKey( PRINCIPAL_ID )
+                        .clusteringColumns( REQUESTID )
+                        .columns( ACL_ROOT, ACL_CHILDREN_PERMISSIONS, STATUS )
+                        .fullCollectionIndex( ACL_ROOT )
+                        .sasi( STATUS );
             case REQUESTS:
                 return new CassandraTableBuilder( REQUESTS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
-                        .clusteringColumns( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
-                        .columns( CommonColumns.PERMISSIONS, CommonColumns.STATUS )
-                        .sasi( CommonColumns.PRINCIPAL_TYPE,
-                                CommonColumns.PRINCIPAL_ID,
-                                CommonColumns.STATUS );
+                        .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
+                        .columns( CommonColumns.PERMISSIONS, STATUS )
+                        .sasi( PRINCIPAL_TYPE,
+                                PRINCIPAL_ID,
+                                STATUS );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.NAMESPACE )
-                        .columns( CommonColumns.NAME_SET );
+                        .partitionKey( NAMESPACE )
+                        .columns( NAME_SET );
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );
         }
+    }
+
+    public String getName() {
+        return name();
+    }
+
+    public String getKeyspace() {
+        return keyspace;
+    }
+
+    public CassandraTableBuilder getBuilder() {
+        return getTableDefinition( this );
+    }
+
+    public TableDef asTableDef() {
+        return this;
     }
 
 }

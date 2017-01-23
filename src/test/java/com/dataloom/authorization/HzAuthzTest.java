@@ -12,6 +12,7 @@ import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.conductor.codecs.pods.TypeCodecsPod;
 import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
@@ -39,7 +40,7 @@ public class HzAuthzTest extends CassandraBootstrap {
         session = testServer.getContext().getBean( Session.class );
         cc = testServer.getContext().getBean( CassandraConfiguration.class );
         aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
-        hzAuthz = new HazelcastAuthorizationService( hazelcastInstance, aqs );
+        hzAuthz = new HazelcastAuthorizationService( hazelcastInstance, aqs , testServer.getContext().getBean( EventBus.class ) );
 
     }
 
