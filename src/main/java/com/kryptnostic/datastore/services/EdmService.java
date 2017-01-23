@@ -217,7 +217,7 @@ public class EdmService implements EdmManager {
         
         aclKeyReservations.reserveIdAndValidateType( entitySet );
 
-        checkState( entitySets.putIfAbsent( entitySet.getId(), entitySet ) != null, "Entity set already exists." );
+        checkState( entitySets.putIfAbsent( entitySet.getId(), entitySet ) == null, "Entity set already exists." );
     }
 
     @Override
