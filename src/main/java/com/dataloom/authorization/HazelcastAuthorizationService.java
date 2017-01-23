@@ -84,7 +84,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             List<UUID> key,
             Set<Principal> principals,
             EnumSet<Permission> requiredPermissions ) {
-        principals.forEach( p -> eventBus.post( new AuditableEvent<String>( key, p, SecurableObjectType.Datasource,
+        principals.forEach( p -> eventBus.post( new AuditableEvent( key, p, SecurableObjectType.Datasource,
                 requiredPermissions, "This is a test" ) ) );
         Set<Permission> permissions = getSecurableObjectPermissions( key, principals );
         return permissions.containsAll( requiredPermissions );

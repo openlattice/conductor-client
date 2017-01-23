@@ -72,7 +72,7 @@ public class AuditQuerySerivce {
         return bs.setList( CommonColumns.ACL_KEYS.cql(), ImmutableList.of(), UUID.class );
     }
 
-    public <T> void storeAuditableEvent( AuditableEvent<T> event ) {
+    public void storeAuditableEvent( AuditableEvent event ) {
         Principal p = event.getPrincipal();
         BoundStatement s = storeEvent.bind()
                 .setList( ACL_KEYS.cql(), event.getAclKey() )
@@ -81,7 +81,7 @@ public class AuditQuerySerivce {
                 .setString( PRINCIPAL_ID.cql(), p.getId() )
                 .set( PERMISSIONS.cql(), event.getEventType(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() )
                 .set( SECURABLE_OBJECT_TYPE.cql(), event.getObjectType(), SecurableObjectType.class )
-                .set( AUDIT_EVENT_DETAILS.cql(), event.getEventDetails(), event.getTypeToken() )
+                .setString( AUDIT_EVENT_DETAILS.cql(), event.getEventDetails() )
                 .setBytes( BLOCK.cql(), ByteBuffer.wrap( RESERVED ) );
         session.executeAsync( s );
     }

@@ -18,18 +18,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class AuditableEvent<T> {
+public class AuditableEvent {
     private final AuditableEventKey   eventKey;
     private final SecurableObjectType objectType;
-    private final T                   eventDetails;
-    private final TypeToken<T>        token = TypeToken.of( T );
+    private final String                   eventDetails;
 
     public AuditableEvent(
             List<UUID> aclKey,
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> eventType,
-            T eventDetails ) {
+            String eventDetails ) {
         this( new AuditableEventKey( aclKey, principal, eventType ), objectType, eventType, eventDetails );
     }
 
@@ -39,7 +38,7 @@ public class AuditableEvent<T> {
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> eventType,
-            T eventDetails ) {
+            String eventDetails ) {
         this( new AuditableEventKey( aclKey, timestamp, principal, eventType ), objectType, eventType, eventDetails );
 
     }
@@ -48,7 +47,7 @@ public class AuditableEvent<T> {
             AuditableEventKey eventKey,
             SecurableObjectType objectType,
             EnumSet<Permission> requestedPermission,
-            T eventDetails ) {
+            String eventDetails ) {
         this.eventKey = checkNotNull( eventKey );
         this.objectType = checkNotNull( objectType );
         this.eventDetails = checkNotNull( eventDetails );
@@ -61,11 +60,6 @@ public class AuditableEvent<T> {
 
     public SecurableObjectType getObjectType() {
         return objectType;
-    }
-
-    @JsonIgnore
-    public TypeToken<T> getTypeToken() {
-        return token;
     }
 
     public List<UUID> getAclKey() {
@@ -89,8 +83,7 @@ public class AuditableEvent<T> {
         return eventKey.getEventType();
     }
 
-    public T getEventDetails() {
+    public String getEventDetails() {
         return eventDetails;
     }
-
 }

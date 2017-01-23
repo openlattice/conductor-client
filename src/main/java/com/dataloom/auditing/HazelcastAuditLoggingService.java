@@ -29,7 +29,7 @@ public class HazelcastAuditLoggingService {
     }
 
     @Subscribe
-    public <T> void processAuditableEvent( AuditableEvent<T> event ) {
+    public void processAuditableEvent( AuditableEvent event ) {
         aqs.storeAuditableEvent( event );
         leaderboard.submitToKey( AclKey.wrap( event.getAclKey() ), INCREMENTER );
     }
