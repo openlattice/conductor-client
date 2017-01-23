@@ -1,38 +1,46 @@
 package com.kryptnostic.datastore.cassandra;
 
-import java.util.function.Function;
-
-import org.apache.commons.lang3.RandomStringUtils;
-
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.querybuilder.BindMarker;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Preconditions;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
+import org.apache.commons.lang3.RandomStringUtils;
+
+import java.util.function.Function;
 
 public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
-    ACL_KEYS( DataType.frozenList( DataType.uuid() ) ), // partition index within a table for distribution purpose
-    ROLE( DataType.text() ),
-    ROLES( DataType.set( DataType.text() ) ),
-    MEMBERS( DataType.set( DataType.text() ) ),
-    USER( DataType.text() ),
-    USERID( DataType.text() ),
+    FROZEN_PERMISSIONS( DataType.frozenSet( DataType.text() ) ),
+    ACL_CHILDREN_PERMISSIONS( DataType.map( DataType.uuid(), FROZEN_PERMISSIONS.getType() ) ),
+    ACL_KEYS( DataType.frozenList( DataType.uuid() ) ), // partition index within a table for distribution purpose,
+    ACL_ROOT( DataType.frozenList( DataType.uuid() ) ),
+    ALLOWED_EMAIL_DOMAINS( DataType.set( DataType.text() ) ),
+    AUDIT_EVENT_DETAILS( DataType.blob() ),
+    AUDIT_EVENT_TYPE( DataType.text() ),
     CLOCK( DataType.timestamp() ),
     DATATYPE( DataType.text() ),
+    DESCRIPTION( DataType.text() ),
+    ENTITYID( DataType.text() ),
     ENTITY_SET( DataType.text() ),
     ENTITY_SET_ID( DataType.uuid() ),
     ENTITY_SETS( DataType.set( DataType.text() ) ),
     ENTITY_TYPE( DataType.text() ),
+    ENTITY_TYPE_ID( DataType.uuid() ),
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
     FQN( DataType.text() ),
+    ID( DataType.uuid() ),
     KEY( DataType.set( DataType.uuid() ) ),
+    MEMBERS( DataType.set( DataType.text() ) ),
     MULTIPLICITY( DataType.bigint() ),
     NAME( DataType.text() ),
     NAME_SET( DataType.set( DataType.text() ) ),
     NAMESPACE( DataType.text() ),
-    REQUESTID( DataType.uuid() ),
-    ENTITYID( DataType.text() ),
+    PARTITION_INDEX( DataType.tinyint() ),
+    PERMISSIONS( DataType.set( DataType.text() ) ),
+    PRINCIPAL( DataType.text() ),
+    PRINCIPAL_TYPE( DataType.text() ),
+    PRINCIPAL_ID( DataType.text() ),
     PROPERTY_TYPE( DataType.text() ),
     PROPERTY_TYPE_ID( DataType.uuid() ),
     PROPERTY_VALUE( DataType.blob() ),
@@ -42,24 +50,20 @@ public enum CommonColumns implements ColumnDef {
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
     TYPE( DataType.text() ),
-    VALUE( null ),
+    ROLE( DataType.text() ),
+    ROLES( DataType.set( DataType.text() ) ),
+    REQUESTID( DataType.uuid() ),
     SECURABLE_OBJECT_TYPE( DataType.text() ),
     SECURABLE_OBJECTID( DataType.uuid() ),
-    PERMISSIONS( DataType.set( DataType.text() ) ),
-    FROZEN_PERMISSIONS( DataType.frozenSet( DataType.text() )),
-    PARTITION_INDEX( DataType.tinyint() ),
-    PRINCIPAL_TYPE( DataType.text() ),
-    PRINCIPAL_ID( DataType.text() ),
-    ID( DataType.uuid() ),
-    TYPE_ID( DataType.uuid() ),
-    DESCRIPTION( DataType.text() ),
-    ENTITY_TYPE_ID( DataType.uuid() ),
-    PRINCIPAL( DataType.text() ),
-    ACL_ROOT( DataType.frozenList( DataType.uuid() ) ),
-    ACL_CHILDREN_PERMISSIONS( DataType.map( DataType.uuid(), FROZEN_PERMISSIONS.getType() )),
     STATUS( DataType.text() ),
+    TIME_ID( DataType.uuid() ),
+    TYPE_ID( DataType.uuid() ),
     TRUSTED_ORGANIZATIONS( DataType.set( DataType.uuid() ) ),
-    ALLOWED_EMAIL_DOMAINS( DataType.set( DataType.text() ) );
+    USER( DataType.text() ),
+    USERID( DataType.text() ),
+    BLOCK( DataType.blob() ),
+    COUNT( DataType.bigint() ),
+    ACL_KEY_VALUE( DataType.frozenList( DataType.uuid() ) );
 
     private final DataType type;
 

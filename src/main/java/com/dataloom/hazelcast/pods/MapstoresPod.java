@@ -1,47 +1,37 @@
 package com.dataloom.hazelcast.pods;
 
-import java.util.UUID;
-
-import javax.inject.Inject;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-
+import com.dataloom.auditing.AuditMetric;
+import com.dataloom.auditing.mapstores.LeaderboardMapstore;
 import com.dataloom.authorization.AceKey;
+import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.mapstores.AclKeysMapstore;
-import com.dataloom.edm.mapstores.EntitySetMapstore;
-import com.dataloom.edm.mapstores.EntityTypeMapstore;
-import com.dataloom.edm.mapstores.NamesMapstore;
-import com.dataloom.edm.mapstores.PropertyTypeMapstore;
+import com.dataloom.edm.mapstores.*;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.PrincipalSet;
-import com.dataloom.organizations.mapstores.RoleSetMapstore;
-import com.dataloom.organizations.mapstores.StringMapstore;
-import com.dataloom.organizations.mapstores.StringSetMapstore;
-import com.dataloom.organizations.mapstores.UUIDSetMapstore;
-import com.dataloom.organizations.mapstores.UserSetMapstore;
+import com.dataloom.organizations.mapstores.*;
 import com.dataloom.requests.AclRootRequestDetailsPair;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
-import com.dataloom.requests.mapstores.AclRootPrincipalPair;
-import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
-import com.dataloom.requests.mapstores.RequestMapstore;
-import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
-import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
+import com.dataloom.requests.mapstores.*;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+import javax.inject.Inject;
+import java.util.UUID;
 
 @Configuration
 @Import( CassandraPod.class )
@@ -49,6 +39,8 @@ public class MapstoresPod {
 
     @Inject
     Session session;
+
+    @Inject CassandraConfiguration cc;
 
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
@@ -98,6 +90,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<AceKey, Status> requestMapstore() {
         return new RequestMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<AclKey, AuditMetric> auditMetricsMapstore() {
+        return new LeaderboardMapstore( cc.getKeyspace(), session );
     }
 
     @Bean

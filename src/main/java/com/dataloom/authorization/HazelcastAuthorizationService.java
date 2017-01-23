@@ -1,7 +1,18 @@
 package com.dataloom.authorization;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.dataloom.auditing.AuditableEvent;
+import com.dataloom.authorization.processors.PermissionMerger;
+import com.dataloom.authorization.processors.PermissionRemover;
+import com.dataloom.authorization.util.AuthorizationUtils;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.eventbus.EventBus;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.util.Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.spark_project.guava.collect.Iterables;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -10,28 +21,23 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spark_project.guava.collect.Iterables;
-
-import com.dataloom.authorization.processors.PermissionMerger;
-import com.dataloom.authorization.processors.PermissionRemover;
-import com.dataloom.authorization.util.AuthorizationUtils;
-import com.dataloom.hazelcast.HazelcastMap;
-import com.google.common.collect.ImmutableSet;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
-import com.kryptnostic.datastore.util.Util;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
-    private static final Logger                 logger = LoggerFactory.getLogger( AuthorizationManager.class );
+    private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
 
     private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
-    private final AuthorizationQueryService     aqs;
+    private final AuthorizationQueryService                aqs;
+    private final EventBus                                 eventBus;
 
-    public HazelcastAuthorizationService( HazelcastInstance hazelcastInstance, AuthorizationQueryService aqs ) {
+    public HazelcastAuthorizationService(
+            HazelcastInstance hazelcastInstance,
+            AuthorizationQueryService aqs,
+            EventBus eventBus ) {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         this.aqs = checkNotNull( aqs );
+        this.eventBus = checkNotNull( eventBus );
     }
 
     @Override
@@ -77,7 +83,9 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public boolean checkIfHasPermissions(
             List<UUID> key,
             Set<Principal> principals,
-            Set<Permission> requiredPermissions ) {
+            EnumSet<Permission> requiredPermissions ) {
+        principals.forEach( p -> eventBus.post( new AuditableEvent<String>( key, p, SecurableObjectType.Datasource,
+                requiredPermissions, "This is a test" ) ) );
         Set<Permission> permissions = getSecurableObjectPermissions( key, principals );
         return permissions.containsAll( requiredPermissions );
     }
@@ -99,7 +107,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                         .collect( Collectors.toSet() ) )
                 .values()
                 .stream()
-//                .peek( ps -> logger.info( "Implementing class: {}", ps.getClass().getCanonicalName() ) )
+                //                .peek( ps -> logger.info( "Implementing class: {}", ps.getClass().getCanonicalName() ) )
                 .flatMap( permissions -> permissions.stream() )
                 .collect( Collectors.toCollection( () -> EnumSet.noneOf( Permission.class ) ) );
     }

@@ -3,13 +3,15 @@ package com.dataloom.hazelcast;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 
 public enum HazelcastMap {
+    ACL_KEYS( Tables.ACL_KEYS ),
+    AUDIT_EVENTS( Tables.AUDIT_EVENTS ),
+    AUDIT_METRICS( Tables.AUDIT_METRICS ),
     PERMISSIONS( Tables.PERMISSIONS ),
     PERMISSIONS_REQUESTS_UNRESOLVED( Tables.PERMISSIONS_REQUESTS_UNRESOLVED ),
     PERMISSIONS_REQUESTS_RESOLVED( Tables.PERMISSIONS_REQUESTS_RESOLVED ),
     PROPERTY_TYPES( Tables.PROPERTY_TYPES ),
     ENTITY_TYPES( Tables.ENTITY_TYPES ),
     ENTITY_SETS( Tables.ENTITY_SETS ),
-    ACL_KEYS( Tables.ACL_KEYS ),
     NAMES( Tables.NAMES ),
     SCHEMAS( Tables.SCHEMAS ),
     TRUSTED_ORGANIZATIONS( Tables.ORGANIZATIONS ),
@@ -22,7 +24,8 @@ public enum HazelcastMap {
     USERS( null ),
     ENTITY_SET_TICKETS( null ),
     ENTITY_SET_PROPERTIES_TICKETS( null ),
-    REQUESTS( Tables.REQUESTS );
+    REQUESTS( Tables.REQUESTS )
+    ;
 
     private final Tables table;
 

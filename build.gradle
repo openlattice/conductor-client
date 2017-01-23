@@ -19,7 +19,7 @@ ext.developerConnectionUrl = 'scm:git:https://github.com/dataloom/conductor-clie
 apply from: "https://raw.githubusercontent.com/kryptnostic/gradles/master/kryptnostic.gradle"
 
 sourceCompatibility=JavaVersion.VERSION_1_8
-
+test { finalizedBy jacocoTestReport }
 dependencies { 
     /*
      * SL4J

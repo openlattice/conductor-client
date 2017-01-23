@@ -11,6 +11,8 @@ import java.util.EnumMap;
 
 public enum Tables implements TableDef {
     ACL_KEYS,
+    AUDIT_EVENTS,
+    AUDIT_METRICS,
     DATA,
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
@@ -27,23 +29,7 @@ public enum Tables implements TableDef {
     private static final Logger                                 logger   = LoggerFactory
             .getLogger( Tables.class );
     private static final EnumMap<Tables, CassandraTableBuilder> cache    = new EnumMap<>( Tables.class );
-    private static String                                       keyspace = DatastoreConstants.KEYSPACE;
-
-    public String getName() {
-        return name();
-    }
-
-    public String getKeyspace() {
-        return keyspace;
-    }
-
-    public CassandraTableBuilder getBuilder() {
-        return getTableDefinition( this );
-    }
-
-    public TableDef asTableDef() {
-        return this;
-    }
+    private static       String                                 keyspace = DatastoreConstants.KEYSPACE;
 
     static CassandraTableBuilder getTableDefinition( Tables table ) {
         CassandraTableBuilder ctb = cache.get( table );
@@ -61,6 +47,20 @@ public enum Tables implements TableDef {
                         .ifNotExists()
                         .partitionKey( CommonColumns.NAME )
                         .columns( CommonColumns.SECURABLE_OBJECTID );
+            case AUDIT_EVENTS:
+                return new CassandraTableBuilder( AUDIT_EVENTS )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.ACL_KEYS )
+                        .clusteringColumns( CommonColumns.TIME_ID, CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID )
+                        .columns( CommonColumns.PERMISSIONS, CommonColumns.BLOCK )
+                        .staticColumns( CommonColumns.SECURABLE_OBJECT_TYPE )
+                        .sasi( CommonColumns.PRINCIPAL_TYPE, CommonColumns.PRINCIPAL_ID );
+            case AUDIT_METRICS:
+                return new CassandraTableBuilder( AUDIT_METRICS )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.ACL_KEYS )
+                        .clusteringColumns( CommonColumns.COUNT, CommonColumns.ACL_KEY_VALUE )
+                        .withDescendingOrder( CommonColumns.COUNT );
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
@@ -161,6 +161,22 @@ public enum Tables implements TableDef {
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );
         }
+    }
+
+    public String getName() {
+        return name();
+    }
+
+    public String getKeyspace() {
+        return keyspace;
+    }
+
+    public CassandraTableBuilder getBuilder() {
+        return getTableDefinition( this );
+    }
+
+    public TableDef asTableDef() {
+        return this;
     }
 
 }

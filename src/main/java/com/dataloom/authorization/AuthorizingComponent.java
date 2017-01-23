@@ -25,7 +25,7 @@ public interface AuthorizingComponent {
         return isAuthorized( EnumSet.of( requiredPermission, requiredPermissions ) );
     }
 
-    default Predicate<List<UUID>> isAuthorized( Set<Permission> requiredPermissions ) {
+    default Predicate<List<UUID>> isAuthorized( EnumSet<Permission> requiredPermissions ) {
         return aclKey -> getAuthorizationManager().checkIfHasPermissions( aclKey,
                 Principals.getCurrentPrincipals(),
                 requiredPermissions );
@@ -53,7 +53,7 @@ public interface AuthorizingComponent {
         }
     }
 
-    default void accessCheck( List<UUID> aclKey, Set<Permission> requiredPermissions ) {
+    default void accessCheck( List<UUID> aclKey, EnumSet<Permission> requiredPermissions ) {
         if ( !getAuthorizationManager().checkIfHasPermissions(
                 aclKey,
                 Principals.getCurrentPrincipals(),

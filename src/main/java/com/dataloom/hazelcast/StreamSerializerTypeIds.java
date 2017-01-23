@@ -12,6 +12,8 @@ public enum StreamSerializerTypeIds {
      * Move this one, break everything.
      */
     STREAM_SERIALIZER_IDS_MUST_BE_POSTIVE,
+    ACL_KEY,
+    AUDIT_METRIC_INCREMENTER,
     RUNNABLE,
     CALLABLE,
     CONDUCTOR_CALL,

@@ -48,7 +48,7 @@ public interface AuthorizationManager {
     boolean checkIfHasPermissions(
             List<UUID> aclKeys,
             Set<Principal> principals,
-            Set<Permission> requiredPermissions );
+            EnumSet<Permission> requiredPermissions );
 
     boolean checkIfUserIsOwner( List<UUID> aclkeys, Principal principal );
     // Utility functions for retrieving permissions
