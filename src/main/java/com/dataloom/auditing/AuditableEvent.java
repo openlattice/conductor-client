@@ -22,7 +22,7 @@ public class AuditableEvent<T> {
     private final AuditableEventKey   eventKey;
     private final SecurableObjectType objectType;
     private final T                   eventDetails;
-    private final TypeToken<T>        token;
+    private final TypeToken<T>        token = TypeToken.of( T );
 
     public AuditableEvent(
             List<UUID> aclKey,
@@ -52,8 +52,6 @@ public class AuditableEvent<T> {
         this.eventKey = checkNotNull( eventKey );
         this.objectType = checkNotNull( objectType );
         this.eventDetails = checkNotNull( eventDetails );
-        this.token = new TypeToken<T>() {
-        };
     }
 
     @JsonIgnore

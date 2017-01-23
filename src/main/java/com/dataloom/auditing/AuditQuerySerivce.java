@@ -13,15 +13,16 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.nio.ByteBuffer;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import static com.dataloom.auditing.AuditableEventKey.AuditableEventType;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 
 /**
@@ -63,7 +64,12 @@ public class AuditQuerySerivce {
     public static Delete.Where clearTail( String keyspace ) {
         return QueryBuilder.delete()
                 .from( keyspace, Tables.AUDIT_METRICS.getName() )
-                .where( QueryBuilder.lt( CommonColumns.COUNT.cql(), CommonColumns.COUNT.bindMarker() ) );
+                .where( CommonColumns.ACL_KEYS.eq() )
+                .and( QueryBuilder.lt( CommonColumns.COUNT.cql(), CommonColumns.COUNT.bindMarker() ) );
+    }
+
+    private static BoundStatement bindToEmptyListPartition( BoundStatement bs ) {
+        return bs.setList( CommonColumns.ACL_KEYS.cql(), ImmutableList.of(), UUID.class );
     }
 
     public <T> void storeAuditableEvent( AuditableEvent<T> event ) {
@@ -81,17 +87,19 @@ public class AuditQuerySerivce {
     }
 
     public Stream<AuditMetric> getTop100() {
-        return StreamUtil
-                .stream( session.execute( top100.bind() ) )
+        return Stream.of( top100.bind() )
+                .map( AuditQuerySerivce::bindToEmptyListPartition )
+                .map( session::execute )
+                .flatMap( StreamUtil::stream )
                 .map( AuditUtil::auditMetric );
     }
 
-    @Scheduled(fixedRate = 30000)
+    @Scheduled( fixedRate = 30000 )
     public void clearLeaderboard() {
         java.util.Optional<AuditMetric> maybeAuditMetric = getTop100().min( AuditMetric::compareTo );
         maybeAuditMetric.ifPresent( m -> session
-                .executeAsync( clearTail.bind().setLong( CommonColumns.COUNT.cql(), m.getCounter() ) ) );
-        ;
+                .executeAsync( bindToEmptyListPartition( clearTail.bind() )
+                        .setLong( CommonColumns.COUNT.cql(), m.getCounter() ) ) );
 
     }
 
