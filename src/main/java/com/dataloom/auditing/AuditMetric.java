@@ -33,4 +33,30 @@ public class AuditMetric implements Comparable<AuditMetric> {
     public int compareTo( AuditMetric o ) {
         return Long.compare( getCounter(), o.getCounter() );
     }
+
+    @Override public boolean equals( Object o ) {
+        if ( this == o )
+            return true;
+        if ( o == null || getClass() != o.getClass() )
+            return false;
+
+        AuditMetric that = (AuditMetric) o;
+
+        if ( counter != that.counter )
+            return false;
+        return aclKey != null ? aclKey.equals( that.aclKey ) : that.aclKey == null;
+    }
+
+    @Override public int hashCode() {
+        int result = aclKey != null ? aclKey.hashCode() : 0;
+        result = 31 * result + (int) ( counter ^ ( counter >>> 32 ) );
+        return result;
+    }
+
+    @Override public String toString() {
+        return "AuditMetric{" +
+                "aclKey=" + aclKey +
+                ", counter=" + counter +
+                '}';
+    }
 }
