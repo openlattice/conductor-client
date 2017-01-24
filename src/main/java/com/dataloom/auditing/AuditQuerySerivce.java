@@ -29,7 +29,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class AuditQuerySerivce {
-    private static final byte[] RESERVED = "Reserved for future use.".getBytes( Charsets.UTF_8 );
+    private static final byte[] RESERVED = "Reserved for future use." .getBytes( Charsets.UTF_8 );
     private final Session           session;
     private final PreparedStatement storeEvent;
     private final PreparedStatement top100;
@@ -75,7 +75,7 @@ public class AuditQuerySerivce {
     public void storeAuditableEvent( AuditableEvent event ) {
         Principal p = event.getPrincipal();
         BoundStatement s = storeEvent.bind()
-                .setList( ACL_KEYS.cql(), event.getAclKey() )
+                .setList( ACL_KEYS.cql(), event.getAclKey(), UUID.class )
                 .setUUID( TIME_ID.cql(), event.getUuidTimestamp() )
                 .set( PRINCIPAL_TYPE.cql(), p.getType(), PrincipalType.class )
                 .setString( PRINCIPAL_ID.cql(), p.getId() )
