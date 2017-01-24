@@ -96,7 +96,7 @@ public class UserDirectoryService {
 
     public void removeRoleFromUser( String userId, String role ) {
         Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
-        roles.add( role );
+        roles.remove( role );
         setRolesOfUser( userId, roles );
     }
 
