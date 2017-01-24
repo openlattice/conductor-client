@@ -1,6 +1,6 @@
 package com.dataloom;
 
-import com.dataloom.auditing.AuditQuerySerivce;
+import com.dataloom.auditing.AuditQueryService;
 import com.dataloom.auditing.AuditableEvent;
 import com.dataloom.auditing.HazelcastAuditLoggingService;
 import com.dataloom.authorization.HzAuthzTest;
@@ -13,10 +13,10 @@ import org.junit.Test;
  */
 public class AuditLogging extends HzAuthzTest {
     protected static final HazelcastAuditLoggingService hals;
-    protected static final AuditQuerySerivce            auditQuerys;
+    protected static final AuditQueryService            auditQuerys;
 
     static {
-        auditQuerys = new AuditQuerySerivce( cc.getKeyspace(), session );
+        auditQuerys = new AuditQueryService( cc.getKeyspace(), session );
         hals = new HazelcastAuditLoggingService( hazelcastInstance,
                 auditQuerys,
                 testServer.getContext().getBean( EventBus.class ) );
