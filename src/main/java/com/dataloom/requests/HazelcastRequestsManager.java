@@ -39,10 +39,10 @@ public class HazelcastRequestsManager {
     }
 
     public void submitAll( Map<AceKey, Status> statusMap ) {
-        Map<AceKey, DelegatedPermissionEnumSet> permissionToAdd = statusMap.entrySet().stream()
+        statusMap.entrySet().stream()
                 .filter( e -> e.getValue().getStatus().equals( RequestStatus.APPROVED ) )
                 .forEach( e -> aces.submitToKey( e.getKey(),
-                        new PermissionMerger( DelegatedPermissionEnumSet.wrap( e.getValue().getPermissions() ) ) );
+                        new PermissionMerger( DelegatedPermissionEnumSet.wrap( e.getValue().getPermissions() ) ) ) );
         requests.putAll( statusMap );
     }
 
