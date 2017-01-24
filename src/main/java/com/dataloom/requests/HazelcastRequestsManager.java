@@ -40,7 +40,7 @@ public class HazelcastRequestsManager {
         statusMap.entrySet().stream()
                 .filter( e -> e.getValue().getStatus().equals( RequestStatus.APPROVED ) )
                 .forEach( e -> aces.executeOnKey( e.getKey(),
-                        new PermissionMerger( e.getValue().getPermissions() ) ) );
+                        new PermissionMerger( DelegatedPermissionEnumSet.wrap( e.getValue().getPermissions() ) ) ) );
         requests.putAll( statusMap );
     }
 
