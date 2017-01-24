@@ -16,7 +16,7 @@ public enum CommonColumns implements ColumnDef {
     ACL_KEYS( DataType.frozenList( DataType.uuid() ) ), // partition index within a table for distribution purpose,
     ACL_ROOT( DataType.frozenList( DataType.uuid() ) ),
     ALLOWED_EMAIL_DOMAINS( DataType.set( DataType.text() ) ),
-    AUDIT_EVENT_DETAILS( DataType.blob() ),
+    AUDIT_EVENT_DETAILS( DataType.text() ),
     AUDIT_EVENT_TYPE( DataType.text() ),
     CLOCK( DataType.timestamp() ),
     DATATYPE( DataType.text() ),

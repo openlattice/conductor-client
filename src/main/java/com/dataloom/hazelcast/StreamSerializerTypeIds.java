@@ -13,6 +13,7 @@ public enum StreamSerializerTypeIds {
      */
     STREAM_SERIALIZER_IDS_MUST_BE_POSTIVE,
     ACL_KEY,
+    AUDIT_METRIC,
     AUDIT_METRIC_INCREMENTER,
     RUNNABLE,
     CALLABLE,

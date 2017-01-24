@@ -15,12 +15,12 @@ import com.hazelcast.map.EntryProcessor;
 public class HazelcastAuditLoggingService {
     private static EntryProcessor<AclKey, AuditMetric> INCREMENTER = new AuditMetricIncrementer();
 //    private final IMap<AuditableEventKey, AuditableEvent<?>> auditEvents;
-    private final IMap<AclKey, AuditMetric>                  leaderboard;
-    private final AuditQuerySerivce                          aqs;
+    private final IMap<AclKey, AuditMetric> leaderboard;
+    private final AuditQueryService         aqs;
 
     public HazelcastAuditLoggingService(
             HazelcastInstance hazelcastInstance,
-            AuditQuerySerivce aqs,
+            AuditQueryService aqs,
             EventBus eventBus ) {
 //        this.auditEvents = hazelcastInstance.getMap( HazelcastMap.AUDIT_EVENTS.name() );
         this.leaderboard = hazelcastInstance.getMap( HazelcastMap.AUDIT_METRICS.name() );

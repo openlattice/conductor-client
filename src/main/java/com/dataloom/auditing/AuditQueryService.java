@@ -3,13 +3,11 @@ package com.dataloom.auditing;
 import com.dataloom.auditing.util.AuditUtil;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Delete;
-import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.base.Charsets;
@@ -28,31 +26,18 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class AuditQuerySerivce {
+public class AuditQueryService {
     private static final byte[] RESERVED = "Reserved for future use." .getBytes( Charsets.UTF_8 );
     private final Session           session;
     private final PreparedStatement storeEvent;
     private final PreparedStatement top100;
     private final PreparedStatement clearTail;
 
-    public AuditQuerySerivce( String keyspace, Session session ) {
+    public AuditQueryService( String keyspace, Session session ) {
         this.session = session;
-        storeEvent = session.prepare( storeQuery( keyspace ) );
+        storeEvent = session.prepare( Tables.AUDIT_EVENTS.getBuilder().buildStoreQuery());
         top100 = session.prepare( top100( keyspace ) );
         clearTail = session.prepare( clearTail( keyspace ) );
-    }
-
-    public static Insert storeQuery( String keyspace ) {
-        return QueryBuilder.insertInto( keyspace, Tables.AUDIT_EVENTS.getName() )
-                .value( ACL_KEYS.cql(), ACL_KEYS.bindMarker() )
-                .value( TIME_ID.cql(), TIME_ID.bindMarker() )
-                .value( PRINCIPAL_TYPE.cql(), PRINCIPAL_TYPE.bindMarker() )
-                .value( PRINCIPAL_ID.cql(), PRINCIPAL_ID.bindMarker() )
-                .value( PERMISSIONS.cql(), PERMISSIONS.bindMarker() )
-                .value( SECURABLE_OBJECT_TYPE.cql(), SECURABLE_OBJECT_TYPE.bindMarker() )
-                .value( AUDIT_EVENT_DETAILS.cql(), ACL_KEYS.bindMarker() )
-                .value( BLOCK.cql(), BLOCK.bindMarker() );
-
     }
 
     public static Select top100( String keyspace ) {
@@ -80,7 +65,6 @@ public class AuditQuerySerivce {
                 .set( PRINCIPAL_TYPE.cql(), p.getType(), PrincipalType.class )
                 .setString( PRINCIPAL_ID.cql(), p.getId() )
                 .set( PERMISSIONS.cql(), event.getEventType(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() )
-                .set( SECURABLE_OBJECT_TYPE.cql(), event.getObjectType(), SecurableObjectType.class )
                 .setString( AUDIT_EVENT_DETAILS.cql(), event.getEventDetails() )
                 .setBytes( BLOCK.cql(), ByteBuffer.wrap( RESERVED ) );
         session.executeAsync( s );
@@ -88,7 +72,7 @@ public class AuditQuerySerivce {
 
     public Stream<AuditMetric> getTop100() {
         return Stream.of( top100.bind() )
-                .map( AuditQuerySerivce::bindToEmptyListPartition )
+                .map( AuditQueryService::bindToEmptyListPartition )
                 .map( session::execute )
                 .flatMap( StreamUtil::stream )
                 .map( AuditUtil::auditMetric );

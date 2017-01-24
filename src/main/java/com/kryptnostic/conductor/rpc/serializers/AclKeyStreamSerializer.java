@@ -2,10 +2,14 @@ package com.kryptnostic.conductor.rpc.serializers;
 
 import com.dataloom.authorization.AclKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.StreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
+import com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 import static com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers.DelegatedUUIDListStreamSerializer;
 
@@ -18,6 +22,10 @@ public class AclKeyStreamSerializer extends DelegatedUUIDListStreamSerializer
     @Override
     public Class<? extends DelegatedUUIDList> getClazz() {
         return AclKey.class;
+    }
+
+    @Override public AclKey read( ObjectDataInput in ) throws IOException {
+        return AclKey.wrap( ListStreamSerializers.fastUUIDListDeserialize( in ) );
     }
 
     @Override public int getTypeId() {

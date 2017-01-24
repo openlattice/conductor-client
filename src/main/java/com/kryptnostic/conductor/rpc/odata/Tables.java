@@ -55,7 +55,6 @@ public enum Tables implements TableDef {
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( TIME_ID, PRINCIPAL_TYPE, PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS, AUDIT_EVENT_DETAILS, BLOCK )
-                        .staticColumns( SECURABLE_OBJECT_TYPE )
                         .sasi( PRINCIPAL_TYPE, PRINCIPAL_ID );
             case AUDIT_METRICS:
                 return new CassandraTableBuilder( AUDIT_METRICS )
