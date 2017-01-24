@@ -9,13 +9,8 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.EnumSet;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -31,7 +26,7 @@ public class PermissionMergerStreamSerializer implements SelfRegisteringStreamSe
     @Override public void write(
             ObjectDataOutput out, PermissionMerger object ) throws IOException {
         BitSet bs = new BitSet( P.length );
-        for( Permission p : object.getBackingCollection() ) {
+        for ( Permission p : object.getBackingCollection() ) {
             bs.set( p.ordinal() );
         }
         out.writeLongArray( bs.toLongArray() );
@@ -40,14 +35,14 @@ public class PermissionMergerStreamSerializer implements SelfRegisteringStreamSe
     @Override public PermissionMerger read( ObjectDataInput in ) throws IOException {
         BitSet bs = BitSet.valueOf( in.readLongArray() );
 
-        EnumSet<Permission>  ps = EnumSet.noneOf(Permission.class);
-        for( int i = 0 ; i < P.length ; ++i ) {
-            if( bs.get( i ) ){
-                ps.add( P[i ] );
+        EnumSet<Permission> ps = EnumSet.noneOf( Permission.class );
+        for ( int i = 0; i < P.length; ++i ) {
+            if ( bs.get( i ) ) {
+                ps.add( P[ i ] );
             }
         }
 
-        return new PermissionMerger(ps);
+        return new PermissionMerger( ps );
     }
 
     @Override public int getTypeId() {
