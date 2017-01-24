@@ -56,7 +56,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             List<UUID> key,
             Principal principal,
             Set<Permission> permissions ) {
-        aces.executeOnKey( new AceKey( key, principal ), new PermissionRemover( permissions ) );
+        aces.executeOnKey( new AceKey( key, principal ), new PermissionRemover( DelegatedPermissionEnumSet.wrap( permissions ) ) );
     }
 
     @Override
