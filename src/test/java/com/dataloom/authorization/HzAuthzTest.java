@@ -166,13 +166,5 @@ public class HzAuthzTest extends CassandraBootstrap {
         Assert.assertTrue( p2s.contains( key ) );
     }
 
-    @Test
-    public void doMany() {
-        Stopwatch w = Stopwatch.createStarted();
-        for ( int i = 0; i < 1000; i++ ) {
-            logger.info( "Attempt #{}", i );
-            testListSecurableObjects();
-        }
-        logger.info( "Did 1000 check in {} ms", w.elapsed( TimeUnit.MILLISECONDS ) );
-    }
+
 }

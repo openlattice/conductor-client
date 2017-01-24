@@ -17,5 +17,4 @@ public class PermissionMerger extends AbstractMerger<AceKey, DelegatedPermission
         return new DelegatedPermissionEnumSet();
     }
 
-
 }
