@@ -2,19 +2,9 @@ package com.dataloom.requests;
 
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.hazelcast.pods.MapstoresPod;
-import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.requests.util.RequestUtil;
-import com.datastax.driver.core.Session;
-import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableSet;
-import com.hazelcast.core.HazelcastInstance;
-import com.kryptnostic.conductor.codecs.pods.TypeCodecsPod;
-import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
-import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
-import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
-import com.kryptnostic.rhizome.pods.CassandraPod;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,13 +13,11 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RequestsTests extends HzAuthzTest {
     protected static final RequestQueryService      aqs;
     protected static final HazelcastRequestsManager hzRequests;
-    protected static final Lock lock = new ReentrantLock();
-
+    protected static final Lock        lock      = new ReentrantLock();
     protected static final Status      expected  = TestDataFactory.status();
     protected static final Status      expected2 = new Status(
             expected.getAclKey(),
@@ -49,14 +37,18 @@ public class RequestsTests extends HzAuthzTest {
     protected static final Set<Status> ss        = ImmutableSet.of( expected,
             expected2,
             expected3,
+            expected4,
             TestDataFactory.status(),
             TestDataFactory.status(),
             TestDataFactory.status() );
+    protected static final Set<Status> submitted = ImmutableSet.of(
+            expected2,
+            expected3,
+            expected4 );
 
     static {
         aqs = new RequestQueryService( cc.getKeyspace(), session );
         hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs );
-
         Map<AceKey, Status> statusMap = RequestUtil.statusMap( ss );
         hzRequests.submitAll( statusMap );
     }
@@ -86,7 +78,7 @@ public class RequestsTests extends HzAuthzTest {
         Set<Status> statuses = hzRequests
                 .getStatuses( expected.getPrincipal(), expected.getStatus() )
                 .collect(
-                Collectors.toSet());
+                        Collectors.toSet() );
         Assert.assertEquals( c, statuses.size() );
         Assert.assertEquals( expectedStatuses, statuses );
     }
@@ -108,5 +100,18 @@ public class RequestsTests extends HzAuthzTest {
                 .count();
         Assert.assertEquals( c,
                 hzRequests.getStatusesForAllUser( expected.getAclKey(), RequestStatus.SUBMITTED ).count() );
+    }
+
+    @Test
+    public void testApproval() {
+        Assert.assertTrue( submitted.stream().allMatch( s -> !hzAuthz
+                .checkIfHasPermissions( s.getAclKey(), ImmutableSet.of( s.getPrincipal() ), s.getPermissions() ) ) );
+        ;
+        hzRequests.submitAll( RequestUtil
+                .statusMap( submitted.stream().map( RequestUtil::approve ).collect( Collectors.toSet() ) ) );
+
+        Assert.assertTrue( submitted.stream().allMatch( s -> hzAuthz
+                .checkIfHasPermissions( s.getAclKey(), ImmutableSet.of( s.getPrincipal() ), s.getPermissions() ) ) );
+
     }
 }
