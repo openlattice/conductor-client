@@ -15,21 +15,6 @@ import com.dataloom.authentication.LoomAuthentication;
 
 public final class Principals {
     private static final Logger logger            = LoggerFactory.getLogger( Principals.class );
-    public static enum Role {
-        ADMIN( "admin" ),
-        USER( "user" ),
-        AUTHENTICATED_USER( "AuthenticatedUser" );
-        private final Principal principal;
-
-        private Role( String principalId ) {
-            this.principal = new Principal( PrincipalType.ROLE, principalId );
-        }
-
-        public Principal getPrincipal() {
-            return principal;
-        }
-
-    };
 
     private Principals() {}
 
