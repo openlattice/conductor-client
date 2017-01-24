@@ -20,6 +20,8 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -37,22 +39,9 @@ public class AuditQuerySerivce {
 
     public AuditQuerySerivce( String keyspace, Session session ) {
         this.session = session;
-        storeEvent = session.prepare( storeQuery( keyspace ) );
+        storeEvent = session.prepare( Tables.AUDIT_EVENTS.getBuilder().buildStoreQuery());
         top100 = session.prepare( top100( keyspace ) );
         clearTail = session.prepare( clearTail( keyspace ) );
-    }
-
-    public static Insert storeQuery( String keyspace ) {
-        return QueryBuilder.insertInto( keyspace, Tables.AUDIT_EVENTS.getName() )
-                .value( ACL_KEYS.cql(), ACL_KEYS.bindMarker() )
-                .value( TIME_ID.cql(), TIME_ID.bindMarker() )
-                .value( PRINCIPAL_TYPE.cql(), PRINCIPAL_TYPE.bindMarker() )
-                .value( PRINCIPAL_ID.cql(), PRINCIPAL_ID.bindMarker() )
-                .value( PERMISSIONS.cql(), PERMISSIONS.bindMarker() )
-                .value( SECURABLE_OBJECT_TYPE.cql(), SECURABLE_OBJECT_TYPE.bindMarker() )
-                .value( AUDIT_EVENT_DETAILS.cql(), ACL_KEYS.bindMarker() )
-                .value( BLOCK.cql(), BLOCK.bindMarker() );
-
     }
 
     public static Select top100( String keyspace ) {
@@ -80,7 +69,6 @@ public class AuditQuerySerivce {
                 .set( PRINCIPAL_TYPE.cql(), p.getType(), PrincipalType.class )
                 .setString( PRINCIPAL_ID.cql(), p.getId() )
                 .set( PERMISSIONS.cql(), event.getEventType(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() )
-                .set( SECURABLE_OBJECT_TYPE.cql(), event.getObjectType(), SecurableObjectType.class )
                 .setString( AUDIT_EVENT_DETAILS.cql(), event.getEventDetails() )
                 .setBytes( BLOCK.cql(), ByteBuffer.wrap( RESERVED ) );
         session.executeAsync( s );

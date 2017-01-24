@@ -1,6 +1,7 @@
 package com.dataloom.requests;
 
 import com.dataloom.authorization.AceKey;
+import com.dataloom.authorization.HzAuthzTest;
 import com.dataloom.hazelcast.pods.MapstoresPod;
 import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.dataloom.mapstores.TestDataFactory;
@@ -24,11 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class RequestsTests extends CassandraBootstrap {
-    protected static final RhizomeApplicationServer testServer;
-    protected static final HazelcastInstance        hazelcastInstance;
-    protected static final Session                  session;
-    protected static final CassandraConfiguration   cc;
+public class RequestsTests extends HzAuthzTest {
     protected static final RequestQueryService      aqs;
     protected static final HazelcastRequestsManager hzRequests;
     protected static final Lock lock = new ReentrantLock();
@@ -57,16 +54,6 @@ public class RequestsTests extends CassandraBootstrap {
             TestDataFactory.status() );
 
     static {
-        testServer = new RhizomeApplicationServer(
-                MapstoresPod.class,
-                CassandraPod.class,
-                TypeCodecsPod.class,
-                SharedStreamSerializersPod.class,
-                CassandraTablesPod.class );
-        testServer.sprout( "local", CassandraPod.CASSANDRA_PROFILE );
-        hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
-        session = testServer.getContext().getBean( Session.class );
-        cc = testServer.getContext().getBean( CassandraConfiguration.class );
         aqs = new RequestQueryService( cc.getKeyspace(), session );
         hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs );
 
