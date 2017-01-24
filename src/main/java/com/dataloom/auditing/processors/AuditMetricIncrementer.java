@@ -14,6 +14,9 @@ public class AuditMetricIncrementer extends AbstractRhizomeEntryProcessor<AclKey
     @Override
     public Void process( Map.Entry<AclKey, AuditMetric> entry ) {
         AuditMetric m = entry.getValue();
+        if( m == null ) {
+            m = new AuditMetric(0L ,entry.getKey() );
+        }
         m.increment();
         entry.setValue( m );
         return null;
