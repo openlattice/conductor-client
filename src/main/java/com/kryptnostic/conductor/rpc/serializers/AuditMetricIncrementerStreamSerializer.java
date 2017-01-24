@@ -5,12 +5,14 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+@Component
 public class AuditMetricIncrementerStreamSerializer implements SelfRegisteringStreamSerializer<AuditMetricIncrementer> {
     private static final AuditMetricIncrementer INCREMENTER = new AuditMetricIncrementer();
 
