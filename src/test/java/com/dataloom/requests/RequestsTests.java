@@ -56,7 +56,8 @@ public class RequestsTests extends HzAuthzTest {
     @Test
     public void testSubmitAndGet() {
         Set<Status> expectedStatuses = ss.stream()
-                .filter( status -> status.getPrincipal().equals( expected.getPrincipal() ) )
+                .filter( status -> status.getPrincipal().equals( expected.getPrincipal() ) && status.getStatus()
+                        .equals( expected.getStatus() ) )
                 .collect( Collectors.toSet() );
 
         long c = expectedStatuses.size();

@@ -39,7 +39,7 @@ public class AuditLogging extends HzAuthzTest {
     @Test
     public void doMany() {
         Stopwatch w = Stopwatch.createStarted();
-        for ( int i = 0; i < 1000; i++ ) {
+        for ( int i = 0; i < 100; i++ ) {
             logger.info( "Attempt #{}", i );
             testListSecurableObjects();
         }
