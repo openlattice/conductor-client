@@ -32,7 +32,7 @@ public class PermissionRemoverStreamSerializer implements SelfRegisteringStreamS
     }
 
     @Override public int getTypeId() {
-        return StreamSerializerTypeIds.PERMISSION_MERGER.ordinal();
+        return StreamSerializerTypeIds.PERMISSION_REMOVER.ordinal();
     }
 
     @Override public void destroy() {

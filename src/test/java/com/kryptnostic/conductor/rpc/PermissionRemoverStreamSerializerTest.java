@@ -1,7 +1,6 @@
 package com.kryptnostic.conductor.rpc;
 
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.mapstores.TestDataFactory;
 import com.kryptnostic.conductor.rpc.serializers.PermissionRemoverStreamSerializer;
@@ -16,7 +15,7 @@ public class PermissionRemoverStreamSerializerTest
         return new PermissionRemoverStreamSerializer();
     }
 
-    @Override protected PermissionMerger createInput() {
-        return new PermissionMerger( DelegatedPermissionEnumSet.wrap( TestDataFactory.permissions() ) );
+    @Override protected PermissionRemover createInput() {
+        return new PermissionRemover( DelegatedPermissionEnumSet.wrap( TestDataFactory.permissions() ) );
     }
 }
