@@ -4,12 +4,13 @@ import com.dataloom.authorization.AclKey;
 import com.dataloom.mapstores.TestDataFactory;
 import com.kryptnostic.conductor.rpc.serializers.AclKeyStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
-import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class AclKeyStreamSerializerTest extends BaseSerializerTest<AclKeyStreamSerializer, DelegatedUUIDList> {
+public class AclKeyStreamSerializerTest extends
+        AbstractStreamSerializerTest<AclKeyStreamSerializer, DelegatedUUIDList> {
 
     @Override
     protected AclKeyStreamSerializer createSerializer() {
