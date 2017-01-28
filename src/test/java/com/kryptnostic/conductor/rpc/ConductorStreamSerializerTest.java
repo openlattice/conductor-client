@@ -8,10 +8,10 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.rpc.serializers.ConductorCallStreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 @SuppressWarnings( "rawtypes" )
-public class ConductorStreamSerializerTest extends BaseSerializerTest<ConductorCallStreamSerializer, ConductorCall>
+public class ConductorStreamSerializerTest extends AbstractStreamSerializerTest<ConductorCallStreamSerializer, ConductorCall>
         implements Serializable {
     private static final long serialVersionUID = -8844481298074343953L;
 

@@ -5,9 +5,9 @@ import java.io.Serializable;
 
 import org.junit.Test;
 
-import com.kryptnostic.rhizome.hazelcast.serializers.BaseSerializerTest;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class LambdaSerializersTest extends BaseSerializerTest<LambdaStreamSerializer, Runnable>
+public class LambdaSerializersTest extends AbstractStreamSerializerTest<LambdaStreamSerializer, Runnable>
         implements Serializable {
     private static final long serialVersionUID = -8844481298074343953L;
 
