@@ -1,16 +1,15 @@
-/*
-*	Kryptnostic conductor client
-* 	version is defined in kryptnostic-gradles/kryptnostic.gradle
-*/
-
 plugins {
     id "java"
     id "eclipse"
     id "idea"
     id "jacoco"
+    id 'checkstyle'
+    id 'findbugs'
 }
+
 description = "Kryptnostic Conductor Client"
 group = "com.kryptnostic"
+
 ext.projectName = "kryptnostic-conductor-client"
 ext.scmUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
 ext.connectionUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
@@ -19,7 +18,29 @@ ext.developerConnectionUrl = 'scm:git:https://github.com/dataloom/conductor-clie
 apply from: "https://raw.githubusercontent.com/kryptnostic/gradles/master/kryptnostic.gradle"
 
 sourceCompatibility=JavaVersion.VERSION_1_8
-test { finalizedBy jacocoTestReport }
+
+def versions = [
+  checkstyle: '7.4',
+]
+
+checkstyle {
+  toolVersion = "${versions.checkstyle}"
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+tasks.withType(Checkstyle) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
 dependencies { 
     /*
      * SL4J
