@@ -35,6 +35,9 @@ import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
+import com.dataloom.edm.types.processors.RenameEntitySetProcessor;
+import com.dataloom.edm.types.processors.RenameEntityTypeProcessor;
+import com.dataloom.edm.types.processors.RenamePropertyTypeProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
@@ -356,6 +359,27 @@ public class EdmService implements EdmManager {
         Preconditions.checkArgument( Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty(), "Key property types cannot be removed." );
         entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
     }
+    
+    @Override
+    public void renameEntityType( UUID entityTypeId, FullQualifiedName newFqn ){
+        aclKeyReservations.renameReservation( entityTypeId, newFqn );
+        entityTypes.executeOnKey( entityTypeId, new RenameEntityTypeProcessor( newFqn ) );
+    }
+    
+    @Override
+    public void renamePropertyType( UUID propertyTypeId, FullQualifiedName newFqn ){
+        aclKeyReservations.renameReservation( propertyTypeId, newFqn );
+        propertyTypes.executeOnKey( propertyTypeId, new RenamePropertyTypeProcessor( newFqn ) );
+    }
+    
+    @Override
+    public void renameEntitySet( UUID entitySetId, String newName ){
+        //debug by Ho Chung
+        System.err.println( "New name of entity set: " + newName );
+        aclKeyReservations.renameReservation( entitySetId, newName );
+        entitySets.executeOnKey( entitySetId, new RenameEntitySetProcessor( newName ) );
+    }
+
 
     /**************
      * Validation

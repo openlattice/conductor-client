@@ -51,6 +51,12 @@ public interface EdmManager {
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+    
+    void renamePropertyType( UUID typeId, FullQualifiedName newFqn );
+
+    void renameEntityType( UUID typeId, FullQualifiedName newFqn );
+
+    void renameEntitySet( UUID typeId, String newName );
 
     // Helper methods to check existence
     boolean checkPropertyTypesExist( Set<UUID> properties );
