@@ -2,12 +2,15 @@ package com.kryptnostic.conductor.rpc.serializers;
 
 import java.io.IOException;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.edm.types.processors.RenameEntitySetProcessor;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class RenameEntitySetProcessorStreamSerializer
         implements SelfRegisteringStreamSerializer<RenameEntitySetProcessor> {
 
