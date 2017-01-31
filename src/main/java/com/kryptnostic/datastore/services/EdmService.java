@@ -374,8 +374,6 @@ public class EdmService implements EdmManager {
     
     @Override
     public void renameEntitySet( UUID entitySetId, String newName ){
-        //debug by Ho Chung
-        System.err.println( "New name of entity set: " + newName );
         aclKeyReservations.renameReservation( entitySetId, newName );
         entitySets.executeOnKey( entitySetId, new RenameEntitySetProcessor( newName ) );
     }
