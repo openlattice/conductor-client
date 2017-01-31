@@ -7,11 +7,12 @@ import java.util.UUID;
 import com.dataloom.edm.internal.EntityType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
-public class RemovePropertyTypesFromEntityTypeProcessor extends AbstractRhizomeEntryProcessor<UUID, EntityType, Object> {
+public class RemovePropertyTypesFromEntityTypeProcessor
+        extends AbstractRhizomeEntryProcessor<UUID, EntityType, Object> {
     private static final long serialVersionUID = -8192830001484436836L;
-    private final Set<UUID> propertyTypeIds ;
-    
-    public RemovePropertyTypesFromEntityTypeProcessor(Set<UUID> propertyTypeIds ) {
+    private final Set<UUID>   propertyTypeIds;
+
+    public RemovePropertyTypesFromEntityTypeProcessor( Set<UUID> propertyTypeIds ) {
         this.propertyTypeIds = propertyTypeIds;
     }
 
@@ -25,4 +26,7 @@ public class RemovePropertyTypesFromEntityTypeProcessor extends AbstractRhizomeE
         return null;
     }
 
+    public Set<UUID> getPropertyTypeIds() {
+        return propertyTypeIds;
+    }
 }
