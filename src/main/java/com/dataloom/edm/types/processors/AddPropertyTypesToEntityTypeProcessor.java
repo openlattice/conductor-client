@@ -9,9 +9,9 @@ import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcesso
 
 public class AddPropertyTypesToEntityTypeProcessor extends AbstractRhizomeEntryProcessor<UUID, EntityType, Object> {
     private static final long serialVersionUID = -8192830001484436836L;
-    private final Set<UUID> propertyTypeIds ;
-    
-    public AddPropertyTypesToEntityTypeProcessor(Set<UUID> propertyTypeIds ) {
+    private final Set<UUID>   propertyTypeIds;
+
+    public AddPropertyTypesToEntityTypeProcessor( Set<UUID> propertyTypeIds ) {
         this.propertyTypeIds = propertyTypeIds;
     }
 
@@ -25,4 +25,7 @@ public class AddPropertyTypesToEntityTypeProcessor extends AbstractRhizomeEntryP
         return null;
     }
 
+    public Set<UUID> getPropertyTypeIds() {
+        return propertyTypeIds;
+    }
 }

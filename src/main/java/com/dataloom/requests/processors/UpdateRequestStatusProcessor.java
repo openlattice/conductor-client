@@ -26,4 +26,7 @@ public class UpdateRequestStatusProcessor
         return null;
     }
 
+    public RequestStatus getRequestStatus(){
+        return status;
+    }
 }
