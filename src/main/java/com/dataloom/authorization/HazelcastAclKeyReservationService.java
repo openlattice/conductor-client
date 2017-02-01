@@ -1,12 +1,15 @@
 package com.dataloom.authorization;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.exceptions.AclKeyConflictException;
 import com.dataloom.edm.exceptions.TypeExistsException;
@@ -66,10 +69,36 @@ public class HazelcastAclKeyReservationService {
          * Attempt to associated newName with existing aclKey
          */
 
-        final UUID existingAclKey = aclKeys.putIfAbsent( newName, Util.getSafely( aclKeys, oldName ) );
+        final UUID associatedAclKey = checkNotNull( Util.getSafely( aclKeys, oldName ),
+                "Name " + oldName + " is not being used yet." );
+
+        final UUID existingAclKey = aclKeys.putIfAbsent( newName, associatedAclKey );
 
         if ( existingAclKey == null ) {
             aclKeys.delete( oldName );
+            names.put( associatedAclKey, newName );
+        } else {
+            throw new TypeExistsException(
+                    "Cannot rename " + oldName + " to existing type "
+                            + newName );
+        }
+    }
+
+    public void renameReservation( UUID id, FullQualifiedName newFqn ) {
+        renameReservation( id, Util.fqnToString( newFqn ) );
+    }
+
+    public void renameReservation( UUID id, String newName ) {
+        checkArgument( !RESERVED_NAMES.contains( newName ), "Cannot rename to a reserved name" );
+
+        final String oldName = checkNotNull( Util.getSafely( names, id ),
+                "This aclKey does not correspond to any type." );
+
+        final UUID existingAclKey = aclKeys.putIfAbsent( newName, id );
+
+        if ( existingAclKey == null ) {
+            aclKeys.delete( oldName );
+            names.put( id, newName );
         } else {
             throw new TypeExistsException(
                     "Cannot rename " + oldName + " to existing type "
