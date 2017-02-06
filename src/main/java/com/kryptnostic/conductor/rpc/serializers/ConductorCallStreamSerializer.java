@@ -1,6 +1,7 @@
 package com.kryptnostic.conductor.rpc.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.dataloom.organization.Organization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -39,7 +40,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
                             new StdInstantiatorStrategy() ) );
             kryo.register( Object[].class );
             kryo.register( java.lang.Class.class );
-
+            kryo.register( Organization.class );
             // Shared Lambdas
             kryo.register( Lambdas.class );
             kryo.register( GetAllEntitiesOfTypeLambda.class );

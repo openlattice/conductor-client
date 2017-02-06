@@ -15,6 +15,7 @@ import com.dataloom.authorization.Principals;
 import com.dataloom.data.requests.LookupEntitiesRequest;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.organization.Organization;
 import com.google.common.base.Optional;
 
 public class Lambdas implements Serializable {
@@ -64,5 +65,31 @@ public class Lambdas implements Serializable {
     public static Function<ConductorSparkApi, Boolean> deleteEntitySet( UUID entitySetId ) {
     	return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
     			.deleteEntitySet( entitySetId );
+    }
+    
+    public static Function<ConductorSparkApi, Boolean> createOrganization( Organization organization, Principal principal ) {
+        return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
+                .createOrganization( organization, principal );
+    }
+    
+    public static Function<ConductorSparkApi, List<Map<String, Object>>> executeOrganizationKeywordSearch( String searchTerm ) {
+        Set<Principal> principals = Principals.getCurrentPrincipals();
+        return (Function<ConductorSparkApi, List<Map<String, Object>>> & Serializable) ( api ) -> api
+                .executeOrganizationKeywordSearch( searchTerm, principals ); 
+    }
+    
+    public static Function<ConductorSparkApi, Boolean> updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription ) {
+        return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
+                .updateOrganization( id, optionalTitle, optionalDescription );
+    }
+    
+    public static Function<ConductorSparkApi, Boolean> deleteOrganization( UUID organizationId ) {
+        return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
+                .deleteOrganization( organizationId );
+    }
+    
+    public static Function<ConductorSparkApi, Boolean> updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions ) {
+        return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
+                .updateOrganizationPermissions( organizationId, principal, permissions );
     }
 }

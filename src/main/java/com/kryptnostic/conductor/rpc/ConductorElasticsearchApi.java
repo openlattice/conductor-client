@@ -9,13 +9,11 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.organization.Organization;
 import com.google.common.base.Optional;
 
 public interface ConductorElasticsearchApi {
 	
-	// index setup consts
-	final String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
-	final String ENTITY_SET_TYPE = "entity_set";
 	final String ES_PROPERTIES = "properties";
 	final String PARENT = "_parent";
 	final String TYPE = "type";
@@ -24,6 +22,16 @@ public interface ConductorElasticsearchApi {
 	final String KEYWORD = "keyword";
 	final String NUM_SHARDS = "index.number_of_shards";
 	final String NUM_REPLICAS = "index.number_of_replicas";
+	
+	// index setup consts
+    final String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
+    final String ENTITY_SET_TYPE = "entity_set";
+    
+    // organizations setup consts
+    final String ORGANIZATIONS = "organizations";
+    final String ORGANIZATION = "organization";
+    final String ORGANIZATION_TYPE = "organizationType";
+    final String ORGANIZATION_ID = "organizationId";
 	
 	// entity set field consts
 	final String TYPE_FIELD = "_type";
@@ -39,6 +47,8 @@ public interface ConductorElasticsearchApi {
 
 	Boolean initializeEntitySetDataModelIndex();
 	
+	Boolean initializeOrganizationIndex();
+	
 	Boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 	
 	Boolean deleteEntitySet( UUID entitySetId );
@@ -53,4 +63,14 @@ public interface ConductorElasticsearchApi {
 	
 	Boolean updatePropertyTypesInEntitySet( UUID entitySetId, Set<PropertyType> newPropertyTypes );
 	
+	Boolean createOrganization( Organization organization, Principal principal );
+	
+	Boolean updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions );
+	
+	Boolean deleteOrganization( UUID organizationId );
+	
+	List<Map<String, Object>> executeOrganizationSearch( String searchTerm, Set<Principal> principals );
+	
+	Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
+		
 }
