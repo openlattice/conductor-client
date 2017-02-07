@@ -217,7 +217,7 @@ public class EdmService implements EdmManager {
 
     private void createEntitySet( EntitySet entitySet ) {
         ensureValidEntitySet( entitySet );
-        
+
         aclKeyReservations.reserveIdAndValidateType( entitySet );
 
         checkState( entitySets.putIfAbsent( entitySet.getId(), entitySet ) == null, "Entity set already exists." );
@@ -272,7 +272,8 @@ public class EdmService implements EdmManager {
         } else if ( FullQualifiedName.class.isAssignableFrom( o.getClass() ) ) {
             names = Util.fqnToString( (Set<FullQualifiedName>) fqnsOrNames );
         } else {
-            throw new IllegalArgumentException( "Unable to retrieve Acl Keys for this type: " + o.getClass().getSimpleName() );
+            throw new IllegalArgumentException(
+                    "Unable to retrieve Acl Keys for this type: " + o.getClass().getSimpleName() );
         }
         return ImmutableSet.copyOf( aclKeys.getAll( names ).values() );
     }
@@ -334,7 +335,8 @@ public class EdmService implements EdmManager {
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
         return Preconditions.checkNotNull(
                 Util.getSafely( propertyTypes, Util.getSafely( aclKeys, Util.fqnToString( propertyType ) ) ),
-                "Property type %s does not exist", propertyType.getFullQualifiedNameAsString() );
+                "Property type %s does not exist",
+                propertyType.getFullQualifiedNameAsString() );
     }
 
     @Override
@@ -356,28 +358,29 @@ public class EdmService implements EdmManager {
     @Override
     public void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
-        Preconditions.checkArgument( Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty(), "Key property types cannot be removed." );
+        Preconditions.checkArgument(
+                Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty(),
+                "Key property types cannot be removed." );
         entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
     }
-    
+
     @Override
-    public void renameEntityType( UUID entityTypeId, FullQualifiedName newFqn ){
+    public void renameEntityType( UUID entityTypeId, FullQualifiedName newFqn ) {
         aclKeyReservations.renameReservation( entityTypeId, newFqn );
         entityTypes.executeOnKey( entityTypeId, new RenameEntityTypeProcessor( newFqn ) );
     }
-    
+
     @Override
-    public void renamePropertyType( UUID propertyTypeId, FullQualifiedName newFqn ){
+    public void renamePropertyType( UUID propertyTypeId, FullQualifiedName newFqn ) {
         aclKeyReservations.renameReservation( propertyTypeId, newFqn );
         propertyTypes.executeOnKey( propertyTypeId, new RenamePropertyTypeProcessor( newFqn ) );
     }
-    
+
     @Override
-    public void renameEntitySet( UUID entitySetId, String newName ){
+    public void renameEntitySet( UUID entitySetId, String newName ) {
         aclKeyReservations.renameReservation( entitySetId, newName );
         entitySets.executeOnKey( entitySetId, new RenameEntitySetProcessor( newName ) );
     }
-
 
     /**************
      * Validation
@@ -400,13 +403,13 @@ public class EdmService implements EdmManager {
     }
 
     private void ensureValidPropertyType( PropertyType propertyType ) {
-            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getNamespace() ),
-                    "Namespace for Property Type is missing" );
-            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getName() ),
-                    "Name of Property Type is missing" );
-            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getTitle() ),
-                    "Title of Property Type is missing" );
-            Preconditions.checkArgument( propertyType.getDatatype() != null, "Datatype of Property Type is missing" );
+        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getNamespace() ),
+                "Namespace for Property Type is missing" );
+        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getName() ),
+                "Name of Property Type is missing" );
+        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getTitle() ),
+                "Title of Property Type is missing" );
+        Preconditions.checkArgument( propertyType.getDatatype() != null, "Datatype of Property Type is missing" );
     }
 
     private void ensureValidEntitySet( EntitySet entitySet ) {
@@ -499,6 +502,12 @@ public class EdmService implements EdmManager {
     @Override
     public <V> Map<UUID, V> fromPropertyTypes( Set<UUID> propertyTypeIds, EntryProcessor<UUID, PropertyType> ep ) {
         return (Map<UUID, V>) propertyTypes.executeOnKeys( propertyTypeIds, ep );
+    }
+
+    @Override
+    public Set<UUID> getPropertyTypeUuidsOfEntityTypeWithPIIField( UUID entityTypeId ) {
+        return getEntityType( entityTypeId ).getProperties().stream()
+                .filter( ptId -> getPropertyType( ptId ).isPIIfield() ).collect( Collectors.toSet() );
     }
 
 }
