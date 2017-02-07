@@ -31,6 +31,7 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
             FullQualifiedNameStreamSerializer.serialize( out, schema );
         } );
         out.writeInt( object.getDatatype().ordinal() );
+        out.writeBoolean( object.isPIIfield() );
     }
 
     @Override
@@ -43,7 +44,8 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
             return FullQualifiedNameStreamSerializer.deserialize( dataInput );
         } );
         EdmPrimitiveTypeKind datatype = edmTypes[ in.readInt() ];
-        return new PropertyType( id, type, title, description, schemas, datatype );
+        boolean piiField = in.readBoolean();
+        return new PropertyType( id, type, title, description, schemas, datatype, piiField );
     }
 
     @Override
