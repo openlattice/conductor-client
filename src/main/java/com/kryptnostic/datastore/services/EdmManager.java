@@ -93,4 +93,6 @@ public interface EdmManager {
 
     <V> Map<UUID, V> fromPropertyTypes( Set<UUID> propertyTypeIds, EntryProcessor<UUID, PropertyType> ep );
 
+    Set<UUID> getPropertyTypeUuidsOfEntityTypeWithPIIField( UUID entityTypeId );
+
 }
