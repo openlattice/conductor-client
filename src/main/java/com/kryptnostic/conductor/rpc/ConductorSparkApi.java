@@ -46,8 +46,6 @@ public interface ConductorSparkApi {
 	Boolean submitEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 	
 	Boolean deleteEntitySet( UUID entitySetId );
-
-	Boolean submitEntitySetDataToElasticsearch( EntitySet entitySet, Dataset<Row> entitySetData );
 	
 	List<Map<String, Object>> executeElasticsearchMetadataQuery(
 			Optional<String> query,
@@ -58,5 +56,7 @@ public interface ConductorSparkApi {
 	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
 	
 	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
+	
+	List<Map<String, Object>> executeEntitySetDataSearch( UUID entitySetId, String searchTerm, Set<UUID> authorizedPropertyTypes );
 	
 }

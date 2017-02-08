@@ -13,6 +13,7 @@ import com.kryptnostic.conductor.rpc.ConductorSparkApi;
 import com.kryptnostic.conductor.rpc.EntityDataLambdas;
 import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import com.kryptnostic.conductor.rpc.Lambdas;
+import com.kryptnostic.conductor.rpc.SearchEntitySetDataLambda;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.springframework.stereotype.Component;
@@ -44,6 +45,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
             kryo.register( Lambdas.class );
             kryo.register( GetAllEntitiesOfTypeLambda.class );
             kryo.register( EntityDataLambdas.class );
+            kryo.register( SearchEntitySetDataLambda.class );
             kryo.register( SerializedLambda.class );
 
             // always needed for closure serialization, also if

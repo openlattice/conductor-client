@@ -25,8 +25,10 @@ public interface ConductorElasticsearchApi {
 	final String NUM_SHARDS = "index.number_of_shards";
 	final String NUM_REPLICAS = "index.number_of_replicas";
 	
-	final String ENTITY_SET_DATA = "entity_set_data";
-	final String ENTITY_DATA_TYPE = "entity_data";
+	final String SECURABLE_OBJECT_INDEX_PREFIX = "securable_object_";
+	final String SECURABLE_OBJECT_ROW_TYPE = "securable_object_row";
+	final String ACL_KEY = "aclKey";
+	final String PROPERTY_TYPE_ID = "propertyTypeId";
 	
 	// entity set field consts
 	final String TYPE_FIELD = "_type";
@@ -41,8 +43,6 @@ public interface ConductorElasticsearchApi {
 	final String ID = "id";
 
 	Boolean initializeEntitySetDataModelIndex();
-	
-	Boolean initializeEntitySetDataIndex();
 	
 	Boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 	
@@ -59,7 +59,7 @@ public interface ConductorElasticsearchApi {
 	Boolean updatePropertyTypesInEntitySet( UUID entitySetId, Set<PropertyType> newPropertyTypes );
 	
 	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
-	
-	List<Map<String, Object>> executeEntityDataQuery( String keywordSearchTerm );
+	    
+    List<Map<String, Object>> executeEntitySetDataSearch( UUID entitySetId, String searchTerm, Set<UUID> authorizedPropertyTypes );
 	
 }
