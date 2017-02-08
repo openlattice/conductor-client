@@ -44,7 +44,7 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
             return FullQualifiedNameStreamSerializer.deserialize( dataInput );
         } );
         EdmPrimitiveTypeKind datatype = edmTypes[ in.readInt() ];
-        boolean piiField = in.readBoolean();
+        Optional<Boolean> piiField = Optional.of( in.readBoolean() );
         return new PropertyType( id, type, title, description, schemas, datatype, piiField );
     }
 
