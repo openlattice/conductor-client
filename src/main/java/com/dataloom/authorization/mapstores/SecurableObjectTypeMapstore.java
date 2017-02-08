@@ -53,10 +53,4 @@ public class SecurableObjectTypeMapstore extends AbstractStructuredCassandraPart
     public SecurableObjectType generateTestValue() {
         return SecurableObjectType.EntitySet;
     }
-    
-    @Override
-    protected RegularStatement loadQuery(){
-        return tableBuilder.buildLoadByPartitionKeyQueryWithStaticColumns();
-    }
-
 }
