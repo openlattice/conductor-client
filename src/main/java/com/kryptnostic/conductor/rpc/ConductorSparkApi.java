@@ -53,6 +53,10 @@ public interface ConductorSparkApi {
 			Optional<Set<UUID>> optionalPropertyTypes,
 			Set<Principal> principals );
 	
+	Boolean updateEntitySetMetadata( EntitySet entitySet );
+
+	Boolean updatePropertyTypesInEntitySet( UUID entitySetId, Set<PropertyType> newPropertyTypes );
+	
 	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
 	
 	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
