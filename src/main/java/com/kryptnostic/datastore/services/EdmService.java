@@ -6,10 +6,13 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import javax.inject.Inject;
 
@@ -132,9 +135,9 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deletePropertyType( UUID propertyTypeId ) {
-        Set<EntityType> entityTypes = entityTypeManager
-                .getEntityTypesContainingPropertyTypes( ImmutableSet.of( propertyTypeId ) );
-        if ( entityTypes.stream()
+        Stream<EntityType> entityTypes = entityTypeManager
+                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) );
+        if ( entityTypes
                 .allMatch( et -> Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( et.getId() ) ) ) ) {
             propertyTypes.delete( propertyTypeId );
         }
@@ -375,6 +378,14 @@ public class EdmService implements EdmManager {
     public void renamePropertyType( UUID propertyTypeId, FullQualifiedName newFqn ) {
         aclKeyReservations.renameReservation( propertyTypeId, newFqn );
         propertyTypes.executeOnKey( propertyTypeId, new RenamePropertyTypeProcessor( newFqn ) );
+        //get all entity sets containing the property type, and re-index them.
+        entityTypeManager
+        .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) )
+        .forEach( et -> {
+            List<PropertyType> properties = Lists.newArrayList( propertyTypes.getAll( et.getProperties() ).values() );
+            entitySetManager.getAllEntitySetsForType( et.getId() )
+            .forEach( es -> eventBus.post( new PropertyTypesInEntitySetUpdatedEvent( es.getId(), properties ) ) );
+        });
     }
 
     @Override

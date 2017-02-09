@@ -3,6 +3,7 @@ package com.dataloom.edm.properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.spark_project.guava.collect.Iterables;
@@ -75,11 +76,15 @@ public class CassandraTypeManager {
     }
 
     public Set<EntityType> getEntityTypesContainingPropertyTypes( Set<UUID> properties ) {
+        return getEntityTypesContainingPropertyTypesAsStream( properties )
+                .collect( Collectors.toSet() );
+    }
+
+    public Stream<EntityType> getEntityTypesContainingPropertyTypesAsStream( Set<UUID> properties ) {
         return properties.stream().map( this::getEntityTypesContainingPropertyType )
                 .map( ResultSetFuture::getUninterruptibly )
                 .map( rs -> Iterables.transform( rs, RowAdapters::entityType ).spliterator() )
-                .flatMap( si -> StreamSupport.stream( si, false ) )
-                .collect( Collectors.toSet() );
+                .flatMap( si -> StreamSupport.stream( si, false ) );
     }
 
     private ResultSetFuture getEntityTypesContainingPropertyType( UUID propertyId ) {
