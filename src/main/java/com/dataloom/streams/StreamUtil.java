@@ -27,6 +27,6 @@ public class StreamUtil {
 
     public static Stream<Row> getRowsAndFlatten( Stream<ResultSetFuture> stream ) {
         return stream.map( ResultSetFuture::getUninterruptibly )
-                .flatMap( rs -> StreamSupport.stream( rs.spliterator(), false ) );
+                .flatMap( StreamUtil::stream );
     }
 }

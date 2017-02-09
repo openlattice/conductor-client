@@ -20,22 +20,6 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 public class PermissionsRequestsUtils {
     private PermissionsRequestsUtils() {}
 
-    /**
-     * Useful adapter for {@code Iterables#transform(Iterable, com.google.common.base.Function)} that allows lazy
-     * evaluation of result set future. See the same function in AuthorizationUtils as well.
-     * 
-     * @param rsf The result set future to make a lazy evaluated iterator
-     * @return The lazy evaluatable iterable
-     */
-    public static Iterable<Row> makeLazy( ResultSetFuture rsf ) {
-        return getRowsAndFlatten( Stream.of( rsf ) )::iterator;
-    }
-
-    public static Stream<Row> getRowsAndFlatten( Stream<ResultSetFuture> stream ) {
-        return stream.map( ResultSetFuture::getUninterruptibly )
-                .flatMap( rs -> StreamSupport.stream( rs.spliterator(), false ) );
-    }
-
     public static PermissionsRequest getPRFromRow( Row row ) {
         final List<UUID> aclRoot = RowAdapters.aclRoot( row );
         final Principal user = new Principal( PrincipalType.USER, RowAdapters.principalId( row ) );
