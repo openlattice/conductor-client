@@ -381,7 +381,7 @@ public class EdmService implements EdmManager {
     public void renameEntitySet( UUID entitySetId, String newName ) {
         aclKeyReservations.renameReservation( entitySetId, newName );
         entitySets.executeOnKey( entitySetId, new RenameEntitySetProcessor( newName ) );
-        eventBus.post( new EntitySetMetadataUpdatedEvent( entitySetManager.getEntitySet( newName ) ) );
+        eventBus.post( new EntitySetMetadataUpdatedEvent( getEntitySet( entitySetId ) ) );
     }
 
     /**************
