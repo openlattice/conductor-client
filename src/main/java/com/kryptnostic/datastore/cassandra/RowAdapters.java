@@ -104,7 +104,8 @@ public final class RowAdapters {
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
         EdmPrimitiveTypeKind dataType = row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class );
-        return new PropertyType( id, type, title, description, schemas, dataType );
+        Optional<Boolean> piiField = Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) );
+        return new PropertyType( id, type, title, description, schemas, dataType, piiField );
     }
 
     public static EntityType entityType( Row row ) {
