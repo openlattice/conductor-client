@@ -98,7 +98,7 @@ public class Lambdas implements Serializable {
                 .updateEntitySetMetadata( entitySet );
     }
 
-    public static Function<ConductorSparkApi, Boolean> updatePropertyTypesInEntitySet( UUID entitySetId, Set<PropertyType> newPropertyTypes ) {
+    public static Function<ConductorSparkApi, Boolean> updatePropertyTypesInEntitySet( UUID entitySetId, List<PropertyType> newPropertyTypes ) {
         return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
                 .updatePropertyTypesInEntitySet( entitySetId, newPropertyTypes );
     }
