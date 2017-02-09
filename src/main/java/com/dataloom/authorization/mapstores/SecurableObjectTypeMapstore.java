@@ -1,22 +1,20 @@
 package com.dataloom.authorization.mapstores;
 
-import java.util.List;
-import java.util.UUID;
-
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.RegularStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
-public class SecurableObjectTypeMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<List<UUID>, SecurableObjectType>{
+import java.util.List;
+import java.util.UUID;
+
+public class SecurableObjectTypeMapstore
+        extends AbstractStructuredCassandraPartitionKeyValueStore<List<UUID>, SecurableObjectType> {
 
     public SecurableObjectTypeMapstore( Session session ) {
         super( HazelcastMap.SECURABLE_OBJECT_TYPES.name(), session, Tables.PERMISSIONS.getBuilder() );
@@ -39,11 +37,20 @@ public class SecurableObjectTypeMapstore extends AbstractStructuredCassandraPart
     }
 
     @Override
+    protected RegularStatement storeQuery() {
+        return QueryBuilder
+                .update( Tables.PERMISSIONS.getKeyspace(), Tables.PERMISSIONS.getName() )
+                .with( QueryBuilder.set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
+                        CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) )
+                .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(), CommonColumns.ACL_KEYS.bindMarker() ) );
+    }
+
+    @Override
     protected SecurableObjectType mapValue( ResultSet rs ) {
         Row row = rs.one();
         return row == null ? null : AuthorizationUtils.securableObjectType( row );
     }
-    
+
     @Override
     public List<UUID> generateTestKey() {
         return ImmutableList.of( UUID.randomUUID() );
