@@ -38,7 +38,8 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
                 .setString( CommonColumns.TITLE.cql(), value.getTitle() )
                 .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() )
                 .setSet( CommonColumns.SCHEMAS.cql(), value.getSchemas(), FullQualifiedName.class )
-                .set( CommonColumns.DATATYPE.cql(), value.getDatatype(), EdmPrimitiveTypeKind.class );
+                .set( CommonColumns.DATATYPE.cql(), value.getDatatype(), EdmPrimitiveTypeKind.class )
+                .setBool( CommonColumns.PII_FIELD.cql(), value.isPIIfield() );
     }
 
     @Override
@@ -60,7 +61,8 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
                 row.getString( CommonColumns.TITLE.cql() ),
                 Optional.of( row.getString( CommonColumns.DESCRIPTION.cql() ) ),
                 row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class ),
-                row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class ) );
+                row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class ),
+                Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) ) );
     }
 
     @Override

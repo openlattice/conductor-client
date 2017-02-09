@@ -5,6 +5,8 @@ import com.dataloom.auditing.mapstores.LeaderboardMapstore;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
+import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
@@ -31,6 +33,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import javax.inject.Inject;
+
+import java.util.List;
 import java.util.UUID;
 
 @Configuration
@@ -45,6 +49,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
         return new PermissionMapstore( session );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<List<UUID>, SecurableObjectType> securableObjectTypeMapstore() {
+        return new SecurableObjectTypeMapstore( session );
     }
 
     @Bean

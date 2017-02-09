@@ -1,6 +1,7 @@
 package com.kryptnostic.conductor.rpc.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.dataloom.organization.Organization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
@@ -10,13 +11,14 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.conductor.rpc.ConductorCall;
 import com.kryptnostic.conductor.rpc.ConductorSparkApi;
+import com.kryptnostic.conductor.rpc.EntityDataLambdas;
 import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import com.kryptnostic.conductor.rpc.Lambdas;
+import com.kryptnostic.conductor.rpc.SearchEntitySetDataLambda;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,10 +41,12 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
                             new StdInstantiatorStrategy() ) );
             kryo.register( Object[].class );
             kryo.register( java.lang.Class.class );
-
+            kryo.register( Organization.class );
             // Shared Lambdas
             kryo.register( Lambdas.class );
             kryo.register( GetAllEntitiesOfTypeLambda.class );
+            kryo.register( EntityDataLambdas.class );
+            kryo.register( SearchEntitySetDataLambda.class );
             kryo.register( SerializedLambda.class );
 
             // always needed for closure serialization, also if

@@ -118,7 +118,8 @@ public enum Tables implements TableDef {
                         .columns( TITLE,
                                 DESCRIPTION,
                                 CommonColumns.SCHEMAS,
-                                DATATYPE )
+                                DATATYPE,
+                                PII_FIELD )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case PERMISSIONS:
                 // TODO: Once Cassandra fixes SASI + Collection column inde
