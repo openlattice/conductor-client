@@ -27,6 +27,7 @@ import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
+import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
@@ -380,6 +381,7 @@ public class EdmService implements EdmManager {
     public void renameEntitySet( UUID entitySetId, String newName ) {
         aclKeyReservations.renameReservation( entitySetId, newName );
         entitySets.executeOnKey( entitySetId, new RenameEntitySetProcessor( newName ) );
+        eventBus.post( new EntitySetMetadataUpdatedEvent( entitySetManager.getEntitySet( newName ) ) );
     }
 
     /**************
