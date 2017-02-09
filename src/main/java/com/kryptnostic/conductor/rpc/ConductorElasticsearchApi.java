@@ -66,6 +66,8 @@ public interface ConductorElasticsearchApi {
 	
 	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
 	
+	Boolean updateEntitySetMetadata( EntitySet entitySet );
+	
 	Boolean updatePropertyTypesInEntitySet( UUID entitySetId, Set<PropertyType> newPropertyTypes );
 	
 	Boolean createOrganization( Organization organization, Principal principal );
