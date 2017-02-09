@@ -1,23 +1,6 @@
 package com.dataloom.organizations;
 
-import com.dataloom.authorization.*;
-import com.dataloom.directory.UserDirectoryService;
-import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organization.Organization;
-import com.dataloom.organizations.processors.EmailDomainsMerger;
-import com.dataloom.organizations.processors.EmailDomainsRemover;
-import com.dataloom.organizations.processors.PrincipalMerger;
-import com.dataloom.organizations.processors.PrincipalRemover;
-import com.datastax.driver.core.Session;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
-import com.kryptnostic.datastore.util.Util;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -27,9 +10,42 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import javax.inject.Inject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.dataloom.authorization.AuthorizationManager;
+import com.dataloom.authorization.HazelcastAclKeyReservationService;
+import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
+import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.directory.UserDirectoryService;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.organization.Organization;
+import com.dataloom.organizations.events.OrganizationCreatedEvent;
+import com.dataloom.organizations.events.OrganizationDeletedEvent;
+import com.dataloom.organizations.events.OrganizationUpdatedEvent;
+import com.dataloom.organizations.processors.EmailDomainsMerger;
+import com.dataloom.organizations.processors.EmailDomainsRemover;
+import com.dataloom.organizations.processors.PrincipalMerger;
+import com.dataloom.organizations.processors.PrincipalRemover;
+import com.datastax.driver.core.Session;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.eventbus.EventBus;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.util.Util;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 
 public class HazelcastOrganizationService {
+    
+    @Inject
+    private EventBus                     eventBus;
+    
     private static final Logger logger = LoggerFactory
             .getLogger( HazelcastOrganizationService.class );
 
@@ -82,6 +98,7 @@ public class HazelcastOrganizationService {
                 DelegatedStringSet.wrap( organization.getAutoApprovedEmails() ) );
         membersOf.set( organizationId, PrincipalSet.wrap( organization.getMembers() ) );
         rolesOf.set( organizationId, PrincipalSet.wrap( organization.getRoles() ) );
+        eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
 
     }
 
@@ -111,14 +128,17 @@ public class HazelcastOrganizationService {
     public void destroyOrganization( UUID organizationId ) {
         allMaps.stream().forEach( m -> m.delete( organizationId ) );
         reservations.release( organizationId );
+        eventBus.post( new OrganizationDeletedEvent( organizationId ) );
     }
 
     public void updateTitle( UUID organizationId, String title ) {
         titles.set( organizationId, title );
+        eventBus.post( new OrganizationUpdatedEvent( organizationId, Optional.of( title ), Optional.absent() ) );
     }
 
     public void updateDescription( UUID organizationId, String description ) {
         descriptions.set( organizationId, description );
+        eventBus.post( new OrganizationUpdatedEvent( organizationId, Optional.absent(), Optional.of( description ) ) );
     }
 
     public Set<String> getAutoApprovedEmailDomains( UUID organizationId ) {

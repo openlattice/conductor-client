@@ -15,6 +15,7 @@ import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.SecurableObjectType;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
@@ -45,6 +46,10 @@ public final class AuthorizationUtils {
 
     public static EnumSet<Permission> permissions( Row row ) {
         return row.get( CommonColumns.PERMISSIONS.cql(), EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
+    }
+    
+    public static SecurableObjectType securableObjectType( Row row ) {
+        return row.get( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), SecurableObjectType.class );
     }
 
     /**

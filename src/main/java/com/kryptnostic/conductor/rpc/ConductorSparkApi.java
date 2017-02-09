@@ -15,6 +15,7 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.data.requests.LookupEntitiesRequest;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.organization.Organization;
 import com.google.common.base.Optional;
 import com.google.common.collect.SetMultimap;
 
@@ -59,6 +60,16 @@ public interface ConductorSparkApi {
 	
 	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
 	
+	Boolean createOrganization( Organization organization, Principal principal );
+	
+	List<Map<String, Object>> executeOrganizationKeywordSearch( String searchTerm, Set<Principal> principals );
+	
+	Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
+	
+	Boolean deleteOrganization( UUID organizationId );
+	
+	Boolean updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions );
+
 	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
 	
 	List<Map<String, Object>> executeEntitySetDataSearch( UUID entitySetId, String searchTerm, Set<UUID> authorizedPropertyTypes );
