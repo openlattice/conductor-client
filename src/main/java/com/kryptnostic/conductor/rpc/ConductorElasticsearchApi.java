@@ -32,6 +32,11 @@ public interface ConductorElasticsearchApi {
     final String ORGANIZATION = "organization";
     final String ORGANIZATION_TYPE = "organizationType";
     final String ORGANIZATION_ID = "organizationId";
+
+	final String SECURABLE_OBJECT_INDEX_PREFIX = "securable_object_";
+	final String SECURABLE_OBJECT_ROW_TYPE = "securable_object_row";
+	final String ACL_KEY = "aclKey";
+	final String PROPERTY_TYPE_ID = "propertyTypeId";
 	
 	// entity set field consts
 	final String TYPE_FIELD = "_type";
@@ -73,4 +78,8 @@ public interface ConductorElasticsearchApi {
 	
 	Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
 		
+	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
+	    
+    List<Map<String, Object>> executeEntitySetDataSearch( UUID entitySetId, String searchTerm, Set<UUID> authorizedPropertyTypes );
+	
 }

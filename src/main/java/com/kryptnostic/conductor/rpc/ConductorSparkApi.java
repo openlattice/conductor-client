@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Map.Entry;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.spark.sql.Dataset;
@@ -16,6 +17,7 @@ import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.PropertyType;
 import com.dataloom.organization.Organization;
 import com.google.common.base.Optional;
+import com.google.common.collect.SetMultimap;
 
 public interface ConductorSparkApi {
 
@@ -45,8 +47,6 @@ public interface ConductorSparkApi {
 	Boolean submitEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 	
 	Boolean deleteEntitySet( UUID entitySetId );
-
-	Boolean submitEntitySetDataToElasticsearch( EntitySet entitySet, Dataset<Row> entitySetData );
 	
 	List<Map<String, Object>> executeElasticsearchMetadataQuery(
 			Optional<String> query,
@@ -65,5 +65,9 @@ public interface ConductorSparkApi {
 	Boolean deleteOrganization( UUID organizationId );
 	
 	Boolean updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions );
+
+	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
+	
+	List<Map<String, Object>> executeEntitySetDataSearch( UUID entitySetId, String searchTerm, Set<UUID> authorizedPropertyTypes );
 	
 }
