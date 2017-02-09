@@ -63,7 +63,8 @@ public enum CommonColumns implements ColumnDef {
     USERID( DataType.text() ),
     BLOCK( DataType.blob() ),
     COUNT( DataType.bigint() ),
-    ACL_KEY_VALUE( DataType.frozenList( DataType.uuid() ) );
+    ACL_KEY_VALUE( DataType.frozenList( DataType.uuid() ) ),
+    PII_FIELD( DataType.cboolean() );
 
     private final DataType type;
 
