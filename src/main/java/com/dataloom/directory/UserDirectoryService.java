@@ -3,7 +3,10 @@ package com.dataloom.directory;
 import com.dataloom.client.RetrofitFactory;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.google.common.collect.*;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.Auth0ManagementApi;
@@ -40,7 +43,8 @@ public class UserDirectoryService {
 
         Set<Auth0UserBasic> users = Sets.newHashSet();
         for ( Set<Auth0UserBasic> pageOfUsers = auth0ManagementApi.getAllUsers( page, 100 );
-              pageOfUsers.size() == 100; pageOfUsers = auth0ManagementApi.getAllUsers( page++, 100 ) ) {
+              users.isEmpty() || pageOfUsers.size() == 100; pageOfUsers = auth0ManagementApi
+                .getAllUsers( page++, 100 ) ) {
             users.addAll( pageOfUsers );
         }
 
