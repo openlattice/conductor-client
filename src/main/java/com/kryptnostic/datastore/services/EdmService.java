@@ -1,15 +1,15 @@
 package com.kryptnostic.datastore.services;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -28,7 +28,7 @@ import com.dataloom.authorization.SecurableObjectType;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
-import com.dataloom.edm.exceptions.TypeNotFoundException;
+import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
 import com.dataloom.edm.internal.EntitySet;
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
@@ -40,7 +40,6 @@ import com.dataloom.edm.types.processors.RenameEntitySetProcessor;
 import com.dataloom.edm.types.processors.RenameEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RenamePropertyTypeProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -132,9 +131,9 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deletePropertyType( UUID propertyTypeId ) {
-        Set<EntityType> entityTypes = entityTypeManager
-                .getEntityTypesContainingPropertyTypes( ImmutableSet.of( propertyTypeId ) );
-        if ( entityTypes.stream()
+        Stream<EntityType> entityTypes = entityTypeManager
+                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) );
+        if ( entityTypes
                 .allMatch( et -> Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( et.getId() ) ) ) ) {
             propertyTypes.delete( propertyTypeId );
         }
@@ -375,6 +374,16 @@ public class EdmService implements EdmManager {
     public void renamePropertyType( UUID propertyTypeId, FullQualifiedName newFqn ) {
         aclKeyReservations.renameReservation( propertyTypeId, newFqn );
         propertyTypes.executeOnKey( propertyTypeId, new RenamePropertyTypeProcessor( newFqn ) );
+        // get all entity sets containing the property type, and re-index them.
+        entityTypeManager
+                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) )
+                .forEach( et -> {
+                    List<PropertyType> properties = Lists
+                            .newArrayList( propertyTypes.getAll( et.getProperties() ).values() );
+                    entitySetManager.getAllEntitySetsForType( et.getId() )
+                            .forEach( es -> eventBus
+                                    .post( new PropertyTypesInEntitySetUpdatedEvent( es.getId(), properties ) ) );
+                } );
     }
 
     @Override

@@ -3,17 +3,17 @@ package com.dataloom.edm.properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
-
-import org.spark_project.guava.collect.Iterables;
+import java.util.stream.Stream;
 
 import com.dataloom.edm.internal.EntityType;
 import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
@@ -75,11 +75,13 @@ public class CassandraTypeManager {
     }
 
     public Set<EntityType> getEntityTypesContainingPropertyTypes( Set<UUID> properties ) {
-        return properties.stream().map( this::getEntityTypesContainingPropertyType )
-                .map( ResultSetFuture::getUninterruptibly )
-                .map( rs -> Iterables.transform( rs, RowAdapters::entityType ).spliterator() )
-                .flatMap( si -> StreamSupport.stream( si, false ) )
+        return getEntityTypesContainingPropertyTypesAsStream( properties )
                 .collect( Collectors.toSet() );
+    }
+
+    public Stream<EntityType> getEntityTypesContainingPropertyTypesAsStream( Set<UUID> properties ) {
+        Stream<ResultSetFuture> rsfs = properties.stream().map( this::getEntityTypesContainingPropertyType );
+        return StreamUtil.getRowsAndFlatten( rsfs ).map( RowAdapters::entityType );
     }
 
     private ResultSetFuture getEntityTypesContainingPropertyType( UUID propertyId ) {
