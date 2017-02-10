@@ -13,7 +13,7 @@ public interface Auth0ManagementApi {
 
     String USERS = "users";
     String PAGE = "page";
-    String PER_PAGE = "perPage";
+    String PER_PAGE = "per_page";
 
     String USER_ID      = "userId";
     String USER_ID_PATH = "{" + USER_ID + "}";
