@@ -1,25 +1,29 @@
 package com.dataloom.directory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.util.Collection;
-import java.util.Map;
-
-import javax.ws.rs.NotSupportedException;
-
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.datastore.services.Auth0ManagementApi;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.NotSupportedException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Auth0Mapstore implements TestableSelfRegisteringMapStore<String, Auth0UserBasic> {
+    private static final Logger logger = LoggerFactory.getLogger( Auth0Mapstore.class );
     private final Auth0ManagementApi auth0;
-    private HazelcastMap             map;
+    private       HazelcastMap       map;
 
     public Auth0Mapstore( HazelcastMap map, Auth0ManagementApi auth0 ) {
         this.auth0 = checkNotNull( auth0, "Auth0 management api cannot be null" );
@@ -58,7 +62,7 @@ public class Auth0Mapstore implements TestableSelfRegisteringMapStore<String, Au
 
     @Override
     public Iterable<String> loadAllKeys() {
-        return auth0.getAllUsers().stream().map( Auth0UserBasic::getUserId )::iterator;
+        return getAllUsers().stream().map( Auth0UserBasic::getUserId )::iterator;
     }
 
     @Override
@@ -93,5 +97,23 @@ public class Auth0Mapstore implements TestableSelfRegisteringMapStore<String, Au
     public Auth0UserBasic generateTestValue() {
         return null;
     }
+
+    private Set<Auth0UserBasic> getAllUsers() {
+        int page = 0;
+
+        final Set<Auth0UserBasic> users = Sets.newHashSet();
+        for (Set<Auth0UserBasic> pageOfUsers = auth0.getAllUsers( page, 100 );
+              users.isEmpty() || pageOfUsers.size() == 100; pageOfUsers = auth0.getAllUsers( page++, 100 ) ) {
+            users.addAll( pageOfUsers );
+        }
+
+        if ( users.isEmpty() ) {
+            logger.warn( "Received null response from auth0" );
+            return ImmutableSet.of();
+        }
+
+        return users;
+    }
+
 
 }
