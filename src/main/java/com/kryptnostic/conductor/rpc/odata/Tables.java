@@ -35,6 +35,7 @@ public enum Tables implements TableDef {
     AUDIT_EVENTS,
     AUDIT_METRICS,
     DATA,
+    EDGES,
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
@@ -81,6 +82,13 @@ public enum Tables implements TableDef {
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( COUNT, ACL_KEY_VALUE )
                         .withDescendingOrder( COUNT );
+            case EDGES:
+                return new CassandraTableBuilder( EDGES )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.SOURCE )
+                        .clusteringColumns( CommonColumns.DESTINATION )
+                        .columns( CommonColumns.EDGE_VALUE );
+
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
@@ -91,9 +99,9 @@ public enum Tables implements TableDef {
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
                         .partitionKey( ENTITYID )
-                        .clusteringColumns( SYNCID,
-                                PROPERTY_TYPE_ID,
-                                PROPERTY_VALUE );
+                        .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
+                        .columns( SYNCID )
+                        .sasi( SYNCID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
@@ -148,7 +156,10 @@ public enum Tables implements TableDef {
                         .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS )
                         .staticColumns( SECURABLE_OBJECT_TYPE )
-                        .secondaryIndex( PRINCIPAL_TYPE, PRINCIPAL_ID, CommonColumns.PERMISSIONS, SECURABLE_OBJECT_TYPE );
+                        .secondaryIndex( PRINCIPAL_TYPE,
+                                PRINCIPAL_ID,
+                                CommonColumns.PERMISSIONS,
+                                SECURABLE_OBJECT_TYPE );
             case PERMISSIONS_REQUESTS_UNRESOLVED:
                 return new CassandraTableBuilder( PERMISSIONS_REQUESTS_UNRESOLVED )
                         .ifNotExists()

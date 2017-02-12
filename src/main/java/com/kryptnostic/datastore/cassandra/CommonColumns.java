@@ -83,7 +83,10 @@ public enum CommonColumns implements ColumnDef {
     BLOCK( DataType.blob() ),
     COUNT( DataType.bigint() ),
     ACL_KEY_VALUE( DataType.frozenList( DataType.uuid() ) ),
-    PII_FIELD( DataType.cboolean() );
+    PII_FIELD( DataType.cboolean() ),
+    SOURCE( DataType.text() ),
+    DESTINATION( DataType.text() ),
+    EDGE_VALUE( DataType.text() );
 
     private final DataType type;
 

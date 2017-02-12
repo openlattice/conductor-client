@@ -17,14 +17,35 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.hazelcast;
+package com.dataloom.graph;
 
+import com.dataloom.data.EntityKey;
 import com.hazelcast.core.IMap;
 
-public class HazelcastUtils {
-    public static <T, V> V typedGet( IMap<T, V> m, T key ) {
-        return m.get( key );
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public abstract class HazelcastGraphService implements GraphService {
+    private final IMap<Edge, EntityKey>                     edges;
+//    private final IMap<EntityKey, SetMultimap<UUID,Object>> entities;
+
+    public HazelcastGraphService( IMap<Edge, EntityKey> edges ) {
+        this.edges = edges;
     }
 
+    @Override
+    public EntityKey getEdge( Edge edge ) {
+        return edges.get( edge );
+    }
+
+    @Override
+    public void addEdge( Edge edge, EntityKey vertex ) {
+        edges.set( edge, vertex );
+    }
+
+    @Override
+    public void removeEdge( Edge edge ) {
+        edges.delete( edge );
+    }
 
 }
