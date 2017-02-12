@@ -19,7 +19,7 @@
 
 package com.dataloom.edm.events;
 
-import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.EntitySet;
 
 public class EntitySetMetadataUpdatedEvent {
     

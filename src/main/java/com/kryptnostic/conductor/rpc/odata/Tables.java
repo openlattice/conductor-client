@@ -35,10 +35,11 @@ public enum Tables implements TableDef {
     AUDIT_EVENTS,
     AUDIT_METRICS,
     DATA,
-    EDGES,
+    ENTITY_EDGES,
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
+    LINKING_EDGES,
     NAMES,
     ORGANIZATIONS,
     PERMISSIONS,
@@ -82,10 +83,16 @@ public enum Tables implements TableDef {
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( COUNT, ACL_KEY_VALUE )
                         .withDescendingOrder( COUNT );
-            case EDGES:
-                return new CassandraTableBuilder( EDGES )
+            case ENTITY_EDGES:
+                return new CassandraTableBuilder( ENTITY_EDGES )
                         .ifNotExists()
                         .partitionKey( CommonColumns.SOURCE )
+                        .clusteringColumns( CommonColumns.DESTINATION )
+                        .columns( CommonColumns.EDGE_VALUE );
+            case LINKING_EDGES:
+                return new CassandraTableBuilder( LINKING_EDGES )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.GRAPH_ID, CommonColumns.SOURCE )
                         .clusteringColumns( CommonColumns.DESTINATION )
                         .columns( CommonColumns.EDGE_VALUE );
 

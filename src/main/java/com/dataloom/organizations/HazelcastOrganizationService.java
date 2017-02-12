@@ -39,7 +39,7 @@ import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.Organization;

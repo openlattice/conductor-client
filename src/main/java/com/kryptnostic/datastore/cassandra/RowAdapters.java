@@ -33,10 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.SecurableObjectType;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.EntityType;
+import com.dataloom.edm.PropertyType;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;

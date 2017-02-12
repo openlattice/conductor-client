@@ -27,9 +27,9 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.Principal;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.EntityType;
+import com.dataloom.edm.PropertyType;
 import com.hazelcast.map.EntryProcessor;
 
 public interface EdmManager {

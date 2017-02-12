@@ -22,10 +22,9 @@ package com.kryptnostic.conductor.rpc.serializers;
 import java.io.IOException;
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.stereotype.Component;
 
-import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.EntitySet;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;

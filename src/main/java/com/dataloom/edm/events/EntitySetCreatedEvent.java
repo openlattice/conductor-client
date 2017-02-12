@@ -22,8 +22,8 @@ package com.dataloom.edm.events;
 import java.util.List;
 
 import com.dataloom.authorization.Principal;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.PropertyType;
 
 public class EntitySetCreatedEvent {
 	

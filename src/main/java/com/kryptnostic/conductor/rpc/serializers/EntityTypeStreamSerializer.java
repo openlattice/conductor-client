@@ -26,7 +26,7 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.stereotype.Component;
 
-import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.EntityType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;

@@ -21,11 +21,9 @@ package com.dataloom.edm.types.processors;
 
 import java.util.Map.Entry;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
 import java.util.UUID;
 
-import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.EntitySet;
 import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 

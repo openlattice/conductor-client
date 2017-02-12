@@ -25,7 +25,7 @@ import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
+import com.dataloom.authorization.securable.AbstractSchemaAssociatedSecurableType;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 

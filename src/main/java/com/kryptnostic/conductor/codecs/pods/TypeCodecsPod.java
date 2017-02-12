@@ -21,7 +21,7 @@ package com.kryptnostic.conductor.codecs.pods;
 
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;

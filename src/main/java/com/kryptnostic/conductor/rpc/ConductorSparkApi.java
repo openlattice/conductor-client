@@ -23,20 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Map.Entry;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.data.requests.LookupEntitiesRequest;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.PropertyType;
 import com.dataloom.organization.Organization;
 import com.google.common.base.Optional;
-import com.google.common.collect.SetMultimap;
 
 public interface ConductorSparkApi {
 

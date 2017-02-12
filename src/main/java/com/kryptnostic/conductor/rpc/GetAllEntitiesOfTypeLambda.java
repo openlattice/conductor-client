@@ -25,7 +25,7 @@ import java.util.function.Function;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.PropertyType;
 
 public class GetAllEntitiesOfTypeLambda implements Function<ConductorSparkApi, QueryResult>, Serializable {
 

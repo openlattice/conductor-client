@@ -24,7 +24,7 @@ import java.util.UUID;
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.clearspring.analytics.util.Preconditions;
 import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.EntitySet;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;

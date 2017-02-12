@@ -20,31 +20,30 @@
 package com.dataloom.graph;
 
 import com.dataloom.data.EntityKey;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public abstract class HazelcastGraphService implements GraphService {
-    private final IMap<Edge, EntityKey>                     edges;
-//    private final IMap<EntityKey, SetMultimap<UUID,Object>> entities;
+public abstract class HazelcastEntityGraph {
+    private final IMap<DirectedEdge, EntityKey> edges;
+    //    private final IMap<EntityKey, SetMultimap<UUID,Object>> entities;
 
-    public HazelcastGraphService( IMap<Edge, EntityKey> edges ) {
-        this.edges = edges;
+    public HazelcastEntityGraph( HazelcastInstance hazelcastInstance) {
+        this.edges = hazelcastInstance.getMap( HazelcastMap.ENTITY_EDGES.name() );
     }
 
-    @Override
-    public EntityKey getEdge( Edge edge ) {
+    public EntityKey getEdge( DirectedEdge edge ) {
         return edges.get( edge );
     }
 
-    @Override
-    public void addEdge( Edge edge, EntityKey vertex ) {
+    public void createOrUpdateEdge( DirectedEdge edge, EntityKey vertex ) {
         edges.set( edge, vertex );
     }
 
-    @Override
-    public void removeEdge( Edge edge ) {
+    public void deleteEdge( DirectedEdge edge ) {
         edges.delete( edge );
     }
 

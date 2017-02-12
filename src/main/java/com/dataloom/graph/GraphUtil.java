@@ -4,6 +4,8 @@ import com.dataloom.data.EntityKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
+
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
@@ -21,8 +23,8 @@ public final class GraphUtil {
         return a.compareTo( b ) > 0 ? a : b;
     }
 
-    public static SimpleEdge simpleEdge( EntityKey a, EntityKey b ) {
-        return new SimpleEdge( a, b );
+    public static LinkingEdge linkingEdge( UUID graphId, EntityKey a, EntityKey b ) {
+        return new LinkingEdge( graphId, a, b );
     }
 
     public static DirectedEdge edge( EntityKey a, EntityKey b ) {

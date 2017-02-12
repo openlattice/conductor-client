@@ -22,6 +22,7 @@ package com.dataloom.authorization;
 import com.dataloom.auditing.AuditableEvent;
 import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;

@@ -21,9 +21,7 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;

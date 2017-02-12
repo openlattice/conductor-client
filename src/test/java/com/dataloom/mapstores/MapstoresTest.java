@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.edm.internal.AbstractSecurableObject;
+import com.dataloom.authorization.securable.AbstractSecurableObject;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 
 
