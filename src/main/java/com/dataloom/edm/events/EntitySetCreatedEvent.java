@@ -23,7 +23,7 @@ import java.util.List;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.PropertyType;
+import com.dataloom.edm.type.PropertyType;
 
 public class EntitySetCreatedEvent {
 	

@@ -40,7 +40,7 @@ import org.apache.olingo.server.api.uri.UriParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.edm.EntityType;
+import com.dataloom.edm.type.EntityType;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;

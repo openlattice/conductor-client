@@ -26,7 +26,7 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.edm.PropertyType;
+import com.dataloom.edm.type.PropertyType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class EdmPrimitiveTypeKindGetter extends AbstractRhizomeEntryProcessor<UUID, PropertyType, EdmPrimitiveTypeKind> {

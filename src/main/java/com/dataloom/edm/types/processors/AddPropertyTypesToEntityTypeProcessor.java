@@ -23,7 +23,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
-import com.dataloom.edm.EntityType;
+import com.dataloom.edm.type.EntityType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class AddPropertyTypesToEntityTypeProcessor extends AbstractRhizomeEntryProcessor<UUID, EntityType, Object> {

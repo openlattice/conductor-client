@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.EntityType;
+import com.dataloom.edm.type.EntityType;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.datastore.services.EdmManager;
 

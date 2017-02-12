@@ -27,7 +27,7 @@ import java.util.UUID;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.PropertyType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.Organization;
 import com.google.common.base.Optional;
 
