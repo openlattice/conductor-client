@@ -31,6 +31,7 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.data.requests.LookupEntitiesRequest;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.linking.Entity;
 import com.dataloom.organization.Organization;
 import com.google.common.base.Optional;
 
@@ -89,6 +90,6 @@ public interface ConductorSparkApi {
 	
 	List<Map<String, Object>> executeEntitySetDataSearch( UUID entitySetId, String searchTerm, Set<UUID> authorizedPropertyTypes );
 	
-    List<Map<String, Object>> executeEntitySetDataSearchAcrossIndices( Set<UUID> entitySetIds, Map<UUID, String> fieldSearches, int size, boolean explain );
+    List<Entity> executeEntitySetDataSearchAcrossIndices( Set<UUID> entitySetIds, Map<UUID, String> fieldSearches, int size, boolean explain );
 
 }
