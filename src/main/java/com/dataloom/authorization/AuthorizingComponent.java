@@ -21,12 +21,12 @@ package com.dataloom.authorization;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import com.dataloom.edm.internal.AbstractSecurableObject;
+import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.authorization.securable.AbstractSecurableObject;
 import com.google.common.collect.ImmutableList;
 
 public interface AuthorizingComponent {

@@ -22,7 +22,7 @@ package com.kryptnostic.conductor.rpc;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organizations.processors.PrincipalRemover;
 import com.google.common.collect.ImmutableSet;
-import com.kryptnostic.conductor.rpc.serializers.PrincipalRemoverStreamSerializer;
+import com.dataloom.hazelcast.serializers.PrincipalRemoverStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**

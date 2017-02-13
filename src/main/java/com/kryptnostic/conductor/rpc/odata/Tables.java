@@ -35,9 +35,11 @@ public enum Tables implements TableDef {
     AUDIT_EVENTS,
     AUDIT_METRICS,
     DATA,
+    ENTITY_EDGES,
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
+    LINKING_EDGES,
     NAMES,
     ORGANIZATIONS,
     PERMISSIONS,
@@ -81,6 +83,23 @@ public enum Tables implements TableDef {
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( COUNT, ACL_KEY_VALUE )
                         .withDescendingOrder( COUNT );
+            case ENTITY_EDGES:
+                /*
+                 * Implied in the table structure here is that a graph link must be written in the same sync job
+                 * as the associated data.
+                 */
+                return new CassandraTableBuilder( ENTITY_EDGES )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.SOURCE )
+                        .clusteringColumns( CommonColumns.DESTINATION )
+                        .columns( CommonColumns.ENTITYID, CommonColumns.SYNCID )
+                        .sasi( CommonColumns.SYNCID );
+            case LINKING_EDGES:
+                return new CassandraTableBuilder( LINKING_EDGES )
+                        .ifNotExists()
+                        .partitionKey( CommonColumns.GRAPH_ID, CommonColumns.SOURCE )
+                        .clusteringColumns( CommonColumns.DESTINATION )
+                        .columns( CommonColumns.EDGE_VALUE );
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
@@ -91,9 +110,9 @@ public enum Tables implements TableDef {
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
                         .partitionKey( ENTITYID )
-                        .clusteringColumns( SYNCID,
-                                PROPERTY_TYPE_ID,
-                                PROPERTY_VALUE );
+                        .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
+                        .columns( SYNCID )
+                        .sasi( SYNCID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
@@ -148,7 +167,10 @@ public enum Tables implements TableDef {
                         .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS )
                         .staticColumns( SECURABLE_OBJECT_TYPE )
-                        .secondaryIndex( PRINCIPAL_TYPE, PRINCIPAL_ID, CommonColumns.PERMISSIONS, SECURABLE_OBJECT_TYPE );
+                        .secondaryIndex( PRINCIPAL_TYPE,
+                                PRINCIPAL_ID,
+                                CommonColumns.PERMISSIONS,
+                                SECURABLE_OBJECT_TYPE );
             case PERMISSIONS_REQUESTS_UNRESOLVED:
                 return new CassandraTableBuilder( PERMISSIONS_REQUESTS_UNRESOLVED )
                         .ifNotExists()

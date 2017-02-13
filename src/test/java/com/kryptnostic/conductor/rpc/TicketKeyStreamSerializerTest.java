@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import com.dataloom.data.TicketKey;
-import com.kryptnostic.conductor.rpc.serializers.TicketKeyStreamSerializer;
+import com.dataloom.hazelcast.serializers.TicketKeyStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class TicketKeyStreamSerializerTest extends AbstractStreamSerializerTest<TicketKeyStreamSerializer, TicketKey> {

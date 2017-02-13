@@ -28,13 +28,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.dataloom.authorization.securable.SecurableObjectType;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.exceptions.AclKeyConflictException;
 import com.dataloom.edm.exceptions.TypeExistsException;
-import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
-import com.dataloom.edm.internal.AbstractSecurableObject;
-import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.authorization.securable.AbstractSchemaAssociatedSecurableType;
+import com.dataloom.authorization.securable.AbstractSecurableObject;
+import com.dataloom.edm.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;

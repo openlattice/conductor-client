@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.stereotype.Component;
 
-import com.kryptnostic.conductor.rpc.serializers.SharedStreamSerializers;
+import com.dataloom.hazelcast.serializers.SharedStreamSerializers;
 
 @Configuration
 @ComponentScan(

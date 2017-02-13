@@ -32,10 +32,10 @@ import java.util.stream.StreamSupport;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
-import com.dataloom.edm.internal.Schema;
+import com.dataloom.authorization.securable.AbstractSchemaAssociatedSecurableType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.Schema;
 import com.dataloom.edm.schemas.SchemaQueryService;
 import com.dataloom.edm.schemas.processors.AddSchemasToType;
 import com.dataloom.edm.schemas.processors.RemoveSchemasFromType;

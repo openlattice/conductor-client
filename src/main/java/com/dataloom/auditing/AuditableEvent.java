@@ -19,13 +19,11 @@
 
 package com.dataloom.auditing;
 
-import com.dataloom.auditing.AuditableEventKey.AuditableEventType;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.datastax.driver.core.utils.UUIDs;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.reflect.TypeToken;
 import org.joda.time.DateTime;
 
 import java.util.EnumSet;
