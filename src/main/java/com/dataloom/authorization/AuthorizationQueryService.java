@@ -30,7 +30,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public class AuthorizationQueryService {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         authorizedAclKeysQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.ACL_KEYS.cql() )
-                .from( keyspace, Tables.PERMISSIONS.getName() ).allowFiltering()
+                .from( keyspace, Table.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
                         CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
@@ -67,7 +67,7 @@ public class AuthorizationQueryService {
 
         authorizedAclKeysForObjectTypeQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.ACL_KEYS.cql() )
-                .from( keyspace, Tables.PERMISSIONS.getName() ).allowFiltering()
+                .from( keyspace, Table.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_TYPE.cql(),
                         CommonColumns.PRINCIPAL_TYPE.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(),
@@ -79,12 +79,12 @@ public class AuthorizationQueryService {
 
         aclsForSecurableObjectQuery = session.prepare( QueryBuilder
                 .select( CommonColumns.PRINCIPAL_TYPE.cql(), CommonColumns.PRINCIPAL_ID.cql() )
-                .from( keyspace, Tables.PERMISSIONS.getName() ).allowFiltering()
+                .from( keyspace, Table.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
                         CommonColumns.ACL_KEYS.bindMarker() ) ) );
 
         setObjectType = session.prepare( QueryBuilder
-                .update( keyspace, Tables.PERMISSIONS.getName() )
+                .update( keyspace, Table.PERMISSIONS.getName() )
                 .with( QueryBuilder.set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
                         CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) )
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(), CommonColumns.ACL_KEYS.bindMarker() ) ) );

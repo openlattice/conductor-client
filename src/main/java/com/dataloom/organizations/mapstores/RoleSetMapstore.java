@@ -22,6 +22,7 @@ package com.dataloom.organizations.mapstores;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.kryptnostic.conductor.rpc.odata.Table;
 import org.apache.commons.lang.RandomStringUtils;
 
 import com.dataloom.authorization.Principal;
@@ -32,12 +33,11 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
-import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
 public class RoleSetMapstore extends PrincipalSetMapstore {
 
-    public RoleSetMapstore( HazelcastMap map, Session session, Tables table, ColumnDef keyCol, ColumnDef valueCol ) {
+    public RoleSetMapstore( HazelcastMap map, Session session, Table table, ColumnDef keyCol, ColumnDef valueCol ) {
         super( map, session, table, keyCol, valueCol );
     }
 

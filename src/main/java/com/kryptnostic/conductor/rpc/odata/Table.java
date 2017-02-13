@@ -30,7 +30,7 @@ import java.util.EnumMap;
 
 import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 
-public enum Tables implements TableDef {
+public enum Table implements TableDef {
     ACL_KEYS,
     AUDIT_EVENTS,
     AUDIT_METRICS,
@@ -49,12 +49,12 @@ public enum Tables implements TableDef {
     SCHEMAS,
     REQUESTS;
 
-    private static final Logger                                 logger   = LoggerFactory
-            .getLogger( Tables.class );
-    private static final EnumMap<Tables, CassandraTableBuilder> cache    = new EnumMap<>( Tables.class );
-    private static       String                                 keyspace = DatastoreConstants.KEYSPACE;
+    private static final Logger                                logger   = LoggerFactory
+            .getLogger( Table.class );
+    private static final EnumMap<Table, CassandraTableBuilder> cache    = new EnumMap<>( Table.class );
+    private static       String                                keyspace = DatastoreConstants.KEYSPACE;
 
-    static CassandraTableBuilder getTableDefinition( Tables table ) {
+    static CassandraTableBuilder getTableDefinition( Table table ) {
         CassandraTableBuilder ctb = cache.get( table );
         if ( ctb == null ) {
             ctb = createTableDefinition( table );
@@ -63,7 +63,7 @@ public enum Tables implements TableDef {
         return ctb;
     }
 
-    static CassandraTableBuilder createTableDefinition( Tables table ) {
+    static CassandraTableBuilder createTableDefinition( Table table ) {
         switch ( table ) {
             case ACL_KEYS:
                 return new CassandraTableBuilder( ACL_KEYS )
