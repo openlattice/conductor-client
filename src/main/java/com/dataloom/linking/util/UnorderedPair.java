@@ -6,7 +6,7 @@ import java.util.Set;
 public class UnorderedPair<T> {
     private final Set<T> backingCollection = new HashSet<T>( 2 );
 
-    UnorderedPair( T a, T b ) {
+    public UnorderedPair( T a, T b ) {
         backingCollection.add( a );
         backingCollection.add( b );
     }
