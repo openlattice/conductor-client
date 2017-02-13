@@ -78,6 +78,26 @@ public final class RowAdapters {
         return m;
     }
 
+    public static SetMultimap<UUID, Object> entityIndexedById(
+            ResultSet rs,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> m = HashMultimap.create();
+        for ( Row row : rs ) {
+            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+            String entityId = row.getString( CommonColumns.ENTITYID.cql() );
+            if ( propertyTypeId != null ) {
+                PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+                m.put( propertyTypeId,
+                        deserializeValue( mapper,
+                                row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                                pt.getDatatype(),
+                                entityId ) );
+            }
+        }
+        return m;
+    }
+
     public static String entityId( Row row ) {
         return row.getString( CommonColumns.ENTITYID.cql() );
     }
