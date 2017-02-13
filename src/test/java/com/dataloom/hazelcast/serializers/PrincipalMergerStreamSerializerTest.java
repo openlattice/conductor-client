@@ -17,33 +17,25 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.io.IOException;
-import java.io.Serializable;
-
-import org.junit.Test;
-
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.organizations.processors.PrincipalMerger;
+import com.google.common.collect.ImmutableSet;
+import com.dataloom.hazelcast.serializers.PrincipalMergerStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class LambdaSerializersTest extends AbstractStreamSerializerTest<LambdaStreamSerializer, Runnable>
-        implements Serializable {
-    private static final long serialVersionUID = -8844481298074343953L;
-
-    @Override
-    protected LambdaStreamSerializer createSerializer() {
-        return new LambdaStreamSerializer();
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public class PrincipalMergerStreamSerializerTest
+        extends AbstractStreamSerializerTest<PrincipalMergerStreamSerializer, PrincipalMerger> {
+    @Override protected PrincipalMergerStreamSerializer createSerializer() {
+        return new PrincipalMergerStreamSerializer();
     }
 
-    @Override
-    protected Runnable createInput() {
-        return (Runnable & Serializable) () -> System.out.println( "foo" );
-    }
-
-    @Override
-    @Test(
-        expected = AssertionError.class )
-    public void testSerializeDeserialize() throws SecurityException, IOException {
-        super.testSerializeDeserialize();
+    @Override protected PrincipalMerger createInput() {
+        return new PrincipalMerger( ImmutableSet
+                .of( TestDataFactory.userPrincipal(), TestDataFactory.userPrincipal() ) );
     }
 }

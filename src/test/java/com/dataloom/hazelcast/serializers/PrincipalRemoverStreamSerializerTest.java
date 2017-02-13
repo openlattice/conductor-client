@@ -17,30 +17,25 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.io.Serializable;
-import java.util.UUID;
-
-import com.dataloom.hazelcast.serializers.QueryResultStreamSerializer;
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.organizations.processors.PrincipalRemover;
+import com.google.common.collect.ImmutableSet;
+import com.dataloom.hazelcast.serializers.PrincipalRemoverStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class QueryResultStreamSerializerTest extends AbstractStreamSerializerTest<QueryResultStreamSerializer, QueryResult>
-implements Serializable {
-	private static final long serialVersionUID = -8582472573746218921L;
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public class PrincipalRemoverStreamSerializerTest
+        extends AbstractStreamSerializerTest<PrincipalRemoverStreamSerializer, PrincipalRemover> {
+    @Override protected PrincipalRemoverStreamSerializer createSerializer() {
+        return new PrincipalRemoverStreamSerializer();
+    }
 
-	@Override
-	protected QueryResult createInput() {
-		return new QueryResult(
-				"namespace",
-				"table",
-				UUID.randomUUID(),
-				" sessionid" );
-	}
-
-	@Override
-	protected QueryResultStreamSerializer createSerializer() {
-		return new QueryResultStreamSerializer( null );
-	}
-
+    @Override protected PrincipalRemover createInput() {
+        return new PrincipalRemover( ImmutableSet
+                .of( TestDataFactory.userPrincipal(), TestDataFactory.userPrincipal() ) );
+    }
 }

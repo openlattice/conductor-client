@@ -17,27 +17,30 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
 import java.io.Serializable;
+import java.util.UUID;
 
-import com.dataloom.edm.EntitySet;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.EntitySetStreamSerializer;
+import com.dataloom.hazelcast.serializers.QueryResultStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class EntitySetStreamSerializerTest extends AbstractStreamSerializerTest<EntitySetStreamSerializer, EntitySet>
-        implements Serializable {
-    private static final long serialVersionUID = 8869472746330274551L;
+public class QueryResultStreamSerializerTest extends AbstractStreamSerializerTest<QueryResultStreamSerializer, QueryResult>
+implements Serializable {
+	private static final long serialVersionUID = -8582472573746218921L;
 
-    @Override
-    protected EntitySet createInput() {
-        return TestDataFactory.entitySet();
-    }
+	@Override
+	protected QueryResult createInput() {
+		return new QueryResult(
+				"namespace",
+				"table",
+				UUID.randomUUID(),
+				" sessionid" );
+	}
 
-    @Override
-    protected EntitySetStreamSerializer createSerializer() {
-        return new EntitySetStreamSerializer();
-    }
+	@Override
+	protected QueryResultStreamSerializer createSerializer() {
+		return new QueryResultStreamSerializer( null );
+	}
 
 }

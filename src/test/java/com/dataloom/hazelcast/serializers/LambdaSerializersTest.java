@@ -17,26 +17,33 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.util.UUID;
+import java.io.IOException;
+import java.io.Serializable;
 
-import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Test;
 
-import com.dataloom.data.TicketKey;
-import com.dataloom.hazelcast.serializers.TicketKeyStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class TicketKeyStreamSerializerTest extends AbstractStreamSerializerTest<TicketKeyStreamSerializer, TicketKey> {
+public class LambdaSerializersTest extends AbstractStreamSerializerTest<LambdaStreamSerializer, Runnable>
+        implements Serializable {
+    private static final long serialVersionUID = -8844481298074343953L;
 
     @Override
-    protected TicketKeyStreamSerializer createSerializer() {
-        return new TicketKeyStreamSerializer();
+    protected LambdaStreamSerializer createSerializer() {
+        return new LambdaStreamSerializer();
     }
 
     @Override
-    protected TicketKey createInput() {
-        return new TicketKey( RandomStringUtils.random( 10 ), UUID.randomUUID() );
+    protected Runnable createInput() {
+        return (Runnable & Serializable) () -> System.out.println( "foo" );
     }
 
+    @Override
+    @Test(
+        expected = AssertionError.class )
+    public void testSerializeDeserialize() throws SecurityException, IOException {
+        super.testSerializeDeserialize();
+    }
 }
