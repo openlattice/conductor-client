@@ -11,7 +11,7 @@ import com.kryptnostic.datastore.util.Util;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastLinkingGraphs {
-    private final IMap<Edge, Double> linkingEdges;
+    private final IMap<LinkingEdge, Double> linkingEdges;
 
     public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
         this.linkingEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );

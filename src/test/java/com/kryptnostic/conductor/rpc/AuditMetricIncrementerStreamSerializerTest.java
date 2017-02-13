@@ -20,7 +20,7 @@
 package com.kryptnostic.conductor.rpc;
 
 import com.dataloom.auditing.processors.AuditMetricIncrementer;
-import com.kryptnostic.conductor.rpc.serializers.AuditMetricIncrementerStreamSerializer;
+import com.dataloom.hazelcast.serializers.AuditMetricIncrementerStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**

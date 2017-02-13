@@ -23,7 +23,7 @@ import java.io.Serializable;
 
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.mapstores.TestDataFactory;
-import com.kryptnostic.conductor.rpc.serializers.PropertyTypeStreamSerializer;
+import com.dataloom.hazelcast.serializers.PropertyTypeStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class PropertyTypeStreamSerializerTest extends AbstractStreamSerializerTest<PropertyTypeStreamSerializer, PropertyType>

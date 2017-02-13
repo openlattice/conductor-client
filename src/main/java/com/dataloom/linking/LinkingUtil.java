@@ -17,25 +17,23 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.linking;
 
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.organizations.processors.PrincipalRemover;
-import com.google.common.collect.ImmutableSet;
-import com.dataloom.hazelcast.serializers.PrincipalRemoverStreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class PrincipalRemoverStreamSerializerTest
-        extends AbstractStreamSerializerTest<PrincipalRemoverStreamSerializer, PrincipalRemover> {
-    @Override protected PrincipalRemoverStreamSerializer createSerializer() {
-        return new PrincipalRemoverStreamSerializer();
+public class LinkingUtil {
+    public static Set<UUID> requiredEntitySets( Set<Map<UUID, UUID>> linkingProperties ) {
+        return linkingProperties
+                .stream()
+                .map( Map::keySet )
+                .flatMap( Set::stream )
+                .collect( Collectors.toSet() );
     }
 
-    @Override protected PrincipalRemover createInput() {
-        return new PrincipalRemover( ImmutableSet
-                .of( TestDataFactory.userPrincipal(), TestDataFactory.userPrincipal() ) );
-    }
 }

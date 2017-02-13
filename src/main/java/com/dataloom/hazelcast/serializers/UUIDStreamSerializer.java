@@ -17,27 +17,19 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.io.Serializable;
+import org.springframework.stereotype.Component;
 
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.EntityTypeStreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
+import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
 
-public class EntityTypeStreamSerializerTest extends AbstractStreamSerializerTest<EntityTypeStreamSerializer, EntityType>
-        implements Serializable {
-    private static final long serialVersionUID = 8869472746330274551L;
+@Component
+public class UUIDStreamSerializer extends AbstractUUIDStreamSerializer {
 
     @Override
-    protected EntityType createInput() {
-        return TestDataFactory.entityType();
-    }
-
-    @Override
-    protected EntityTypeStreamSerializer createSerializer() {
-        return new EntityTypeStreamSerializer();
+    public int getTypeId() {
+        return StreamSerializerTypeIds.UUID.ordinal();
     }
 
 }

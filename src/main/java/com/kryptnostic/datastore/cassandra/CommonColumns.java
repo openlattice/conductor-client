@@ -86,7 +86,7 @@ public enum CommonColumns implements ColumnDef {
     PII_FIELD( DataType.cboolean() ),
     SOURCE( DataType.text() ),
     DESTINATION( DataType.text() ),
-    EDGE_VALUE( DataType.text() ),
+    EDGE_VALUE( DataType.cdouble() ),
     GRAPH_ID( DataType.uuid() );
 
     private final DataType type;

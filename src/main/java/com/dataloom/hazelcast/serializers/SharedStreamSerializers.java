@@ -17,27 +17,14 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.io.Serializable;
 
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.EntityTypeStreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
-
-public class EntityTypeStreamSerializerTest extends AbstractStreamSerializerTest<EntityTypeStreamSerializer, EntityType>
-        implements Serializable {
-    private static final long serialVersionUID = 8869472746330274551L;
-
-    @Override
-    protected EntityType createInput() {
-        return TestDataFactory.entityType();
-    }
-
-    @Override
-    protected EntityTypeStreamSerializer createSerializer() {
-        return new EntityTypeStreamSerializer();
-    }
-
+/**
+ * This class is just hear for component scanning in SelfRegisteringStreamSerializer
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt; 
+ *
+ */
+public final class SharedStreamSerializers {
+    private SharedStreamSerializers() {}
 }
