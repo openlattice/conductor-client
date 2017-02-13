@@ -85,21 +85,20 @@ public enum Table implements TableDef {
                         .withDescendingOrder( COUNT );
             case ENTITY_EDGES:
                 /*
-                 * Implied in the table structure here is that a graph link must be written in the same sync job
-                 * as the associated data.
+                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
                  */
                 return new CassandraTableBuilder( ENTITY_EDGES )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.SOURCE )
-                        .clusteringColumns( CommonColumns.DESTINATION )
-                        .columns( CommonColumns.ENTITYID, CommonColumns.SYNCID )
-                        .sasi( CommonColumns.SYNCID );
+                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID  )
+                        .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
+                        .columns( ENTITYID, SYNCID )
+                        .sasi( SYNCID );
             case LINKING_EDGES:
                 return new CassandraTableBuilder( LINKING_EDGES )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.GRAPH_ID, CommonColumns.SOURCE )
-                        .clusteringColumns( CommonColumns.DESTINATION )
-                        .columns( CommonColumns.EDGE_VALUE );
+                        .partitionKey( GRAPH_ID, SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
+                        .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
+                        .columns( EDGE_VALUE );
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
