@@ -1,10 +1,10 @@
 package com.dataloom.linking.util;
 
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.Set;
 
 public class UnorderedPair<T> {
-    private final Set<T> backingCollection = new LinkedHashSet<T>( 2 );
+    private final Set<T> backingCollection = new HashSet<T>( 2 );
 
     UnorderedPair( T a, T b ) {
         backingCollection.add( a );
