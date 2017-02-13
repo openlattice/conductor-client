@@ -21,9 +21,9 @@ package com.kryptnostic.conductor.rpc;
 
 import java.io.Serializable;
 
-import com.dataloom.edm.internal.EntityType;
+import com.dataloom.edm.type.EntityType;
 import com.dataloom.mapstores.TestDataFactory;
-import com.kryptnostic.conductor.rpc.serializers.EntityTypeStreamSerializer;
+import com.dataloom.hazelcast.serializers.EntityTypeStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class EntityTypeStreamSerializerTest extends AbstractStreamSerializerTest<EntityTypeStreamSerializer, EntityType>

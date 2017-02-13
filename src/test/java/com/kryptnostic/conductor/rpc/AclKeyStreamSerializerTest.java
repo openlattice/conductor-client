@@ -21,7 +21,7 @@ package com.kryptnostic.conductor.rpc;
 
 import com.dataloom.authorization.AclKey;
 import com.dataloom.mapstores.TestDataFactory;
-import com.kryptnostic.conductor.rpc.serializers.AclKeyStreamSerializer;
+import com.dataloom.hazelcast.serializers.AclKeyStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 

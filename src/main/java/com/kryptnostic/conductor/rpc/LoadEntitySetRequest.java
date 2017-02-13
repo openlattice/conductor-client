@@ -19,7 +19,7 @@
 
 package com.kryptnostic.conductor.rpc;
 
-import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.edm.EntitySet;
 
 public class LoadEntitySetRequest {
     EntitySet entitySet;

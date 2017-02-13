@@ -26,7 +26,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.kryptnostic.conductor.rpc.serializers.ConductorCallStreamSerializer;
+import com.dataloom.hazelcast.serializers.ConductorCallStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 @SuppressWarnings( "rawtypes" )

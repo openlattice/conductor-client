@@ -22,7 +22,7 @@ package com.kryptnostic.conductor.rpc;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.mapstores.TestDataFactory;
-import com.kryptnostic.conductor.rpc.serializers.PermissionRemoverStreamSerializer;
+import com.dataloom.hazelcast.serializers.PermissionRemoverStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**

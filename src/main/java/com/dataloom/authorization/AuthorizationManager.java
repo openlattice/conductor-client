@@ -19,6 +19,8 @@
 
 package com.dataloom.authorization;
 
+import com.dataloom.authorization.securable.SecurableObjectType;
+
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
