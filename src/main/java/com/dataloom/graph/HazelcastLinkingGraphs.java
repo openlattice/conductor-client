@@ -17,7 +17,7 @@ public class HazelcastLinkingGraphs {
         this.linkingEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
     }
 
-    public double getWeight( LinkingEdge edge ) {
+    public Double getWeight( LinkingEdge edge ) {
         return Util.getSafely( linkingEdges, edge );
     }
 
