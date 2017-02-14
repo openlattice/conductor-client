@@ -22,6 +22,10 @@ public class UnorderedPair<T> {
         return backingCollection;
     }
 
+    public T[] getAsArray() {
+        return (T[]) backingCollection.toArray();
+    }
+    
     @Override
     public int hashCode() {
         return backingCollection.hashCode();

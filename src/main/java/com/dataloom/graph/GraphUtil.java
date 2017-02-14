@@ -34,7 +34,7 @@ public final class GraphUtil {
     }
 
     public static LinkingEdge linkingEdge( UUID graphId, UnorderedPair<EntityKey> keys ) {
-        return linkingEdge( graphId, keys.getBackingCollection().toArray( new EntityKey[ 2 ] ) );
+        return linkingEdge( graphId, keys.getAsArray() );
     }
 
     public static DirectedEdge edge( EntityKey a, EntityKey b ) {
