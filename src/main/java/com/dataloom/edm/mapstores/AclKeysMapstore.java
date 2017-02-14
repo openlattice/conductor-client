@@ -27,14 +27,14 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
 public class AclKeysMapstore
         extends AbstractStructuredCassandraPartitionKeyValueStore<String, UUID> {
-    private static final CassandraTableBuilder ctb = Tables.ACL_KEYS.getBuilder();
+    private static final CassandraTableBuilder ctb = Table.ACL_KEYS.getBuilder();
 
     public AclKeysMapstore( Session session ) {
         super( HazelcastMap.ACL_KEYS.name(), session, ctb );

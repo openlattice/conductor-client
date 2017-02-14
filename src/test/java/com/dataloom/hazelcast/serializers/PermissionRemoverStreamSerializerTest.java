@@ -17,24 +17,24 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.processors.PermissionMerger;
+import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.PermissionMergerStreamSerializer;
+import com.dataloom.hazelcast.serializers.PermissionRemoverStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class PermissionMergerStreamSerializerTest
-        extends AbstractStreamSerializerTest<PermissionMergerStreamSerializer, PermissionMerger> {
-    @Override protected PermissionMergerStreamSerializer createSerializer() {
-        return new PermissionMergerStreamSerializer();
+public class PermissionRemoverStreamSerializerTest
+        extends AbstractStreamSerializerTest<PermissionRemoverStreamSerializer, PermissionRemover> {
+    @Override protected PermissionRemoverStreamSerializer createSerializer() {
+        return new PermissionRemoverStreamSerializer();
     }
 
-    @Override protected PermissionMerger createInput() {
-        return new PermissionMerger( DelegatedPermissionEnumSet.wrap( TestDataFactory.permissions() ) );
+    @Override protected PermissionRemover createInput() {
+        return new PermissionRemover( DelegatedPermissionEnumSet.wrap( TestDataFactory.permissions() ) );
     }
 }

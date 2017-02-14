@@ -29,7 +29,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 
@@ -39,7 +39,7 @@ public class StringSetMapstore extends UUIDKeyMapstore<DelegatedStringSet> {
     public StringSetMapstore(
             HazelcastMap map,
             Session session,
-            Tables table,
+            Table table,
             ColumnDef keyCol,
             ColumnDef valueCol ) {
         super( map, session, table, keyCol );

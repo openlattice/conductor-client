@@ -30,7 +30,7 @@ import java.util.EnumMap;
 
 import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 
-public enum Tables implements TableDef {
+public enum Table implements TableDef {
     ACL_KEYS,
     AUDIT_EVENTS,
     AUDIT_METRICS,
@@ -39,6 +39,7 @@ public enum Tables implements TableDef {
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
+    LINKED_ENTITY_TYPES,
     LINKING_EDGES,
     NAMES,
     ORGANIZATIONS,
@@ -47,14 +48,15 @@ public enum Tables implements TableDef {
     PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
     SCHEMAS,
-    REQUESTS;
+    REQUESTS
+    ;
 
-    private static final Logger                                 logger   = LoggerFactory
-            .getLogger( Tables.class );
-    private static final EnumMap<Tables, CassandraTableBuilder> cache    = new EnumMap<>( Tables.class );
-    private static       String                                 keyspace = DatastoreConstants.KEYSPACE;
+    private static final Logger                                logger   = LoggerFactory
+            .getLogger( Table.class );
+    private static final EnumMap<Table, CassandraTableBuilder> cache    = new EnumMap<>( Table.class );
+    private static       String                                keyspace = DatastoreConstants.KEYSPACE;
 
-    static CassandraTableBuilder getTableDefinition( Tables table ) {
+    static CassandraTableBuilder getTableDefinition( Table table ) {
         CassandraTableBuilder ctb = cache.get( table );
         if ( ctb == null ) {
             ctb = createTableDefinition( table );
@@ -63,7 +65,7 @@ public enum Tables implements TableDef {
         return ctb;
     }
 
-    static CassandraTableBuilder createTableDefinition( Tables table ) {
+    static CassandraTableBuilder createTableDefinition( Table table ) {
         switch ( table ) {
             case ACL_KEYS:
                 return new CassandraTableBuilder( ACL_KEYS )
@@ -85,21 +87,21 @@ public enum Tables implements TableDef {
                         .withDescendingOrder( COUNT );
             case ENTITY_EDGES:
                 /*
-                 * Implied in the table structure here is that a graph link must be written in the same sync job
-                 * as the associated data.
+                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
                  */
                 return new CassandraTableBuilder( ENTITY_EDGES )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.SOURCE )
-                        .clusteringColumns( CommonColumns.DESTINATION )
-                        .columns( CommonColumns.ENTITYID, CommonColumns.SYNCID )
-                        .sasi( CommonColumns.SYNCID );
+                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID  )
+                        .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
+                        .columns( ENTITYID, SYNCID )
+                        .sasi( SYNCID );
             case LINKING_EDGES:
                 return new CassandraTableBuilder( LINKING_EDGES )
                         .ifNotExists()
-                        .partitionKey( CommonColumns.GRAPH_ID, CommonColumns.SOURCE )
-                        .clusteringColumns( CommonColumns.DESTINATION )
-                        .columns( CommonColumns.EDGE_VALUE );
+                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
+                        .clusteringColumns( GRAPH_ID, DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
+                        .columns( EDGE_VALUE )
+                        .sasi( EDGE_VALUE );
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
@@ -133,6 +135,11 @@ public enum Tables implements TableDef {
                                 PROPERTIES,
                                 CommonColumns.SCHEMAS )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case LINKED_ENTITY_TYPES:
+                return new CassandraTableBuilder( LINKED_ENTITY_TYPES )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .columns( CommonColumns.ENTITY_TYPE_IDS );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
                         .ifNotExists()

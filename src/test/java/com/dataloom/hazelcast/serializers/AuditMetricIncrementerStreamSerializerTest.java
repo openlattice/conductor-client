@@ -17,24 +17,25 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.processors.PermissionRemover;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.PermissionRemoverStreamSerializer;
+import com.dataloom.auditing.processors.AuditMetricIncrementer;
+import com.dataloom.hazelcast.serializers.AuditMetricIncrementerStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class PermissionRemoverStreamSerializerTest
-        extends AbstractStreamSerializerTest<PermissionRemoverStreamSerializer, PermissionRemover> {
-    @Override protected PermissionRemoverStreamSerializer createSerializer() {
-        return new PermissionRemoverStreamSerializer();
+public class AuditMetricIncrementerStreamSerializerTest
+        extends AbstractStreamSerializerTest<AuditMetricIncrementerStreamSerializer, AuditMetricIncrementer> {
+
+    @Override
+    protected AuditMetricIncrementerStreamSerializer createSerializer() {
+        return new AuditMetricIncrementerStreamSerializer();
     }
 
-    @Override protected PermissionRemover createInput() {
-        return new PermissionRemover( DelegatedPermissionEnumSet.wrap( TestDataFactory.permissions() ) );
+    @Override
+    protected AuditMetricIncrementer createInput() {
+        return new AuditMetricIncrementer();
     }
 }

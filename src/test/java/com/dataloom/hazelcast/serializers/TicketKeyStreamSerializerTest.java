@@ -17,25 +17,26 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.organizations.processors.PrincipalRemover;
-import com.google.common.collect.ImmutableSet;
-import com.dataloom.hazelcast.serializers.PrincipalRemoverStreamSerializer;
+import java.util.UUID;
+
+import org.apache.commons.lang3.RandomStringUtils;
+
+import com.dataloom.data.TicketKey;
+import com.dataloom.hazelcast.serializers.TicketKeyStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-/**
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
- */
-public class PrincipalRemoverStreamSerializerTest
-        extends AbstractStreamSerializerTest<PrincipalRemoverStreamSerializer, PrincipalRemover> {
-    @Override protected PrincipalRemoverStreamSerializer createSerializer() {
-        return new PrincipalRemoverStreamSerializer();
+public class TicketKeyStreamSerializerTest extends AbstractStreamSerializerTest<TicketKeyStreamSerializer, TicketKey> {
+
+    @Override
+    protected TicketKeyStreamSerializer createSerializer() {
+        return new TicketKeyStreamSerializer();
     }
 
-    @Override protected PrincipalRemover createInput() {
-        return new PrincipalRemover( ImmutableSet
-                .of( TestDataFactory.userPrincipal(), TestDataFactory.userPrincipal() ) );
+    @Override
+    protected TicketKey createInput() {
+        return new TicketKey( RandomStringUtils.random( 10 ), UUID.randomUUID() );
     }
+
 }

@@ -40,7 +40,7 @@ import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
 import com.dataloom.requests.mapstores.*;
 import com.datastax.driver.core.Session;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
@@ -130,7 +130,7 @@ public class MapstoresPod {
         return new StringMapstore(
                 HazelcastMap.TITLES,
                 session,
-                Tables.ORGANIZATIONS,
+                Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.TITLE );
     }
@@ -140,7 +140,7 @@ public class MapstoresPod {
         return new StringMapstore(
                 HazelcastMap.DESCRIPTIONS,
                 session,
-                Tables.ORGANIZATIONS,
+                Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.DESCRIPTION );
     }
@@ -150,7 +150,7 @@ public class MapstoresPod {
         return new UUIDSetMapstore(
                 HazelcastMap.TRUSTED_ORGANIZATIONS,
                 session,
-                Tables.ORGANIZATIONS,
+                Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.TRUSTED_ORGANIZATIONS );
     }
@@ -160,7 +160,7 @@ public class MapstoresPod {
         return new StringSetMapstore(
                 HazelcastMap.ALLOWED_EMAIL_DOMAINS,
                 session,
-                Tables.ORGANIZATIONS,
+                Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.ALLOWED_EMAIL_DOMAINS );
     }
@@ -170,7 +170,7 @@ public class MapstoresPod {
         return new RoleSetMapstore(
                 HazelcastMap.ROLES,
                 session,
-                Tables.ORGANIZATIONS,
+                Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.ROLES );
     }
@@ -180,7 +180,7 @@ public class MapstoresPod {
         return new UserSetMapstore(
                 HazelcastMap.MEMBERS,
                 session,
-                Tables.ORGANIZATIONS,
+                Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.MEMBERS );
     }

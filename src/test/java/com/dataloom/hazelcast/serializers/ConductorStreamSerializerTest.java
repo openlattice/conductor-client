@@ -17,11 +17,13 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
 import java.io.IOException;
 import java.io.Serializable;
 
+import com.kryptnostic.conductor.rpc.ConductorCall;
+import com.kryptnostic.conductor.rpc.Lambdas;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.junit.Test;
 

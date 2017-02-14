@@ -17,27 +17,27 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.io.Serializable;
-
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import com.dataloom.hazelcast.serializers.FullQualifiedNameStreamSerializer;
+import com.dataloom.authorization.AclKey;
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.hazelcast.serializers.AclKeyStreamSerializer;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class FullQualifiedNameStreamSerializerTest extends AbstractStreamSerializerTest<FullQualifiedNameStreamSerializer, FullQualifiedName>
-implements Serializable {
-	private static final long serialVersionUID = 6956722858352314361L;
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public class AclKeyStreamSerializerTest extends
+        AbstractStreamSerializerTest<AclKeyStreamSerializer, DelegatedUUIDList> {
 
-	@Override
-	protected FullQualifiedName createInput() {
-		return new FullQualifiedName( "foo", "bar" );
-	}
+    @Override
+    protected AclKeyStreamSerializer createSerializer() {
+        return new AclKeyStreamSerializer();
+    }
 
-	@Override
-	protected FullQualifiedNameStreamSerializer createSerializer() {
-		return new FullQualifiedNameStreamSerializer();
-	}
-	
+    @Override
+    protected AclKey createInput() {
+        return AclKey.wrap( TestDataFactory.aclKey() );
+    }
 }

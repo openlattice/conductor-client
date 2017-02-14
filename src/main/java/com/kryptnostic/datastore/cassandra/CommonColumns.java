@@ -46,6 +46,7 @@ public enum CommonColumns implements ColumnDef {
     ENTITY_SETS( DataType.set( DataType.text() ) ),
     ENTITY_TYPE( DataType.text() ),
     ENTITY_TYPE_ID( DataType.uuid() ),
+    ENTITY_TYPE_IDS( DataType.frozenSet( DataType.uuid() ) ),
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
     FQN( DataType.text() ),
     ID( DataType.uuid() ),
@@ -84,8 +85,10 @@ public enum CommonColumns implements ColumnDef {
     COUNT( DataType.bigint() ),
     ACL_KEY_VALUE( DataType.frozenList( DataType.uuid() ) ),
     PII_FIELD( DataType.cboolean() ),
-    SOURCE( DataType.text() ),
-    DESTINATION( DataType.text() ),
+    SOURCE_ENTITY_SET_ID( DataType.uuid() ),
+    SOURCE_ENTITY_ID( DataType.text() ),
+    DESTINATION_ENTITY_SET_ID( DataType.uuid() ),
+    DESTINATION_ENTITY_ID( DataType.text() ),
     EDGE_VALUE( DataType.cdouble() ),
     GRAPH_ID( DataType.uuid() );
 
