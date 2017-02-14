@@ -33,7 +33,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.collect.Iterables;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 
@@ -50,20 +50,20 @@ public class CassandraTypeManager {
         this.session = session;
         this.entityTypesContainPropertyType = session.prepare(
                 QueryBuilder.select().all()
-                        .from( keyspace, Tables.ENTITY_TYPES.getName() ).allowFiltering()
+                        .from( keyspace, Table.ENTITY_TYPES.getName() ).allowFiltering()
                         .where( QueryBuilder
                                 .contains( CommonColumns.PROPERTIES.cql(), CommonColumns.PROPERTIES.bindMarker() ) ) );
         this.getEntityTypeIds = QueryBuilder.select( CommonColumns.ID.cql() ).distinct().from( keyspace,
-                Tables.ENTITY_TYPES.getName() );
+                Table.ENTITY_TYPES.getName() );
         this.getEntityTypes = QueryBuilder.select().all().from( keyspace,
-                Tables.ENTITY_TYPES.getName() );
+                Table.ENTITY_TYPES.getName() );
         this.getPropertyTypeIds = QueryBuilder.select( CommonColumns.ID.cql() ).distinct().from( keyspace,
-                Tables.PROPERTY_TYPES.getName() );
+                Table.PROPERTY_TYPES.getName() );
         this.getPropertyTypes = QueryBuilder.select().all()
-                .from( keyspace, Tables.PROPERTY_TYPES.getName() );
+                .from( keyspace, Table.PROPERTY_TYPES.getName() );
         this.getPropertyTypesInNamespace = session.prepare(
                 QueryBuilder.select().all()
-                        .from( keyspace, Tables.PROPERTY_TYPES.getName() )
+                        .from( keyspace, Table.PROPERTY_TYPES.getName() )
                         .where( QueryBuilder
                                 .eq( CommonColumns.NAMESPACE.cql(), CommonColumns.NAMESPACE.bindMarker() ) ) );
     }

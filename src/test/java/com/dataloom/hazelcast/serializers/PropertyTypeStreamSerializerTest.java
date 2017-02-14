@@ -17,25 +17,27 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.auditing.processors.AuditMetricIncrementer;
-import com.dataloom.hazelcast.serializers.AuditMetricIncrementerStreamSerializer;
+import java.io.Serializable;
+
+import com.dataloom.edm.type.PropertyType;
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.hazelcast.serializers.PropertyTypeStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-/**
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
- */
-public class AuditMetricIncrementerStreamSerializerTest
-        extends AbstractStreamSerializerTest<AuditMetricIncrementerStreamSerializer, AuditMetricIncrementer> {
+public class PropertyTypeStreamSerializerTest extends AbstractStreamSerializerTest<PropertyTypeStreamSerializer, PropertyType>
+        implements Serializable {
+    private static final long serialVersionUID = 8869472746330274551L;
 
     @Override
-    protected AuditMetricIncrementerStreamSerializer createSerializer() {
-        return new AuditMetricIncrementerStreamSerializer();
+    protected PropertyType createInput() {
+        return TestDataFactory.propertyType();
     }
 
     @Override
-    protected AuditMetricIncrementer createInput() {
-        return new AuditMetricIncrementer();
+    protected PropertyTypeStreamSerializer createSerializer() {
+        return new PropertyTypeStreamSerializer();
     }
+
 }

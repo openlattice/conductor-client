@@ -24,6 +24,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.Set;
 import java.util.UUID;
 
+import com.kryptnostic.conductor.rpc.odata.Table;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.schemas.SchemaQueryService;
@@ -34,7 +35,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 
@@ -49,20 +49,20 @@ public class CassandraSchemaQueryService implements SchemaQueryService {
         propertyTypesInSchemaQuery = session.prepare( getPropertyTypesInSchema( keyspace ) );
         entityTypesInSchemaQuery = session.prepare( getEntityTypesInSchema( keyspace ) );
         getNamespaces = QueryBuilder.select( CommonColumns.NAMESPACE.cql() ).distinct()
-                .from( Tables.SCHEMAS.getKeyspace(), Tables.SCHEMAS.getName() );
+                .from( Table.SCHEMAS.getKeyspace(), Table.SCHEMAS.getName() );
     }
 
     private static RegularStatement getPropertyTypesInSchema( String keyspace ) {
         return QueryBuilder
                 .select( CommonColumns.ID.cql() )
-                .from( keyspace, Tables.PROPERTY_TYPES.getName() ).allowFiltering()
+                .from( keyspace, Table.PROPERTY_TYPES.getName() ).allowFiltering()
                 .where( QueryBuilder.contains( CommonColumns.SCHEMAS.cql(), CommonColumns.SCHEMAS.bindMarker() ) );
     }
 
     private static RegularStatement getEntityTypesInSchema( String keyspace ) {
         return QueryBuilder
                 .select( CommonColumns.ID.cql() )
-                .from( keyspace, Tables.ENTITY_TYPES.getName() ).allowFiltering()
+                .from( keyspace, Table.ENTITY_TYPES.getName() ).allowFiltering()
                 .where( QueryBuilder.contains( CommonColumns.SCHEMAS.cql(), CommonColumns.SCHEMAS.bindMarker() ) );
     }
 

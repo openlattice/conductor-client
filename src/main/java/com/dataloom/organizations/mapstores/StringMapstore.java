@@ -27,13 +27,13 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
 public class StringMapstore extends UUIDKeyMapstore<String> {
     private final ColumnDef valueCol;
 
-    public StringMapstore( HazelcastMap map, Session session, Tables table, ColumnDef keyCol, ColumnDef valueCol ) {
+    public StringMapstore( HazelcastMap map, Session session, Table table, ColumnDef keyCol, ColumnDef valueCol ) {
         super( map, session, table, keyCol );
         this.valueCol = valueCol;
     }

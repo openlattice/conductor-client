@@ -27,7 +27,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 
@@ -37,7 +37,7 @@ public class UUIDSetMapstore extends UUIDKeyMapstore<DelegatedUUIDSet> {
     public UUIDSetMapstore(
             HazelcastMap map,
             Session session,
-            Tables table,
+            Table table,
             ColumnDef keyCol,
             ColumnDef valueCol ) {
         super( map, session, table, keyCol );

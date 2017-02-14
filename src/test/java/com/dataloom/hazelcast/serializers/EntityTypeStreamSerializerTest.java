@@ -17,27 +17,27 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.AclKey;
+import java.io.Serializable;
+
+import com.dataloom.edm.type.EntityType;
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.AclKeyStreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
+import com.dataloom.hazelcast.serializers.EntityTypeStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-/**
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
- */
-public class AclKeyStreamSerializerTest extends
-        AbstractStreamSerializerTest<AclKeyStreamSerializer, DelegatedUUIDList> {
+public class EntityTypeStreamSerializerTest extends AbstractStreamSerializerTest<EntityTypeStreamSerializer, EntityType>
+        implements Serializable {
+    private static final long serialVersionUID = 8869472746330274551L;
 
     @Override
-    protected AclKeyStreamSerializer createSerializer() {
-        return new AclKeyStreamSerializer();
+    protected EntityType createInput() {
+        return TestDataFactory.entityType();
     }
 
     @Override
-    protected AclKey createInput() {
-        return AclKey.wrap( TestDataFactory.aclKey() );
+    protected EntityTypeStreamSerializer createSerializer() {
+        return new EntityTypeStreamSerializer();
     }
+
 }

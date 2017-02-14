@@ -34,7 +34,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
@@ -45,7 +45,7 @@ public class ResolvedPermissionsRequestsMapstore
         super(
                 HazelcastMap.PERMISSIONS_REQUESTS_RESOLVED.name(),
                 session,
-                Tables.PERMISSIONS_REQUESTS_RESOLVED.getBuilder() );
+                Table.PERMISSIONS_REQUESTS_RESOLVED.getBuilder() );
     }
 
     @Override

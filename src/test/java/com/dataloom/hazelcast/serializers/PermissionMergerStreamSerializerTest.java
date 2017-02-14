@@ -17,27 +17,24 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.io.Serializable;
-
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.authorization.DelegatedPermissionEnumSet;
+import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.PropertyTypeStreamSerializer;
+import com.dataloom.hazelcast.serializers.PermissionMergerStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class PropertyTypeStreamSerializerTest extends AbstractStreamSerializerTest<PropertyTypeStreamSerializer, PropertyType>
-        implements Serializable {
-    private static final long serialVersionUID = 8869472746330274551L;
-
-    @Override
-    protected PropertyType createInput() {
-        return TestDataFactory.propertyType();
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public class PermissionMergerStreamSerializerTest
+        extends AbstractStreamSerializerTest<PermissionMergerStreamSerializer, PermissionMerger> {
+    @Override protected PermissionMergerStreamSerializer createSerializer() {
+        return new PermissionMergerStreamSerializer();
     }
 
-    @Override
-    protected PropertyTypeStreamSerializer createSerializer() {
-        return new PropertyTypeStreamSerializer();
+    @Override protected PermissionMerger createInput() {
+        return new PermissionMerger( DelegatedPermissionEnumSet.wrap( TestDataFactory.permissions() ) );
     }
-
 }

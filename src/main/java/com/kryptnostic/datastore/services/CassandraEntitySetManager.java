@@ -33,7 +33,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.collect.Iterables;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 
@@ -56,24 +56,24 @@ public class CassandraEntitySetManager {
         this.authorizations = authorizations;
         this.getEntitySet = session
                 .prepare( QueryBuilder.select().all()
-                        .from( this.keyspace, Tables.ENTITY_SETS.getName() )
+                        .from( this.keyspace, Table.ENTITY_SETS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.NAME.cql(), CommonColumns.NAME.bindMarker() ) ) );
 
         this.getEntitySetsByType = session
                 .prepare( QueryBuilder.select().all()
-                        .from( this.keyspace, Tables.ENTITY_SETS.getName() )
+                        .from( this.keyspace, Table.ENTITY_SETS.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE_ID.cql(), CommonColumns.ENTITY_TYPE_ID.bindMarker() ) ) );
 
-        this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Tables.ENTITY_SETS.getName() );
+        this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Table.ENTITY_SETS.getName() );
         this.getEntities = session
                 .prepare( QueryBuilder.select().all()
-                        .from( keyspace, Tables.ENTITY_ID_LOOKUP.getName() )
+                        .from( keyspace, Table.ENTITY_ID_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
                                 CommonColumns.ENTITY_SET_ID.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
         this.assignEntity = session.prepare(
                 QueryBuilder
-                        .insertInto( keyspace, Tables.ENTITY_ID_LOOKUP.getName() )
+                        .insertInto( keyspace, Table.ENTITY_ID_LOOKUP.getName() )
                         .value( CommonColumns.ENTITY_SET_ID.cql(),
                                 CommonColumns.ENTITY_SET_ID.bindMarker() )
                         .value( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() )
@@ -81,7 +81,7 @@ public class CassandraEntitySetManager {
         this.evictEntity = session.prepare(
                 QueryBuilder
                         .delete().all()
-                        .from( keyspace, Tables.ENTITY_ID_LOOKUP.getName() )
+                        .from( keyspace, Table.ENTITY_ID_LOOKUP.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
                                 CommonColumns.ENTITY_SET_ID.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) )

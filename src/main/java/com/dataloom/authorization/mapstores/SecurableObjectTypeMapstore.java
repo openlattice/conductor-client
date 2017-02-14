@@ -25,7 +25,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.ImmutableList;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
@@ -36,7 +36,7 @@ public class SecurableObjectTypeMapstore
         extends AbstractStructuredCassandraPartitionKeyValueStore<List<UUID>, SecurableObjectType> {
 
     public SecurableObjectTypeMapstore( Session session ) {
-        super( HazelcastMap.SECURABLE_OBJECT_TYPES.name(), session, Tables.PERMISSIONS.getBuilder() );
+        super( HazelcastMap.SECURABLE_OBJECT_TYPES.name(), session, Table.PERMISSIONS.getBuilder() );
     }
 
     @Override
@@ -58,7 +58,7 @@ public class SecurableObjectTypeMapstore
     @Override
     protected RegularStatement storeQuery() {
         return QueryBuilder
-                .update( Tables.PERMISSIONS.getKeyspace(), Tables.PERMISSIONS.getName() )
+                .update( Table.PERMISSIONS.getKeyspace(), Table.PERMISSIONS.getName() )
                 .with( QueryBuilder.set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
                         CommonColumns.SECURABLE_OBJECT_TYPE.bindMarker() ) )
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(), CommonColumns.ACL_KEYS.bindMarker() ) );
