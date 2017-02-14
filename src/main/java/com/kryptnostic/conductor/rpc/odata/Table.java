@@ -39,6 +39,7 @@ public enum Table implements TableDef {
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
+    LINKED_ENTITY_TYPES,
     LINKING_EDGES,
     NAMES,
     ORGANIZATIONS,
@@ -47,7 +48,8 @@ public enum Table implements TableDef {
     PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
     SCHEMAS,
-    REQUESTS;
+    REQUESTS
+    ;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -96,9 +98,10 @@ public enum Table implements TableDef {
             case LINKING_EDGES:
                 return new CassandraTableBuilder( LINKING_EDGES )
                         .ifNotExists()
-                        .partitionKey( GRAPH_ID, SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
-                        .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
-                        .columns( EDGE_VALUE );
+                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
+                        .clusteringColumns( GRAPH_ID, DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
+                        .columns( EDGE_VALUE )
+                        .sasi( EDGE_VALUE );
             case ENTITY_ID_LOOKUP:
                 return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
@@ -132,6 +135,11 @@ public enum Table implements TableDef {
                                 PROPERTIES,
                                 CommonColumns.SCHEMAS )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case LINKED_ENTITY_TYPES:
+                return new CassandraTableBuilder( LINKED_ENTITY_TYPES )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .columns( CommonColumns.ENTITY_TYPE_IDS );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
                         .ifNotExists()
