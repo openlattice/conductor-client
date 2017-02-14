@@ -1,21 +1,24 @@
 package com.dataloom.linking.components;
 
-import java.util.Set;
-
-import com.dataloom.data.EntityKey;
+import java.util.UUID;
 
 /**
  * Basic Clusterer interface.
  * 
- * An initialized Clusterer instance should have the weighted graph for clustering. More precisely, it should have the set of entity keys (the vertex set), and a distance function between the vertices.
+ * An initialized Clusterer instance should have the weighted graph for clustering.
  * @author Ho Chung Siu
  *
  */
 public interface Clusterer {
+    
+    /**
+     * Set the linkedEntitySetId, equivalently the edge graph Id.
+     */
+    public void setId( UUID linkedEntitySetId );
 
     /**
      * 
      * @return
      */
-    public Iterable<Set<EntityKey>> cluster();
+    public void cluster();
 }

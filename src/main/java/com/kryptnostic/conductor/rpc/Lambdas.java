@@ -121,4 +121,9 @@ public class Lambdas implements Serializable {
         return (Function<ConductorSparkApi, Boolean> & Serializable) ( api ) -> api
                 .updatePropertyTypesInEntitySet( entitySetId, newPropertyTypes );
     }
+
+    public static Function<ConductorSparkApi, Void> clustering( UUID linkedEntitySetId ) {
+        return (Function<ConductorSparkApi, Void> & Serializable) ( api ) -> api
+                .clustering( linkedEntitySetId );
+    }
 }
