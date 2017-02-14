@@ -24,6 +24,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.dataloom.data.EntityKey;
+import com.dataloom.linking.util.UnorderedPair;
+
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
@@ -34,6 +37,11 @@ public class LinkingUtil {
                 .map( Map::keySet )
                 .flatMap( Set::stream )
                 .collect( Collectors.toSet() );
+    }
+
+    public static UnorderedPair<EntityKey> getEntityKeyPair( UnorderedPair<Entity> entityPair ){
+        Set<EntityKey> keys = entityPair.getBackingCollection().stream().map( entity -> entity.getKey() ).collect( Collectors.toSet() );
+        return new UnorderedPair<EntityKey>( keys );
     }
 
 }

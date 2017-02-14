@@ -1,7 +1,12 @@
 package com.dataloom.linking.components;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
 import com.dataloom.linking.Entity;
 import com.dataloom.linking.util.UnorderedPair;
+import com.google.common.collect.Multimap;
 
 /**
  * Basic Matcher interface. 
@@ -12,8 +17,11 @@ import com.dataloom.linking.util.UnorderedPair;
  */
 public interface Matcher {
 
+    public static final double threshold = 0.8;
+    
+    public void setLinking( Map<UUID, UUID> entitySetsWithSyncIds, Multimap<UUID, UUID> linkingMap, Set<Map<UUID, UUID>> linkingProperties );
     /**
-     * Given an unordered pair of entities, should return the probability where the two entities match.
+     * Given an unordered pair of entities, should return the score between 0 to 1 where the two entities match.
      * @param entityPair
      * @return
      */
@@ -21,9 +29,12 @@ public interface Matcher {
 
     /**
      * Given an unordered pair of entities, should return whether the two entities match.
+     * The default implementation is when the score goes above threshold, then the two entity are considered a match.
      * @param entityPair
      * @return
      */
-    public boolean match( UnorderedPair<Entity> entityPair );
+    default boolean match( UnorderedPair<Entity> entityPair ){
+        return score( entityPair ) > threshold;
+    }
 
 }

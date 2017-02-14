@@ -1,6 +1,7 @@
 package com.dataloom.linking.components;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -18,7 +19,7 @@ import com.google.common.collect.Multimap;
  */
 public interface Blocker {
 
-    public void setLinking( Map<UUID, UUID> entitySetsWithSyncIds, Multimap<UUID, UUID> linkingMap );
+    public void setLinking( Map<UUID, UUID> entitySetsWithSyncIds, Multimap<UUID, UUID> linkingMap, Set<Map<UUID, UUID>> linkingProperties );
 
     public Stream<UnorderedPair<Entity>> block();
 }
