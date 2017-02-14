@@ -41,4 +41,8 @@ public class HazelcastListingService {
     public void setLinkedEntityTypes( UUID entitySetId, Set<UUID> entityTypes ) {
         this.linkedEntityTypes.set( entitySetId, DelegatedUUIDSet.wrap( entityTypes ) );
     }
+
+    public boolean isLinkedEntitySet( UUID entitySetId ) {
+        return linkedEntityTypes.containsKey( entitySetId );
+    }
 }
