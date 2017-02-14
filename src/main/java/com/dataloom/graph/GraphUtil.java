@@ -19,7 +19,6 @@
 
 package com.dataloom.graph;
 
-
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -63,7 +62,6 @@ public final class GraphUtil {
         return new DirectedEdge( a, b );
     }
 
-
     public static boolean isNewEdge(
             HazelcastLinkingGraphs linkingGraph,
             UUID graphId,
@@ -74,7 +72,6 @@ public final class GraphUtil {
         LinkingEdge edge = linkingEdge( graphId, keys );
         return linkingGraph.getWeight( edge ) == null;
     }
-
 
     public static EntityKey source( Row rs ) {
         final UUID entitySetId = rs.getUUID( CommonColumns.SOURCE_ENTITY_SET_ID.cql() );
@@ -99,5 +96,4 @@ public final class GraphUtil {
     public static Double edgeValue( Row row ) {
         return row.getDouble( CommonColumns.EDGE_VALUE.cql() );
     }
-
 }
