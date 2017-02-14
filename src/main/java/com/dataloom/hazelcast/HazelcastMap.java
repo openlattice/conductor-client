@@ -19,43 +19,44 @@
 
 package com.dataloom.hazelcast;
 
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 
 public enum HazelcastMap {
-    ACL_KEYS( Tables.ACL_KEYS ),
-    AUDIT_EVENTS( Tables.AUDIT_EVENTS ),
-    AUDIT_METRICS( Tables.AUDIT_METRICS ),
-    ENTITY_EDGES( Tables.ENTITY_EDGES ),
-    LINKING_EDGES( Tables.LINKING_EDGES ),
-    PERMISSIONS( Tables.PERMISSIONS ),
-    PERMISSIONS_REQUESTS_UNRESOLVED( Tables.PERMISSIONS_REQUESTS_UNRESOLVED ),
-    PERMISSIONS_REQUESTS_RESOLVED( Tables.PERMISSIONS_REQUESTS_RESOLVED ),
-    PROPERTY_TYPES( Tables.PROPERTY_TYPES ),
-    ENTITY_TYPES( Tables.ENTITY_TYPES ),
-    ENTITY_SETS( Tables.ENTITY_SETS ),
-    NAMES( Tables.NAMES ),
-    SCHEMAS( Tables.SCHEMAS ),
-    TRUSTED_ORGANIZATIONS( Tables.ORGANIZATIONS ),
-    VISIBILITY( Tables.ORGANIZATIONS ),
-    TITLES( Tables.ORGANIZATIONS ),
-    DESCRIPTIONS( Tables.ORGANIZATIONS ),
-    ALLOWED_EMAIL_DOMAINS( Tables.ORGANIZATIONS ),
-    MEMBERS( Tables.ORGANIZATIONS ),
-    ROLES( Tables.ORGANIZATIONS ),
+    ACL_KEYS( Table.ACL_KEYS ),
+    AUDIT_EVENTS( Table.AUDIT_EVENTS ),
+    AUDIT_METRICS( Table.AUDIT_METRICS ),
+    ENTITY_EDGES( Table.ENTITY_EDGES ),
+    LINKED_ENTITY_TYPES( Table.LINKED_ENTITY_TYPES ),
+    LINKING_EDGES( Table.LINKING_EDGES ),
+    PERMISSIONS( Table.PERMISSIONS ),
+    PERMISSIONS_REQUESTS_UNRESOLVED( Table.PERMISSIONS_REQUESTS_UNRESOLVED ),
+    PERMISSIONS_REQUESTS_RESOLVED( Table.PERMISSIONS_REQUESTS_RESOLVED ),
+    PROPERTY_TYPES( Table.PROPERTY_TYPES ),
+    ENTITY_TYPES( Table.ENTITY_TYPES ),
+    ENTITY_SETS( Table.ENTITY_SETS ),
+    NAMES( Table.NAMES ),
+    SCHEMAS( Table.SCHEMAS ),
+    TRUSTED_ORGANIZATIONS( Table.ORGANIZATIONS ),
+    VISIBILITY( Table.ORGANIZATIONS ),
+    TITLES( Table.ORGANIZATIONS ),
+    DESCRIPTIONS( Table.ORGANIZATIONS ),
+    ALLOWED_EMAIL_DOMAINS( Table.ORGANIZATIONS ),
+    MEMBERS( Table.ORGANIZATIONS ),
+    ROLES( Table.ORGANIZATIONS ),
     USERS( null ),
     ENTITY_SET_TICKETS( null ),
     ENTITY_SET_PROPERTIES_TICKETS( null ),
-    REQUESTS( Tables.REQUESTS ),
-    SECURABLE_OBJECT_TYPES( Tables.PERMISSIONS )
+    REQUESTS( Table.REQUESTS ),
+    SECURABLE_OBJECT_TYPES( Table.PERMISSIONS )
     ;
 
-    private final Tables table;
+    private final Table table;
 
-    private HazelcastMap( Tables table ) {
+    private HazelcastMap( Table table ) {
         this.table = table;
     }
 
-    public Tables getTable() {
+    public Table getTable() {
         return table;
     }
 }

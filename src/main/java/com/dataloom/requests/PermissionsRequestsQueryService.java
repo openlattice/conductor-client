@@ -35,7 +35,7 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Iterables;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 public class PermissionsRequestsQueryService {
@@ -49,13 +49,13 @@ public class PermissionsRequestsQueryService {
 
     public PermissionsRequestsQueryService( Session session ) {
         this.session = session;
-        unresolvedPRsQuery = session.prepare( Tables.PERMISSIONS_REQUESTS_UNRESOLVED.getBuilder().buildLoadAllQuery()
+        unresolvedPRsQuery = session.prepare( Table.PERMISSIONS_REQUESTS_UNRESOLVED.getBuilder().buildLoadAllQuery()
                 .where( QueryBuilder.eq( CommonColumns.ACL_ROOT.cql(), CommonColumns.ACL_ROOT.bindMarker() ) ) );
         unresolvedPRsQueryByStatus = session
-                .prepare( Tables.PERMISSIONS_REQUESTS_UNRESOLVED.getBuilder().buildLoadAllQuery()
+                .prepare( Table.PERMISSIONS_REQUESTS_UNRESOLVED.getBuilder().buildLoadAllQuery()
                         .where( QueryBuilder.eq( CommonColumns.ACL_ROOT.cql(), CommonColumns.ACL_ROOT.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.STATUS.cql(), CommonColumns.STATUS.bindMarker() ) ) );
-        resolvedPRsQuery = session.prepare( Tables.PERMISSIONS_REQUESTS_RESOLVED.getBuilder().buildLoadAllQuery()
+        resolvedPRsQuery = session.prepare( Table.PERMISSIONS_REQUESTS_RESOLVED.getBuilder().buildLoadAllQuery()
                 .where( QueryBuilder.eq( CommonColumns.PRINCIPAL_ID.cql(), CommonColumns.PRINCIPAL_ID.bindMarker() ) )
                 .and( QueryBuilder.eq( CommonColumns.ACL_ROOT.cql(), CommonColumns.ACL_ROOT.bindMarker() ) ) );
     }

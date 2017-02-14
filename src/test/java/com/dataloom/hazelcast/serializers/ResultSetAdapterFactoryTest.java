@@ -17,7 +17,7 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
 import static org.junit.Assert.assertEquals;
 
@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import com.kryptnostic.conductor.rpc.ResultSetAdapterFactory;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

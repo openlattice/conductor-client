@@ -23,7 +23,7 @@ import com.dataloom.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 
 public final class Queries {
     private Queries() {}
@@ -54,7 +54,7 @@ public final class Queries {
     public static final String CREATE_INDEX_ON_NAME               = "CREATE INDEX IF NOT EXISTS entity_sets_name_idx ON "
             + DatastoreConstants.KEYSPACE
             + "."
-            + Tables.ENTITY_SETS.getName()
+            + Table.ENTITY_SETS.getName()
             + " (" + CommonColumns.NAME.cql() + ")";
     /**
      * This is the query for adding the secondary index on the entitySets column for entity table of a given type
@@ -173,7 +173,7 @@ public final class Queries {
     }
 
 //    public static final RegularStatement countEntitySets( String keyspace ) {
-//        return QueryBuilder.select().countAll().from( keyspace, Tables.ENTITY_SETS.getName() )
+//        return QueryBuilder.select().countAll().from( keyspace, Table.ENTITY_SETS.getName() )
 //                .where( QueryBuilder.eq( CommonColumns.TYPENAME.cql(), QueryBuilder.bindMarker() ) )
 //                .and( QueryBuilder.eq( CommonColumns.NAME.cql(), QueryBuilder.bindMarker() ) );
 //    }

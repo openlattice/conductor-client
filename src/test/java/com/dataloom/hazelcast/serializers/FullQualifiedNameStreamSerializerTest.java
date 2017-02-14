@@ -17,26 +17,27 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.util.UUID;
+import java.io.Serializable;
 
-import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.data.TicketKey;
-import com.dataloom.hazelcast.serializers.TicketKeyStreamSerializer;
+import com.dataloom.hazelcast.serializers.FullQualifiedNameStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class TicketKeyStreamSerializerTest extends AbstractStreamSerializerTest<TicketKeyStreamSerializer, TicketKey> {
+public class FullQualifiedNameStreamSerializerTest extends AbstractStreamSerializerTest<FullQualifiedNameStreamSerializer, FullQualifiedName>
+implements Serializable {
+	private static final long serialVersionUID = 6956722858352314361L;
 
-    @Override
-    protected TicketKeyStreamSerializer createSerializer() {
-        return new TicketKeyStreamSerializer();
-    }
+	@Override
+	protected FullQualifiedName createInput() {
+		return new FullQualifiedName( "foo", "bar" );
+	}
 
-    @Override
-    protected TicketKey createInput() {
-        return new TicketKey( RandomStringUtils.random( 10 ), UUID.randomUUID() );
-    }
-
+	@Override
+	protected FullQualifiedNameStreamSerializer createSerializer() {
+		return new FullQualifiedNameStreamSerializer();
+	}
+	
 }

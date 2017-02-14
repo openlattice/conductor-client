@@ -31,9 +31,8 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.ImmutableList;
 import com.hazelcast.config.MapStoreConfig;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
 import java.util.UUID;
@@ -48,7 +47,7 @@ public class LeaderboardMapstore extends AbstractStructuredCassandraPartitionKey
     private final PreparedStatement bookkeeper;
 
     public LeaderboardMapstore( String keyspace, Session session ) {
-        super( HazelcastMap.AUDIT_METRICS.name(), session, Tables.AUDIT_METRICS.getBuilder() );
+        super( HazelcastMap.AUDIT_METRICS.name(), session, Table.AUDIT_METRICS.getBuilder() );
         bookkeeper = session.prepare( bookkeepingQuery( keyspace ) );
     }
 
@@ -88,7 +87,7 @@ public class LeaderboardMapstore extends AbstractStructuredCassandraPartitionKey
     }
 
     public Insert bookkeepingQuery( String keyspace ) {
-        return QueryBuilder.insertInto( keyspace, Tables.AUDIT_METRICS.getName() )
+        return QueryBuilder.insertInto( keyspace, Table.AUDIT_METRICS.getName() )
                 .value( CommonColumns.ACL_KEYS.cql(), ImmutableList.of() )
                 .value( CommonColumns.COUNT.cql(), CommonColumns.COUNT.bindMarker() )
                 .value( CommonColumns.ACL_KEY_VALUE.cql(), CommonColumns.ACL_KEY_VALUE.bindMarker() );

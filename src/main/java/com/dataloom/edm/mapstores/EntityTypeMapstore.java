@@ -21,6 +21,7 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
+import com.kryptnostic.conductor.rpc.odata.Table;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.type.EntityType;
@@ -31,13 +32,12 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
-import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
 public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, EntityType> {
-    private static final CassandraTableBuilder ctb = Tables.ENTITY_TYPES.getBuilder();
+    private static final CassandraTableBuilder ctb = Table.ENTITY_TYPES.getBuilder();
 
     public EntityTypeMapstore( Session session ) {
         super( HazelcastMap.ENTITY_TYPES.name(), session, ctb );

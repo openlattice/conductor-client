@@ -19,8 +19,6 @@
 
 package com.dataloom.edm.schemas.mapstores;
 
-import java.util.Set;
-
 import org.apache.commons.lang3.RandomStringUtils;
 
 import com.dataloom.hazelcast.HazelcastMap;
@@ -29,14 +27,14 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
 public class SchemaMapstore extends AbstractStructuredCassandraMapstore<String, DelegatedStringSet> {
-    private static final CassandraTableBuilder ctb = Tables.SCHEMAS.getBuilder();
+    private static final CassandraTableBuilder ctb = Table.SCHEMAS.getBuilder();
 
     public SchemaMapstore( Session session ) {
         super( HazelcastMap.SCHEMAS.name(), session, ctb );

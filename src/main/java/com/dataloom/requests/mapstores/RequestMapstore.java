@@ -32,7 +32,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
@@ -42,7 +42,7 @@ public class RequestMapstore extends AbstractStructuredCassandraMapstore<AceKey,
     private final Status TEST_STATUS = TestDataFactory.status();
 
     public RequestMapstore( Session session ) {
-        super( HazelcastMap.REQUESTS.name(), session, Tables.REQUESTS.getBuilder() );
+        super( HazelcastMap.REQUESTS.name(), session, Table.REQUESTS.getBuilder() );
     }
 
     @Override

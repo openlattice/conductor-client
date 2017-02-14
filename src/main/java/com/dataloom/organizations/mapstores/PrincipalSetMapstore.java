@@ -27,7 +27,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.PrincipalSet;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Session;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
 
 public abstract class PrincipalSetMapstore extends UUIDKeyMapstore<PrincipalSet> {
@@ -36,7 +36,7 @@ public abstract class PrincipalSetMapstore extends UUIDKeyMapstore<PrincipalSet>
     public PrincipalSetMapstore(
             HazelcastMap map,
             Session session,
-            Tables table,
+            Table table,
             ColumnDef keyCol,
             ColumnDef valueCol ) {
         super( map, session, table, keyCol );

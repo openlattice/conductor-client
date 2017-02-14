@@ -17,27 +17,25 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.conductor.rpc;
+package com.dataloom.hazelcast.serializers;
 
-import java.io.Serializable;
-
-import com.dataloom.edm.EntitySet;
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.EntitySetStreamSerializer;
+import com.dataloom.organizations.processors.PrincipalRemover;
+import com.google.common.collect.ImmutableSet;
+import com.dataloom.hazelcast.serializers.PrincipalRemoverStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class EntitySetStreamSerializerTest extends AbstractStreamSerializerTest<EntitySetStreamSerializer, EntitySet>
-        implements Serializable {
-    private static final long serialVersionUID = 8869472746330274551L;
-
-    @Override
-    protected EntitySet createInput() {
-        return TestDataFactory.entitySet();
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public class PrincipalRemoverStreamSerializerTest
+        extends AbstractStreamSerializerTest<PrincipalRemoverStreamSerializer, PrincipalRemover> {
+    @Override protected PrincipalRemoverStreamSerializer createSerializer() {
+        return new PrincipalRemoverStreamSerializer();
     }
 
-    @Override
-    protected EntitySetStreamSerializer createSerializer() {
-        return new EntitySetStreamSerializer();
+    @Override protected PrincipalRemover createInput() {
+        return new PrincipalRemover( ImmutableSet
+                .of( TestDataFactory.userPrincipal(), TestDataFactory.userPrincipal() ) );
     }
-
 }

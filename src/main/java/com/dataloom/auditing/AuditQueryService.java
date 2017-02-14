@@ -32,7 +32,7 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -54,20 +54,20 @@ public class AuditQueryService {
 
     public AuditQueryService( String keyspace, Session session ) {
         this.session = session;
-        storeEvent = session.prepare( Tables.AUDIT_EVENTS.getBuilder().buildStoreQuery());
+        storeEvent = session.prepare( Table.AUDIT_EVENTS.getBuilder().buildStoreQuery());
         top100 = session.prepare( top100( keyspace ) );
         clearTail = session.prepare( clearTail( keyspace ) );
     }
 
     public static Select top100( String keyspace ) {
         return QueryBuilder.select( CommonColumns.COUNT.cql(), CommonColumns.ACL_KEYS.cql() )
-                .from( keyspace, Tables.AUDIT_METRICS.getName() )
+                .from( keyspace, Table.AUDIT_METRICS.getName() )
                 .where( CommonColumns.ACL_KEYS.eq() ).limit( 100 );
     }
 
     public static Delete.Where clearTail( String keyspace ) {
         return QueryBuilder.delete()
-                .from( keyspace, Tables.AUDIT_METRICS.getName() )
+                .from( keyspace, Table.AUDIT_METRICS.getName() )
                 .where( CommonColumns.ACL_KEYS.eq() )
                 .and( QueryBuilder.lt( CommonColumns.COUNT.cql(), CommonColumns.COUNT.bindMarker() ) );
     }
