@@ -22,6 +22,7 @@ package com.dataloom.hazelcast.serializers;
 import java.io.IOException;
 import java.io.Serializable;
 
+import com.kryptnostic.conductor.rpc.ConductorCall;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.junit.Test;
 

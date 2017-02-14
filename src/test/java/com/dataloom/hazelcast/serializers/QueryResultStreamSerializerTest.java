@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.util.UUID;
 
 import com.dataloom.hazelcast.serializers.QueryResultStreamSerializer;
+import com.kryptnostic.conductor.rpc.QueryResult;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class QueryResultStreamSerializerTest extends AbstractStreamSerializerTest<QueryResultStreamSerializer, QueryResult>

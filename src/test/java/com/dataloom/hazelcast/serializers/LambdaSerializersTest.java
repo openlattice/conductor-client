@@ -19,12 +19,12 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import java.io.IOException;
-import java.io.Serializable;
-
+import com.kryptnostic.conductor.rpc.LambdaStreamSerializer;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import org.junit.Test;
 
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
+import java.io.IOException;
+import java.io.Serializable;
 
 public class LambdaSerializersTest extends AbstractStreamSerializerTest<LambdaStreamSerializer, Runnable>
         implements Serializable {
