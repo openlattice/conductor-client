@@ -22,17 +22,13 @@ package com.dataloom.graph;
 
 import java.util.UUID;
 
-
-import com.dataloom.data.EntityKey;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.linking.util.UnorderedPair;
+import com.datastax.driver.core.Row;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
