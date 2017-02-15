@@ -32,6 +32,22 @@ import com.dataloom.organization.Organization;
 import com.google.common.base.Optional;
 
 public interface ConductorElasticsearchApi {
+    
+    // settings consts
+    final String NUM_SHARDS = "number_of_shards";
+    final String NUM_REPLICAS = "number_of_replicas";
+    final String ANALYSIS = "analysis";
+    final String FILTER = "filter";
+    final String ANALYZER = "analyzer";
+    final String ENCODER = "encoder";
+    final String REPLACE = "replace";
+    final String TOKENIZER = "tokenizer";
+    final String STANDARD = "standard";
+    final String LOWERCASE = "lowercase";
+    final String PHONETIC = "phonetic";
+    final String METAPHONE = "metaphone";
+    final String METAPHONE_FILTER = "metaphone_filter";
+    final String METAPHONE_ANALYZER = "MetaphoneAnalyzer";
 	
 	final String ES_PROPERTIES = "properties";
 	final String PARENT = "_parent";
@@ -39,10 +55,9 @@ public interface ConductorElasticsearchApi {
 	final String OBJECT = "object";
 	final String NESTED = "nested";
 	final String KEYWORD = "keyword";
-	final String NUM_SHARDS = "index.number_of_shards";
-	final String NUM_REPLICAS = "index.number_of_replicas";
+	final String STRING = "string";
 	
-	// index setup consts
+	// entity_set_data_model setup consts
     final String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
     final String ENTITY_SET_TYPE = "entity_set";
     
