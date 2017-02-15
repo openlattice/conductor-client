@@ -244,6 +244,12 @@ public class EdmService implements EdmManager {
 
     @Override
     public void createEntitySet( Principal principal, EntitySet entitySet ) {
+        EntityType entityType = entityTypes.get( entitySet.getEntityTypeId() );
+        createEntitySet( principal, entitySet, entityType.getProperties() );
+    }
+
+    @Override
+    public void createEntitySet( Principal principal, EntitySet entitySet, Set<UUID> ownablePropertyTypes ) {
         Principals.ensureUser( principal );
         createEntitySet( entitySet );
 
@@ -254,9 +260,7 @@ public class EdmService implements EdmManager {
 
             authorizations.createEmptyAcl( ImmutableList.of( entitySet.getId() ), SecurableObjectType.EntitySet );
 
-            EntityType entityType = entityTypes.get( entitySet.getEntityTypeId() );
-
-            entityType.getProperties().stream()
+            ownablePropertyTypes.stream()
                     .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
                     .peek( aclKey -> authorizations.addPermission(
                             aclKey,
@@ -267,7 +271,7 @@ public class EdmService implements EdmManager {
 
             eventBus.post( new EntitySetCreatedEvent(
                     entitySet,
-                    Lists.newArrayList( propertyTypes.getAll( entityType.getProperties() ).values() ),
+                    Lists.newArrayList( propertyTypes.getAll( ownablePropertyTypes ).values() ),
                     principal ) );
 
         } catch ( Exception e ) {
