@@ -22,11 +22,14 @@ package com.kryptnostic.conductor.codecs.pods;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.data.EntityKey;
+import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
 import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
 import com.datastax.driver.extras.codecs.joda.LocalTimeCodec;
+import com.kryptnostic.conductor.codecs.EntityKeyTypeCodec;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.codecs.FullQualifiedNameTypeCodec;
 import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
@@ -111,6 +114,11 @@ public class TypeCodecsPod {
     @Bean
     public EnumNameCodec<RequestStatus> requestStatusCodec() {
         return new EnumNameCodec<>( RequestStatus.class );
+    }
+
+    @Bean
+    public TypeCodec<EntityKey> entitykeyCodec() {
+        return new EntityKeyTypeCodec( ObjectMappers.getJsonMapper() );
     }
 
 }

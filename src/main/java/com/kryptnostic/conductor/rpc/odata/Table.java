@@ -40,6 +40,7 @@ public enum Table implements TableDef {
     ENTITY_SETS,
     ENTITY_TYPES,
     LINKED_ENTITY_TYPES,
+    LINKED_ENTITIES,
     LINKING_EDGES,
     NAMES,
     ORGANIZATIONS,
@@ -140,6 +141,12 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( ID )
                         .columns( CommonColumns.ENTITY_TYPE_IDS );
+            case LINKED_ENTITIES:
+                return new CassandraTableBuilder( LINKED_ENTITIES )
+                        .ifNotExists()
+                        .partitionKey( ENTITY_SET_ID )
+                        .clusteringColumns( ENTITYID )
+                        .columns( ENTITY_KEYS );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
                         .ifNotExists()
