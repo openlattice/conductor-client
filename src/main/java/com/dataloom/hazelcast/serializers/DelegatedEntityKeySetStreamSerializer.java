@@ -2,6 +2,8 @@ package com.dataloom.hazelcast.serializers;
 
 import java.io.IOException;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.data.DelegatedEntityKeySet;
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
@@ -10,6 +12,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 
+@Component
 public class DelegatedEntityKeySetStreamSerializer extends SetStreamSerializer<DelegatedEntityKeySet, EntityKey> {
 
     public DelegatedEntityKeySetStreamSerializer( ) {

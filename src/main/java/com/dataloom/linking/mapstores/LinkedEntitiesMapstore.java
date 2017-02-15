@@ -2,6 +2,7 @@ package com.dataloom.linking.mapstores;
 
 import java.util.UUID;
 
+import com.dataloom.data.DelegatedEntityKeySet;
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
@@ -9,9 +10,9 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
 /**
@@ -19,7 +20,7 @@ import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMa
  * @author Ho Chung Siu
  *
  */
-public class LinkedEntitiesMapstore extends AbstractStructuredCassandraMapstore<EntityKey, DelegatedUUIDSet> {
+public class LinkedEntitiesMapstore extends AbstractStructuredCassandraMapstore<EntityKey, DelegatedEntityKeySet> {
 
     public LinkedEntitiesMapstore( Session session ) {
         super( HazelcastMap.LINKED_ENTITIES.name(), session, Table.LINKED_ENTITIES.getBuilder() );
@@ -31,8 +32,8 @@ public class LinkedEntitiesMapstore extends AbstractStructuredCassandraMapstore<
     }
 
     @Override
-    public DelegatedUUIDSet generateTestValue() {
-        return TestDataFactory.delegatedUUIDSet();
+    public DelegatedEntityKeySet generateTestValue() {
+        return DelegatedEntityKeySet.wrap( ImmutableSet.of( TestDataFactory.entityKey(), TestDataFactory.entityKey() ) );
     }
 
     @Override
@@ -42,10 +43,10 @@ public class LinkedEntitiesMapstore extends AbstractStructuredCassandraMapstore<
     }
 
     @Override
-    protected BoundStatement bind( EntityKey key, DelegatedUUIDSet value, BoundStatement bs ) {
+    protected BoundStatement bind( EntityKey key, DelegatedEntityKeySet value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ENTITY_SET_ID.cql(), key.getEntitySetId() )
                 .setString( CommonColumns.ENTITYID.cql(), key.getEntityId() )
-                .setSet( CommonColumns.ENTITY_KEYS.cql(), value, UUID.class );        
+                .setSet( CommonColumns.ENTITY_KEYS.cql(), value, EntityKey.class );        
     }
 
     @Override
@@ -59,9 +60,9 @@ public class LinkedEntitiesMapstore extends AbstractStructuredCassandraMapstore<
     }
 
     @Override
-    protected DelegatedUUIDSet mapValue( ResultSet rs ) {
+    protected DelegatedEntityKeySet mapValue( ResultSet rs ) {
         Row row = rs.one();
-        return row == null ? null : DelegatedUUIDSet.wrap( row.getSet( CommonColumns.ENTITY_KEYS.cql(), UUID.class ) );
+        return row == null ? null : DelegatedEntityKeySet.wrap( row.getSet( CommonColumns.ENTITY_KEYS.cql(), EntityKey.class ) );
     }
 
 }
