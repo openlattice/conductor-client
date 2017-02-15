@@ -63,7 +63,7 @@ public class UserDirectoryService {
         Set<Auth0UserBasic> users = Sets.newHashSet();
         for ( Set<Auth0UserBasic> pageOfUsers = auth0ManagementApi.getAllUsers( page, 100 );
               users.isEmpty() || pageOfUsers.size() == 100; pageOfUsers = auth0ManagementApi
-                .getAllUsers( page++, 100 ) ) {
+                .getAllUsers( ++page, 100 ) ) {
             users.addAll( pageOfUsers );
         }
 
