@@ -544,4 +544,10 @@ public class EdmService implements EdmManager {
                 .filter( ptId -> getPropertyType( ptId ).isPIIfield() ).collect( Collectors.toSet() );
     }
 
+    @Override
+    public EntityType getEntityTypeByEntitySetId( UUID entitySetId ) {
+        UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
+        return getEntityType( entityTypeId );
+    }
+    
 }

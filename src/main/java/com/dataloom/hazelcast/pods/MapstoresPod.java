@@ -36,6 +36,8 @@ import com.dataloom.edm.mapstores.*;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.mapstores.LinkedEntitiesMapstore;
+import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
+import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.mapstores.*;
 import com.dataloom.requests.AclRootRequestDetailsPair;
@@ -43,7 +45,6 @@ import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
 import com.dataloom.requests.mapstores.*;
 import com.datastax.driver.core.Session;
-import com.kryptnostic.conductor.rpc.odata.LinkedEntityTypesMapstore;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
@@ -197,5 +198,10 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntityTypesMapstore() {
         return new LinkedEntityTypesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntitySetsMapstore() {
+        return new LinkedEntitySetsMapstore( session );
     }
 }

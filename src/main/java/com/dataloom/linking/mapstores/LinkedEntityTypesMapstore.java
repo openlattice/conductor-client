@@ -1,4 +1,4 @@
-package com.kryptnostic.conductor.rpc.odata;
+package com.dataloom.linking.mapstores;
 
 import java.util.UUID;
 
@@ -8,6 +8,7 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;

@@ -39,6 +39,7 @@ public enum Table implements TableDef {
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
+    LINKED_ENTITY_SETS,
     LINKED_ENTITY_TYPES,
     LINKED_ENTITIES,
     LINKING_EDGES,
@@ -136,6 +137,11 @@ public enum Table implements TableDef {
                                 PROPERTIES,
                                 CommonColumns.SCHEMAS )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case LINKED_ENTITY_SETS:
+                return new CassandraTableBuilder( LINKED_ENTITY_SETS )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .columns( CommonColumns.ENTITY_SET_IDS );
             case LINKED_ENTITY_TYPES:
                 return new CassandraTableBuilder( LINKED_ENTITY_TYPES )
                         .ifNotExists()

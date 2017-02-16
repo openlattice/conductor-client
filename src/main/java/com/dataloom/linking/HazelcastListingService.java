@@ -19,30 +19,47 @@
 
 package com.dataloom.linking;
 
-import com.dataloom.edm.type.EntityType;
+import java.util.Set;
+import java.util.UUID;
+
+import com.dataloom.edm.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.services.EdmManager;
+import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
-
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastListingService {
     private final IMap<UUID, DelegatedUUIDSet> linkedEntityTypes;
+    private final IMap<UUID, DelegatedUUIDSet> linkedEntitySets;
 
     public HazelcastListingService( HazelcastInstance hazelcastInstance ) {
         this.linkedEntityTypes = hazelcastInstance.getMap( HazelcastMap.LINKED_ENTITY_TYPES.name() );
+        this.linkedEntitySets = hazelcastInstance.getMap( HazelcastMap.LINKED_ENTITY_SETS.name() );
     }
 
-    public void setLinkedEntityTypes( UUID entitySetId, Set<UUID> entityTypes ) {
-        this.linkedEntityTypes.set( entitySetId, DelegatedUUIDSet.wrap( entityTypes ) );
+    public void setLinkedEntityTypes( UUID entityTypeId, Set<UUID> entityTypes ) {
+        this.linkedEntityTypes.set( entityTypeId, DelegatedUUIDSet.wrap( entityTypes ) );
+    }
+
+    public boolean isLinkedEntityType( UUID entityTypeId ) {
+        return linkedEntityTypes.containsKey( entityTypeId );
+    }
+
+    public void setLinkedEntitySets( UUID entitySetId, Set<UUID> entitySets ) {
+        this.linkedEntitySets.set( entitySetId, DelegatedUUIDSet.wrap( entitySets ) );
+    }
+    
+    public DelegatedUUIDSet getLinkedEntitySets( UUID entitySetId ) {
+        return Util.getSafely( linkedEntitySets, entitySetId );
     }
 
     public boolean isLinkedEntitySet( UUID entitySetId ) {
-        return linkedEntityTypes.containsKey( entitySetId );
+        return linkedEntitySets.containsKey( entitySetId );
     }
+
 }
