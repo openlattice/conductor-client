@@ -17,23 +17,31 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.hazelcast;
+package com.dataloom.linking;
 
-import com.hazelcast.core.IMap;
+import com.dataloom.graph.LinkingEdge;
 
-import java.util.function.Supplier;
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public class WeightedLinkingEdge implements Comparable<WeightedLinkingEdge> {
+    private final Double      weight;
+    private final LinkingEdge edge;
 
-public class HazelcastUtils {
-    public static <T, V> V typedGet( IMap<T, V> m, T key ) {
-        return m.get( key );
+    public WeightedLinkingEdge( double weight, LinkingEdge edge ) {
+        this.weight = weight;
+        this.edge = edge;
     }
 
-    public static <K,V> K insertIntoUnusedKey( IMap<K,V> m, V value, Supplier<K> keyFactory ) {
-        K key = keyFactory.get();
-        while( m.putIfAbsent( key, value ) !=null ){
-            key = keyFactory.get();
-        }
-        return key;
+    public LinkingEdge getEdge() {
+        return edge;
     }
 
+    public double getWeight() {
+        return weight;
+    }
+
+    @Override public int compareTo( WeightedLinkingEdge o ) {
+        return weight.compareTo( o.weight );
+    }
 }

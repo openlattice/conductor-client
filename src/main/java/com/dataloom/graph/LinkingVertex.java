@@ -17,23 +17,30 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.hazelcast;
+package com.dataloom.graph;
 
-import com.hazelcast.core.IMap;
+import com.dataloom.data.EntityKey;
 
-import java.util.function.Supplier;
+import java.util.Set;
+import java.util.UUID;
 
-public class HazelcastUtils {
-    public static <T, V> V typedGet( IMap<T, V> m, T key ) {
-        return m.get( key );
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public class LinkingVertex implements Set<UUID> {
+    private final double         diameter;
+    private final Set<EntityKey> entityKeys;
+
+    public LinkingVertex( double diameter, Set<EntityKey> entityKeys ) {
+        this.diameter = diameter;
+        this.entityKeys = entityKeys;
     }
 
-    public static <K,V> K insertIntoUnusedKey( IMap<K,V> m, V value, Supplier<K> keyFactory ) {
-        K key = keyFactory.get();
-        while( m.putIfAbsent( key, value ) !=null ){
-            key = keyFactory.get();
-        }
-        return key;
+    public double getDiameter() {
+        return diameter;
     }
 
+    public Set<EntityKey> getEntityKeys() {
+        return entityKeys;
+    }
 }
