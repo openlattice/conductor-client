@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 import com.dataloom.linking.Entity;
 import com.dataloom.linking.util.UnorderedPair;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 
 /**
  * Basic Blocker interface.
@@ -19,7 +20,15 @@ import com.google.common.collect.Multimap;
  */
 public interface Blocker {
 
-    public void setLinking( Map<UUID, UUID> entitySetsWithSyncIds, Multimap<UUID, UUID> linkingMap, Set<Map<UUID, UUID>> linkingProperties );
+    /**
+     * Warning: We assume that the restrictions on links are enforced/validated as specified in LinkingApi. In particular, only identical property types are linked on.
+     * @param entitySetsWithSyncIds
+     * @param linkIndexedByPropertyTypes
+     * @param linkIndexedByEntitySets
+     */
+    public void setLinking( Map<UUID, UUID> entitySetsWithSyncIds,
+            SetMultimap<UUID, UUID> linkIndexedByPropertyTypes,
+            SetMultimap<UUID, UUID> linkIndexedByEntitySets );
 
     public Stream<UnorderedPair<Entity>> block();
 }

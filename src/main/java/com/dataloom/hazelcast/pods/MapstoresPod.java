@@ -25,6 +25,8 @@ import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.data.DelegatedEntityKeySet;
+import com.dataloom.data.EntityKey;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.edm.EntitySet;
@@ -33,6 +35,9 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.edm.mapstores.*;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.linking.mapstores.LinkedEntitiesMapstore;
+import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
+import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.mapstores.*;
 import com.dataloom.requests.AclRootRequestDetailsPair;
@@ -183,5 +188,20 @@ public class MapstoresPod {
                 Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.MEMBERS );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<EntityKey, DelegatedEntityKeySet> linkedEntitiesMapstore() {
+        return new LinkedEntitiesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntityTypesMapstore() {
+        return new LinkedEntityTypesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntitySetsMapstore() {
+        return new LinkedEntitySetsMapstore( session );
     }
 }

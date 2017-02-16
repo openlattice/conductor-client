@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
@@ -198,6 +199,9 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.REQUESTID.cql() );
     }
 
+    public static Set<EntityKey> entityKeys( Row row ){
+        return row.getSet( CommonColumns.ENTITY_KEYS.cql(), EntityKey.class );
+    }
 
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
