@@ -38,10 +38,6 @@ public class CassandraGraphQueryService {
         return null;
     }
 
-    public  getNeighbors( LinkingEdge key ) {
-    }
-
-
     public Map<UUID,Double> getDstNeighbors( LinkingEdge edge ) {
         return getNeighbors( edge.getDst(), edge.getSrc() );
     }
@@ -51,6 +47,6 @@ public class CassandraGraphQueryService {
     }
 
     public Map<UUID, Double> getNeighbors( LinkingVertexKey center, LinkingVertexKey exclude ) {
-
+        return null;
     }
 }

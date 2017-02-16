@@ -92,7 +92,9 @@ public enum CommonColumns implements ColumnDef {
     DESTINATION_ENTITY_SET_ID( DataType.uuid() ),
     DESTINATION_ENTITY_ID( DataType.text() ),
     EDGE_VALUE( DataType.cdouble() ),
-    GRAPH_ID( DataType.uuid() );
+    GRAPH_ID( DataType.uuid() ),
+    DESTINATION_LINKING_VERTEX_ID( DataType.uuid() ),
+    SOURCE_LINKING_VERTEX_ID( DataType.uuid() );
 
     private final DataType type;
 

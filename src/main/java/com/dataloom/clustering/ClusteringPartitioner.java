@@ -109,8 +109,9 @@ public class ClusteringPartitioner {
 
             graphs.deleteVertex( lightestEdge.getSrc() );
             graphs.deleteVertex( lightestEdge.getDst() );
-        }
 
+            graphs.removeEdge( lightestEdge );
+        }
     }
 
 }

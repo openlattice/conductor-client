@@ -19,15 +19,9 @@
 
 package com.dataloom.graph.mapstores;
 
-import java.util.UUID;
-
-import org.apache.commons.lang.math.RandomUtils;
-
-import com.dataloom.data.EntityKey;
 import com.dataloom.graph.GraphUtil;
 import com.dataloom.graph.LinkingEdge;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -35,6 +29,9 @@ import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
+import org.apache.commons.lang.math.RandomUtils;
+
+import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -46,13 +43,11 @@ public class LinkingGraphsMapstore extends AbstractStructuredCassandraMapstore<L
 
     @Override
     protected BoundStatement bind( LinkingEdge key, BoundStatement bs ) {
-        final EntityKey src = key.getSource();
-        final EntityKey dst = key.getDestination();
+        final LinkingVertexKey src = key.getSrc();
+        final LinkingVertexKey dst = key.getDst();
         return bs.setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() )
-                .setUUID( CommonColumns.SOURCE_ENTITY_SET_ID.cql(), src.getEntitySetId() )
-                .setString( CommonColumns.SOURCE_ENTITY_ID.cql(), src.getEntityId() )
-                .setUUID( CommonColumns.DESTINATION_ENTITY_SET_ID.cql(), dst.getEntitySetId() )
-                .setString( CommonColumns.DESTINATION_ENTITY_ID.cql(), dst.getEntityId() );
+                .setUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), src.getVertexId() )
+                .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), dst.getVertexId() );
     }
 
     @Override
@@ -83,6 +78,7 @@ public class LinkingGraphsMapstore extends AbstractStructuredCassandraMapstore<L
     }
 
     public static LinkingEdge testKey() {
-        return new LinkingEdge( UUID.randomUUID(), TestDataFactory.entityKey(), TestDataFactory.entityKey() );
+        return new LinkingEdge( new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ),
+                new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ) );
     }
 }

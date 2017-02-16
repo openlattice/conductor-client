@@ -50,8 +50,9 @@ public enum Table implements TableDef {
     PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
     SCHEMAS,
-    REQUESTS
-    ;
+    REQUESTS,
+    LINKING_VERTICES,
+    LINKING_ENTITY_VERTICES;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
