@@ -54,9 +54,23 @@ public interface ConductorElasticsearchApi {
 	final String TYPE = "type";
 	final String OBJECT = "object";
 	final String NESTED = "nested";
-	final String KEYWORD = "keyword";
-	final String STRING = "string";
+	final String INDEX = "index";
+	final String NOT_ANALYZED = "not_analyzed";
 	
+	// datatypes
+	final String TEXT = "text";
+	final String KEYWORD = "keyword";
+	final String INTEGER = "integer";
+	final String SHORT = "short";
+	final String LONG = "long";
+	final String DOUBLE = "double";
+	final String FLOAT = "float";
+	final String BYTE = "byte";
+	final String DATE = "date";
+	final String BOOLEAN = "boolean";
+	final String BINARY = "binary";
+    final String GEO_POINT = "geo_point";
+
 	// entity_set_data_model setup consts
     final String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
     final String ENTITY_SET_TYPE = "entity_set";
@@ -68,7 +82,7 @@ public interface ConductorElasticsearchApi {
     final String ORGANIZATION_ID = "organizationId";
 
 	final String SECURABLE_OBJECT_INDEX_PREFIX = "securable_object_";
-	final String SECURABLE_OBJECT_ROW_TYPE = "securable_object_row";
+	final String SECURABLE_OBJECT_TYPE_PREFIX = "type_";
 	final String ACL_KEY = "aclKey";
 	final String PROPERTY_TYPE_ID = "propertyTypeId";
 	
