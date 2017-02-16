@@ -22,7 +22,6 @@ package com.dataloom.linking;
 import com.dataloom.data.EntityKey;
 
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;

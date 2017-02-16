@@ -19,17 +19,16 @@
 
 package com.dataloom.graph;
 
-import java.util.UUID;
-
-import com.dataloom.linking.HazelcastLinkingGraphs;
-import com.dataloom.linking.LinkingEdge;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.data.EntityKey;
+import com.dataloom.linking.LinkingEdge;
+import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.util.UnorderedPair;
 import com.datastax.driver.core.Row;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -60,17 +59,6 @@ public final class GraphUtil {
         return new DirectedEdge( a, b );
     }
 
-    public static boolean isNewEdge(
-            HazelcastLinkingGraphs linkingGraph,
-            UUID graphId,
-            UnorderedPair<EntityKey> keys ) {
-        if ( keys.getBackingCollection().size() <= 1 ) {
-            return false;
-        }
-        LinkingEdge edge = linkingEdge( graphId, keys );
-        return linkingGraph.getWeight( edge ) == null;
-    }
-
     public static EntityKey source( Row rs ) {
         final UUID entitySetId = rs.getUUID( CommonColumns.SOURCE_ENTITY_SET_ID.cql() );
         final String entityId = rs.getString( CommonColumns.SOURCE_ENTITY_ID.cql() );
@@ -85,10 +73,10 @@ public final class GraphUtil {
 
     public static LinkingEdge linkingEdge( Row row ) {
         final UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
-        final EntityKey src = source( row );
-        final EntityKey dst = destination( row );
+        final UUID src = row.getUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql() );
+        final UUID dst = row.getUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql() );
 
-        return new LinkingEdge( graphId, src, dst );
+        return new LinkingEdge( new LinkingVertexKey( graphId, src ), new LinkingVertexKey( graphId, dst ) );
     }
 
     public static Double edgeValue( Row row ) {

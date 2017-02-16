@@ -43,8 +43,8 @@ public class HazelcastLinkingGraphs {
 
     public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
         this.linkingEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
-        this.linkingVertices =hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
-        this.vertices =hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_VERTICES.name() );
+        this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
+        this.vertices = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_VERTICES.name() );
 
     }
 
@@ -60,7 +60,9 @@ public class HazelcastLinkingGraphs {
         LinkingVertex vertex = new LinkingVertex( 0.0D, Sets.newHashSet( entityKey ) );
 
         LinkingVertexKey vertexKey = HazelcastUtils
-                .insertIntoUnusedKey( linkingVertices, vertex, () -> new LinkingVertexKey( graphId, UUID.randomUUID() ) );
+                .insertIntoUnusedKey( linkingVertices,
+                        vertex,
+                        () -> new LinkingVertexKey( graphId, UUID.randomUUID() ) );
         vertices.set( lek, vertexKey.getVertexId() );
         return vertexKey;
     }
@@ -91,5 +93,13 @@ public class HazelcastLinkingGraphs {
 
     public void removeEdge( LinkingEdge edge ) {
         linkingEdges.delete( edge );
+    }
+
+    public boolean edgeExists( LinkingEdge edge ) {
+        return linkingEdges.containsKey( edge );
+    }
+
+    public LinkingVertexKey getLinkingVertextKey( LinkingEntityKey linkingEntityKey ) {
+        return new LinkingVertexKey( linkingEntityKey.getGraphId(), Util.getSafely( vertices, linkingEntityKey ) );
     }
 }
