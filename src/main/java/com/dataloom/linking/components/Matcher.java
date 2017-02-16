@@ -19,7 +19,7 @@ import com.google.common.collect.SetMultimap;
  */
 public interface Matcher {
 
-    public static final double threshold = 0.8;
+    public static final double threshold = 0.1;
 
     /**
      * Warning: We assume that the restrictions on links are enforced/validated as specified in LinkingApi. In particular, only identical property types are linked on.
@@ -34,22 +34,22 @@ public interface Matcher {
     }
 
     /**
-     * Given an unordered pair of entities, should return the score between 0 to 1 where the two entities match.
+     * Given an unordered pair of entities, should return a distance of the two entities (between 0 to 1). The lower the distance, the more similar they are.
      * 
      * @param entityPair
      * @return
      */
-    public double score( UnorderedPair<Entity> entityPair );
+    public double dist( UnorderedPair<Entity> entityPair );
 
     /**
      * Given an unordered pair of entities, should return whether the two entities match. The default implementation is
-     * when the score goes above threshold, then the two entity are considered a match.
+     * when the distance goes below threshold, then the two entity are considered a match.
      * 
      * @param entityPair
      * @return
      */
     default boolean match( UnorderedPair<Entity> entityPair ) {
-        return score( entityPair ) > threshold;
+        return dist( entityPair ) < threshold;
     }
 
 }
