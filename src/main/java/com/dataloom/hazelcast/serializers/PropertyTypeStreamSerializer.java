@@ -27,6 +27,7 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.stereotype.Component;
 
+import com.dataloom.edm.type.Analyzer;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
@@ -38,7 +39,8 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 @Component
 public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerializer<PropertyType> {
 
-    private static final EdmPrimitiveTypeKind[] edmTypes = EdmPrimitiveTypeKind.values();
+    private static final EdmPrimitiveTypeKind[] edmTypes  = EdmPrimitiveTypeKind.values();
+    private static final Analyzer[]             analyzers = Analyzer.values();
 
     @Override
     public void write( ObjectDataOutput out, PropertyType object ) throws IOException {
@@ -51,6 +53,7 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
         } );
         out.writeInt( object.getDatatype().ordinal() );
         out.writeBoolean( object.isPIIfield() );
+        out.writeInt( object.getAnalyzer().ordinal() );
     }
 
     @Override
@@ -64,7 +67,8 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
         } );
         EdmPrimitiveTypeKind datatype = edmTypes[ in.readInt() ];
         Optional<Boolean> piiField = Optional.of( in.readBoolean() );
-        return new PropertyType( id, type, title, description, schemas, datatype, piiField );
+        Optional<Analyzer> analyzer = Optional.of( analyzers[ in.readInt() ] );
+        return new PropertyType( id, type, title, description, schemas, datatype, piiField, analyzer );
     }
 
     @Override

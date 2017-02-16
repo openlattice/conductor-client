@@ -164,7 +164,8 @@ public enum Table implements TableDef {
                                 DESCRIPTION,
                                 CommonColumns.SCHEMAS,
                                 DATATYPE,
-                                PII_FIELD )
+                                PII_FIELD,
+                                ANALYZER )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case PERMISSIONS:
                 // TODO: Once Cassandra fixes SASI + Collection column inde
