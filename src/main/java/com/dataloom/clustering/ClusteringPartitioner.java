@@ -19,16 +19,13 @@
 
 package com.dataloom.clustering;
 
-import com.dataloom.graph.CassandraGraphQueryService;
-import com.dataloom.graph.HazelcastLinkingGraphs;
-import com.dataloom.graph.LinkingEdge;
-import com.dataloom.graph.mapstores.LinkingVertexKey;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.SetMultimap;
+import com.dataloom.linking.CassandraLinkingGraphsQueryService;
+import com.dataloom.linking.HazelcastLinkingGraphs;
+import com.dataloom.linking.LinkingEdge;
+import com.dataloom.linking.LinkingVertexKey;
+import com.dataloom.linking.WeightedLinkingEdge;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,10 +36,10 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class ClusteringPartitioner {
-    private final CassandraGraphQueryService cgqs;
-    private final HazelcastLinkingGraphs     graphs;
+    private final CassandraLinkingGraphsQueryService cgqs;
+    private final HazelcastLinkingGraphs             graphs;
 
-    public ClusteringPartitioner( CassandraGraphQueryService cgqs, HazelcastLinkingGraphs graphs , HazelcastInstance hazelcastInstance ) {
+    public ClusteringPartitioner( CassandraLinkingGraphsQueryService cgqs, HazelcastLinkingGraphs graphs , HazelcastInstance hazelcastInstance ) {
         this.cgqs = cgqs;
         this.graphs = graphs;
     }
@@ -58,9 +55,9 @@ public class ClusteringPartitioner {
          * 5. Loop until there are no edges below clustering threshold t
          */
 
-        Pair<LinkingEdge, Double> lightestEdgeAndWeight = cgqs.getLightestEdge( graphId );
-        LinkingEdge lightestEdge = lightestEdgeAndWeight.getLeft();
-        double lighestWeight = lightestEdgeAndWeight.getRight().doubleValue();
+        WeightedLinkingEdge lightestEdgeAndWeight = cgqs.getLightestEdge( graphId );
+        LinkingEdge lightestEdge = lightestEdgeAndWeight.getEdge();
+        double lighestWeight = lightestEdgeAndWeight.getWeight();
 
         while( lighestWeight < threshold ) {
 
@@ -111,6 +108,11 @@ public class ClusteringPartitioner {
             graphs.deleteVertex( lightestEdge.getDst() );
 
             graphs.removeEdge( lightestEdge );
+
+            //Setup next loop
+            lightestEdgeAndWeight = cgqs.getLightestEdge( graphId );
+            lightestEdge = lightestEdgeAndWeight.getEdge();
+            lighestWeight = lightestEdgeAndWeight.getWeight();
         }
     }
 

@@ -19,27 +19,33 @@
 
 package com.dataloom.linking;
 
+import java.util.UUID;
+
+import static com.google.common.base.Preconditions.checkArgument;
+
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class WeightedLinkingEdge implements Comparable<WeightedLinkingEdge> {
-    private final Double      weight;
-    private final LinkingEdge edge;
+public class LinkingVertexKey implements Comparable<LinkingVertexKey> {
+    private final UUID graphId;
+    private final UUID vertexId;
 
-    public WeightedLinkingEdge( double weight, LinkingEdge edge ) {
-        this.weight = weight;
-        this.edge = edge;
+    public LinkingVertexKey( UUID graphId, UUID vertexId ) {
+        this.graphId = graphId;
+        this.vertexId = vertexId;
     }
 
-    public LinkingEdge getEdge() {
-        return edge;
+    public UUID getGraphId() {
+        return graphId;
     }
 
-    public double getWeight() {
-        return weight;
+    public UUID getVertexId() {
+        return vertexId;
     }
 
-    @Override public int compareTo( WeightedLinkingEdge o ) {
-        return weight.compareTo( o.weight );
+    @Override
+    public int compareTo( LinkingVertexKey o ) {
+        checkArgument( graphId.equals( o.getGraphId() ), "Cannot compare vertices with different graph ids." );
+        return vertexId.compareTo( o.graphId );
     }
 }

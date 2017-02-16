@@ -17,7 +17,7 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.graph;
+package com.dataloom.linking;
 
 import com.dataloom.data.EntityKey;
 

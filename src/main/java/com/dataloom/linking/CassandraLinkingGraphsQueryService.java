@@ -19,31 +19,49 @@
 
 package com.dataloom.linking;
 
+import com.dataloom.data.EntityKey;
+import com.dataloom.graph.DirectedEdge;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Select;
 
-import java.util.PriorityQueue;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class LinkingPriorityQueue {
+public class CassandraLinkingGraphsQueryService {
     private final Session session;
-    private final UUID    graphId;
-    private final PriorityQueue<WeightedLinkingEdge> q = new PriorityQueue<>( 10000 );
-
-    public LinkingPriorityQueue( Session session, UUID graphId ) {
+    public CassandraLinkingGraphsQueryService( String keyspace, Session session ) {
         this.session = session;
-        this.graphId = graphId;
     }
 
-    public LinkingEdge getLightestEdge() {
-//        if( )
+    public Map<UUID,Double> getNeighbors( LinkingEdge vertices ) {
         return null;
     }
 
-    private Set<LinkingEdge> getLightedgeFromCassandra() {
+    public Iterable<DirectedEdge> getOutgoingEdges( EntityKey vertex ) {
+        return null;
+    }
+
+
+    public static Select.Where neighborsQuery(String keyspace ) {
+        return null;
+    }
+
+    public WeightedLinkingEdge getLightestEdge( UUID graphId ) {
+        return null;
+    }
+
+    public Map<UUID,Double> getDstNeighbors( LinkingEdge edge ) {
+        return getNeighbors( edge.getDst(), edge.getSrc() );
+    }
+
+    public Map<UUID,Double> getSrcNeighbors( LinkingEdge edge ) {
+        return getNeighbors( edge.getSrc(), edge.getDst() );
+    }
+
+    public Map<UUID, Double> getNeighbors( LinkingVertexKey center, LinkingVertexKey exclude ) {
         return null;
     }
 }

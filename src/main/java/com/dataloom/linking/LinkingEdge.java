@@ -17,31 +17,40 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.graph;
+package com.dataloom.linking;
 
-import com.dataloom.data.EntityKey;
+import com.google.common.base.Preconditions;
 
 import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class LinkingEntityKey {
-    private final UUID      graphId;
-    private final EntityKey entityKey;
+public class LinkingEdge {
+    private final LinkingVertexKey src;
+    private final LinkingVertexKey dst;
 
-    public LinkingEntityKey(
-            UUID graphId,
-            EntityKey entityKey ) {
-        this.graphId = graphId;
-        this.entityKey = entityKey;
+    public LinkingEdge( LinkingVertexKey src, LinkingVertexKey dst ) {
+        Preconditions.checkArgument( src.getGraphId().equals( dst.getGraphId() ) );
+        if ( src.compareTo( dst ) < 0 ) {
+            this.src = src;
+            this.dst = dst;
+        } else {
+            this.src = dst;
+            this.dst = src;
+        }
     }
 
     public UUID getGraphId() {
-        return graphId;
+        return src.getGraphId();
     }
 
-    public EntityKey getEntityKey() {
-        return entityKey;
+    public LinkingVertexKey getSrc() {
+        return src;
     }
+
+    public LinkingVertexKey getDst() {
+        return dst;
+    }
+
 }

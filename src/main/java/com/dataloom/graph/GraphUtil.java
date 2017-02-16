@@ -21,6 +21,8 @@ package com.dataloom.graph;
 
 import java.util.UUID;
 
+import com.dataloom.linking.HazelcastLinkingGraphs;
+import com.dataloom.linking.LinkingEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,10 +45,6 @@ public final class GraphUtil {
 
     public static EntityKey max( EntityKey a, EntityKey b ) {
         return a.compareTo( b ) > 0 ? a : b;
-    }
-
-    public static LinkingEdge linkingEdge( UUID graphId, EntityKey a, EntityKey b ) {
-        return new LinkingEdge( graphId, a, b );
     }
 
     public static LinkingEdge linkingEdge( UUID graphId, EntityKey... keys ) {

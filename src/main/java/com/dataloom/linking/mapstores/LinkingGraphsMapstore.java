@@ -17,11 +17,12 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.graph.mapstores;
+package com.dataloom.linking.mapstores;
 
 import com.dataloom.graph.GraphUtil;
-import com.dataloom.graph.LinkingEdge;
+import com.dataloom.linking.LinkingEdge;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.linking.LinkingVertexKey;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
