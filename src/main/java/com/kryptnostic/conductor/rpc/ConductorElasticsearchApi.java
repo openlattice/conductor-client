@@ -29,6 +29,7 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.Organization;
+import com.dataloom.search.requests.SearchResult;
 import com.google.common.base.Optional;
 
 public interface ConductorElasticsearchApi {
@@ -101,7 +102,7 @@ public interface ConductorElasticsearchApi {
 		
 	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
 	    
-    List<Map<String, Object>> executeEntitySetDataSearch( UUID entitySetId, String searchTerm, Set<UUID> authorizedPropertyTypes );
+	SearchResult executeEntitySetDataSearch( UUID entitySetId, String searchTerm, int start, int maxHits, Set<UUID> authorizedPropertyTypes );
 	
     List<Map<String, Object>> executeEntitySetDataSearchAcrossIndices( Set<UUID> entitySetIds, Map<UUID, Set<String>> fieldSearches, int size, boolean explain );
 }
