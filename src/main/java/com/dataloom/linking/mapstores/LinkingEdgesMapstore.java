@@ -37,8 +37,8 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class LinkingGraphsMapstore extends AbstractStructuredCassandraMapstore<LinkingEdge, Double> {
-    public LinkingGraphsMapstore( Session session ) {
+public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<LinkingEdge, Double> {
+    public LinkingEdgesMapstore( Session session ) {
         super( HazelcastMap.LINKING_EDGES.name(), session, Table.LINKING_EDGES.getBuilder() );
     }
 

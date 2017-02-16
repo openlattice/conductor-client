@@ -94,7 +94,9 @@ public enum CommonColumns implements ColumnDef {
     EDGE_VALUE( DataType.cdouble() ),
     GRAPH_ID( DataType.uuid() ),
     DESTINATION_LINKING_VERTEX_ID( DataType.uuid() ),
-    SOURCE_LINKING_VERTEX_ID( DataType.uuid() );
+    SOURCE_LINKING_VERTEX_ID( DataType.uuid() ),
+    VERTEX_ID( DataType.uuid() ),
+    GRAPH_DIAMETER( DataType.cdouble() );
 
     private final DataType type;
 

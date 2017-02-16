@@ -101,8 +101,8 @@ public enum Table implements TableDef {
             case LINKING_EDGES:
                 return new CassandraTableBuilder( LINKING_EDGES )
                         .ifNotExists()
-                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
-                        .clusteringColumns( GRAPH_ID, DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
+                        .partitionKey( SOURCE_LINKING_VERTEX_ID )
+                        .clusteringColumns( GRAPH_ID, DESTINATION_LINKING_VERTEX_ID )
                         .columns( EDGE_VALUE )
                         .sasi( EDGE_VALUE );
             case ENTITY_ID_LOOKUP:
@@ -154,6 +154,18 @@ public enum Table implements TableDef {
                         .partitionKey( ENTITY_SET_ID )
                         .clusteringColumns( ENTITYID )
                         .columns( ENTITY_KEYS );
+            case LINKING_VERTICES:
+                return new CassandraTableBuilder( LINKING_VERTICES )
+                        .ifNotExists()
+                        .partitionKey( VERTEX_ID )
+                        .clusteringColumns( GRAPH_ID )
+                        .columns( GRAPH_DIAMETER, ENTITY_KEYS );
+            case LINKING_ENTITY_VERTICES:
+                return new CassandraTableBuilder( LINKING_ENTITY_VERTICES )
+                        .ifNotExists()
+                        .partitionKey( ENTITY_SET_ID, ENTITYID )
+                        .clusteringColumns( GRAPH_ID )
+                        .columns( VERTEX_ID );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
                         .ifNotExists()
