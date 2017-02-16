@@ -27,7 +27,7 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class LinkingVertex implements Set<UUID> {
+public class LinkingVertex {
     private final double         diameter;
     private final Set<EntityKey> entityKeys;
 
