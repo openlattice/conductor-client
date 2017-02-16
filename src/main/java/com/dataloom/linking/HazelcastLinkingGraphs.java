@@ -48,6 +48,10 @@ public class HazelcastLinkingGraphs {
 
     }
 
+    public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ){
+        return linkedEntitySetId;
+    }
+    
     public LinkingVertexKey createVertex( UUID graphId, EntityKey entityKey ) {
         LinkingEntityKey lek = new LinkingEntityKey( graphId, entityKey );
         UUID existingVertexId = vertices

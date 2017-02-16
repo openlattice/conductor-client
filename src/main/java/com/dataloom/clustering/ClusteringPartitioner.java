@@ -24,6 +24,7 @@ import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingEdge;
+import com.dataloom.linking.components.Clusterer;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 
@@ -35,16 +36,21 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class ClusteringPartitioner {
+public class ClusteringPartitioner implements Clusterer {
     private final CassandraLinkingGraphsQueryService cgqs;
     private final HazelcastLinkingGraphs             graphs;
-
-    public ClusteringPartitioner( CassandraLinkingGraphsQueryService cgqs, HazelcastLinkingGraphs graphs , HazelcastInstance hazelcastInstance ) {
+    
+    private final double defaultThreshold = 0.1D;
+    
+    public ClusteringPartitioner( CassandraLinkingGraphsQueryService cgqs, HazelcastLinkingGraphs graphs ) {
         this.cgqs = cgqs;
         this.graphs = graphs;
     }
 
-    public void cluster( UUID graphId, int threshold ) {
+    public void cluster( UUID graphId ){
+        cluster( graphId, defaultThreshold );
+    }
+    public void cluster( UUID graphId, double threshold ) {
 
         /*
          * Start with clustering threshold t
