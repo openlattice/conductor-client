@@ -43,6 +43,42 @@ public class LinkingVertex {
         return entityKeys;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        long temp;
+        temp = Double.doubleToLongBits( diameter );
+        result = prime * result + (int) ( temp ^ ( temp >>> 32 ) );
+        result = prime * result + ( ( entityKeys == null ) ? 0 : entityKeys.hashCode() );
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj ) {
+        if ( this == obj ) {
+            return true;
+        }
+        if ( obj == null ) {
+            return false;
+        }
+        if ( !( obj instanceof LinkingVertex ) ) {
+            return false;
+        }
+        LinkingVertex other = (LinkingVertex) obj;
+        if ( Double.doubleToLongBits( diameter ) != Double.doubleToLongBits( other.diameter ) ) {
+            return false;
+        }
+        if ( entityKeys == null ) {
+            if ( other.entityKeys != null ) {
+                return false;
+            }
+        } else if ( !entityKeys.equals( other.entityKeys ) ) {
+            return false;
+        }
+        return true;
+    }
+
     @Override public String toString() {
         return "LinkingVertex{" +
                 "diameter=" + diameter +

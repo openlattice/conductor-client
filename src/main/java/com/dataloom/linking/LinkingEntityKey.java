@@ -44,4 +44,48 @@ public class LinkingEntityKey {
     public EntityKey getEntityKey() {
         return entityKey;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ( ( entityKey == null ) ? 0 : entityKey.hashCode() );
+        result = prime * result + ( ( graphId == null ) ? 0 : graphId.hashCode() );
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj ) {
+        if ( this == obj ) {
+            return true;
+        }
+        if ( obj == null ) {
+            return false;
+        }
+        if ( !( obj instanceof LinkingEntityKey ) ) {
+            return false;
+        }
+        LinkingEntityKey other = (LinkingEntityKey) obj;
+        if ( entityKey == null ) {
+            if ( other.entityKey != null ) {
+                return false;
+            }
+        } else if ( !entityKey.equals( other.entityKey ) ) {
+            return false;
+        }
+        if ( graphId == null ) {
+            if ( other.graphId != null ) {
+                return false;
+            }
+        } else if ( !graphId.equals( other.graphId ) ) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "LinkingEntityKey [graphId=" + graphId + ", entityKey=" + entityKey + "]";
+    }
+    
 }
