@@ -26,9 +26,9 @@ public class EntityDataCreatedEvent {
     
     private UUID entitySetId;
     private String entityId;
-    private Map<UUID, String> propertyValues;
+    private Map<UUID, Object> propertyValues;
     
-    public EntityDataCreatedEvent( UUID entitySetId, String entityId, Map<UUID, String> propertyValues ) {
+    public EntityDataCreatedEvent( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues ) {
         this.entitySetId = entitySetId;
         this.entityId = entityId;
         this.propertyValues = propertyValues;
@@ -42,7 +42,7 @@ public class EntityDataCreatedEvent {
         return entityId;
     }
     
-    public Map<UUID, String> getPropertyValues() {
+    public Map<UUID, Object> getPropertyValues() {
         return propertyValues;
     }
 
