@@ -21,6 +21,7 @@ package com.dataloom.graph;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.linking.LinkingEdge;
+import com.dataloom.linking.LinkingEntityKey;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.util.UnorderedPair;
 import com.datastax.driver.core.Row;
@@ -28,7 +29,9 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -44,15 +47,6 @@ public final class GraphUtil {
 
     public static EntityKey max( EntityKey a, EntityKey b ) {
         return a.compareTo( b ) > 0 ? a : b;
-    }
-
-    public static LinkingEdge linkingEdge( UUID graphId, EntityKey... keys ) {
-        if ( keys.length != 2 ) return null;
-        return linkingEdge( graphId, keys[ 0 ], keys[ 1 ] );
-    }
-
-    public static LinkingEdge linkingEdge( UUID graphId, UnorderedPair<EntityKey> keys ) {
-        return linkingEdge( graphId, keys.getAsArray() );
     }
 
     public static DirectedEdge edge( EntityKey a, EntityKey b ) {

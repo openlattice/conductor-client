@@ -3,6 +3,8 @@ package com.dataloom.hazelcast.serializers;
 import java.io.IOException;
 import java.util.UUID;
 
+import org.springframework.stereotype.Component;
+
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.linking.LinkingEntityKey;
@@ -10,6 +12,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+@Component
 public class LinkingEntityKeyStreamSerializer implements SelfRegisteringStreamSerializer<LinkingEntityKey> {
 
     @Override

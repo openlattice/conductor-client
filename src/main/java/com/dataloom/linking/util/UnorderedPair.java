@@ -1,8 +1,11 @@
 package com.dataloom.linking.util;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import com.dataloom.linking.LinkingEntityKey;
 import com.google.common.base.Preconditions;
 
 public class UnorderedPair<T> {
@@ -22,10 +25,10 @@ public class UnorderedPair<T> {
         return backingCollection;
     }
 
-    public T[] getAsArray() {
-        return (T[]) backingCollection.toArray();
+    public List<T> getAsList() {
+        return backingCollection.stream().collect( Collectors.toList() );
     }
-    
+
     @Override
     public int hashCode() {
         return backingCollection.hashCode();
