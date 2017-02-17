@@ -27,9 +27,7 @@ public class LinkingVertexStreamSerializer implements SelfRegisteringStreamSeria
     @Override
     public LinkingVertex read( ObjectDataInput in ) throws IOException {
         double diameter = in.readDouble();
-        Set<EntityKey> entityKeys = SetStreamSerializers.deserialize( in, ( ObjectDataInput dataInput ) -> {
-            return EntityKeyStreamSerializer.deserialize( dataInput );
-        } );
+        Set<EntityKey> entityKeys = SetStreamSerializers.deserialize( in,  EntityKeyStreamSerializer::deserialize );
         return new LinkingVertex( diameter, entityKeys );
     }
 

@@ -96,7 +96,8 @@ public class HazelcastLinkingGraphs {
     }
 
     public void addEdge( LinkingEdge edge, double weight ) {
-        linkingEdges.putIfAbsent( edge, weight );;
+        linkingEdges.putIfAbsent( edge, weight );
+        ;
     }
 
     public void removeEdge( LinkingEdge edge ) {
@@ -109,5 +110,9 @@ public class HazelcastLinkingGraphs {
 
     public LinkingVertexKey getLinkingVertextKey( LinkingEntityKey linkingEntityKey ) {
         return getOrCreateVertex( linkingEntityKey.getGraphId(), linkingEntityKey.getEntityKey() );
+    }
+
+    public boolean verticesExists( LinkingEdge edge ) {
+        return linkingVertices.containsKey( edge.getSrc() ) && linkingVertices.containsKey( edge.getDst() );
     }
 }

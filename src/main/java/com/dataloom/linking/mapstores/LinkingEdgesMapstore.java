@@ -87,7 +87,10 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
     //    }
 
     @Override public void delete( LinkingEdge key ) {
-        session.execute( bind( key, load( key ), getDeleteQuery().bind() ) );
+        Double val = load( key );
+        if( val != null ) {
+            session.execute( bind( key, val, getDeleteQuery().bind() ) );
+        }
     }
 
     @Override
