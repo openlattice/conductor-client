@@ -19,37 +19,38 @@
 
 package com.dataloom.clustering;
 
-import com.dataloom.linking.CassandraLinkingGraphsQueryService;
-import com.dataloom.linking.HazelcastLinkingGraphs;
-import com.dataloom.linking.LinkingEdge;
-import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.linking.WeightedLinkingEdge;
+import com.dataloom.linking.*;
 import com.dataloom.linking.components.Clusterer;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
-import com.hazelcast.core.HazelcastInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class ClusteringPartitioner implements Clusterer {
+    private static final Logger logger = LoggerFactory.getLogger( ClusteringPartitioner.class );
     private final CassandraLinkingGraphsQueryService cgqs;
     private final HazelcastLinkingGraphs             graphs;
-    
+
     private final double defaultThreshold = 0.1D;
-    
+
     public ClusteringPartitioner( CassandraLinkingGraphsQueryService cgqs, HazelcastLinkingGraphs graphs ) {
         this.cgqs = cgqs;
         this.graphs = graphs;
     }
 
-    public void cluster( UUID graphId ){
+    public void cluster( UUID graphId ) {
         cluster( graphId, defaultThreshold );
     }
+
     public void cluster( UUID graphId, double threshold ) {
 
         /*
@@ -64,9 +65,10 @@ public class ClusteringPartitioner implements Clusterer {
         WeightedLinkingEdge lightestEdgeAndWeight = cgqs.getLightestEdge( graphId );
         LinkingEdge lightestEdge = lightestEdgeAndWeight.getEdge();
         double lighestWeight = lightestEdgeAndWeight.getWeight();
-
-        while( lighestWeight < threshold ) {
-            if( graphs.verticesExists( lightestEdge ) ) {
+        Stopwatch w = Stopwatch.createUnstarted();
+        while ( lighestWeight < threshold ) {
+            if ( graphs.verticesExists( lightestEdge ) ) {
+                w.start();
                 Map<UUID, Double> srcNeighborWeights = cgqs.getSrcNeighbors( lightestEdge );
                 Map<UUID, Double> dstNeighborWeights = cgqs.getDstNeighbors( lightestEdge );
 
@@ -125,7 +127,9 @@ public class ClusteringPartitioner implements Clusterer {
                 graphs.deleteVertex( lightestEdge.getDst() );
 
                 graphs.removeEdge( lightestEdge );
+                logger.info("One round of clustering took {} ms."  , w.elapsed( TimeUnit.MILLISECONDS ) );
             } else {
+                logger.info( "Encountered removed edge: {}", lightestEdge );
                 graphs.removeEdge( lightestEdge );
             }
             //Setup next loop

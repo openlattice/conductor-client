@@ -56,7 +56,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
     @Test
     public void testClustering() {
         Set<EntityKey> entityKeys = new HashSet<>();
-        for ( int i = 0; i < 100; i++ ) {
+        for ( int i = 0; i < 100000; i++ ) {
             entityKeys.add( TestDataFactory.entityKey() );
         }
         UUID graphId = UUID.randomUUID();

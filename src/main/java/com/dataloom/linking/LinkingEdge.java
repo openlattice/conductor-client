@@ -53,4 +53,10 @@ public class LinkingEdge {
         return dst;
     }
 
+    @Override public String toString() {
+        return "LinkingEdge{" +
+                "src=" + src +
+                ", dst=" + dst +
+                '}';
+    }
 }
