@@ -29,9 +29,9 @@ public class EntityDataLambdas implements Function<ConductorSparkApi, Boolean>, 
     
     private UUID entitySetId;
     private String entityId;
-    private Map<UUID, String> propertyValues;
+    private Map<UUID, Object> propertyValues;
 
-    public EntityDataLambdas( UUID entitySetId, String entityId, Map<UUID, String> propertyValues ) {
+    public EntityDataLambdas( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues ) {
         this.entitySetId = entitySetId;
         this.entityId = entityId;
         this.propertyValues = propertyValues;
