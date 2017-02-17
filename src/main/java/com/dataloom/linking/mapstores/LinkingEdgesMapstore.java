@@ -46,8 +46,9 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
     }
 
     public static LinkingEdge testKey() {
-        return new LinkingEdge( new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ),
-                new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ) );
+        UUID graphId = UUID.randomUUID();
+        return new LinkingEdge( new LinkingVertexKey( graphId, UUID.randomUUID() ),
+                new LinkingVertexKey( graphId, UUID.randomUUID() ) );
     }
 
     @Override
