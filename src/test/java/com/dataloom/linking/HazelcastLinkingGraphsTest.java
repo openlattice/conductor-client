@@ -42,12 +42,13 @@ import com.dataloom.streams.StreamUtil;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastLinkingGraphsTest extends HzAuthzTest {
-    private static final Random r = new Random();
+    private static final Random                               r      = new Random();
     protected static final HazelcastLinkingGraphs             graphs;
     protected static final CassandraLinkingGraphsQueryService cgqs;
     protected static final ClusteringPartitioner              partitioner;
     protected static final LinkingVerticesMapstore            lvm;
-    private static final Logger logger = LoggerFactory.getLogger( HazelcastLinkingGraphsTest.class );
+    private static final Logger                               logger = LoggerFactory
+            .getLogger( HazelcastLinkingGraphsTest.class );
 
     static {
         graphs = new HazelcastLinkingGraphs( hazelcastInstance );
@@ -59,7 +60,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
     @Test
     public void testClustering() {
         final int entityCount = 100;
-        Set<EntityKey> entityKeys = new HashSet<> ( entityCount );
+        Set<EntityKey> entityKeys = new HashSet<>( entityCount );
         for ( int i = 0; i < entityCount; i++ ) {
             entityKeys.add( TestDataFactory.entityKey() );
         }
@@ -70,14 +71,13 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
                 .map( entityKey -> graphs.getOrCreateVertex( graphId, entityKey ) )
                 .collect( Collectors.toSet() );
 
-        Set<LinkingEdge> edges = vertices.parallelStream()
+        vertices.parallelStream()
                 .flatMap( u -> vertices
                         .parallelStream()
-                        .filter( ignored -> r.nextBoolean() )
+                        .filter( ignored -> r.nextBoolean() && r.nextBoolean() )
                         .map( v -> new LinkingEdge( u, v ) ) )
-                .collect( Collectors.toSet() );
-        edges.parallelStream().forEach( edge -> graphs.addEdge( edge, r.nextDouble() ) );
-        partitioner.cluster( graphId, 4 );
+                .forEach( edge -> graphs.addEdge( edge, r.nextDouble() ) );
+        partitioner.cluster( graphId, 2 );
 
         StreamUtil.stream( lvm.loadAllKeys() ).map( graphs::getVertex )
                 .peek( v -> Assert.assertTrue( v.getEntityKeys().size() > 0 ) )
