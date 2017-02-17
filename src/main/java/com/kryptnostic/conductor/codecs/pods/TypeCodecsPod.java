@@ -22,6 +22,7 @@ package com.kryptnostic.conductor.codecs.pods;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.edm.type.Analyzer;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
@@ -111,6 +112,11 @@ public class TypeCodecsPod {
     @Bean
     public EnumNameCodec<RequestStatus> requestStatusCodec() {
         return new EnumNameCodec<>( RequestStatus.class );
+    }
+    
+    @Bean
+    public EnumNameCodec<Analyzer> analyzerCodec() {
+        return new EnumNameCodec<>( Analyzer.class );
     }
 
 }
