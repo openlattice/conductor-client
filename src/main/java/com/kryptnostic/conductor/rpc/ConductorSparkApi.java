@@ -87,7 +87,7 @@ public interface ConductorSparkApi {
 	
 	Boolean updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions );
 
-	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
+	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues );
 	
 	SearchResult executeEntitySetDataSearch( UUID entitySetId, String searchTerm, int start, int maxHits, Set<UUID> authorizedPropertyTypes );
 	
