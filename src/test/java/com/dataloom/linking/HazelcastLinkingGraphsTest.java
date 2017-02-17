@@ -57,7 +57,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
         lvm = new LinkingVerticesMapstore( session );
     }
 
-    @Test
+    //@Test
     public void testClustering() {
         final int entityCount = 100;
         Set<EntityKey> entityKeys = new HashSet<>( entityCount );
