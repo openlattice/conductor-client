@@ -129,7 +129,7 @@ public interface ConductorElasticsearchApi {
 	
 	Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
 		
-	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, String> propertyValues );
+	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues );
 	    
 	SearchResult executeEntitySetDataSearch( UUID entitySetId, String searchTerm, int start, int maxHits, Set<UUID> authorizedPropertyTypes );
 	
