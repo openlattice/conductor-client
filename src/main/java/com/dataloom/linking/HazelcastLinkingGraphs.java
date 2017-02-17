@@ -48,10 +48,10 @@ public class HazelcastLinkingGraphs {
 
     }
 
-    public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ){
+    public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ) {
         return linkedEntitySetId;
     }
-    
+
     public LinkingVertexKey getOrCreateVertex( UUID graphId, EntityKey entityKey ) {
         LinkingEntityKey lek = new LinkingEntityKey( graphId, entityKey );
         UUID existingVertexId = vertices
@@ -87,12 +87,16 @@ public class HazelcastLinkingGraphs {
                 () -> new LinkingVertexKey( edge.getGraphId(), UUID.randomUUID() ) );
     }
 
+    public LinkingVertex getVertex( LinkingVertexKey vertexKey ) {
+        return linkingVertices.get( vertexKey );
+    }
+
     public void deleteVertex( LinkingVertexKey key ) {
         Util.deleteSafely( linkingVertices, key );
     }
 
     public void addEdge( LinkingEdge edge, double weight ) {
-        linkingEdges.set( edge, weight );
+        linkingEdges.putIfAbsent( edge, weight );;
     }
 
     public void removeEdge( LinkingEdge edge ) {

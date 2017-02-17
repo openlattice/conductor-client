@@ -11,9 +11,12 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.UUID;
 
 public class EntityKeyTypeCodec extends TypeCodec<EntityKey> {
+    private static final Base64.Encoder encoder = Base64.getEncoder();
+    private static final Base64.Decoder decoder = Base64.getDecoder();
 
     private static final Logger logger = LoggerFactory
             .getLogger( EntityKeyTypeCodec.class );
@@ -37,19 +40,19 @@ public class EntityKeyTypeCodec extends TypeCodec<EntityKey> {
 
     @Override
     public EntityKey parse( String value ) throws InvalidTypeException {
-        return deserialize( TypeCodec.blob().parse( value ) );
+        return deserialize( ByteBuffer.wrap( decoder.decode( value ) );
     }
 
     @Override
     public String format( EntityKey value ) throws InvalidTypeException {
-        return TypeCodec.blob().format( serialize( value ) );
+        return encoder.encodeToString( serialize( value ).array() );
     }
 
     private ByteBuffer serialize( EntityKey value ) throws InvalidTypeException {
         if ( value == null ) {
             return null;
         }
-        final byte[] idBytes = value.getEntityId().getBytes();
+        final byte[] idBytes = value.getEntityId().getBytes( StandardCharsets.UTF_8 );
         final int len = 2 * Long.BYTES + idBytes.length;
         final byte[] bytes = new byte[ len ];
         final ByteBuffer buf = ByteBuffer.wrap( bytes );

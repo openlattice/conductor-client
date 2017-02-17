@@ -42,4 +42,11 @@ public class LinkingVertex {
     public Set<EntityKey> getEntityKeys() {
         return entityKeys;
     }
+
+    @Override public String toString() {
+        return "LinkingVertex{" +
+                "diameter=" + diameter +
+                ", entityKeys=" + entityKeys +
+                '}';
+    }
 }

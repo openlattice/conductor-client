@@ -34,6 +34,7 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 import org.apache.commons.lang.math.RandomUtils;
 
+import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -67,12 +68,31 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
     @Override protected Select.Where loadQuery() {
         return QueryBuilder.select( CommonColumns.GRAPH_ID.cql(),
                 CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(),
-                CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql() )
+                CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(),
+                CommonColumns.EDGE_VALUE.cql() )
                 .from( Table.LINKING_EDGES.getKeyspace(), Table.LINKING_EDGES.getName() )
                 .allowFiltering()
                 .where( CommonColumns.GRAPH_ID.eq() )
                 .and( CommonColumns.SOURCE_LINKING_VERTEX_ID.eq() )
                 .and( CommonColumns.DESTINATION_LINKING_VERTEX_ID.eq() );
+    }
+
+    //    @Override protected RegularStatement deleteQuery() {
+    //        return QueryBuilder.delete()
+    //                .from( Table.LINKING_EDGES.getKeyspace(), Table.LINKING_EDGES.getName() )
+    //                .where( QueryBuilder.gt( CommonColumns.EDGE_VALUE.cql(), CommonColumns.EDGE_VALUE.bindMarker() ) )
+    //                .and( CommonColumns.GRAPH_ID.eq() )
+    //                .and( CommonColumns.SOURCE_LINKING_VERTEX_ID.eq() )
+    //                .and( CommonColumns.DESTINATION_LINKING_VERTEX_ID.eq() );
+    //    }
+
+    @Override public void delete( LinkingEdge key ) {
+        session.execute( bind( key, load( key ), getDeleteQuery().bind() ) );
+    }
+
+    @Override
+    public void deleteAll( Collection<LinkingEdge> keys ) {
+        keys.forEach( this::delete );
     }
 
     @Override
