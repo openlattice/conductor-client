@@ -81,5 +81,6 @@ public enum StreamSerializerTypeIds {
     RENAME_ENTITY_TYPE_PROCESSOR,
     RENAME_ENTITY_SET_PROCESSOR,
     ENTITY_KEY_SET,
-    ENTITY
+    ENTITY,
+    SEARCH_RESULT
 }
