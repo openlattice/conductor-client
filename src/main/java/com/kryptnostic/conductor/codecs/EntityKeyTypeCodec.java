@@ -40,7 +40,7 @@ public class EntityKeyTypeCodec extends TypeCodec<EntityKey> {
 
     @Override
     public EntityKey parse( String value ) throws InvalidTypeException {
-        return deserialize( ByteBuffer.wrap( decoder.decode( value ) );
+        return deserialize( ByteBuffer.wrap( decoder.decode( value ) ) );
     }
 
     @Override
