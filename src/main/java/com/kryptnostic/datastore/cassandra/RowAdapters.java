@@ -228,6 +228,10 @@ public final class RowAdapters {
     public static Set<EntityKey> entityKeys( Row row ){
         return row.getSet( CommonColumns.ENTITY_KEYS.cql(), EntityKey.class );
     }
+    
+    public static Pair<UUID, Set<EntityKey>> linkedEntity( Row row ){
+        return Pair.of( row.getUUID( CommonColumns.VERTEX_ID.cql() ), entityKeys( row ) );
+    }
 
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
