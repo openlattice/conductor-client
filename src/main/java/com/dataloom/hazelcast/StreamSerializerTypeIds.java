@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.dataloom.hazelcast;
 
 /**
@@ -19,8 +38,13 @@ public enum StreamSerializerTypeIds {
     CALLABLE,
     CONDUCTOR_CALL,
     EMPLOYEE,
+    ENTITY_KEY,
     ENTITY_SET,
     ENTITY_TYPE,
+    LINKING_EDGE,
+    LINKING_VERTEX,
+    LINKING_ENTITY_KEY,
+    LINKING_VERTEX_KEY,
     PROPERTY_TYPE,
     PERMISSION_MERGER,
     PERMISSION_REMOVER,
@@ -42,5 +66,21 @@ public enum StreamSerializerTypeIds {
     PRINCIPAL_SET,
     TICKET_KEY,
     REQUEST_STATUS,
-    STATUS
+    STATUS,
+    EDM_PRIMITIVE_TYPE_KIND_GETTER,
+    ADD_SCHEMAS_TO_TYPE,
+    REMOVE_SCHEMAS_FROM_TYPE,
+    SCHEMA_MERGER,
+    SCHEMA_REMOVER,
+    ADD_PROPERTY_TYPES_TO_ENTITY_TYPE_PROCESSOR,
+    REMOVE_PROPERTY_TYPES_FROM_ENTITY_TYPE_PROCESSOR,
+    EMAIL_DOMAINS_MERGER,
+    EMAIL_DOMAINS_REMOVER,
+    UPDATE_REQUEST_STATUS_PROCESSOR,
+    RENAME_PROPERTY_TYPE_PROCESSOR,
+    RENAME_ENTITY_TYPE_PROCESSOR,
+    RENAME_ENTITY_SET_PROCESSOR,
+    ENTITY_KEY_SET,
+    ENTITY,
+    SEARCH_RESULT
 }

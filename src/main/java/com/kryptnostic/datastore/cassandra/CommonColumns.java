@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.kryptnostic.datastore.cassandra;
 
 import com.datastax.driver.core.DataType;
@@ -24,10 +43,13 @@ public enum CommonColumns implements ColumnDef {
     ENTITYID( DataType.text() ),
     ENTITY_SET( DataType.text() ),
     ENTITY_SET_ID( DataType.uuid() ),
+    ENTITY_SET_IDS( DataType.frozenSet( DataType.uuid() ) ),
     ENTITY_SETS( DataType.set( DataType.text() ) ),
     ENTITY_TYPE( DataType.text() ),
     ENTITY_TYPE_ID( DataType.uuid() ),
+    ENTITY_TYPE_IDS( DataType.frozenSet( DataType.uuid() ) ),
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
+    ENTITY_KEYS( DataType.frozenSet( DataType.blob() ) ),
     FQN( DataType.text() ),
     ID( DataType.uuid() ),
     KEY( DataType.set( DataType.uuid() ) ),
@@ -63,7 +85,19 @@ public enum CommonColumns implements ColumnDef {
     USERID( DataType.text() ),
     BLOCK( DataType.blob() ),
     COUNT( DataType.bigint() ),
-    ACL_KEY_VALUE( DataType.frozenList( DataType.uuid() ) );
+    ACL_KEY_VALUE( DataType.frozenList( DataType.uuid() ) ),
+    PII_FIELD( DataType.cboolean() ),
+    SOURCE_ENTITY_SET_ID( DataType.uuid() ),
+    SOURCE_ENTITY_ID( DataType.text() ),
+    DESTINATION_ENTITY_SET_ID( DataType.uuid() ),
+    DESTINATION_ENTITY_ID( DataType.text() ),
+    EDGE_VALUE( DataType.cdouble() ),
+    GRAPH_ID( DataType.uuid() ),
+    DESTINATION_LINKING_VERTEX_ID( DataType.uuid() ),
+    SOURCE_LINKING_VERTEX_ID( DataType.uuid() ),
+    VERTEX_ID( DataType.uuid() ),
+    GRAPH_DIAMETER( DataType.cdouble() ),
+    ANALYZER( DataType.text() );
 
     private final DataType type;
 

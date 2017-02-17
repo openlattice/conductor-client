@@ -1,15 +1,34 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.kryptnostic.datastore.services;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -24,19 +43,22 @@ import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
-import com.dataloom.authorization.SecurableObjectType;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
-import com.dataloom.edm.exceptions.TypeNotFoundException;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
+import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
+import com.dataloom.edm.types.processors.RenameEntitySetProcessor;
+import com.dataloom.edm.types.processors.RenameEntityTypeProcessor;
+import com.dataloom.edm.types.processors.RenamePropertyTypeProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -128,9 +150,9 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deletePropertyType( UUID propertyTypeId ) {
-        Set<EntityType> entityTypes = entityTypeManager
-                .getEntityTypesContainingPropertyTypes( ImmutableSet.of( propertyTypeId ) );
-        if ( entityTypes.stream()
+        Stream<EntityType> entityTypes = entityTypeManager
+                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) );
+        if ( entityTypes
                 .allMatch( et -> Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( et.getId() ) ) ) ) {
             propertyTypes.delete( propertyTypeId );
         }
@@ -214,7 +236,7 @@ public class EdmService implements EdmManager {
 
     private void createEntitySet( EntitySet entitySet ) {
         ensureValidEntitySet( entitySet );
-        
+
         aclKeyReservations.reserveIdAndValidateType( entitySet );
 
         checkState( entitySets.putIfAbsent( entitySet.getId(), entitySet ) == null, "Entity set already exists." );
@@ -222,6 +244,12 @@ public class EdmService implements EdmManager {
 
     @Override
     public void createEntitySet( Principal principal, EntitySet entitySet ) {
+        EntityType entityType = entityTypes.get( entitySet.getEntityTypeId() );
+        createEntitySet( principal, entitySet, entityType.getProperties() );
+    }
+
+    @Override
+    public void createEntitySet( Principal principal, EntitySet entitySet, Set<UUID> ownablePropertyTypes ) {
         Principals.ensureUser( principal );
         createEntitySet( entitySet );
 
@@ -232,9 +260,7 @@ public class EdmService implements EdmManager {
 
             authorizations.createEmptyAcl( ImmutableList.of( entitySet.getId() ), SecurableObjectType.EntitySet );
 
-            EntityType entityType = entityTypes.get( entitySet.getEntityTypeId() );
-
-            entityType.getProperties().stream()
+            ownablePropertyTypes.stream()
                     .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
                     .peek( aclKey -> authorizations.addPermission(
                             aclKey,
@@ -245,7 +271,7 @@ public class EdmService implements EdmManager {
 
             eventBus.post( new EntitySetCreatedEvent(
                     entitySet,
-                    Lists.newArrayList( propertyTypes.getAll( entityType.getProperties() ).values() ),
+                    Lists.newArrayList( propertyTypes.getAll( ownablePropertyTypes ).values() ),
                     principal ) );
 
         } catch ( Exception e ) {
@@ -269,7 +295,8 @@ public class EdmService implements EdmManager {
         } else if ( FullQualifiedName.class.isAssignableFrom( o.getClass() ) ) {
             names = Util.fqnToString( (Set<FullQualifiedName>) fqnsOrNames );
         } else {
-            throw new IllegalArgumentException( "Unable to retrieve Acl Keys for this type: " + o.getClass().getSimpleName() );
+            throw new IllegalArgumentException(
+                    "Unable to retrieve Acl Keys for this type: " + o.getClass().getSimpleName() );
         }
         return ImmutableSet.copyOf( aclKeys.getAll( names ).values() );
     }
@@ -331,7 +358,8 @@ public class EdmService implements EdmManager {
     public PropertyType getPropertyType( FullQualifiedName propertyType ) {
         return Preconditions.checkNotNull(
                 Util.getSafely( propertyTypes, Util.getSafely( aclKeys, Util.fqnToString( propertyType ) ) ),
-                "Property type %s does not exist", propertyType.getFullQualifiedNameAsString() );
+                "Property type %s does not exist",
+                propertyType.getFullQualifiedNameAsString() );
     }
 
     @Override
@@ -353,8 +381,39 @@ public class EdmService implements EdmManager {
     @Override
     public void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
-        Preconditions.checkArgument( Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty(), "Key property types cannot be removed." );
+        Preconditions.checkArgument(
+                Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty(),
+                "Key property types cannot be removed." );
         entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
+    }
+
+    @Override
+    public void renameEntityType( UUID entityTypeId, FullQualifiedName newFqn ) {
+        aclKeyReservations.renameReservation( entityTypeId, newFqn );
+        entityTypes.executeOnKey( entityTypeId, new RenameEntityTypeProcessor( newFqn ) );
+    }
+
+    @Override
+    public void renamePropertyType( UUID propertyTypeId, FullQualifiedName newFqn ) {
+        aclKeyReservations.renameReservation( propertyTypeId, newFqn );
+        propertyTypes.executeOnKey( propertyTypeId, new RenamePropertyTypeProcessor( newFqn ) );
+        // get all entity sets containing the property type, and re-index them.
+        entityTypeManager
+                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) )
+                .forEach( et -> {
+                    List<PropertyType> properties = Lists
+                            .newArrayList( propertyTypes.getAll( et.getProperties() ).values() );
+                    entitySetManager.getAllEntitySetsForType( et.getId() )
+                            .forEach( es -> eventBus
+                                    .post( new PropertyTypesInEntitySetUpdatedEvent( es.getId(), properties ) ) );
+                } );
+    }
+
+    @Override
+    public void renameEntitySet( UUID entitySetId, String newName ) {
+        aclKeyReservations.renameReservation( entitySetId, newName );
+        entitySets.executeOnKey( entitySetId, new RenameEntitySetProcessor( newName ) );
+        eventBus.post( new EntitySetMetadataUpdatedEvent( getEntitySet( entitySetId ) ) );
     }
 
     /**************
@@ -378,13 +437,13 @@ public class EdmService implements EdmManager {
     }
 
     private void ensureValidPropertyType( PropertyType propertyType ) {
-            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getNamespace() ),
-                    "Namespace for Property Type is missing" );
-            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getName() ),
-                    "Name of Property Type is missing" );
-            Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getTitle() ),
-                    "Title of Property Type is missing" );
-            Preconditions.checkArgument( propertyType.getDatatype() != null, "Datatype of Property Type is missing" );
+        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getNamespace() ),
+                "Namespace for Property Type is missing" );
+        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getName() ),
+                "Name of Property Type is missing" );
+        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getTitle() ),
+                "Title of Property Type is missing" );
+        Preconditions.checkArgument( propertyType.getDatatype() != null, "Datatype of Property Type is missing" );
     }
 
     private void ensureValidEntitySet( EntitySet entitySet ) {
@@ -479,4 +538,16 @@ public class EdmService implements EdmManager {
         return (Map<UUID, V>) propertyTypes.executeOnKeys( propertyTypeIds, ep );
     }
 
+    @Override
+    public Set<UUID> getPropertyTypeUuidsOfEntityTypeWithPIIField( UUID entityTypeId ) {
+        return getEntityType( entityTypeId ).getProperties().stream()
+                .filter( ptId -> getPropertyType( ptId ).isPIIfield() ).collect( Collectors.toSet() );
+    }
+
+    @Override
+    public EntityType getEntityTypeByEntitySetId( UUID entitySetId ) {
+        UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
+        return getEntityType( entityTypeId );
+    }
+    
 }

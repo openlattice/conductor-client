@@ -1,25 +1,48 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.dataloom.directory;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import java.util.Collection;
-import java.util.Map;
-
-import javax.ws.rs.NotSupportedException;
 
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.datastore.services.Auth0ManagementApi;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.NotSupportedException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Auth0Mapstore implements TestableSelfRegisteringMapStore<String, Auth0UserBasic> {
+    private static final Logger logger = LoggerFactory.getLogger( Auth0Mapstore.class );
     private final Auth0ManagementApi auth0;
-    private HazelcastMap             map;
+    private       HazelcastMap       map;
 
     public Auth0Mapstore( HazelcastMap map, Auth0ManagementApi auth0 ) {
         this.auth0 = checkNotNull( auth0, "Auth0 management api cannot be null" );
@@ -58,7 +81,7 @@ public class Auth0Mapstore implements TestableSelfRegisteringMapStore<String, Au
 
     @Override
     public Iterable<String> loadAllKeys() {
-        return auth0.getAllUsers().stream().map( Auth0UserBasic::getUserId )::iterator;
+        return getAllUsers().stream().map( Auth0UserBasic::getUserId )::iterator;
     }
 
     @Override
@@ -93,5 +116,23 @@ public class Auth0Mapstore implements TestableSelfRegisteringMapStore<String, Au
     public Auth0UserBasic generateTestValue() {
         return null;
     }
+
+    private Set<Auth0UserBasic> getAllUsers() {
+        int page = 0;
+
+        final Set<Auth0UserBasic> users = Sets.newHashSet();
+        for (Set<Auth0UserBasic> pageOfUsers = auth0.getAllUsers( page, 100 );
+              users.isEmpty() || pageOfUsers.size() == 100; pageOfUsers = auth0.getAllUsers( page++, 100 ) ) {
+            users.addAll( pageOfUsers );
+        }
+
+        if ( users.isEmpty() ) {
+            logger.warn( "Received null response from auth0" );
+            return ImmutableSet.of();
+        }
+
+        return users;
+    }
+
 
 }

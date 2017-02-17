@@ -1,6 +1,26 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.dataloom.authorization;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -8,11 +28,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.dataloom.authorization.securable.SecurableObjectType;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
 import com.dataloom.edm.exceptions.AclKeyConflictException;
 import com.dataloom.edm.exceptions.TypeExistsException;
-import com.dataloom.edm.internal.AbstractSchemaAssociatedSecurableType;
-import com.dataloom.edm.internal.AbstractSecurableObject;
-import com.dataloom.edm.internal.EntitySet;
+import com.dataloom.authorization.securable.AbstractSchemaAssociatedSecurableType;
+import com.dataloom.authorization.securable.AbstractSecurableObject;
+import com.dataloom.edm.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
@@ -66,10 +89,36 @@ public class HazelcastAclKeyReservationService {
          * Attempt to associated newName with existing aclKey
          */
 
-        final UUID existingAclKey = aclKeys.putIfAbsent( newName, Util.getSafely( aclKeys, oldName ) );
+        final UUID associatedAclKey = checkNotNull( Util.getSafely( aclKeys, oldName ),
+                "Name " + oldName + " is not being used yet." );
+
+        final UUID existingAclKey = aclKeys.putIfAbsent( newName, associatedAclKey );
 
         if ( existingAclKey == null ) {
             aclKeys.delete( oldName );
+            names.put( associatedAclKey, newName );
+        } else {
+            throw new TypeExistsException(
+                    "Cannot rename " + oldName + " to existing type "
+                            + newName );
+        }
+    }
+
+    public void renameReservation( UUID id, FullQualifiedName newFqn ) {
+        renameReservation( id, Util.fqnToString( newFqn ) );
+    }
+
+    public void renameReservation( UUID id, String newName ) {
+        checkArgument( !RESERVED_NAMES.contains( newName ), "Cannot rename to a reserved name" );
+
+        final String oldName = checkNotNull( Util.getSafely( names, id ),
+                "This aclKey does not correspond to any type." );
+
+        final UUID existingAclKey = aclKeys.putIfAbsent( newName, id );
+
+        if ( existingAclKey == null ) {
+            aclKeys.delete( oldName );
+            names.put( id, newName );
         } else {
             throw new TypeExistsException(
                     "Cannot rename " + oldName + " to existing type "

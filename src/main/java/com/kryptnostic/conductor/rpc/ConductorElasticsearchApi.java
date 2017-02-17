@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.kryptnostic.conductor.rpc;
 
 import java.util.List;
@@ -7,23 +26,67 @@ import java.util.UUID;
 
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.PropertyType;
+import com.dataloom.linking.Entity;
+import com.dataloom.organization.Organization;
+import com.dataloom.search.requests.SearchResult;
 import com.google.common.base.Optional;
 
 public interface ConductorElasticsearchApi {
+    
+    // settings consts
+    final String NUM_SHARDS = "number_of_shards";
+    final String NUM_REPLICAS = "number_of_replicas";
+    final String ANALYSIS = "analysis";
+    final String FILTER = "filter";
+    final String ANALYZER = "analyzer";
+    final String ENCODER = "encoder";
+    final String REPLACE = "replace";
+    final String TOKENIZER = "tokenizer";
+    final String STANDARD = "standard";
+    final String LOWERCASE = "lowercase";
+    final String PHONETIC = "phonetic";
+    final String METAPHONE = "metaphone";
+    final String METAPHONE_FILTER = "metaphone_filter";
+    final String METAPHONE_ANALYZER = "MetaphoneAnalyzer";
 	
-	// index setup consts
-	final String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
-	final String ENTITY_SET_TYPE = "entity_set";
 	final String ES_PROPERTIES = "properties";
 	final String PARENT = "_parent";
 	final String TYPE = "type";
 	final String OBJECT = "object";
 	final String NESTED = "nested";
+	final String INDEX = "index";
+	final String NOT_ANALYZED = "not_analyzed";
+	
+	// datatypes
+	final String TEXT = "text";
 	final String KEYWORD = "keyword";
-	final String NUM_SHARDS = "index.number_of_shards";
-	final String NUM_REPLICAS = "index.number_of_replicas";
+	final String INTEGER = "integer";
+	final String SHORT = "short";
+	final String LONG = "long";
+	final String DOUBLE = "double";
+	final String FLOAT = "float";
+	final String BYTE = "byte";
+	final String DATE = "date";
+	final String BOOLEAN = "boolean";
+	final String BINARY = "binary";
+    final String GEO_POINT = "geo_point";
+
+	// entity_set_data_model setup consts
+    final String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
+    final String ENTITY_SET_TYPE = "entity_set";
+    
+    // organizations setup consts
+    final String ORGANIZATIONS = "organizations";
+    final String ORGANIZATION = "organization";
+    final String ORGANIZATION_TYPE = "organizationType";
+    final String ORGANIZATION_ID = "organizationId";
+
+	final String SECURABLE_OBJECT_INDEX_PREFIX = "securable_object_";
+	final String SECURABLE_OBJECT_TYPE_PREFIX = "type_";
+	final String ACL_KEY = "aclKey";
+	final String PROPERTY_TYPE_ID = "propertyTypeId";
 	
 	// entity set field consts
 	final String TYPE_FIELD = "_type";
@@ -39,6 +102,8 @@ public interface ConductorElasticsearchApi {
 
 	Boolean initializeEntitySetDataModelIndex();
 	
+	Boolean initializeOrganizationIndex();
+	
 	Boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 	
 	Boolean deleteEntitySet( UUID entitySetId );
@@ -51,6 +116,24 @@ public interface ConductorElasticsearchApi {
 	
 	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
 	
-	Boolean updatePropertyTypesInEntitySet( UUID entitySetId, Set<PropertyType> newPropertyTypes );
+	Boolean updateEntitySetMetadata( EntitySet entitySet );
 	
+	Boolean updatePropertyTypesInEntitySet( UUID entitySetId, List<PropertyType> newPropertyTypes );
+	
+	Boolean createOrganization( Organization organization, Principal principal );
+	
+	Boolean updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions );
+	
+	Boolean deleteOrganization( UUID organizationId );
+	
+	List<Map<String, Object>> executeOrganizationSearch( String searchTerm, Set<Principal> principals );
+	
+	Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
+		
+	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues );
+	    
+	SearchResult executeEntitySetDataSearch( UUID entitySetId, String searchTerm, int start, int maxHits, Set<UUID> authorizedPropertyTypes );
+	
+    List<Entity> executeEntitySetDataSearchAcrossIndices( Set<UUID> entitySetIds, Map<UUID, Set<String>> fieldSearches, int size, boolean explain );
+
 }

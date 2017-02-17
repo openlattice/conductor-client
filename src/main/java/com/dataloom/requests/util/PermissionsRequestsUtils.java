@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.dataloom.requests.util;
 
 import java.util.EnumSet;
@@ -19,22 +38,6 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 
 public class PermissionsRequestsUtils {
     private PermissionsRequestsUtils() {}
-
-    /**
-     * Useful adapter for {@code Iterables#transform(Iterable, com.google.common.base.Function)} that allows lazy
-     * evaluation of result set future. See the same function in AuthorizationUtils as well.
-     * 
-     * @param rsf The result set future to make a lazy evaluated iterator
-     * @return The lazy evaluatable iterable
-     */
-    public static Iterable<Row> makeLazy( ResultSetFuture rsf ) {
-        return getRowsAndFlatten( Stream.of( rsf ) )::iterator;
-    }
-
-    public static Stream<Row> getRowsAndFlatten( Stream<ResultSetFuture> stream ) {
-        return stream.map( ResultSetFuture::getUninterruptibly )
-                .flatMap( rs -> StreamSupport.stream( rs.spliterator(), false ) );
-    }
 
     public static PermissionsRequest getPRFromRow( Row row ) {
         final List<UUID> aclRoot = RowAdapters.aclRoot( row );

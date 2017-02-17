@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.dataloom.auditing.mapstores;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.RandomUtils;
@@ -12,9 +31,8 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.ImmutableList;
 import com.hazelcast.config.MapStoreConfig;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
 import java.util.UUID;
@@ -29,7 +47,7 @@ public class LeaderboardMapstore extends AbstractStructuredCassandraPartitionKey
     private final PreparedStatement bookkeeper;
 
     public LeaderboardMapstore( String keyspace, Session session ) {
-        super( HazelcastMap.AUDIT_METRICS.name(), session, Tables.AUDIT_METRICS.getBuilder() );
+        super( HazelcastMap.AUDIT_METRICS.name(), session, Table.AUDIT_METRICS.getBuilder() );
         bookkeeper = session.prepare( bookkeepingQuery( keyspace ) );
     }
 
@@ -69,7 +87,7 @@ public class LeaderboardMapstore extends AbstractStructuredCassandraPartitionKey
     }
 
     public Insert bookkeepingQuery( String keyspace ) {
-        return QueryBuilder.insertInto( keyspace, Tables.AUDIT_METRICS.getName() )
+        return QueryBuilder.insertInto( keyspace, Table.AUDIT_METRICS.getName() )
                 .value( CommonColumns.ACL_KEYS.cql(), ImmutableList.of() )
                 .value( CommonColumns.COUNT.cql(), CommonColumns.COUNT.bindMarker() )
                 .value( CommonColumns.ACL_KEY_VALUE.cql(), CommonColumns.ACL_KEY_VALUE.bindMarker() );

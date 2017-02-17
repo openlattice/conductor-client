@@ -1,20 +1,39 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.dataloom.edm.properties;
 
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.stream.Stream;
 
-import org.spark_project.guava.collect.Iterables;
-
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.PropertyType;
+import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
-import com.kryptnostic.conductor.rpc.odata.Tables;
+import com.google.common.collect.Iterables;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 
@@ -31,20 +50,20 @@ public class CassandraTypeManager {
         this.session = session;
         this.entityTypesContainPropertyType = session.prepare(
                 QueryBuilder.select().all()
-                        .from( keyspace, Tables.ENTITY_TYPES.getName() ).allowFiltering()
+                        .from( keyspace, Table.ENTITY_TYPES.getName() ).allowFiltering()
                         .where( QueryBuilder
                                 .contains( CommonColumns.PROPERTIES.cql(), CommonColumns.PROPERTIES.bindMarker() ) ) );
         this.getEntityTypeIds = QueryBuilder.select( CommonColumns.ID.cql() ).distinct().from( keyspace,
-                Tables.ENTITY_TYPES.getName() );
+                Table.ENTITY_TYPES.getName() );
         this.getEntityTypes = QueryBuilder.select().all().from( keyspace,
-                Tables.ENTITY_TYPES.getName() );
+                Table.ENTITY_TYPES.getName() );
         this.getPropertyTypeIds = QueryBuilder.select( CommonColumns.ID.cql() ).distinct().from( keyspace,
-                Tables.PROPERTY_TYPES.getName() );
+                Table.PROPERTY_TYPES.getName() );
         this.getPropertyTypes = QueryBuilder.select().all()
-                .from( keyspace, Tables.PROPERTY_TYPES.getName() );
+                .from( keyspace, Table.PROPERTY_TYPES.getName() );
         this.getPropertyTypesInNamespace = session.prepare(
                 QueryBuilder.select().all()
-                        .from( keyspace, Tables.PROPERTY_TYPES.getName() )
+                        .from( keyspace, Table.PROPERTY_TYPES.getName() )
                         .where( QueryBuilder
                                 .eq( CommonColumns.NAMESPACE.cql(), CommonColumns.NAMESPACE.bindMarker() ) ) );
     }
@@ -75,11 +94,13 @@ public class CassandraTypeManager {
     }
 
     public Set<EntityType> getEntityTypesContainingPropertyTypes( Set<UUID> properties ) {
-        return properties.stream().map( this::getEntityTypesContainingPropertyType )
-                .map( ResultSetFuture::getUninterruptibly )
-                .map( rs -> Iterables.transform( rs, RowAdapters::entityType ).spliterator() )
-                .flatMap( si -> StreamSupport.stream( si, false ) )
+        return getEntityTypesContainingPropertyTypesAsStream( properties )
                 .collect( Collectors.toSet() );
+    }
+
+    public Stream<EntityType> getEntityTypesContainingPropertyTypesAsStream( Set<UUID> properties ) {
+        Stream<ResultSetFuture> rsfs = properties.stream().map( this::getEntityTypesContainingPropertyType );
+        return StreamUtil.getRowsAndFlatten( rsfs ).map( RowAdapters::entityType );
     }
 
     private ResultSetFuture getEntityTypesContainingPropertyType( UUID propertyId ) {

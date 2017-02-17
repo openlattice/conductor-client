@@ -1,3 +1,22 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.kryptnostic.datastore.cassandra;
 
 import java.io.IOException;
@@ -8,16 +27,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.SecurableObjectType;
-import com.dataloom.edm.internal.EntitySet;
-import com.dataloom.edm.internal.EntityType;
-import com.dataloom.edm.internal.PropertyType;
+import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.data.EntityKey;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
@@ -57,6 +78,51 @@ public final class RowAdapters {
             }
         }
         return m;
+    }
+
+    public static SetMultimap<UUID, Object> entityIndexedById(
+            ResultSet rs,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> m = HashMultimap.create();
+        for ( Row row : rs ) {
+            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+            String entityId = row.getString( CommonColumns.ENTITYID.cql() );
+            if ( propertyTypeId != null ) {
+                PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+                m.put( propertyTypeId,
+                        deserializeValue( mapper,
+                                row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                                pt.getDatatype(),
+                                entityId ) );
+            }
+        }
+        return m;
+    }
+
+
+    public static Pair<SetMultimap<UUID, Object>, SetMultimap<FullQualifiedName, Object>> entityIdFQNPair(
+            ResultSet rs,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> mByUUID = HashMultimap.create();
+        final SetMultimap<FullQualifiedName, Object> mByKey = HashMultimap.create();
+
+        for ( Row row : rs ) {
+            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+            String entityId = row.getString( CommonColumns.ENTITYID.cql() );
+            if ( propertyTypeId != null ) {
+                PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+                Object value = deserializeValue( mapper,
+                        row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                        pt.getDatatype(),
+                        entityId );
+                mByUUID.put( propertyTypeId,
+                        value );
+                mByKey.put( authorizedPropertyTypes.get( propertyTypeId ).getType(), value );
+            }
+        }
+        return Pair.of( mByUUID, mByKey );
     }
 
     public static String entityId( Row row ) {
@@ -104,7 +170,8 @@ public final class RowAdapters {
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
         EdmPrimitiveTypeKind dataType = row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class );
-        return new PropertyType( id, type, title, description, schemas, dataType );
+        Optional<Boolean> piiField = Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) );
+        return new PropertyType( id, type, title, description, schemas, dataType, piiField );
     }
 
     public static EntityType entityType( Row row ) {
@@ -158,6 +225,13 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.REQUESTID.cql() );
     }
 
+    public static Set<EntityKey> entityKeys( Row row ){
+        return row.getSet( CommonColumns.ENTITY_KEYS.cql(), EntityKey.class );
+    }
+    
+    public static Pair<UUID, Set<EntityKey>> linkedEntity( Row row ){
+        return Pair.of( row.getUUID( CommonColumns.VERTEX_ID.cql() ), entityKeys( row ) );
+    }
 
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes

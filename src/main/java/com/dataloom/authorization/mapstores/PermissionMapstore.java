@@ -1,8 +1,28 @@
+/*
+ * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * You can contact the owner of the copyright at support@thedataloom.com
+ */
+
 package com.dataloom.authorization.mapstores;
 
 import java.util.EnumSet;
 import java.util.UUID;
 
+import com.kryptnostic.conductor.rpc.odata.Table;
 import org.apache.commons.lang3.RandomStringUtils;
 
 import com.dataloom.authorization.AceKey;
@@ -18,13 +38,12 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
-import com.kryptnostic.conductor.rpc.odata.Tables;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
 public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceKey, DelegatedPermissionEnumSet> {
     public PermissionMapstore( Session session ) {
-        super( HazelcastMap.PERMISSIONS.name(), session, Tables.PERMISSIONS.getBuilder() );
+        super( HazelcastMap.PERMISSIONS.name(), session, Table.PERMISSIONS.getBuilder() );
     }
 
     @Override
