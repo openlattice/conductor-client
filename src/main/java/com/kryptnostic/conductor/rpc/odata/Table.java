@@ -98,28 +98,21 @@ public enum Table implements TableDef {
                         .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
                         .columns( ENTITYID, SYNCID )
                         .sasi( SYNCID );
-            case LINKING_EDGES:
-                return new CassandraTableBuilder( LINKING_EDGES )
-                        .ifNotExists()
-                        .partitionKey( SOURCE_LINKING_VERTEX_ID )
-                        .clusteringColumns( GRAPH_ID, DESTINATION_LINKING_VERTEX_ID )
-                        .columns( EDGE_VALUE )
-                        .sasi( EDGE_VALUE );
             case ENTITY_ID_LOOKUP:
-                return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
+            return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
                         .partitionKey( SYNCID, ENTITY_SET_ID )
                         .clusteringColumns( ENTITYID )
                         .secondaryIndex( ENTITY_SET_ID );
             case DATA:
-                return new CassandraTableBuilder( DATA )
+            return new CassandraTableBuilder( DATA )
                         .ifNotExists()
                         .partitionKey( ENTITYID )
                         .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
                         .columns( SYNCID )
                         .sasi( SYNCID );
             case ENTITY_SETS:
-                return new CassandraTableBuilder( ENTITY_SETS )
+            return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
                         .partitionKey( ID )
                         .clusteringColumns( NAME )
@@ -128,7 +121,7 @@ public enum Table implements TableDef {
                                 DESCRIPTION )
                         .secondaryIndex( ENTITY_TYPE_ID, NAME );
             case ENTITY_TYPES:
-                return new CassandraTableBuilder( ENTITY_TYPES )
+            return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
                         .partitionKey( ID )
                         .clusteringColumns( NAMESPACE, NAME )
@@ -138,30 +131,37 @@ public enum Table implements TableDef {
                                 PROPERTIES,
                                 CommonColumns.SCHEMAS )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case LINKING_EDGES:
+                return new CassandraTableBuilder( LINKING_EDGES )
+                        .ifNotExists()
+                        .partitionKey( GRAPH_ID )
+                        .clusteringColumns( EDGE_VALUE, SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID )
+                        .columns( EDGE_VALUE )
+                        .sasi( SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID );
             case LINKED_ENTITY_SETS:
-                return new CassandraTableBuilder( LINKED_ENTITY_SETS )
+            return new CassandraTableBuilder( LINKED_ENTITY_SETS )
                         .ifNotExists()
                         .partitionKey( ID )
                         .columns( CommonColumns.ENTITY_SET_IDS );
             case LINKED_ENTITY_TYPES:
-                return new CassandraTableBuilder( LINKED_ENTITY_TYPES )
+            return new CassandraTableBuilder( LINKED_ENTITY_TYPES )
                         .ifNotExists()
                         .partitionKey( ID )
                         .columns( CommonColumns.ENTITY_TYPE_IDS );
             case LINKED_ENTITIES:
-                return new CassandraTableBuilder( LINKED_ENTITIES )
+            return new CassandraTableBuilder( LINKED_ENTITIES )
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID )
                         .clusteringColumns( ENTITYID )
                         .columns( ENTITY_KEYS );
             case LINKING_VERTICES:
-                return new CassandraTableBuilder( LINKING_VERTICES )
+            return new CassandraTableBuilder( LINKING_VERTICES )
                         .ifNotExists()
                         .partitionKey( VERTEX_ID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( GRAPH_DIAMETER, ENTITY_KEYS );
             case LINKING_ENTITY_VERTICES:
-                return new CassandraTableBuilder( LINKING_ENTITY_VERTICES )
+            return new CassandraTableBuilder( LINKING_ENTITY_VERTICES )
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( GRAPH_ID )

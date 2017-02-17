@@ -19,13 +19,15 @@
 
 package com.dataloom.linking;
 
+import com.dataloom.data.EntityKey;
+import com.dataloom.linking.util.UnorderedPair;
+import com.datastax.driver.core.Row;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import com.dataloom.data.EntityKey;
-import com.dataloom.linking.util.UnorderedPair;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -39,9 +41,32 @@ public class LinkingUtil {
                 .collect( Collectors.toSet() );
     }
 
-    public static UnorderedPair<EntityKey> getEntityKeyPair( UnorderedPair<Entity> entityPair ){
-        Set<EntityKey> keys = entityPair.getBackingCollection().stream().map( entity -> entity.getKey() ).collect( Collectors.toSet() );
+    public static UnorderedPair<EntityKey> getEntityKeyPair( UnorderedPair<Entity> entityPair ) {
+        Set<EntityKey> keys = entityPair.getBackingCollection().stream().map( entity -> entity.getKey() )
+                .collect( Collectors.toSet() );
         return new UnorderedPair<EntityKey>( keys );
     }
 
+    public static Double edgeValue( Row row ) {
+        return row.getDouble( CommonColumns.EDGE_VALUE.cql() );
+    }
+
+    public static UUID srcId( Row row ) {
+        return row.getUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql() );
+    }
+
+    public static UUID dstId( Row row ) {
+        return row.getUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql() );
+    }
+
+    public static UUID graphId( Row row ) {
+        return row.getUUID( CommonColumns.GRAPH_ID.cql() );
+    }
+
+    public static LinkingEdge linkingEdge( Row row ) {
+        UUID graphId = graphId( row );
+
+        return new LinkingEdge( new LinkingVertexKey( graphId, srcId( row ) ),
+                new LinkingVertexKey( graphId, dstId( row ) ) );
+    }
 }
