@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -97,6 +98,31 @@ public final class RowAdapters {
             }
         }
         return m;
+    }
+
+
+    public static Pair<SetMultimap<UUID, Object>, SetMultimap<FullQualifiedName, Object>> entityIdFQNPair(
+            ResultSet rs,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> mByUUID = HashMultimap.create();
+        final SetMultimap<FullQualifiedName, Object> mByKey = HashMultimap.create();
+
+        for ( Row row : rs ) {
+            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+            String entityId = row.getString( CommonColumns.ENTITYID.cql() );
+            if ( propertyTypeId != null ) {
+                PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+                Object value = deserializeValue( mapper,
+                        row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                        pt.getDatatype(),
+                        entityId );
+                mByUUID.put( propertyTypeId,
+                        value );
+                mByKey.put( authorizedPropertyTypes.get( propertyTypeId ).getType(), value );
+            }
+        }
+        return Pair.of( mByUUID, mByKey );
     }
 
     public static String entityId( Row row ) {
