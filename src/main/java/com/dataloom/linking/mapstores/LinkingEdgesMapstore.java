@@ -20,13 +20,15 @@
 package com.dataloom.linking.mapstores;
 
 import com.dataloom.graph.GraphUtil;
-import com.dataloom.linking.LinkingEdge;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
@@ -42,6 +44,11 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
         super( HazelcastMap.LINKING_EDGES.name(), session, Table.LINKING_EDGES.getBuilder() );
     }
 
+    public static LinkingEdge testKey() {
+        return new LinkingEdge( new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ),
+                new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ) );
+    }
+
     @Override
     protected BoundStatement bind( LinkingEdge key, BoundStatement bs ) {
         final LinkingVertexKey src = key.getSrc();
@@ -55,6 +62,17 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
     protected BoundStatement bind( LinkingEdge key, Double value, BoundStatement bs ) {
         return bind( key, bs ).setDouble( CommonColumns.EDGE_VALUE.cql(), value );
 
+    }
+
+    @Override protected Select.Where loadQuery() {
+        return QueryBuilder.select( CommonColumns.GRAPH_ID.cql(),
+                CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(),
+                CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql() )
+                .from( Table.LINKING_EDGES.getKeyspace(), Table.LINKING_EDGES.getName() )
+                .allowFiltering()
+                .where( CommonColumns.GRAPH_ID.eq() )
+                .and( CommonColumns.SOURCE_LINKING_VERTEX_ID.eq() )
+                .and( CommonColumns.DESTINATION_LINKING_VERTEX_ID.eq() );
     }
 
     @Override
@@ -76,10 +94,5 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
     @Override
     public Double generateTestValue() {
         return RandomUtils.nextDouble();
-    }
-
-    public static LinkingEdge testKey() {
-        return new LinkingEdge( new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ),
-                new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ) );
     }
 }
