@@ -59,7 +59,8 @@ public class EntityKeyTypeCodec extends TypeCodec<EntityKey> {
         buf.putLong( value.getEntitySetId().getLeastSignificantBits() );
         buf.putLong( value.getEntitySetId().getMostSignificantBits() );
         buf.put( idBytes );
-        return buf.duplicate();
+        buf.clear();
+        return buf;
     }
 
     private EntityKey deserialize( ByteBuffer bytes ) throws InvalidTypeException {
@@ -67,10 +68,11 @@ public class EntityKeyTypeCodec extends TypeCodec<EntityKey> {
             return null;
         }
         ByteBuffer buf = bytes.duplicate();
-        long lsb = bytes.getLong();
-        long msb = bytes.getLong();
+        long lsb = buf.getLong();
+        long msb = buf.getLong();
         UUID entitySetId = new UUID( msb, lsb );
         byte[] idBytes = new byte[ buf.remaining() ];
+        buf.get(idBytes);
         String entityId = new String( idBytes, StandardCharsets.UTF_8 );
         return new EntityKey( entitySetId, entityId );
     }
