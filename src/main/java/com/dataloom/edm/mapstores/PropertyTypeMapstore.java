@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.edm.type.Analyzer;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
@@ -58,7 +59,8 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
                 .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() )
                 .setSet( CommonColumns.SCHEMAS.cql(), value.getSchemas(), FullQualifiedName.class )
                 .set( CommonColumns.DATATYPE.cql(), value.getDatatype(), EdmPrimitiveTypeKind.class )
-                .setBool( CommonColumns.PII_FIELD.cql(), value.isPIIfield() );
+                .setBool( CommonColumns.PII_FIELD.cql(), value.isPIIfield() )
+                .set( CommonColumns.ANALYZER.cql(), value.getAnalyzer(), Analyzer.class );
     }
 
     @Override
@@ -81,7 +83,8 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
                 Optional.of( row.getString( CommonColumns.DESCRIPTION.cql() ) ),
                 row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class ),
                 row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class ),
-                Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) ) );
+                Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) ),
+                Optional.of( row.get( CommonColumns.ANALYZER.cql(), Analyzer.class ) ) );
     }
 
     @Override
