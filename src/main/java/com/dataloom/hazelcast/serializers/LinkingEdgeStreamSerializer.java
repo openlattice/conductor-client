@@ -19,20 +19,21 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.graph.LinkingEdge;
+import java.io.IOException;
+
+import org.springframework.stereotype.Component;
+
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.dataloom.linking.LinkingEdge;
+import com.dataloom.linking.LinkingVertexKey;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import org.springframework.stereotype.Component;
-
-import java.io.IOException;
-import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
 @Component
 public class LinkingEdgeStreamSerializer implements SelfRegisteringStreamSerializer<LinkingEdge> {
     @Override
@@ -61,15 +62,13 @@ public class LinkingEdgeStreamSerializer implements SelfRegisteringStreamSeriali
     }
 
     public static void serialize( ObjectDataOutput out, LinkingEdge object ) throws IOException {
-        UUIDStreamSerializer.serialize( out, object.getGraphId() );
-        EntityKeyStreamSerializer.serialize( out, object.getSource() );
-        EntityKeyStreamSerializer.serialize( out, object.getDestination() );
+        LinkingVertexKeyStreamSerializer.serialize( out, object.getSrc() );
+        LinkingVertexKeyStreamSerializer.serialize( out, object.getDst() );
     }
 
     public static LinkingEdge deserialize( ObjectDataInput in ) throws IOException {
-        UUID graphId = UUIDStreamSerializer.deserialize( in );
-        EntityKey srcId = EntityKeyStreamSerializer.deserialize( in );
-        EntityKey dstId = EntityKeyStreamSerializer.deserialize( in );
-        return new LinkingEdge( graphId, srcId, dstId );
+        LinkingVertexKey src = LinkingVertexKeyStreamSerializer.deserialize( in );
+        LinkingVertexKey dst = LinkingVertexKeyStreamSerializer.deserialize( in );
+        return new LinkingEdge( src, dst );
     }
 }

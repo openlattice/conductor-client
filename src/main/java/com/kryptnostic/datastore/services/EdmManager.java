@@ -47,6 +47,9 @@ public interface EdmManager {
 
     void createEntitySet( Principal principal, EntitySet entitySet );
 
+    //Warning: This method is used only in creating linked entity set, where entity set owner may not own all the property types.
+    void createEntitySet( Principal principal, EntitySet entitySet, Set<UUID> ownablePropertyTypes );
+
     EntitySet getEntitySet( UUID entitySetId );
 
     Iterable<EntitySet> getEntitySets();
@@ -113,5 +116,7 @@ public interface EdmManager {
     <V> Map<UUID, V> fromPropertyTypes( Set<UUID> propertyTypeIds, EntryProcessor<UUID, PropertyType> ep );
 
     Set<UUID> getPropertyTypeUuidsOfEntityTypeWithPIIField( UUID entityTypeId );
+    
+    EntityType getEntityTypeByEntitySetId( UUID entitySetId );
 
 }

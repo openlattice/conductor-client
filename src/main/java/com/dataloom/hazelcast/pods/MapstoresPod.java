@@ -19,26 +19,59 @@
 
 package com.dataloom.hazelcast.pods;
 
+import java.util.List;
+import java.util.UUID;
+
+import javax.inject.Inject;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
 import com.dataloom.auditing.AuditMetric;
 import com.dataloom.auditing.mapstores.LeaderboardMapstore;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
+import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
+import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.data.DelegatedEntityKeySet;
+import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.mapstores.AclKeysMapstore;
+import com.dataloom.edm.mapstores.EntitySetMapstore;
+import com.dataloom.edm.mapstores.EntityTypeMapstore;
+import com.dataloom.edm.mapstores.NamesMapstore;
+import com.dataloom.edm.mapstores.PropertyTypeMapstore;
+import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.edm.mapstores.*;
-import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.linking.LinkingEdge;
+import com.dataloom.linking.LinkingEntityKey;
+import com.dataloom.linking.LinkingVertex;
+import com.dataloom.linking.LinkingVertexKey;
+import com.dataloom.linking.mapstores.LinkedEntitiesMapstore;
+import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
+import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
+import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
+import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
+import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.organizations.PrincipalSet;
-import com.dataloom.organizations.mapstores.*;
+import com.dataloom.organizations.mapstores.RoleSetMapstore;
+import com.dataloom.organizations.mapstores.StringMapstore;
+import com.dataloom.organizations.mapstores.StringSetMapstore;
+import com.dataloom.organizations.mapstores.UUIDSetMapstore;
+import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.requests.AclRootRequestDetailsPair;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
-import com.dataloom.requests.mapstores.*;
+import com.dataloom.requests.mapstores.AclRootPrincipalPair;
+import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
+import com.dataloom.requests.mapstores.RequestMapstore;
+import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
+import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -47,29 +80,22 @@ import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-
-import javax.inject.Inject;
-
-import java.util.List;
-import java.util.UUID;
 
 @Configuration
 @Import( CassandraPod.class )
 public class MapstoresPod {
 
     @Inject
-    Session session;
+    Session                session;
 
-    @Inject CassandraConfiguration cc;
+    @Inject
+    CassandraConfiguration cc;
 
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
         return new PermissionMapstore( session );
     }
-    
+
     @Bean
     public SelfRegisteringMapStore<List<UUID>, SecurableObjectType> securableObjectTypeMapstore() {
         return new SecurableObjectTypeMapstore( session );
@@ -184,4 +210,35 @@ public class MapstoresPod {
                 CommonColumns.ID,
                 CommonColumns.MEMBERS );
     }
+
+    @Bean
+    public SelfRegisteringMapStore<EntityKey, DelegatedEntityKeySet> linkedEntitiesMapstore() {
+        return new LinkedEntitiesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntityTypesMapstore() {
+        return new LinkedEntityTypesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntitySetsMapstore() {
+        return new LinkedEntitySetsMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<LinkingEdge, Double> linkingEdgesMapstore() {
+        return new LinkingEdgesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<LinkingVertexKey, LinkingVertex> linkingVerticesMapstore() {
+        return new LinkingVerticesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<LinkingEntityKey, UUID> linkingEntityVerticesMapstore() {
+        return new LinkingEntityVerticesMapstore( session );
+    }
+
 }

@@ -20,13 +20,18 @@
 package com.dataloom.graph;
 
 import com.dataloom.data.EntityKey;
-import com.datastax.driver.core.ResultSet;
+import com.dataloom.linking.LinkingEdge;
+import com.dataloom.linking.LinkingEntityKey;
+import com.dataloom.linking.LinkingVertexKey;
+import com.dataloom.linking.util.UnorderedPair;
 import com.datastax.driver.core.Row;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -34,8 +39,7 @@ import java.util.UUID;
 public final class GraphUtil {
     private static final Logger logger = LoggerFactory.getLogger( GraphUtil.class );
 
-    private GraphUtil() {
-    }
+    private GraphUtil() {}
 
     public static EntityKey min( EntityKey a, EntityKey b ) {
         return a.compareTo( b ) < 0 ? a : b;
@@ -43,10 +47,6 @@ public final class GraphUtil {
 
     public static EntityKey max( EntityKey a, EntityKey b ) {
         return a.compareTo( b ) > 0 ? a : b;
-    }
-
-    public static LinkingEdge linkingEdge( UUID graphId, EntityKey a, EntityKey b ) {
-        return new LinkingEdge( graphId, a, b );
     }
 
     public static DirectedEdge edge( EntityKey a, EntityKey b ) {
@@ -67,10 +67,10 @@ public final class GraphUtil {
 
     public static LinkingEdge linkingEdge( Row row ) {
         final UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
-        final EntityKey src = source( row );
-        final EntityKey dst = destination( row );
+        final UUID src = row.getUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql() );
+        final UUID dst = row.getUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql() );
 
-        return new LinkingEdge( graphId, src, dst );
+        return new LinkingEdge( new LinkingVertexKey( graphId, src ), new LinkingVertexKey( graphId, dst ) );
     }
 
     public static Double edgeValue( Row row ) {

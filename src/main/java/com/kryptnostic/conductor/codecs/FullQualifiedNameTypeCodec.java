@@ -58,7 +58,7 @@ public class FullQualifiedNameTypeCodec extends TypeCodec<FullQualifiedName> {
         if ( bytes == null ) {
             return null;
         }
-        // TODO Auto-generated method stub
+
         byte[] b = new byte[ bytes.remaining() ];
         bytes.duplicate().get( b );
 

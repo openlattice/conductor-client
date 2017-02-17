@@ -43,11 +43,13 @@ public enum CommonColumns implements ColumnDef {
     ENTITYID( DataType.text() ),
     ENTITY_SET( DataType.text() ),
     ENTITY_SET_ID( DataType.uuid() ),
+    ENTITY_SET_IDS( DataType.frozenSet( DataType.uuid() ) ),
     ENTITY_SETS( DataType.set( DataType.text() ) ),
     ENTITY_TYPE( DataType.text() ),
     ENTITY_TYPE_ID( DataType.uuid() ),
     ENTITY_TYPE_IDS( DataType.frozenSet( DataType.uuid() ) ),
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
+    ENTITY_KEYS( DataType.frozenSet( DataType.blob() ) ),
     FQN( DataType.text() ),
     ID( DataType.uuid() ),
     KEY( DataType.set( DataType.uuid() ) ),
@@ -91,6 +93,10 @@ public enum CommonColumns implements ColumnDef {
     DESTINATION_ENTITY_ID( DataType.text() ),
     EDGE_VALUE( DataType.cdouble() ),
     GRAPH_ID( DataType.uuid() ),
+    DESTINATION_LINKING_VERTEX_ID( DataType.uuid() ),
+    SOURCE_LINKING_VERTEX_ID( DataType.uuid() ),
+    VERTEX_ID( DataType.uuid() ),
+    GRAPH_DIAMETER( DataType.cdouble() ),
     ANALYZER( DataType.text() );
 
     private final DataType type;

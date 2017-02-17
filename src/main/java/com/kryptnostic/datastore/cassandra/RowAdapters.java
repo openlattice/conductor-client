@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
@@ -76,6 +78,51 @@ public final class RowAdapters {
             }
         }
         return m;
+    }
+
+    public static SetMultimap<UUID, Object> entityIndexedById(
+            ResultSet rs,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> m = HashMultimap.create();
+        for ( Row row : rs ) {
+            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+            String entityId = row.getString( CommonColumns.ENTITYID.cql() );
+            if ( propertyTypeId != null ) {
+                PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+                m.put( propertyTypeId,
+                        deserializeValue( mapper,
+                                row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                                pt.getDatatype(),
+                                entityId ) );
+            }
+        }
+        return m;
+    }
+
+
+    public static Pair<SetMultimap<UUID, Object>, SetMultimap<FullQualifiedName, Object>> entityIdFQNPair(
+            ResultSet rs,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> mByUUID = HashMultimap.create();
+        final SetMultimap<FullQualifiedName, Object> mByKey = HashMultimap.create();
+
+        for ( Row row : rs ) {
+            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+            String entityId = row.getString( CommonColumns.ENTITYID.cql() );
+            if ( propertyTypeId != null ) {
+                PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+                Object value = deserializeValue( mapper,
+                        row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                        pt.getDatatype(),
+                        entityId );
+                mByUUID.put( propertyTypeId,
+                        value );
+                mByKey.put( authorizedPropertyTypes.get( propertyTypeId ).getType(), value );
+            }
+        }
+        return Pair.of( mByUUID, mByKey );
     }
 
     public static String entityId( Row row ) {
@@ -178,6 +225,13 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.REQUESTID.cql() );
     }
 
+    public static Set<EntityKey> entityKeys( Row row ){
+        return row.getSet( CommonColumns.ENTITY_KEYS.cql(), EntityKey.class );
+    }
+    
+    public static Pair<UUID, Set<EntityKey>> linkedEntity( Row row ){
+        return Pair.of( row.getUUID( CommonColumns.VERTEX_ID.cql() ), entityKeys( row ) );
+    }
 
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes

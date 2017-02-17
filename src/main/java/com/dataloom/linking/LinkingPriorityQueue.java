@@ -17,23 +17,33 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.hazelcast;
+package com.dataloom.linking;
 
-import com.hazelcast.core.IMap;
+import com.datastax.driver.core.Session;
 
-import java.util.function.Supplier;
+import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.UUID;
 
-public class HazelcastUtils {
-    public static <T, V> V typedGet( IMap<T, V> m, T key ) {
-        return m.get( key );
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ */
+public class LinkingPriorityQueue {
+    private final Session session;
+    private final UUID    graphId;
+    private final PriorityQueue<WeightedLinkingEdge> q = new PriorityQueue<>( 10000 );
+
+    public LinkingPriorityQueue( Session session, UUID graphId ) {
+        this.session = session;
+        this.graphId = graphId;
     }
 
-    public static <K,V> K insertIntoUnusedKey( IMap<K,V> m, V value, Supplier<K> keyFactory ) {
-        K key = keyFactory.get();
-        while( m.putIfAbsent( key, value ) !=null ){
-            key = keyFactory.get();
-        }
-        return key;
+    public LinkingEdge getLightestEdge() {
+//        if( )
+        return null;
     }
 
+    private Set<LinkingEdge> getLightedgeFromCassandra() {
+        return null;
+    }
 }
