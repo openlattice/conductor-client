@@ -19,27 +19,30 @@
 
 package com.dataloom.linking;
 
-import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.clustering.ClusteringPartitioner;
-import com.dataloom.data.EntityKey;
-import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.streams.StreamUtil;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.dataloom.authorization.HzAuthzTest;
+import com.dataloom.clustering.ClusteringPartitioner;
+import com.dataloom.data.EntityKey;
+import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.streams.StreamUtil;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastLinkingGraphsTest extends HzAuthzTest {
+    private static final Random r = new Random();
     protected static final HazelcastLinkingGraphs             graphs;
     protected static final CassandraLinkingGraphsQueryService cgqs;
     protected static final ClusteringPartitioner              partitioner;
@@ -55,25 +58,26 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
 
     @Test
     public void testClustering() {
-        Set<EntityKey> entityKeys = new HashSet<>();
-        for ( int i = 0; i < 100000; i++ ) {
+        final int entityCount = 100;
+        Set<EntityKey> entityKeys = new HashSet<> ( entityCount );
+        for ( int i = 0; i < entityCount; i++ ) {
             entityKeys.add( TestDataFactory.entityKey() );
         }
         UUID graphId = UUID.randomUUID();
 
         Set<LinkingVertexKey> vertices = entityKeys
-                .stream()
+                .parallelStream()
                 .map( entityKey -> graphs.getOrCreateVertex( graphId, entityKey ) )
                 .collect( Collectors.toSet() );
 
-        Set<LinkingEdge> edges = vertices.stream()
+        Set<LinkingEdge> edges = vertices.parallelStream()
                 .flatMap( u -> vertices
-                        .stream()
-                        .filter( ignored -> RandomUtils.nextBoolean() )
+                        .parallelStream()
+                        .filter( ignored -> r.nextBoolean() )
                         .map( v -> new LinkingEdge( u, v ) ) )
                 .collect( Collectors.toSet() );
-        edges.forEach( edge -> graphs.addEdge( edge, RandomUtils.nextDouble( 0, 10 ) ) );
-        partitioner.cluster( graphId, 20 );
+        edges.parallelStream().forEach( edge -> graphs.addEdge( edge, r.nextDouble() ) );
+        partitioner.cluster( graphId, 4 );
 
         StreamUtil.stream( lvm.loadAllKeys() ).map( graphs::getVertex )
                 .peek( v -> Assert.assertTrue( v.getEntityKeys().size() > 0 ) )

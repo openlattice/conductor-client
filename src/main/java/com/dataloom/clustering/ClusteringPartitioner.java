@@ -19,18 +19,23 @@
 
 package com.dataloom.clustering;
 
-import com.dataloom.linking.*;
-import com.dataloom.linking.components.Clusterer;
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Sets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.dataloom.linking.CassandraLinkingGraphsQueryService;
+import com.dataloom.linking.HazelcastLinkingGraphs;
+import com.dataloom.linking.LinkingEdge;
+import com.dataloom.linking.LinkingVertexKey;
+import com.dataloom.linking.WeightedLinkingEdge;
+import com.dataloom.linking.components.Clusterer;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Sets;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -128,6 +133,7 @@ public class ClusteringPartitioner implements Clusterer {
 
                 graphs.removeEdge( lightestEdge );
                 logger.info("One round of clustering took {} ms."  , w.elapsed( TimeUnit.MILLISECONDS ) );
+                w.reset();
             } else {
                 logger.info( "Encountered removed edge: {}", lightestEdge );
                 graphs.removeEdge( lightestEdge );
