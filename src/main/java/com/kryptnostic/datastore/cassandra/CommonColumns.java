@@ -96,7 +96,8 @@ public enum CommonColumns implements ColumnDef {
     DESTINATION_LINKING_VERTEX_ID( DataType.uuid() ),
     SOURCE_LINKING_VERTEX_ID( DataType.uuid() ),
     VERTEX_ID( DataType.uuid() ),
-    GRAPH_DIAMETER( DataType.cdouble() );
+    GRAPH_DIAMETER( DataType.cdouble() ),
+    ANALYZER( DataType.text() );
 
     private final DataType type;
 
