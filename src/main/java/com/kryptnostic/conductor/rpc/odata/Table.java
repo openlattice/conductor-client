@@ -136,7 +136,6 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( GRAPH_ID )
                         .clusteringColumns( EDGE_VALUE, SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID )
-                        .columns( EDGE_VALUE )
                         .sasi( SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID );
             case LINKED_ENTITY_SETS:
             return new CassandraTableBuilder( LINKED_ENTITY_SETS )
