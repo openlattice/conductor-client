@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -41,11 +43,13 @@ import com.google.common.collect.Sets;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class ClusteringPartitioner implements Clusterer {
-    private static final Logger logger = LoggerFactory.getLogger( ClusteringPartitioner.class );
+    private static final Logger                      logger           = LoggerFactory
+            .getLogger( ClusteringPartitioner.class );
+    private static final ExecutorService             executor         = Executors.newFixedThreadPool( 50 );
     private final CassandraLinkingGraphsQueryService cgqs;
     private final HazelcastLinkingGraphs             graphs;
 
-    private final double defaultThreshold = 0.1D;
+    private final double                             defaultThreshold = 0.1D;
 
     public ClusteringPartitioner( CassandraLinkingGraphsQueryService cgqs, HazelcastLinkingGraphs graphs ) {
         this.cgqs = cgqs;
@@ -59,12 +63,10 @@ public class ClusteringPartitioner implements Clusterer {
     public void cluster( UUID graphId, double threshold ) {
 
         /*
-         * Start with clustering threshold t
-         * 1. Identify the two closest vertices/clusters v1, v2 and choose a new free vertex UUID i at random
-         * 2. Compute longest shortest path to all clusters in the neighborhood of {v1,v2}
-         * 3. Merge vertices into new cluster
-         * 4. Create new edges with weights computing in (2)
-         * 5. Loop until there are no edges below clustering threshold t
+         * Start with clustering threshold t 1. Identify the two closest vertices/clusters v1, v2 and choose a new free
+         * vertex UUID i at random 2. Compute longest shortest path to all clusters in the neighborhood of {v1,v2} 3.
+         * Merge vertices into new cluster 4. Create new edges with weights computing in (2) 5. Loop until there are no
+         * edges below clustering threshold t
          */
 
         WeightedLinkingEdge lightestEdgeAndWeight = cgqs.getLightestEdge( graphId );
@@ -114,31 +116,40 @@ public class ClusteringPartitioner implements Clusterer {
 
                 LinkingVertexKey vertexKey = graphs.merge( lightestEdge );
 
-                newNeighborWeights
-                        .forEach( ( neighbor, weight ) -> graphs
-                                .addEdge( new LinkingEdge( vertexKey, new LinkingVertexKey( graphId, neighbor ) ),
-                                        weight ) );
+                logger.info( "Step 1 of one round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
+                newNeighborWeights.entrySet().parallelStream()
+                        .forEach( e -> graphs
+                                .addEdge( new LinkingEdge( vertexKey, new LinkingVertexKey( graphId, e.getKey() ) ),
+                                        e.getValue() ) );
+                logger.info( "Step 2 of one round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
                 for ( UUID neighbor : srcNeighborWeights.keySet() ) {
-                    graphs.removeEdge( new LinkingEdge( lightestEdge.getSrc(),
-                            new LinkingVertexKey( graphId, neighbor ) ) );
+                    final LinkingVertexKey key = lightestEdge.getSrc();
+                    executor.submit( () -> graphs.removeEdge( new LinkingEdge(
+                            key,
+                            new LinkingVertexKey( graphId, neighbor ) ) ) );
                 }
 
                 for ( UUID neighbor : dstNeighborWeights.keySet() ) {
-                    graphs.removeEdge( new LinkingEdge( lightestEdge.getDst(),
-                            new LinkingVertexKey( graphId, neighbor ) ) );
+                    final LinkingVertexKey key = lightestEdge.getDst();
+                    executor.submit( () -> graphs.removeEdge( new LinkingEdge(
+                            key,
+                            new LinkingVertexKey( graphId, neighbor ) ) ) );
                 }
 
+                logger.info( "Step 3 of one round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
                 graphs.deleteVertex( lightestEdge.getSrc() );
                 graphs.deleteVertex( lightestEdge.getDst() );
 
                 graphs.removeEdge( lightestEdge );
-                logger.info("One round of clustering took {} ms."  , w.elapsed( TimeUnit.MILLISECONDS ) );
+                logger.info( "Step 4 of one round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
+
+                logger.info( "One round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
                 w.reset();
             } else {
                 logger.info( "Encountered removed edge: {}", lightestEdge );
                 graphs.removeEdge( lightestEdge );
             }
-            //Setup next loop
+            // Setup next loop
             lightestEdgeAndWeight = cgqs.getLightestEdge( graphId );
             lightestEdge = lightestEdgeAndWeight.getEdge();
             lighestWeight = lightestEdgeAndWeight.getWeight();
