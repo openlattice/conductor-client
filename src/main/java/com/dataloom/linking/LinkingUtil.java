@@ -66,7 +66,12 @@ public class LinkingUtil {
     public static LinkingEdge linkingEdge( Row row ) {
         UUID graphId = graphId( row );
 
-        return new LinkingEdge( new LinkingVertexKey( graphId, srcId( row ) ),
+        return new LinkingEdge(
+                new LinkingVertexKey( graphId, srcId( row ) ),
                 new LinkingVertexKey( graphId, dstId( row ) ) );
+    }
+
+    public static WeightedLinkingEdge weightedEdge( Row row ) {
+        return new WeightedLinkingEdge( edgeValue( row ), linkingEdge( row ) );
     }
 }

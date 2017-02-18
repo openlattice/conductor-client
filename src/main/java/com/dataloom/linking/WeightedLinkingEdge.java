@@ -42,4 +42,48 @@ public class WeightedLinkingEdge implements Comparable<WeightedLinkingEdge> {
     @Override public int compareTo( WeightedLinkingEdge o ) {
         return weight.compareTo( o.weight );
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ( ( edge == null ) ? 0 : edge.hashCode() );
+        result = prime * result + ( ( weight == null ) ? 0 : weight.hashCode() );
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj ) {
+        if ( this == obj ) {
+            return true;
+        }
+        if ( obj == null ) {
+            return false;
+        }
+        if ( !( obj instanceof WeightedLinkingEdge ) ) {
+            return false;
+        }
+        WeightedLinkingEdge other = (WeightedLinkingEdge) obj;
+        if ( edge == null ) {
+            if ( other.edge != null ) {
+                return false;
+            }
+        } else if ( !edge.equals( other.edge ) ) {
+            return false;
+        }
+        if ( weight == null ) {
+            if ( other.weight != null ) {
+                return false;
+            }
+        } else if ( !weight.equals( other.weight ) ) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "WeightedLinkingEdge [weight=" + weight + ", edge=" + edge + "]";
+    }
+    
 }

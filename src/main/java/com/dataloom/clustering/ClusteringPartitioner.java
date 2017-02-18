@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -34,10 +33,14 @@ import com.dataloom.linking.CassandraLinkingGraphsQueryService;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
+import com.dataloom.linking.SortedCassandraLinkingEdgeBuffer;
 import com.dataloom.linking.WeightedLinkingEdge;
 import com.dataloom.linking.components.Clusterer;
+import com.datastax.driver.core.Session;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -45,23 +48,34 @@ import com.google.common.collect.Sets;
 public class ClusteringPartitioner implements Clusterer {
     private static final Logger                      logger           = LoggerFactory
             .getLogger( ClusteringPartitioner.class );
-    private static final ExecutorService             executor         = Executors.newFixedThreadPool( 50 );
+    private static final ListeningExecutorService    executor         = MoreExecutors
+            .listeningDecorator( Executors.newFixedThreadPool( 50 ) );
+
     private final CassandraLinkingGraphsQueryService cgqs;
     private final HazelcastLinkingGraphs             graphs;
-
+    private final Session                            session;
+    private final String                             keyspace;
     private final double                             defaultThreshold = 0.1D;
 
-    public ClusteringPartitioner( CassandraLinkingGraphsQueryService cgqs, HazelcastLinkingGraphs graphs ) {
+    public ClusteringPartitioner(
+            String keyspace,
+            Session session,
+            CassandraLinkingGraphsQueryService cgqs,
+            HazelcastLinkingGraphs graphs ) {
         this.cgqs = cgqs;
         this.graphs = graphs;
+        this.session = session;
+        this.keyspace = keyspace;
     }
 
     public void cluster( UUID graphId ) {
         cluster( graphId, defaultThreshold );
     }
 
+    @SuppressWarnings( "null" )
     public void cluster( UUID graphId, double threshold ) {
-
+        Stopwatch cw = Stopwatch.createStarted();
+        final SortedCassandraLinkingEdgeBuffer cbuf = new SortedCassandraLinkingEdgeBuffer( keyspace, session, graphs, graphId, threshold );
         /*
          * Start with clustering threshold t 1. Identify the two closest vertices/clusters v1, v2 and choose a new free
          * vertex UUID i at random 2. Compute longest shortest path to all clusters in the neighborhood of {v1,v2} 3.
@@ -69,7 +83,12 @@ public class ClusteringPartitioner implements Clusterer {
          * edges below clustering threshold t
          */
 
-        WeightedLinkingEdge lightestEdgeAndWeight = cgqs.getLightestEdge( graphId );
+        WeightedLinkingEdge lightestEdgeAndWeight = cbuf.getLightestEdge();
+
+        if ( lightestEdgeAndWeight == null ) {
+            return;
+        }
+
         LinkingEdge lightestEdge = lightestEdgeAndWeight.getEdge();
         double lighestWeight = lightestEdgeAndWeight.getWeight();
         Stopwatch w = Stopwatch.createUnstarted();
@@ -122,25 +141,29 @@ public class ClusteringPartitioner implements Clusterer {
                                 .addEdge( new LinkingEdge( vertexKey, new LinkingVertexKey( graphId, e.getKey() ) ),
                                         e.getValue() ) );
                 logger.info( "Step 2 of one round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
-                for ( UUID neighbor : srcNeighborWeights.keySet() ) {
-                    final LinkingVertexKey key = lightestEdge.getSrc();
-                    executor.submit( () -> graphs.removeEdge( new LinkingEdge(
-                            key,
-                            new LinkingVertexKey( graphId, neighbor ) ) ) );
-                }
 
-                for ( UUID neighbor : dstNeighborWeights.keySet() ) {
-                    final LinkingVertexKey key = lightestEdge.getDst();
-                    executor.submit( () -> graphs.removeEdge( new LinkingEdge(
-                            key,
-                            new LinkingVertexKey( graphId, neighbor ) ) ) );
-                }
+                final LinkingVertexKey srcVertex = lightestEdge.getSrc();
+                final LinkingVertexKey dstVertex = lightestEdge.getDst();
+
+                srcNeighborWeights
+                        .keySet()
+                        .parallelStream()
+                        .map( neighbor -> new LinkingEdge( srcVertex, new LinkingVertexKey( graphId, neighbor ) ) )
+                        .parallel()
+                        .forEach( cbuf::removeEdge );
+
+                dstNeighborWeights
+                        .keySet()
+                        .stream()
+                        .map( neighbor -> new LinkingEdge( dstVertex, new LinkingVertexKey( graphId, neighbor ) ) )
+                        .parallel()
+                        .forEach( cbuf::removeEdge );
 
                 logger.info( "Step 3 of one round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
                 graphs.deleteVertex( lightestEdge.getSrc() );
                 graphs.deleteVertex( lightestEdge.getDst() );
 
-                graphs.removeEdge( lightestEdge );
+                cbuf.removeEdge( lightestEdge );
                 logger.info( "Step 4 of one round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
 
                 logger.info( "One round of clustering took {} ms.", w.elapsed( TimeUnit.MILLISECONDS ) );
@@ -149,11 +172,17 @@ public class ClusteringPartitioner implements Clusterer {
                 logger.info( "Encountered removed edge: {}", lightestEdge );
                 graphs.removeEdge( lightestEdge );
             }
+            
             // Setup next loop
-            lightestEdgeAndWeight = cgqs.getLightestEdge( graphId );
+            lightestEdgeAndWeight = cbuf.getLightestEdge();
+            if ( lightestEdgeAndWeight == null ) {
+                break;
+            }
+            
             lightestEdge = lightestEdgeAndWeight.getEdge();
             lighestWeight = lightestEdgeAndWeight.getWeight();
         }
+        logger.info("Total clustering time was {} ms", cw.elapsed( TimeUnit.MILLISECONDS ) );
     }
 
 }

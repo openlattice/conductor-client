@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class CassandraLinkingGraphsQueryService {
+    private static final String     LOWERBOUND = "lowerbound";
+    private static final String     UPPERBOUND = "upperbound";
     private final Session           session;
     private final PreparedStatement srcNeighbors;
     private final PreparedStatement dstNeighbors;
@@ -54,6 +56,8 @@ public class CassandraLinkingGraphsQueryService {
                         CommonColumns.EDGE_VALUE.cql() )
                 .from( keyspace, Table.LINKING_EDGES.getName() )
                 .where( CommonColumns.GRAPH_ID.eq() )
+                .and( QueryBuilder.gt( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( LOWERBOUND ) ) )
+                .and( QueryBuilder.lt( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( UPPERBOUND ) ) )
                 .limit( 1 );
     }
 
@@ -71,12 +75,18 @@ public class CassandraLinkingGraphsQueryService {
                 .where( CommonColumns.GRAPH_ID.eq() ).and( CommonColumns.DESTINATION_LINKING_VERTEX_ID.eq() );
     }
 
-    public WeightedLinkingEdge getLightestEdge( UUID graphId ) {
-        ResultSet rs = session.execute( lighestEdge.bind().setUUID( CommonColumns.GRAPH_ID.cql(), graphId ) );
+    public WeightedLinkingEdge getLightestEdge( UUID graphId, double lowerbound, double upperbound ) {
+        ResultSet rs = session.execute( lighestEdge
+                .bind()
+                .setUUID( CommonColumns.GRAPH_ID.cql(), graphId )
+                .setDouble( LOWERBOUND,  lowerbound )
+                .setDouble( UPPERBOUND,  upperbound ) );
+        
         Row row = rs.one();
         if ( row == null ) {
             return null;
         }
+        
         LinkingEdge edge = LinkingUtil.linkingEdge( row );
         Double weight = LinkingUtil.edgeValue( row );
         return new WeightedLinkingEdge( weight.doubleValue(), edge );
@@ -87,7 +97,7 @@ public class CassandraLinkingGraphsQueryService {
                 .setUUID( CommonColumns.GRAPH_ID.cql(), edge.getGraphId() )
                 .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), edge.getDst().getVertexId() );
 
-        Map<UUID,Double> neighbors = StreamUtil.stream( session.execute( bs ) )
+        Map<UUID, Double> neighbors = StreamUtil.stream( session.execute( bs ) )
                 .collect( Collectors.toMap( LinkingUtil::srcId, LinkingUtil::edgeValue ) );
 
         neighbors.remove( edge.getSrc() );
@@ -99,7 +109,7 @@ public class CassandraLinkingGraphsQueryService {
                 .setUUID( CommonColumns.GRAPH_ID.cql(), edge.getGraphId() )
                 .setUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), edge.getSrc().getVertexId() );
 
-        Map<UUID,Double> neighbors =  StreamUtil.stream( session.execute( bs ) )
+        Map<UUID, Double> neighbors = StreamUtil.stream( session.execute( bs ) )
                 .collect( Collectors.toMap( LinkingUtil::dstId, LinkingUtil::edgeValue ) );
 
         neighbors.remove( edge.getDst() );
