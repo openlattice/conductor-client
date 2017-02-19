@@ -19,8 +19,6 @@
 
 package com.dataloom.linking;
 
-import com.google.common.base.Preconditions;
-
 import java.util.UUID;
 
 /**
@@ -31,7 +29,6 @@ public class LinkingEdge {
     private final LinkingVertexKey dst;
 
     public LinkingEdge( LinkingVertexKey src, LinkingVertexKey dst ) {
-        Preconditions.checkArgument( src.getGraphId().equals( dst.getGraphId() ) );
         if ( src.compareTo( dst ) < 0 ) {
             this.src = src;
             this.dst = dst;

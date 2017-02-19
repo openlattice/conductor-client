@@ -42,7 +42,7 @@ import java.util.UUID;
  */
 public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<LinkingEdge, Double> {
     public LinkingEdgesMapstore( Session session ) {
-        super( HazelcastMap.LINKING_EDGES.name(), session, Table.LINKING_EDGES.getBuilder() );
+        super( HazelcastMap.LINKING_EDGES.name(), session, Table.WEIGHTED_LINKING_EDGES.getBuilder() );
     }
 
     public static LinkingEdge testKey() {
@@ -71,7 +71,7 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
                 CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(),
                 CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(),
                 CommonColumns.EDGE_VALUE.cql() )
-                .from( Table.LINKING_EDGES.getKeyspace(), Table.LINKING_EDGES.getName() )
+                .from( Table.WEIGHTED_LINKING_EDGES.getKeyspace(), Table.WEIGHTED_LINKING_EDGES.getName() )
                 .allowFiltering()
                 .where( CommonColumns.GRAPH_ID.eq() )
                 .and( CommonColumns.SOURCE_LINKING_VERTEX_ID.eq() )
