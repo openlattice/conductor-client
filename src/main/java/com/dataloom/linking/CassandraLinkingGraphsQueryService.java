@@ -19,16 +19,21 @@
 
 package com.dataloom.linking;
 
-import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.*;
+import java.util.Map;
+import java.util.UUID;
+
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.google.common.base.Preconditions;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import jersey.repackaged.com.google.common.collect.Maps;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -54,7 +59,7 @@ public class CassandraLinkingGraphsQueryService {
                         CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(),
                         CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(),
                         CommonColumns.EDGE_VALUE.cql() )
-                .from( keyspace, Table.LINKING_EDGES.getName() )
+                .from( keyspace, Table.WEIGHTED_LINKING_EDGES.getName() )
                 .where( CommonColumns.GRAPH_ID.eq() )
                 .and( QueryBuilder.gt( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( LOWERBOUND ) ) )
                 .and( QueryBuilder.lt( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( UPPERBOUND ) ) )
@@ -64,14 +69,14 @@ public class CassandraLinkingGraphsQueryService {
     public static Select.Where srcNeighborsQuery( String keyspace ) {
         return QueryBuilder
                 .select( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), CommonColumns.EDGE_VALUE.cql() )
-                .from( keyspace, Table.LINKING_EDGES.getName() )
+                .from( keyspace, Table.WEIGHTED_LINKING_EDGES.getName() )
                 .where( CommonColumns.GRAPH_ID.eq() ).and( CommonColumns.SOURCE_LINKING_VERTEX_ID.eq() );
     }
 
     public static Select.Where dstNeighborsQuery( String keyspace ) {
         return QueryBuilder
                 .select( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), CommonColumns.EDGE_VALUE.cql() )
-                .from( keyspace, Table.LINKING_EDGES.getName() )
+                .from( keyspace, Table.WEIGHTED_LINKING_EDGES.getName() )
                 .where( CommonColumns.GRAPH_ID.eq() ).and( CommonColumns.DESTINATION_LINKING_VERTEX_ID.eq() );
     }
 
@@ -79,40 +84,87 @@ public class CassandraLinkingGraphsQueryService {
         ResultSet rs = session.execute( lighestEdge
                 .bind()
                 .setUUID( CommonColumns.GRAPH_ID.cql(), graphId )
-                .setDouble( LOWERBOUND,  lowerbound )
-                .setDouble( UPPERBOUND,  upperbound ) );
-        
+                .setDouble( LOWERBOUND, lowerbound )
+                .setDouble( UPPERBOUND, upperbound ) );
+
         Row row = rs.one();
         if ( row == null ) {
             return null;
         }
-        
+
         LinkingEdge edge = LinkingUtil.linkingEdge( row );
         Double weight = LinkingUtil.edgeValue( row );
         return new WeightedLinkingEdge( weight.doubleValue(), edge );
     }
 
     public Map<UUID, Double> getDstNeighbors( LinkingEdge edge ) {
-        BoundStatement bs = dstNeighbors.bind()
-                .setUUID( CommonColumns.GRAPH_ID.cql(), edge.getGraphId() )
-                .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), edge.getDst().getVertexId() );
+        ResultSet srcNeighbors = executeSrcNeighbors( edge.getDst() ); // All neighbors were getSrc appears Src col
+        ResultSet dstNeighbors = executeDstNeighbors( edge.getDst() ); // All neighbors were getSrc appears in Dst col
 
-        Map<UUID, Double> neighbors = StreamUtil.stream( session.execute( bs ) )
-                .collect( Collectors.toMap( LinkingUtil::srcId, LinkingUtil::edgeValue ) );
+        Map<UUID, Double> neighbors = Maps.newHashMap();
 
-        neighbors.remove( edge.getSrc() );
+        for ( Row row : srcNeighbors ) {
+            UUID id = LinkingUtil.dstId( row );
+            Preconditions.checkState( neighbors.put( id, LinkingUtil.edgeValue( row ) ) == null,
+                    "Duplicate Key: %s",
+                    id );
+        }
+
+        for ( Row row : dstNeighbors ) {
+            UUID id = LinkingUtil.srcId( row );
+            Preconditions.checkState( neighbors.put( id, LinkingUtil.edgeValue( row ) ) == null,
+                    "Duplicate Key: %s",
+                    id );
+        }
+
+        // Remove the edge represented by edge from results.
+        neighbors.remove( edge.getSrc().getVertexId() );
+
         return neighbors;
     }
 
     public Map<UUID, Double> getSrcNeighbors( LinkingEdge edge ) {
-        BoundStatement bs = srcNeighbors.bind()
-                .setUUID( CommonColumns.GRAPH_ID.cql(), edge.getGraphId() )
-                .setUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), edge.getSrc().getVertexId() );
+        ResultSet srcNeighbors = executeSrcNeighbors( edge.getSrc() ); // All neighbors were getSrc appears Src col
+        ResultSet dstNeighbors = executeDstNeighbors( edge.getSrc() ); // All neighbors were getSrc appears in Dst col
 
-        Map<UUID, Double> neighbors = StreamUtil.stream( session.execute( bs ) )
-                .collect( Collectors.toMap( LinkingUtil::dstId, LinkingUtil::edgeValue ) );
+        Map<UUID, Double> neighbors = Maps.newHashMap();
 
-        neighbors.remove( edge.getDst() );
+        for ( Row row : srcNeighbors ) {
+            UUID id = LinkingUtil.dstId( row );
+            Preconditions.checkState( neighbors.put( id, LinkingUtil.edgeValue( row ) ) == null,
+                    "Duplicate Key: %s",
+                    id );
+        }
+
+        for ( Row row : dstNeighbors ) {
+            UUID id = LinkingUtil.srcId( row );
+            Preconditions.checkState( neighbors.put( id, LinkingUtil.edgeValue( row ) ) == null,
+                    "Duplicate Key: %s",
+                    id );
+        }
+
+        // Remove the edge represented by edge from results.
+        neighbors.remove( edge.getDst().getVertexId() );
+
         return neighbors;
+    }
+
+    private ResultSet executeSrcNeighbors( LinkingVertexKey key ) {
+        final UUID graphId = key.getGraphId();
+        final UUID vertexId = key.getVertexId();
+        BoundStatement bs = srcNeighbors.bind()
+                .setUUID( CommonColumns.GRAPH_ID.cql(), graphId )
+                .setUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), vertexId );
+        return session.execute( bs );
+    }
+
+    private ResultSet executeDstNeighbors( LinkingVertexKey key ) {
+        final UUID graphId = key.getGraphId();
+        final UUID vertexId = key.getVertexId();
+        BoundStatement dstbs = dstNeighbors.bind()
+                .setUUID( CommonColumns.GRAPH_ID.cql(), graphId )
+                .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), vertexId );
+
+        return session.execute( dstbs );
     }
 }
