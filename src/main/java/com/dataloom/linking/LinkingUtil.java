@@ -19,15 +19,15 @@
 
 package com.dataloom.linking;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.linking.util.UnorderedPair;
-import com.datastax.driver.core.Row;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.dataloom.data.EntityKey;
+import com.dataloom.linking.util.UnorderedPair;
+import com.datastax.driver.core.Row;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -66,7 +66,12 @@ public class LinkingUtil {
     public static LinkingEdge linkingEdge( Row row ) {
         UUID graphId = graphId( row );
 
-        return new LinkingEdge( new LinkingVertexKey( graphId, srcId( row ) ),
+        return new LinkingEdge(
+                new LinkingVertexKey( graphId, srcId( row ) ),
                 new LinkingVertexKey( graphId, dstId( row ) ) );
+    }
+
+    public static WeightedLinkingEdge weightedEdge( Row row ) {
+        return new WeightedLinkingEdge( edgeValue( row ), linkingEdge( row ) );
     }
 }

@@ -19,16 +19,61 @@
 
 package com.kryptnostic.conductor.rpc.odata;
 
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_CHILDREN_PERMISSIONS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_KEY_VALUE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_ROOT;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ALLOWED_EMAIL_DOMAINS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ANALYZER;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.AUDIT_EVENT_DETAILS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.COUNT;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.DATATYPE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.DESCRIPTION;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_ENTITY_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_ENTITY_SET_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_LINKING_VERTEX_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_VALUE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEYS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_TYPE_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_DIAMETER;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.KEY;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.MEMBERS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.NAMESPACE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME_SET;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PII_FIELD;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTIES;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_TYPE_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_VALUE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.REQUESTID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ROLES;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECTID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECT_TYPE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_ENTITY_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_ENTITY_SET_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_LINKING_VERTEX_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
+
+import java.util.EnumMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.EnumMap;
-
-import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 
 public enum Table implements TableDef {
     ACL_KEYS,
@@ -39,25 +84,26 @@ public enum Table implements TableDef {
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
+    LINKING_EDGES,
     LINKED_ENTITY_SETS,
     LINKED_ENTITY_TYPES,
     LINKED_ENTITIES,
-    LINKING_EDGES,
+    LINKING_VERTICES,
+    LINKING_ENTITY_VERTICES,
     NAMES,
     ORGANIZATIONS,
     PERMISSIONS,
     PERMISSIONS_REQUESTS_UNRESOLVED,
     PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
-    SCHEMAS,
     REQUESTS,
-    LINKING_VERTICES,
-    LINKING_ENTITY_VERTICES;
+    SCHEMAS,
+    WEIGHTED_LINKING_EDGES;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
     private static final EnumMap<Table, CassandraTableBuilder> cache    = new EnumMap<>( Table.class );
-    private static       String                                keyspace = DatastoreConstants.KEYSPACE;
+    private static String                                      keyspace = DatastoreConstants.KEYSPACE;
 
     static CassandraTableBuilder getTableDefinition( Table table ) {
         CassandraTableBuilder ctb = cache.get( table );
@@ -94,25 +140,25 @@ public enum Table implements TableDef {
                  */
                 return new CassandraTableBuilder( ENTITY_EDGES )
                         .ifNotExists()
-                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID  )
+                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
                         .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
                         .columns( ENTITYID, SYNCID )
                         .sasi( SYNCID );
             case ENTITY_ID_LOOKUP:
-            return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
+                return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
                         .ifNotExists()
                         .partitionKey( SYNCID, ENTITY_SET_ID )
                         .clusteringColumns( ENTITYID )
                         .secondaryIndex( ENTITY_SET_ID );
             case DATA:
-            return new CassandraTableBuilder( DATA )
+                return new CassandraTableBuilder( DATA )
                         .ifNotExists()
                         .partitionKey( ENTITYID )
                         .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
                         .columns( SYNCID )
                         .sasi( SYNCID );
             case ENTITY_SETS:
-            return new CassandraTableBuilder( ENTITY_SETS )
+                return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
                         .partitionKey( ID )
                         .clusteringColumns( NAME )
@@ -121,7 +167,7 @@ public enum Table implements TableDef {
                                 DESCRIPTION )
                         .secondaryIndex( ENTITY_TYPE_ID, NAME );
             case ENTITY_TYPES:
-            return new CassandraTableBuilder( ENTITY_TYPES )
+                return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
                         .partitionKey( ID )
                         .clusteringColumns( NAMESPACE, NAME )
@@ -131,36 +177,41 @@ public enum Table implements TableDef {
                                 PROPERTIES,
                                 CommonColumns.SCHEMAS )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
-            case LINKING_EDGES:
-                return new CassandraTableBuilder( LINKING_EDGES )
+            case WEIGHTED_LINKING_EDGES:
+                return new CassandraTableBuilder( WEIGHTED_LINKING_EDGES )
                         .ifNotExists()
                         .partitionKey( GRAPH_ID )
                         .clusteringColumns( EDGE_VALUE, SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID )
                         .sasi( SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID );
+            case LINKING_EDGES:
+                return new CassandraTableBuilder( LINKING_EDGES )
+                        .ifNotExists()
+                        .partitionKey( GRAPH_ID, SOURCE_LINKING_VERTEX_ID )
+                        .clusteringColumns( DESTINATION_LINKING_VERTEX_ID );
             case LINKED_ENTITY_SETS:
-            return new CassandraTableBuilder( LINKED_ENTITY_SETS )
+                return new CassandraTableBuilder( LINKED_ENTITY_SETS )
                         .ifNotExists()
                         .partitionKey( ID )
                         .columns( CommonColumns.ENTITY_SET_IDS );
             case LINKED_ENTITY_TYPES:
-            return new CassandraTableBuilder( LINKED_ENTITY_TYPES )
+                return new CassandraTableBuilder( LINKED_ENTITY_TYPES )
                         .ifNotExists()
                         .partitionKey( ID )
                         .columns( CommonColumns.ENTITY_TYPE_IDS );
             case LINKED_ENTITIES:
-            return new CassandraTableBuilder( LINKED_ENTITIES )
+                return new CassandraTableBuilder( LINKED_ENTITIES )
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID )
                         .clusteringColumns( ENTITYID )
                         .columns( ENTITY_KEYS );
             case LINKING_VERTICES:
-            return new CassandraTableBuilder( LINKING_VERTICES )
+                return new CassandraTableBuilder( LINKING_VERTICES )
                         .ifNotExists()
                         .partitionKey( VERTEX_ID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( GRAPH_DIAMETER, ENTITY_KEYS );
             case LINKING_ENTITY_VERTICES:
-            return new CassandraTableBuilder( LINKING_ENTITY_VERTICES )
+                return new CassandraTableBuilder( LINKING_ENTITY_VERTICES )
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( GRAPH_ID )
