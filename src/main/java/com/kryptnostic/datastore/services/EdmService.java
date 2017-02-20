@@ -222,6 +222,7 @@ public class EdmService implements EdmManager {
                 .forEach( authorizations::deletePermissions );
 
         Util.deleteSafely( entitySets, entitySetId );
+        aclKeyReservations.release( entitySetId );
         eventBus.post( new EntitySetDeletedEvent( entitySetId ) );
     }
 
