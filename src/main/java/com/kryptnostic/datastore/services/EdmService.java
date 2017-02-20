@@ -138,13 +138,13 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void deleteEntityType( UUID entityTypeFqn ) {
+    public void deleteEntityType( UUID entityTypeId ) {
         /*
          * Entity types should only be deleted if there are no entity sets of that type in the system.
          */
-        if ( Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( entityTypeFqn ) ) ) {
-            UUID entityTypeId = aclKeys.get( entityTypeFqn );
+        if ( Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( entityTypeId ) ) ) {
             entityTypes.delete( entityTypeId );
+            aclKeyReservations.release( entityTypeId );
         }
     }
 
@@ -155,6 +155,7 @@ public class EdmService implements EdmManager {
         if ( entityTypes
                 .allMatch( et -> Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( et.getId() ) ) ) ) {
             propertyTypes.delete( propertyTypeId );
+            aclKeyReservations.release( propertyTypeId );
         }
     }
 
