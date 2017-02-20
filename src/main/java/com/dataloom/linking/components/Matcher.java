@@ -1,12 +1,10 @@
 package com.dataloom.linking.components;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import com.dataloom.linking.Entity;
 import com.dataloom.linking.util.UnorderedPair;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 
 /**
