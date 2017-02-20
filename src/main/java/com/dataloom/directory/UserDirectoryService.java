@@ -137,4 +137,27 @@ public class UserDirectoryService {
                 ImmutableMap.of( "app_metadata", ImmutableMap.of( "organizations", organizations ) ) );
 
     }
+
+    public Map<String, Auth0UserBasic> searchAllUsers( String searchQuery ) {
+
+        int page = 0;
+        Set<Auth0UserBasic> users = Sets.newHashSet();
+        for ( Set<Auth0UserBasic> pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, page, 100 );
+              users.isEmpty() || pageOfUsers.size() == 100;
+              pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, ++page, 100 ) ) {
+            if ( pageOfUsers.size() == 0 ) {
+                break;
+            }
+            users.addAll( pageOfUsers );
+        }
+
+        if ( users.isEmpty() ) {
+            logger.warn( "Auth0 did not return any users for this search." );
+            return ImmutableMap.of();
+        }
+
+        return users
+                .stream()
+                .collect( Collectors.toMap( Auth0UserBasic::getUserId, Function.identity() ) );
+    }
 }
