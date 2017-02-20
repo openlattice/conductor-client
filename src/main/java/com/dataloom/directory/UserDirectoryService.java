@@ -144,7 +144,7 @@ public class UserDirectoryService {
         Set<Auth0UserBasic> users = Sets.newHashSet();
         for ( Set<Auth0UserBasic> pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, page, 100 );
               users.isEmpty() || pageOfUsers.size() == 100;
-              pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, page++, 100 ) ) {
+              pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, ++page, 100 ) ) {
             if ( pageOfUsers.size() == 0 ) {
                 break;
             }
