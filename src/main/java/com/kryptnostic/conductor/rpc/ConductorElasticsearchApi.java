@@ -108,11 +108,13 @@ public interface ConductorElasticsearchApi {
 	
 	Boolean deleteEntitySet( UUID entitySetId );
 	
-	List<Map<String, Object>> executeEntitySetDataModelKeywordSearch(
+	SearchResult executeEntitySetDataModelKeywordSearch(
 			Optional<String> optionalSearchTerm,
 			Optional<UUID> optionalEntityType,
 			Optional<Set<UUID>> optionalPropertyTypes,
-			Set<Principal> principals );
+			Set<Principal> principals,
+			int start,
+			int maxHits );
 	
 	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
 	
@@ -126,7 +128,7 @@ public interface ConductorElasticsearchApi {
 	
 	Boolean deleteOrganization( UUID organizationId );
 	
-	List<Map<String, Object>> executeOrganizationSearch( String searchTerm, Set<Principal> principals );
+	SearchResult executeOrganizationSearch( String searchTerm, Set<Principal> principals, int start, int maxHits );
 	
 	Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
 		
