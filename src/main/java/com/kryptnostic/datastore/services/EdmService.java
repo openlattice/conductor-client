@@ -208,6 +208,9 @@ public class EdmService implements EdmManager {
         }
     }
 
+    /**
+     * Remove permissions/metadata information of the entity set
+     */
     @Override
     public void deleteEntitySet( UUID entitySetId ) {
         final EntitySet entitySet = Util.getSafely( entitySets, entitySetId );
