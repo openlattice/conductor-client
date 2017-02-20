@@ -43,12 +43,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AuthorizationQueryService {
-    private static final Logger logger = LoggerFactory
+    private static final Logger                            logger = LoggerFactory
             .getLogger( AuthorizationQueryService.class );
     private final Session                                  session;
     private final PreparedStatement                        authorizedAclKeysQuery;
     private final PreparedStatement                        authorizedAclKeysForObjectTypeQuery;
     private final PreparedStatement                        aclsForSecurableObjectQuery;
+    private final PreparedStatement                        deletePermissionsByAclKeysQuery;
     private final PreparedStatement                        setObjectType;
     private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
 
@@ -83,6 +84,10 @@ public class AuthorizationQueryService {
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
                         CommonColumns.ACL_KEYS.bindMarker() ) ) );
 
+        deletePermissionsByAclKeysQuery = session
+                .prepare( QueryBuilder.delete().from( keyspace, Table.PERMISSIONS.getName() ).where(
+                        QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(), CommonColumns.ACL_KEYS.bindMarker() ) ) );
+
         setObjectType = session.prepare( QueryBuilder
                 .update( keyspace, Table.PERMISSIONS.getName() )
                 .with( QueryBuilder.set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),
@@ -97,15 +102,14 @@ public class AuthorizationQueryService {
             EnumSet<Permission> desiredPermissions ) {
         return desiredPermissions
                 .stream()
-                .map( desiredPermission ->
-                        authorizedAclKeysForObjectTypeQuery.bind()
-                                .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                                .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
-                                .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
-                                .set( CommonColumns.PERMISSIONS.cql(),
-                                        desiredPermission,
-                                        Permission.class ) )
-//                .peek( q -> logger.info( "Executing query: {}", q.preparedStatement().getQueryString() ) )
+                .map( desiredPermission -> authorizedAclKeysForObjectTypeQuery.bind()
+                        .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                        .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
+                        .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
+                        .set( CommonColumns.PERMISSIONS.cql(),
+                                desiredPermission,
+                                Permission.class ) )
+                // .peek( q -> logger.info( "Executing query: {}", q.preparedStatement().getQueryString() ) )
                 .map( session::executeAsync )
                 .map( ResultSetFuture::getUninterruptibly )
                 .flatMap( StreamUtil::stream )
@@ -121,7 +125,8 @@ public class AuthorizationQueryService {
                 .flatMap( principal -> getAuthorizedAclKeys(
                         principal,
                         objectType,
-                        desiredPermissions ) ).collect( Collectors.toSet() );
+                        desiredPermissions ) )
+                .collect( Collectors.toSet() );
     }
 
     public Stream<List<UUID>> getAuthorizedAclKeys(
@@ -153,7 +158,8 @@ public class AuthorizationQueryService {
     public Stream<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {
         return Stream.of( session.executeAsync(
                 aclsForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
-                        aclKeys, UUID.class ) ) )
+                        aclKeys,
+                        UUID.class ) ) )
                 .map( ResultSetFuture::getUninterruptibly )
                 .flatMap( StreamUtil::stream )
                 .map( AuthorizationUtils::getPrincipalFromRow );
@@ -174,5 +180,13 @@ public class AuthorizationQueryService {
                 .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class );
         session.execute( bs );
         logger.info( "Created empty acl with key {} and type {}", aclKey, objectType );
+    }
+
+    public void deletePermissionsByAclKeys( List<UUID> aclKey ) {
+        BoundStatement bs = deletePermissionsByAclKeysQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
+                aclKey,
+                UUID.class );
+        session.execute( bs );
+        logger.info( "Deleted all permissions for aclKey " + aclKey );
     }
 }

@@ -89,9 +89,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public void deletePermissions( List<UUID> aclKeys ) {
-        aqs.getPrincipalsForSecurableObject( aclKeys )
-                .map( principal -> new AceKey( aclKeys, principal ) )
-                .forEach( Util.safeDeleter( aces ) );
+        aqs.deletePermissionsByAclKeys( aclKeys );
     }
 
     @Override
