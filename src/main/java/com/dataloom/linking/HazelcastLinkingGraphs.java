@@ -37,12 +37,10 @@ import java.util.UUID;
  */
 public class HazelcastLinkingGraphs {
     private static final UUID DEFAULT_ID = new UUID( 0, 0 );
-    private final IMap<LinkingEdge, Double>             linkingEdges;
     private final IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
     private final IMap<LinkingEntityKey, UUID>          vertices;
 
     public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
-        this.linkingEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
         this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
         this.vertices = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_VERTICES.name() );
 
@@ -71,8 +69,8 @@ public class HazelcastLinkingGraphs {
         return vertexKey;
     }
 
-    public LinkingVertexKey merge( LinkingEdge edge ) {
-        Double diameter = Util.getSafely( linkingEdges, edge );
+    public LinkingVertexKey merge( WeightedLinkingEdge weightedEdge ) {
+        LinkingEdge edge = weightedEdge.getEdge();
         LinkingVertex u = Util.getSafely( linkingVertices, edge.getSrc() );
         LinkingVertex v = Util.getSafely( linkingVertices, edge.getDst() );
         Set<EntityKey> entityKeys = Sets
@@ -83,7 +81,7 @@ public class HazelcastLinkingGraphs {
          * As long as min edge is chosen for merging it is appropriate to use the edge weight as new diameter.
          */
         return HazelcastUtils.insertIntoUnusedKey( linkingVertices,
-                new LinkingVertex( diameter.doubleValue(), entityKeys ),
+                new LinkingVertex( weightedEdge.getWeight(), entityKeys ),
                 () -> new LinkingVertexKey( edge.getGraphId(), UUID.randomUUID() ) );
     }
 
@@ -93,19 +91,6 @@ public class HazelcastLinkingGraphs {
 
     public void deleteVertex( LinkingVertexKey key ) {
         Util.deleteSafely( linkingVertices, key );
-    }
-
-    public void addEdge( LinkingEdge edge, double weight ) {
-        linkingEdges.putIfAbsent( edge, weight );
-        ;
-    }
-
-    public void removeEdge( LinkingEdge edge ) {
-        linkingEdges.delete( edge );
-    }
-
-    public boolean edgeExists( LinkingEdge edge ) {
-        return linkingEdges.containsKey( edge );
     }
 
     public LinkingVertexKey getLinkingVertextKey( LinkingEntityKey linkingEntityKey ) {
