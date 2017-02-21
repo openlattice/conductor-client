@@ -233,6 +233,14 @@ public final class RowAdapters {
         return Pair.of( row.getUUID( CommonColumns.VERTEX_ID.cql() ), entityKeys( row ) );
     }
 
+    public static UUID syncId( Row row ) {
+        return row.getUUID( CommonColumns.SYNCID.cql() );
+    }
+
+    public static UUID entitySetId( Row row ) {
+        return row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
+    }
+
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
      * 

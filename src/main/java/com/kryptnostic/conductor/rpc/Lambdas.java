@@ -35,6 +35,7 @@ import com.dataloom.data.requests.LookupEntitiesRequest;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.Organization;
+import com.dataloom.search.requests.SearchResult;
 import com.google.common.base.Optional;
 
 public class Lambdas implements Serializable {
@@ -67,13 +68,15 @@ public class Lambdas implements Serializable {
     			.submitEntitySetToElasticsearch( entitySet, propertyTypes, principal );
     }
     
-    public static Function<ConductorSparkApi, List<Map<String, Object>>> executeElasticsearchMetadataQuery(
+    public static Function<ConductorSparkApi, SearchResult> executeElasticsearchMetadataQuery(
     		Optional<String> optionalQuery,
 			Optional<UUID> optionalEntityType,
-			Optional<Set<UUID>> optionalPropertyTypes ) {
+			Optional<Set<UUID>> optionalPropertyTypes,
+			int start,
+			int maxHits ) {
     	Set<Principal> principals = Principals.getCurrentPrincipals();
-    	return (Function<ConductorSparkApi, List<Map<String, Object>>> & Serializable) ( api ) -> api
-                .executeElasticsearchMetadataQuery( optionalQuery, optionalEntityType, optionalPropertyTypes, principals );
+    	return (Function<ConductorSparkApi, SearchResult> & Serializable) ( api ) -> api
+                .executeElasticsearchMetadataQuery( optionalQuery, optionalEntityType, optionalPropertyTypes, principals, start, maxHits );
     }
     
     public static Function<ConductorSparkApi, Boolean> updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions ) {
@@ -91,10 +94,10 @@ public class Lambdas implements Serializable {
                 .createOrganization( organization, principal );
     }
     
-    public static Function<ConductorSparkApi, List<Map<String, Object>>> executeOrganizationKeywordSearch( String searchTerm ) {
+    public static Function<ConductorSparkApi, SearchResult> executeOrganizationKeywordSearch( String searchTerm, int start, int maxHits ) {
         Set<Principal> principals = Principals.getCurrentPrincipals();
-        return (Function<ConductorSparkApi, List<Map<String, Object>>> & Serializable) ( api ) -> api
-                .executeOrganizationKeywordSearch( searchTerm, principals ); 
+        return (Function<ConductorSparkApi, SearchResult> & Serializable) ( api ) -> api
+                .executeOrganizationKeywordSearch( searchTerm, principals, start, maxHits ); 
     }
     
     public static Function<ConductorSparkApi, Boolean> updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription ) {

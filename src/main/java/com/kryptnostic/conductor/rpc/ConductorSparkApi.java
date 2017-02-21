@@ -65,11 +65,13 @@ public interface ConductorSparkApi {
 	
 	Boolean deleteEntitySet( UUID entitySetId );
 	
-	List<Map<String, Object>> executeElasticsearchMetadataQuery(
+	SearchResult executeElasticsearchMetadataQuery(
 			Optional<String> query,
 			Optional<UUID> optionalEntityType,
 			Optional<Set<UUID>> optionalPropertyTypes,
-			Set<Principal> principals );
+			Set<Principal> principals,
+			int start,
+			int maxHits );
 	
 	Boolean updateEntitySetMetadata( EntitySet entitySet );
 
@@ -79,7 +81,7 @@ public interface ConductorSparkApi {
 	
 	Boolean createOrganization( Organization organization, Principal principal );
 	
-	List<Map<String, Object>> executeOrganizationKeywordSearch( String searchTerm, Set<Principal> principals );
+	SearchResult executeOrganizationKeywordSearch( String searchTerm, Set<Principal> principals, int start, int maxHits );
 	
 	Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
 	
