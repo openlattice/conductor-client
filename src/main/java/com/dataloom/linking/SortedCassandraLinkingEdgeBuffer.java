@@ -290,7 +290,7 @@ public class SortedCassandraLinkingEdgeBuffer {
                 .from( keyspace, Table.WEIGHTED_LINKING_EDGES.getName() )
                 .where( CommonColumns.GRAPH_ID.eq() )
                 .and( QueryBuilder.gte( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( LOWERBOUND ) ) )
-                .and( QueryBuilder.lte( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( UPPERBOUND ) ) )
+                .and( QueryBuilder.lt( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( UPPERBOUND ) ) )
                 .limit( Math.max( bufferReadSize, 1 ) );
     }
 
