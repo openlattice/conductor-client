@@ -93,7 +93,7 @@ public class HazelcastLinkingGraphs {
         Util.deleteSafely( linkingVertices, key );
     }
 
-    public LinkingVertexKey getLinkingVertextKey( LinkingEntityKey linkingEntityKey ) {
+    public LinkingVertexKey getOrCreateVertex( LinkingEntityKey linkingEntityKey ) {
         return getOrCreateVertex( linkingEntityKey.getGraphId(), linkingEntityKey.getEntityKey() );
     }
 

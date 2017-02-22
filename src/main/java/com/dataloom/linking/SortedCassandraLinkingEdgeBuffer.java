@@ -250,7 +250,7 @@ public class SortedCassandraLinkingEdgeBuffer {
     }
 
     private void replenishBuffer() {
-        if ( ( remainingBeforeNextRead.get() < bufferTriggerSize ) && !exhausted ) {
+        if ( ( remainingBeforeNextRead.get() <= bufferTriggerSize ) && !exhausted ) {
             try {
                 lock.lock();
                 waitForPendingOperations();
@@ -289,7 +289,7 @@ public class SortedCassandraLinkingEdgeBuffer {
                         CommonColumns.EDGE_VALUE.cql() )
                 .from( keyspace, Table.WEIGHTED_LINKING_EDGES.getName() )
                 .where( CommonColumns.GRAPH_ID.eq() )
-                .and( QueryBuilder.gt( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( LOWERBOUND ) ) )
+                .and( QueryBuilder.gte( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( LOWERBOUND ) ) )
                 .and( QueryBuilder.lt( CommonColumns.EDGE_VALUE.cql(), QueryBuilder.bindMarker( UPPERBOUND ) ) )
                 .limit( Math.max( bufferReadSize, 1 ) );
     }
