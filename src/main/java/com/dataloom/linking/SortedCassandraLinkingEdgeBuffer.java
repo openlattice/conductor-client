@@ -163,7 +163,7 @@ public class SortedCassandraLinkingEdgeBuffer {
     }
 
     public List<ResultSetFuture> removeEdge( WeightedLinkingEdge edge ) {
-        if ( edge.getWeight() < heaviestWeightLoadedFromCassandra ) {
+        if ( edge.getWeight() <= heaviestWeightLoadedFromCassandra && buffer.remove( edge ) ) {
             remainingBeforeNextRead.decrementAndGet();
         }
 
@@ -173,7 +173,6 @@ public class SortedCassandraLinkingEdgeBuffer {
 //            logger.info( "Trying to remove edge that is not present: {}" , edge );
 //        }
 //        
-        buffer.remove( edge );
         
 //        if( buffer.contains( edge ) ) {
 //            logger.info( "Edge is still there wtf." );
@@ -263,6 +262,7 @@ public class SortedCassandraLinkingEdgeBuffer {
                             counter.count++;
                         } )
                         .forEach( buffer::add );
+                remainingBeforeNextRead.getAndUpdate( remaining -> remaining + counter.count );
                 exhausted = ( !lock.hasQueuedThreads() && counter.count == 0 );
             } finally {
                 lock.unlock();
@@ -325,7 +325,7 @@ public class SortedCassandraLinkingEdgeBuffer {
          * Since we already know everything less than the heaviest weight that's been loaded from Cassandra we can
          * safely add to the buffer and increment the number before next read.
          */
-        if ( edge.getWeight() < heaviestWeightLoadedFromCassandra ) {
+        if ( edge.getWeight() <= heaviestWeightLoadedFromCassandra ) {
             remainingBeforeNextRead.incrementAndGet();
             buffer.add( edge );
         }
