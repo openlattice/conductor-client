@@ -96,4 +96,6 @@ public interface ConductorSparkApi {
     List<Entity> executeEntitySetDataSearchAcrossIndices( Set<UUID> entitySetIds, Map<UUID, Set<String>> fieldSearches, int size, boolean explain );
 
     Void clustering( UUID linkedEntitySetId );
+    
+    SearchResult executeAdvancedEntitySetDataSearch( UUID entitySetId, Map<UUID, String> searches, int start, int maxHits, Set<UUID> authorizedPropertyTypes );
 }
