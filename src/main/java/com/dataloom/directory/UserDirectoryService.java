@@ -45,6 +45,8 @@ public class UserDirectoryService {
     private       Retrofit                     retrofit;
     private       Auth0ManagementApi           auth0ManagementApi;
 
+    private static final int DEFAULT_PAGE_SIZE = 100;
+
     public UserDirectoryService( String token, HazelcastInstance hazelcastInstance ) {
         retrofit = RetrofitFactory.newClient( "https://loom.auth0.com/api/v2/", () -> token );
         auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
@@ -64,9 +66,9 @@ public class UserDirectoryService {
         Set<Auth0UserBasic> users = Sets.newHashSet();
 
         do {
-            pageOfUsers = auth0ManagementApi.getAllUsers( page++, 100 );
+            pageOfUsers = auth0ManagementApi.getAllUsers( page++, DEFAULT_PAGE_SIZE );
             users.addAll( pageOfUsers );
-        } while ( pageOfUsers.size() == 100 );
+        } while ( pageOfUsers.size() == DEFAULT_PAGE_SIZE );
 
         if ( users.isEmpty() ) {
             logger.warn( "Received null response from auth0" );
@@ -148,9 +150,9 @@ public class UserDirectoryService {
         Set<Auth0UserBasic> users = Sets.newHashSet();
 
         do {
-            pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuerySubstring, page++, 100 );
+            pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuerySubstring, page++, DEFAULT_PAGE_SIZE );
             users.addAll( pageOfUsers );
-        } while ( pageOfUsers.size() == 100 );
+        } while ( pageOfUsers.size() == DEFAULT_PAGE_SIZE );
 
         if ( users.isEmpty() ) {
             logger.warn( "Auth0 did not return any users for this search." );
