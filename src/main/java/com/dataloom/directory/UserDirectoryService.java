@@ -58,14 +58,15 @@ public class UserDirectoryService {
     }
 
     public Map<String, Auth0UserBasic> getAllUsers() {
-        int page = 0;
 
+        int page = 0;
+        Set<Auth0UserBasic> pageOfUsers;
         Set<Auth0UserBasic> users = Sets.newHashSet();
-        for ( Set<Auth0UserBasic> pageOfUsers = auth0ManagementApi.getAllUsers( page, 100 );
-              users.isEmpty() || pageOfUsers.size() == 100; pageOfUsers = auth0ManagementApi
-                .getAllUsers( ++page, 100 ) ) {
+
+        do {
+            pageOfUsers = auth0ManagementApi.getAllUsers( page++, 100 );
             users.addAll( pageOfUsers );
-        }
+        } while ( pageOfUsers.size() == 100 );
 
         if ( users.isEmpty() ) {
             logger.warn( "Received null response from auth0" );
@@ -141,16 +142,15 @@ public class UserDirectoryService {
     public Map<String, Auth0UserBasic> searchAllUsers( String searchQuery ) {
 
         int page = 0;
-        Set<Auth0UserBasic> users = Sets.newHashSet();
         String searchQuerySubstring = searchQuery + "*";
-        for ( Set<Auth0UserBasic> pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuerySubstring, page, 100 );
-              users.isEmpty() || pageOfUsers.size() == 100;
-              pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuerySubstring, ++page, 100 ) ) {
-            if ( pageOfUsers.size() == 0 ) {
-                break;
-            }
+
+        Set<Auth0UserBasic> pageOfUsers;
+        Set<Auth0UserBasic> users = Sets.newHashSet();
+
+        do {
+            pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuerySubstring, page++, 100 );
             users.addAll( pageOfUsers );
-        }
+        } while ( pageOfUsers.size() == 100 );
 
         if ( users.isEmpty() ) {
             logger.warn( "Auth0 did not return any users for this search." );
