@@ -137,5 +137,7 @@ public interface ConductorElasticsearchApi {
 	SearchResult executeEntitySetDataSearch( UUID entitySetId, String searchTerm, int start, int maxHits, Set<UUID> authorizedPropertyTypes );
 	
     List<Entity> executeEntitySetDataSearchAcrossIndices( Set<UUID> entitySetIds, Map<UUID, Set<String>> fieldSearches, int size, boolean explain );
+    
+    SearchResult executeAdvancedEntitySetDataSearch( UUID entitySetId, Map<UUID, String> searches, int start, int maxHits, Set<UUID> authorizedPropertyTypes );
 
 }
