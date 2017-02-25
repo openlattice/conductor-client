@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
-public class EntityDataLambdas implements Function<ConductorSparkApi, Boolean>, Serializable {
+public class EntityDataLambdas implements Function<ConductorElasticsearchApi, Boolean>, Serializable {
     private static final long serialVersionUID = -1071651645473672891L;
     
     private UUID entitySetId;
@@ -38,7 +38,7 @@ public class EntityDataLambdas implements Function<ConductorSparkApi, Boolean>, 
     }
 
     @Override
-    public Boolean apply( ConductorSparkApi api ) {
+    public Boolean apply( ConductorElasticsearchApi api ) {
         return api.createEntityData( entitySetId, entityId, propertyValues );
     }
 

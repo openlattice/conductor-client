@@ -1,22 +1,3 @@
-/*
- * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * You can contact the owner of the copyright at support@thedataloom.com
- */
-
 package com.dataloom.hazelcast.serializers;
 
 import java.io.IOException;
@@ -38,15 +19,17 @@ import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
-import com.kryptnostic.conductor.rpc.ConductorCall;
-import com.kryptnostic.conductor.rpc.ConductorSparkApi;
+import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
+import com.kryptnostic.conductor.rpc.ConductorElasticsearchCall;
+import com.kryptnostic.conductor.rpc.EntityDataLambdas;
 import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import com.kryptnostic.conductor.rpc.Lambdas;
+import com.kryptnostic.conductor.rpc.SearchEntitySetDataLambda;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @SuppressWarnings( "rawtypes" )
 @Component
-public class ConductorCallStreamSerializer implements SelfRegisteringStreamSerializer<ConductorCall> {
+public class ConductorElasticsearchCallStreamSerializer implements SelfRegisteringStreamSerializer<ConductorElasticsearchCall> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
         @Override
@@ -63,6 +46,8 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
             // Shared Lambdas
             kryo.register( Lambdas.class );
             kryo.register( GetAllEntitiesOfTypeLambda.class );
+            kryo.register( EntityDataLambdas.class );
+            kryo.register( SearchEntitySetDataLambda.class );
             kryo.register( SerializedLambda.class );
 
             // always needed for closure serialization, also if
@@ -76,11 +61,13 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
             return kryo;
         }
     };
+    
+    private ConductorElasticsearchApi api;
 
-    private ConductorSparkApi api;
 
+    
     @Override
-    public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
+    public void write( ObjectDataOutput out, ConductorElasticsearchCall object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getUserId() );
         Output output = new Output( (OutputStream) out );
         kryoThreadLocal.get().writeClassAndObject( output, object.getFunction() );
@@ -89,32 +76,33 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
 
     @SuppressWarnings( "unchecked" )
     @Override
-    public ConductorCall read( ObjectDataInput in ) throws IOException {
+    public ConductorElasticsearchCall read( ObjectDataInput in ) throws IOException {
         UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
-        Function<ConductorSparkApi, ?> f = (Function<ConductorSparkApi, ?>) kryoThreadLocal.get()
+        Function<ConductorElasticsearchApi, ?> f = (Function<ConductorElasticsearchApi, ?>) kryoThreadLocal.get()
                 .readClassAndObject( input );
-        return new ConductorCall( userId, f, api );
+        return new ConductorElasticsearchCall( userId, f, api );
     }
 
     @Override
     public int getTypeId() {
-        return StreamSerializerTypeIds.CONDUCTOR_CALL.ordinal();
+        return StreamSerializerTypeIds.CONDUCTOR_ELASTICSEARCH_CALL.ordinal();
     }
 
     @Override
     public void destroy() {
-
+        
     }
-
-    public synchronized void setConductorSparkApi( ConductorSparkApi api ) {
+    
+    public synchronized void setConductorElasticsearchApi( ConductorElasticsearchApi api ) {
         Preconditions.checkState( this.api == null, "Api can only be set once" );
         this.api = Preconditions.checkNotNull( api );
     }
 
+
     @Override
-    public Class<ConductorCall> getClazz() {
-        return ConductorCall.class;
+    public Class<? extends ConductorElasticsearchCall> getClazz() {
+        return ConductorElasticsearchCall.class;
     }
 
 }

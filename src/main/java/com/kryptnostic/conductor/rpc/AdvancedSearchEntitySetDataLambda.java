@@ -8,7 +8,7 @@ import java.util.function.Function;
 
 import com.dataloom.search.requests.SearchResult;
 
-public class AdvancedSearchEntitySetDataLambda implements Function<ConductorSparkApi, SearchResult>, Serializable {
+public class AdvancedSearchEntitySetDataLambda implements Function<ConductorElasticsearchApi, SearchResult>, Serializable {
     private static final long serialVersionUID = 6807941698843957059L;
 
     private UUID entitySetId;
@@ -26,7 +26,7 @@ public class AdvancedSearchEntitySetDataLambda implements Function<ConductorSpar
     }
     
     @Override
-    public SearchResult apply( ConductorSparkApi api ) {
+    public SearchResult apply( ConductorElasticsearchApi api ) {
         return api.executeAdvancedEntitySetDataSearch( entitySetId, searches, start, maxHits, authorizedPropertyTypes );
     }
 
