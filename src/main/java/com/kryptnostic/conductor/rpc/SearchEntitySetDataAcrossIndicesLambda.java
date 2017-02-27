@@ -9,7 +9,8 @@ import java.util.function.Function;
 
 import com.dataloom.linking.Entity;
 
-public class SearchEntitySetDataAcrossIndicesLambda implements Function<ConductorSparkApi, List<Entity>>, Serializable {
+public class SearchEntitySetDataAcrossIndicesLambda
+        implements Function<ConductorElasticsearchApi, List<Entity>>, Serializable {
 
     private static final long      serialVersionUID = 874720830583573161L;
 
@@ -30,7 +31,7 @@ public class SearchEntitySetDataAcrossIndicesLambda implements Function<Conducto
     }
 
     @Override
-    public List<Entity> apply( ConductorSparkApi api ) {
+    public List<Entity> apply( ConductorElasticsearchApi api ) {
         return api.executeEntitySetDataSearchAcrossIndices( entitySetIds, fieldSearches, size, explain );
     }
 }

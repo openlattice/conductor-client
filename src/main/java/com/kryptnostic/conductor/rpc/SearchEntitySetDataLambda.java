@@ -26,25 +26,30 @@ import java.util.function.Function;
 
 import com.dataloom.search.requests.SearchResult;
 
-public class SearchEntitySetDataLambda implements Function<ConductorSparkApi, SearchResult>, Serializable {
+public class SearchEntitySetDataLambda implements Function<ConductorElasticsearchApi, SearchResult>, Serializable {
     private static final long serialVersionUID = -3273005291047567056L;
 
-    private UUID entitySetId;
-    private String searchTerm;
-    private int start;
-    private int maxHits;
-    private Set<UUID> authorizedProperties;
-    
-    public SearchEntitySetDataLambda( UUID entitySetId, String searchTerm, int start, int maxHits, Set<UUID> authorizedProperties) {
+    private UUID              entitySetId;
+    private String            searchTerm;
+    private int               start;
+    private int               maxHits;
+    private Set<UUID>         authorizedProperties;
+
+    public SearchEntitySetDataLambda(
+            UUID entitySetId,
+            String searchTerm,
+            int start,
+            int maxHits,
+            Set<UUID> authorizedProperties ) {
         this.entitySetId = entitySetId;
         this.searchTerm = searchTerm;
         this.start = start;
         this.maxHits = maxHits;
         this.authorizedProperties = authorizedProperties;
     }
-    
+
     @Override
-    public SearchResult apply( ConductorSparkApi api ) {
+    public SearchResult apply( ConductorElasticsearchApi api ) {
         return api.executeEntitySetDataSearch( entitySetId, searchTerm, start, maxHits, authorizedProperties );
     }
 
