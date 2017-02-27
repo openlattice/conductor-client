@@ -50,7 +50,7 @@ public final class RequestUtil {
         return new Status(
                 request.getAclKey(),
                 request.getPermissions(),
-                Optional.of( request.getReason() ),
+                request.getReason(),
                 Principals.getCurrentUser(),
                 RequestStatus.SUBMITTED );
     }
@@ -82,10 +82,10 @@ public final class RequestUtil {
     }
 
     public static Status approve( Status s ) {
-        return new Status( s.getAclKey(), s.getPermissions(), Optional.of( s.getReason() ), s.getPrincipal(), RequestStatus.APPROVED );
+        return new Status( s.getAclKey(), s.getPermissions(), s.getReason(), s.getPrincipal(), RequestStatus.APPROVED );
     }
 
     public static Status decline( Status s ) {
-        return new Status( s.getAclKey(), s.getPermissions(), Optional.of( s.getReason() ), s.getPrincipal(), RequestStatus.DECLINED );
+        return new Status( s.getAclKey(), s.getPermissions(), s.getReason(), s.getPrincipal(), RequestStatus.DECLINED );
     }
 }

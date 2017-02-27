@@ -67,8 +67,8 @@ public final class AuthorizationUtils {
         return row.get( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), SecurableObjectType.class );
     }
 
-    public static Optional<String> reason( Row row ) {
-        return Optional.fromNullable( row.getString( CommonColumns.REASON.cql() ) );
+    public static String reason( Row row ) {
+        return row.getString( CommonColumns.REASON.cql() );
     }
     
     public static UUID getLastAclKeySafely( List<UUID> aclKeys ) {
