@@ -33,6 +33,7 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.datastax.driver.core.Row;
+import com.google.common.base.Optional;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
@@ -66,6 +67,10 @@ public final class AuthorizationUtils {
         return row.get( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), SecurableObjectType.class );
     }
 
+    public static Optional<String> reason( Row row ) {
+        return Optional.fromNullable( row.getString( CommonColumns.REASON.cql() ) );
+    }
+    
     public static UUID getLastAclKeySafely( List<UUID> aclKeys ) {
         return aclKeys.isEmpty() ? null : aclKeys.get( aclKeys.size() - 1 );
     }
