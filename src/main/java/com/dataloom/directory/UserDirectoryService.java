@@ -144,13 +144,11 @@ public class UserDirectoryService {
     public Map<String, Auth0UserBasic> searchAllUsers( String searchQuery ) {
 
         int page = 0;
-        String searchQuerySubstring = searchQuery + "*";
-
         Set<Auth0UserBasic> pageOfUsers;
         Set<Auth0UserBasic> users = Sets.newHashSet();
 
         do {
-            pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuerySubstring, page++, DEFAULT_PAGE_SIZE );
+            pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, page++, DEFAULT_PAGE_SIZE );
             users.addAll( pageOfUsers );
         } while ( pageOfUsers.size() == DEFAULT_PAGE_SIZE );
 
