@@ -20,6 +20,8 @@
 package com.dataloom.authorization;
 
 import com.dataloom.auditing.AuditableEvent;
+import com.dataloom.authorization.paging.AuthorizedObjectsPagingInfo;
+import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.authorization.securable.SecurableObjectType;
@@ -34,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -140,6 +143,16 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             EnumSet<Permission> aces ) {
         return aqs.getAuthorizedAclKeys( principals, objectType, aces )
                 .stream();
+    }
+
+    @Override
+    public AuthorizedObjectsSearchResult getAuthorizedObjectsOfType(
+            NavigableSet<Principal> principals,
+            SecurableObjectType objectType,
+            Permission permission,
+            AuthorizedObjectsPagingInfo pagingInfo,
+            int pageSize ) {
+        return aqs.getAuthorizedAclKeys( principals, objectType, permission, pagingInfo, pageSize );
     }
 
     @Override
