@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.search.requests.SearchResult;
-import com.google.common.collect.Lists;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
@@ -25,9 +25,8 @@ public class SearchResultStreamSerializer implements SelfRegisteringStreamSerial
 
     @Override
     public SearchResult read( ObjectDataInput in ) throws IOException {
-        List<Map<String, Object>> hitType = Lists.newArrayList();
         long numHits = in.readLong();
-        List<Map<String, Object>> hits = ObjectMappers.getSmileMapper().readValue( in.readByteArray(), hitType.getClass() );
+        List<Map<String, Object>> hits = ObjectMappers.getSmileMapper().readValue( in.readByteArray(), new TypeReference<List<Map<String,Object>>>(){} );
         return new SearchResult( numHits, hits );
     }
 
