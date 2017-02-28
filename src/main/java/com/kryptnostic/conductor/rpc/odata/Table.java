@@ -65,6 +65,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
 
 import java.util.EnumMap;
 
@@ -277,7 +278,7 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
-                        .columns( CommonColumns.PERMISSIONS, STATUS )
+                        .columns( CommonColumns.PERMISSIONS, REASON, STATUS )
                         .sasi( PRINCIPAL_TYPE,
                                 PRINCIPAL_ID,
                                 STATUS );

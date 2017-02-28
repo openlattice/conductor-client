@@ -40,18 +40,21 @@ public class RequestsTests extends HzAuthzTest {
     protected static final Status      expected  = TestDataFactory.status();
     protected static final Status      expected2 = new Status(
             expected.getAclKey(),
-            TestDataFactory.userPrincipal(),
             expected.getPermissions(),
+            expected.getReason(),
+            TestDataFactory.userPrincipal(),
             RequestStatus.SUBMITTED );
     protected static final Status      expected3 = new Status(
             expected.getAclKey(),
-            TestDataFactory.userPrincipal(),
             expected.getPermissions(),
+            expected.getReason(),
+            TestDataFactory.userPrincipal(),
             RequestStatus.SUBMITTED );
     protected static final Status      expected4 = new Status(
             TestDataFactory.aclKey(),
-            expected.getPrincipal(),
             expected.getPermissions(),
+            expected.getReason(),
+            expected.getPrincipal(),
             RequestStatus.SUBMITTED );
     protected static final Set<Status> ss        = ImmutableSet.of( expected,
             expected2,

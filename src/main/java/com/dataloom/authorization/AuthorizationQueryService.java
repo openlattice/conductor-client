@@ -201,7 +201,7 @@ public class AuthorizationQueryService {
             }
         } while ( currentFetchSize > 0 && !exhausted );
         
-        AuthorizedObjectsPagingInfo newPagingInfo = AuthorizedObjectsPagingFactory.createSafely( currentPrincipal, currentPagingState );
+        AuthorizedObjectsPagingInfo newPagingInfo = exhausted ? null : AuthorizedObjectsPagingFactory.createSafely( currentPrincipal, currentPagingState );
         String pagingToken = AuthorizedObjectsPagingFactory.encode( newPagingInfo );
         
         return new AuthorizedObjectsSearchResult( pagingToken, results );
