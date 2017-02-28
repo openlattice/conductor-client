@@ -44,13 +44,14 @@ public class RenameEntitySetProcessor extends AbstractRhizomeEntryProcessor<UUID
                     es.getEntityTypeId(),
                     newName,
                     es.getTitle(),
-                    Optional.of( es.getDescription() ) );
+                    Optional.of( es.getDescription() ),
+                    Optional.of( es.getContacts() ) );
             entry.setValue( newEs );
         }
         return null;
     }
-    
-    public String getName(){
+
+    public String getName() {
         return newName;
     }
 

@@ -64,6 +64,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
 
 import java.util.EnumMap;
 
@@ -164,7 +165,8 @@ public enum Table implements TableDef {
                         .clusteringColumns( NAME )
                         .columns( ENTITY_TYPE_ID,
                                 TITLE,
-                                DESCRIPTION )
+                                DESCRIPTION,
+                                CONTACTS )
                         .secondaryIndex( ENTITY_TYPE_ID, NAME );
             case ENTITY_TYPES:
                 return new CassandraTableBuilder( ENTITY_TYPES )

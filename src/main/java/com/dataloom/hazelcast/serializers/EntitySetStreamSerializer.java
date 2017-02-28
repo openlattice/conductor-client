@@ -20,6 +20,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
@@ -29,6 +30,7 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
+import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @Component
@@ -42,6 +44,7 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
         out.writeUTF( object.getName() );
         out.writeUTF( object.getTitle() );
         out.writeUTF( object.getDescription() );
+        SetStreamSerializers.serialize( out, object.getContacts(), ObjectDataOutput::writeUTF );
     }
 
     @Override
@@ -51,12 +54,15 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
         String name = in.readUTF();
         String title = in.readUTF();
         Optional<String> description = Optional.of( in.readUTF() );
+        Optional<Set<String>> contacts = Optional
+                .of( SetStreamSerializers.deserialize( in, ObjectDataInput::readUTF ) );
         EntitySet es = new EntitySet(
                 id,
                 entityTypeId,
                 name,
                 title,
-                description );
+                description,
+                contacts );
         return es;
     }
 
