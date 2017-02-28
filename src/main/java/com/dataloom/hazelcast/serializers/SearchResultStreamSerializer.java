@@ -16,6 +16,8 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @Component
 public class SearchResultStreamSerializer implements SelfRegisteringStreamSerializer<SearchResult> {
+    
+    private static final TypeReference<List<Map<String, Object>>> hitType = new TypeReference<List<Map<String,Object>>>(){};
 
     @Override
     public void write( ObjectDataOutput out, SearchResult object ) throws IOException {
@@ -26,7 +28,7 @@ public class SearchResultStreamSerializer implements SelfRegisteringStreamSerial
     @Override
     public SearchResult read( ObjectDataInput in ) throws IOException {
         long numHits = in.readLong();
-        List<Map<String, Object>> hits = ObjectMappers.getSmileMapper().readValue( in.readByteArray(), new TypeReference<List<Map<String,Object>>>(){} );
+        List<Map<String, Object>> hits = ObjectMappers.getSmileMapper().readValue( in.readByteArray(), hitType );
         return new SearchResult( numHits, hits );
     }
 
