@@ -32,6 +32,7 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.requests.RequestStatus;
 import com.dataloom.requests.Status;
+import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
@@ -42,20 +43,22 @@ public class StatusStreamSerializer implements SelfRegisteringStreamSerializer<S
 
     @Override
     public void write( ObjectDataOutput out, Status object ) throws IOException {
-        PrincipalStreamSerializer.serialize( out, object.getPrincipal() );
         SetStreamSerializers.fastUUIDSetSerialize( out, object.getAclKey() );
         DelegatedPermissionEnumSetStreamSerializer.serialize( out, object.getPermissions() );
+        out.writeUTF( object.getReason() );
+        PrincipalStreamSerializer.serialize( out, object.getPrincipal() );
         RequestStatusStreamSerializer.serialize( out, object.getStatus() );
 
     }
 
     @Override
     public Status read( ObjectDataInput in ) throws IOException {
-        Principal principal = PrincipalStreamSerializer.deserialize( in );
         List<UUID> aclKey = ListStreamSerializers.fastUUIDListDeserialize( in );
         EnumSet<Permission> permissions = DelegatedPermissionEnumSetStreamSerializer.deserialize( in );
+        Optional<String> reason = Optional.fromNullable( in.readUTF() );
+        Principal principal = PrincipalStreamSerializer.deserialize( in );
         RequestStatus requestStatus = RequestStatusStreamSerializer.deserialize( in );
-        return new Status( aclKey, principal, permissions, requestStatus );
+        return new Status( aclKey, permissions, reason, principal, requestStatus );
     }
 
     @Override
