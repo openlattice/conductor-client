@@ -207,7 +207,7 @@ public class AuthorizationQueryService {
         while( currentFetchSize == 0 && currentPagingState == null && !exhausted ){
             Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission ).setFetchSize( 1 );
             ResultSet rs = session.execute( query );
-            if( rs.isExhausted() ){
+            if( rs.one() == null ){
                 currentPrincipal = principals.higher( currentPrincipal );
                 if( currentPrincipal == null ){
                     exhausted = true;
