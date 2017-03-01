@@ -10,8 +10,8 @@ import com.dataloom.authorization.PrincipalType;
 import com.datastax.driver.core.PagingState;
 
 public class AuthorizedObjectsPagingFactory {
-    private static final Encoder encoder   = Base64.getEncoder();
-    private static final Decoder decoder   = Base64.getDecoder();
+    private static final Encoder encoder   = Base64.getUrlEncoder();
+    private static final Decoder decoder   = Base64.getUrlDecoder();
 
     private static final String  delimiter = ":";
 
