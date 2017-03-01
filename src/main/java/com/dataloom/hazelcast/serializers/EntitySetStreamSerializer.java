@@ -54,8 +54,7 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
         String name = in.readUTF();
         String title = in.readUTF();
         Optional<String> description = Optional.of( in.readUTF() );
-        Optional<Set<String>> contacts = Optional
-                .of( SetStreamSerializers.deserialize( in, ObjectDataInput::readUTF ) );
+        Set<String> contacts = SetStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
         EntitySet es = new EntitySet(
                 id,
                 entityTypeId,

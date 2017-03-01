@@ -144,8 +144,8 @@ public final class RowAdapters {
         return Optional.fromNullable( row.getString( CommonColumns.DESCRIPTION.cql() ) );
     }
 
-    public static Optional<Set<String>> contacts( Row row ) {
-        return Optional.fromNullable( row.getSet( CommonColumns.CONTACTS.cql(), String.class ) );
+    public static Set<String> contacts( Row row ) {
+        return row.getSet( CommonColumns.CONTACTS.cql(), String.class );
     }
 
     public static UUID id( Row row ) {
@@ -163,7 +163,7 @@ public final class RowAdapters {
         String name = name( row );
         String title = title( row );
         Optional<String> description = description( row );
-        Optional<Set<String>> contacts = contacts( row );
+        Set<String> contacts = contacts( row );
         return new EntitySet( id, entityTypeId, name, title, description, contacts );
     }
 
