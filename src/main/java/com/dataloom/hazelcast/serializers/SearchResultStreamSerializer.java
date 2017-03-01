@@ -7,24 +7,28 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.search.requests.SearchResult;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @Component
 public class SearchResultStreamSerializer implements SelfRegisteringStreamSerializer<SearchResult> {
+    
+    private static final TypeReference<List<Map<String, Object>>> hitType = new TypeReference<List<Map<String,Object>>>(){};
 
     @Override
     public void write( ObjectDataOutput out, SearchResult object ) throws IOException {
         out.writeLong( object.getNumHits() );
-        out.writeObject( object.getHits() );
+        out.writeByteArray( ObjectMappers.getSmileMapper().writeValueAsBytes( object.getHits() ) );
     }
 
     @Override
     public SearchResult read( ObjectDataInput in ) throws IOException {
         long numHits = in.readLong();
-        List<Map<String, Object>> hits = in.readObject();
+        List<Map<String, Object>> hits = ObjectMappers.getSmileMapper().readValue( in.readByteArray(), hitType );
         return new SearchResult( numHits, hits );
     }
 

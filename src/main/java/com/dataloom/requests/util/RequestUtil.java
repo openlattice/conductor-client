@@ -25,9 +25,11 @@ import com.dataloom.requests.Request;
 import com.dataloom.requests.RequestStatus;
 import com.dataloom.requests.Status;
 import com.datastax.driver.core.Row;
+import com.google.common.base.Optional;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 
 import javax.annotation.Nonnull;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -47,8 +49,9 @@ public final class RequestUtil {
     public static @Nonnull Status newStatus( @Nonnull Request request ) {
         return new Status(
                 request.getAclKey(),
-                Principals.getCurrentUser(),
                 request.getPermissions(),
+                request.getReason(),
+                Principals.getCurrentUser(),
                 RequestStatus.SUBMITTED );
     }
 
@@ -59,8 +62,9 @@ public final class RequestUtil {
     public static Status status( Row row ) {
         return new Status(
                 aclKey( row ),
-                getPrincipalFromRow( row ),
                 permissions( row ),
+                reason( row ),
+                getPrincipalFromRow( row ),
                 RowAdapters.reqStatus( row ) );
     }
 
@@ -78,10 +82,10 @@ public final class RequestUtil {
     }
 
     public static Status approve( Status s ) {
-        return new Status( s.getAclKey(), s.getPrincipal(), s.getPermissions(), RequestStatus.APPROVED );
+        return new Status( s.getAclKey(), s.getPermissions(), s.getReason(), s.getPrincipal(), RequestStatus.APPROVED );
     }
 
     public static Status decline( Status s ) {
-        return new Status( s.getAclKey(), s.getPrincipal(), s.getPermissions(), RequestStatus.DECLINED );
+        return new Status( s.getAclKey(), s.getPermissions(), s.getReason(), s.getPrincipal(), RequestStatus.DECLINED );
     }
 }

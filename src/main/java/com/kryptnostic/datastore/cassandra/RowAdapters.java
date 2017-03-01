@@ -100,7 +100,6 @@ public final class RowAdapters {
         return m;
     }
 
-
     public static Pair<SetMultimap<UUID, Object>, SetMultimap<FullQualifiedName, Object>> entityIdFQNPair(
             ResultSet rs,
             Map<UUID, PropertyType> authorizedPropertyTypes,
@@ -145,6 +144,10 @@ public final class RowAdapters {
         return Optional.fromNullable( row.getString( CommonColumns.DESCRIPTION.cql() ) );
     }
 
+    public static Set<String> contacts( Row row ) {
+        return row.getSet( CommonColumns.CONTACTS.cql(), String.class );
+    }
+
     public static UUID id( Row row ) {
         return row.getUUID( CommonColumns.ID.cql() );
     }
@@ -160,7 +163,8 @@ public final class RowAdapters {
         String name = name( row );
         String title = title( row );
         Optional<String> description = description( row );
-        return new EntitySet( id, entityTypeId, name, title, description );
+        Set<String> contacts = contacts( row );
+        return new EntitySet( id, entityTypeId, name, title, description, contacts );
     }
 
     public static PropertyType propertyType( Row row ) {
@@ -216,7 +220,7 @@ public final class RowAdapters {
     public static RequestStatus reqStatus( Row row ) {
         return row.get( CommonColumns.STATUS.cql(), RequestStatus.class );
     }
-    
+
     public static String principalId( Row row ) {
         return row.getString( CommonColumns.PRINCIPAL_ID.cql() );
     }
@@ -225,11 +229,11 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.REQUESTID.cql() );
     }
 
-    public static Set<EntityKey> entityKeys( Row row ){
+    public static Set<EntityKey> entityKeys( Row row ) {
         return row.getSet( CommonColumns.ENTITY_KEYS.cql(), EntityKey.class );
     }
-    
-    public static Pair<UUID, Set<EntityKey>> linkedEntity( Row row ){
+
+    public static Pair<UUID, Set<EntityKey>> linkedEntity( Row row ) {
         return Pair.of( row.getUUID( CommonColumns.VERTEX_ID.cql() ), entityKeys( row ) );
     }
 

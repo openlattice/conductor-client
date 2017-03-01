@@ -20,21 +20,12 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
 import com.dataloom.data.requests.LookupEntitiesRequest;
-import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.linking.Entity;
-import com.dataloom.organization.Organization;
-import com.dataloom.search.requests.SearchResult;
-import com.google.common.base.Optional;
 
 public interface ConductorSparkApi {
 
@@ -60,40 +51,6 @@ public interface ConductorSparkApi {
      * @return QueryResult of UUID's linking the lookup request
      */
     QueryResult getFilterEntities( LookupEntitiesRequest request );
-
-	Boolean submitEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
-	
-	Boolean deleteEntitySet( UUID entitySetId );
-	
-	SearchResult executeElasticsearchMetadataQuery(
-			Optional<String> query,
-			Optional<UUID> optionalEntityType,
-			Optional<Set<UUID>> optionalPropertyTypes,
-			Set<Principal> principals,
-			int start,
-			int maxHits );
-	
-	Boolean updateEntitySetMetadata( EntitySet entitySet );
-
-	Boolean updatePropertyTypesInEntitySet( UUID entitySetId, List<PropertyType> newPropertyTypes );
-	
-	Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
-	
-	Boolean createOrganization( Organization organization, Principal principal );
-	
-	SearchResult executeOrganizationKeywordSearch( String searchTerm, Set<Principal> principals, int start, int maxHits );
-	
-	Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
-	
-	Boolean deleteOrganization( UUID organizationId );
-	
-	Boolean updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions );
-
-	Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues );
-	
-	SearchResult executeEntitySetDataSearch( UUID entitySetId, String searchTerm, int start, int maxHits, Set<UUID> authorizedPropertyTypes );
-	
-    List<Entity> executeEntitySetDataSearchAcrossIndices( Set<UUID> entitySetIds, Map<UUID, Set<String>> fieldSearches, int size, boolean explain );
 
     Void clustering( UUID linkedEntitySetId );
 }

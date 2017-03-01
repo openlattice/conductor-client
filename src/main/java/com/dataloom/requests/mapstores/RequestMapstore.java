@@ -60,7 +60,8 @@ public class RequestMapstore extends AbstractStructuredCassandraMapstore<AceKey,
                 .set( CommonColumns.PERMISSIONS.cql(),
                         status.getPermissions(),
                         EnumSetTypeCodec.getTypeTokenForEnumSetPermission() )
-                .set( CommonColumns.STATUS.cql(), status.getStatus(), RequestStatus.class );
+                .set( CommonColumns.STATUS.cql(), status.getStatus(), RequestStatus.class )
+                .setString( CommonColumns.REASON.cql(), status.getReason() );
     }
 
     @Override

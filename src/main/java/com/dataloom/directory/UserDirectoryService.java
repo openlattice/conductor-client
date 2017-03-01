@@ -45,6 +45,8 @@ public class UserDirectoryService {
     private       Retrofit                     retrofit;
     private       Auth0ManagementApi           auth0ManagementApi;
 
+    private static final int DEFAULT_PAGE_SIZE = 100;
+
     public UserDirectoryService( String token, HazelcastInstance hazelcastInstance ) {
         retrofit = RetrofitFactory.newClient( "https://loom.auth0.com/api/v2/", () -> token );
         auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
@@ -58,14 +60,15 @@ public class UserDirectoryService {
     }
 
     public Map<String, Auth0UserBasic> getAllUsers() {
-        int page = 0;
 
+        int page = 0;
+        Set<Auth0UserBasic> pageOfUsers;
         Set<Auth0UserBasic> users = Sets.newHashSet();
-        for ( Set<Auth0UserBasic> pageOfUsers = auth0ManagementApi.getAllUsers( page, 100 );
-              users.isEmpty() || pageOfUsers.size() == 100; pageOfUsers = auth0ManagementApi
-                .getAllUsers( ++page, 100 ) ) {
+
+        do {
+            pageOfUsers = auth0ManagementApi.getAllUsers( page++, DEFAULT_PAGE_SIZE );
             users.addAll( pageOfUsers );
-        }
+        } while ( pageOfUsers.size() == DEFAULT_PAGE_SIZE );
 
         if ( users.isEmpty() ) {
             logger.warn( "Received null response from auth0" );
@@ -141,16 +144,13 @@ public class UserDirectoryService {
     public Map<String, Auth0UserBasic> searchAllUsers( String searchQuery ) {
 
         int page = 0;
+        Set<Auth0UserBasic> pageOfUsers;
         Set<Auth0UserBasic> users = Sets.newHashSet();
-        String searchQuerySubstring = searchQuery + "*";
-        for ( Set<Auth0UserBasic> pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuerySubstring, page, 100 );
-              users.isEmpty() || pageOfUsers.size() == 100;
-              pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuerySubstring, ++page, 100 ) ) {
-            if ( pageOfUsers.size() == 0 ) {
-                break;
-            }
+
+        do {
+            pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, page++, DEFAULT_PAGE_SIZE );
             users.addAll( pageOfUsers );
-        }
+        } while ( pageOfUsers.size() == DEFAULT_PAGE_SIZE );
 
         if ( users.isEmpty() ) {
             logger.warn( "Auth0 did not return any users for this search." );

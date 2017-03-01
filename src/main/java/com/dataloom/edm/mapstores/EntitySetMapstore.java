@@ -28,9 +28,9 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
@@ -52,7 +52,8 @@ public class EntitySetMapstore extends AbstractStructuredCassandraPartitionKeyVa
                 .setString( CommonColumns.NAME.cql(), value.getName() )
                 .setUUID( CommonColumns.ENTITY_TYPE_ID.cql(), value.getEntityTypeId() )
                 .setString( CommonColumns.TITLE.cql(), value.getTitle() )
-                .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() );
+                .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() )
+                .setSet( CommonColumns.CONTACTS.cql(), value.getContacts(), String.class );
     }
 
     @Override
@@ -66,12 +67,7 @@ public class EntitySetMapstore extends AbstractStructuredCassandraPartitionKeyVa
         if ( row == null ) {
             return null;
         }
-        return new EntitySet(
-                row.getUUID( CommonColumns.ID.cql() ),
-                row.getUUID( CommonColumns.ENTITY_TYPE_ID.cql() ),
-                row.getString( CommonColumns.NAME.cql() ),
-                row.getString( CommonColumns.TITLE.cql() ),
-                Optional.of( row.getString( CommonColumns.DESCRIPTION.cql() ) ) );
+        return RowAdapters.entitySet( row );
     }
 
     @Override

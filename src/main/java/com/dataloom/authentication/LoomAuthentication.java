@@ -21,7 +21,9 @@ package com.dataloom.authentication;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.NavigableSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -39,7 +41,7 @@ public class LoomAuthentication implements Authentication {
     private static final Logger  logger           = LoggerFactory.getLogger( LoomAuthentication.class );
     private static final long    serialVersionUID = -6853527586490225640L;
     private final Principal      principal;
-    private final Set<Principal> principals;
+    private final NavigableSet<Principal> principals;
     private final Auth0JWTToken  jwtToken;
 
     public LoomAuthentication( Authentication authentication ) {
@@ -56,7 +58,7 @@ public class LoomAuthentication implements Authentication {
             }
 
             principal = new Principal( PrincipalType.USER, principalId.toString() );
-            principals = new HashSet<>( authorities.size() + 1 );
+            principals = new TreeSet<Principal>();
             principals.add( principal );
 
             authorities
@@ -73,7 +75,7 @@ public class LoomAuthentication implements Authentication {
         return principal;
     }
 
-    public Set<Principal> getLoomPrincipals() {
+    public NavigableSet<Principal> getLoomPrincipals() {
         return principals;
     }
 
