@@ -19,14 +19,21 @@
 
 package com.dataloom.authorization;
 
+import com.dataloom.authorization.paging.AuthorizedObjectsPagingFactory;
+import com.dataloom.authorization.paging.AuthorizedObjectsPagingInfo;
+import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PagingState;
 import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -36,9 +43,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -96,26 +106,43 @@ public class AuthorizationQueryService {
 
     }
 
-    public Stream<List<UUID>> getAuthorizedAclKeys(
-            Principal principal,
-            SecurableObjectType objectType,
-            EnumSet<Permission> desiredPermissions ) {
+    private Stream<List<UUID>> getAuthorizedAclKeys(
+            Function<Permission, BoundStatement> binder,
+            EnumSet<Permission> desiredPermissions
+            ){
         return desiredPermissions
                 .stream()
-                .map( desiredPermission -> authorizedAclKeysForObjectTypeQuery.bind()
-                        .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                        .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
-                        .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
-                        .set( CommonColumns.PERMISSIONS.cql(),
-                                desiredPermission,
-                                Permission.class ) )
-                // .peek( q -> logger.info( "Executing query: {}", q.preparedStatement().getQueryString() ) )
+                .map( desiredPermission -> binder.apply( desiredPermission ) )
                 .map( session::executeAsync )
                 .map( ResultSetFuture::getUninterruptibly )
                 .flatMap( StreamUtil::stream )
                 .map( AuthorizationUtils::aclKey );
     }
+    
+    /**
+     * get all authorized acl keys for a principal, of a fixed object type, with desired permissions.
+     * @param principal
+     * @param objectType
+     * @param desiredPermissions
+     * @return
+     */
+    public Stream<List<UUID>> getAuthorizedAclKeys(
+            Principal principal,
+            SecurableObjectType objectType,
+            EnumSet<Permission> desiredPermissions ) {
+        return getAuthorizedAclKeys( desiredPermission -> bindAuthorizedAclKeysForObjectTypeQuery( principal,
+                objectType,
+                desiredPermission ),
+                desiredPermissions );
+    }
 
+    /**
+     * get all authorized acl keys for a set of principals, of a fixed object type, with desired permissions.
+     * @param principals
+     * @param objectType
+     * @param desiredPermissions
+     * @return
+     */
     public Set<List<UUID>> getAuthorizedAclKeys(
             Set<Principal> principals,
             SecurableObjectType objectType,
@@ -129,21 +156,93 @@ public class AuthorizationQueryService {
                 .collect( Collectors.toSet() );
     }
 
+    /**
+     * get all authorized acl keys for a set of principals, of a fixed object type, with specified permission, starting from a page given from paging state.
+     */
+    public AuthorizedObjectsSearchResult getAuthorizedAclKeys(
+            NavigableSet<Principal> principals,
+            SecurableObjectType objectType,
+            Permission permission,
+            AuthorizedObjectsPagingInfo pagingInfo,
+            int pageSize
+            ) {
+        Set<List<UUID>> results = new HashSet<>();
+        int currentFetchSize = pageSize;
+        Principal currentPrincipal = ( pagingInfo == null ) ? principals.first() : pagingInfo.getPrincipal();
+        PagingState currentPagingState = ( pagingInfo == null ) ? null : pagingInfo.getPagingState();
+        boolean exhausted = false;
+        
+        do {
+            Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission ).setFetchSize( currentFetchSize );
+            
+            if( currentPagingState != null ){
+                query.setPagingState( currentPagingState );
+            }
+            
+            ResultSet rs = session.execute( query );
+            
+            int remaining = rs.getAvailableWithoutFetching();
+            for( Row row : rs ){
+                if( results.add( AuthorizationUtils.aclKey( row ) ) ){
+                    currentFetchSize--;
+                }
+                
+                if( --remaining == 0 ){
+                    break;
+                }
+            }
+            
+            currentPagingState = rs.getExecutionInfo().getPagingState();
+            if( currentPagingState == null || rs.isExhausted() ){
+                currentPrincipal = principals.higher( currentPrincipal );
+                currentPagingState = null;
+                
+                if( currentPrincipal == null ){
+                    exhausted = true;
+                }
+            }
+        } while ( currentFetchSize > 0 && !exhausted );
+        
+        //When all needed results are fetched, traverse to the next principal so that the next query returns nonzero results.
+        while( currentFetchSize == 0 && currentPagingState == null && !exhausted ){
+            Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission ).setFetchSize( 1 );
+            ResultSet rs = session.execute( query );
+            if( rs.isExhausted() ){
+                currentPrincipal = principals.higher( currentPrincipal );
+                if( currentPrincipal == null ){
+                    exhausted = true;
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        
+        AuthorizedObjectsPagingInfo newPagingInfo = exhausted ? null : AuthorizedObjectsPagingFactory.createSafely( currentPrincipal, currentPagingState );
+        String pagingToken = AuthorizedObjectsPagingFactory.encode( newPagingInfo );
+        
+        return new AuthorizedObjectsSearchResult( pagingToken, results );
+    }
+
+    /**
+     * get all authorized acl keys for a principal, of all object types, with desired permissions.
+     * @param principal
+     * @param desiredPermissions
+     * @return
+     */
     public Stream<List<UUID>> getAuthorizedAclKeys(
             Principal principal,
             EnumSet<Permission> desiredPermissions ) {
-        return desiredPermissions
-                .stream()
-                .map( desiredPermission -> session.executeAsync(
-                        authorizedAclKeysQuery.bind()
-                                .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                                .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
-                                .set( CommonColumns.PERMISSIONS.cql(), desiredPermission, Permission.class ) ) )
-                .map( ResultSetFuture::getUninterruptibly )
-                .flatMap( StreamUtil::stream )
-                .map( AuthorizationUtils::aclKey );
+        return getAuthorizedAclKeys( desiredPermission -> bindAuthorizedAclKeysQuery( principal, desiredPermission ),
+                desiredPermissions );
     }
 
+    /**
+     * get all authorized acl keys for a set of principals, of all object types, with desired permissions.
+     * @param principals
+     * @param desiredPermissions
+     * @return
+     */
     public Set<List<UUID>> getAuthorizedAclKeys(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions ) {
@@ -153,6 +252,26 @@ public class AuthorizationQueryService {
                         principal,
                         desiredPermissions ) )
                 .collect( Collectors.toSet() );
+    }
+
+    private BoundStatement bindAuthorizedAclKeysForObjectTypeQuery(
+            Principal principal,
+            SecurableObjectType objectType,
+            Permission permission ) {
+        return authorizedAclKeysForObjectTypeQuery.bind()
+                .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
+                .set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(), objectType, SecurableObjectType.class )
+                .set( CommonColumns.PERMISSIONS.cql(),
+                        permission,
+                        Permission.class );
+    }
+
+    private BoundStatement bindAuthorizedAclKeysQuery( Principal principal, Permission permission ) {
+        return authorizedAclKeysQuery.bind()
+                .set( CommonColumns.PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
+                .setString( CommonColumns.PRINCIPAL_ID.cql(), principal.getId() )
+                .set( CommonColumns.PERMISSIONS.cql(), permission, Permission.class );
     }
 
     public Stream<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {

@@ -21,7 +21,7 @@ package com.dataloom.authorization;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.Set;
+import java.util.NavigableSet;
 
 import javax.annotation.Nonnull;
 
@@ -51,7 +51,7 @@ public final class Principals {
         return getLoomAuthentication().getLoomPrincipal();
     }
 
-    public static Set<Principal> getCurrentPrincipals() {
+    public static NavigableSet<Principal> getCurrentPrincipals() {
         return getLoomAuthentication().getLoomPrincipals();
     }
     

@@ -98,6 +98,7 @@ public enum CommonColumns implements ColumnDef {
     VERTEX_ID( DataType.uuid() ),
     GRAPH_DIAMETER( DataType.cdouble() ),
     ANALYZER( DataType.text() ),
+    CONTACTS( DataType.set( DataType.text() ) ),
     REASON( DataType.text() );
 
     private final DataType type;
