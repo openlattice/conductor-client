@@ -100,10 +100,6 @@ public interface ConductorElasticsearchApi {
     final String ENTITY_TYPE_ID                = "entityTypeId";
     final String ID                            = "id";
 
-    Boolean initializeEntitySetDataModelIndex();
-
-    Boolean initializeOrganizationIndex();
-
     Boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 
     Boolean deleteEntitySet( UUID entitySetId );
