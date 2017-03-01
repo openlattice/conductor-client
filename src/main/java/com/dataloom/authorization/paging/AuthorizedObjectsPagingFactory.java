@@ -28,7 +28,7 @@ public class AuthorizedObjectsPagingFactory {
 
         String principalType = info.getPrincipal().getType().toString();
         String principalId = info.getPrincipal().getId();
-        String pagingState = ( info.getPagingState() == null ) ? null : info.getPagingState().toString();
+        String pagingState = ( info.getPagingState() == null ) ? "" : info.getPagingState().toString();
 
         String key = new StringBuilder().append( principalType ).append( delimiter )
                 .append( principalId ).append( delimiter )
