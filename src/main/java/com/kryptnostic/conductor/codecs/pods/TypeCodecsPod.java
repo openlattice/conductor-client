@@ -34,6 +34,8 @@ import com.kryptnostic.conductor.codecs.EntityKeyTypeCodec;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.codecs.FullQualifiedNameTypeCodec;
 import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
+import com.kryptnostic.conductor.codecs.TreeSetCodec;
+
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.context.annotation.Bean;
@@ -125,6 +127,11 @@ public class TypeCodecsPod {
     @Bean
     public TypeCodec<EntityKey> entitykeyCodec() {
         return new EntityKeyTypeCodec( ObjectMappers.getJsonMapper() );
+    }
+    
+    @Bean
+    public TypeCodec<Set<UUID>> uuidTreeSetCodec(){
+        return TreeSetCodec.getUUIDInstance();
     }
 
 }

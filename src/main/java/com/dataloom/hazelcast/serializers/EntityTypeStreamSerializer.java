@@ -21,6 +21,7 @@ package com.dataloom.hazelcast.serializers;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -66,7 +67,7 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
         Set<UUID> keys = SetStreamSerializers.deserialize( in, ( ObjectDataInput dataInput ) -> {
             return UUIDStreamSerializer.deserialize( dataInput );
         } );
-        Set<UUID> properties = SetStreamSerializers.deserialize( in, ( ObjectDataInput dataInput ) -> {
+        Set<UUID> properties = SetStreamSerializers.deserialize( in, new TreeSet<UUID>(), in.readInt(), ( ObjectDataInput dataInput ) -> {
             return UUIDStreamSerializer.deserialize( dataInput );
         } );
         return new EntityType( id, type, title, description, schemas, keys, properties );

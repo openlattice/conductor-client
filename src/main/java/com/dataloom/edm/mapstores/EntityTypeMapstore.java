@@ -21,6 +21,7 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
+import com.kryptnostic.conductor.codecs.TreeSetCodec;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -79,7 +80,7 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
                 row.getString( CommonColumns.TITLE.cql() ),
                 Optional.of( row.getString( CommonColumns.DESCRIPTION.cql() ) ),
                 row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class ),
-                row.getSet( CommonColumns.KEY.cql(), UUID.class ),
+                row.get( CommonColumns.KEY.cql(), TreeSetCodec.getUUIDInstance() ),
                 row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class ) );
     }
 
