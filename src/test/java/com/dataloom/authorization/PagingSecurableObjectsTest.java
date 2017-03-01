@@ -27,6 +27,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
     protected static final Principal               u1 = TestDataFactory.userPrincipal();
     protected static final Principal               r1 = TestDataFactory.rolePrincipal();
     protected static final Principal               r2 = TestDataFactory.rolePrincipal();
+    protected static final Principal               r3 = TestDataFactory.rolePrincipal();
     protected static final NavigableSet<Principal> currentPrincipals = new TreeSet<Principal>();
 
     @BeforeClass
@@ -34,6 +35,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
         currentPrincipals.add( u1 );
         currentPrincipals.add( r1 );
         currentPrincipals.add( r2 );
+        currentPrincipals.add( r3 );
 
         hzAuthz.addPermission( key1, u1, EnumSet.allOf( Permission.class ) );
         hzAuthz.createEmptyAcl( key1, SecurableObjectType.EntitySet );
@@ -59,7 +61,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
     @Test
     public void testListSecurableObjectsInMultiplePages() {
         //There should be 3 results in total.
-        int SMALL_PAGE_SIZE = 2;
+        int SMALL_PAGE_SIZE = 1;
 
         AuthorizedObjectsSearchResult result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
                 SecurableObjectType.EntitySet,
@@ -67,9 +69,9 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
                 null,
                 SMALL_PAGE_SIZE );
 
-        //First page should have 2 results.
+        //First page should have 1 result.
         Assert.assertNotNull( result.getPagingToken() );
-        Assert.assertEquals( 2, result.getAuthorizedObjects().size() );
+        Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
 
         result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
                 SecurableObjectType.EntitySet,
@@ -78,9 +80,20 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
                 SMALL_PAGE_SIZE );
 
         //Second page should have 1 result.
+        Assert.assertNotNull( result.getPagingToken() );
+        Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
+
+
+        result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
+                SecurableObjectType.EntitySet,
+                Permission.READ,
+                AuthorizedObjectsPagingFactory.decode( result.getPagingToken() ),
+                SMALL_PAGE_SIZE );
+
+        //Third page should have 1 result.
         Assert.assertNull( result.getPagingToken() );
         Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
-    }
+}
 
     @Test
     public void testNoResults() {

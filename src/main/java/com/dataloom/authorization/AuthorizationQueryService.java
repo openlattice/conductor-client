@@ -193,13 +193,30 @@ public class AuthorizationQueryService {
             }
             
             currentPagingState = rs.getExecutionInfo().getPagingState();
-            if( currentPagingState == null ){
+            if( currentPagingState == null || rs.isExhausted() ){
                 currentPrincipal = principals.higher( currentPrincipal );
+                currentPagingState = null;
+                
                 if( currentPrincipal == null ){
                     exhausted = true;
                 }
             }
         } while ( currentFetchSize > 0 && !exhausted );
+        
+        //When all needed results are fetched, traverse to the next principal so that the next query returns nonzero results.
+        while( currentFetchSize == 0 && currentPagingState == null && !exhausted ){
+            Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission ).setFetchSize( 1 );
+            ResultSet rs = session.execute( query );
+            if( rs.isExhausted() ){
+                currentPrincipal = principals.higher( currentPrincipal );
+                if( currentPrincipal == null ){
+                    exhausted = true;
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
         
         AuthorizedObjectsPagingInfo newPagingInfo = exhausted ? null : AuthorizedObjectsPagingFactory.createSafely( currentPrincipal, currentPagingState );
         String pagingToken = AuthorizedObjectsPagingFactory.encode( newPagingInfo );
