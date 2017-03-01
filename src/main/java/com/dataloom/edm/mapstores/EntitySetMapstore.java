@@ -52,7 +52,8 @@ public class EntitySetMapstore extends AbstractStructuredCassandraPartitionKeyVa
                 .setString( CommonColumns.NAME.cql(), value.getName() )
                 .setUUID( CommonColumns.ENTITY_TYPE_ID.cql(), value.getEntityTypeId() )
                 .setString( CommonColumns.TITLE.cql(), value.getTitle() )
-                .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() );
+                .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() )
+                .setSet( CommonColumns.CONTACTS.cql(), value.getContacts(), String.class );
     }
 
     @Override
