@@ -41,6 +41,7 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spark_project.guava.collect.Iterables;
 
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -59,6 +60,7 @@ public class AuthorizationQueryService {
     private final PreparedStatement                        authorizedAclKeysQuery;
     private final PreparedStatement                        authorizedAclKeysForObjectTypeQuery;
     private final PreparedStatement                        aclsForSecurableObjectQuery;
+    private final PreparedStatement                        ownersForSecurableObjectQuery;
     private final PreparedStatement                        deletePermissionsByAclKeysQuery;
     private final PreparedStatement                        setObjectType;
     private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
@@ -93,6 +95,13 @@ public class AuthorizationQueryService {
                 .from( keyspace, Table.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
                         CommonColumns.ACL_KEYS.bindMarker() ) ) );
+
+        ownersForSecurableObjectQuery = session.prepare( QueryBuilder
+                .select( CommonColumns.PRINCIPAL_TYPE.cql(), CommonColumns.PRINCIPAL_ID.cql() )
+                .from( keyspace, Table.PERMISSIONS.getName() ).allowFiltering()
+                .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
+                        CommonColumns.ACL_KEYS.bindMarker() ) )
+                .and( QueryBuilder.contains( CommonColumns.PERMISSIONS.cql(), Permission.OWNER ) ) );
 
         deletePermissionsByAclKeysQuery = session
                 .prepare( QueryBuilder.delete().from( keyspace, Table.PERMISSIONS.getName() ).where(
@@ -308,4 +317,12 @@ public class AuthorizationQueryService {
         session.execute( bs );
         logger.info( "Deleted all permissions for aclKey " + aclKey );
     }
+    
+    public Iterable<Principal> getOwnersForSecurableObject( List<UUID> aclKeys ) {
+        BoundStatement bs = ownersForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
+                aclKeys,
+                UUID.class );
+        return Iterables.transform( session.execute( bs ), AuthorizationUtils::getPrincipalFromRow ) ;
+    }
+
 }
