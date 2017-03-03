@@ -81,6 +81,7 @@ public enum CommonColumns implements ColumnDef {
     TIME_ID( DataType.uuid() ),
     TYPE_ID( DataType.uuid() ),
     TRUSTED_ORGANIZATIONS( DataType.set( DataType.uuid() ) ),
+    ORGANIZATION_ID( DataType.uuid() ),
     USER( DataType.text() ),
     USERID( DataType.text() ),
     BLOCK( DataType.blob() ),

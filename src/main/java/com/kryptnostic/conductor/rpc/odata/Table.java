@@ -52,7 +52,6 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTIES;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_TYPE_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_VALUE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.REQUESTID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ROLES;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECTID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECT_TYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_ENTITY_ID;
@@ -66,6 +65,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZA
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ORGANIZATION_ID;
 
 import java.util.EnumMap;
 
@@ -100,7 +100,8 @@ public enum Table implements TableDef {
     PROPERTY_TYPES,
     REQUESTS,
     SCHEMAS,
-    WEIGHTED_LINKING_EDGES;
+    WEIGHTED_LINKING_EDGES,
+    ROLES;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -233,7 +234,7 @@ public enum Table implements TableDef {
                                 TRUSTED_ORGANIZATIONS,
                                 ALLOWED_EMAIL_DOMAINS,
                                 MEMBERS,
-                                ROLES );
+                                CommonColumns.ROLES );
             case PROPERTY_TYPES:
                 return new CassandraTableBuilder( PROPERTY_TYPES )
                         .ifNotExists()
@@ -287,6 +288,13 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( NAMESPACE )
                         .columns( NAME_SET );
+            case ROLES:
+                return new CassandraTableBuilder( ROLES )
+                        .ifNotExists()
+                        .partitionKey( ORGANIZATION_ID )
+                        .clusteringColumns( ID )
+                        .columns( TITLE,
+                                DESCRIPTION ); 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

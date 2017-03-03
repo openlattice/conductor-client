@@ -86,12 +86,12 @@ public class HazelcastOrganizationService {
             HazelcastAclKeyReservationService reservations,
             AuthorizationManager authorizations,
             UserDirectoryService principals ) {
-        this.titles = hazelcastInstance.getMap( HazelcastMap.TITLES.name() );
-        this.descriptions = hazelcastInstance.getMap( HazelcastMap.DESCRIPTIONS.name() );
+        this.titles = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_TITLES.name() );
+        this.descriptions = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS.name() );
         this.trustedOrgsOf = hazelcastInstance.getMap( HazelcastMap.TRUSTED_ORGANIZATIONS.name() );
         this.autoApprovedEmailDomainsOf = hazelcastInstance.getMap( HazelcastMap.ALLOWED_EMAIL_DOMAINS.name() );
-        this.membersOf = hazelcastInstance.getMap( HazelcastMap.MEMBERS.name() );
-        this.rolesOf = hazelcastInstance.getMap( HazelcastMap.ROLES.name() );
+        this.membersOf = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_MEMBERS.name() );
+        this.rolesOf = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_ROLES.name() );
         this.authorizations = authorizations;
         this.reservations = reservations;
         this.allMaps = ImmutableList.of( titles,
