@@ -6,7 +6,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.OrganizationRole;
-import com.dataloom.organizations.roles.RoleKey;
+import com.dataloom.organizations.mapstores.UUIDKeyMapstore;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -14,28 +14,16 @@ import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
-public class RolesMapstore extends AbstractStructuredCassandraMapstore<RoleKey, OrganizationRole> {
+public class RolesMapstore extends UUIDKeyMapstore<OrganizationRole> {
     public RolesMapstore( Session session ) {
-        super( HazelcastMap.ROLES.name(), session, Table.ROLES.getBuilder() );
+        super( HazelcastMap.ROLES, session, Table.ORGANIZATIONS_ROLES, CommonColumns.ID );
     }
 
     @Override
-    protected BoundStatement bind( RoleKey key, BoundStatement bs ) {
-        return bs.setUUID( CommonColumns.ORGANIZATION_ID.cql(), key.getOrganizationId() )
-                .setUUID( CommonColumns.ID.cql(), key.getRoleId() );
-    }
-
-    @Override
-    protected BoundStatement bind( RoleKey key, OrganizationRole value, BoundStatement bs ) {
+    protected BoundStatement bind( UUID key, OrganizationRole value, BoundStatement bs ) {
         return bind( key, bs ).setString( CommonColumns.TITLE.cql(), value.getTitle() )
                 .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() );
-    }
-
-    @Override
-    protected RoleKey mapKey( Row rs ) {
-        return new RoleKey( rs.getUUID( CommonColumns.ORGANIZATION_ID.cql() ), rs.getUUID( CommonColumns.ID.cql() ) );
     }
 
     @Override
@@ -49,11 +37,6 @@ public class RolesMapstore extends AbstractStructuredCassandraMapstore<RoleKey, 
         String title = row.getString( CommonColumns.TITLE.cql() );
         Optional<String> description = Optional.of( row.getString( CommonColumns.DESCRIPTION.cql() ) );
         return new OrganizationRole( id, organizationId, title, description );
-    }
-
-    @Override
-    public RoleKey generateTestKey() {
-        return new RoleKey( UUID.randomUUID(), UUID.randomUUID() );
     }
 
     @Override

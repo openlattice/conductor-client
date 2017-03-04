@@ -84,18 +84,6 @@ public class UserDirectoryService {
         return auth0ManagementApi.getUser( userId );
     }
 
-    public Map<String, List<Auth0UserBasic>> getAllUsersGroupByRole() {
-        Map<String, List<Auth0UserBasic>> res = Maps.newHashMap();
-        getAllUsers().values().forEach( user -> {
-            for ( String r : user.getRoles() ) {
-                List<Auth0UserBasic> users = res.getOrDefault( r, Lists.newArrayList() );
-                users.add( user );
-                res.put( r, users );
-            }
-        } );
-        return res;
-    }
-
     public List<Auth0UserBasic> getAllUsersOfRole( String role ) {
         List<Auth0UserBasic> res = Lists.newArrayList();
         getAllUsers().values().forEach( user -> {

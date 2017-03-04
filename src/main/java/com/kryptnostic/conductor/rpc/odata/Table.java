@@ -66,6 +66,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ORGANIZATION_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_IDS;
 
 import java.util.EnumMap;
 
@@ -101,7 +102,7 @@ public enum Table implements TableDef {
     REQUESTS,
     SCHEMAS,
     WEIGHTED_LINKING_EDGES,
-    ROLES;
+    ORGANIZATIONS_ROLES;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -288,13 +289,15 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( NAMESPACE )
                         .columns( NAME_SET );
-            case ROLES:
-                return new CassandraTableBuilder( ROLES )
+            case ORGANIZATIONS_ROLES:
+                return new CassandraTableBuilder( ORGANIZATIONS_ROLES )
                         .ifNotExists()
-                        .partitionKey( ORGANIZATION_ID )
-                        .clusteringColumns( ID )
+                        .partitionKey( ID )
+                        .clusteringColumns( ORGANIZATION_ID )
                         .columns( TITLE,
-                                DESCRIPTION ); 
+                                DESCRIPTION,
+                                PRINCIPAL_IDS )
+                        .sasi( ORGANIZATION_ID ); 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

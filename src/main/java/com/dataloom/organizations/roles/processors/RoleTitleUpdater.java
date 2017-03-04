@@ -1,13 +1,13 @@
 package com.dataloom.organizations.roles.processors;
 
 import java.util.Map.Entry;
+import java.util.UUID;
 
 import com.dataloom.organization.roles.OrganizationRole;
-import com.dataloom.organizations.roles.RoleKey;
 import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
-public class RoleTitleUpdater extends AbstractRhizomeEntryProcessor<RoleKey, OrganizationRole, Object> {
+public class RoleTitleUpdater extends AbstractRhizomeEntryProcessor<UUID, OrganizationRole, Object> {
     private static final long serialVersionUID = -717197511031518227L;
     private final String      newTitle;
 
@@ -16,7 +16,7 @@ public class RoleTitleUpdater extends AbstractRhizomeEntryProcessor<RoleKey, Org
     }
 
     @Override
-    public Object process( Entry<RoleKey, OrganizationRole> entry ) {
+    public Object process( Entry<UUID, OrganizationRole> entry ) {
         OrganizationRole role = entry.getValue();
         if ( role != null ) {
             OrganizationRole newRole = new OrganizationRole(

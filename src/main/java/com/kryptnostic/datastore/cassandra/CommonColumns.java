@@ -63,6 +63,7 @@ public enum CommonColumns implements ColumnDef {
     PRINCIPAL( DataType.text() ),
     PRINCIPAL_TYPE( DataType.text() ),
     PRINCIPAL_ID( DataType.text() ),
+    PRINCIPAL_IDS( DataType.set( DataType.text() ) ),
     PROPERTY_TYPE( DataType.text() ),
     PROPERTY_TYPE_ID( DataType.uuid() ),
     PROPERTY_VALUE( DataType.blob() ),

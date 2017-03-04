@@ -52,7 +52,8 @@ public enum HazelcastMap {
     ENTITY_SET_PROPERTIES_TICKETS( null ),
     REQUESTS( Table.REQUESTS ),
     SECURABLE_OBJECT_TYPES( Table.PERMISSIONS ),
-    ROLES( Table.ROLES ),
+    ROLES( Table.ORGANIZATIONS_ROLES ),
+    USERS_WITH_ROLE( Table.ORGANIZATIONS_ROLES )
     ;
 
     private final Table table;
