@@ -84,16 +84,6 @@ public class UserDirectoryService {
         return auth0ManagementApi.getUser( userId );
     }
 
-    public List<Auth0UserBasic> getAllUsersOfRole( String role ) {
-        List<Auth0UserBasic> res = Lists.newArrayList();
-        getAllUsers().values().forEach( user -> {
-            if ( user.getRoles().contains( role ) ) {
-                res.add( user );
-            }
-        } );
-        return res;
-    }
-
     public void setRolesOfUser( String userId, Set<String> roleList ) {
         auth0ManagementApi.resetRolesOfUser( userId,
                 ImmutableMap.of( "app_metadata", ImmutableMap.of( "roles", roleList ) ) );
