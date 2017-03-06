@@ -39,6 +39,7 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
@@ -245,6 +246,18 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
     }
 
+    public static UUID organizationId( Row row ) {
+        return row.getUUID( CommonColumns.ORGANIZATION_ID.cql() );
+    }
+
+    public static OrganizationRole organizationRole( Row row ){
+        Optional<UUID> id = Optional.of( id( row ) );
+        UUID organizationId = organizationId( row );
+        String title = title( row );
+        Optional<String> description = description( row );
+        return new OrganizationRole( id, organizationId, title, description );
+    }
+    
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
      * 

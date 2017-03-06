@@ -13,15 +13,17 @@ public interface RolesManager {
     void updateTitle( RoleKey roleKey, String title );
 
     void updateDescription( RoleKey roleKey, String description );
-    
+
     OrganizationRole getRole( RoleKey roleKey );
 
-    Iterable<OrganizationRole> getAllRoles( UUID organizationId );
+    Iterable<OrganizationRole> getAllRolesInOrganization( UUID organizationId );
 
     void deleteRole( RoleKey roleKey );
 
-    //Methods about users
-    
+    void deleteAllRolesInOrganization( UUID organizationId, Iterable<Principal> users );
+
+    // Methods about users
+
     void addRoleToUser( RoleKey roleKey, Principal user );
 
     void removeRoleFromUser( RoleKey roleKey, Principal user );

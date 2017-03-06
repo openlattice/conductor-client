@@ -22,6 +22,7 @@ package com.dataloom.directory;
 import com.dataloom.client.RetrofitFactory;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.organizations.roles.RolesUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -98,6 +99,16 @@ public class UserDirectoryService {
     public void removeRoleFromUser( String userId, String role ) {
         Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
         roles.remove( role );
+        setRolesOfUser( userId, roles );
+    }
+
+    public void removeAllRolesInOrganizationFromUser( String userId, UUID organizationId ) {
+        Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
+        for( String role : roles ){
+            if( RolesUtil.belongsToOrganization( organizationId, role ) ){
+                roles.remove( role );
+            }
+        }
         setRolesOfUser( userId, roles );
     }
 
