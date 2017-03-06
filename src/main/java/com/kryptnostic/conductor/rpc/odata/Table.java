@@ -292,12 +292,11 @@ public enum Table implements TableDef {
             case ORGANIZATIONS_ROLES:
                 return new CassandraTableBuilder( ORGANIZATIONS_ROLES )
                         .ifNotExists()
-                        .partitionKey( ID )
-                        .clusteringColumns( ORGANIZATION_ID )
+                        .partitionKey( ORGANIZATION_ID )
+                        .clusteringColumns( ID )
                         .columns( TITLE,
                                 DESCRIPTION,
-                                PRINCIPAL_IDS )
-                        .sasi( ORGANIZATION_ID ); 
+                                PRINCIPAL_IDS ); 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

@@ -3,6 +3,8 @@ package com.dataloom.organizations.roles;
 import java.util.Set;
 import java.util.UUID;
 
+import org.spark_project.guava.collect.Iterables;
+
 import com.clearspring.analytics.util.Preconditions;
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.AuthorizingComponent;
@@ -10,8 +12,10 @@ import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.UserDirectoryService;
+import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.processors.PrincipalMerger;
 import com.dataloom.organizations.processors.PrincipalRemover;
@@ -26,8 +30,8 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     private final HazelcastAclKeyReservationService reservations;
     private final UserDirectoryService              uds;
 
-    private final IMap<UUID, OrganizationRole>      roles;
-    private final IMap<UUID, PrincipalSet>          usersWithRole;
+    private final IMap<RoleKey, OrganizationRole>      roles;
+    private final IMap<RoleKey, PrincipalSet>          usersWithRole;
 
     private final IMap<UUID, String>                orgsTitles;
 
@@ -53,35 +57,35 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
         reservations.reserveIdAndValidateType( role );
 
         Preconditions.checkState(
-                roles.putIfAbsent( role.getId(), role ) == null,
+                roles.putIfAbsent( new RoleKey( role.getOrganizationId(), role.getId() ), role ) == null,
                 "Organization Role already exists." );
     }
 
     @Override
-    public void updateTitle( String roleIdString, String title ) {
-        roles.executeOnKey( OrganizationRole.getRoleIdFromString( roleIdString ), new RoleTitleUpdater( title ) );
+    public void updateTitle( RoleKey roleKey, String title ) {
+        roles.executeOnKey( roleKey, new RoleTitleUpdater( title ) );
     }
 
     @Override
-    public void updateDescription( String roleIdString, String description ) {
-        roles.executeOnKey( OrganizationRole.getRoleIdFromString( roleIdString ), new RoleDescriptionUpdater( description ) );
+    public void updateDescription( RoleKey roleKey, String description ) {
+        roles.executeOnKey( roleKey, new RoleDescriptionUpdater( description ) );
     }
 
     @Override
-    public OrganizationRole getRole( String roleIdString ) {
-        return roles.get( OrganizationRole.getRoleIdFromString( roleIdString ) );
+    public OrganizationRole getRole( RoleKey roleKey ) {
+        return roles.get( roleKey );
     }
 
     @Override
-    public Iterable<OrganizationRole> getAllRoles() {
-        return roles.values();
+    public Iterable<OrganizationRole> getAllRoles( UUID organizationId ) {
+        return ;
     }
 
     @Override
-    public void deleteRole( String roleIdString ) {
-        UUID id = OrganizationRole.getRoleIdFromString( roleIdString );
-        for( Principal user : getAllUsersOfRole( roleIdString ) ){
-            removeRoleFromUser( user.getId(), roleIdString );
+    public void deleteRole( RoleKey roleKey ) {
+        UUID id = roleKey.getRoleId();
+        for( Principal user : getAllUsersOfRole( roleKey ) ){
+            removeRoleFromUser( roleKey, user );
         }
         roles.delete( id );
         reservations.release( id );
@@ -94,28 +98,31 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     }
 
     @Override
-    public void addRoleToUser( String userId, String roleIdString ) {
-        Principal principal = new Principal( PrincipalType.USER, userId );
+    public void addRoleToUser( RoleKey roleKey, Principal user ) {
+        Preconditions.checkArgument( user.getType() == PrincipalType.USER, "Cannot add roles to another ROLE object.");
         
-        UUID id = OrganizationRole.getRoleIdFromString( roleIdString );
-        usersWithRole.executeOnKey( id, new PrincipalMerger( ImmutableSet.of( principal ) ) );
+        usersWithRole.executeOnKey( roleKey, new PrincipalMerger( ImmutableSet.of( user ) ) );
         
-        uds.addRoleToUser( userId, roleIdString );
+        uds.addRoleToUser( user.getId(), roleKey.toString() );
     }
 
     @Override
-    public void removeRoleFromUser( String userId, String roleIdString ) {
-        Principal principal = new Principal( PrincipalType.USER, userId );
+    public void removeRoleFromUser( RoleKey roleKey, Principal user ) {
+        Preconditions.checkArgument( user.getType() == PrincipalType.USER, "Cannot remove roles to another ROLE object.");
         
-        UUID id = OrganizationRole.getRoleIdFromString( roleIdString );
-        usersWithRole.executeOnKey( id, new PrincipalRemover( ImmutableSet.of( principal ) ) );
+        usersWithRole.executeOnKey( roleKey, new PrincipalRemover( ImmutableSet.of( user ) ) );
         
-        uds.removeRoleFromUser( userId, roleIdString );
+        uds.removeRoleFromUser( user.getId(), roleKey.toString() );
     }
 
     @Override
-    public Set<Principal> getAllUsersOfRole( String roleIdString ) {
-        return usersWithRole.get( OrganizationRole.getRoleIdFromString( roleIdString ) ).unwrap();
+    public Iterable<Principal> getAllUsersOfRole( RoleKey roleKey ) {
+        return usersWithRole.get( roleKey ).unwrap();
+    }
+
+    @Override
+    public Iterable<Auth0UserBasic> getAllUserProfilesOfRole( RoleKey roleKey ) {
+        return Iterables.transform( getAllUsersOfRole( roleKey ), principal -> uds.getUser( principal.getId() ) );
     }
 
     @Override

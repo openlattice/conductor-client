@@ -1,29 +1,32 @@
 package com.dataloom.organizations.roles;
 
-import java.util.Set;
 import java.util.UUID;
 
 import com.dataloom.authorization.Principal;
+import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.RoleKey;
 
 public interface RolesManager {
     void createRoleIfNotExists( OrganizationRole role );
 
-    void updateTitle( String roleIdString, String title );
+    void updateTitle( RoleKey roleKey, String title );
 
-    void updateDescription( String roleIdString, String description );
+    void updateDescription( RoleKey roleKey, String description );
     
-    OrganizationRole getRole( String roleIdString );
+    OrganizationRole getRole( RoleKey roleKey );
 
-    Iterable<OrganizationRole> getAllRoles();
+    Iterable<OrganizationRole> getAllRoles( UUID organizationId );
 
-    void deleteRole( String roleIdString );
+    void deleteRole( RoleKey roleKey );
 
     //Methods about users
     
-    void addRoleToUser( String userId, String roleIdString );
+    void addRoleToUser( RoleKey roleKey, Principal user );
 
-    void removeRoleFromUser( String userId, String roleIdString );
+    void removeRoleFromUser( RoleKey roleKey, Principal user );
 
-    Set<Principal> getAllUsersOfRole( String roleIdString );
+    Iterable<Principal> getAllUsersOfRole( RoleKey roleKey );
+
+    Iterable<Auth0UserBasic> getAllUserProfilesOfRole( RoleKey roleKey );
 }
