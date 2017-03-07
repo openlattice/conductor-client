@@ -22,6 +22,7 @@ package com.kryptnostic.datastore.cassandra;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -184,9 +185,10 @@ public final class RowAdapters {
         String title = title( row );
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
-        Set<UUID> key = row.getSet( CommonColumns.KEY.cql(), UUID.class );
-        Set<UUID> properties = row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
-        return new EntityType( id, type, title, description, schemas, key, properties );
+        LinkedHashSet<UUID> key = (LinkedHashSet<UUID>) row.getSet( CommonColumns.KEY.cql(), UUID.class );
+        LinkedHashSet<UUID> properties = (LinkedHashSet<UUID>) row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
+        Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
+        return new EntityType( id, type, title, description, schemas, key, properties, baseType );
     }
 
     public static FullQualifiedName splitFqn( Row row ) {

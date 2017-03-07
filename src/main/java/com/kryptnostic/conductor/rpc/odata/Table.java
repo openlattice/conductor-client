@@ -26,6 +26,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.ALLOWED_EMAIL_DO
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ANALYZER;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.AUDIT_EVENT_DETAILS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.COUNT;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DATATYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DESCRIPTION;
@@ -51,6 +52,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTIES;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_TYPE_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_VALUE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.REQUESTID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ROLES;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECTID;
@@ -64,8 +66,6 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
 
 import java.util.EnumMap;
 

@@ -25,7 +25,6 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.type.EntityType;
-import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class RenameEntityTypeProcessor extends AbstractRhizomeEntryProcessor<UUID, EntityType, Object> {
@@ -39,22 +38,15 @@ public class RenameEntityTypeProcessor extends AbstractRhizomeEntryProcessor<UUI
     @Override
     public Object process( Entry<UUID, EntityType> entry ) {
         EntityType et = entry.getValue();
+        
         if ( et != null ) {
-            EntityType newEt = new EntityType(
-                    et.getId(),
-                    newFqn,
-                    et.getTitle(),
-                    Optional.of( et.getDescription() ),
-                    et.getSchemas(),
-                    et.getKey(),
-                    et.getProperties() );
-            entry.setValue( newEt );
+            et.rename( newFqn );
+            entry.setValue( et );
         }
         return null;
     }
-    
-    public FullQualifiedName getFullQualifiedName(){
+
+    public FullQualifiedName getFullQualifiedName() {
         return newFqn;
     }
-
 }
