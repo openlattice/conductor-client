@@ -34,7 +34,6 @@ public class OrganizationRoleStreamSerializer implements SelfRegisteringStreamSe
 
     @Override
     public int getTypeId() {
-        // TODO Auto-generated method stub
         return StreamSerializerTypeIds.ORGANIZATION_ROLE.ordinal();
     }
 

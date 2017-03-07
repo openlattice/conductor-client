@@ -53,6 +53,10 @@ public class UserSetMapstore extends PrincipalSetMapstore {
 
     @Override
     public PrincipalSet generateTestValue() {
+        return testValue();
+    }
+    
+    public static PrincipalSet testValue(){
         return PrincipalSet.wrap( ImmutableSet.of( new Principal( PrincipalType.USER, RandomStringUtils.randomAlphanumeric( 5 ) ),
                 new Principal( PrincipalType.USER, RandomStringUtils.randomAlphanumeric( 5 ) ),
                 new Principal( PrincipalType.USER, RandomStringUtils.randomAlphanumeric( 5 ) ) ) );

@@ -59,6 +59,7 @@ import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
 import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
 import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.mapstores.RoleSetMapstore;
 import com.dataloom.organizations.mapstores.StringMapstore;
@@ -66,6 +67,7 @@ import com.dataloom.organizations.mapstores.StringSetMapstore;
 import com.dataloom.organizations.mapstores.UUIDSetMapstore;
 import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.organizations.roles.mapstores.RolesMapstore;
+import com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore;
 import com.dataloom.requests.AclRootRequestDetailsPair;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
@@ -244,18 +246,13 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, OrganizationRole> rolesMapstore() {
+    public SelfRegisteringMapStore<RoleKey, OrganizationRole> rolesMapstore() {
         return new RolesMapstore( session );
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, PrincipalSet> usersWithRolesMapstore() {
-        return new UserSetMapstore(
-                HazelcastMap.USERS_WITH_ROLE,
-                session,
-                Table.ORGANIZATIONS_ROLES,
-                CommonColumns.ID,
-                CommonColumns.PRINCIPAL_IDS );
+    public SelfRegisteringMapStore<RoleKey, PrincipalSet> usersWithRolesMapstore() {
+        return new UsersWithRoleMapstore( session );
     }
 
 }

@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spark_project.guava.collect.Iterables;
 
 import com.clearspring.analytics.util.Preconditions;
@@ -13,6 +15,8 @@ import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.Principals;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -26,8 +30,12 @@ import com.dataloom.organizations.roles.processors.RoleTitleUpdater;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.util.Util;
 
 public class HazelcastRolesService implements RolesManager, AuthorizingComponent {
+    private static final Logger                     logger = LoggerFactory
+            .getLogger( HazelcastRolesService.class );
+
     private final RolesQueryService                 rqs;
 
     private final AuthorizationManager              authorizations;
@@ -57,19 +65,41 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
         this.orgsTitles = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_TITLES.name() );
     }
 
-    @Override
-    public void createRoleIfNotExists( OrganizationRole role ) {
+    private void createRoleIfNotExists( OrganizationRole role ) {
         ensureValidOrganizationRole( role );
 
         reservations.reserveIdAndValidateType( role );
 
         Preconditions.checkState(
-                roles.putIfAbsent( new RoleKey( role.getOrganizationId(), role.getId() ), role ) == null,
+                roles.putIfAbsent( role.getRoleKey(), role ) == null,
                 "Organization Role already exists." );
     }
 
     @Override
+    public void createRoleIfNotExists( Principal principal, OrganizationRole role ) {
+        Principals.ensureUser( principal );
+        createRoleIfNotExists( role );
+
+        try {
+            authorizations.addPermission( role.getRoleKey().getAclKey(),
+                    principal,
+                    EnumSet.allOf( Permission.class ) );
+
+            authorizations.createEmptyAcl( role.getRoleKey().getAclKey(), SecurableObjectType.OrganizationRole );
+        } catch ( Exception e ) {
+            logger.error( "Unable to create role {} in organization {}", role.getTitle(), role.getOrganizationId(), e );
+            Util.deleteSafely( roles, role.getRoleKey() );
+            reservations.release( role.getId() );
+            throw new IllegalStateException(
+                    "Unable to create role: " + role.getTitle() + " in organization " + role.getOrganizationId() );
+        }
+    }
+
+    @Override
     public void updateTitle( RoleKey roleKey, String title ) {
+        String newName = OrganizationRole.getStringRepresentation( roleKey.getOrganizationId(), title );
+        reservations.renameReservation( roleKey.getRoleId(), newName );
+
         roles.executeOnKey( roleKey, new RoleTitleUpdater( title ) );
     }
 
@@ -99,10 +129,10 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
 
     @Override
     public void deleteAllRolesInOrganization( UUID organizationId, Iterable<Principal> users ) {
-        for( Principal user : users ){
+        for ( Principal user : users ) {
             uds.removeAllRolesInOrganizationFromUser( user.getId(), organizationId );
         }
-        for( OrganizationRole role : getAllRolesInOrganization( organizationId ) ){
+        for ( OrganizationRole role : getAllRolesInOrganization( organizationId ) ) {
             authorizations.deletePermissions( Arrays.asList( organizationId, role.getId() ) );
             reservations.release( role.getId() );
         }
@@ -118,10 +148,10 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     @Override
     public void addRoleToUser( RoleKey roleKey, Principal user ) {
         Preconditions.checkArgument( user.getType() == PrincipalType.USER, "Cannot add roles to another ROLE object." );
-
+        
         usersWithRole.executeOnKey( roleKey, new PrincipalMerger( ImmutableSet.of( user ) ) );
 
-        uds.addRoleToUser( user.getId(), roleKey.toString() );
+        uds.addRoleToUser( user.getId(), getRole( roleKey ).toString() );
     }
 
     @Override
@@ -132,7 +162,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
         usersWithRole.executeOnKey( roleKey, new PrincipalRemover( ImmutableSet.of( user ) ) );
 
         authorizations.setPermission( roleKey.getAclKey(), user, EnumSet.noneOf( Permission.class ) );
-        uds.removeRoleFromUser( user.getId(), roleKey.toString() );
+        uds.removeRoleFromUser( user.getId(), getRole( roleKey ).toString() );
     }
 
     @Override

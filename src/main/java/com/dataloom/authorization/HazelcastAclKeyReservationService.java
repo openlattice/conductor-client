@@ -64,7 +64,8 @@ public class HazelcastAclKeyReservationService {
     private static final EnumSet<SecurableObjectType> NAME_ASSOCIATED_TYPES = EnumSet
             .of( SecurableObjectType.EntityType,
                     SecurableObjectType.PropertyTypeInEntitySet,
-                    SecurableObjectType.EntitySet );
+                    SecurableObjectType.EntitySet,
+                    SecurableObjectType.OrganizationRole );
 
     static {
         for ( SecurableObjectType objectType : SecurableObjectType.values() ) {
@@ -143,7 +144,7 @@ public class HazelcastAclKeyReservationService {
     }
 
     public void reserveIdAndValidateType( OrganizationRole role ) {
-        reserveIdAndValidateType( role, role::getTitle );
+        reserveIdAndValidateType( role, () -> role.toString() );
     }
 
     /**

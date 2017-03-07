@@ -40,6 +40,7 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
@@ -250,6 +251,10 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.ORGANIZATION_ID.cql() );
     }
 
+    public static RoleKey roleKey( Row row ){
+        return new RoleKey( organizationId( row ), id( row ) );
+    }
+    
     public static OrganizationRole organizationRole( Row row ){
         Optional<UUID> id = Optional.of( id( row ) );
         UUID organizationId = organizationId( row );
