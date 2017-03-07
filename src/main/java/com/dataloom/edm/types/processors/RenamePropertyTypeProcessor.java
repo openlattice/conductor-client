@@ -40,14 +40,8 @@ public class RenamePropertyTypeProcessor extends AbstractRhizomeEntryProcessor<U
     public Object process( Entry<UUID, PropertyType> entry ) {
         PropertyType pt = entry.getValue();
         if ( pt != null ) {
-            PropertyType newPt = new PropertyType(
-                    pt.getId(),
-                    newFqn,
-                    pt.getTitle(),
-                    Optional.of( pt.getDescription() ),
-                    pt.getSchemas(),
-                    pt.getDatatype() );
-            entry.setValue( newPt );
+            pt.rename( newFqn );
+            entry.setValue( pt );
         }
         return null;
     }
