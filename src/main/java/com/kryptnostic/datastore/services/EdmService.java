@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EnumType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -74,12 +76,14 @@ import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
 
-    private static final Logger                     logger = LoggerFactory.getLogger( EdmService.class );
-    private final IMap<UUID, PropertyType>          propertyTypes;
-    private final IMap<UUID, EntityType>            entityTypes;
-    private final IMap<UUID, EntitySet>             entitySets;
-    private final IMap<String, UUID>                aclKeys;
-    private final IMap<UUID, String>                names;
+    private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
+    private final IMap<UUID, PropertyType> propertyTypes;
+    private final IMap<UUID, ComplexType>  complexTypes;
+    private final IMap<UUID, EnumType>     enumTypes;
+    private final IMap<UUID, EntityType>   entityTypes;
+    private final IMap<UUID, EntitySet>    entitySets;
+    private final IMap<String, UUID>       aclKeys;
+    private final IMap<UUID, String>       names;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -88,7 +92,7 @@ public class EdmService implements EdmManager {
     private final HazelcastSchemaManager            schemaManager;
 
     @Inject
-    private EventBus                                eventBus;
+    private EventBus eventBus;
 
     public EdmService(
             String keyspace,
@@ -104,6 +108,9 @@ public class EdmService implements EdmManager {
         this.entityTypeManager = entityTypeManager;
         this.schemaManager = schemaManager;
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
+        this.complexTypes = hazelcastInstance.getMap( HazelcastMap.COMPLEX_TYPES.name() );
+        this.enumTypes = hazelcastInstance.getMap( HazelcastMap.ENUM_TYPES.name() );
+        ;
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
         this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
@@ -121,7 +128,6 @@ public class EdmService implements EdmManager {
     @Override
     public void createPropertyTypeIfNotExists( PropertyType propertyType ) {
         ensureValidPropertyType( propertyType );
-        aclKeyReservations.reserveIdAndValidateType( propertyType );
 
         /*
          * Create property type if it doesn't exist. The reserveAclKeyAndValidateType call should ensure that
@@ -321,6 +327,56 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public void createEnumTypeIfNotExists( EnumType enumType ) {
+        aclKeyReservations.reserveIdAndValidateType( enumType );
+        enumTypes.putIfAbsent( enumType.getId(), enumType );
+    }
+
+    @Override
+    public Stream<EnumType> getEnumTypes() {
+        return entityTypeManager.getEnumTypeIds()
+                .parallel()
+                .map( enumTypes::get );
+    }
+
+    @Override public EnumType getEnumType( UUID enumTypeId ) {
+        return enumTypes.get( enumTypeId );
+    }
+
+    @Override
+    public void deleteEnumType( UUID enumTypeId ) {
+        enumTypes.delete( enumTypeId );
+    }
+
+    @Override
+    public void createComplexTypeIfNotExists( ComplexType complexType ) {
+        aclKeyReservations.reserveIdAndValidateType( complexType );
+        complexTypes.putIfAbsent( complexType.getId(), complexType );
+    }
+
+    @Override
+    public Stream<ComplexType> getComplexTypes() {
+        /*
+         * An assumption worth stating here is that we are going to periodically run health checks the verify
+         * the consistency of the database such that no null values will ever be present.
+         *
+         */
+        return entityTypeManager.getComplexTypeIds()
+                .parallel()
+                .map( complexTypes::get );
+    }
+
+    @Override
+    public ComplexType getComplexType( UUID complexTypeId ) {
+        return complexTypes.get( complexTypeId );
+    }
+
+    @Override
+    public void deleteComplexType( UUID complexTypeId ) {
+        complexTypes.delete( complexTypeId );
+    }
+
+    @Override
     public EntityType getEntityType( FullQualifiedName typeFqn ) {
         UUID entityTypeId = getTypeAclKey( typeFqn );
         Preconditions.checkNotNull( entityTypeId,
@@ -441,7 +497,7 @@ public class EdmService implements EdmManager {
                 "Properties must include all the key property types" );
     }
 
-    private void ensureValidPropertyType( PropertyType propertyType ) {
+    private static void ensureValidPropertyType( PropertyType propertyType ) {
         Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getNamespace() ),
                 "Namespace for Property Type is missing" );
         Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getName() ),
@@ -554,5 +610,5 @@ public class EdmService implements EdmManager {
         UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
         return getEntityType( entityTypeId );
     }
-    
+
 }
