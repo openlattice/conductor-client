@@ -23,17 +23,17 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EnumType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -46,22 +46,27 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
 import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RenameEntitySetProcessor;
 import com.dataloom.edm.types.processors.RenameEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RenamePropertyTypeProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -76,14 +81,14 @@ import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
 
-    private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
-    private final IMap<UUID, PropertyType> propertyTypes;
-    private final IMap<UUID, ComplexType>  complexTypes;
-    private final IMap<UUID, EnumType>     enumTypes;
-    private final IMap<UUID, EntityType>   entityTypes;
-    private final IMap<UUID, EntitySet>    entitySets;
-    private final IMap<String, UUID>       aclKeys;
-    private final IMap<UUID, String>       names;
+    private static final Logger                     logger = LoggerFactory.getLogger( EdmService.class );
+    private final IMap<UUID, PropertyType>          propertyTypes;
+    private final IMap<UUID, ComplexType>           complexTypes;
+    private final IMap<UUID, EnumType>              enumTypes;
+    private final IMap<UUID, EntityType>            entityTypes;
+    private final IMap<UUID, EntitySet>             entitySets;
+    private final IMap<String, UUID>                aclKeys;
+    private final IMap<UUID, String>                names;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -92,7 +97,7 @@ public class EdmService implements EdmManager {
     private final HazelcastSchemaManager            schemaManager;
 
     @Inject
-    private EventBus eventBus;
+    private EventBus                                eventBus;
 
     public EdmService(
             String keyspace,
@@ -339,8 +344,14 @@ public class EdmService implements EdmManager {
                 .map( enumTypes::get );
     }
 
-    @Override public EnumType getEnumType( UUID enumTypeId ) {
+    @Override
+    public EnumType getEnumType( UUID enumTypeId ) {
         return enumTypes.get( enumTypeId );
+    }
+
+    @Override
+    public Set<EntityType> getEntityTypeHierarchy( UUID entityTypeId ) {
+        return getTypeHierarchy( entityTypeId, HazelcastUtils.getter( entityTypes ), EntityType::getBaseType );
     }
 
     @Override
@@ -357,9 +368,8 @@ public class EdmService implements EdmManager {
     @Override
     public Stream<ComplexType> getComplexTypes() {
         /*
-         * An assumption worth stating here is that we are going to periodically run health checks the verify
-         * the consistency of the database such that no null values will ever be present.
-         *
+         * An assumption worth stating here is that we are going to periodically run health checks the verify the
+         * consistency of the database such that no null values will ever be present.
          */
         return entityTypeManager.getComplexTypeIds()
                 .parallel()
@@ -369,6 +379,31 @@ public class EdmService implements EdmManager {
     @Override
     public ComplexType getComplexType( UUID complexTypeId ) {
         return complexTypes.get( complexTypeId );
+    }
+
+    @Override
+    public Set<ComplexType> getComplexTypeHierarchy( UUID complexTypeId ) {
+        return getTypeHierarchy( complexTypeId, HazelcastUtils.getter( complexTypes ), ComplexType::getBaseType );
+    }
+
+    private <T> Set<T> getTypeHierarchy(
+            UUID enumTypeId,
+            Function<UUID, T> typeGetter,
+            Function<T, Optional<UUID>> baseTypeSupplier ) {
+        Set<T> typeHierarchy = new LinkedHashSet<>();
+        T entityType;
+        Optional<UUID> baseType = Optional.of( enumTypeId );
+
+        do {
+            entityType = typeGetter.apply( baseType.get() );
+            if ( entityType == null ) {
+                throw new TypeNotFoundException( "Unable to find type " + baseType.get() );
+            }
+            baseType = baseTypeSupplier.apply( entityType );
+            typeHierarchy.add( entityType );
+        } while ( baseType.isPresent() );
+
+        return typeHierarchy;
     }
 
     @Override

@@ -137,4 +137,8 @@ public interface EdmManager {
     ComplexType getComplexType( UUID complexTypeId );
 
     void deleteComplexType( UUID complexTypeId );
+
+    Set<EntityType> getEntityTypeHierarchy( UUID entityTypeId );
+
+    Set<ComplexType> getComplexTypeHierarchy( UUID complexTypeId );
 }
