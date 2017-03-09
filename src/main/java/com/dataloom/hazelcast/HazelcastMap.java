@@ -53,7 +53,8 @@ public enum HazelcastMap {
     REQUESTS( Table.REQUESTS ),
     SECURABLE_OBJECT_TYPES( Table.PERMISSIONS ),
     ROLES( Table.ORGANIZATIONS_ROLES ),
-    USERS_WITH_ROLE( Table.ORGANIZATIONS_ROLES )
+    USERS_WITH_ROLE( Table.ORGANIZATIONS_ROLES ),
+    TOKEN_ACCEPTANCE_TIME( null )
     ;
 
     private final Table table;

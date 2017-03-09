@@ -40,6 +40,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
 
     private final AuthorizationManager              authorizations;
     private final HazelcastAclKeyReservationService reservations;
+    private final ExpiringTokenTracker tokenTracker;
     private final UserDirectoryService              uds;
 
     private final IMap<RoleKey, OrganizationRole>   roles;
@@ -51,12 +52,14 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
             HazelcastInstance hazelcastInstance,
             RolesQueryService rqs,
             HazelcastAclKeyReservationService reservations,
+            ExpiringTokenTracker tokenTracker,
             UserDirectoryService uds,
             AuthorizationManager authorizations ) {
         this.rqs = rqs;
 
         this.authorizations = authorizations;
         this.reservations = reservations;
+        this.tokenTracker = tokenTracker;
         this.uds = uds;
 
         this.roles = hazelcastInstance.getMap( HazelcastMap.ROLES.name() );
@@ -101,6 +104,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
         reservations.renameReservation( roleKey.getRoleId(), newName );
 
         roles.executeOnKey( roleKey, new RoleTitleUpdater( title ) );
+        //TODO update user roles in Auth0 too
     }
 
     @Override
@@ -131,6 +135,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     public void deleteAllRolesInOrganization( UUID organizationId, Iterable<Principal> users ) {
         for ( Principal user : users ) {
             uds.removeAllRolesInOrganizationFromUser( user.getId(), organizationId );
+            tokenTracker.trackUser( user.getId() );
         }
         for ( OrganizationRole role : getAllRolesInOrganization( organizationId ) ) {
             authorizations.deletePermissions( Arrays.asList( organizationId, role.getId() ) );
@@ -152,17 +157,18 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
         usersWithRole.executeOnKey( roleKey, new PrincipalMerger( ImmutableSet.of( user ) ) );
 
         uds.addRoleToUser( user.getId(), getRole( roleKey ).toString() );
+        tokenTracker.trackUser( user.getId() );
     }
 
     @Override
     public void removeRoleFromUser( RoleKey roleKey, Principal user ) {
         Preconditions.checkArgument( user.getType() == PrincipalType.USER,
-                "Cannot remove roles to another ROLE object." );
+                "Cannot remove roles from another ROLE object." );
 
         usersWithRole.executeOnKey( roleKey, new PrincipalRemover( ImmutableSet.of( user ) ) );
 
-        authorizations.setPermission( roleKey.getAclKey(), user, EnumSet.noneOf( Permission.class ) );
         uds.removeRoleFromUser( user.getId(), getRole( roleKey ).toString() );
+        tokenTracker.trackUser( user.getId() );
     }
 
     @Override
