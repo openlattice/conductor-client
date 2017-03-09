@@ -21,6 +21,7 @@ package com.kryptnostic.datastore.services;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -472,6 +473,23 @@ public class EdmService implements EdmManager {
     public void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
         entityTypes.executeOnKey( entityTypeId, new AddPropertyTypesToEntityTypeProcessor( propertyTypeIds ) );
+        
+        for ( EntitySet entitySet : entitySetManager.getAllEntitySetsForType( entityTypeId ) ) {
+            UUID esId = entitySet.getId();
+            Iterable<Principal> owners = authorizations.getSecurableObjectOwners( Arrays.asList( esId ) );
+            for ( Principal owner : owners ) {
+                propertyTypeIds.stream()
+                        .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
+                        .forEach( aclKey -> {
+                            authorizations.addPermission(
+                                    aclKey,
+                                    owner,
+                                    EnumSet.allOf( Permission.class ) );
+                            authorizations.createEmptyAcl( aclKey,
+                                    SecurableObjectType.PropertyTypeInEntitySet );
+                        } );
+            }
+        }
     }
 
     @Override
