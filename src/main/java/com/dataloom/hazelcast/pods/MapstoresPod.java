@@ -24,9 +24,6 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
-import com.dataloom.edm.mapstores.*;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EnumType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -42,8 +39,15 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.DelegatedEntityKeySet;
 import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.mapstores.AclKeysMapstore;
+import com.dataloom.edm.mapstores.EntitySetMapstore;
+import com.dataloom.edm.mapstores.EntityTypeMapstore;
+import com.dataloom.edm.mapstores.NamesMapstore;
+import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
+import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
@@ -71,6 +75,8 @@ import com.dataloom.requests.mapstores.RequestMapstore;
 import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
 import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
+import com.kryptnostic.conductor.rpc.OrderedRPCKey;
+import com.kryptnostic.conductor.rpc.RpcMapstore;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
@@ -247,6 +253,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<LinkingEntityKey, UUID> linkingEntityVerticesMapstore() {
         return new LinkingEntityVerticesMapstore( session );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<OrderedRPCKey, byte[]> rpcDataMapstore() {
+        return new RpcMapstore( session );
     }
 
 }

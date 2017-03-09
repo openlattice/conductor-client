@@ -20,6 +20,7 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -53,4 +54,6 @@ public interface ConductorSparkApi {
     QueryResult getFilterEntities( LookupEntitiesRequest request );
 
     Void clustering( UUID linkedEntitySetId );
+    
+    UUID getTopUtilizers( UUID entitySetId, UUID propertyTypeId, Map<UUID, PropertyType> propertyTypes );
 }

@@ -21,6 +21,7 @@ package com.kryptnostic.conductor.rpc;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -60,5 +61,9 @@ public class Lambdas implements Serializable {
     public static Function<ConductorSparkApi, Void> clustering( UUID linkedEntitySetId ) {
         return (Function<ConductorSparkApi, Void> & Serializable) ( api ) -> api
                 .clustering( linkedEntitySetId );
+    }
+    public static Function<ConductorSparkApi, UUID> getTopUtilizers( UUID entitySetId, UUID propertyTypeId, Map<UUID, PropertyType> propertyTypes ) {
+        return (Function<ConductorSparkApi, UUID> & Serializable) ( api ) -> api
+                .getTopUtilizers( entitySetId, propertyTypeId, propertyTypes );
     }
 }
