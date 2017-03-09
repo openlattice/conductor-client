@@ -38,12 +38,10 @@ public class SortedCassandraLinkingEdgeBuffer {
             .getLogger( SortedCassandraLinkingEdgeBuffer.class );
     private static final String                              LOWERBOUND              = "lowerbound";
     private static final String                              UPPERBOUND              = "upperbound";
-    // private final ConcurrentSkipListSet<WeightedLinkingEdge> buffer = new ConcurrentSkipListSet<>();
     private final PriorityBlockingQueue<WeightedLinkingEdge> buffer;
     private final Session                                    session;
     private final PreparedStatement                          lighestEdge;
     private final PreparedStatement                          addEdge;
-    private final PreparedStatement                          getEdge;
     private final PreparedStatement                          removeEdge;
     private final PreparedStatement                          removeEdgeWeight;
     private final PreparedStatement                          addEdgeIfNotExists;
@@ -78,7 +76,6 @@ public class SortedCassandraLinkingEdgeBuffer {
         this.threshold = threshold;
         this.bufferReadSize = bufferReadSize;
         this.bufferTriggerSize = bufferTriggerSize;
-        this.getEdge = session.prepare( getEdgeQuery( keyspace ) );
         this.lighestEdge = session.prepare( lighestEdgeQuery( keyspace ) );
         this.addEdge = session.prepare( Table.WEIGHTED_LINKING_EDGES.getBuilder().buildStoreQuery() );
         this.unsafeAddEdge = session.prepare( Table.LINKING_EDGES.getBuilder().buildStoreQuery() );
@@ -167,44 +164,9 @@ public class SortedCassandraLinkingEdgeBuffer {
             remainingBeforeNextRead.decrementAndGet();
         }
 
-//        if( buffer.contains( edge ) ) {
-//            logger.info( "Trying to remove edge that is present." );
-//        } else {
-//            logger.info( "Trying to remove edge that is not present: {}" , edge );
-//        }
-//        
-        
-//        if( buffer.contains( edge ) ) {
-//            logger.info( "Edge is still there wtf." );
-//        }
-        
         return ImmutableList.of(
                 submitRemoveEdge( edge.getEdge() ),
                 submitRemoveEdgeWeight( edge ) );
-    }
-
-    public ResultSetFuture executeIfEdgeNotExists( LinkingEdge edge, Runnable runnable ) {
-        ResultSetFuture rsf = session.executeAsync( getEdge.bind()
-                .setUUID( CommonColumns.GRAPH_ID.cql(), edge.getGraphId() )
-                .setUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), edge.getSrc().getVertexId() )
-                .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), edge.getDst().getVertexId() ) );
-
-        Futures.addCallback( rsf, new FutureCallback<ResultSet>() {
-
-            @Override
-            public void onSuccess( ResultSet result ) {
-                if ( result.one() == null ) {
-                    runnable.run();
-                }
-
-            }
-
-            @Override
-            public void onFailure( Throwable t ) {
-                logger.error( "Unable to execute runnable for edge {}", edge );
-            }
-        } );
-        return rsf;
     }
 
     public void waitForPendingOperations() {
@@ -338,18 +300,4 @@ public class SortedCassandraLinkingEdgeBuffer {
                 .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), le.getDst().getVertexId() )
                 .setDouble( CommonColumns.EDGE_VALUE.cql(), edge.getWeight() ) );
     }
-
-    private static Select.Where getEdgeQuery( String keyspace ) {
-        return QueryBuilder.select( CommonColumns.GRAPH_ID.cql(),
-                CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(),
-                CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(),
-                CommonColumns.EDGE_VALUE.cql() )
-                .from( Table.WEIGHTED_LINKING_EDGES.getKeyspace(), Table.WEIGHTED_LINKING_EDGES.getName() )
-                .allowFiltering()
-                .where( CommonColumns.GRAPH_ID.eq() )
-                .and( CommonColumns.SOURCE_LINKING_VERTEX_ID.eq() )
-                .and( CommonColumns.DESTINATION_LINKING_VERTEX_ID.eq() );
-
-    }
-
 }

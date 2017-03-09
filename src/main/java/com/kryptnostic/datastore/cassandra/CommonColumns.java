@@ -99,7 +99,8 @@ public enum CommonColumns implements ColumnDef {
     GRAPH_DIAMETER( DataType.cdouble() ),
     ANALYZER( DataType.text() ),
     CONTACTS( DataType.set( DataType.text() ) ),
-    REASON( DataType.text() );
+    REASON( DataType.text() ),
+    BASE_TYPE( DataType.uuid() ), FLAGS( DataType.cboolean() );
 
     private final DataType type;
 

@@ -31,12 +31,12 @@ import com.dataloom.authorization.HzAuthzTest;
 import com.dataloom.authorization.securable.AbstractSecurableObject;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 
-
 public class MapstoresTest extends HzAuthzTest {
-    private static final Logger                                      logger = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( MapstoresTest.class );
     @SuppressWarnings( "rawtypes" )
     private static final Collection<TestableSelfRegisteringMapStore> mapstores;
+
     static {
         mapstores = testServer.getContext().getBeansOfType( TestableSelfRegisteringMapStore.class ).values();
     }
@@ -58,8 +58,12 @@ public class MapstoresTest extends HzAuthzTest {
         try {
             ms.store( key, expected );
             actual = ms.load( key );
-            if( !expected.equals( actual ) ) {
-                logger.error( "Incorrect r/w to mapstore {} for key {}. expected({}) != actual({})", ms.getMapName(), key, expected, actual );
+            if ( !expected.equals( actual ) ) {
+                logger.error( "Incorrect r/w to mapstore {} for key {}. expected({}) != actual({})",
+                        ms.getMapName(),
+                        key,
+                        expected,
+                        actual );
             }
         } catch ( Exception e ) {
             logger.error( "Unable to r/w to mapstore {} value: ({},{})", ms.getMapName(), key, expected, e );
