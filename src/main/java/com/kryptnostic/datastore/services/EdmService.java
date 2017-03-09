@@ -23,10 +23,12 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,22 +46,27 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
 import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RenameEntitySetProcessor;
 import com.dataloom.edm.types.processors.RenameEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RenamePropertyTypeProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -76,6 +83,8 @@ public class EdmService implements EdmManager {
 
     private static final Logger                     logger = LoggerFactory.getLogger( EdmService.class );
     private final IMap<UUID, PropertyType>          propertyTypes;
+    private final IMap<UUID, ComplexType>           complexTypes;
+    private final IMap<UUID, EnumType>              enumTypes;
     private final IMap<UUID, EntityType>            entityTypes;
     private final IMap<UUID, EntitySet>             entitySets;
     private final IMap<String, UUID>                aclKeys;
@@ -104,6 +113,9 @@ public class EdmService implements EdmManager {
         this.entityTypeManager = entityTypeManager;
         this.schemaManager = schemaManager;
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
+        this.complexTypes = hazelcastInstance.getMap( HazelcastMap.COMPLEX_TYPES.name() );
+        this.enumTypes = hazelcastInstance.getMap( HazelcastMap.ENUM_TYPES.name() );
+        ;
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
         this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
@@ -121,7 +133,6 @@ public class EdmService implements EdmManager {
     @Override
     public void createPropertyTypeIfNotExists( PropertyType propertyType ) {
         ensureValidPropertyType( propertyType );
-        aclKeyReservations.reserveIdAndValidateType( propertyType );
 
         /*
          * Create property type if it doesn't exist. The reserveAclKeyAndValidateType call should ensure that
@@ -321,6 +332,86 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public void createEnumTypeIfNotExists( EnumType enumType ) {
+        aclKeyReservations.reserveIdAndValidateType( enumType );
+        enumTypes.putIfAbsent( enumType.getId(), enumType );
+    }
+
+    @Override
+    public Stream<EnumType> getEnumTypes() {
+        return entityTypeManager.getEnumTypeIds()
+                .parallel()
+                .map( enumTypes::get );
+    }
+
+    @Override
+    public EnumType getEnumType( UUID enumTypeId ) {
+        return enumTypes.get( enumTypeId );
+    }
+
+    @Override
+    public Set<EntityType> getEntityTypeHierarchy( UUID entityTypeId ) {
+        return getTypeHierarchy( entityTypeId, HazelcastUtils.getter( entityTypes ), EntityType::getBaseType );
+    }
+
+    @Override
+    public void deleteEnumType( UUID enumTypeId ) {
+        enumTypes.delete( enumTypeId );
+    }
+
+    @Override
+    public void createComplexTypeIfNotExists( ComplexType complexType ) {
+        aclKeyReservations.reserveIdAndValidateType( complexType );
+        complexTypes.putIfAbsent( complexType.getId(), complexType );
+    }
+
+    @Override
+    public Stream<ComplexType> getComplexTypes() {
+        /*
+         * An assumption worth stating here is that we are going to periodically run health checks the verify the
+         * consistency of the database such that no null values will ever be present.
+         */
+        return entityTypeManager.getComplexTypeIds()
+                .parallel()
+                .map( complexTypes::get );
+    }
+
+    @Override
+    public ComplexType getComplexType( UUID complexTypeId ) {
+        return complexTypes.get( complexTypeId );
+    }
+
+    @Override
+    public Set<ComplexType> getComplexTypeHierarchy( UUID complexTypeId ) {
+        return getTypeHierarchy( complexTypeId, HazelcastUtils.getter( complexTypes ), ComplexType::getBaseType );
+    }
+
+    private <T> Set<T> getTypeHierarchy(
+            UUID enumTypeId,
+            Function<UUID, T> typeGetter,
+            Function<T, Optional<UUID>> baseTypeSupplier ) {
+        Set<T> typeHierarchy = new LinkedHashSet<>();
+        T entityType;
+        Optional<UUID> baseType = Optional.of( enumTypeId );
+
+        do {
+            entityType = typeGetter.apply( baseType.get() );
+            if ( entityType == null ) {
+                throw new TypeNotFoundException( "Unable to find type " + baseType.get() );
+            }
+            baseType = baseTypeSupplier.apply( entityType );
+            typeHierarchy.add( entityType );
+        } while ( baseType.isPresent() );
+
+        return typeHierarchy;
+    }
+
+    @Override
+    public void deleteComplexType( UUID complexTypeId ) {
+        complexTypes.delete( complexTypeId );
+    }
+
+    @Override
     public EntityType getEntityType( FullQualifiedName typeFqn ) {
         UUID entityTypeId = getTypeAclKey( typeFqn );
         Preconditions.checkNotNull( entityTypeId,
@@ -441,7 +532,7 @@ public class EdmService implements EdmManager {
                 "Properties must include all the key property types" );
     }
 
-    private void ensureValidPropertyType( PropertyType propertyType ) {
+    private static void ensureValidPropertyType( PropertyType propertyType ) {
         Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getNamespace() ),
                 "Namespace for Property Type is missing" );
         Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getName() ),
@@ -554,5 +645,5 @@ public class EdmService implements EdmManager {
         UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
         return getEntityType( entityTypeId );
     }
-    
+
 }
