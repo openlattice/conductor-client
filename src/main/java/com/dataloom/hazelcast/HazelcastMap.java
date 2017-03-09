@@ -25,7 +25,9 @@ public enum HazelcastMap {
     ACL_KEYS( Table.ACL_KEYS ),
     AUDIT_EVENTS( Table.AUDIT_EVENTS ),
     AUDIT_METRICS( Table.AUDIT_METRICS ),
+    COMPLEX_TYPES( Table.COMPLEX_TYPES ),
     ENTITY_EDGES( Table.ENTITY_EDGES ),
+    ENUM_TYPES( Table.ENUM_TYPES ),
     LINKED_ENTITY_TYPES( Table.LINKED_ENTITY_TYPES ),
     LINKED_ENTITY_SETS( Table.LINKED_ENTITY_SETS ),
     LINKED_ENTITIES( Table.LINKED_ENTITIES ),
@@ -63,4 +65,5 @@ public enum HazelcastMap {
     public Table getTable() {
         return table;
     }
+
 }

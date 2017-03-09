@@ -20,11 +20,13 @@
 package com.kryptnostic.datastore.cassandra;
 
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.dataloom.edm.type.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -35,8 +37,6 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.PropertyType;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -50,7 +50,8 @@ import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 public final class RowAdapters {
     static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
 
-    private RowAdapters() {}
+    private RowAdapters() {
+    }
 
     public static SetMultimap<FullQualifiedName, Object> entity(
             ResultSet rs,
@@ -159,15 +160,30 @@ public final class RowAdapters {
         return new EntitySet( id, entityTypeId, name, title, description, contacts );
     }
 
-    public static PropertyType propertyType( Row row ) {
-        UUID id = id( row );
-        FullQualifiedName type = new FullQualifiedName( namespace( row ), name( row ) );
+    public static EnumType enumType( Row row ) {
+        com.google.common.base.Optional<UUID> id = com.google.common.base.Optional.of( id( row ) );
+        FullQualifiedName type = splitFqn( row );
         String title = title( row );
         Optional<String> description = description( row );
-        Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
-        EdmPrimitiveTypeKind dataType = row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class );
-        Optional<Boolean> piiField = Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) );
-        return new PropertyType( id, type, title, description, schemas, dataType, piiField );
+        Set<FullQualifiedName> schemas = schemas( row );
+        LinkedHashSet<String> members = members( row );
+        Optional<EdmPrimitiveTypeKind> dataType = Optional.fromNullable( primitveType( row ) );
+        Optional<Boolean> piiField = pii( row );
+        boolean flags = flags( row );
+        Optional<Analyzer> maybeAnalyzer = analyzer( row );
+        return new EnumType( id, type, title, description, members, schemas, dataType, flags, piiField, maybeAnalyzer );
+    }
+
+    public static PropertyType propertyType( Row row ) {
+        UUID id = id( row );
+        FullQualifiedName type = splitFqn( row );
+        String title = title( row );
+        Optional<String> description = description( row );
+        Set<FullQualifiedName> schemas = schemas( row );
+        EdmPrimitiveTypeKind dataType = primitveType( row );
+        Optional<Boolean> piiField = pii( row );
+        Optional<Analyzer> maybeAnalyzer = analyzer( row );
+        return new PropertyType( id, type, title, description, schemas, dataType, piiField, maybeAnalyzer );
     }
 
     public static EntityType entityType( Row row ) {
@@ -176,9 +192,21 @@ public final class RowAdapters {
         String title = title( row );
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
-        Set<UUID> key = row.getSet( CommonColumns.KEY.cql(), UUID.class );
-        Set<UUID> properties = row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
-        return new EntityType( id, type, title, description, schemas, key, properties );
+        LinkedHashSet<UUID> key = (LinkedHashSet<UUID>) row.getSet( CommonColumns.KEY.cql(), UUID.class );
+        LinkedHashSet<UUID> properties = (LinkedHashSet<UUID>) row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
+        Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
+        return new EntityType( id, type, title, description, schemas, key, properties, baseType );
+    }
+
+    public static ComplexType complexType( Row row ) {
+        UUID id = id( row );
+        FullQualifiedName type = new FullQualifiedName( namespace( row ), name( row ) );
+        String title = title( row );
+        Optional<String> description = description( row );
+        Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
+        LinkedHashSet<UUID> properties = (LinkedHashSet<UUID>) row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
+        Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
+        return new ComplexType( id, type, title, description, schemas, properties, baseType );
     }
 
     public static FullQualifiedName splitFqn( Row row ) {
@@ -236,4 +264,29 @@ public final class RowAdapters {
     public static UUID entitySetId( Row row ) {
         return row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
     }
+
+    public static LinkedHashSet<String> members( Row row ) {
+        return (LinkedHashSet<String>) row.getSet( CommonColumns.MEMBERS.cql(), String.class );
+    }
+
+    public static Set<FullQualifiedName> schemas( Row row ) {
+        return row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
+    }
+
+    public static EdmPrimitiveTypeKind primitveType( Row row ) {
+        return row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class );
+    }
+
+    public static Optional<Analyzer> analyzer( Row row ) {
+        return Optional.of( row.get( CommonColumns.ANALYZER.cql(), Analyzer.class ) );
+    }
+
+    public static Optional<Boolean> pii( Row row ) {
+        return Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) );
+    }
+
+    private static boolean flags( Row row ) {
+        return row.getBool( CommonColumns.FLAGS.cql() );
+    }
+
 }

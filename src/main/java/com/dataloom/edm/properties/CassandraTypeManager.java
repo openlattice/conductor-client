@@ -46,6 +46,9 @@ public class CassandraTypeManager {
     private final Select            getPropertyTypes;
     private final PreparedStatement getPropertyTypesInNamespace;
 
+    private final PreparedStatement getComplexTypeIds;
+    private final PreparedStatement getEnumTypeIds;
+
     public CassandraTypeManager( String keyspace, Session session ) {
         this.session = session;
         this.entityTypesContainPropertyType = session.prepare(
@@ -66,6 +69,14 @@ public class CassandraTypeManager {
                         .from( keyspace, Table.PROPERTY_TYPES.getName() )
                         .where( QueryBuilder
                                 .eq( CommonColumns.NAMESPACE.cql(), CommonColumns.NAMESPACE.bindMarker() ) ) );
+        this.getComplexTypeIds = session.prepare(
+                QueryBuilder.select( CommonColumns.ID.cql() ).distinct()
+                        .from( keyspace, Table.COMPLEX_TYPES.getName() ) );
+
+        this.getEnumTypeIds = session.prepare(
+                QueryBuilder.select( CommonColumns.ID.cql() ).distinct()
+                        .from( keyspace, Table.ENUM_TYPES.getName() ) );
+
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
@@ -91,6 +102,14 @@ public class CassandraTypeManager {
 
     public Iterable<EntityType> getEntityTypes() {
         return Iterables.transform( session.execute( getEntityTypes ), RowAdapters::entityType );
+    }
+
+    public Stream<UUID> getComplexTypeIds() {
+        return StreamUtil.stream( session.execute( getComplexTypeIds.bind() ) ).map( RowAdapters::id );
+    }
+
+    public Stream<UUID> getEnumTypeIds() {
+        return StreamUtil.stream( session.execute( getEnumTypeIds.bind() ) ).map( RowAdapters::id );
     }
 
     public Set<EntityType> getEntityTypesContainingPropertyTypes( Set<UUID> properties ) {

@@ -21,29 +21,26 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import com.kryptnostic.datastore.cassandra.RowAdapters;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import com.dataloom.edm.type.ComplexType;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.edm.type.Analyzer;
-import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
-public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, PropertyType> {
-    private static final CassandraTableBuilder ctb = Table.PROPERTY_TYPES.getBuilder();
+public class ComplexTypeMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, ComplexType> {
+    private static final CassandraTableBuilder ctb = Table.COMPLEX_TYPES.getBuilder();
 
-    public PropertyTypeMapstore( Session session ) {
-        super( HazelcastMap.PROPERTY_TYPES.name(), session, ctb );
+    public ComplexTypeMapstore( Session session ) {
+        super( HazelcastMap.COMPLEX_TYPES.name(), session, ctb );
     }
 
     @Override
@@ -52,16 +49,15 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
     }
 
     @Override
-    protected BoundStatement bind( UUID key, PropertyType value, BoundStatement bs ) {
+    protected BoundStatement bind( UUID key, ComplexType value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ID.cql(), key )
                 .setString( CommonColumns.NAMESPACE.cql(), value.getType().getNamespace() )
                 .setString( CommonColumns.NAME.cql(), value.getType().getName() )
                 .setString( CommonColumns.TITLE.cql(), value.getTitle() )
                 .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() )
+                .setSet( CommonColumns.PROPERTIES.cql(), value.getProperties(), UUID.class )
                 .setSet( CommonColumns.SCHEMAS.cql(), value.getSchemas(), FullQualifiedName.class )
-                .set( CommonColumns.DATATYPE.cql(), value.getDatatype(), EdmPrimitiveTypeKind.class )
-                .setBool( CommonColumns.PII_FIELD.cql(), value.isPIIfield() )
-                .set( CommonColumns.ANALYZER.cql(), value.getAnalyzer(), Analyzer.class );
+                .setUUID( CommonColumns.BASE_TYPE.cql(), value.getBaseType().orNull() );
     }
 
     @Override
@@ -70,12 +66,12 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
     }
 
     @Override
-    protected PropertyType mapValue( ResultSet rs ) {
+    protected ComplexType mapValue( ResultSet rs ) {
         Row row = rs.one();
         if ( row == null ) {
             return null;
         }
-        return RowAdapters.propertyType( row );
+        return RowAdapters.complexType( row );
     }
 
     @Override
@@ -84,8 +80,8 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
     }
 
     @Override
-    public PropertyType generateTestValue() {
-        return TestDataFactory.propertyType();
+    public ComplexType generateTestValue() {
+        return TestDataFactory.complexType();
     }
 
 }

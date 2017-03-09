@@ -35,6 +35,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.odata.Table;
@@ -59,6 +60,7 @@ public class AuthorizationQueryService {
     private final PreparedStatement                        authorizedAclKeysQuery;
     private final PreparedStatement                        authorizedAclKeysForObjectTypeQuery;
     private final PreparedStatement                        aclsForSecurableObjectQuery;
+    private final PreparedStatement                        ownersForSecurableObjectQuery;
     private final PreparedStatement                        deletePermissionsByAclKeysQuery;
     private final PreparedStatement                        setObjectType;
     private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
@@ -93,6 +95,13 @@ public class AuthorizationQueryService {
                 .from( keyspace, Table.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
                         CommonColumns.ACL_KEYS.bindMarker() ) ) );
+
+        ownersForSecurableObjectQuery = session.prepare( QueryBuilder
+                .select( CommonColumns.PRINCIPAL_TYPE.cql(), CommonColumns.PRINCIPAL_ID.cql() )
+                .from( keyspace, Table.PERMISSIONS.getName() ).allowFiltering()
+                .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
+                        CommonColumns.ACL_KEYS.bindMarker() ) )
+                .and( QueryBuilder.contains( CommonColumns.PERMISSIONS.cql(), Permission.OWNER ) ) );
 
         deletePermissionsByAclKeysQuery = session
                 .prepare( QueryBuilder.delete().from( keyspace, Table.PERMISSIONS.getName() ).where(
@@ -207,7 +216,7 @@ public class AuthorizationQueryService {
         while( currentFetchSize == 0 && currentPagingState == null && !exhausted ){
             Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission ).setFetchSize( 1 );
             ResultSet rs = session.execute( query );
-            if( rs.isExhausted() ){
+            if( rs.one() == null ){
                 currentPrincipal = principals.higher( currentPrincipal );
                 if( currentPrincipal == null ){
                     exhausted = true;
@@ -308,4 +317,12 @@ public class AuthorizationQueryService {
         session.execute( bs );
         logger.info( "Deleted all permissions for aclKey " + aclKey );
     }
+    
+    public Iterable<Principal> getOwnersForSecurableObject( List<UUID> aclKeys ) {
+        BoundStatement bs = ownersForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
+                aclKeys,
+                UUID.class );
+        return Iterables.transform( session.execute( bs ), AuthorizationUtils::getPrincipalFromRow ) ;
+    }
+
 }
