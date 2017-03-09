@@ -33,8 +33,10 @@ public class CassandraSerDesFactory {
 
     /**
      * This directly depends on output format of {@link #validateFormatAndNormalize(EdmPrimitiveTypeKind, Object)}
-     * 
+     * @param mapper
+     * @param value
      * @param type
+     * @param entityId
      * @return
      */
     public static ByteBuffer serializeValue(
@@ -96,8 +98,10 @@ public class CassandraSerDesFactory {
 
     /**
      * This directly depends on output of {@link #validateFormatAndNormalize(EdmPrimitiveTypeKind, Object)}
-     * 
+     * @param mapper
+     * @param bytes
      * @param type
+     * @param entityId
      * @return
      */
     public static Object deserializeValue(
@@ -174,18 +178,14 @@ public class CassandraSerDesFactory {
 
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
-     * 
-     * @param type
+     * @param dataType
+     * @param value
      * @return
      */
     public static Object validateFormatAndNormalize( EdmPrimitiveTypeKind dataType, Object value ) {
         if ( value == null ) {
             return true;
         }
-        // debug by Ho Chung
-        System.err.println( "Datatype: " + dataType );
-        System.err.println( "Object: " + value );
-        System.err.println( "Object Type: " + value.getClass() );
         switch ( dataType ) {
             case Boolean:
                 if ( value instanceof Boolean ) {
