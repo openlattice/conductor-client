@@ -170,4 +170,9 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return aqs.getAuthorizedAclKeys( principal, permissions ).stream();
     }
 
+    @Override
+    public Iterable<Principal> getSecurableObjectOwners( List<UUID> key ) {
+        return aqs.getOwnersForSecurableObject( key );
+    }
+
 }

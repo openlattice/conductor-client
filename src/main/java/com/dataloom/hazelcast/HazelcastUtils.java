@@ -20,7 +20,9 @@
 package com.dataloom.hazelcast;
 
 import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.util.Util;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class HazelcastUtils {
@@ -36,4 +38,7 @@ public class HazelcastUtils {
         return key;
     }
 
+    public static <K,V> Function<K,V> getter( IMap<K,V> m ) {
+        return (K k) -> Util.getSafely( m, k );
+    }
 }

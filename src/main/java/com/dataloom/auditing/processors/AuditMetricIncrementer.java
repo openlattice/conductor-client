@@ -30,6 +30,8 @@ import java.util.Map;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class AuditMetricIncrementer extends AbstractRhizomeEntryProcessor<AclKey, AuditMetric, Void> {
+    private static final long serialVersionUID = 3920888304011438731L;
+
     @Override
     public Void process( Map.Entry<AclKey, AuditMetric> entry ) {
         AuditMetric m = entry.getValue();
