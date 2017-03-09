@@ -100,7 +100,7 @@ public enum CommonColumns implements ColumnDef {
     ANALYZER( DataType.text() ),
     CONTACTS( DataType.set( DataType.text() ) ),
     REASON( DataType.text() ),
-    BASE_TYPE( DataType.uuid() );
+    BASE_TYPE( DataType.uuid() ), FLAGS( DataType.cboolean() );
 
     private final DataType type;
 

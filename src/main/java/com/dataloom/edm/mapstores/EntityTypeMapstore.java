@@ -57,7 +57,8 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
                 .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() )
                 .setSet( CommonColumns.KEY.cql(), value.getKey(), UUID.class )
                 .setSet( CommonColumns.PROPERTIES.cql(), value.getProperties(), UUID.class )
-                .setSet( CommonColumns.SCHEMAS.cql(), value.getSchemas(), FullQualifiedName.class );
+                .setSet( CommonColumns.SCHEMAS.cql(), value.getSchemas(), FullQualifiedName.class )
+                .setUUID( CommonColumns.BASE_TYPE.cql(), value.getBaseType().orNull() );
     }
 
     @Override
@@ -83,5 +84,6 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
     public EntityType generateTestValue() {
         return TestDataFactory.entityType();
     }
+
 
 }

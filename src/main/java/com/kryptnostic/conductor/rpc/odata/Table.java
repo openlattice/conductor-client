@@ -93,39 +93,6 @@ public enum Table implements TableDef {
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( COUNT, ACL_KEY_VALUE )
                         .withDescendingOrder( COUNT );
-            case ENTITY_EDGES:
-                /*
-                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
-                 */
-                return new CassandraTableBuilder( ENTITY_EDGES )
-                        .ifNotExists()
-                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
-                        .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
-                        .columns( ENTITYID, SYNCID )
-                        .sasi( SYNCID );
-            case ENTITY_ID_LOOKUP:
-                return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
-                        .ifNotExists()
-                        .partitionKey( SYNCID, ENTITY_SET_ID )
-                        .clusteringColumns( ENTITYID )
-                        .secondaryIndex( ENTITY_SET_ID );
-            case DATA:
-                return new CassandraTableBuilder( DATA )
-                        .ifNotExists()
-                        .partitionKey( ENTITYID )
-                        .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
-                        .columns( SYNCID )
-                        .sasi( SYNCID );
-            case ENTITY_SETS:
-                return new CassandraTableBuilder( ENTITY_SETS )
-                        .ifNotExists()
-                        .partitionKey( ID )
-                        .clusteringColumns( NAME )
-                        .columns( ENTITY_TYPE_ID,
-                                TITLE,
-                                DESCRIPTION,
-                                CONTACTS )
-                        .secondaryIndex( ENTITY_TYPE_ID, NAME );
             case COMPLEX_TYPES:
                 return new CassandraTableBuilder( COMPLEX_TYPES )
                         .ifNotExists()
@@ -137,6 +104,39 @@ public enum Table implements TableDef {
                                 BASE_TYPE,
                                 CommonColumns.SCHEMAS )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case DATA:
+                return new CassandraTableBuilder( DATA )
+                        .ifNotExists()
+                        .partitionKey( ENTITYID )
+                        .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
+                        .columns( SYNCID )
+                        .sasi( SYNCID );
+            case ENTITY_EDGES:
+                /*
+                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
+                 */
+            return new CassandraTableBuilder( ENTITY_EDGES )
+                        .ifNotExists()
+                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
+                        .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
+                        .columns( ENTITYID, SYNCID )
+                        .sasi( SYNCID );
+            case ENTITY_ID_LOOKUP:
+            return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
+                        .ifNotExists()
+                        .partitionKey( SYNCID, ENTITY_SET_ID )
+                        .clusteringColumns( ENTITYID )
+                        .secondaryIndex( ENTITY_SET_ID );
+            case ENTITY_SETS:
+                return new CassandraTableBuilder( ENTITY_SETS )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .clusteringColumns( NAME )
+                        .columns( ENTITY_TYPE_ID,
+                                TITLE,
+                                DESCRIPTION,
+                                CONTACTS )
+                        .secondaryIndex( ENTITY_TYPE_ID, NAME );
             case ENTITY_TYPES:
                 return new CassandraTableBuilder( ENTITY_TYPES )
                         .ifNotExists()
@@ -148,6 +148,20 @@ public enum Table implements TableDef {
                                 PROPERTIES,
                                 BASE_TYPE,
                                 CommonColumns.SCHEMAS )
+                        .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case ENUM_TYPES:
+                return new CassandraTableBuilder( ENUM_TYPES )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .clusteringColumns( NAMESPACE, NAME )
+                        .columns( TITLE,
+                                DESCRIPTION,
+                                MEMBERS,
+                                CommonColumns.SCHEMAS,
+                                DATATYPE,
+                                FLAGS,
+                                PII_FIELD,
+                                ANALYZER )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case WEIGHTED_LINKING_EDGES:
                 return new CassandraTableBuilder( WEIGHTED_LINKING_EDGES )
