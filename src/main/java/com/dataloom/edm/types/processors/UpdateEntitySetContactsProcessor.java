@@ -20,14 +20,8 @@ public class UpdateEntitySetContactsProcessor extends AbstractRhizomeEntryProces
     public Object process( Entry<UUID, EntitySet> entry ) {
         EntitySet es = entry.getValue();
         if ( es != null ) {
-            EntitySet newEs = new EntitySet(
-                    es.getId(),
-                    es.getEntityTypeId(),
-                    es.getName(),
-                    es.getTitle(),
-                    Optional.of( es.getDescription() ),
-                    contacts );
-            entry.setValue( newEs );
+            es.setContacts( contacts );
+            entry.setValue( es );
         }
         return null;
     }
