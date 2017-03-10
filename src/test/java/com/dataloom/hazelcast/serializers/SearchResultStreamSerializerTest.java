@@ -34,7 +34,7 @@ implements Serializable {
         List<Map<String, Object>> hits = Lists.newArrayList();
         hits.add( firstHit );
         hits.add( secondHit );
-        return new SearchResult( Long.valueOf( "2" ), hits );
+        return new SearchResult( Long.parseLong( "2" ), hits );
     }
 
 }

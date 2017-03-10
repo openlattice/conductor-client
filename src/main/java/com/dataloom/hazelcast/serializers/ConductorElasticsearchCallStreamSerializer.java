@@ -22,10 +22,11 @@ import com.hazelcast.util.Preconditions;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchCall;
 import com.kryptnostic.conductor.rpc.EntityDataLambdas;
-import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.conductor.rpc.SearchEntitySetDataLambda;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 @SuppressWarnings( "rawtypes" )
 @Component
@@ -45,7 +46,6 @@ public class ConductorElasticsearchCallStreamSerializer implements SelfRegisteri
             kryo.register( Organization.class );
             // Shared Lambdas
             kryo.register( Lambdas.class );
-            kryo.register( GetAllEntitiesOfTypeLambda.class );
             kryo.register( EntityDataLambdas.class );
             kryo.register( SearchEntitySetDataLambda.class );
             kryo.register( SerializedLambda.class );
@@ -67,6 +67,7 @@ public class ConductorElasticsearchCallStreamSerializer implements SelfRegisteri
 
     
     @Override
+    @SuppressFBWarnings
     public void write( ObjectDataOutput out, ConductorElasticsearchCall object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getUserId() );
         Output output = new Output( (OutputStream) out );
@@ -74,8 +75,9 @@ public class ConductorElasticsearchCallStreamSerializer implements SelfRegisteri
         output.flush();
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
+    @SuppressWarnings( "unchecked" )
+    @SuppressFBWarnings
     public ConductorElasticsearchCall read( ObjectDataInput in ) throws IOException {
         UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );

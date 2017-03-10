@@ -85,6 +85,6 @@ public class ConductorConfiguration implements Configuration {
     }
 
     public String[] getSparkJars() {
-        return sparkJars;
+        return sparkJars.clone();
     }
 }
