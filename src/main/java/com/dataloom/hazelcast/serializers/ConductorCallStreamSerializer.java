@@ -40,9 +40,10 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.conductor.rpc.ConductorCall;
 import com.kryptnostic.conductor.rpc.ConductorSparkApi;
-import com.kryptnostic.conductor.rpc.GetAllEntitiesOfTypeLambda;
 import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 @SuppressWarnings( "rawtypes" )
 @Component
@@ -62,7 +63,6 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
             kryo.register( Organization.class );
             // Shared Lambdas
             kryo.register( Lambdas.class );
-            kryo.register( GetAllEntitiesOfTypeLambda.class );
             kryo.register( SerializedLambda.class );
 
             // always needed for closure serialization, also if
@@ -80,6 +80,7 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
     private ConductorSparkApi api;
 
     @Override
+    @SuppressFBWarnings
     public void write( ObjectDataOutput out, ConductorCall object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getUserId() );
         Output output = new Output( (OutputStream) out );
@@ -87,8 +88,9 @@ public class ConductorCallStreamSerializer implements SelfRegisteringStreamSeria
         output.flush();
     }
 
-    @SuppressWarnings( "unchecked" )
     @Override
+    @SuppressWarnings( "unchecked" )
+    @SuppressFBWarnings
     public ConductorCall read( ObjectDataInput in ) throws IOException {
         UUID userId = UUIDStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
