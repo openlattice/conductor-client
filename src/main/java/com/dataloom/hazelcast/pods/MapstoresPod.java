@@ -75,8 +75,6 @@ import com.dataloom.requests.mapstores.RequestMapstore;
 import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
 import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
-import com.kryptnostic.conductor.rpc.OrderedRPCKey;
-import com.kryptnostic.conductor.rpc.OrderedRPCMapstore;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
@@ -254,10 +252,4 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<LinkingEntityKey, UUID> linkingEntityVerticesMapstore() {
         return new LinkingEntityVerticesMapstore( session );
     }
-    
-    @Bean
-    public SelfRegisteringMapStore<OrderedRPCKey, byte[]> rpcDataMapstore() {
-        return new OrderedRPCMapstore( session );
-    }
-
 }
