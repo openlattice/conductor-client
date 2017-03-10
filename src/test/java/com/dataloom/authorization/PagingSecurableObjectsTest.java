@@ -22,9 +22,9 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
     private static final Logger                     logger = LoggerFactory.getLogger( PagingSecurableObjectsTest.class );
 
     // Entity Set acl Keys
-    protected static List<UUID>              key1 = ImmutableList.of( UUID.randomUUID() );
-    protected static List<UUID>              key2 = ImmutableList.of( UUID.randomUUID() );
-    protected static List<UUID>              key3 = ImmutableList.of( UUID.randomUUID() );
+    protected static final List<UUID>              key1 = ImmutableList.of( UUID.randomUUID() );
+    protected static final List<UUID>              key2 = ImmutableList.of( UUID.randomUUID() );
+    protected static final List<UUID>              key3 = ImmutableList.of( UUID.randomUUID() );
 
     // User and roles
     protected static final Principal               u1 = TestDataFactory.userPrincipal();

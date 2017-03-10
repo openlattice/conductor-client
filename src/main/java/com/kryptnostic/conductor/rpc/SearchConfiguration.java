@@ -19,10 +19,13 @@
 
 package com.kryptnostic.conductor.rpc;
 
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class SearchConfiguration {
+public class SearchConfiguration implements Serializable {
+    private static final long serialVersionUID = 1018452800248369401L;
     private static final String ELASTICSEARCH_URL		= "elasticsearchUrl";
     private static final String ELASTICSEARCH_CLUSTER = "elasticsearchCluster";
     private static final String ELASTICSEARCH_PORT    = "elasticsearchPort";

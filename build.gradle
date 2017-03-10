@@ -17,19 +17,18 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-/*
-*	Kryptnostic conductor client
-* 	version is defined in kryptnostic-gradles/kryptnostic.gradle
-*/
-
 plugins {
     id "java"
     id "eclipse"
     id "idea"
     id "jacoco"
+    id 'checkstyle'
+    id 'findbugs'
 }
+
 description = "Kryptnostic Conductor Client"
 group = "com.kryptnostic"
+
 ext.projectName = "kryptnostic-conductor-client"
 ext.scmUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
 ext.connectionUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
@@ -38,7 +37,29 @@ ext.developerConnectionUrl = 'scm:git:https://github.com/dataloom/conductor-clie
 apply from: "https://raw.githubusercontent.com/kryptnostic/gradles/master/kryptnostic.gradle"
 
 sourceCompatibility=JavaVersion.VERSION_1_8
-test { finalizedBy jacocoTestReport }
+
+def versions = [
+  checkstyle: '7.4',
+]
+
+checkstyle {
+  toolVersion = "${versions.checkstyle}"
+}
+
+tasks.withType(FindBugs) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
+tasks.withType(Checkstyle) {
+    reports {
+        xml.enabled = false
+        html.enabled = true
+    }
+}
+
 dependencies { 
     /*
      * SL4J
@@ -68,7 +89,7 @@ dependencies {
     compile group: 'com.datastax.cassandra', name: 'cassandra-driver-mapping', version: "${cassandra_driver_version}"
     compile "org.xerial.snappy:snappy-java:${snappy_version}"
     compile "net.jpountz.lz4:lz4:${lz4_version}"
-
+    compile 'com.google.code.findbugs:findbugs:3.0.1'
 	/*
      * Kryptnostic dependencies
      */
