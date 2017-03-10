@@ -19,19 +19,16 @@
 
 package com.dataloom.graph;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.linking.LinkingEdge;
-import com.dataloom.linking.LinkingEntityKey;
-import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.linking.util.UnorderedPair;
-import com.datastax.driver.core.Row;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import com.dataloom.data.EntityKey;
+import com.dataloom.linking.LinkingEdge;
+import com.dataloom.linking.LinkingVertexKey;
+import com.datastax.driver.core.Row;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;

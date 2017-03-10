@@ -19,14 +19,14 @@
 
 package com.kryptnostic.datastore.cassandra;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.dataloom.edm.type.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -42,12 +42,8 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
-import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
-import com.datastax.driver.core.TypeCodec;
-import com.datastax.driver.core.utils.Bytes;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
@@ -56,11 +52,10 @@ import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 
 public final class RowAdapters {
-    private static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
+    static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
 
-    private RowAdapters() {}
-
-    private static final ProtocolVersion protocolVersion = ProtocolVersion.NEWEST_SUPPORTED;
+    private RowAdapters() {
+    }
 
     public static SetMultimap<FullQualifiedName, Object> entity(
             ResultSet rs,
@@ -73,7 +68,7 @@ public final class RowAdapters {
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 m.put( pt.getType(),
-                        deserializeValue( mapper,
+                        CassandraSerDesFactory.deserializeValue( mapper,
                                 row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
                                 pt.getDatatype(),
                                 entityId ) );
@@ -93,7 +88,7 @@ public final class RowAdapters {
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 m.put( propertyTypeId,
-                        deserializeValue( mapper,
+                        CassandraSerDesFactory.deserializeValue( mapper,
                                 row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
                                 pt.getDatatype(),
                                 entityId ) );
@@ -114,7 +109,7 @@ public final class RowAdapters {
             String entityId = row.getString( CommonColumns.ENTITYID.cql() );
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
-                Object value = deserializeValue( mapper,
+                Object value = CassandraSerDesFactory.deserializeValue( mapper,
                         row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
                         pt.getDatatype(),
                         entityId );
@@ -169,15 +164,30 @@ public final class RowAdapters {
         return new EntitySet( id, entityTypeId, name, title, description, contacts );
     }
 
-    public static PropertyType propertyType( Row row ) {
-        UUID id = id( row );
-        FullQualifiedName type = new FullQualifiedName( namespace( row ), name( row ) );
+    public static EnumType enumType( Row row ) {
+        com.google.common.base.Optional<UUID> id = com.google.common.base.Optional.of( id( row ) );
+        FullQualifiedName type = splitFqn( row );
         String title = title( row );
         Optional<String> description = description( row );
-        Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
-        EdmPrimitiveTypeKind dataType = row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class );
-        Optional<Boolean> piiField = Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) );
-        return new PropertyType( id, type, title, description, schemas, dataType, piiField );
+        Set<FullQualifiedName> schemas = schemas( row );
+        LinkedHashSet<String> members = members( row );
+        Optional<EdmPrimitiveTypeKind> dataType = Optional.fromNullable( primitveType( row ) );
+        Optional<Boolean> piiField = pii( row );
+        boolean flags = flags( row );
+        Optional<Analyzer> maybeAnalyzer = analyzer( row );
+        return new EnumType( id, type, title, description, members, schemas, dataType, flags, piiField, maybeAnalyzer );
+    }
+
+    public static PropertyType propertyType( Row row ) {
+        UUID id = id( row );
+        FullQualifiedName type = splitFqn( row );
+        String title = title( row );
+        Optional<String> description = description( row );
+        Set<FullQualifiedName> schemas = schemas( row );
+        EdmPrimitiveTypeKind dataType = primitveType( row );
+        Optional<Boolean> piiField = pii( row );
+        Optional<Analyzer> maybeAnalyzer = analyzer( row );
+        return new PropertyType( id, type, title, description, schemas, dataType, piiField, maybeAnalyzer );
     }
 
     public static EntityType entityType( Row row ) {
@@ -186,9 +196,21 @@ public final class RowAdapters {
         String title = title( row );
         Optional<String> description = description( row );
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
-        Set<UUID> key = row.getSet( CommonColumns.KEY.cql(), UUID.class );
-        Set<UUID> properties = row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
-        return new EntityType( id, type, title, description, schemas, key, properties );
+        LinkedHashSet<UUID> key = (LinkedHashSet<UUID>) row.getSet( CommonColumns.KEY.cql(), UUID.class );
+        LinkedHashSet<UUID> properties = (LinkedHashSet<UUID>) row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
+        Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
+        return new EntityType( id, type, title, description, schemas, key, properties, baseType );
+    }
+
+    public static ComplexType complexType( Row row ) {
+        UUID id = id( row );
+        FullQualifiedName type = new FullQualifiedName( namespace( row ), name( row ) );
+        String title = title( row );
+        Optional<String> description = description( row );
+        Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
+        LinkedHashSet<UUID> properties = (LinkedHashSet<UUID>) row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
+        Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
+        return new ComplexType( id, type, title, description, schemas, properties, baseType );
     }
 
     public static FullQualifiedName splitFqn( Row row ) {
@@ -263,118 +285,28 @@ public final class RowAdapters {
         return new OrganizationRole( id, organizationId, title, description );
     }
     
-    /**
-     * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
-     * 
-     * @param type
-     * @return
-     */
-    public static ByteBuffer serializeValue(
-            ObjectMapper mapper,
-            Object value,
-            EdmPrimitiveTypeKind type,
-            String entityId ) {
-        switch ( type ) {
-            // To come back to: binary, byte
-            /**
-             * Jackson binds to Boolean
-             */
-            case Boolean:
-                return TypeCodec.cboolean().serialize( (Boolean) value, protocolVersion );
-            /**
-             * Jackson binds to String
-             */
-            case Binary:
-            case Date:
-            case DateTimeOffset:
-            case Duration:
-            case Guid:
-            case String:
-            case TimeOfDay:
-                return TypeCodec.varchar().serialize( (String) value, protocolVersion );
-            /**
-             * Jackson binds to Double
-             */
-            case Decimal:
-            case Double:
-            case Single:
-                return TypeCodec.cdouble().serialize( Double.parseDouble( value.toString() ), protocolVersion );
-            /**
-             * Jackson binds to Integer, Long, or BigInteger
-             */
-            case Byte:
-            case SByte:
-                return TypeCodec.tinyInt().serialize( Byte.parseByte( value.toString() ), protocolVersion );
-            case Int16:
-                return TypeCodec.smallInt().serialize( Short.parseShort( value.toString() ), protocolVersion );
-            case Int32:
-                return TypeCodec.cint().serialize( Integer.parseInt( value.toString() ), protocolVersion );
-            case Int64:
-                return TypeCodec.bigint().serialize( Long.parseLong( value.toString() ), protocolVersion );
-            default:
-                try {
-                    return ByteBuffer.wrap( mapper.writeValueAsBytes( value ) );
-                } catch ( JsonProcessingException e ) {
-                    logger.error( "Serialization error when writing entity " + entityId );
-                    return null;
-                }
-        }
+    public static LinkedHashSet<String> members( Row row ) {
+        return (LinkedHashSet<String>) row.getSet( CommonColumns.MEMBERS.cql(), String.class );
     }
 
-    /**
-     * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
-     * 
-     * @param type
-     * @return
-     */
-    public static Object deserializeValue(
-            ObjectMapper mapper,
-            ByteBuffer bytes,
-            EdmPrimitiveTypeKind type,
-            String entityId ) {
-        switch ( type ) {
-            /**
-             * Jackson binds to Boolean
-             */
-            case Boolean:
-                return TypeCodec.cboolean().deserialize( bytes, protocolVersion );
-            /**
-             * Jackson binds to String
-             */
-            case Binary:
-            case Date:
-            case DateTimeOffset:
-            case Duration:
-            case Guid:
-            case String:
-            case TimeOfDay:
-                return TypeCodec.varchar().deserialize( bytes, protocolVersion );
-            /**
-             * Jackson binds to Double
-             */
-            case Decimal:
-            case Double:
-            case Single:
-                return TypeCodec.cdouble().deserialize( bytes, protocolVersion );
-            /**
-             * Jackson binds to Integer, Long, or BigInteger
-             */
-            case Byte:
-            case SByte:
-                return TypeCodec.tinyInt().deserialize( bytes, protocolVersion );
-            case Int16:
-                return TypeCodec.smallInt().deserialize( bytes, protocolVersion );
-            case Int32:
-                return TypeCodec.cint().deserialize( bytes, protocolVersion );
-            case Int64:
-                return TypeCodec.bigint().deserialize( bytes, protocolVersion );
-            default:
-                try {
-                    return mapper.readValue( Bytes.getArray( bytes ), Object.class );
-                } catch ( IOException e ) {
-                    logger.error( "Deserialization error when reading entity " + entityId );
-                    return null;
-                }
-        }
+    public static Set<FullQualifiedName> schemas( Row row ) {
+        return row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
     }
+
+    public static EdmPrimitiveTypeKind primitveType( Row row ) {
+        return row.get( CommonColumns.DATATYPE.cql(), EdmPrimitiveTypeKind.class );
+    }
+
+    public static Optional<Analyzer> analyzer( Row row ) {
+        return Optional.of( row.get( CommonColumns.ANALYZER.cql(), Analyzer.class ) );
+    }
+
+    public static Optional<Boolean> pii( Row row ) {
+        return Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) );
+    }
+
+    private static boolean flags( Row row ) {
+        return row.getBool( CommonColumns.FLAGS.cql() );
+    }
+
 }

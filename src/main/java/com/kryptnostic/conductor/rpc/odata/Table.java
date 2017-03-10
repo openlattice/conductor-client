@@ -78,15 +78,19 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
 
+import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
+
 public enum Table implements TableDef {
     ACL_KEYS,
     AUDIT_EVENTS,
     AUDIT_METRICS,
+    COMPLEX_TYPES,
     DATA,
     ENTITY_EDGES,
     ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
+    ENUM_TYPES,
     LINKING_EDGES,
     LINKED_ENTITY_SETS,
     LINKED_ENTITY_TYPES,
@@ -138,22 +142,17 @@ public enum Table implements TableDef {
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( COUNT, ACL_KEY_VALUE )
                         .withDescendingOrder( COUNT );
-            case ENTITY_EDGES:
-                /*
-                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
-                 */
-                return new CassandraTableBuilder( ENTITY_EDGES )
+            case COMPLEX_TYPES:
+                return new CassandraTableBuilder( COMPLEX_TYPES )
                         .ifNotExists()
-                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
-                        .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
-                        .columns( ENTITYID, SYNCID )
-                        .sasi( SYNCID );
-            case ENTITY_ID_LOOKUP:
-                return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
-                        .ifNotExists()
-                        .partitionKey( SYNCID, ENTITY_SET_ID )
-                        .clusteringColumns( ENTITYID )
-                        .secondaryIndex( ENTITY_SET_ID );
+                        .partitionKey( ID )
+                        .clusteringColumns( NAMESPACE, NAME )
+                        .columns( TITLE,
+                                DESCRIPTION,
+                                PROPERTIES,
+                                BASE_TYPE,
+                                CommonColumns.SCHEMAS )
+                        .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case DATA:
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
@@ -161,6 +160,22 @@ public enum Table implements TableDef {
                         .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
                         .columns( SYNCID )
                         .sasi( SYNCID );
+            case ENTITY_EDGES:
+                /*
+                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
+                 */
+            return new CassandraTableBuilder( ENTITY_EDGES )
+                        .ifNotExists()
+                        .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
+                        .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
+                        .columns( ENTITYID, SYNCID )
+                        .sasi( SYNCID );
+            case ENTITY_ID_LOOKUP:
+            return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
+                        .ifNotExists()
+                        .partitionKey( SYNCID, ENTITY_SET_ID )
+                        .clusteringColumns( ENTITYID )
+                        .secondaryIndex( ENTITY_SET_ID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
@@ -180,7 +195,22 @@ public enum Table implements TableDef {
                                 DESCRIPTION,
                                 KEY,
                                 PROPERTIES,
+                                BASE_TYPE,
                                 CommonColumns.SCHEMAS )
+                        .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case ENUM_TYPES:
+                return new CassandraTableBuilder( ENUM_TYPES )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .clusteringColumns( NAMESPACE, NAME )
+                        .columns( TITLE,
+                                DESCRIPTION,
+                                MEMBERS,
+                                CommonColumns.SCHEMAS,
+                                DATATYPE,
+                                FLAGS,
+                                PII_FIELD,
+                                ANALYZER )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case WEIGHTED_LINKING_EDGES:
                 return new CassandraTableBuilder( WEIGHTED_LINKING_EDGES )

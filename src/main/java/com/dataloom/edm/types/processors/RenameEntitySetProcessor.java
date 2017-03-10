@@ -20,11 +20,9 @@
 package com.dataloom.edm.types.processors;
 
 import java.util.Map.Entry;
-
 import java.util.UUID;
 
 import com.dataloom.edm.EntitySet;
-import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class RenameEntitySetProcessor extends AbstractRhizomeEntryProcessor<UUID, EntitySet, Object> {
@@ -39,14 +37,8 @@ public class RenameEntitySetProcessor extends AbstractRhizomeEntryProcessor<UUID
     public Object process( Entry<UUID, EntitySet> entry ) {
         EntitySet es = entry.getValue();
         if ( es != null ) {
-            EntitySet newEs = new EntitySet(
-                    es.getId(),
-                    es.getEntityTypeId(),
-                    newName,
-                    es.getTitle(),
-                    Optional.of( es.getDescription() ),
-                    es.getContacts() );
-            entry.setValue( newEs );
+            es.setName( newName );
+            entry.setValue( es );
         }
         return null;
     }
