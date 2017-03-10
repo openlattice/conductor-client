@@ -104,7 +104,7 @@ public enum CommonColumns implements ColumnDef {
     REASON( DataType.text() ),
     BASE_TYPE( DataType.uuid() ), FLAGS( DataType.cboolean() );
 
-    private final DataType type;
+    private transient final DataType type;
 
     private CommonColumns( DataType type ) {
         this.type = type;

@@ -90,7 +90,20 @@ public class QueryResult implements Serializable, Iterable<Row> {
     public String getSessionId() {
         return sessionId;
     }
+
     
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ( ( keyspace == null ) ? 0 : keyspace.hashCode() );
+        result = prime * result + ( ( queryId == null ) ? 0 : queryId.hashCode() );
+        result = prime * result + ( ( session == null ) ? 0 : session.hashCode() );
+        result = prime * result + ( ( sessionId == null ) ? 0 : sessionId.hashCode() );
+        result = prime * result + ( ( tableName == null ) ? 0 : tableName.hashCode() );
+        return result;
+    }
+
     @Override
     public boolean equals( Object obj ) {
         if ( this == obj ) {
@@ -110,18 +123,18 @@ public class QueryResult implements Serializable, Iterable<Row> {
         } else if ( !keyspace.equals( other.keyspace ) ) {
             return false;
         }
-        if ( tableName == null ) {
-            if ( other.tableName != null ) {
-                return false;
-            }
-        } else if ( !tableName.equals( other.tableName ) ) {
-            return false;
-        }
         if ( queryId == null ) {
             if ( other.queryId != null ) {
                 return false;
             }
         } else if ( !queryId.equals( other.queryId ) ) {
+            return false;
+        }
+        if ( session == null ) {
+            if ( other.session != null ) {
+                return false;
+            }
+        } else if ( !session.equals( other.session ) ) {
             return false;
         }
         if ( sessionId == null ) {
@@ -131,11 +144,11 @@ public class QueryResult implements Serializable, Iterable<Row> {
         } else if ( !sessionId.equals( other.sessionId ) ) {
             return false;
         }
-        if ( !session.isPresent() ) {
-            if ( other.session.isPresent() ) {
+        if ( tableName == null ) {
+            if ( other.tableName != null ) {
                 return false;
             }
-        } else if ( !session.get().equals( other.session.get() ) ) {
+        } else if ( !tableName.equals( other.tableName ) ) {
             return false;
         }
         return true;

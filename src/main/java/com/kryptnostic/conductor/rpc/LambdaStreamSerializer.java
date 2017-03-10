@@ -36,6 +36,8 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 @Component
 public class LambdaStreamSerializer implements SelfRegisteringStreamSerializer<Runnable> {
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
@@ -64,6 +66,7 @@ public class LambdaStreamSerializer implements SelfRegisteringStreamSerializer<R
     };
 
     @Override
+    @SuppressFBWarnings
     public void write( ObjectDataOutput out, Runnable object ) throws IOException {
         Output output = new Output( (OutputStream) out );
         kryoThreadLocal.get().writeClassAndObject( output, object );
@@ -71,6 +74,7 @@ public class LambdaStreamSerializer implements SelfRegisteringStreamSerializer<R
     }
 
     @Override
+    @SuppressFBWarnings
     public Runnable read( ObjectDataInput in ) throws IOException {
         Input input = new Input( (InputStream) in );
         return (Runnable) kryoThreadLocal.get().readClassAndObject( input );

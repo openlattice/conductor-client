@@ -49,6 +49,9 @@ import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.durableexecutor.DurableExecutorService;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
+@SuppressFBWarnings
 public class ODataStorageService {
     @Deprecated
     public static final String           ES_PRODUCTS_NAME = "Products";
