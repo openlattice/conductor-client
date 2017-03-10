@@ -270,7 +270,8 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( RPC_DATA_ORDERED )
                         .ifNotExists()
                         .partitionKey( RPC_REQUEST_ID )
-                        .clusteringColumns( RPC_WEIGHT, RPC_VALUE );
+                        .clusteringColumns( RPC_WEIGHT, RPC_VALUE )
+                        .withDescendingOrder( RPC_WEIGHT );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()
