@@ -18,10 +18,10 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
-public class RpcMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<OrderedRPCKey, byte[]> {
-    private static final Logger logger = LoggerFactory.getLogger( RpcMapstore.class );
+public class OrderedRPCMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<OrderedRPCKey, byte[]> {
+    private static final Logger logger = LoggerFactory.getLogger( OrderedRPCMapstore.class );
 
-    public RpcMapstore( Session session ) {
+    public OrderedRPCMapstore( Session session ) {
         super( HazelcastMap.RPC_DATA_ORDERED.name(), session, Table.RPC_DATA_ORDERED.getBuilder() );
     }
 
