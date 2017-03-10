@@ -21,7 +21,6 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import com.kryptnostic.conductor.rpc.odata.Table;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.type.EntityType;
@@ -31,8 +30,9 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Optional;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
@@ -57,7 +57,8 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
                 .setString( CommonColumns.DESCRIPTION.cql(), value.getDescription() )
                 .setSet( CommonColumns.KEY.cql(), value.getKey(), UUID.class )
                 .setSet( CommonColumns.PROPERTIES.cql(), value.getProperties(), UUID.class )
-                .setSet( CommonColumns.SCHEMAS.cql(), value.getSchemas(), FullQualifiedName.class );
+                .setSet( CommonColumns.SCHEMAS.cql(), value.getSchemas(), FullQualifiedName.class )
+                .setUUID( CommonColumns.BASE_TYPE.cql(), value.getBaseType().orNull() );
     }
 
     @Override
@@ -71,16 +72,7 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
         if ( row == null ) {
             return null;
         }
-        return new EntityType(
-                row.getUUID( CommonColumns.ID.cql() ),
-                new FullQualifiedName(
-                        row.getString( CommonColumns.NAMESPACE.cql() ),
-                        row.getString( CommonColumns.NAME.cql() ) ),
-                row.getString( CommonColumns.TITLE.cql() ),
-                Optional.of( row.getString( CommonColumns.DESCRIPTION.cql() ) ),
-                row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class ),
-                row.getSet( CommonColumns.KEY.cql(), UUID.class ),
-                row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class ) );
+        return RowAdapters.entityType( row );
     }
 
     @Override
@@ -92,5 +84,6 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
     public EntityType generateTestValue() {
         return TestDataFactory.entityType();
     }
+
 
 }

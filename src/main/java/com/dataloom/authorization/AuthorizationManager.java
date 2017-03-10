@@ -105,4 +105,6 @@ public interface AuthorizationManager {
     Stream<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
 
     Stream<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
+    
+    Iterable<Principal> getSecurableObjectOwners( List<UUID> key );
 }

@@ -23,7 +23,10 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EnumType;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.Principal;
@@ -119,4 +122,23 @@ public interface EdmManager {
     
     EntityType getEntityTypeByEntitySetId( UUID entitySetId );
 
+    void createEnumTypeIfNotExists( EnumType enumType );
+
+    Stream<EnumType> getEnumTypes();
+
+    EnumType getEnumType( UUID enumTypeId );
+
+    void deleteEnumType( UUID enumTypeId );
+
+    void createComplexTypeIfNotExists( ComplexType complexType );
+
+    Stream<ComplexType> getComplexTypes();
+
+    ComplexType getComplexType( UUID complexTypeId );
+
+    void deleteComplexType( UUID complexTypeId );
+
+    Set<EntityType> getEntityTypeHierarchy( UUID entityTypeId );
+
+    Set<ComplexType> getComplexTypeHierarchy( UUID complexTypeId );
 }

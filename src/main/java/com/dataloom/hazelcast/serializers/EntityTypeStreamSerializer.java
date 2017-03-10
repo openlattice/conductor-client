@@ -20,6 +20,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -52,6 +53,15 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
         SetStreamSerializers.serialize( out, object.getProperties(), ( UUID property ) -> {
             UUIDStreamSerializer.serialize( out, property );
         } );
+
+        final Optional<UUID> baseType = object.getBaseType();
+        final boolean present = baseType.isPresent();
+
+        out.writeBoolean( present );
+
+        if ( present ) {
+            UUIDStreamSerializer.serialize( out, baseType.get() );
+        }
     }
 
     @Override
@@ -63,13 +73,18 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
         Set<FullQualifiedName> schemas = SetStreamSerializers.deserialize( in, ( ObjectDataInput dataInput ) -> {
             return FullQualifiedNameStreamSerializer.deserialize( dataInput );
         } );
-        Set<UUID> keys = SetStreamSerializers.deserialize( in, ( ObjectDataInput dataInput ) -> {
-            return UUIDStreamSerializer.deserialize( dataInput );
-        } );
-        Set<UUID> properties = SetStreamSerializers.deserialize( in, ( ObjectDataInput dataInput ) -> {
-            return UUIDStreamSerializer.deserialize( dataInput );
-        } );
-        return new EntityType( id, type, title, description, schemas, keys, properties );
+        LinkedHashSet<UUID> keys = SetStreamSerializers.orderedDeserialize( in, UUIDStreamSerializer::deserialize );
+        LinkedHashSet<UUID> properties = SetStreamSerializers.orderedDeserialize( in,
+                UUIDStreamSerializer::deserialize );
+        Optional<UUID> baseType;
+
+        if ( in.readBoolean() ) {
+            baseType = Optional.of( UUIDStreamSerializer.deserialize( in ) );
+        } else {
+            baseType = Optional.absent();
+        }
+
+        return new EntityType( id, type, title, description, schemas, keys, properties, baseType );
     }
 
     @Override
