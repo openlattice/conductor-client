@@ -24,9 +24,6 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
-import com.dataloom.edm.mapstores.*;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EnumType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -42,8 +39,17 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.DelegatedEntityKeySet;
 import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.mapstores.AclKeysMapstore;
+import com.dataloom.edm.mapstores.ComplexTypeMapstore;
+import com.dataloom.edm.mapstores.EntitySetMapstore;
+import com.dataloom.edm.mapstores.EntityTypeMapstore;
+import com.dataloom.edm.mapstores.EnumTypesMapstore;
+import com.dataloom.edm.mapstores.NamesMapstore;
+import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
+import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
@@ -248,5 +254,4 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<LinkingEntityKey, UUID> linkingEntityVerticesMapstore() {
         return new LinkingEntityVerticesMapstore( session );
     }
-
 }

@@ -55,6 +55,7 @@ public enum Table implements TableDef {
     PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
     REQUESTS,
+    RPC_DATA_ORDERED,
     SCHEMAS,
     WEIGHTED_LINKING_EDGES
     ;
@@ -265,11 +266,18 @@ public enum Table implements TableDef {
                         .sasi( PRINCIPAL_TYPE,
                                 PRINCIPAL_ID,
                                 STATUS );
+            case RPC_DATA_ORDERED:
+                return new CassandraTableBuilder( RPC_DATA_ORDERED )
+                        .ifNotExists()
+                        .partitionKey( RPC_REQUEST_ID )
+                        .clusteringColumns( RPC_WEIGHT, RPC_VALUE )
+                        .withDescendingOrder( RPC_WEIGHT );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()
                         .partitionKey( NAMESPACE )
                         .columns( NAME_SET );
+
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

@@ -20,6 +20,8 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -29,12 +31,12 @@ import com.dataloom.edm.type.PropertyType;
 
 public interface ConductorSparkApi {
 
-    //Mainly for compatibility - read all properties of the entity type
+    // Mainly for compatibility - read all properties of the entity type
     QueryResult getAllEntitiesOfType( FullQualifiedName entityTypeFqn );
 
     QueryResult getAllEntitiesOfType( FullQualifiedName entityTypeFqn, List<PropertyType> authorizedProperties );
 
-    //Mainly for compatibility - read all properties of the entity set
+    // Mainly for compatibility - read all properties of the entity set
     QueryResult getAllEntitiesOfEntitySet(
             FullQualifiedName entityFqn,
             String entitySetName );
@@ -53,4 +55,6 @@ public interface ConductorSparkApi {
     QueryResult getFilterEntities( LookupEntitiesRequest request );
 
     Void clustering( UUID linkedEntitySetId );
+
+    UUID getTopUtilizers( UUID entitySetId, Set<UUID> propertyTypeIds, Map<UUID, PropertyType> propertyTypes );
 }
