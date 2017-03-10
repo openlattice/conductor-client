@@ -33,7 +33,7 @@ public class EdmPrimitiveTypeKindGetter extends AbstractRhizomeEntryProcessor<UU
     private static final long            serialVersionUID      = 4485807443899509297L;
     private static final Logger          logger                = LoggerFactory
             .getLogger( EdmPrimitiveTypeKindGetter.class );
-    public static EdmPrimitiveTypeKindGetter GETTER = new EdmPrimitiveTypeKindGetter();
+    public static final EdmPrimitiveTypeKindGetter GETTER = new EdmPrimitiveTypeKindGetter();
 
     @Override
     public EdmPrimitiveTypeKind process( Entry<UUID, PropertyType> entry ) {

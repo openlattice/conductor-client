@@ -20,9 +20,7 @@
 package com.dataloom.authentication;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.NavigableSet;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -36,6 +34,8 @@ import com.auth0.spring.security.api.Auth0UserDetails;
 import com.dataloom.authorization.ForbiddenException;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class LoomAuthentication implements Authentication {
     private static final Logger  logger           = LoggerFactory.getLogger( LoomAuthentication.class );
@@ -121,6 +121,7 @@ public class LoomAuthentication implements Authentication {
         jwtToken.eraseCredentials();
     }
 
+    @SuppressFBWarnings
     public boolean equals( Object obj ) {
         return jwtToken.equals( obj );
     }
