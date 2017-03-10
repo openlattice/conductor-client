@@ -133,7 +133,7 @@ public class EdmService implements EdmManager {
      */
     @Override
     public void createPropertyTypeIfNotExists( PropertyType propertyType ) {
-        ensureValidPropertyType( propertyType );
+        aclKeyReservations.reserveIdAndValidateType( propertyType );
 
         /*
          * Create property type if it doesn't exist. The reserveAclKeyAndValidateType call should ensure that
@@ -175,7 +175,6 @@ public class EdmService implements EdmManager {
         /*
          * This is really create or replace and should be noted as such.
          */
-        ensureValidEntityType( entityType );
         aclKeyReservations.reserveIdAndValidateType( entityType );
         // Only create entity table if insert transaction succeeded.
         final EntityType existing = entityTypes.putIfAbsent( entityType.getId(), entityType );
@@ -252,8 +251,6 @@ public class EdmService implements EdmManager {
     }
 
     private void createEntitySet( EntitySet entitySet ) {
-        ensureValidEntitySet( entitySet );
-
         aclKeyReservations.reserveIdAndValidateType( entitySet );
 
         checkState( entitySets.putIfAbsent( entitySet.getId(), entitySet ) == null, "Entity set already exists." );
@@ -533,44 +530,6 @@ public class EdmService implements EdmManager {
     /**************
      * Validation
      **************/
-    private void ensureValidEntityType( EntityType entityType ) {
-        Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getType().getNamespace() ),
-                "Namespace for Entity Type is missing" );
-        Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getType().getName() ),
-                "Name of Entity Type is missing" );
-        Preconditions.checkArgument( StringUtils.isNotBlank( entityType.getTitle() ),
-                "Title of Entity Type is missing" );
-        Preconditions.checkArgument( CollectionUtils.isNotEmpty( entityType.getProperties() ),
-                "Properties for Entity Type is missing" );
-        Preconditions.checkArgument( CollectionUtils.isNotEmpty( entityType.getKey() ),
-                "Key for Entity Type is missing" );
-        Preconditions.checkArgument( checkPropertyTypesExist( entityType.getProperties() ),
-                "Some properties do not exist" );
-        Preconditions.checkArgument( entityType.getProperties().containsAll( entityType.getKey() ),
-                "Properties must include all the key property types" );
-    }
-
-    private static void ensureValidPropertyType( PropertyType propertyType ) {
-        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getNamespace() ),
-                "Namespace for Property Type is missing" );
-        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getType().getName() ),
-                "Name of Property Type is missing" );
-        Preconditions.checkArgument( StringUtils.isNotBlank( propertyType.getTitle() ),
-                "Title of Property Type is missing" );
-        Preconditions.checkArgument( propertyType.getDatatype() != null, "Datatype of Property Type is missing" );
-    }
-
-    private void ensureValidEntitySet( EntitySet entitySet ) {
-        Preconditions.checkArgument( StringUtils.isNotBlank( entitySet.getName() ),
-                "Name of Entity Set is missing." );
-        Preconditions.checkArgument( StringUtils.isNotBlank( entitySet.getTitle() ),
-                "Title of Entity Set is missing." );
-        Preconditions.checkArgument( entitySet.getEntityTypeId() != null,
-                "Entity Type Id of Entity Set is missing." );
-        Preconditions.checkArgument( checkEntityTypeExists( entitySet.getEntityTypeId() ),
-                "Entity Set Type does not exist." );
-    }
-
     @Override
     public boolean checkPropertyTypesExist( Set<UUID> properties ) {
         return properties.stream().allMatch( propertyTypes::containsKey );

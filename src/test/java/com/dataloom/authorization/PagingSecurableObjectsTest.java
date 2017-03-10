@@ -9,6 +9,8 @@ import java.util.UUID;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.paging.AuthorizedObjectsPagingFactory;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
@@ -17,6 +19,7 @@ import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.collect.ImmutableList;
 
 public class PagingSecurableObjectsTest extends HzAuthzTest {
+    private static final Logger                     logger = LoggerFactory.getLogger( PagingSecurableObjectsTest.class );
 
     // Entity Set acl Keys
     protected static List<UUID>              key1 = ImmutableList.of( UUID.randomUUID() );
@@ -69,6 +72,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
                 null,
                 SMALL_PAGE_SIZE );
 
+        logger.debug( "First page has result: " + result);
         //First page should have 1 result.
         Assert.assertNotNull( result.getPagingToken() );
         Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
@@ -79,6 +83,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
                 AuthorizedObjectsPagingFactory.decode( result.getPagingToken() ),
                 SMALL_PAGE_SIZE );
 
+        logger.debug( "Second page has result: " + result);
         //Second page should have 1 result.
         Assert.assertNotNull( result.getPagingToken() );
         Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
@@ -90,8 +95,19 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
                 AuthorizedObjectsPagingFactory.decode( result.getPagingToken() ),
                 SMALL_PAGE_SIZE );
 
+        logger.debug( "Third page has result: " + result);
         //Third page should have 1 result.
-        Assert.assertNull( result.getPagingToken() );
+        try { 
+            Assert.assertNull( result.getPagingToken() );
+        } catch ( AssertionError e ){
+            result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
+                    SecurableObjectType.EntitySet,
+                    Permission.READ,
+                    AuthorizedObjectsPagingFactory.decode( result.getPagingToken() ),
+                    SMALL_PAGE_SIZE );
+            logger.debug( "Paging token should be null but it is not: next page using the token gives " + result );
+            throw e;
+        }
         Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
 }
 
