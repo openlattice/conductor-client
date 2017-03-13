@@ -19,14 +19,13 @@
 
 package com.dataloom.authentication;
 
-import org.joda.time.Instant;
 import org.springframework.security.core.Authentication;
 
 import com.auth0.authentication.AuthenticationAPIClient;
 import com.auth0.spring.security.api.Auth0JWTToken;
-import com.auth0.spring.security.api.Auth0TokenException;
 import com.auth0.spring.security.api.Auth0UserDetails;
-import com.dataloom.organizations.roles.ExpiringTokenTracker;
+import com.dataloom.organizations.roles.TokenExpirationTracker;
+import com.dataloom.organizations.roles.exceptions.TokenRefreshException;
 
 import digital.loom.rhizome.authentication.ConfigurableAuth0AuthenticationProvider;
 
@@ -35,9 +34,9 @@ public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0Authentica
     public static final String SUBJECT_ATTRIBUTE = "sub";
     public static final String ISSUE_TIME_ATTRIBUTE = "iat";
     
-    private ExpiringTokenTracker tokenTracker;
+    private TokenExpirationTracker tokenTracker;
 
-    public LoomAuth0AuthenticationProvider( AuthenticationAPIClient auth0Client, ExpiringTokenTracker tokenTracker ) {
+    public LoomAuth0AuthenticationProvider( AuthenticationAPIClient auth0Client, TokenExpirationTracker tokenTracker ) {
         super( auth0Client );
         this.tokenTracker = tokenTracker;
     }
@@ -52,13 +51,11 @@ public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0Authentica
         }
         String userId = userIdAsObj.toString();
         
-        Long tokenAcceptTime = tokenTracker.getAcceptanceTime( userId );
-        Long tokenIssueTime = Long.parseLong( details.getAuth0Attribute( LoomAuth0AuthenticationProvider.ISSUE_TIME_ATTRIBUTE ).toString() );
-        
-        if( tokenAcceptTime > tokenIssueTime ){
+        Long tokenIssueTime = Long.parseLong( details.getAuth0Attribute( LoomAuth0AuthenticationProvider.ISSUE_TIME_ATTRIBUTE ).toString() );        
+        if( !tokenTracker.accept( userId, tokenIssueTime ) ){
             jwtToken.setAuthenticated(false);
             //Token is issued before the token acceptance time - should be rejected
-            throw new Auth0TokenException("JWT Token was issued before the current acceptable token issue time. The token must be retrieved from Auth0 again.");
+            throw new TokenRefreshException();
         }
         
         //Successful login should remove user from USERS_NEEDING_NEW_TOKEN set
