@@ -10,6 +10,7 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.Organization;
 import com.dataloom.search.requests.SearchResult;
@@ -103,5 +104,37 @@ public class ElasticsearchLambdas implements Serializable {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .updatePropertyTypesInEntitySet( entitySetId, newPropertyTypes );
     }
+    
+    public static Function<ConductorElasticsearchApi, Boolean> saveEntityTypeToElasticsearch( EntityType entityType ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .saveEntityTypeToElasticsearch( entityType );
+    }
+    
+    public static Function<ConductorElasticsearchApi, Boolean> savePropertyTypeToElasticsearch( PropertyType propertyType ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .savePropertyTypeToElasticsearch( propertyType );
+    }
+    
+    public static Function<ConductorElasticsearchApi, Boolean> deleteEntityType( UUID entityTypeId ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .deleteEntityType( entityTypeId );
+    }
+    
+    public static Function<ConductorElasticsearchApi, Boolean> deletePropertyType( UUID propertyTypeId ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .deletePropertyType( propertyTypeId );
+    }
+    
+    public static Function<ConductorElasticsearchApi, SearchResult> executeEntityTypeSearch( String searchTerm, int start, int maxHits ) {
+        return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
+                .executeEntityTypeSearch( searchTerm, start, maxHits );
+    }
+    
+    public static Function<ConductorElasticsearchApi, SearchResult> executePropertyTypeSearch( String searchTerm, int start, int maxHits ) {
+        return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
+                .executePropertyTypeSearch( searchTerm, start, maxHits );
+    }
+    
+    
 
 }
