@@ -99,14 +99,14 @@ public enum Table implements TableDef {
     LINKING_ENTITY_VERTICES,
     NAMES,
     ORGANIZATIONS,
+    ORGANIZATIONS_ROLES,
     PERMISSIONS,
     PERMISSIONS_REQUESTS_UNRESOLVED,
     PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
     REQUESTS,
     SCHEMAS,
-    WEIGHTED_LINKING_EDGES,
-    ORGANIZATIONS_ROLES;
+    WEIGHTED_LINKING_EDGES;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -264,8 +264,15 @@ public enum Table implements TableDef {
                                 DESCRIPTION,
                                 TRUSTED_ORGANIZATIONS,
                                 ALLOWED_EMAIL_DOMAINS,
-                                MEMBERS,
-                                CommonColumns.ROLES );
+                                MEMBERS );
+            case ORGANIZATIONS_ROLES:
+                return new CassandraTableBuilder( ORGANIZATIONS_ROLES )
+                        .ifNotExists()
+                        .partitionKey( ORGANIZATION_ID )
+                        .clusteringColumns( ID )
+                        .columns( TITLE,
+                                DESCRIPTION,
+                                PRINCIPAL_IDS ); 
             case PROPERTY_TYPES:
                 return new CassandraTableBuilder( PROPERTY_TYPES )
                         .ifNotExists()
@@ -319,14 +326,6 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( NAMESPACE )
                         .columns( NAME_SET );
-            case ORGANIZATIONS_ROLES:
-                return new CassandraTableBuilder( ORGANIZATIONS_ROLES )
-                        .ifNotExists()
-                        .partitionKey( ORGANIZATION_ID )
-                        .clusteringColumns( ID )
-                        .columns( TITLE,
-                                DESCRIPTION,
-                                PRINCIPAL_IDS ); 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

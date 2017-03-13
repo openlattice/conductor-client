@@ -21,7 +21,7 @@ import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMa
 public class RolesMapstore extends AbstractStructuredCassandraMapstore<RoleKey, OrganizationRole> {
 
     public RolesMapstore( Session session ) {
-        super( HazelcastMap.ROLES.name(), session, Table.ORGANIZATIONS_ROLES.getBuilder() );
+        super( HazelcastMap.ORGANIZATIONS_ROLES.name(), session, Table.ORGANIZATIONS_ROLES.getBuilder() );
     }
 
     @Override

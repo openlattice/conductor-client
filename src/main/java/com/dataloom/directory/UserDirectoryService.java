@@ -102,6 +102,13 @@ public class UserDirectoryService {
         setRolesOfUser( userId, roles );
     }
 
+    public void updateRoleOfUser( String userId, String roleToRemove, String roleToAdd ) {
+        Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
+        roles.remove( roleToRemove );
+        roles.add( roleToAdd );
+        setRolesOfUser( userId, roles );
+    }
+
     public void removeAllRolesInOrganizationFromUser( String userId, UUID organizationId ) {
         Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
         for( String role : roles ){

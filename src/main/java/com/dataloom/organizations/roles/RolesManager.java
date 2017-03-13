@@ -15,6 +15,8 @@ public interface RolesManager {
     void updateDescription( RoleKey roleKey, String description );
 
     OrganizationRole getRole( RoleKey roleKey );
+    
+    RoleKey getRoleKey( UUID organizationId, Principal principal );
 
     Iterable<OrganizationRole> getAllRolesInOrganization( UUID organizationId );
 
@@ -31,4 +33,8 @@ public interface RolesManager {
     Iterable<Principal> getAllUsersOfRole( RoleKey roleKey );
 
     Iterable<Auth0UserBasic> getAllUserProfilesOfRole( RoleKey roleKey );
+    
+    // Validation helper methods; throw exception should validation fail.
+    
+    void ensureValidOrganizationRole( OrganizationRole role );
 }
