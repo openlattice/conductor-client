@@ -58,8 +58,6 @@ public class TokenExpirationTracker {
 
     public static long getEpochSecond() {
         // WARNING: This would give wrong results if Auth0 time and server time do not match.
-        // return Instant.now().getMillis() / 1000L;
-        // debug by Ho Chung
-        return Instant.now().getMillis() / 1000L - 135;
+        return Instant.now().getMillis() / 1000L;
     }
 }
