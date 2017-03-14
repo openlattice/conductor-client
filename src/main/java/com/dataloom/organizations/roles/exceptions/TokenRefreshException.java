@@ -20,13 +20,14 @@
 package com.dataloom.organizations.roles.exceptions;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus( HttpStatus.UNAUTHORIZED )
-public class TokenRefreshException extends RuntimeException {
+public class TokenRefreshException extends AuthenticationException {
     private static final long serialVersionUID = 7541262856797158909L;
 
-    private static final String DEFAULT_MESSAGE = "JWT Token was issued before the current acceptable token issue time. The token must be retrieved from Auth0 again.";
+    public static final String DEFAULT_MESSAGE = "JWT Token was issued before the current acceptable token issue time. The token must be retrieved from Auth0 again.";
     
     public TokenRefreshException() {
         super( DEFAULT_MESSAGE );
