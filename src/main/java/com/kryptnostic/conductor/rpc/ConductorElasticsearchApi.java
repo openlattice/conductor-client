@@ -172,6 +172,8 @@ public interface ConductorElasticsearchApi {
 
     SearchResult executePropertyTypeSearch( String searchTerm, int start, int maxHits );
 
+    SearchResult executeFQNEntityTypeSearch( String namespace, String name, int start, int maxHits );
+  
     SearchResult executeFQNPropertyTypeSearch( String namespace, String name, int start, int maxHits );
 
 }
