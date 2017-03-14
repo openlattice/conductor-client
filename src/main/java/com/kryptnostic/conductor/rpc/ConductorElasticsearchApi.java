@@ -104,6 +104,7 @@ public interface ConductorElasticsearchApi {
     final String PROPERTY_TYPES                = "propertyTypes";
     final String ACLS                          = "acls";
     final String NAME                          = "name";
+    final String NAMESPACE                     = "namespace";
     final String TITLE                         = "title";
     final String DESCRIPTION                   = "description";
     final String ENTITY_TYPE_ID                = "entityTypeId";
@@ -158,17 +159,19 @@ public interface ConductorElasticsearchApi {
             int start,
             int maxHits,
             Set<UUID> authorizedPropertyTypes );
-    
+
     Boolean saveEntityTypeToElasticsearch( EntityType entityType );
-    
+
     Boolean savePropertyTypeToElasticsearch( PropertyType propertyType );
-    
+
     Boolean deleteEntityType( UUID entityTypeId );
-    
+
     Boolean deletePropertyType( UUID propertyTypeId );
-    
+
     SearchResult executeEntityTypeSearch( String searchTerm, int start, int maxHits );
-    
+
     SearchResult executePropertyTypeSearch( String searchTerm, int start, int maxHits );
-    
+
+    SearchResult executeFQNPropertyTypeSearch( String namespace, String name, int start, int maxHits );
+
 }
