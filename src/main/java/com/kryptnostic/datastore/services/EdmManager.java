@@ -31,6 +31,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.hazelcast.map.EntryProcessor;
@@ -77,11 +78,20 @@ public interface EdmManager {
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
     
+    @Deprecated
     void renamePropertyType( UUID typeId, FullQualifiedName newFqn );
 
+    @Deprecated
     void renameEntityType( UUID typeId, FullQualifiedName newFqn );
 
+    @Deprecated
     void renameEntitySet( UUID typeId, String newName );
+
+    void updatePropertyTypeMetadata( UUID typeId, MetadataUpdate update );
+
+    void updateEntityTypeMetadata( UUID typeId, MetadataUpdate update );
+
+    void updateEntitySetMetadata( UUID typeId, MetadataUpdate update );
 
     // Helper methods to check existence
     boolean checkPropertyTypesExist( Set<UUID> properties );

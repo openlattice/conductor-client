@@ -40,7 +40,7 @@ public class RenameEntityTypeProcessor extends AbstractRhizomeEntryProcessor<UUI
         EntityType et = entry.getValue();
         
         if ( et != null ) {
-            et.rename( newFqn );
+            et.setType( newFqn );
             entry.setValue( et );
         }
         return null;
