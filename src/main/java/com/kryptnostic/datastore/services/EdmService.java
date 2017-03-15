@@ -499,38 +499,6 @@ public class EdmService implements EdmManager {
                 "Key property types cannot be removed." );
         entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
     }
-
-    @Override
-    @Deprecated
-    public void renameEntityType( UUID entityTypeId, FullQualifiedName newFqn ) {
-        aclKeyReservations.renameReservation( entityTypeId, newFqn );
-        entityTypes.executeOnKey( entityTypeId, new RenameEntityTypeProcessor( newFqn ) );
-    }
-
-    @Override
-    @Deprecated
-    public void renamePropertyType( UUID propertyTypeId, FullQualifiedName newFqn ) {
-        aclKeyReservations.renameReservation( propertyTypeId, newFqn );
-        propertyTypes.executeOnKey( propertyTypeId, new RenamePropertyTypeProcessor( newFqn ) );
-        // get all entity sets containing the property type, and re-index them.
-        entityTypeManager
-                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) )
-                .forEach( et -> {
-                    List<PropertyType> properties = Lists
-                            .newArrayList( propertyTypes.getAll( et.getProperties() ).values() );
-                    entitySetManager.getAllEntitySetsForType( et.getId() )
-                            .forEach( es -> eventBus
-                                    .post( new PropertyTypesInEntitySetUpdatedEvent( es.getId(), properties ) ) );
-                } );
-    }
-
-    @Override
-    @Deprecated
-    public void renameEntitySet( UUID entitySetId, String newName ) {
-        aclKeyReservations.renameReservation( entitySetId, newName );
-        entitySets.executeOnKey( entitySetId, new RenameEntitySetProcessor( newName ) );
-        eventBus.post( new EntitySetMetadataUpdatedEvent( getEntitySet( entitySetId ) ) );
-    }
     
     @Override
     public void updatePropertyTypeMetadata( UUID propertyTypeId, MetadataUpdate update ) {

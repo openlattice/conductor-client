@@ -77,15 +77,6 @@ public interface EdmManager {
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
-    
-    @Deprecated
-    void renamePropertyType( UUID typeId, FullQualifiedName newFqn );
-
-    @Deprecated
-    void renameEntityType( UUID typeId, FullQualifiedName newFqn );
-
-    @Deprecated
-    void renameEntitySet( UUID typeId, String newName );
 
     void updatePropertyTypeMetadata( UUID typeId, MetadataUpdate update );
 
