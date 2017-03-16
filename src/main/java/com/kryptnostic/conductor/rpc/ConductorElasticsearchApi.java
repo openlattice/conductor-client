@@ -160,13 +160,13 @@ public interface ConductorElasticsearchApi {
             int maxHits,
             Set<UUID> authorizedPropertyTypes );
 
-    Boolean saveEntityTypeToElasticsearch( EntityType entityType );
+    boolean saveEntityTypeToElasticsearch( EntityType entityType );
 
-    Boolean savePropertyTypeToElasticsearch( PropertyType propertyType );
+    boolean savePropertyTypeToElasticsearch( PropertyType propertyType );
 
-    Boolean deleteEntityType( UUID entityTypeId );
+    boolean deleteEntityType( UUID entityTypeId );
 
-    Boolean deletePropertyType( UUID propertyTypeId );
+    boolean deletePropertyType( UUID propertyTypeId );
 
     SearchResult executeEntityTypeSearch( String searchTerm, int start, int maxHits );
 
