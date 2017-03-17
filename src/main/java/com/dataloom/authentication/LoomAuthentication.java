@@ -34,6 +34,8 @@ import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class LoomAuthentication implements Authentication {
 
     private static final Logger logger           = LoggerFactory.getLogger( LoomAuthentication.class );
