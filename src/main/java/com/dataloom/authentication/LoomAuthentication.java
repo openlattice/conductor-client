@@ -19,35 +19,35 @@
 
 package com.dataloom.authentication;
 
-import java.util.Collection;
-import java.util.NavigableSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-
 import com.auth0.spring.security.api.Auth0JWTToken;
 import com.auth0.spring.security.api.Auth0UserDetails;
 import com.dataloom.authorization.ForbiddenException;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Collection;
+import java.util.NavigableSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 public class LoomAuthentication implements Authentication {
-    private static final Logger  logger           = LoggerFactory.getLogger( LoomAuthentication.class );
-    private static final long    serialVersionUID = -6853527586490225640L;
-    private final Principal      principal;
+
+    private static final Logger logger           = LoggerFactory.getLogger( LoomAuthentication.class );
+    private static final long   serialVersionUID = -6853527586490225640L;
+
+    private final Principal               principal;
     private final NavigableSet<Principal> principals;
-    private final Auth0JWTToken  jwtToken;
+    private final Auth0JWTToken           jwtToken;
 
     public LoomAuthentication( Authentication authentication ) {
         if ( authentication != null
                 && Auth0JWTToken.class.isAssignableFrom( authentication.getClass() )
                 && authentication.isAuthenticated() ) {
+
             jwtToken = (Auth0JWTToken) authentication;
             Auth0UserDetails details = (Auth0UserDetails) jwtToken.getPrincipal();
             final Collection<? extends GrantedAuthority> authorities = details.getAuthorities();
@@ -123,7 +123,26 @@ public class LoomAuthentication implements Authentication {
 
     @SuppressFBWarnings
     public boolean equals( Object obj ) {
-        return jwtToken.equals( obj );
+
+        if ( obj == null ) {
+            return false;
+        }
+
+        if ( !( obj instanceof LoomAuthentication ) ) {
+            return false;
+        }
+
+        LoomAuthentication test = (LoomAuthentication) obj;
+
+        if ( this.principal == null && test.principal != null ) {
+            return false;
+        }
+
+        if ( this.principal != null && test.principal == null ) {
+            return false;
+        }
+
+        return this.principal != null && this.principal.equals( test.principal );
     }
 
     public int hashCode() {
