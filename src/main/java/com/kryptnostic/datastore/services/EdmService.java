@@ -35,8 +35,6 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +65,7 @@ import com.dataloom.edm.types.processors.RenamePropertyTypeProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
+import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -469,33 +468,76 @@ public class EdmService implements EdmManager {
     @Override
     public void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
-        entityTypes.executeOnKey( entityTypeId, new AddPropertyTypesToEntityTypeProcessor( propertyTypeIds ) );
-        
-        for ( EntitySet entitySet : entitySetManager.getAllEntitySetsForType( entityTypeId ) ) {
-            UUID esId = entitySet.getId();
-            Iterable<Principal> owners = authorizations.getSecurableObjectOwners( Arrays.asList( esId ) );
-            for ( Principal owner : owners ) {
-                propertyTypeIds.stream()
-                        .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
-                        .forEach( aclKey -> {
-                            authorizations.addPermission(
-                                    aclKey,
-                                    owner,
-                                    EnumSet.allOf( Permission.class ) );
-                            authorizations.createEmptyAcl( aclKey,
-                                    SecurableObjectType.PropertyTypeInEntitySet );
-                        } );
+        Stream<UUID> childrenIds = entityTypeManager.getEntityTypeChildrenIdsDeep( entityTypeId );
+        Map<UUID, Boolean> childrenIdsToLocks = childrenIds
+                .collect( Collectors.toMap( Functions.<UUID> identity()::apply, propertyTypes::tryLock ) );
+        childrenIdsToLocks.values().forEach( locked -> {
+            if ( !locked ) {
+                childrenIdsToLocks.entrySet().forEach( entry -> {
+                    if ( entry.getValue() ) propertyTypes.unlock( entry.getKey() );
+                } );
+                throw new IllegalStateException(
+                        "Unable to modify the entity data model right now--please try again." );
             }
-        }
+        } );
+        childrenIdsToLocks.keySet().forEach( id -> {
+            entityTypes.executeOnKey( id, new AddPropertyTypesToEntityTypeProcessor( propertyTypeIds ) );
+
+            for ( EntitySet entitySet : entitySetManager.getAllEntitySetsForType( id ) ) {
+                UUID esId = entitySet.getId();
+                Iterable<Principal> owners = authorizations.getSecurableObjectOwners( Arrays.asList( esId ) );
+                for ( Principal owner : owners ) {
+                    propertyTypeIds.stream()
+                            .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
+                            .forEach( aclKey -> {
+                                authorizations.addPermission(
+                                        aclKey,
+                                        owner,
+                                        EnumSet.allOf( Permission.class ) );
+                                authorizations.createEmptyAcl( aclKey,
+                                        SecurableObjectType.PropertyTypeInEntitySet );
+                            } );
+                }
+            }
+        } );
+        childrenIdsToLocks.entrySet().forEach( entry -> {
+            if ( entry.getValue() ) propertyTypes.unlock( entry.getKey() );
+        } );
     }
 
     @Override
     public void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
-        Preconditions.checkArgument(
-                Sets.intersection( getEntityType( entityTypeId ).getKey(), propertyTypeIds ).isEmpty(),
-                "Key property types cannot be removed." );
-        entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
+        EntityType entityType = getEntityType( entityTypeId );
+        if ( entityType.getBaseType().isPresent() ) {
+            EntityType baseType = getEntityType( entityType.getBaseType().get() );
+            Preconditions.checkArgument( Sets.intersection( propertyTypeIds, baseType.getProperties() ).isEmpty(),
+                    "Inherited property types cannot be removed." );
+        }
+
+        List<UUID> childrenIds = entityTypeManager.getEntityTypeChildrenIdsDeep( entityTypeId )
+                .collect( Collectors.<UUID> toList() );
+        childrenIds.forEach( id -> {
+            Preconditions.checkArgument( Sets.intersection( getEntityType( id ).getKey(), propertyTypeIds ).isEmpty(),
+                    "Key property types cannot be removed." );
+            Preconditions.checkArgument( !entitySetManager.getAllEntitySetsForType( id ).iterator().hasNext(),
+                    "Property types cannot be removed from entity types that have already been associated with an entity set." );
+        } );
+        Map<UUID, Boolean> childrenIdsToLocks = childrenIds.stream()
+                .collect( Collectors.toMap( Functions.<UUID> identity()::apply, propertyTypes::tryLock ) );
+        childrenIdsToLocks.values().forEach( locked -> {
+            if ( !locked ) {
+                childrenIdsToLocks.entrySet().forEach( entry -> {
+                    if ( entry.getValue() ) propertyTypes.unlock( entry.getKey() );
+                } );
+                throw new IllegalStateException(
+                        "Unable to modify the entity data model right now--please try again." );
+            }
+        } );
+        childrenIds.forEach( id -> entityTypes.executeOnKey( id,
+                new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) ) );
+        childrenIds.forEach( propertyTypes::unlock );
+
     }
 
     @Override
