@@ -35,8 +35,6 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +52,7 @@ import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
 import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.CassandraTypeManager;
+import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
@@ -61,9 +60,9 @@ import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
-import com.dataloom.edm.types.processors.RenameEntitySetProcessor;
-import com.dataloom.edm.types.processors.RenameEntityTypeProcessor;
-import com.dataloom.edm.types.processors.RenamePropertyTypeProcessor;
+import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
+import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
+import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
@@ -497,17 +496,13 @@ public class EdmService implements EdmManager {
                 "Key property types cannot be removed." );
         entityTypes.executeOnKey( entityTypeId, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
     }
-
+    
     @Override
-    public void renameEntityType( UUID entityTypeId, FullQualifiedName newFqn ) {
-        aclKeyReservations.renameReservation( entityTypeId, newFqn );
-        entityTypes.executeOnKey( entityTypeId, new RenameEntityTypeProcessor( newFqn ) );
-    }
-
-    @Override
-    public void renamePropertyType( UUID propertyTypeId, FullQualifiedName newFqn ) {
-        aclKeyReservations.renameReservation( propertyTypeId, newFqn );
-        propertyTypes.executeOnKey( propertyTypeId, new RenamePropertyTypeProcessor( newFqn ) );
+    public void updatePropertyTypeMetadata( UUID propertyTypeId, MetadataUpdate update ) {
+        if( update.getType().isPresent() ){
+            aclKeyReservations.renameReservation( propertyTypeId, update.getType().get() );
+        }
+        propertyTypes.executeOnKey( propertyTypeId, new UpdatePropertyTypeMetadataProcessor( update ) );
         // get all entity sets containing the property type, and re-index them.
         entityTypeManager
                 .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) )
@@ -519,14 +514,23 @@ public class EdmService implements EdmManager {
                                     .post( new PropertyTypesInEntitySetUpdatedEvent( es.getId(), properties ) ) );
                 } );
     }
-
+    
     @Override
-    public void renameEntitySet( UUID entitySetId, String newName ) {
-        aclKeyReservations.renameReservation( entitySetId, newName );
-        entitySets.executeOnKey( entitySetId, new RenameEntitySetProcessor( newName ) );
-        eventBus.post( new EntitySetMetadataUpdatedEvent( getEntitySet( entitySetId ) ) );
+    public void updateEntityTypeMetadata( UUID entityTypeId, MetadataUpdate update ) {
+        if( update.getType().isPresent() ){
+            aclKeyReservations.renameReservation( entityTypeId, update.getType().get() );
+        }
+        entityTypes.executeOnKey( entityTypeId, new UpdateEntityTypeMetadataProcessor( update ) );
     }
 
+    @Override
+    public void updateEntitySetMetadata( UUID entitySetId, MetadataUpdate update ) {
+        if( update.getName().isPresent() ){
+            aclKeyReservations.renameReservation( entitySetId, update.getName().get() );
+        }
+        entitySets.executeOnKey( entitySetId, new UpdateEntitySetMetadataProcessor( update ) );
+        eventBus.post( new EntitySetMetadataUpdatedEvent( getEntitySet( entitySetId ) ) );
+    }
     /**************
      * Validation
      **************/
