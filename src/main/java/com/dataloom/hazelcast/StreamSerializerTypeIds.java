@@ -41,6 +41,8 @@ public enum StreamSerializerTypeIds {
     ENTITY_KEY,
     ENTITY_SET,
     ENTITY_TYPE,
+    COMPLEX_TYPE,
+    ENUM_TYPE,
     LINKING_EDGE,
     LINKING_VERTEX,
     LINKING_ENTITY_KEY,
