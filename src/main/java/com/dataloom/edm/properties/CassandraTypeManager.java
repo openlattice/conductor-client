@@ -19,10 +19,13 @@
 
 package com.dataloom.edm.properties;
 
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.spark_project.guava.collect.Sets;
 
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
@@ -33,6 +36,7 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Queues;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
@@ -48,6 +52,7 @@ public class CassandraTypeManager {
 
     private final PreparedStatement getComplexTypeIds;
     private final PreparedStatement getEnumTypeIds;
+    private final PreparedStatement getEntityTypeChildIds;
 
     public CassandraTypeManager( String keyspace, Session session ) {
         this.session = session;
@@ -76,6 +81,11 @@ public class CassandraTypeManager {
         this.getEnumTypeIds = session.prepare(
                 QueryBuilder.select( CommonColumns.ID.cql() ).distinct()
                         .from( keyspace, Table.ENUM_TYPES.getName() ) );
+        this.getEntityTypeChildIds = session.prepare(
+                QueryBuilder.select( CommonColumns.ID.cql() ).from( keyspace, Table.ENTITY_TYPES.getName() )
+                        .allowFiltering().where(
+                                QueryBuilder.eq( CommonColumns.BASE_TYPE.cql(),
+                                        CommonColumns.BASE_TYPE.bindMarker() ) ) );
 
     }
 
@@ -125,6 +135,25 @@ public class CassandraTypeManager {
     private ResultSetFuture getEntityTypesContainingPropertyType( UUID propertyId ) {
         return session.executeAsync(
                 entityTypesContainPropertyType.bind().setUUID( CommonColumns.PROPERTIES.cql(), propertyId ) );
+    }
+
+    private Iterable<UUID> getEntityTypeChildrenIds( UUID entityTypeId ) {
+        return Iterables.transform(
+                session.execute(
+                        getEntityTypeChildIds.bind().setUUID( CommonColumns.BASE_TYPE.cql(), entityTypeId ) ),
+                RowAdapters::id );
+    }
+
+    public Stream<UUID> getEntityTypeChildrenIdsDeep( UUID entityTypeId ) {
+        Set<UUID> children = Sets.newHashSet();
+        Queue<UUID> idsToLoad = Queues.newArrayDeque();
+        idsToLoad.add( entityTypeId );
+        while ( !idsToLoad.isEmpty() ) {
+            UUID id = idsToLoad.poll();
+            getEntityTypeChildrenIds( id ).forEach( childId -> idsToLoad.add( childId ) );
+            children.add( id );
+        }
+        return StreamUtil.stream( children );
     }
 
 }
