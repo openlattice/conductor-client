@@ -75,6 +75,14 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
         return RowAdapters.entityType( row );
     }
 
+    /**
+     * If an entity type is being put with the same uuid, the entire value should be replaced.
+     */
+    @Override
+    public void store( UUID key, EntityType value ) {
+        replace( key, value );
+    }
+
     @Override
     public UUID generateTestKey() {
         return UUID.randomUUID();
@@ -84,6 +92,5 @@ public class EntityTypeMapstore extends AbstractStructuredCassandraPartitionKeyV
     public EntityType generateTestValue() {
         return TestDataFactory.entityType();
     }
-
 
 }
