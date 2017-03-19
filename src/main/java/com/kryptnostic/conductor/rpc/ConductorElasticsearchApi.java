@@ -100,9 +100,9 @@ public interface ConductorElasticsearchApi {
     final String ENTITY_TYPE_ID                = "entityTypeId";
     final String ID                            = "id";
 
-    Boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
+    boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 
-    Boolean deleteEntitySet( UUID entitySetId );
+    boolean deleteEntitySet( UUID entitySetId );
 
     SearchResult executeEntitySetMetadataSearch(
             Optional<String> optionalSearchTerm,
@@ -112,23 +112,23 @@ public interface ConductorElasticsearchApi {
             int start,
             int maxHits );
 
-    Boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
+    boolean updateEntitySetPermissions( UUID entitySetId, Principal principal, Set<Permission> permissions );
 
-    Boolean updateEntitySetMetadata( EntitySet entitySet );
+    boolean updateEntitySetMetadata( EntitySet entitySet );
 
-    Boolean updatePropertyTypesInEntitySet( UUID entitySetId, List<PropertyType> newPropertyTypes );
+    boolean updatePropertyTypesInEntitySet( UUID entitySetId, List<PropertyType> newPropertyTypes );
 
-    Boolean createOrganization( Organization organization, Principal principal );
+    boolean createOrganization( Organization organization, Principal principal );
 
-    Boolean updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions );
+    boolean updateOrganizationPermissions( UUID organizationId, Principal principal, Set<Permission> permissions );
 
-    Boolean deleteOrganization( UUID organizationId );
+    boolean deleteOrganization( UUID organizationId );
 
     SearchResult executeOrganizationSearch( String searchTerm, Set<Principal> principals, int start, int maxHits );
 
-    Boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
+    boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
 
-    Boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues );
+    boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues );
 
     SearchResult executeEntitySetDataSearch(
             UUID entitySetId,
