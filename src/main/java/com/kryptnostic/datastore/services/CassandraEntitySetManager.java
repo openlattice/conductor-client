@@ -43,8 +43,6 @@ public class CassandraEntitySetManager {
     private final AuthorizationManager authorizations;
 
     private final PreparedStatement    getEntities;
-    private final PreparedStatement    assignEntity;
-    private final PreparedStatement    evictEntity;
     private final PreparedStatement    getEntitySetsByType;
     private final PreparedStatement    getEntitySet;
     private final Select               getAllEntitySets;
@@ -66,26 +64,10 @@ public class CassandraEntitySetManager {
 
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Table.ENTITY_SETS.getName() );
         this.getEntities = session
-                .prepare( QueryBuilder.select().all()
-                        .from( keyspace, Table.ENTITY_ID_LOOKUP.getName() )
+                .prepare( QueryBuilder.select().distinct()
+                        .from( keyspace, Table.DATA.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
-                                CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
-        this.assignEntity = session.prepare(
-                QueryBuilder
-                        .insertInto( keyspace, Table.ENTITY_ID_LOOKUP.getName() )
-                        .value( CommonColumns.ENTITY_SET_ID.cql(),
-                                CommonColumns.ENTITY_SET_ID.bindMarker() )
-                        .value( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() )
-                        .value( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) );
-        this.evictEntity = session.prepare(
-                QueryBuilder
-                        .delete().all()
-                        .from( keyspace, Table.ENTITY_ID_LOOKUP.getName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
-                                CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) ) );
+                                CommonColumns.ENTITY_SET_ID.bindMarker() ) ) );
     }
 
     public EntitySet getEntitySet( String entitySetName ) {
@@ -93,29 +75,17 @@ public class CassandraEntitySetManager {
         return row == null ? null : RowAdapters.entitySet( row );
     }
 
-    public Iterable<String> getEntitiesInEntitySet( UUID syncId, String entitySetName ) {
+    /**
+     * This method retrieve all entities (that may have been historical) in an entity set
+     * @param entitySetName
+     * @return
+     */
+    public Iterable<String> getEntitiesInEntitySet( String entitySetName ) {
         ResultSet rs = session
                 .execute( getEntities.bind()
-                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
                         .setUUID( CommonColumns.ENTITY_SET_ID.cql(),
                                 getEntitySet( entitySetName ).getId() ) );
         return Iterables.transform( rs, row -> row.getString( CommonColumns.ENTITYID.cql() ) );
-    }
-
-    public void assignEntityToEntitySet( UUID syncId, String entityId, String entitySetName ) {
-        session.execute(
-                assignEntity.bind()
-                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
-                        .setString( CommonColumns.ENTITYID.cql(), entityId )
-                        .setString( CommonColumns.ENTITY_SET_ID.cql(), entitySetName ) );
-    }
-
-    public void evictEntityFromEntitySet( UUID syncId, String entityId, String entitySetName ) {
-        session.execute(
-                evictEntity.bind()
-                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
-                        .setString( CommonColumns.ENTITYID.cql(), entityId )
-                        .setString( CommonColumns.ENTITY_SET_ID.cql(), entitySetName ) );
     }
 
     public Iterable<EntitySet> getAllEntitySetsForType( UUID typeId ) {

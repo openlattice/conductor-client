@@ -240,16 +240,6 @@ public class EdmService implements EdmManager {
         eventBus.post( new EntitySetDeletedEvent( entitySetId ) );
     }
 
-    @Override
-    public void assignEntityToEntitySet( UUID syncId, String entityId, String name ) {
-        entitySetManager.assignEntityToEntitySet( syncId, entityId, name );
-    }
-
-    @Override
-    public void assignEntityToEntitySet( UUID syncId, String entityId, EntitySet es ) {
-        assignEntityToEntitySet( syncId, entityId, es.getName() );
-    }
-
     private void createEntitySet( EntitySet entitySet ) {
         aclKeyReservations.reserveIdAndValidateType( entitySet );
 

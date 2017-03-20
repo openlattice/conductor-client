@@ -61,10 +61,6 @@ public interface EdmManager {
 
     void createEntityType( EntityType objectType );
 
-    void assignEntityToEntitySet( UUID syncId, String entityId, String name );
-
-    void assignEntityToEntitySet( UUID syncId, String entityId, EntitySet es );
-
     EntityType getEntityType( String namespace, String name );
 
     Iterable<EntityType> getEntityTypes();
