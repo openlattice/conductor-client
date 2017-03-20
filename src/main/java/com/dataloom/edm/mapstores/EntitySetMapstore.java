@@ -22,6 +22,7 @@ package com.dataloom.edm.mapstores;
 import java.util.UUID;
 
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
@@ -68,6 +69,14 @@ public class EntitySetMapstore extends AbstractStructuredCassandraPartitionKeyVa
             return null;
         }
         return RowAdapters.entitySet( row );
+    }
+
+    /**
+     * If an entity set is being put with the same uuid, the entire value should be replaced.
+     */
+    @Override
+    public void store( UUID key, EntitySet value ) {
+        replace( key, value );
     }
 
     @Override

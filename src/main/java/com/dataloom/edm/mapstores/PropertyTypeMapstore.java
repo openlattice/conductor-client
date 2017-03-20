@@ -21,7 +21,6 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import com.kryptnostic.datastore.cassandra.RowAdapters;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -33,9 +32,9 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
@@ -76,6 +75,14 @@ public class PropertyTypeMapstore extends AbstractStructuredCassandraPartitionKe
             return null;
         }
         return RowAdapters.propertyType( row );
+    }
+
+    /**
+     * If a property type is being put with the same uuid, the entire value should be replaced.
+     */
+    @Override
+    public void store( UUID key, PropertyType value ) {
+        replace( key, value );
     }
 
     @Override
