@@ -57,7 +57,8 @@ public enum Table implements TableDef {
     REQUESTS,
     RPC_DATA_ORDERED,
     SCHEMAS,
-    WEIGHTED_LINKING_EDGES
+    WEIGHTED_LINKING_EDGES,
+    LINKING_TYPES
     ;
 
     private static final Logger                                logger   = LoggerFactory
@@ -203,6 +204,18 @@ public enum Table implements TableDef {
                         .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( VERTEX_ID );
+            case LINKING_TYPES:
+                return new CassandraTableBuilder( LINKING_TYPES )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .clusteringColumns( NAMESPACE, NAME )
+                        .columns( TITLE,
+                                DESCRIPTION,
+                                CommonColumns.SCHEMAS,
+                                SRC,
+                                DEST,
+                                BIDIRECTIONAL )
+                        .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
                         .ifNotExists()

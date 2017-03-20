@@ -27,6 +27,7 @@ import java.util.UUID;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.LinkingType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.linking.Entity;
 import com.dataloom.organization.Organization;
@@ -83,6 +84,9 @@ public interface ConductorElasticsearchApi {
     final String ORGANIZATION_TYPE             = "organizationType";
     final String ORGANIZATION_ID               = "organizationId";
 
+    final String LINKING_TYPE_INDEX            = "linking_type_index";
+    final String LINKING_TYPE                  = "linkingType";
+
     final String SECURABLE_OBJECT_INDEX_PREFIX = "securable_object_";
     final String SECURABLE_OBJECT_TYPE_PREFIX  = "type_";
     final String ACL_KEY                       = "aclKey";
@@ -95,10 +99,14 @@ public interface ConductorElasticsearchApi {
     final String PROPERTY_TYPES                = "propertyTypes";
     final String ACLS                          = "acls";
     final String NAME                          = "name";
+    final String NAMESPACE                     = "namespace";
     final String TITLE                         = "title";
     final String DESCRIPTION                   = "description";
     final String ENTITY_TYPE_ID                = "entityTypeId";
     final String ID                            = "id";
+    final String SRC                           = "src";
+    final String DEST                          = "dest";
+    final String BIDIRECTIONAL                 = "bidirectional";
 
     boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 
@@ -149,5 +157,17 @@ public interface ConductorElasticsearchApi {
             int start,
             int maxHits,
             Set<UUID> authorizedPropertyTypes );
+
+    boolean saveLinkingTypeToElasticsearch( LinkingType linkingType );
+
+    boolean deleteLinkingType( UUID linkingTypeId );
+
+    SearchResult executeLinkingTypeSearch(
+            Optional<String> optionalSearchTerm,
+            Optional<UUID> optionalProperty,
+            Optional<UUID> optionalSrcId,
+            Optional<UUID> optionalDestId,
+            int start,
+            int maxHits );
 
 }

@@ -208,6 +208,18 @@ public final class RowAdapters {
         Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
         return new ComplexType( id, type, title, description, schemas, properties, baseType );
     }
+    
+    public static LinkingType linkingType( Row row ) {
+        UUID id = id( row );
+        FullQualifiedName type = splitFqn( row );
+        String title = title( row );
+        Optional<String> description = description( row );
+        Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
+        UUID src = src( row );
+        UUID dest = dest( row );
+        boolean bidirectional = bidirectional( row );
+        return new LinkingType( id, type, title, description, schemas, src, dest, bidirectional );
+    }
 
     public static FullQualifiedName splitFqn( Row row ) {
         String namespace = row.getString( CommonColumns.NAMESPACE.cql() );
@@ -284,7 +296,19 @@ public final class RowAdapters {
     public static Optional<Boolean> pii( Row row ) {
         return Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) );
     }
-
+    
+    public static UUID src( Row row ) {
+        return row.getUUID( CommonColumns.SRC.cql() );
+    }
+    
+    public static UUID dest( Row row ) {
+        return row.getUUID( CommonColumns.DEST.cql() );
+    }
+    
+    public static boolean bidirectional( Row row ) {
+        return row.getBool( CommonColumns.BIDIRECTIONAL.cql() );
+    }
+    
     private static boolean flags( Row row ) {
         return row.getBool( CommonColumns.FLAGS.cql() );
     }

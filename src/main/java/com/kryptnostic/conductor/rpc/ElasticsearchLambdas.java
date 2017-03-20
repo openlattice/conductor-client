@@ -10,6 +10,7 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.LinkingType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.Organization;
 import com.dataloom.search.requests.SearchResult;
@@ -102,6 +103,32 @@ public class ElasticsearchLambdas implements Serializable {
             List<PropertyType> newPropertyTypes ) {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .updatePropertyTypesInEntitySet( entitySetId, newPropertyTypes );
+    }
+
+    public static Function<ConductorElasticsearchApi, Boolean> createLinkingType( LinkingType linkingType ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .saveLinkingTypeToElasticsearch( linkingType );
+    }
+
+    public static Function<ConductorElasticsearchApi, Boolean> deleteLinkingType( UUID linkingTypeId ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .deleteLinkingType( linkingTypeId );
+    }
+
+    public static Function<ConductorElasticsearchApi, SearchResult> executeLinkingTypeSearch(
+            Optional<String> optionalSearchTerm,
+            Optional<UUID> optionalProperty,
+            Optional<UUID> optionalSrcId,
+            Optional<UUID> optionalDestId,
+            int start,
+            int maxHits ) {
+        return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
+                .executeLinkingTypeSearch( optionalSearchTerm,
+                        optionalProperty,
+                        optionalSrcId,
+                        optionalDestId,
+                        start,
+                        maxHits );
     }
 
 }

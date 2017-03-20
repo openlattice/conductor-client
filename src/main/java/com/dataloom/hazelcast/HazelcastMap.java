@@ -54,7 +54,8 @@ public enum HazelcastMap {
     ENTITY_SET_PROPERTIES_TICKETS( null ),
     REQUESTS( Table.REQUESTS ),
     SECURABLE_OBJECT_TYPES( Table.PERMISSIONS ),
-    RPC_DATA_ORDERED( Table.RPC_DATA_ORDERED );
+    RPC_DATA_ORDERED( Table.RPC_DATA_ORDERED ),
+    LINKING_TYPES( Table.LINKING_TYPES );
 
     private final Table table;
 

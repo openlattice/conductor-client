@@ -27,6 +27,8 @@ import java.util.stream.Stream;
 
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.LinkingType;
+
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.Principal;
@@ -69,11 +71,11 @@ public interface EdmManager {
     EntityType getEntityType( String namespace, String name );
 
     Iterable<EntityType> getEntityTypes();
-
+    
     void deleteEntityType( UUID entityTypeId );
 
     EntityType getEntityType( UUID entityTypeId );
-
+    
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
@@ -142,4 +144,13 @@ public interface EdmManager {
     Set<EntityType> getEntityTypeHierarchy( UUID entityTypeId );
 
     Set<ComplexType> getComplexTypeHierarchy( UUID complexTypeId );
+    
+    void createLinkingType( LinkingType linkingType);
+    
+    LinkingType getLinkingType( UUID linkingTypeId );
+    
+    Iterable<LinkingType> getLinkingTypes();
+    
+    void deleteLinkingType( UUID linkingTypeId );    
+    
 }
