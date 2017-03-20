@@ -110,7 +110,8 @@ public enum Table implements TableDef {
                         .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
                         .columns( SYNCID )
-                        .sasi( SYNCID, ENTITY_SET_ID );
+                        .sasi( SYNCID )
+                        .secondaryIndex( ENTITY_SET_ID );
             case ENTITY_EDGES:
                 /*
                  * The sync id is for the edge. The entity containing data for that edge is managed independently.
