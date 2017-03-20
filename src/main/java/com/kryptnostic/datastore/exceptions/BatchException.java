@@ -25,7 +25,7 @@ import org.springframework.http.HttpStatus;
 
 import com.dataloom.exceptions.ErrorDTO;
 import com.dataloom.exceptions.ErrorsDTO;
-import com.dataloom.exceptions.LoomException;
+import com.dataloom.exceptions.LoomExceptions;
 
 public class BatchException extends RuntimeException {
     private static final long serialVersionUID = 7632884063119454460L;
@@ -54,7 +54,7 @@ public class BatchException extends RuntimeException {
         return errors;
     }
 
-    public void addError( LoomException error, String message ) {
+    public void addError( LoomExceptions error, String message ) {
         errors.addError( error, message );
     }
 
