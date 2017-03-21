@@ -18,6 +18,8 @@ public interface RolesManager {
     
     RoleKey getRoleKey( UUID organizationId, Principal principal );
 
+    RoleKey getRoleKey( Principal principal );
+
     Iterable<OrganizationRole> getAllRolesInOrganization( UUID organizationId );
 
     void deleteRole( RoleKey roleKey );
