@@ -7,8 +7,11 @@ import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.type.PropertyType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class UpdatePropertyTypeMetadataProcessor extends AbstractRhizomeEntryProcessor<UUID, PropertyType, Object> {
     private static final long serialVersionUID = -1970049507051915211L;
+    @SuppressFBWarnings(value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented")
     private final MetadataUpdate update;
 
     public UpdatePropertyTypeMetadataProcessor( MetadataUpdate update ) {
