@@ -146,8 +146,8 @@ public interface EdmManager {
     
     UUID createEdgeType( EdgeType edgeType, UUID entityTypeId );
     
-    EdgeType getEdgeType( UUID linkingTypeId );
+    EdgeType getEdgeType( UUID edgeTypeId );
         
-    void deleteEdgeType( UUID linkingTypeId );
+    void deleteEdgeType( UUID edgeTypeId );
         
 }
