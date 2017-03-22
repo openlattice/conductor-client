@@ -7,8 +7,11 @@ import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.type.EntityType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class UpdateEntityTypeMetadataProcessor extends AbstractRhizomeEntryProcessor<UUID, EntityType, Object> {
     private static final long    serialVersionUID = 5283397691478851914L;
+    @SuppressFBWarnings(value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented")
     private final MetadataUpdate update;
 
     public UpdateEntityTypeMetadataProcessor( MetadataUpdate update ) {
@@ -35,6 +38,26 @@ public class UpdateEntityTypeMetadataProcessor extends AbstractRhizomeEntryProce
 
     public MetadataUpdate getUpdate() {
         return update;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ( ( update == null ) ? 0 : update.hashCode() );
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj ) {
+        if ( this == obj ) return true;
+        if ( obj == null ) return false;
+        if ( getClass() != obj.getClass() ) return false;
+        UpdateEntityTypeMetadataProcessor other = (UpdateEntityTypeMetadataProcessor) obj;
+        if ( update == null ) {
+            if ( other.update != null ) return false;
+        } else if ( !update.equals( other.update ) ) return false;
+        return true;
     }
 
 }
