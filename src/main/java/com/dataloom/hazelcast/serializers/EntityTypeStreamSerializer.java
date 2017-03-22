@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.stereotype.Component;
 
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
@@ -62,6 +63,7 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
         if ( present ) {
             UUIDStreamSerializer.serialize( out, baseType.get() );
         }
+        out.writeUTF( object.getCategory().toString() );
     }
 
     @Override
@@ -83,8 +85,9 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
         } else {
             baseType = Optional.absent();
         }
+        SecurableObjectType category = SecurableObjectType.valueOf( in.readUTF() );
 
-        return new EntityType( id, type, title, description, schemas, keys, properties, baseType );
+        return new EntityType( id, type, title, description, schemas, keys, properties, baseType, category );
     }
 
     @Override

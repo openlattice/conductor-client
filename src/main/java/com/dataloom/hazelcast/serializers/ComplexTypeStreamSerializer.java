@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.stereotype.Component;
 
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
@@ -32,6 +33,7 @@ public class ComplexTypeStreamSerializer implements SelfRegisteringStreamSeriali
                 object.getProperties(),
                 UUIDStreamSerializer::serialize );
         OptionalStreamSerializers.serialize( out, object.getBaseType(), UUIDStreamSerializer::serialize );
+        out.writeUTF( object.getCategory().toString() );
     }
 
     @Override
@@ -44,8 +46,8 @@ public class ComplexTypeStreamSerializer implements SelfRegisteringStreamSeriali
         LinkedHashSet<UUID> properties = SetStreamSerializers.orderedDeserialize( in,
                 UUIDStreamSerializer::deserialize );
         Optional<UUID> baseType = OptionalStreamSerializers.deserialize( in, UUIDStreamSerializer::deserialize );
-
-        return new ComplexType( id, type, title, description, schemas, properties, baseType );
+        SecurableObjectType category = SecurableObjectType.valueOf( in.readUTF() );
+        return new ComplexType( id, type, title, description, schemas, properties, baseType, category );
     }
 
     @Override

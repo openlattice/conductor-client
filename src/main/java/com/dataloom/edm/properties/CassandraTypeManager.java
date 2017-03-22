@@ -28,7 +28,6 @@ import java.util.stream.Stream;
 import org.spark_project.guava.collect.Sets;
 
 import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.LinkingType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.PreparedStatement;
@@ -54,7 +53,6 @@ public class CassandraTypeManager {
     private final PreparedStatement getComplexTypeIds;
     private final PreparedStatement getEnumTypeIds;
     private final PreparedStatement getEntityTypeChildIds;
-    private final Select            getLinkingTypes;
 
     public CassandraTypeManager( String keyspace, Session session ) {
         this.session = session;
@@ -88,8 +86,6 @@ public class CassandraTypeManager {
                         .allowFiltering().where(
                                 QueryBuilder.eq( CommonColumns.BASE_TYPE.cql(),
                                         CommonColumns.BASE_TYPE.bindMarker() ) ) );
-
-        this.getLinkingTypes = QueryBuilder.select().all().from( keyspace, Table.LINKING_TYPES.getName() );
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
@@ -125,10 +121,6 @@ public class CassandraTypeManager {
         return StreamUtil.stream( session.execute( getEnumTypeIds.bind() ) ).map( RowAdapters::id );
     }
 
-    public Iterable<LinkingType> getLinkingTypes() {
-        return Iterables.transform( session.execute( getLinkingTypes ), RowAdapters::linkingType );
-    }
-
     public Set<EntityType> getEntityTypesContainingPropertyTypes( Set<UUID> properties ) {
         return getEntityTypesContainingPropertyTypesAsStream( properties )
                 .collect( Collectors.toSet() );
@@ -162,5 +154,5 @@ public class CassandraTypeManager {
         }
         return StreamUtil.stream( children );
     }
-
+    
 }

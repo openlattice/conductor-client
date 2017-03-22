@@ -49,17 +49,15 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
-import com.dataloom.edm.events.LinkingTypeCreatedEvent;
-import com.dataloom.edm.events.LinkingTypeDeletedEvent;
 import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.LinkingType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
@@ -93,7 +91,7 @@ public class EdmService implements EdmManager {
     private final IMap<UUID, EntitySet>             entitySets;
     private final IMap<String, UUID>                aclKeys;
     private final IMap<UUID, String>                names;
-    private final IMap<UUID, LinkingType>           linkingTypes;
+    private final IMap<UUID, EdgeType>              edgeTypes;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -125,7 +123,7 @@ public class EdmService implements EdmManager {
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
         this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
-        this.linkingTypes = hazelcastInstance.getMap( HazelcastMap.LINKING_TYPES.name() );
+        this.edgeTypes = hazelcastInstance.getMap( HazelcastMap.EDGE_TYPES.name() );
         this.aclKeyReservations = aclKeyReservations;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
@@ -678,41 +676,27 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void createLinkingType( LinkingType linkingType ) {
-        aclKeyReservations.reserveIdAndValidateType( linkingType );
-
-        /*
-         * Create property type if it doesn't exist. The reserveAclKeyAndValidateType call should ensure that
-         */
-
-        final LinkingType existing = linkingTypes.putIfAbsent( linkingType.getId(), linkingType );
+    public UUID createEdgeType( EdgeType edgeType, UUID entityTypeId ) {
+        final EdgeType existing = edgeTypes.putIfAbsent( entityTypeId, edgeType );
 
         if ( existing != null ) {
             logger.error(
                     "Inconsistency encountered in database. Verify that existing linking types have all their acl keys reserved." );
-        } else {
-            eventBus.post( new LinkingTypeCreatedEvent( linkingType ) );
         }
+        return entityTypeId;
     }
 
     @Override
-    public LinkingType getLinkingType( UUID linkingTypeId ) {
+    public EdgeType getEdgeType( UUID edgeTypeId ) {
         return Preconditions.checkNotNull(
-                Util.getSafely( linkingTypes, linkingTypeId ),
+                Util.getSafely( edgeTypes, edgeTypeId ),
                 "Linking type of id %s does not exist.",
-                linkingTypeId.toString() );
+                edgeTypeId.toString() );
     }
 
     @Override
-    public Iterable<LinkingType> getLinkingTypes() {
-        return entityTypeManager.getLinkingTypes();
-    }
-
-    @Override
-    public void deleteLinkingType( UUID linkingTypeId ) {
-        linkingTypes.delete( linkingTypeId );
-        aclKeyReservations.release( linkingTypeId );
-        eventBus.post( new LinkingTypeDeletedEvent( linkingTypeId ) );
+    public void deleteEdgeType( UUID edgeTypeId ) {
+        edgeTypes.delete( edgeTypeId );
     }
 
 }

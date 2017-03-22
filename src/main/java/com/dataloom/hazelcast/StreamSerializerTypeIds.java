@@ -86,5 +86,5 @@ public enum StreamSerializerTypeIds {
     ENTITY,
     SEARCH_RESULT,
     CONDUCTOR_ELASTICSEARCH_CALL,
-    LINKING_TYPE
+    EDGE_TYPE
 }
