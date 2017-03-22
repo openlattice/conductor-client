@@ -681,7 +681,7 @@ public class EdmService implements EdmManager {
 
         if ( existing != null ) {
             logger.error(
-                    "Inconsistency encountered in database. Verify that existing linking types have all their acl keys reserved." );
+                    "Inconsistency encountered in database. Verify that existing edge types have all their acl keys reserved." );
         }
         return entityTypeId;
     }
@@ -690,7 +690,7 @@ public class EdmService implements EdmManager {
     public EdgeType getEdgeType( UUID edgeTypeId ) {
         return Preconditions.checkNotNull(
                 Util.getSafely( edgeTypes, edgeTypeId ),
-                "Linking type of id %s does not exist.",
+                "Edge type of id %s does not exist.",
                 edgeTypeId.toString() );
     }
 
