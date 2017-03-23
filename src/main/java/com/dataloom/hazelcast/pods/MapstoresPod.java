@@ -212,16 +212,6 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, PrincipalSet> organizationsRolesMapstore() {
-        return new RoleSetMapstore(
-                HazelcastMap.ORGANIZATIONS_ROLES,
-                session,
-                Table.ORGANIZATIONS,
-                CommonColumns.ID,
-                CommonColumns.ROLES );
-    }
-
-    @Bean
     public SelfRegisteringMapStore<UUID, PrincipalSet> membersMapstore() {
         return new UserSetMapstore(
                 HazelcastMap.ORGANIZATIONS_MEMBERS,
