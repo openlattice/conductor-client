@@ -31,12 +31,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.dataloom.authentication.LoomAuthentication;
+import com.dataloom.organizations.roles.TokenExpirationTracker;
+import com.dataloom.organizations.roles.exceptions.TokenRefreshException;
 
 public final class Principals {
     private static final Logger logger            = LoggerFactory.getLogger( Principals.class );
 
+    private static TokenExpirationTracker tokenTracker;
+    
     private Principals() {}
 
+    public static void setExpiringTokenTracker( TokenExpirationTracker tokenTracker ){
+        logger.info( "Expiring Token Tracker hooked up to Principals" );
+        Principals.tokenTracker = tokenTracker;
+    }
+    
     public static void ensureUser( Principal principal ) {
         checkState( principal.getType().equals( PrincipalType.USER ), "Only user principal type allowed." );
     }
@@ -56,7 +65,10 @@ public final class Principals {
     }
     
     public static LoomAuthentication getLoomAuthentication() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        LoomAuthentication auth = (LoomAuthentication) SecurityContextHolder.getContext().getAuthentication();
+        if( tokenTracker.needsNewToken( auth.getLoomPrincipal().getId() ) ){
+            throw new TokenRefreshException();
+        }
         return ( (LoomAuthentication) auth );
     }
 

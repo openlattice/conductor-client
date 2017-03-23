@@ -23,8 +23,9 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 
-import com.kryptnostic.datastore.util.ErrorDTO;
-import com.kryptnostic.datastore.util.ErrorsDTO;
+import com.dataloom.exceptions.ErrorDTO;
+import com.dataloom.exceptions.ErrorsDTO;
+import com.dataloom.exceptions.LoomExceptions;
 
 public class BatchException extends RuntimeException {
     private static final long serialVersionUID = 7632884063119454460L;
@@ -53,8 +54,8 @@ public class BatchException extends RuntimeException {
         return errors;
     }
 
-    public void addError( String type, String message ) {
-        errors.addError( type, message );
+    public void addError( LoomExceptions error, String message ) {
+        errors.addError( error, message );
     }
 
     public void setErrors( ErrorsDTO errors ) {
