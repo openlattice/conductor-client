@@ -28,12 +28,14 @@ import com.dataloom.organizations.roles.TokenExpirationTracker;
 import com.dataloom.organizations.roles.exceptions.TokenRefreshException;
 
 import digital.loom.rhizome.authentication.ConfigurableAuth0AuthenticationProvider;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0AuthenticationProvider {
     public static final String USER_ID_ATTRIBUTE = "user_id";
     public static final String SUBJECT_ATTRIBUTE = "sub";
     public static final String ISSUE_TIME_ATTRIBUTE = "iat";
     
+    @SuppressFBWarnings(value = "URF_UNREAD_FIELD", justification = "Temporarily turn off manual token expiration")
     private TokenExpirationTracker tokenTracker;
 
     public LoomAuth0AuthenticationProvider( AuthenticationAPIClient auth0Client, TokenExpirationTracker tokenTracker ) {
