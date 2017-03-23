@@ -85,7 +85,7 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
         } else {
             baseType = Optional.absent();
         }
-        SecurableObjectType category = SecurableObjectType.valueOf( in.readUTF() );
+        Optional<SecurableObjectType> category = Optional.of( SecurableObjectType.valueOf( in.readUTF() ) );
 
         return new EntityType( id, type, title, description, schemas, keys, properties, baseType, category );
     }

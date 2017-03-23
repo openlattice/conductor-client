@@ -192,7 +192,7 @@ public class HazelcastAclKeyReservationService {
     }
 
     /**
-     * This function reserves an {@code AclKey} for a SecurableObject. It throws unchecked exceptions
+     * This function reserves an id for a SecurableObject. It throws unchecked exceptions
      * {@link TypeExistsException} if the type already exists or {@link AclKeyConflictException} if a different AclKey
      * is already associated with the type.
      * 
