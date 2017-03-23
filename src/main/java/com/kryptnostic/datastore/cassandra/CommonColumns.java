@@ -37,9 +37,11 @@ public enum CommonColumns implements ColumnDef {
     ALLOWED_EMAIL_DOMAINS( DataType.set( DataType.text() ) ),
     AUDIT_EVENT_DETAILS( DataType.text() ),
     AUDIT_EVENT_TYPE( DataType.text() ),
+    BIDIRECTIONAL( DataType.cboolean() ),
     CLOCK( DataType.timestamp() ),
     DATATYPE( DataType.text() ),
     DESCRIPTION( DataType.text() ),
+    DEST( DataType.set( DataType.uuid() ) ),
     ENTITYID( DataType.text() ),
     ENTITY_SET( DataType.text() ),
     ENTITY_SET_ID( DataType.uuid() ),
@@ -81,6 +83,7 @@ public enum CommonColumns implements ColumnDef {
     REQUESTID( DataType.uuid() ),
     SECURABLE_OBJECT_TYPE( DataType.text() ),
     SECURABLE_OBJECTID( DataType.uuid() ),
+    SRC( DataType.set( DataType.uuid() ) ),
     STATUS( DataType.text() ),
     TIME_ID( DataType.uuid() ),
     TYPE_ID( DataType.uuid() ),
@@ -105,7 +108,9 @@ public enum CommonColumns implements ColumnDef {
     ANALYZER( DataType.text() ),
     CONTACTS( DataType.set( DataType.text() ) ),
     REASON( DataType.text() ),
-    BASE_TYPE( DataType.uuid() ), FLAGS( DataType.cboolean() );
+    BASE_TYPE( DataType.uuid() ),
+    FLAGS( DataType.cboolean() ),
+    CATEGORY( DataType.text() );
 
     private transient final DataType type;
 

@@ -86,6 +86,7 @@ public enum StreamSerializerTypeIds {
     ENTITY,
     SEARCH_RESULT,
     CONDUCTOR_ELASTICSEARCH_CALL,
+    EDGE_TYPE,
     ROLE_KEY,
     ORGANIZATION_ROLE,
     ROLE_TITLE_UPDATER,

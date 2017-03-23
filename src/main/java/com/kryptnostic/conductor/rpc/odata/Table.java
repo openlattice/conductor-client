@@ -106,7 +106,8 @@ public enum Table implements TableDef {
     REQUESTS,
     RPC_DATA_ORDERED,
     SCHEMAS,
-    WEIGHTED_LINKING_EDGES;
+    WEIGHTED_LINKING_EDGES,
+    EDGE_TYPES;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -151,7 +152,8 @@ public enum Table implements TableDef {
                                 DESCRIPTION,
                                 PROPERTIES,
                                 BASE_TYPE,
-                                CommonColumns.SCHEMAS )
+                                CommonColumns.SCHEMAS,
+                                CATEGORY)
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case DATA:
                 return new CassandraTableBuilder( DATA )
@@ -191,7 +193,8 @@ public enum Table implements TableDef {
                                 KEY,
                                 PROPERTIES,
                                 BASE_TYPE,
-                                CommonColumns.SCHEMAS )
+                                CommonColumns.SCHEMAS,
+                                CATEGORY )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case ENUM_TYPES:
                 return new CassandraTableBuilder( ENUM_TYPES )
@@ -246,6 +249,13 @@ public enum Table implements TableDef {
                         .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( VERTEX_ID );
+            case EDGE_TYPES:
+                return new CassandraTableBuilder( EDGE_TYPES )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .columns( SRC,
+                                DEST,
+                                BIDIRECTIONAL );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
                         .ifNotExists()

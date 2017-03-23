@@ -59,6 +59,7 @@ import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
@@ -94,6 +95,7 @@ public class EdmService implements EdmManager {
     private final IMap<UUID, EntitySet>             entitySets;
     private final IMap<String, UUID>                aclKeys;
     private final IMap<UUID, String>                names;
+    private final IMap<UUID, EdgeType>              edgeTypes;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -125,6 +127,7 @@ public class EdmService implements EdmManager {
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
         this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
+        this.edgeTypes = hazelcastInstance.getMap( HazelcastMap.EDGE_TYPES.name() );
         this.aclKeyReservations = aclKeyReservations;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
@@ -541,10 +544,10 @@ public class EdmService implements EdmManager {
         childrenIds.forEach( propertyTypes::unlock );
 
     }
-    
+
     @Override
     public void updatePropertyTypeMetadata( UUID propertyTypeId, MetadataUpdate update ) {
-        if( update.getType().isPresent() ){
+        if ( update.getType().isPresent() ) {
             aclKeyReservations.renameReservation( propertyTypeId, update.getType().get() );
         }
         propertyTypes.executeOnKey( propertyTypeId, new UpdatePropertyTypeMetadataProcessor( update ) );
@@ -560,10 +563,10 @@ public class EdmService implements EdmManager {
                 } );
         eventBus.post( new PropertyTypeCreatedEvent( getPropertyType( propertyTypeId ) ) );
     }
-    
+
     @Override
     public void updateEntityTypeMetadata( UUID entityTypeId, MetadataUpdate update ) {
-        if( update.getType().isPresent() ){
+        if ( update.getType().isPresent() ) {
             aclKeyReservations.renameReservation( entityTypeId, update.getType().get() );
         }
         entityTypes.executeOnKey( entityTypeId, new UpdateEntityTypeMetadataProcessor( update ) );
@@ -571,12 +574,13 @@ public class EdmService implements EdmManager {
 
     @Override
     public void updateEntitySetMetadata( UUID entitySetId, MetadataUpdate update ) {
-        if( update.getName().isPresent() ){
+        if ( update.getName().isPresent() ) {
             aclKeyReservations.renameReservation( entitySetId, update.getName().get() );
         }
         entitySets.executeOnKey( entitySetId, new UpdateEntitySetMetadataProcessor( update ) );
         eventBus.post( new EntitySetMetadataUpdatedEvent( getEntitySet( entitySetId ) ) );
     }
+
     /**************
      * Validation
      **************/
@@ -671,6 +675,30 @@ public class EdmService implements EdmManager {
     public EntityType getEntityTypeByEntitySetId( UUID entitySetId ) {
         UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
         return getEntityType( entityTypeId );
+    }
+
+    @Override
+    public UUID createEdgeType( EdgeType edgeType, UUID entityTypeId ) {
+        final EdgeType existing = edgeTypes.putIfAbsent( entityTypeId, edgeType );
+
+        if ( existing != null ) {
+            logger.error(
+                    "Inconsistency encountered in database. Verify that existing edge types have all their acl keys reserved." );
+        }
+        return entityTypeId;
+    }
+
+    @Override
+    public EdgeType getEdgeType( UUID edgeTypeId ) {
+        return Preconditions.checkNotNull(
+                Util.getSafely( edgeTypes, edgeTypeId ),
+                "Edge type of id %s does not exist.",
+                edgeTypeId.toString() );
+    }
+
+    @Override
+    public void deleteEdgeType( UUID edgeTypeId ) {
+        edgeTypes.delete( edgeTypeId );
     }
 
 }

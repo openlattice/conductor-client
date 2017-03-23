@@ -144,7 +144,5 @@ public class ElasticsearchLambdas implements Serializable {
         return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
                 .executeFQNPropertyTypeSearch( namespace, name, start, maxHits );
     }
-    
-    
 
 }

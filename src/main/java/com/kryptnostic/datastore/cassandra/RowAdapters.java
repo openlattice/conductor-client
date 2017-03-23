@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.dataloom.edm.type.*;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -37,7 +36,11 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.Analyzer;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
@@ -54,8 +57,7 @@ import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 public final class RowAdapters {
     static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
 
-    private RowAdapters() {
-    }
+    private RowAdapters() {}
 
     public static SetMultimap<FullQualifiedName, Object> entity(
             ResultSet rs,
@@ -199,7 +201,8 @@ public final class RowAdapters {
         LinkedHashSet<UUID> key = (LinkedHashSet<UUID>) row.getSet( CommonColumns.KEY.cql(), UUID.class );
         LinkedHashSet<UUID> properties = (LinkedHashSet<UUID>) row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
         Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
-        return new EntityType( id, type, title, description, schemas, key, properties, baseType );
+        SecurableObjectType category = SecurableObjectType.valueOf( row.getString( CommonColumns.CATEGORY.cql() ) );
+        return new EntityType( id, type, title, description, schemas, key, properties, baseType, category );
     }
 
     public static ComplexType complexType( Row row ) {
@@ -210,7 +213,15 @@ public final class RowAdapters {
         Set<FullQualifiedName> schemas = row.getSet( CommonColumns.SCHEMAS.cql(), FullQualifiedName.class );
         LinkedHashSet<UUID> properties = (LinkedHashSet<UUID>) row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
         Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
-        return new ComplexType( id, type, title, description, schemas, properties, baseType );
+        SecurableObjectType category = SecurableObjectType.valueOf( row.getString( CommonColumns.CATEGORY.cql() ) );
+        return new ComplexType( id, type, title, description, schemas, properties, baseType, category );
+    }
+    
+    public static EdgeType edgeType( Row row ) {
+        LinkedHashSet<UUID> src = (LinkedHashSet<UUID>) row.getSet( CommonColumns.SRC.cql(), UUID.class );
+        LinkedHashSet<UUID> dest = (LinkedHashSet<UUID>) row.getSet( CommonColumns.DEST.cql(), UUID.class );
+        boolean bidirectional = bidirectional( row );
+        return new EdgeType( Optional.absent(), src, dest, bidirectional );
     }
 
     public static FullQualifiedName splitFqn( Row row ) {
@@ -303,6 +314,18 @@ public final class RowAdapters {
 
     public static Optional<Boolean> pii( Row row ) {
         return Optional.of( row.getBool( CommonColumns.PII_FIELD.cql() ) );
+    }
+
+    public static UUID src( Row row ) {
+        return row.getUUID( CommonColumns.SRC.cql() );
+    }
+
+    public static UUID dest( Row row ) {
+        return row.getUUID( CommonColumns.DEST.cql() );
+    }
+
+    public static boolean bidirectional( Row row ) {
+        return row.getBool( CommonColumns.BIDIRECTIONAL.cql() );
     }
 
     private static boolean flags( Row row ) {

@@ -86,7 +86,6 @@ public class CassandraTypeManager {
                         .allowFiltering().where(
                                 QueryBuilder.eq( CommonColumns.BASE_TYPE.cql(),
                                         CommonColumns.BASE_TYPE.bindMarker() ) ) );
-
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
@@ -155,5 +154,5 @@ public class CassandraTypeManager {
         }
         return StreamUtil.stream( children );
     }
-
+    
 }
