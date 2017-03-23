@@ -1,6 +1,6 @@
 package com.dataloom.linking.components;
 
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import com.dataloom.linking.Entity;
@@ -20,19 +20,21 @@ public interface Matcher {
     public static final double threshold = 0.1;
 
     /**
-     * Warning: We assume that the restrictions on links are enforced/validated as specified in LinkingApi. In particular, only identical property types are linked on.
+     * Warning: We assume that the restrictions on links are enforced/validated as specified in LinkingApi. In
+     * particular, only identical property types are linked on.
+     * 
      * @param entitySetsWithSyncIds
      * @param linkIndexedByPropertyTypes
      * @param linkIndexedByEntitySets
      */
     default void setLinking(
-            Map<UUID, UUID> entitySetsWithSyncIds,
+            Set<UUID> linkingEntitySets,
             SetMultimap<UUID, UUID> linkIndexedByPropertyTypes,
-            SetMultimap<UUID, UUID> linkIndexedByEntitySets ) {
-    }
+            SetMultimap<UUID, UUID> linkIndexedByEntitySets ) {}
 
     /**
-     * Given an unordered pair of entities, should return a distance of the two entities (between 0 to 1). The lower the distance, the more similar they are.
+     * Given an unordered pair of entities, should return a distance of the two entities (between 0 to 1). The lower the
+     * distance, the more similar they are.
      * 
      * @param entityPair
      * @return
