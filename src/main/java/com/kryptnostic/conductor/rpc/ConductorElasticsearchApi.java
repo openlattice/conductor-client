@@ -27,6 +27,7 @@ import java.util.UUID;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.linking.Entity;
 import com.dataloom.organization.Organization;
@@ -87,6 +88,14 @@ public interface ConductorElasticsearchApi {
     final String SECURABLE_OBJECT_TYPE_PREFIX  = "type_";
     final String ACL_KEY                       = "aclKey";
     final String PROPERTY_TYPE_ID              = "propertyTypeId";
+
+    // entity_type_index setup consts
+    final String ENTITY_TYPE_INDEX             = "entity_type_index";
+    final String ENTITY_TYPE                   = "entity_type";
+
+    // property_type_index setup consts
+    final String PROPERTY_TYPE_INDEX           = "property_type_index";
+    final String PROPERTY_TYPE                 = "property_type";
 
     // entity set field consts
     final String TYPE_FIELD                    = "_type";
@@ -153,5 +162,21 @@ public interface ConductorElasticsearchApi {
             int start,
             int maxHits,
             Set<UUID> authorizedPropertyTypes );
+
+    boolean saveEntityTypeToElasticsearch( EntityType entityType );
+
+    boolean savePropertyTypeToElasticsearch( PropertyType propertyType );
+
+    boolean deleteEntityType( UUID entityTypeId );
+
+    boolean deletePropertyType( UUID propertyTypeId );
+
+    SearchResult executeEntityTypeSearch( String searchTerm, int start, int maxHits );
+
+    SearchResult executePropertyTypeSearch( String searchTerm, int start, int maxHits );
+
+    SearchResult executeFQNEntityTypeSearch( String namespace, String name, int start, int maxHits );
+  
+    SearchResult executeFQNPropertyTypeSearch( String namespace, String name, int start, int maxHits );
 
 }

@@ -49,6 +49,10 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
+import com.dataloom.edm.events.EntityTypeCreatedEvent;
+import com.dataloom.edm.events.EntityTypeDeletedEvent;
+import com.dataloom.edm.events.PropertyTypeCreatedEvent;
+import com.dataloom.edm.events.PropertyTypeDeletedEvent;
 import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.CassandraTypeManager;
@@ -146,6 +150,7 @@ public class EdmService implements EdmManager {
 
         if ( dbRecord == null ) {
             propertyType.getSchemas().forEach( schemaManager.propertyTypesSchemaAdder( propertyType.getId() ) );
+            eventBus.post( new PropertyTypeCreatedEvent( propertyType ) );
         } else {
             logger.error(
                     "Inconsistency encountered in database. Verify that existing property types have all their acl keys reserved." );
@@ -160,6 +165,7 @@ public class EdmService implements EdmManager {
         if ( Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( entityTypeId ) ) ) {
             entityTypes.delete( entityTypeId );
             aclKeyReservations.release( entityTypeId );
+            eventBus.post( new EntityTypeDeletedEvent( entityTypeId ) );
         }
     }
 
@@ -171,6 +177,7 @@ public class EdmService implements EdmManager {
                 .allMatch( et -> Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( et.getId() ) ) ) ) {
             propertyTypes.delete( propertyTypeId );
             aclKeyReservations.release( propertyTypeId );
+            eventBus.post( new PropertyTypeDeletedEvent( propertyTypeId ) );
         }
     }
 
@@ -189,6 +196,7 @@ public class EdmService implements EdmManager {
              * services are loosely coupled in a way that makes it easy to break accidentally.
              */
             schemaManager.upsertSchemas( entityType.getSchemas() );
+            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
         } else {
             /*
              * Only allow updates if entity type is not already in use.
@@ -241,16 +249,6 @@ public class EdmService implements EdmManager {
         Util.deleteSafely( entitySets, entitySetId );
         aclKeyReservations.release( entitySetId );
         eventBus.post( new EntitySetDeletedEvent( entitySetId ) );
-    }
-
-    @Override
-    public void assignEntityToEntitySet( UUID syncId, String entityId, String name ) {
-        entitySetManager.assignEntityToEntitySet( syncId, entityId, name );
-    }
-
-    @Override
-    public void assignEntityToEntitySet( UUID syncId, String entityId, EntitySet es ) {
-        assignEntityToEntitySet( syncId, entityId, es.getName() );
     }
 
     private void createEntitySet( EntitySet entitySet ) {
@@ -503,6 +501,7 @@ public class EdmService implements EdmManager {
                             } );
                 }
             }
+            eventBus.post( new EntityTypeCreatedEvent( getEntityType( id ) ) );
         } );
         childrenIdsToLocks.entrySet().forEach( entry -> {
             if ( entry.getValue() ) propertyTypes.unlock( entry.getKey() );
@@ -538,8 +537,10 @@ public class EdmService implements EdmManager {
                         "Unable to modify the entity data model right now--please try again." );
             }
         } );
-        childrenIds.forEach( id -> entityTypes.executeOnKey( id,
-                new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) ) );
+        childrenIds.forEach( id -> {
+            entityTypes.executeOnKey( id, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
+            eventBus.post( new EntityTypeCreatedEvent( getEntityType( id ) ) );
+        });
         childrenIds.forEach( propertyTypes::unlock );
 
     }
@@ -560,6 +561,7 @@ public class EdmService implements EdmManager {
                             .forEach( es -> eventBus
                                     .post( new PropertyTypesInEntitySetUpdatedEvent( es.getId(), properties ) ) );
                 } );
+        eventBus.post( new PropertyTypeCreatedEvent( getPropertyType( propertyTypeId ) ) );
     }
 
     @Override
