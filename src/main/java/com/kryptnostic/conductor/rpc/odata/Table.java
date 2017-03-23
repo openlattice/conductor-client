@@ -38,7 +38,6 @@ public enum Table implements TableDef {
     COMPLEX_TYPES,
     DATA,
     ENTITY_EDGES,
-    ENTITY_ID_LOOKUP,
     ENTITY_SETS,
     ENTITY_TYPES,
     ENUM_TYPES,
@@ -108,10 +107,11 @@ public enum Table implements TableDef {
             case DATA:
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
-                        .partitionKey( ENTITYID )
+                        .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
                         .columns( SYNCID )
-                        .sasi( SYNCID );
+                        .sasi( SYNCID )
+                        .secondaryIndex( ENTITY_SET_ID );
             case ENTITY_EDGES:
                 /*
                  * The sync id is for the edge. The entity containing data for that edge is managed independently.
@@ -122,12 +122,6 @@ public enum Table implements TableDef {
                         .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
                         .columns( ENTITYID, SYNCID )
                         .sasi( SYNCID );
-            case ENTITY_ID_LOOKUP:
-            return new CassandraTableBuilder( ENTITY_ID_LOOKUP )
-                        .ifNotExists()
-                        .partitionKey( SYNCID, ENTITY_SET_ID )
-                        .clusteringColumns( ENTITYID )
-                        .secondaryIndex( ENTITY_SET_ID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
