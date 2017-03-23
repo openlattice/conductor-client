@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -201,7 +202,13 @@ public final class RowAdapters {
         LinkedHashSet<UUID> key = (LinkedHashSet<UUID>) row.getSet( CommonColumns.KEY.cql(), UUID.class );
         LinkedHashSet<UUID> properties = (LinkedHashSet<UUID>) row.getSet( CommonColumns.PROPERTIES.cql(), UUID.class );
         Optional<UUID> baseType = Optional.fromNullable( row.getUUID( CommonColumns.BASE_TYPE.cql() ) );
-        SecurableObjectType category = SecurableObjectType.valueOf( row.getString( CommonColumns.CATEGORY.cql() ) );
+        final Optional<SecurableObjectType> category;
+        String objectType = row.getString( CommonColumns.CATEGORY.cql() );
+        if ( StringUtils.isBlank( objectType ) ) {
+            category = Optional.of( SecurableObjectType.EntityType );
+        } else {
+            category = Optional.of( SecurableObjectType.valueOf( objectType ) );
+        }
         return new EntityType( id, type, title, description, schemas, key, properties, baseType, category );
     }
 
@@ -216,7 +223,7 @@ public final class RowAdapters {
         SecurableObjectType category = SecurableObjectType.valueOf( row.getString( CommonColumns.CATEGORY.cql() ) );
         return new ComplexType( id, type, title, description, schemas, properties, baseType, category );
     }
-    
+
     public static EdgeType edgeType( Row row ) {
         LinkedHashSet<UUID> src = (LinkedHashSet<UUID>) row.getSet( CommonColumns.SRC.cql(), UUID.class );
         LinkedHashSet<UUID> dest = (LinkedHashSet<UUID>) row.getSet( CommonColumns.DEST.cql(), UUID.class );
@@ -284,18 +291,18 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.ORGANIZATION_ID.cql() );
     }
 
-    public static RoleKey roleKey( Row row ){
+    public static RoleKey roleKey( Row row ) {
         return new RoleKey( organizationId( row ), id( row ) );
     }
-    
-    public static OrganizationRole organizationRole( Row row ){
+
+    public static OrganizationRole organizationRole( Row row ) {
         Optional<UUID> id = Optional.of( id( row ) );
         UUID organizationId = organizationId( row );
         String title = title( row );
         Optional<String> description = description( row );
         return new OrganizationRole( id, organizationId, title, description );
     }
-    
+
     public static LinkedHashSet<String> members( Row row ) {
         return (LinkedHashSet<String>) row.getSet( CommonColumns.MEMBERS.cql(), String.class );
     }
