@@ -44,6 +44,8 @@ public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0Authentica
     @Override
     public Authentication authenticate( Authentication authentication ) {
         final Auth0JWTToken jwtToken = ((Auth0JWTToken) super.authenticate( authentication) );
+        // TODO: Temporarily turn off manual token expiration
+        /**
         Auth0UserDetails details = (Auth0UserDetails) jwtToken.getPrincipal();
         Object userIdAsObj = details.getAuth0Attribute( LoomAuth0AuthenticationProvider.SUBJECT_ATTRIBUTE );
         if ( userIdAsObj == null ) {
@@ -60,6 +62,7 @@ public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0Authentica
         
         //Successful login should remove user from USERS_NEEDING_NEW_TOKEN set
         tokenTracker.untrackUser( userId );
+        */
         
         return new LoomAuthentication( jwtToken );
     }
