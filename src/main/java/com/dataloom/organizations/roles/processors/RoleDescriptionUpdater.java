@@ -33,4 +33,24 @@ public class RoleDescriptionUpdater extends AbstractRhizomeEntryProcessor<RoleKe
         return newDescription;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ( ( newDescription == null ) ? 0 : newDescription.hashCode() );
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj ) {
+        if ( this == obj ) return true;
+        if ( obj == null ) return false;
+        if ( getClass() != obj.getClass() ) return false;
+        RoleDescriptionUpdater other = (RoleDescriptionUpdater) obj;
+        if ( newDescription == null ) {
+            if ( other.newDescription != null ) return false;
+        } else if ( !newDescription.equals( other.newDescription ) ) return false;
+        return true;
+    }
+
 }
