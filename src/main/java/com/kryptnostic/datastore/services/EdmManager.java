@@ -25,14 +25,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EnumType;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.requests.MetadataUpdate;
+import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.PropertyType;
 import com.hazelcast.map.EntryProcessor;
 
@@ -65,11 +66,11 @@ public interface EdmManager {
     EntityType getEntityType( String namespace, String name );
 
     Iterable<EntityType> getEntityTypes();
-
+    
     void deleteEntityType( UUID entityTypeId );
 
     EntityType getEntityType( UUID entityTypeId );
-
+    
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
@@ -138,4 +139,11 @@ public interface EdmManager {
     Set<EntityType> getEntityTypeHierarchy( UUID entityTypeId );
 
     Set<ComplexType> getComplexTypeHierarchy( UUID complexTypeId );
+    
+    UUID createEdgeType( EdgeType edgeType, UUID entityTypeId );
+    
+    EdgeType getEdgeType( UUID edgeTypeId );
+        
+    void deleteEdgeType( UUID edgeTypeId );
+        
 }

@@ -44,12 +44,14 @@ import com.dataloom.edm.mapstores.ComplexTypeMapstore;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.EnumTypesMapstore;
+import com.dataloom.edm.mapstores.EdgeTypeMapstore;
 import com.dataloom.edm.mapstores.NamesMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
@@ -257,6 +259,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<LinkingEntityKey, UUID> linkingEntityVerticesMapstore() {
         return new LinkingEntityVerticesMapstore( session );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<UUID, EdgeType> edgeTypeMapstore() {
+        return new EdgeTypeMapstore( session );
     }
 
     @Bean
