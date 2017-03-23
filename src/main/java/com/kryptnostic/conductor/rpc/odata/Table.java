@@ -107,7 +107,8 @@ public enum Table implements TableDef {
     RPC_DATA_ORDERED,
     SCHEMAS,
     WEIGHTED_LINKING_EDGES,
-    EDGE_TYPES;
+    EDGE_TYPES,
+    SYNC_IDS;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -337,6 +338,12 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( NAMESPACE )
                         .columns( NAME_SET );
+                
+            case SYNC_IDS:
+                return new CassandraTableBuilder( SYNC_IDS )
+                        .ifNotExists()
+                        .partitionKey( ENTITY_SET_ID )
+                        .clusteringColumns( SYNC_ID );
 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
