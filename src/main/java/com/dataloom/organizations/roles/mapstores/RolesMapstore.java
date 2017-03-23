@@ -20,22 +20,20 @@ import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMa
 
 public class RolesMapstore extends AbstractStructuredCassandraMapstore<RoleKey, OrganizationRole> {
 
+    private OrganizationRole testValue = generateOrganizationRole();
+    
     public RolesMapstore( Session session ) {
         super( HazelcastMap.ORGANIZATIONS_ROLES.name(), session, Table.ORGANIZATIONS_ROLES.getBuilder() );
     }
 
     @Override
     public RoleKey generateTestKey() {
-        return TestDataFactory.roleKey();
+        return testValue.getRoleKey();
     }
 
     @Override
     public OrganizationRole generateTestValue() {
-        return new OrganizationRole(
-                Optional.of( UUID.randomUUID() ),
-                UUID.randomUUID(),
-                RandomStringUtils.randomAlphanumeric( 5 ),
-                Optional.of( RandomStringUtils.randomAlphanumeric( 5 ) ) );
+        return testValue;
     }
 
     @Override
@@ -68,4 +66,11 @@ public class RolesMapstore extends AbstractStructuredCassandraMapstore<RoleKey, 
         return new OrganizationRole( id, organizationId, title, description );
     }
 
+    private OrganizationRole generateOrganizationRole(){
+        return new OrganizationRole(
+                Optional.of( UUID.randomUUID() ),
+                UUID.randomUUID(),
+                RandomStringUtils.randomAlphanumeric( 5 ),
+                Optional.of( RandomStringUtils.randomAlphanumeric( 5 ) ) );
+    }
 }
