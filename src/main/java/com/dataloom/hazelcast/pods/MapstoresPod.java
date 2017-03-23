@@ -64,12 +64,16 @@ import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
 import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
 import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
+import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.mapstores.RoleSetMapstore;
 import com.dataloom.organizations.mapstores.StringMapstore;
 import com.dataloom.organizations.mapstores.StringSetMapstore;
 import com.dataloom.organizations.mapstores.UUIDSetMapstore;
 import com.dataloom.organizations.mapstores.UserSetMapstore;
+import com.dataloom.organizations.roles.mapstores.RolesMapstore;
+import com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore;
 import com.dataloom.requests.AclRootRequestDetailsPair;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
@@ -170,7 +174,7 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, String> orgTitlesMapstore() {
         return new StringMapstore(
-                HazelcastMap.TITLES,
+                HazelcastMap.ORGANIZATIONS_TITLES,
                 session,
                 Table.ORGANIZATIONS,
                 CommonColumns.ID,
@@ -180,7 +184,7 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, String> orgDescsMapstore() {
         return new StringMapstore(
-                HazelcastMap.DESCRIPTIONS,
+                HazelcastMap.ORGANIZATIONS_DESCRIPTIONS,
                 session,
                 Table.ORGANIZATIONS,
                 CommonColumns.ID,
@@ -208,9 +212,9 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, PrincipalSet> rolesMapstore() {
+    public SelfRegisteringMapStore<UUID, PrincipalSet> organizationsRolesMapstore() {
         return new RoleSetMapstore(
-                HazelcastMap.ROLES,
+                HazelcastMap.ORGANIZATIONS_ROLES,
                 session,
                 Table.ORGANIZATIONS,
                 CommonColumns.ID,
@@ -220,7 +224,7 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, PrincipalSet> membersMapstore() {
         return new UserSetMapstore(
-                HazelcastMap.MEMBERS,
+                HazelcastMap.ORGANIZATIONS_MEMBERS,
                 session,
                 Table.ORGANIZATIONS,
                 CommonColumns.ID,
@@ -260,6 +264,16 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, EdgeType> edgeTypeMapstore() {
         return new EdgeTypeMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<RoleKey, OrganizationRole> rolesMapstore() {
+        return new RolesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<RoleKey, PrincipalSet> usersWithRolesMapstore() {
+        return new UsersWithRoleMapstore( session );
     }
 
 }

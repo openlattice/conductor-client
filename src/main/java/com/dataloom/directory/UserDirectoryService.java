@@ -22,6 +22,7 @@ package com.dataloom.directory;
 import com.dataloom.client.RetrofitFactory;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.organizations.roles.RolesUtil;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -84,28 +85,6 @@ public class UserDirectoryService {
         return auth0ManagementApi.getUser( userId );
     }
 
-    public Map<String, List<Auth0UserBasic>> getAllUsersGroupByRole() {
-        Map<String, List<Auth0UserBasic>> res = Maps.newHashMap();
-        getAllUsers().values().forEach( user -> {
-            for ( String r : user.getRoles() ) {
-                List<Auth0UserBasic> users = res.getOrDefault( r, Lists.newArrayList() );
-                users.add( user );
-                res.put( r, users );
-            }
-        } );
-        return res;
-    }
-
-    public List<Auth0UserBasic> getAllUsersOfRole( String role ) {
-        List<Auth0UserBasic> res = Lists.newArrayList();
-        getAllUsers().values().forEach( user -> {
-            if ( user.getRoles().contains( role ) ) {
-                res.add( user );
-            }
-        } );
-        return res;
-    }
-
     public void setRolesOfUser( String userId, Set<String> roleList ) {
         auth0ManagementApi.resetRolesOfUser( userId,
                 ImmutableMap.of( "app_metadata", ImmutableMap.of( "roles", roleList ) ) );
@@ -120,6 +99,23 @@ public class UserDirectoryService {
     public void removeRoleFromUser( String userId, String role ) {
         Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
         roles.remove( role );
+        setRolesOfUser( userId, roles );
+    }
+
+    public void updateRoleOfUser( String userId, String roleToRemove, String roleToAdd ) {
+        Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
+        roles.remove( roleToRemove );
+        roles.add( roleToAdd );
+        setRolesOfUser( userId, roles );
+    }
+
+    public void removeAllRolesInOrganizationFromUser( String userId, UUID organizationId ) {
+        Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
+        for( String role : roles ){
+            if( RolesUtil.belongsToOrganization( organizationId, role ) ){
+                roles.remove( role );
+            }
+        }
         setRolesOfUser( userId, roles );
     }
 

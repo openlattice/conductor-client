@@ -42,6 +42,8 @@ import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -278,6 +280,22 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
     }
 
+    public static UUID organizationId( Row row ) {
+        return row.getUUID( CommonColumns.ORGANIZATION_ID.cql() );
+    }
+
+    public static RoleKey roleKey( Row row ){
+        return new RoleKey( organizationId( row ), id( row ) );
+    }
+    
+    public static OrganizationRole organizationRole( Row row ){
+        Optional<UUID> id = Optional.of( id( row ) );
+        UUID organizationId = organizationId( row );
+        String title = title( row );
+        Optional<String> description = description( row );
+        return new OrganizationRole( id, organizationId, title, description );
+    }
+    
     public static LinkedHashSet<String> members( Row row ) {
         return (LinkedHashSet<String>) row.getSet( CommonColumns.MEMBERS.cql(), String.class );
     }

@@ -17,28 +17,23 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.datastore.util;
+package com.dataloom.organizations.roles.exceptions;
 
-public class ErrorDTO {
-    private String type;
-    private String message;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-    public ErrorDTO( String type, String message ) {
-        this.type = type;
-        this.message = message;
+@ResponseStatus( HttpStatus.UNAUTHORIZED )
+public class TokenRefreshException extends AuthenticationException {
+    private static final long serialVersionUID = 7541262856797158909L;
+
+    public static final String DEFAULT_MESSAGE = "JWT Token was issued before the current acceptable token issue time. The token must be retrieved from Auth0 again.";
+    
+    public TokenRefreshException() {
+        super( DEFAULT_MESSAGE );
     }
-
-    public String getType() {
-        return type;
+    
+    public TokenRefreshException( String message ) {
+        super( message );
     }
-
-    public String getMessage() {
-        return message;
-    }
-
-    @Override
-    public String toString() {
-        return "ErrorDTO [type=" + type + ", message=" + message + "]";
-    }
-
 }
