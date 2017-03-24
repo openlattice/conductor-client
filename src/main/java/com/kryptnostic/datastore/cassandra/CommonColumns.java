@@ -110,8 +110,7 @@ public enum CommonColumns implements ColumnDef {
     REASON( DataType.text() ),
     BASE_TYPE( DataType.uuid() ),
     FLAGS( DataType.cboolean() ),
-    CATEGORY( DataType.text() ),
-    SYNC_ID( DataType.uuid() );
+    CATEGORY( DataType.text() );
 
     private transient final DataType type;
 

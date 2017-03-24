@@ -7,6 +7,7 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.utils.UUIDs;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
@@ -27,7 +28,7 @@ public class SyncIdsMapstore extends AbstractStructuredCassandraPartitionKeyValu
     @Override
     protected BoundStatement bind( UUID key, UUID value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ENTITY_SET_ID.cql(), key )
-                .setUUID( CommonColumns.SYNC_ID.cql(), value );
+                .setUUID( CommonColumns.SYNCID.cql(), value );
     }
 
     @Override
@@ -41,7 +42,7 @@ public class SyncIdsMapstore extends AbstractStructuredCassandraPartitionKeyValu
         if ( row == null ) {
             return null;
         }
-        return row.getUUID( CommonColumns.SYNC_ID.cql() );
+        return row.getUUID( CommonColumns.SYNCID.cql() );
     }
 
     @Override
@@ -51,6 +52,6 @@ public class SyncIdsMapstore extends AbstractStructuredCassandraPartitionKeyValu
 
     @Override
     public UUID generateTestValue() {
-        return UUID.randomUUID();
+        return UUIDs.timeBased();
     }
 }
