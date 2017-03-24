@@ -204,6 +204,12 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     }
 
     @Override
+    public RoleKey getRoleKey( Principal principal ) {
+        Preconditions.checkArgument( principal.getType() == PrincipalType.ROLE, "Only roles may have a role key." );
+        return getRoleKey( OrganizationRole.getOrganizationId( principal.getId() ), principal );
+    }
+
+    @Override
     public AuthorizationManager getAuthorizationManager() {
         return authorizations;
     }
