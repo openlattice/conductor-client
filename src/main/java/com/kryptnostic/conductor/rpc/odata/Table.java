@@ -343,7 +343,7 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( SYNC_IDS )
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID )
-                        .columns( SYNC_ID );
+                        .columns( SYNCID );
 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
