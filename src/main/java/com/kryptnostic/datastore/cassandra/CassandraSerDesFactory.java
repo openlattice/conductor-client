@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.geo.Geospatial.Dimension;
@@ -29,6 +30,7 @@ public class CassandraSerDesFactory {
     private static final ProtocolVersion protocolVersion = ProtocolVersion.NEWEST_SUPPORTED;
     private static final Base64.Decoder  decoder         = Base64.getUrlDecoder();
 
+    private static final String geographyPointRegex = "(\\-)?[0-9]+(\\.){1}[0-9]+(\\,){1}(\\-)?[0-9]+(\\.){1}[0-9]+";
     private CassandraSerDesFactory() {}
 
     /**
@@ -236,10 +238,7 @@ public class CassandraSerDesFactory {
             case Decimal:
             case Double:
             case Single:
-                if ( value instanceof Double ) {
-                    return value;
-                }
-                break;
+                return Double.parseDouble( value.toString() );
             /**
              * Jackson binds to Integer, Long, or BigInteger
              */
@@ -266,6 +265,8 @@ public class CassandraSerDesFactory {
                     if ( point.getGeoType() == Type.POINT && point.getDimension() == Dimension.GEOGRAPHY ) {
                         return point.getY() + "," + point.getX();
                     }
+                } else if ( value instanceof String && ( (String) value ).matches( geographyPointRegex ) ){
+                    return value;
                 }
                 break;
             default:

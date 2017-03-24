@@ -66,9 +66,12 @@ public final class Principals {
     
     public static LoomAuthentication getLoomAuthentication() {
         LoomAuthentication auth = (LoomAuthentication) SecurityContextHolder.getContext().getAuthentication();
+        // TODO: Temporarily turn off manual token expiration
+        /**
         if( tokenTracker.needsNewToken( auth.getLoomPrincipal().getId() ) ){
             throw new TokenRefreshException();
         }
+        */
         return ( (LoomAuthentication) auth );
     }
 
