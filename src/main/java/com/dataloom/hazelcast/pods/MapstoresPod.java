@@ -38,6 +38,7 @@ import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.DelegatedEntityKeySet;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.ComplexTypeMapstore;
@@ -264,6 +265,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<RoleKey, PrincipalSet> usersWithRolesMapstore() {
         return new UsersWithRoleMapstore( session );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<UUID, UUID> syncIdsMapstore() {
+        return new SyncIdsMapstore( session );
     }
 
 }

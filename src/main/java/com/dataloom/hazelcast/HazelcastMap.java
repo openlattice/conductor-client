@@ -57,7 +57,8 @@ public enum HazelcastMap {
     SECURABLE_OBJECT_TYPES( Table.PERMISSIONS ),
     RPC_DATA_ORDERED( Table.RPC_DATA_ORDERED ),
     EDGE_TYPES( Table.EDGE_TYPES ),
-    TOKEN_ACCEPTANCE_TIME( null );
+    TOKEN_ACCEPTANCE_TIME( null ),
+    SYNC_IDS( Table.SYNC_IDS );
 
     private final Table table;
 
