@@ -181,10 +181,35 @@ public class EdmService implements EdmManager {
         }
     }
 
-    public void createEntityType( EntityType entityType ) {
+    private EntityType getEntityTypeWithBaseType( EntityType entityType ) {
+        EntityType baseType = getEntityType( entityType.getBaseType().get() );
+        LinkedHashSet<UUID> properties = new LinkedHashSet<UUID>();
+        properties.addAll( baseType.getProperties() );
+        properties.addAll( entityType.getProperties() );
+        LinkedHashSet<UUID> key = new LinkedHashSet<UUID>();
+        key.addAll( baseType.getKey() );
+        key.addAll( entityType.getKey() );
+        key.forEach( keyId -> Preconditions.checkArgument( properties.contains( keyId ),
+                "Properties must include all the key property types" ) );
+        return new EntityType(
+                Optional.fromNullable( entityType.getId() ),
+                entityType.getType(),
+                entityType.getTitle(),
+                Optional.fromNullable( entityType.getDescription() ),
+                entityType.getSchemas(),
+                key,
+                properties,
+                entityType.getBaseType(),
+                Optional.fromNullable( entityType.getCategory() ) );
+
+    }
+
+    public void createEntityType( EntityType entityTypeRaw ) {
         /*
          * This is really create or replace and should be noted as such.
          */
+        EntityType entityType = ( entityTypeRaw.getBaseType().isPresent() )
+                ? getEntityTypeWithBaseType( entityTypeRaw ) : entityTypeRaw;
         aclKeyReservations.reserveIdAndValidateType( entityType );
         // Only create entity table if insert transaction succeeded.
         final EntityType existing = entityTypes.putIfAbsent( entityType.getId(), entityType );
@@ -540,7 +565,7 @@ public class EdmService implements EdmManager {
         childrenIds.forEach( id -> {
             entityTypes.executeOnKey( id, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
             eventBus.post( new EntityTypeCreatedEvent( getEntityType( id ) ) );
-        });
+        } );
         childrenIds.forEach( propertyTypes::unlock );
 
     }
