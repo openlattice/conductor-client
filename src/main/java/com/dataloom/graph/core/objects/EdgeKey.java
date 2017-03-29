@@ -1,10 +1,13 @@
-package com.dataloom.graph.core.impl;
+package com.dataloom.graph.core.objects;
 
 import java.util.UUID;
+
+import com.datastax.driver.core.utils.UUIDs;
 
 /**
  * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
  * destination vertexId, and timeuuid for time written.
+ * 
  * @author Ho Chung Siu
  *
  */
@@ -13,10 +16,10 @@ public class EdgeKey {
     private UUID dstId;
     private UUID timeId;
 
-    public EdgeKey( UUID srcId, UUID dstId, UUID timeId ) {
+    public EdgeKey( UUID srcId, UUID dstId ) {
         this.srcId = srcId;
         this.dstId = dstId;
-        this.timeId = timeId;
+        this.timeId = UUIDs.timeBased();
     }
 
     public UUID getSrcId() {

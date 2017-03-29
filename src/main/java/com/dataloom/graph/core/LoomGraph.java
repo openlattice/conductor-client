@@ -3,86 +3,83 @@ package com.dataloom.graph.core;
 import java.util.UUID;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.core.impl.EdgeKey;
-import com.dataloom.graph.core.impl.Label;
-import com.dataloom.graph.core.impl.LoomEdge;
-import com.dataloom.graph.core.impl.LoomVertex;
+import com.dataloom.graph.core.objects.EdgeKey;
+import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
+import com.dataloom.graph.core.objects.GraphWrappedEntityKey;
+import com.dataloom.graph.core.objects.GraphWrappedVertexId;
+import com.dataloom.graph.core.objects.LoomEdge;
+import com.dataloom.graph.core.objects.LoomVertex;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 
-/**
- * Graph Object supporting CRUD operations of vertices and edges to the graph. Top Utilizers queries should be covered
- * by {@link #getEdges(EdgeSelection) } endpoint.
- * 
- * @author Ho Chung Siu
- *
- */
-public interface LoomGraph {
+public class LoomGraph implements LoomGraphApi {
+    
+    private UUID graphId;
+    
+    private IMap<GraphWrappedVertexId, LoomVertex> vertices;
+    
+    private IMap<GraphWrappedEdgeKey, LoomEdge> edges;
+    
+    private GraphQueryService gqs;
+    
+    public LoomGraph( HazelcastInstance hazelcastInstance, GraphQueryService gqs ){
+        this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
+        this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
+        
+        this.gqs = gqs;
+    }
+    
+    @Override
+    public UUID getId() {
+        return graphId;
+    }
+    
+    @Override
+    public LoomVertex addVertex( EntityKey entityKey ) {
+        //Put if absent in verticesLookup
+        //Generate random UUID, put if absent in vertices until it succeeds
+        return gqs.addVertex( entityKey );
+    }
 
-    /*
-     * CRUD operations of vertices
-     */
-    /**
-     * Initialize a vertex with specified label.
-     * <p>
-     * Note: {@link Label} corresponds to identifier (id) of the vertex/edge, as well as any extra information.
-     * (EntityKey in our setting)
-     * </p>
-     * 
-     * @param vertexLabel
-     * @return
-     */
-    public LoomVertex addVertex( Label vertexLabel );
+    @Override
+    public LoomVertex getVertex( UUID vertexId ) {
+        return vertices.get( new GraphWrappedVertexId( graphId, vertexId ) );
+    }
 
-    /**
-     * Helper method of adding an vertex, by implicitly registering the label for the entity key (vertex label)
-     * 
-     * @param entityKey
-     * @return
-     */
-    public LoomVertex addVertex( EntityKey entityKey );
+    @Override
+    public void deleteVertex( UUID vertexId ) {
+        // TODO delete all the incident edges        
+    }
 
-    public LoomVertex getVertex( UUID id );
+    @Override
+    public LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey edgeLabel ) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    public void deleteVertex( UUID id );
+    @Override
+    public LoomEdge getEdge( EdgeKey key ) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    /*
-     * CRUD operations of edges
-     */
-    public LoomEdge addEdge( LoomVertex src, LoomVertex dst, Label edgeLabel );
+    @Override
+    public Iterable<LoomEdge> getEdges( EdgeSelection selection ) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    /**
-     * Helper method of adding an edge, by implicitly registering the label for the entity key (edge label)
-     * 
-     * @param entityKey
-     * @return
-     */
-    public LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey edgeLabel );
+    @Override
+    public void deleteEdge( EdgeKey key ) {
+        // TODO Auto-generated method stub
+        
+    }
 
-    /**
-     * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
-     * destination vertexId, and timeuuid for time written.
-     * 
-     * @param key
-     * @return
-     */
-    public LoomEdge getEdge( EdgeKey key );
-
-    /**
-     * An EdgeSelection restricts the columns in the edges table. In the current setting, it should support restriction of
-     * <ul>
-     * <li>source UUID</li>
-     * <li>destination UUID</li>
-     * <li>source type</li>
-     * <li>destination type</li>
-     * <li>edge type</li>
-     * </ul>
-     * and combinations of these.
-     * @param selection
-     * @return
-     */
-    public Iterable<LoomEdge> getEdges( EdgeSelection selection );
-
-    public void deleteEdge( EdgeKey key );
-
-    public void deleteEdges( UUID srcId );
+    @Override
+    public void deleteEdges( UUID srcId ) {
+        // TODO Auto-generated method stub
+        
+    }
 
 }
