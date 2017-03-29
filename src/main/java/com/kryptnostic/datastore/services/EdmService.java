@@ -595,6 +595,7 @@ public class EdmService implements EdmManager {
             aclKeyReservations.renameReservation( entityTypeId, update.getType().get() );
         }
         entityTypes.executeOnKey( entityTypeId, new UpdateEntityTypeMetadataProcessor( update ) );
+        eventBus.post( new EntityTypeCreatedEvent( getEntityType( entityTypeId ) ) );
     }
 
     @Override
