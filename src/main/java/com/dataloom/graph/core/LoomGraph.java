@@ -16,6 +16,7 @@ import com.hazelcast.core.IMap;
 
 public class LoomGraph implements LoomGraphApi {
     
+    private static UUID DEFAULT_GRAPH_ID = new UUID(0, 0);
     private UUID graphId;
     
     private static IMap<GraphWrappedVertexId, LoomVertex> vertices;
@@ -31,8 +32,12 @@ public class LoomGraph implements LoomGraphApi {
         LoomGraph.gqs = gqs;
     }
     
-    public LoomGraph(){
-        
+    public LoomGraph() {
+        this( DEFAULT_GRAPH_ID );
+    }
+    
+    public LoomGraph( UUID graphId ){
+        this.graphId = graphId;
     }
     
     @Override
