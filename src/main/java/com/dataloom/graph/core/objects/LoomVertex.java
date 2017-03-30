@@ -6,7 +6,7 @@ public class LoomVertex {
 
     private UUID graphId;
     private UUID key;
-    ;
+    
     private VertexLabel label;
     
     public LoomVertex( UUID graphId, UUID key, VertexLabel label ) {

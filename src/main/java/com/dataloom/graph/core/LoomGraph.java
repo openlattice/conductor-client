@@ -9,25 +9,35 @@ import com.dataloom.graph.core.objects.GraphWrappedEntityKey;
 import com.dataloom.graph.core.objects.GraphWrappedVertexId;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
+import com.dataloom.graph.core.objects.VertexLabel;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
 public class LoomGraph implements LoomGraphApi {
     
+    private static UUID DEFAULT_GRAPH_ID = new UUID(0, 0);
     private UUID graphId;
     
-    private IMap<GraphWrappedVertexId, LoomVertex> vertices;
+    private static IMap<GraphWrappedVertexId, LoomVertex> vertices;
+    private static IMap<GraphWrappedEntityKey, UUID> verticesLookup;
     
-    private IMap<GraphWrappedEdgeKey, LoomEdge> edges;
+    private static IMap<GraphWrappedEdgeKey, LoomEdge> edges;
+    private static GraphQueryService gqs;
     
-    private GraphQueryService gqs;
-    
-    public LoomGraph( HazelcastInstance hazelcastInstance, GraphQueryService gqs ){
-        this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
-        this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
+    public static void init( HazelcastInstance hazelcastInstance, GraphQueryService gqs ){
+        LoomGraph.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
+        LoomGraph.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
         
-        this.gqs = gqs;
+        LoomGraph.gqs = gqs;
+    }
+    
+    public LoomGraph() {
+        this( DEFAULT_GRAPH_ID );
+    }
+    
+    public LoomGraph( UUID graphId ){
+        this.graphId = graphId;
     }
     
     @Override
@@ -36,10 +46,27 @@ public class LoomGraph implements LoomGraphApi {
     }
     
     @Override
-    public LoomVertex addVertex( EntityKey entityKey ) {
+    public LoomVertex getOrCreateVertex( EntityKey entityKey ) {
         //Put if absent in verticesLookup
         //Generate random UUID, put if absent in vertices until it succeeds
-        return gqs.addVertex( entityKey );
+        GraphWrappedEntityKey lookupKey = new GraphWrappedEntityKey( graphId, entityKey );
+
+        while( true ){
+            UUID proposedId = UUID.randomUUID();
+            UUID currentId = verticesLookup.putIfAbsent( lookupKey, proposedId );
+            if ( currentId != null ) {
+                return vertices.get( new GraphWrappedVertexId( graphId, currentId ) );
+            } else {
+                GraphWrappedVertexId key = new GraphWrappedVertexId( graphId, proposedId );
+                LoomVertex vertex = new LoomVertex( graphId, proposedId, new VertexLabel( entityKey ) );
+                if ( vertices.putIfAbsent( key, vertex ) == null ) {
+                    return vertex;
+                } else {
+                    // creation failed. Rollback the insertion to verticesLookup, and restart the UUID generation process again.
+                    verticesLookup.remove( lookupKey );
+                }
+            }
+        }
     }
 
     @Override
