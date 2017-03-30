@@ -32,7 +32,7 @@ public abstract class HazelcastEntityGraph {
     //    private final IMap<EntityKey, SetMultimap<UUID,Object>> entities;
 
     public HazelcastEntityGraph( HazelcastInstance hazelcastInstance) {
-        this.edges = hazelcastInstance.getMap( HazelcastMap.ENTITY_EDGES.name() );
+        this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
     }
 
     public EntityKey getEdge( DirectedEdge edge ) {

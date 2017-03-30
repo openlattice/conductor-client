@@ -26,7 +26,6 @@ public enum HazelcastMap {
     AUDIT_EVENTS( Table.AUDIT_EVENTS ),
     AUDIT_METRICS( Table.AUDIT_METRICS ),
     COMPLEX_TYPES( Table.COMPLEX_TYPES ),
-    ENTITY_EDGES( Table.ENTITY_EDGES ),
     ENUM_TYPES( Table.ENUM_TYPES ),
     LINKED_ENTITY_TYPES( Table.LINKED_ENTITY_TYPES ),
     LINKED_ENTITY_SETS( Table.LINKED_ENTITY_SETS ),
@@ -57,7 +56,9 @@ public enum HazelcastMap {
     SECURABLE_OBJECT_TYPES( Table.PERMISSIONS ),
     RPC_DATA_ORDERED( Table.RPC_DATA_ORDERED ),
     EDGE_TYPES( Table.EDGE_TYPES ),
-    TOKEN_ACCEPTANCE_TIME( null );
+    TOKEN_ACCEPTANCE_TIME( null ),
+    EDGES( Table.EDGES ),
+    VERTICES( Table.VERTICES );
 
     private final Table table;
 

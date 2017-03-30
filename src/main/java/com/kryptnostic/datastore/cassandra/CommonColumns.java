@@ -85,7 +85,7 @@ public enum CommonColumns implements ColumnDef {
     SECURABLE_OBJECTID( DataType.uuid() ),
     SRC( DataType.set( DataType.uuid() ) ),
     STATUS( DataType.text() ),
-    TIME_ID( DataType.uuid() ),
+    TIME_ID( DataType.timeuuid() ),
     TYPE_ID( DataType.uuid() ),
     TRUSTED_ORGANIZATIONS( DataType.set( DataType.uuid() ) ),
     ORGANIZATION_ID( DataType.uuid() ),

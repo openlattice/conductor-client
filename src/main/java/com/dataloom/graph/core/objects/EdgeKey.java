@@ -17,9 +17,13 @@ public class EdgeKey {
     private UUID timeId;
 
     public EdgeKey( UUID srcId, UUID dstId ) {
+        this( srcId, dstId, UUIDs.timeBased() );
+    }
+    
+    public EdgeKey( UUID srcId, UUID dstId, UUID timeId ) {
         this.srcId = srcId;
         this.dstId = dstId;
-        this.timeId = UUIDs.timeBased();
+        this.timeId = timeId;
     }
 
     public UUID getSrcId() {

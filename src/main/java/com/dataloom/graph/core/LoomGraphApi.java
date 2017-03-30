@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.EdgeKey;
+import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 
