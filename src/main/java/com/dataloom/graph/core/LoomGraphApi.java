@@ -20,7 +20,7 @@ public interface LoomGraphApi {
     /*
      * CRUD operations of vertices
      */
-    LoomVertex addVertex( EntityKey entityKey );
+    LoomVertex getOrCreateVertex( EntityKey entityKey );
 
     LoomVertex getVertex( UUID vertexId );
 
