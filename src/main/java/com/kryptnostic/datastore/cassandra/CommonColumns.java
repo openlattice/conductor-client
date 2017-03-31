@@ -110,7 +110,13 @@ public enum CommonColumns implements ColumnDef {
     REASON( DataType.text() ),
     BASE_TYPE( DataType.uuid() ),
     FLAGS( DataType.cboolean() ),
-    CATEGORY( DataType.text() );
+    CATEGORY( DataType.text() ),
+    SRC_VERTEX_ID( DataType.uuid() ),
+    SRC_VERTEX_TYPE_ID( DataType.uuid() ),
+    DST_VERTEX_ID( DataType.uuid() ),
+    DST_VERTEX_TYPE_ID( DataType.uuid() ),
+    EDGE_TYPE_ID( DataType.uuid() ),
+    EDGE_ID( DataType.uuid() );
 
     private transient final DataType type;
 

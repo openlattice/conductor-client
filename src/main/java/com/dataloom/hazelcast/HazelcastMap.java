@@ -57,8 +57,10 @@ public enum HazelcastMap {
     RPC_DATA_ORDERED( Table.RPC_DATA_ORDERED ),
     EDGE_TYPES( Table.EDGE_TYPES ),
     TOKEN_ACCEPTANCE_TIME( null ),
+    ENTITY_EDGES( Table.ENTITY_EDGES ),
     EDGES( Table.EDGES ),
-    VERTICES( Table.VERTICES );
+    VERTICES( Table.VERTICES ),
+    SYNC_IDS( Table.SYNC_IDS );
 
     private final Table table;
 

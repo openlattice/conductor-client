@@ -236,13 +236,13 @@ public final class RowAdapters {
     
     public static LoomEdge loomEdge( Row row ) {
         UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
-        UUID srcId = row.getUUID( CommonColumns.SOURCE_ENTITY_ID.cql() );
-        UUID dstId = row.getUUID( CommonColumns.DESTINATION_ENTITY_ID.cql() );
+        UUID srcId = row.getUUID( CommonColumns.SRC_VERTEX_ID.cql() );
+        UUID dstId = row.getUUID( CommonColumns.DST_VERTEX_ID.cql() );
         UUID timeId = row.getUUID( CommonColumns.TIME_ID.cql() );
-        UUID srcType = row.getUUID( CommonColumns.SOURCE_ENTITY_SET_ID.cql() );
-        UUID dstType = row.getUUID( CommonColumns.DESTINATION_ENTITY_SET_ID.cql() );
-        UUID edgeType = row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
-        String edgeId = row.getString( CommonColumns.ENTITYID.cql() );
+        UUID srcType = row.getUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql() );
+        UUID dstType = row.getUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql() );
+        UUID edgeType = row.getUUID( CommonColumns.EDGE_TYPE_ID.cql() );
+        String edgeId = row.getString( CommonColumns.EDGE_ID.cql() );
         
         EdgeKey key = new EdgeKey( srcId, dstId, timeId );
         EdgeLabel label = new EdgeLabel( new EntityKey( edgeType, edgeId ), srcType, dstType );

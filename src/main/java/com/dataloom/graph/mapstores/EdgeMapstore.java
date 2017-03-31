@@ -26,8 +26,8 @@ public class EdgeMapstore extends AbstractStructuredCassandraPartitionKeyValueSt
     protected BoundStatement bind( GraphWrappedEdgeKey key, BoundStatement bs ) {
         return bs
                 .setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() )
-                .setUUID( CommonColumns.SOURCE_ENTITY_ID.cql(), key.getEdgeKey().getSrcId() )
-                .setUUID( CommonColumns.DESTINATION_ENTITY_ID.cql(), key.getEdgeKey().getDstId() )
+                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), key.getEdgeKey().getSrcId() )
+                .setUUID( CommonColumns.DST_VERTEX_ID.cql(), key.getEdgeKey().getDstId() )
                 .setUUID( CommonColumns.TIME_ID.cql(), key.getEdgeKey().getTimeId() );
     }
 
@@ -35,13 +35,13 @@ public class EdgeMapstore extends AbstractStructuredCassandraPartitionKeyValueSt
     protected BoundStatement bind( GraphWrappedEdgeKey key, LoomEdge value, BoundStatement bs ) {
         return bs
                 .setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() )
-                .setUUID( CommonColumns.SOURCE_ENTITY_ID.cql(), key.getEdgeKey().getSrcId() )
-                .setUUID( CommonColumns.DESTINATION_ENTITY_ID.cql(), key.getEdgeKey().getDstId() )
+                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), key.getEdgeKey().getSrcId() )
+                .setUUID( CommonColumns.DST_VERTEX_ID.cql(), key.getEdgeKey().getDstId() )
                 .setUUID( CommonColumns.TIME_ID.cql(), key.getEdgeKey().getTimeId() )
-                .setUUID( CommonColumns.SOURCE_ENTITY_SET_ID.cql(), value.getLabel().getSrcType() )
-                .setUUID( CommonColumns.DESTINATION_ENTITY_SET_ID.cql(), value.getLabel().getDstType() )
-                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), value.getLabel().getReference().getEntitySetId() )
-                .setString( CommonColumns.ENTITYID.cql(), value.getLabel().getReference().getEntityId() );
+                .setUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), value.getLabel().getSrcType() )
+                .setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), value.getLabel().getDstType() )
+                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), value.getLabel().getReference().getEntitySetId() )
+                .setString( CommonColumns.EDGE_ID.cql(), value.getLabel().getReference().getEntityId() );
     }
 
     @Override
@@ -49,8 +49,8 @@ public class EdgeMapstore extends AbstractStructuredCassandraPartitionKeyValueSt
         return new GraphWrappedEdgeKey(
                 rs.getUUID( CommonColumns.GRAPH_ID.cql() ),
                 new EdgeKey(
-                        rs.getUUID( CommonColumns.SOURCE_ENTITY_ID.cql() ),
-                        rs.getUUID( CommonColumns.DESTINATION_ENTITY_ID.cql() ),
+                        rs.getUUID( CommonColumns.SRC_VERTEX_ID.cql() ),
+                        rs.getUUID( CommonColumns.DST_VERTEX_ID.cql() ),
                         rs.getUUID( CommonColumns.TIME_ID.cql() ) ) );
     }
 
@@ -61,16 +61,16 @@ public class EdgeMapstore extends AbstractStructuredCassandraPartitionKeyValueSt
             return null;
         }
         EdgeKey key = new EdgeKey(
-                row.getUUID( CommonColumns.SOURCE_ENTITY_ID.cql() ),
-                row.getUUID( CommonColumns.DESTINATION_ENTITY_ID.cql() ),
+                row.getUUID( CommonColumns.SRC_VERTEX_ID.cql() ),
+                row.getUUID( CommonColumns.DST_VERTEX_ID.cql() ),
                 row.getUUID( CommonColumns.TIME_ID.cql() ) );
 
         EdgeLabel label = new EdgeLabel(
                 new EntityKey(
-                        row.getUUID( CommonColumns.ENTITY_SET_ID.cql() ),
-                        row.getString( CommonColumns.ENTITYID.cql() ) ),
-                row.getUUID( CommonColumns.SOURCE_ENTITY_SET_ID.cql() ),
-                row.getUUID( CommonColumns.DESTINATION_ENTITY_SET_ID.cql() ) );
+                        row.getUUID( CommonColumns.EDGE_TYPE_ID.cql() ),
+                        row.getString( CommonColumns.EDGE_ID.cql() ) ),
+                row.getUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql() ),
+                row.getUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql() ) );
 
         return new LoomEdge( row.getUUID( CommonColumns.GRAPH_ID.cql() ), key, label );
     }

@@ -38,21 +38,25 @@ import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.DelegatedEntityKeySet;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.ComplexTypeMapstore;
+import com.dataloom.edm.mapstores.EdgeTypeMapstore;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.EnumTypesMapstore;
-import com.dataloom.edm.mapstores.EdgeTypeMapstore;
 import com.dataloom.edm.mapstores.NamesMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
+import com.dataloom.graph.core.objects.LoomEdge;
+import com.dataloom.graph.mapstores.EdgeMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
@@ -67,7 +71,6 @@ import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
-import com.dataloom.organizations.mapstores.RoleSetMapstore;
 import com.dataloom.organizations.mapstores.StringMapstore;
 import com.dataloom.organizations.mapstores.StringSetMapstore;
 import com.dataloom.organizations.mapstores.UUIDSetMapstore;
@@ -264,6 +267,16 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<RoleKey, PrincipalSet> usersWithRolesMapstore() {
         return new UsersWithRoleMapstore( session );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<UUID, UUID> syncIdsMapstore() {
+        return new SyncIdsMapstore( session );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<GraphWrappedEdgeKey, LoomEdge> edgeMapstore() {
+        return new EdgeMapstore( session );
     }
 
 }
