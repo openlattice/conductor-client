@@ -18,7 +18,9 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
 public class VerticesMapstore extends AbstractStructuredCassandraMapstore<GraphWrappedVertexId, LoomVertex> {
-
+    private static LoomVertex testValue = new LoomVertex( UUID.randomUUID(), UUID.randomUUID(), new VertexLabel( TestDataFactory.entityKey() ) );
+    private static GraphWrappedVertexId testKey = new GraphWrappedVertexId( testValue.getGraphId(), testValue.getKey() );
+    
     public VerticesMapstore( Session session ) {
         super( HazelcastMap.VERTICES.name(), session, Table.VERTICES.getBuilder() );
     }
@@ -36,7 +38,7 @@ public class VerticesMapstore extends AbstractStructuredCassandraMapstore<GraphW
 
     @Override
     protected GraphWrappedVertexId mapKey( Row row ) {
-        return RowAdapters.GraphWrappedVertexId( row );
+        return RowAdapters.graphWrappedVertexId( row );
     }
 
     @Override
@@ -50,12 +52,12 @@ public class VerticesMapstore extends AbstractStructuredCassandraMapstore<GraphW
 
     @Override
     public GraphWrappedVertexId generateTestKey() {
-        return new GraphWrappedVertexId( UUID.randomUUID(), UUID.randomUUID() );
+        return testKey;
     }
 
     @Override
     public LoomVertex generateTestValue() {
-        return new LoomVertex( UUID.randomUUID(), UUID.randomUUID(), new VertexLabel( TestDataFactory.entityKey() ) );
+        return testValue;
     }
 
 }

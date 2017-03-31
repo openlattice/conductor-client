@@ -388,6 +388,7 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( VERTICES_LOOKUP )
                         .ifNotExists()
                         .partitionKey( GRAPH_ID, ENTITY_KEY )
+                        .columns( VERTEX_ID )
                         .secondaryIndex( VERTEX_ID );
 
             default:

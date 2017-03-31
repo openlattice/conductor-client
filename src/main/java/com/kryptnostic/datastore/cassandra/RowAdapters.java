@@ -347,7 +347,7 @@ public final class RowAdapters {
         return row.getBool( CommonColumns.FLAGS.cql() );
     }
 
-    public static GraphWrappedVertexId GraphWrappedVertexId( Row row ) {
+    public static GraphWrappedVertexId graphWrappedVertexId( Row row ) {
         UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
         UUID vertexId = row.getUUID( CommonColumns.VERTEX_ID.cql() );
         return new GraphWrappedVertexId( graphId, vertexId );

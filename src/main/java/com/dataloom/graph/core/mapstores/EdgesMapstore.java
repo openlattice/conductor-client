@@ -2,7 +2,6 @@ package com.dataloom.graph.core.mapstores;
 
 import java.util.UUID;
 
-import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.graph.core.objects.EdgeLabel;
 import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
@@ -13,14 +12,16 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.utils.UUIDs;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
+import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
-public class EdgesMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<GraphWrappedEdgeKey, LoomEdge> {
+public class EdgesMapstore extends AbstractStructuredCassandraMapstore<GraphWrappedEdgeKey, LoomEdge> {
 
+    private static LoomEdge testValue = new LoomEdge( UUID.randomUUID(), generateTestEdgeKey(), generateTestEdgeLabel() );
+    private static GraphWrappedEdgeKey testKey = new GraphWrappedEdgeKey( testValue.getGraphId(), testValue.getKey() );
+    
     public EdgesMapstore( Session session ) {
         super( HazelcastMap.EDGES.name(), session, Table.EDGES.getBuilder() );
     }
@@ -36,7 +37,7 @@ public class EdgesMapstore extends AbstractStructuredCassandraPartitionKeyValueS
 
     @Override
     protected BoundStatement bind( GraphWrappedEdgeKey key, LoomEdge value, BoundStatement bs ) {
-        return bs.bind( key, bs )
+        return bind( key, bs )
                 .setUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), value.getLabel().getSrcType() )
                 .setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), value.getLabel().getDstType() )
                 .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), value.getLabel().getReference().getEntitySetId() )
@@ -59,12 +60,12 @@ public class EdgesMapstore extends AbstractStructuredCassandraPartitionKeyValueS
 
     @Override
     public GraphWrappedEdgeKey generateTestKey() {
-        return new GraphWrappedEdgeKey( UUID.randomUUID(), generateTestEdgeKey() );
+        return testKey;
     }
 
     @Override
     public LoomEdge generateTestValue() {
-        return new LoomEdge( UUID.randomUUID(), generateTestEdgeKey(), generateTestEdgeLabel() );
+        return testValue;
     }
 
     public static EdgeKey generateTestEdgeKey() {
