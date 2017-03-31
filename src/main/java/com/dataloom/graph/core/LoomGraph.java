@@ -16,7 +16,6 @@ import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.graph.core.objects.VertexLabel;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.datastax.driver.core.utils.UUIDs;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
@@ -28,13 +27,13 @@ public class LoomGraph implements LoomGraphApi {
 
     private static IMap<GraphWrappedVertexId, LoomVertex> vertices;
     private static IMap<GraphWrappedEntityKey, UUID>      verticesLookup;
-    private static IMap<GraphWrappedEdgeKey, LoomEdge>    edgeLookup;
 
     private static IMap<GraphWrappedEdgeKey, LoomEdge>    edges;
     private static GraphQueryService                      gqs;
 
     public static void init( HazelcastInstance hazelcastInstance, GraphQueryService gqs ) {
         LoomGraph.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
+        LoomGraph.verticesLookup = hazelcastInstance.getMap( HazelcastMap.VERTICES_LOOKUP.name() );
         LoomGraph.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
 
         LoomGraph.gqs = gqs;
@@ -90,7 +89,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey edgeLabel ) {
-        EdgeKey key = new EdgeKey( src.getVertexId(), dst.getVertexId() );
+        EdgeKey key = new EdgeKey( src.getKey(), dst.getKey() );
         EdgeLabel label = new EdgeLabel(
                 edgeLabel,
                 src.getLabel().getReference().getEntitySetId(),

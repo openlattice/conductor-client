@@ -19,7 +19,10 @@ public class EdgeKey {
     public EdgeKey( UUID srcId, UUID dstId ) {
         this( srcId, dstId, UUIDs.timeBased() );
     }
-    
+
+    /*
+     * Only for deserialization; the time uuid should not be provided in any other case.
+     */
     public EdgeKey( UUID srcId, UUID dstId, UUID timeId ) {
         this.srcId = srcId;
         this.dstId = dstId;

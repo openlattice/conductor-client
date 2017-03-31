@@ -51,6 +51,7 @@ public enum CommonColumns implements ColumnDef {
     ENTITY_TYPE_ID( DataType.uuid() ),
     ENTITY_TYPE_IDS( DataType.frozenSet( DataType.uuid() ) ),
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
+    ENTITY_KEY( DataType.blob() ),
     ENTITY_KEYS( DataType.frozenSet( DataType.blob() ) ),
     FQN( DataType.text() ),
     ID( DataType.uuid() ),
@@ -85,7 +86,7 @@ public enum CommonColumns implements ColumnDef {
     SECURABLE_OBJECTID( DataType.uuid() ),
     SRC( DataType.set( DataType.uuid() ) ),
     STATUS( DataType.text() ),
-    TIME_ID( DataType.timeuuid() ),
+    TIME_ID( DataType.uuid() ),
     TYPE_ID( DataType.uuid() ),
     TRUSTED_ORGANIZATIONS( DataType.set( DataType.uuid() ) ),
     ORGANIZATION_ID( DataType.uuid() ),
@@ -116,7 +117,8 @@ public enum CommonColumns implements ColumnDef {
     DST_VERTEX_ID( DataType.uuid() ),
     DST_VERTEX_TYPE_ID( DataType.uuid() ),
     EDGE_TYPE_ID( DataType.uuid() ),
-    EDGE_ID( DataType.uuid() );
+    EDGE_ENTITYID( DataType.varchar() ),
+    TIME_UUID( DataType.timeuuid() );
 
     private transient final DataType type;
 

@@ -11,7 +11,6 @@ public class EdgeLabel {
     private UUID      dstType;
 
     public EdgeLabel( EntityKey reference, UUID srcType, UUID dstType ) {
-        super();
         this.reference = reference;
         this.srcType = srcType;
         this.dstType = dstType;

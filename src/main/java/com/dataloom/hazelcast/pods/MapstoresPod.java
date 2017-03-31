@@ -54,9 +54,14 @@ import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.graph.core.mapstores.EdgesMapstore;
+import com.dataloom.graph.core.mapstores.VerticesLookupMapstore;
+import com.dataloom.graph.core.mapstores.VerticesMapstore;
 import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
+import com.dataloom.graph.core.objects.GraphWrappedEntityKey;
+import com.dataloom.graph.core.objects.GraphWrappedVertexId;
 import com.dataloom.graph.core.objects.LoomEdge;
-import com.dataloom.graph.mapstores.EdgeMapstore;
+import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
@@ -253,7 +258,7 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<LinkingEntityKey, UUID> linkingEntityVerticesMapstore() {
         return new LinkingEntityVerticesMapstore( session );
     }
-    
+
     @Bean
     public SelfRegisteringMapStore<UUID, EdgeType> edgeTypeMapstore() {
         return new EdgeTypeMapstore( session );
@@ -268,15 +273,25 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<RoleKey, PrincipalSet> usersWithRolesMapstore() {
         return new UsersWithRoleMapstore( session );
     }
-    
+
     @Bean
     public SelfRegisteringMapStore<UUID, UUID> syncIdsMapstore() {
         return new SyncIdsMapstore( session );
     }
-    
+
     @Bean
-    public SelfRegisteringMapStore<GraphWrappedEdgeKey, LoomEdge> edgeMapstore() {
-        return new EdgeMapstore( session );
+    public SelfRegisteringMapStore<GraphWrappedVertexId, LoomVertex> verticesMapstore() {
+        return new VerticesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<GraphWrappedEntityKey, UUID> verticesLookupMapstore() {
+        return new VerticesLookupMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<GraphWrappedEdgeKey, LoomEdge> edgesMapstore() {
+        return new EdgesMapstore( session );
     }
 
 }

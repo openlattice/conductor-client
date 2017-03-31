@@ -5,6 +5,7 @@ import java.util.UUID;
 public class LoomVertex {
 
     private UUID graphId;
+    //key is the vertexId
     private UUID key;
     
     private VertexLabel label;
@@ -19,7 +20,7 @@ public class LoomVertex {
         return graphId;
     }
 
-    public UUID getVertexId() {
+    public UUID getKey() {
         return key;
     }
 
