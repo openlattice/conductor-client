@@ -12,7 +12,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
@@ -22,23 +21,21 @@ import jersey.repackaged.com.google.common.collect.Iterables;
 public class GraphQueryService {
     private static final Logger     logger = LoggerFactory.getLogger( GraphQueryService.class );
     private final Session           session;
-    private final ObjectMapper      mapper;
 
     private final PreparedStatement deleteAllEdgesForSrcQuery;
     private final PreparedStatement getEdgesQuery;
 
-    public GraphQueryService( Session session, ObjectMapper mapper ) {
+    public GraphQueryService( Session session ) {
         this.session = session;
-        this.mapper = mapper;
 
         this.deleteAllEdgesForSrcQuery = prepareDeleteAllEdgesForSrcQuery( session );
         this.getEdgesQuery = prepareGetEdgesQuery( session );
 
     }
 
-    public Iterable<LoomEdge> getEdges( EdgeSelection selection ) {
+    public Iterable<LoomEdge> getEdges( UUID graphId, EdgeSelection selection ) {
         BoundStatement stmt = getEdgesQuery.bind()
-                .setUUID( CommonColumns.GRAPH_ID.cql(), selection.getGraphId() );
+                .setUUID( CommonColumns.GRAPH_ID.cql(), graphId );
         if ( selection.getOptionalSrcId().isPresent() )
             stmt.setUUID( CommonColumns.SRC_VERTEX_ID.cql(), selection.getOptionalSrcId().get() );
         if ( selection.getOptionalSrcType().isPresent() )
@@ -53,8 +50,9 @@ public class GraphQueryService {
         return Iterables.transform( rs, RowAdapters::loomEdge );
     }
 
-    public void deleteEdges( UUID srcId ) {
-        session.execute( deleteAllEdgesForSrcQuery.bind().setUUID( CommonColumns.SRC_VERTEX_ID.cql(), srcId ) );
+    public void deleteEdges( UUID graphId, UUID srcId ) {
+        session.execute( deleteAllEdgesForSrcQuery.bind().setUUID( CommonColumns.GRAPH_ID.cql(), graphId )
+                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), srcId ) );
     }
 
     private static PreparedStatement prepareDeleteAllEdgesForSrcQuery( Session session ) {

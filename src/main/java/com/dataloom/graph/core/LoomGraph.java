@@ -104,13 +104,20 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
+    public LoomEdge addEdge( EntityKey src, EntityKey dst, EntityKey label ) {
+        LoomVertex srcVertex = getOrCreateVertex( src );
+        LoomVertex dstVertex = getOrCreateVertex( dst );
+        return addEdge( srcVertex, dstVertex, label );
+    }
+
+    @Override
     public LoomEdge getEdge( EdgeKey key ) {
         return edges.get( new GraphWrappedEdgeKey( graphId, key ) );
     }
 
     @Override
     public Iterable<LoomEdge> getEdges( EdgeSelection selection ) {
-        return gqs.getEdges( selection );
+        return gqs.getEdges( graphId, selection );
     }
 
     @Override
@@ -120,7 +127,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public void deleteEdges( UUID srcId ) {
-        gqs.deleteEdges( srcId );
+        gqs.deleteEdges( graphId, srcId );
     }
 
 }

@@ -31,6 +31,8 @@ public interface LoomGraphApi {
      * CRUD operations of edges
      */
     LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey edgeLabel );
+    
+    LoomEdge addEdge( EntityKey src, EntityKey dst, EntityKey label);
 
     /**
      * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
