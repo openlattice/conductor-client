@@ -19,54 +19,7 @@
 
 package com.kryptnostic.conductor.rpc.odata;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_CHILDREN_PERMISSIONS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_KEY_VALUE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_ROOT;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ALLOWED_EMAIL_DOMAINS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ANALYZER;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.AUDIT_EVENT_DETAILS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.COUNT;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DATATYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DESCRIPTION;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_ENTITY_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_ENTITY_SET_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_LINKING_VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_VALUE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEYS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_TYPE_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_DIAMETER;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.KEY;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.MEMBERS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.NAMESPACE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME_SET;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PII_FIELD;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTIES;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_TYPE_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_VALUE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.REQUESTID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECTID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECT_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_ENTITY_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_ENTITY_SET_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_LINKING_VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ORGANIZATION_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_IDS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 
 import java.util.EnumMap;
 
@@ -78,14 +31,13 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
-
 public enum Table implements TableDef {
     ACL_KEYS,
     AUDIT_EVENTS,
     AUDIT_METRICS,
     COMPLEX_TYPES,
     DATA,
+    EDGES,
     ENTITY_EDGES,
     ENTITY_SETS,
     ENTITY_TYPES,
@@ -107,7 +59,9 @@ public enum Table implements TableDef {
     RPC_DATA_ORDERED,
     SCHEMAS,
     WEIGHTED_LINKING_EDGES,
-    EDGE_TYPES;
+    EDGE_TYPES,
+    VERTICES,
+    SYNC_IDS;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -172,6 +126,16 @@ public enum Table implements TableDef {
                         .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
                         .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
                         .columns( ENTITYID, SYNCID )
+                        .sasi( SYNCID );
+            case EDGES:
+                /*
+                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
+                 */
+            return new CassandraTableBuilder( EDGES )
+                        .ifNotExists()
+                        .partitionKey( SRC_VERTEX_TYPE_ID, SRC_VERTEX_ID )
+                        .clusteringColumns( DST_VERTEX_TYPE_ID, DST_VERTEX_ID )
+                        .columns( EDGE_ID, EDGE_TYPE_ID, TIME_ID, GRAPH_ID, SYNCID )
                         .sasi( SYNCID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
@@ -337,6 +301,13 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( NAMESPACE )
                         .columns( NAME_SET );
+                
+            case SYNC_IDS:
+                return new CassandraTableBuilder( SYNC_IDS )
+                        .ifNotExists()
+                        .partitionKey( ENTITY_SET_ID )
+                        .clusteringColumns( SYNCID )
+                        .withDescendingOrder( SYNCID );
 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );

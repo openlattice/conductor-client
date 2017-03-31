@@ -128,10 +128,5 @@ public class TypeCodecsPod {
     public TypeCodec<EntityKey> entitykeyCodec() {
         return new EntityKeyTypeCodec( ObjectMappers.getJsonMapper() );
     }
-    
-    @Bean
-    public TypeCodec<Set<UUID>> uuidTreeSetCodec(){
-        return TreeSetCodec.getUUIDInstance();
-    }
 
 }

@@ -85,7 +85,7 @@ public enum CommonColumns implements ColumnDef {
     SECURABLE_OBJECTID( DataType.uuid() ),
     SRC( DataType.set( DataType.uuid() ) ),
     STATUS( DataType.text() ),
-    TIME_ID( DataType.uuid() ),
+    TIME_ID( DataType.timeuuid() ),
     TYPE_ID( DataType.uuid() ),
     TRUSTED_ORGANIZATIONS( DataType.set( DataType.uuid() ) ),
     ORGANIZATION_ID( DataType.uuid() ),
@@ -110,7 +110,13 @@ public enum CommonColumns implements ColumnDef {
     REASON( DataType.text() ),
     BASE_TYPE( DataType.uuid() ),
     FLAGS( DataType.cboolean() ),
-    CATEGORY( DataType.text() );
+    CATEGORY( DataType.text() ),
+    SRC_VERTEX_ID( DataType.uuid() ),
+    SRC_VERTEX_TYPE_ID( DataType.uuid() ),
+    DST_VERTEX_ID( DataType.uuid() ),
+    DST_VERTEX_TYPE_ID( DataType.uuid() ),
+    EDGE_TYPE_ID( DataType.uuid() ),
+    EDGE_ID( DataType.uuid() );
 
     private transient final DataType type;
 
