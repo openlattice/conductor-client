@@ -37,12 +37,18 @@ public class GraphQueryService {
     }
 
     public Iterable<LoomEdge> getEdges( EdgeSelection selection ) {
-        BoundStatement stmt = getEdgesQuery.bind();
-        if ( selection.getOptionalSrcId().isPresent() ) stmt.bind( CommonColumns.SRC_VERTEX_ID.cql(), selection.getOptionalSrcId().get() );
-        if ( selection.getOptionalSrcType().isPresent() ) stmt.bind( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), selection.getOptionalSrcType().get() );
-        if ( selection.getOptionalDstId().isPresent() ) stmt.bind( CommonColumns.DST_VERTEX_ID.cql(), selection.getOptionalDstId().get() );
-        if ( selection.getOptionalDstType().isPresent() ) stmt.bind( CommonColumns.DST_VERTEX_TYPE_ID.cql(), selection.getOptionalDstType().get() );
-        if ( selection.getOptionalEdgeType().isPresent() ) stmt.bind( CommonColumns.EDGE_TYPE_ID.cql(), selection.getOptionalEdgeType().get() );
+        BoundStatement stmt = getEdgesQuery.bind()
+                .setUUID( CommonColumns.GRAPH_ID.cql(), selection.getGraphId() );
+        if ( selection.getOptionalSrcId().isPresent() )
+            stmt.setUUID( CommonColumns.SRC_VERTEX_ID.cql(), selection.getOptionalSrcId().get() );
+        if ( selection.getOptionalSrcType().isPresent() )
+            stmt.setUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), selection.getOptionalSrcType().get() );
+        if ( selection.getOptionalDstId().isPresent() )
+            stmt.setUUID( CommonColumns.DST_VERTEX_ID.cql(), selection.getOptionalDstId().get() );
+        if ( selection.getOptionalDstType().isPresent() )
+            stmt.setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), selection.getOptionalDstType().get() );
+        if ( selection.getOptionalEdgeType().isPresent() )
+            stmt.setUUID( CommonColumns.EDGE_TYPE_ID.cql(), selection.getOptionalEdgeType().get() );
         ResultSet rs = session.execute( stmt );
         return Iterables.transform( rs, RowAdapters::loomEdge );
     }
@@ -54,17 +60,21 @@ public class GraphQueryService {
     private static PreparedStatement prepareDeleteAllEdgesForSrcQuery( Session session ) {
         return session.prepare(
                 QueryBuilder.delete().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).where( QueryBuilder
-                        .eq( CommonColumns.SRC_VERTEX_ID.cql(), CommonColumns.SRC_VERTEX_ID.bindMarker() ) ) );
+                        .eq( CommonColumns.GRAPH_ID.cql(), CommonColumns.GRAPH_ID.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.SRC_VERTEX_ID.cql(),
+                                CommonColumns.SRC_VERTEX_ID.bindMarker() ) ) );
     }
 
     private static PreparedStatement prepareGetEdgesQuery( Session session ) {
         return session
-                .prepare( QueryBuilder.select().all().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).where(
-                        QueryBuilder.eq( CommonColumns.SRC_VERTEX_ID.cql(),
+                .prepare( QueryBuilder.select().all().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() )
+                        .allowFiltering()
+                        .where( QueryBuilder.eq( CommonColumns.GRAPH_ID.cql(),
+                                CommonColumns.GRAPH_ID.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.SRC_VERTEX_ID.cql(),
                                 CommonColumns.SRC_VERTEX_ID.bindMarker() ) )
-                        .and(
-                                QueryBuilder.eq( CommonColumns.SRC_VERTEX_TYPE_ID.cql(),
-                                        CommonColumns.SRC_VERTEX_TYPE_ID.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.SRC_VERTEX_TYPE_ID.cql(),
+                                CommonColumns.SRC_VERTEX_TYPE_ID.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.DST_VERTEX_ID.cql(),
                                 CommonColumns.DST_VERTEX_ID.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.DST_VERTEX_TYPE_ID.cql(),
