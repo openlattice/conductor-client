@@ -25,10 +25,15 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_ROOT;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ALLOWED_EMAIL_DOMAINS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ANALYZER;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.AUDIT_EVENT_DETAILS;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.BASE_TYPE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.BIDIRECTIONAL;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.CATEGORY;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.COUNT;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DATATYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DESCRIPTION;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.DEST;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_ENTITY_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_ENTITY_SET_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_LINKING_VERTEX_ID;
@@ -37,6 +42,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEYS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_TYPE_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.FLAGS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_DIAMETER;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ID;
@@ -45,28 +51,30 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.MEMBERS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.NAMESPACE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME_SET;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ORGANIZATION_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PII_FIELD;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_IDS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTIES;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_TYPE_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_VALUE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.REQUESTID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.RPC_REQUEST_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.RPC_VALUE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.RPC_WEIGHT;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECTID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECT_TYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_ENTITY_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_ENTITY_SET_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_LINKING_VERTEX_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ORGANIZATION_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_IDS;
 
 import java.util.EnumMap;
 
@@ -77,8 +85,6 @@ import com.dataloom.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
-
-import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 
 public enum Table implements TableDef {
     ACL_KEYS,
@@ -154,7 +160,7 @@ public enum Table implements TableDef {
                                 PROPERTIES,
                                 BASE_TYPE,
                                 CommonColumns.SCHEMAS,
-                                CATEGORY)
+                                CATEGORY )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case DATA:
                 return new CassandraTableBuilder( DATA )
@@ -168,7 +174,7 @@ public enum Table implements TableDef {
                 /*
                  * The sync id is for the edge. The entity containing data for that edge is managed independently.
                  */
-            return new CassandraTableBuilder( ENTITY_EDGES )
+                return new CassandraTableBuilder( ENTITY_EDGES )
                         .ifNotExists()
                         .partitionKey( SOURCE_ENTITY_SET_ID, SOURCE_ENTITY_ID )
                         .clusteringColumns( DESTINATION_ENTITY_SET_ID, DESTINATION_ENTITY_ID )
@@ -268,7 +274,6 @@ public enum Table implements TableDef {
                         .partitionKey( ID )
                         .columns( TITLE,
                                 DESCRIPTION,
-                                TRUSTED_ORGANIZATIONS,
                                 ALLOWED_EMAIL_DOMAINS,
                                 MEMBERS );
             case ORGANIZATIONS_ROLES:
@@ -278,7 +283,7 @@ public enum Table implements TableDef {
                         .clusteringColumns( ID )
                         .columns( TITLE,
                                 DESCRIPTION,
-                                PRINCIPAL_IDS ); 
+                                PRINCIPAL_IDS );
             case PROPERTY_TYPES:
                 return new CassandraTableBuilder( PROPERTY_TYPES )
                         .ifNotExists()
@@ -338,7 +343,7 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( NAMESPACE )
                         .columns( NAME_SET );
-                
+
             case SYNC_IDS:
                 return new CassandraTableBuilder( SYNC_IDS )
                         .ifNotExists()

@@ -193,16 +193,6 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> trustedOrgsMapstore() {
-        return new UUIDSetMapstore(
-                HazelcastMap.TRUSTED_ORGANIZATIONS,
-                session,
-                Table.ORGANIZATIONS,
-                CommonColumns.ID,
-                CommonColumns.TRUSTED_ORGANIZATIONS );
-    }
-
-    @Bean
     public SelfRegisteringMapStore<UUID, DelegatedStringSet> aaEmailDomainsMapstore() {
         return new StringSetMapstore(
                 HazelcastMap.ALLOWED_EMAIL_DOMAINS,
