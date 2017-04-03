@@ -22,14 +22,14 @@ public class GraphQueryService {
     private static final Logger     logger = LoggerFactory.getLogger( GraphQueryService.class );
     private final Session           session;
 
-    private final PreparedStatement deleteAllEdgesForSrcQuery;
     private final PreparedStatement getEdgesQuery;
+    private final PreparedStatement deleteEdgeDataQuery;
 
     public GraphQueryService( Session session ) {
         this.session = session;
 
-        this.deleteAllEdgesForSrcQuery = prepareDeleteAllEdgesForSrcQuery( session );
         this.getEdgesQuery = prepareGetEdgesQuery( session );
+        this.deleteEdgeDataQuery = prepareDeleteEdgeDataQuery( session );
 
     }
 
@@ -50,17 +50,9 @@ public class GraphQueryService {
         return Iterables.transform( rs, RowAdapters::loomEdge );
     }
 
-    public void deleteEdges( UUID graphId, UUID srcId ) {
-        session.execute( deleteAllEdgesForSrcQuery.bind().setUUID( CommonColumns.GRAPH_ID.cql(), graphId )
-                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), srcId ) );
-    }
-
-    private static PreparedStatement prepareDeleteAllEdgesForSrcQuery( Session session ) {
-        return session.prepare(
-                QueryBuilder.delete().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).where( QueryBuilder
-                        .eq( CommonColumns.GRAPH_ID.cql(), CommonColumns.GRAPH_ID.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.SRC_VERTEX_ID.cql(),
-                                CommonColumns.SRC_VERTEX_ID.bindMarker() ) ) );
+    public void deleteEdgeData( UUID entitySetId, String edgeId ) {
+        session.execute( deleteEdgeDataQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                .setString( CommonColumns.ENTITYID.cql(), edgeId ) );
     }
 
     private static PreparedStatement prepareGetEdgesQuery( Session session ) {
@@ -80,6 +72,12 @@ public class GraphQueryService {
                         .and( QueryBuilder.eq( CommonColumns.EDGE_TYPE_ID.cql(),
                                 CommonColumns.EDGE_TYPE_ID.bindMarker() ) ) );
 
+    }
+
+    private static PreparedStatement prepareDeleteEdgeDataQuery( Session session ) {
+        return session.prepare( QueryBuilder.delete().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.ENTITY_SET_ID.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.EDGE_ENTITYID.bindMarker() ) ) );
     }
 
 }

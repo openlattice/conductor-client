@@ -16,6 +16,7 @@ import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.graph.core.objects.VertexLabel;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.base.Optional;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
@@ -122,12 +123,25 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public void deleteEdge( EdgeKey key ) {
+        LoomEdge edge = getEdge( key );
+        gqs.deleteEdgeData( edge.getLabel().getReference().getEntitySetId(),
+                edge.getLabel().getReference().getEntityId() );
         edges.delete( key );
     }
 
     @Override
     public void deleteEdges( UUID srcId ) {
-        gqs.deleteEdges( graphId, srcId );
+        getEdges( new EdgeSelection(
+                Optional.of( srcId ),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent() ) ).forEach( edge -> {
+                    gqs.deleteEdgeData( edge.getLabel().getReference().getEntitySetId(),
+                            edge.getLabel().getReference().getEntityId() );
+                    edges.delete( edge.getKey() );
+                } );
+        ;
     }
 
 }
