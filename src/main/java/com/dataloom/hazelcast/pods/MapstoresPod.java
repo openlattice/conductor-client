@@ -67,7 +67,6 @@ import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.linking.mapstores.LinkedEntitiesMapstore;
 import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
 import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
@@ -227,11 +226,6 @@ public class MapstoresPod {
                 Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.MEMBERS );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<EntityKey, DelegatedEntityKeySet> linkedEntitiesMapstore() {
-        return new LinkedEntitiesMapstore( session );
     }
 
     @Bean
