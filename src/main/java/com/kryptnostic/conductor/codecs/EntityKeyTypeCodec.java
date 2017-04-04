@@ -1,31 +1,28 @@
 package com.kryptnostic.conductor.codecs;
 
-import com.dataloom.data.EntityKey;
-import com.datastax.driver.core.DataType;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.TypeCodec;
-import com.datastax.driver.core.exceptions.InvalidTypeException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.dataloom.data.EntityKey;
+import com.datastax.driver.core.DataType;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.core.exceptions.InvalidTypeException;
+
 public class EntityKeyTypeCodec extends TypeCodec<EntityKey> {
     private static final Base64.Encoder encoder = Base64.getEncoder();
     private static final Base64.Decoder decoder = Base64.getDecoder();
 
-    private static final Logger logger = LoggerFactory
+    private static final Logger         logger  = LoggerFactory
             .getLogger( EntityKeyTypeCodec.class );
 
-    private final ObjectMapper mapper;
-
-    public EntityKeyTypeCodec( ObjectMapper mapper ) {
+    public EntityKeyTypeCodec() {
         super( DataType.blob(), EntityKey.class );
-        this.mapper = mapper;
     }
 
     @Override
@@ -53,11 +50,13 @@ public class EntityKeyTypeCodec extends TypeCodec<EntityKey> {
             return null;
         }
         final byte[] idBytes = value.getEntityId().getBytes( StandardCharsets.UTF_8 );
-        final int len = 2 * Long.BYTES + idBytes.length;
+        final int len = 4 * Long.BYTES + idBytes.length;
         final byte[] bytes = new byte[ len ];
         final ByteBuffer buf = ByteBuffer.wrap( bytes );
         buf.putLong( value.getEntitySetId().getLeastSignificantBits() );
         buf.putLong( value.getEntitySetId().getMostSignificantBits() );
+        buf.putLong( value.getSyncId().getLeastSignificantBits() );
+        buf.putLong( value.getSyncId().getMostSignificantBits() );
         buf.put( idBytes );
         buf.clear();
         return buf;
@@ -71,10 +70,13 @@ public class EntityKeyTypeCodec extends TypeCodec<EntityKey> {
         long lsb = buf.getLong();
         long msb = buf.getLong();
         UUID entitySetId = new UUID( msb, lsb );
+        lsb = buf.getLong();
+        msb = buf.getLong();
+        UUID syncId = new UUID( msb, lsb );
         byte[] idBytes = new byte[ buf.remaining() ];
-        buf.get(idBytes);
+        buf.get( idBytes );
         String entityId = new String( idBytes, StandardCharsets.UTF_8 );
-        return new EntityKey( entitySetId, entityId );
+        return new EntityKey( entitySetId, entityId, syncId );
     }
 
 }

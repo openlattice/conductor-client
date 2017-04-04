@@ -273,7 +273,7 @@ public enum Table implements TableDef {
             case LINKING_ENTITY_VERTICES:
                 return new CassandraTableBuilder( LINKING_ENTITY_VERTICES )
                         .ifNotExists()
-                        .partitionKey( ENTITY_SET_ID, ENTITYID )
+                        .partitionKey( ENTITY_SET_ID, ENTITYID, SYNCID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( VERTEX_ID );
             case EDGE_TYPES:
