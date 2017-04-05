@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.EdgeKey;
-import com.dataloom.graph.core.objects.EdgeLabel;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
@@ -42,16 +42,16 @@ public class LoomEdgeStreamSerializer implements SelfRegisteringStreamSerializer
     }
 
     public static void serialize( ObjectDataOutput out, LoomEdge object ) throws IOException {
-        UUIDStreamSerializer.serialize( out, object.getGraphId() );
         EdgeKeyStreamSerializer.serialize( out, object.getKey() );
-        EdgeLabelStreamSerializer.serialize( out, object.getLabel() );
+        UUIDStreamSerializer.serialize( out, object.getSrcType() );
+        UUIDStreamSerializer.serialize( out, object.getDstType() );
     }
 
     public static LoomEdge deserialize( ObjectDataInput in ) throws IOException {
-        final UUID graphId = UUIDStreamSerializer.deserialize( in );
         final EdgeKey key = EdgeKeyStreamSerializer.deserialize( in );
-        final EdgeLabel label = EdgeLabelStreamSerializer.deserialize( in );
-        return new LoomEdge( graphId, key, label );
+        final UUID srcType = UUIDStreamSerializer.deserialize( in );
+        final UUID dstType = UUIDStreamSerializer.deserialize( in );
+        return new LoomEdge( key, srcType, dstType );
     }
 
 }

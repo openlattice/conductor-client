@@ -118,7 +118,7 @@ public class TypeCodecsPod {
     public EnumNameCodec<RequestStatus> requestStatusCodec() {
         return new EnumNameCodec<>( RequestStatus.class );
     }
-    
+
     @Bean
     public EnumNameCodec<Analyzer> analyzerCodec() {
         return new EnumNameCodec<>( Analyzer.class );
@@ -126,7 +126,7 @@ public class TypeCodecsPod {
 
     @Bean
     public TypeCodec<EntityKey> entitykeyCodec() {
-        return new EntityKeyTypeCodec( ObjectMappers.getJsonMapper() );
+        return new EntityKeyTypeCodec();
     }
 
 }

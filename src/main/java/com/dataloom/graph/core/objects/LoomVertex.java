@@ -2,38 +2,33 @@ package com.dataloom.graph.core.objects;
 
 import java.util.UUID;
 
+import com.dataloom.data.EntityKey;
+
 public class LoomVertex {
 
-    private UUID        graphId;
-    // key is the vertexId
-    private UUID        key;
+    private UUID      key;
 
-    private VertexLabel label;
+    private EntityKey reference;
 
-    public LoomVertex( UUID graphId, UUID key, VertexLabel label ) {
-        this.graphId = graphId;
+    public LoomVertex( UUID key, EntityKey reference ) {
         this.key = key;
-        this.label = label;
-    }
-
-    public UUID getGraphId() {
-        return graphId;
+        this.reference = reference;
     }
 
     public UUID getKey() {
         return key;
     }
 
-    public VertexLabel getLabel() {
-        return label;
+    public EntityKey getReference() {
+        return reference;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ( ( graphId == null ) ? 0 : graphId.hashCode() );
         result = prime * result + ( ( key == null ) ? 0 : key.hashCode() );
+        result = prime * result + ( ( reference == null ) ? 0 : reference.hashCode() );
         return result;
     }
 
@@ -43,18 +38,18 @@ public class LoomVertex {
         if ( obj == null ) return false;
         if ( getClass() != obj.getClass() ) return false;
         LoomVertex other = (LoomVertex) obj;
-        if ( graphId == null ) {
-            if ( other.graphId != null ) return false;
-        } else if ( !graphId.equals( other.graphId ) ) return false;
         if ( key == null ) {
             if ( other.key != null ) return false;
         } else if ( !key.equals( other.key ) ) return false;
+        if ( reference == null ) {
+            if ( other.reference != null ) return false;
+        } else if ( !reference.equals( other.reference ) ) return false;
         return true;
     }
 
     @Override
     public String toString() {
-        return "LoomVertex [graphId=" + graphId + ", key=" + key + ", label=" + label + "]";
+        return "LoomVertex [key=" + key + ", reference=" + reference + "]";
     }
 
 }

@@ -31,6 +31,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CATEGORY;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.COUNT;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.CURRENT_SYNC_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DATATYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DESCRIPTION;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DEST;
@@ -80,9 +81,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_VERTEX_TYPE_
 import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_UUID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
 
 import java.util.EnumMap;
@@ -109,7 +108,6 @@ public enum Table implements TableDef {
     LINKING_EDGES,
     LINKED_ENTITY_SETS,
     LINKED_ENTITY_TYPES,
-    LINKED_ENTITIES,
     LINKING_VERTICES,
     LINKING_ENTITY_VERTICES,
     NAMES,
@@ -193,20 +191,16 @@ public enum Table implements TableDef {
                         .columns( ENTITYID, SYNCID )
                         .sasi( SYNCID );
             case EDGES:
-                /*
-                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
-                 */
                 return new CassandraTableBuilder( EDGES )
                         .ifNotExists()
-                        .partitionKey( GRAPH_ID, SRC_VERTEX_ID )
-                        .clusteringColumns( DST_VERTEX_ID, TIME_UUID )
-                        .columns( SRC_VERTEX_TYPE_ID, DST_VERTEX_TYPE_ID, EDGE_TYPE_ID, EDGE_ENTITYID, SYNCID )
-                        .secondaryIndex( GRAPH_ID,
+                        .partitionKey( SRC_VERTEX_ID )
+                        .clusteringColumns( DST_VERTEX_ID, EDGE_TYPE_ID, EDGE_ENTITYID, SYNCID )
+                        .columns( SRC_VERTEX_TYPE_ID, DST_VERTEX_TYPE_ID )
+                        .secondaryIndex(
                                 DST_VERTEX_ID,
                                 SRC_VERTEX_TYPE_ID,
                                 DST_VERTEX_TYPE_ID,
-                                EDGE_TYPE_ID,
-                                SYNCID );
+                                EDGE_TYPE_ID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
@@ -265,12 +259,6 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( ID )
                         .columns( CommonColumns.ENTITY_TYPE_IDS );
-            case LINKED_ENTITIES:
-                return new CassandraTableBuilder( LINKED_ENTITIES )
-                        .ifNotExists()
-                        .partitionKey( ENTITY_SET_ID )
-                        .clusteringColumns( ENTITYID )
-                        .columns( ENTITY_KEYS );
             case LINKING_VERTICES:
                 return new CassandraTableBuilder( LINKING_VERTICES )
                         .ifNotExists()
@@ -280,7 +268,7 @@ public enum Table implements TableDef {
             case LINKING_ENTITY_VERTICES:
                 return new CassandraTableBuilder( LINKING_ENTITY_VERTICES )
                         .ifNotExists()
-                        .partitionKey( ENTITY_SET_ID, ENTITYID )
+                        .partitionKey( ENTITY_SET_ID, ENTITYID, SYNCID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( VERTEX_ID );
             case EDGE_TYPES:
@@ -301,7 +289,6 @@ public enum Table implements TableDef {
                         .partitionKey( ID )
                         .columns( TITLE,
                                 DESCRIPTION,
-                                TRUSTED_ORGANIZATIONS,
                                 ALLOWED_EMAIL_DOMAINS,
                                 MEMBERS );
             case ORGANIZATIONS_ROLES:
@@ -377,19 +364,18 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID )
                         .clusteringColumns( SYNCID )
+                        .staticColumns( CURRENT_SYNC_ID )
                         .withDescendingOrder( SYNCID );
             case VERTICES:
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()
-                        .partitionKey( GRAPH_ID, VERTEX_ID )
-                        .columns( ENTITY_KEY )
-                        .secondaryIndex( GRAPH_ID );
+                        .partitionKey( VERTEX_ID )
+                        .columns( ENTITY_KEY );
             case VERTICES_LOOKUP:
                 return new CassandraTableBuilder( VERTICES_LOOKUP )
                         .ifNotExists()
-                        .partitionKey( GRAPH_ID, ENTITY_KEY )
-                        .columns( VERTEX_ID )
-                        .secondaryIndex( VERTEX_ID );
+                        .partitionKey( ENTITY_KEY )
+                        .columns( VERTEX_ID );
 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );

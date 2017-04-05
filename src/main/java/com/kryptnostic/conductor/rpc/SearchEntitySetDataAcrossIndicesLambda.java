@@ -14,17 +14,17 @@ public class SearchEntitySetDataAcrossIndicesLambda
 
     private static final long      serialVersionUID = 874720830583573161L;
 
-    private Set<UUID>              entitySetIds;
+    private Map<UUID, UUID>        entitySetAndSyncIds;
     private Map<UUID, Set<String>> fieldSearches;
     private int                    size;
     private boolean                explain;
 
     public SearchEntitySetDataAcrossIndicesLambda(
-            Set<UUID> entitySetIds,
+            Map<UUID, UUID> entitySetAndSyncIds,
             Map<UUID, Set<String>> fieldSearches,
             int size,
             boolean explain ) {
-        this.entitySetIds = entitySetIds;
+        this.entitySetAndSyncIds = entitySetAndSyncIds;
         this.fieldSearches = fieldSearches;
         this.size = size;
         this.explain = explain;
@@ -32,6 +32,6 @@ public class SearchEntitySetDataAcrossIndicesLambda
 
     @Override
     public List<Entity> apply( ConductorElasticsearchApi api ) {
-        return api.executeEntitySetDataSearchAcrossIndices( entitySetIds, fieldSearches, size, explain );
+        return api.executeEntitySetDataSearchAcrossIndices( entitySetAndSyncIds, fieldSearches, size, explain );
     }
 }

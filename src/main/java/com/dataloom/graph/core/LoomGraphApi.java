@@ -9,15 +9,13 @@ import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 
 /**
- * Graph Object supporting CRUD operations of vertices and edges to the graph. Top Utilizers queries should be covered
- * by {@link #getEdges(EdgeSelection) } endpoint.
+ * Graph Object supporting CRUD operations of vertices and edges to the graph.
  * 
  * @author Ho Chung Siu
  *
  */
 public interface LoomGraphApi {
 
-    UUID getId();
     /*
      * CRUD operations of vertices
      */
@@ -36,12 +34,12 @@ public interface LoomGraphApi {
 
     /**
      * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
-     * destination vertexId, and timeuuid for time written.
+     * destination vertexId, and the edge syncId.
      * 
      * @param key
      * @return
      */
-    LoomEdge getEdge( EdgeKey edgeKey );
+    LoomEdge getEdge( EdgeKey key );
 
     /**
      * An EdgeSelection restricts the columns in the edges table. In the current setting, it should support restriction of

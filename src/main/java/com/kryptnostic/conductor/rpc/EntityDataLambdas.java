@@ -28,18 +28,20 @@ public class EntityDataLambdas implements Function<ConductorElasticsearchApi, Bo
     private static final long serialVersionUID = -1071651645473672891L;
     
     private UUID entitySetId;
+    private UUID syncId;
     private String entityId;
     private Map<UUID, Object> propertyValues;
 
-    public EntityDataLambdas( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues ) {
+    public EntityDataLambdas( UUID entitySetId, UUID syncId, String entityId, Map<UUID, Object> propertyValues ) {
         this.entitySetId = entitySetId;
+        this.syncId = syncId;
         this.entityId = entityId;
         this.propertyValues = propertyValues;
     }
 
     @Override
     public Boolean apply( ConductorElasticsearchApi api ) {
-        return api.createEntityData( entitySetId, entityId, propertyValues );
+        return api.createEntityData( entitySetId, syncId, entityId, propertyValues );
     }
 
 }

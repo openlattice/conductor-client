@@ -30,6 +30,7 @@ public class SearchEntitySetDataLambda implements Function<ConductorElasticsearc
     private static final long serialVersionUID = -3273005291047567056L;
 
     private UUID              entitySetId;
+    private UUID              syncId;
     private String            searchTerm;
     private int               start;
     private int               maxHits;
@@ -37,11 +38,13 @@ public class SearchEntitySetDataLambda implements Function<ConductorElasticsearc
 
     public SearchEntitySetDataLambda(
             UUID entitySetId,
+            UUID syncId,
             String searchTerm,
             int start,
             int maxHits,
             Set<UUID> authorizedProperties ) {
         this.entitySetId = entitySetId;
+        this.syncId = syncId;
         this.searchTerm = searchTerm;
         this.start = start;
         this.maxHits = maxHits;
@@ -50,7 +53,7 @@ public class SearchEntitySetDataLambda implements Function<ConductorElasticsearc
 
     @Override
     public SearchResult apply( ConductorElasticsearchApi api ) {
-        return api.executeEntitySetDataSearch( entitySetId, searchTerm, start, maxHits, authorizedProperties );
+        return api.executeEntitySetDataSearch( entitySetId, syncId, searchTerm, start, maxHits, authorizedProperties );
     }
 
 }

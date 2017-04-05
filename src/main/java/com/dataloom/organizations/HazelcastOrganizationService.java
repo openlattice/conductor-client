@@ -66,7 +66,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 
 public class HazelcastOrganizationService {
 
@@ -83,7 +82,6 @@ public class HazelcastOrganizationService {
 
     private final IMap<UUID, String>                titles;
     private final IMap<UUID, String>                descriptions;
-    private final IMap<UUID, DelegatedUUIDSet>      trustedOrgsOf;
     private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
     private final IMap<UUID, PrincipalSet>          membersOf;
     private final List<IMap<UUID, ?>>               allMaps;
@@ -98,14 +96,12 @@ public class HazelcastOrganizationService {
             RolesManager rolesManager ) {
         this.titles = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_TITLES.name() );
         this.descriptions = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS.name() );
-        this.trustedOrgsOf = hazelcastInstance.getMap( HazelcastMap.TRUSTED_ORGANIZATIONS.name() );
         this.autoApprovedEmailDomainsOf = hazelcastInstance.getMap( HazelcastMap.ALLOWED_EMAIL_DOMAINS.name() );
         this.membersOf = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_MEMBERS.name() );
         this.authorizations = authorizations;
         this.reservations = reservations;
         this.allMaps = ImmutableList.of( titles,
                 descriptions,
-                trustedOrgsOf,
                 autoApprovedEmailDomainsOf,
                 membersOf );
         this.principals = checkNotNull( principals );
@@ -121,7 +117,6 @@ public class HazelcastOrganizationService {
         UUID organizationId = organization.getId();
         titles.set( organizationId, organization.getTitle() );
         descriptions.set( organizationId, organization.getDescription() );
-        trustedOrgsOf.set( organizationId, DelegatedUUIDSet.wrap( organization.getTrustedOrganizations() ) );
         autoApprovedEmailDomainsOf.set( organizationId,
                 DelegatedStringSet.wrap( organization.getAutoApprovedEmails() ) );
         membersOf.set( organizationId, PrincipalSet.wrap( organization.getMembers() ) );
@@ -132,7 +127,6 @@ public class HazelcastOrganizationService {
     public Organization getOrganization( UUID organizationId ) {
         Future<String> title = titles.getAsync( organizationId );
         Future<String> description = descriptions.getAsync( organizationId );
-        Future<DelegatedUUIDSet> trustedOrgs = trustedOrgsOf.getAsync( organizationId );
         Future<PrincipalSet> members = membersOf.getAsync( organizationId );
         Future<DelegatedStringSet> autoApprovedEmailDomains = autoApprovedEmailDomainsOf.getAsync( organizationId );
 
@@ -142,7 +136,6 @@ public class HazelcastOrganizationService {
                     Optional.of( organizationId ),
                     title.get(),
                     Optional.fromNullable( description.get() ),
-                    Optional.fromNullable( trustedOrgs.get() ),
                     autoApprovedEmailDomains.get(),
                     members.get(),
                     roles );

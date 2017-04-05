@@ -23,19 +23,17 @@ public class GraphQueryService {
     private final Session           session;
 
     private final PreparedStatement getEdgesQuery;
-    private final PreparedStatement deleteEdgeDataQuery;
+    private final PreparedStatement deleteEdgesBySrcIdQuery;
 
     public GraphQueryService( Session session ) {
         this.session = session;
 
         this.getEdgesQuery = prepareGetEdgesQuery( session );
-        this.deleteEdgeDataQuery = prepareDeleteEdgeDataQuery( session );
-
+        this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
     }
 
-    public Iterable<LoomEdge> getEdges( UUID graphId, EdgeSelection selection ) {
-        BoundStatement stmt = getEdgesQuery.bind()
-                .setUUID( CommonColumns.GRAPH_ID.cql(), graphId );
+    public Iterable<LoomEdge> getEdges( EdgeSelection selection ) {
+        BoundStatement stmt = getEdgesQuery.bind();
         if ( selection.getOptionalSrcId().isPresent() )
             stmt.setUUID( CommonColumns.SRC_VERTEX_ID.cql(), selection.getOptionalSrcId().get() );
         if ( selection.getOptionalSrcType().isPresent() )
@@ -50,18 +48,16 @@ public class GraphQueryService {
         return Iterables.transform( rs, RowAdapters::loomEdge );
     }
 
-    public void deleteEdgeData( UUID entitySetId, String edgeId ) {
-        session.execute( deleteEdgeDataQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                .setString( CommonColumns.ENTITYID.cql(), edgeId ) );
+    public void deleteEdgesBySrcId( UUID srcId ) {
+        session.execute(
+                deleteEdgesBySrcIdQuery.bind().setUUID( CommonColumns.SRC_VERTEX_ID.cql(), srcId ) );
     }
 
     private static PreparedStatement prepareGetEdgesQuery( Session session ) {
         return session
                 .prepare( QueryBuilder.select().all().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() )
                         .allowFiltering()
-                        .where( QueryBuilder.eq( CommonColumns.GRAPH_ID.cql(),
-                                CommonColumns.GRAPH_ID.bindMarker() ) )
-                        .and( QueryBuilder.eq( CommonColumns.SRC_VERTEX_ID.cql(),
+                        .where( QueryBuilder.eq( CommonColumns.SRC_VERTEX_ID.cql(),
                                 CommonColumns.SRC_VERTEX_ID.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.SRC_VERTEX_TYPE_ID.cql(),
                                 CommonColumns.SRC_VERTEX_TYPE_ID.bindMarker() ) )
@@ -74,10 +70,8 @@ public class GraphQueryService {
 
     }
 
-    private static PreparedStatement prepareDeleteEdgeDataQuery( Session session ) {
-        return session.prepare( QueryBuilder.delete().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-                .and( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.EDGE_ENTITYID.bindMarker() ) ) );
+    private static PreparedStatement prepareDeleteEdgesBySrcIdQuery( Session session ) {
+        return session
+                .prepare( Table.EDGES.getBuilder().buildDeleteByPartitionKeyQuery() );
     }
-
 }

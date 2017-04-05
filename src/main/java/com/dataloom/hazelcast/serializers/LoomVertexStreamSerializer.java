@@ -5,8 +5,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.LoomVertex;
-import com.dataloom.graph.core.objects.VertexLabel;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -41,16 +41,14 @@ public class LoomVertexStreamSerializer implements SelfRegisteringStreamSerializ
     }
 
     public static void serialize( ObjectDataOutput out, LoomVertex object ) throws IOException {
-        UUIDStreamSerializer.serialize( out, object.getGraphId() );
         UUIDStreamSerializer.serialize( out, object.getKey() );
-        VertexLabelStreamSerializer.serialize( out, object.getLabel() );
+        EntityKeyStreamSerializer.serialize( out, object.getReference() );
     }
 
     public static LoomVertex deserialize( ObjectDataInput in ) throws IOException {
-        final UUID graphId = UUIDStreamSerializer.deserialize( in );
         final UUID key = UUIDStreamSerializer.deserialize( in );
-        final VertexLabel label = VertexLabelStreamSerializer.deserialize( in );
-        return new LoomVertex( graphId, key, label );
+        final EntityKey reference = EntityKeyStreamSerializer.deserialize( in );
+        return new LoomVertex( key, reference );
     }
 
 }

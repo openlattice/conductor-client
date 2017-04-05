@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
@@ -42,14 +43,14 @@ public class EdgeKeyStreamSerializer implements SelfRegisteringStreamSerializer<
     public static void serialize( ObjectDataOutput out, EdgeKey object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getSrcId() );
         UUIDStreamSerializer.serialize( out, object.getDstId() );
-        UUIDStreamSerializer.serialize( out, object.getTimeId() );
+        EntityKeyStreamSerializer.serialize( out, object.getReference() );
     }
 
     public static EdgeKey deserialize( ObjectDataInput in ) throws IOException {
         final UUID srcId = UUIDStreamSerializer.deserialize( in );
         final UUID dstId = UUIDStreamSerializer.deserialize( in );
-        final UUID timeId = UUIDStreamSerializer.deserialize( in );
-        return new EdgeKey( srcId, dstId, timeId );
+        final EntityKey reference = EntityKeyStreamSerializer.deserialize( in );
+        return new EdgeKey( srcId, dstId, reference );
     }
 
 }

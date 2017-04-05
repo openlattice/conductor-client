@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.dataloom.graph.core.mapstores.EdgesMapstore;
 import com.dataloom.graph.core.objects.LoomEdge;
+import com.dataloom.mapstores.TestDataFactory;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class LoomEdgeStreamSerializerTest extends AbstractStreamSerializerTest<LoomEdgeStreamSerializer, LoomEdge>
@@ -15,9 +16,9 @@ public class LoomEdgeStreamSerializerTest extends AbstractStreamSerializerTest<L
     @Override
     protected LoomEdge createInput() {
         return new LoomEdge(
-                UUID.randomUUID(),
                 EdgesMapstore.generateTestEdgeKey(),
-                EdgesMapstore.generateTestEdgeLabel() );
+                UUID.randomUUID(),
+                UUID.randomUUID() );
     }
 
     @Override

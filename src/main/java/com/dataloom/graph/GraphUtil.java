@@ -50,18 +50,6 @@ public final class GraphUtil {
         return new DirectedEdge( a, b );
     }
 
-    public static EntityKey source( Row rs ) {
-        final UUID entitySetId = rs.getUUID( CommonColumns.SOURCE_ENTITY_SET_ID.cql() );
-        final String entityId = rs.getString( CommonColumns.SOURCE_ENTITY_ID.cql() );
-        return new EntityKey( entitySetId, entityId );
-    }
-
-    public static EntityKey destination( Row row ) {
-        final UUID entitySetId = row.getUUID( CommonColumns.DESTINATION_ENTITY_SET_ID.cql() );
-        final String entityId = row.getString( CommonColumns.DESTINATION_ENTITY_ID.cql() );
-        return new EntityKey( entitySetId, entityId );
-    }
-
     public static LinkingEdge linkingEdge( Row row ) {
         final UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
         final UUID src = row.getUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql() );

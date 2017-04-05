@@ -36,7 +36,6 @@ import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.data.DelegatedEntityKeySet;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
@@ -57,9 +56,7 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.mapstores.EdgesMapstore;
 import com.dataloom.graph.core.mapstores.VerticesLookupMapstore;
 import com.dataloom.graph.core.mapstores.VerticesMapstore;
-import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
-import com.dataloom.graph.core.objects.GraphWrappedEntityKey;
-import com.dataloom.graph.core.objects.GraphWrappedVertexId;
+import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -67,7 +64,6 @@ import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.linking.mapstores.LinkedEntitiesMapstore;
 import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
 import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
@@ -200,16 +196,6 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> trustedOrgsMapstore() {
-        return new UUIDSetMapstore(
-                HazelcastMap.TRUSTED_ORGANIZATIONS,
-                session,
-                Table.ORGANIZATIONS,
-                CommonColumns.ID,
-                CommonColumns.TRUSTED_ORGANIZATIONS );
-    }
-
-    @Bean
     public SelfRegisteringMapStore<UUID, DelegatedStringSet> aaEmailDomainsMapstore() {
         return new StringSetMapstore(
                 HazelcastMap.ALLOWED_EMAIL_DOMAINS,
@@ -227,11 +213,6 @@ public class MapstoresPod {
                 Table.ORGANIZATIONS,
                 CommonColumns.ID,
                 CommonColumns.MEMBERS );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<EntityKey, DelegatedEntityKeySet> linkedEntitiesMapstore() {
-        return new LinkedEntitiesMapstore( session );
     }
 
     @Bean
@@ -280,17 +261,17 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<GraphWrappedVertexId, LoomVertex> verticesMapstore() {
+    public SelfRegisteringMapStore<UUID, LoomVertex> verticesMapstore() {
         return new VerticesMapstore( session );
     }
 
     @Bean
-    public SelfRegisteringMapStore<GraphWrappedEntityKey, UUID> verticesLookupMapstore() {
+    public SelfRegisteringMapStore<EntityKey, UUID> verticesLookupMapstore() {
         return new VerticesLookupMapstore( session );
     }
 
     @Bean
-    public SelfRegisteringMapStore<GraphWrappedEdgeKey, LoomEdge> edgesMapstore() {
+    public SelfRegisteringMapStore<EdgeKey, LoomEdge> edgesMapstore() {
         return new EdgesMapstore( session );
     }
 

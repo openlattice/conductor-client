@@ -1,6 +1,6 @@
 package com.dataloom.linking.components;
 
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -27,7 +27,7 @@ public interface Blocker {
      * @param linkIndexedByEntitySets
      */
     public void setLinking(
-            Set<UUID> linkingEntitySets,
+            Map<UUID, UUID> linkingEntitySetsWithSyncIds,
             SetMultimap<UUID, UUID> linkIndexedByPropertyTypes,
             SetMultimap<UUID, UUID> linkIndexedByEntitySets );
 
