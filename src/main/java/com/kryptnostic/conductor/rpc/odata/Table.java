@@ -31,6 +31,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CATEGORY;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.COUNT;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.CURRENT_SYNC_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DATATYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DESCRIPTION;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DEST;
@@ -349,6 +350,7 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID )
                         .clusteringColumns( SYNCID )
+                        .staticColumns( CURRENT_SYNC_ID )
                         .withDescendingOrder( SYNCID );
 
             default:
