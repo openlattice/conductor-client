@@ -369,7 +369,7 @@ public class CassandraDataManager {
         return session.executeAsync( deleteEntityQuery.bind()
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setString( CommonColumns.ENTITYID.cql(), entityId )
-                .setUUID( CommonColumns.ENTITY_KEY.cql(), syncId ) );
+                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
     public void deleteEntity( EntityKey entityKey ){
