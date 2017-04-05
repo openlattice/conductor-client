@@ -31,6 +31,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CATEGORY;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.COUNT;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.CURRENT_SYNC_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DATATYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DESCRIPTION;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.DEST;
@@ -81,7 +82,6 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
 
 import java.util.EnumMap;
@@ -289,7 +289,6 @@ public enum Table implements TableDef {
                         .partitionKey( ID )
                         .columns( TITLE,
                                 DESCRIPTION,
-                                TRUSTED_ORGANIZATIONS,
                                 ALLOWED_EMAIL_DOMAINS,
                                 MEMBERS );
             case ORGANIZATIONS_ROLES:
@@ -365,6 +364,7 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID )
                         .clusteringColumns( SYNCID )
+                        .staticColumns( CURRENT_SYNC_ID )
                         .withDescendingOrder( SYNCID );
             case VERTICES:
                 return new CassandraTableBuilder( VERTICES )
