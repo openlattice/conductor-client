@@ -1,12 +1,16 @@
 package com.dataloom.graph.core;
 
+import java.util.Map;
 import java.util.UUID;
+
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
+import com.google.common.collect.SetMultimap;
 
 /**
  * Graph Object supporting CRUD operations of vertices and edges to the graph.
@@ -59,5 +63,7 @@ public interface LoomGraphApi {
     void deleteEdge( EdgeKey edgeKey );
 
     void deleteEdges( UUID srcId );
+    
+    void updateEdge( EdgeKey key, SetMultimap<UUID, Object> entityDetails, Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
 
 }

@@ -1,7 +1,9 @@
 package com.dataloom.graph.core;
 
+import java.util.Map;
 import java.util.UUID;
 
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,6 +13,7 @@ import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.CassandraDataManager;
@@ -25,8 +28,8 @@ public class LoomGraph implements LoomGraphApi {
     private IMap<EdgeKey, LoomEdge> edges;
     private GraphQueryService       gqs;
 
-    private CassandraDataManager cdm;
-    
+    private CassandraDataManager    cdm;
+
     public LoomGraph( HazelcastInstance hazelcastInstance, CassandraDataManager cdm, GraphQueryService gqs ) {
         this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
         this.verticesLookup = hazelcastInstance.getMap( HazelcastMap.VERTICES_LOOKUP.name() );
@@ -109,6 +112,15 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     public void deleteEdges( UUID srcId ) {
         gqs.deleteEdgesBySrcId( srcId );
+    }
+
+    @Override
+    public void updateEdge(
+            EdgeKey key,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        cdm.updateEdge( key.getReference(), entityDetails, authorizedPropertiesWithDataType );
+
     }
 
 }
