@@ -67,10 +67,9 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey reference ) {
-        EdgeKey key = new EdgeKey( src.getKey(), dst.getKey(), reference.getSyncId() );
+        EdgeKey key = new EdgeKey( src.getKey(), dst.getKey(), reference );
         LoomEdge edge = new LoomEdge(
                 key,
-                reference,
                 src.getReference().getEntitySetId(),
                 dst.getReference().getEntitySetId() );
         if ( edges.putIfAbsent( key, edge ) == null ) {
@@ -100,8 +99,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public void deleteEdge( EdgeKey key ) {
-        LoomEdge edge = getEdge( key );
-        gqs.deleteEdgeData( edge.getReference() );
+        gqs.deleteEdgeData( key.getReference() );
         edges.delete( key );
     }
 

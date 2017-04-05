@@ -345,8 +345,8 @@ public final class RowAdapters {
     public static EdgeKey edgeKey( Row row ) {
         UUID srcId = row.getUUID( CommonColumns.SRC_VERTEX_ID.cql() );
         UUID dstId = row.getUUID( CommonColumns.DST_VERTEX_ID.cql() );
-        UUID syncId = row.getUUID( CommonColumns.SYNCID.cql() );
-        return new EdgeKey( srcId, dstId, syncId );
+        EntityKey reference = entityKey( row );
+        return new EdgeKey( srcId, dstId, reference );
     }
 
     public static LoomVertex loomVertex( Row row ) {
@@ -357,10 +357,9 @@ public final class RowAdapters {
 
     public static LoomEdge loomEdge( Row row ) {
         EdgeKey key = edgeKey( row );
-        EntityKey reference = entityKey( row );
         UUID srcType = row.getUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql() );
         UUID dstType = row.getUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql() );
-        return new LoomEdge( key, reference, srcType, dstType );
+        return new LoomEdge( key, srcType, dstType );
     }
 
     public static UUID vertexId( Row row ) {

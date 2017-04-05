@@ -17,7 +17,6 @@ public class LoomEdgeStreamSerializerTest extends AbstractStreamSerializerTest<L
     protected LoomEdge createInput() {
         return new LoomEdge(
                 EdgesMapstore.generateTestEdgeKey(),
-                TestDataFactory.entityKey(),
                 UUID.randomUUID(),
                 UUID.randomUUID() );
     }

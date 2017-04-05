@@ -194,11 +194,10 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( EDGES )
                         .ifNotExists()
                         .partitionKey( SRC_VERTEX_ID )
-                        .clusteringColumns( DST_VERTEX_ID, SYNCID )
-                        .columns( SRC_VERTEX_TYPE_ID, DST_VERTEX_TYPE_ID, EDGE_TYPE_ID, EDGE_ENTITYID )
+                        .clusteringColumns( DST_VERTEX_ID, EDGE_TYPE_ID, EDGE_ENTITYID, SYNCID )
+                        .columns( SRC_VERTEX_TYPE_ID, DST_VERTEX_TYPE_ID )
                         .secondaryIndex(
                                 DST_VERTEX_ID,
-                                SYNCID,
                                 SRC_VERTEX_TYPE_ID,
                                 DST_VERTEX_TYPE_ID,
                                 EDGE_TYPE_ID );

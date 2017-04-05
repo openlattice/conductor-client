@@ -43,17 +43,15 @@ public class LoomEdgeStreamSerializer implements SelfRegisteringStreamSerializer
 
     public static void serialize( ObjectDataOutput out, LoomEdge object ) throws IOException {
         EdgeKeyStreamSerializer.serialize( out, object.getKey() );
-        EntityKeyStreamSerializer.serialize( out, object.getReference() );
         UUIDStreamSerializer.serialize( out, object.getSrcType() );
         UUIDStreamSerializer.serialize( out, object.getDstType() );
     }
 
     public static LoomEdge deserialize( ObjectDataInput in ) throws IOException {
         final EdgeKey key = EdgeKeyStreamSerializer.deserialize( in );
-        final EntityKey reference = EntityKeyStreamSerializer.deserialize( in );
         final UUID srcType = UUIDStreamSerializer.deserialize( in );
         final UUID dstType = UUIDStreamSerializer.deserialize( in );
-        return new LoomEdge( key, reference, srcType, dstType );
+        return new LoomEdge( key, srcType, dstType );
     }
 
 }

@@ -20,7 +20,6 @@ public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, 
     private static EdgeKey  testKey   = generateTestEdgeKey();
     private static LoomEdge testValue = new LoomEdge(
             testKey,
-            TestDataFactory.entityKey(),
             UUID.randomUUID(),
             UUID.randomUUID() );
 
@@ -33,16 +32,16 @@ public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, 
         return bs
                 .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), key.getSrcId() )
                 .setUUID( CommonColumns.DST_VERTEX_ID.cql(), key.getDstId() )
-                .setUUID( CommonColumns.SYNCID.cql(), key.getSyncId() );
+                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), key.getReference().getEntitySetId() )
+                .setString( CommonColumns.EDGE_ENTITYID.cql(), key.getReference().getEntityId() )
+                .setUUID( CommonColumns.SYNCID.cql(), key.getReference().getSyncId() );
     }
 
     @Override
     protected BoundStatement bind( EdgeKey key, LoomEdge value, BoundStatement bs ) {
         return bind( key, bs )
                 .setUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), value.getSrcType() )
-                .setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), value.getDstType() )
-                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), value.getReference().getEntitySetId() )
-                .setString( CommonColumns.EDGE_ENTITYID.cql(), value.getReference().getEntityId() );
+                .setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), value.getDstType() );
     }
 
     @Override
@@ -70,7 +69,7 @@ public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, 
     }
 
     public static EdgeKey generateTestEdgeKey() {
-        return new EdgeKey( UUID.randomUUID(), UUID.randomUUID() );
+        return new EdgeKey( UUID.randomUUID(), UUID.randomUUID(), TestDataFactory.entityKey() );
     }
 
 }
