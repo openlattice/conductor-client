@@ -11,7 +11,6 @@ import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.google.common.base.Optional;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
@@ -24,6 +23,8 @@ public class LoomGraph implements LoomGraphApi {
 
     private IMap<EdgeKey, LoomEdge> edges;
     private GraphQueryService       gqs;
+
+    // TODO add dependency of DataManager here
 
     public LoomGraph( HazelcastInstance hazelcastInstance, GraphQueryService gqs ) {
         this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
@@ -105,15 +106,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public void deleteEdges( UUID srcId ) {
-        getEdges( new EdgeSelection(
-                Optional.of( srcId ),
-                Optional.absent(),
-                Optional.absent(),
-                Optional.absent(),
-                Optional.absent() ) ).forEach( edge -> {
-                    gqs.deleteEdgeData( edge.getReference() );
-                    edges.delete( edge.getKey() );
-                } );
+        gqs.deleteEdgesBySrcId( srcId );
     }
 
 }

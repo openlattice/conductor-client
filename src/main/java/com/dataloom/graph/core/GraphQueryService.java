@@ -1,5 +1,7 @@
 package com.dataloom.graph.core;
 
+import java.util.UUID;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,13 +25,14 @@ public class GraphQueryService {
 
     private final PreparedStatement getEdgesQuery;
     private final PreparedStatement deleteEdgeDataQuery;
+    private final PreparedStatement deleteEdgesBySrcIdQuery;
 
     public GraphQueryService( Session session ) {
         this.session = session;
 
         this.getEdgesQuery = prepareGetEdgesQuery( session );
         this.deleteEdgeDataQuery = prepareDeleteEdgeDataQuery( session );
-
+        this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
     }
 
     public Iterable<LoomEdge> getEdges( EdgeSelection selection ) {
@@ -54,6 +57,11 @@ public class GraphQueryService {
                         .setString( CommonColumns.ENTITYID.cql(), entityKey.getEntityId() )
                         .setUUID( CommonColumns.SYNCID.cql(), entityKey.getSyncId() ) );
     }
+    
+    public void deleteEdgesBySrcId( UUID srcId ) {
+        session.execute(
+                deleteEdgesBySrcIdQuery.bind().setUUID( CommonColumns.SRC_VERTEX_ID.cql(), srcId ) );
+    }
 
     private static PreparedStatement prepareGetEdgesQuery( Session session ) {
         return session
@@ -77,4 +85,8 @@ public class GraphQueryService {
                 .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
     }
 
+    private static PreparedStatement prepareDeleteEdgesBySrcIdQuery( Session session ) {
+        return session
+                .prepare( Table.EDGES.getBuilder().buildDeleteByPartitionKeyQuery() );
+    }
 }
