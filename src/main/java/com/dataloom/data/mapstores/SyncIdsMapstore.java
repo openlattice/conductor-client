@@ -29,7 +29,7 @@ public class SyncIdsMapstore extends AbstractStructuredCassandraPartitionKeyValu
     protected BoundStatement bind( UUID key, UUID value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ENTITY_SET_ID.cql(), key )
                 .setUUID( CommonColumns.SYNCID.cql(), value )
-                .setUUID( CommonColumns.LATEST_SYNC_ID.cql(), value );
+                .setUUID( CommonColumns.CURRENT_SYNC_ID.cql(), value );
     }
 
     @Override
@@ -43,7 +43,7 @@ public class SyncIdsMapstore extends AbstractStructuredCassandraPartitionKeyValu
         if ( row == null ) {
             return null;
         }
-        return row.getUUID( CommonColumns.LATEST_SYNC_ID.cql() );
+        return row.getUUID( CommonColumns.CURRENT_SYNC_ID.cql() );
     }
 
     @Override
