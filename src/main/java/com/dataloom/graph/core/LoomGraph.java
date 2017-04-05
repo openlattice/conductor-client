@@ -13,6 +13,7 @@ import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.services.CassandraDataManager;
 
 public class LoomGraph implements LoomGraphApi {
 
@@ -24,13 +25,14 @@ public class LoomGraph implements LoomGraphApi {
     private IMap<EdgeKey, LoomEdge> edges;
     private GraphQueryService       gqs;
 
-    // TODO add dependency of DataManager here
-
-    public LoomGraph( HazelcastInstance hazelcastInstance, GraphQueryService gqs ) {
+    private CassandraDataManager cdm;
+    
+    public LoomGraph( HazelcastInstance hazelcastInstance, CassandraDataManager cdm, GraphQueryService gqs ) {
         this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
         this.verticesLookup = hazelcastInstance.getMap( HazelcastMap.VERTICES_LOOKUP.name() );
         this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
 
+        this.cdm = cdm;
         this.gqs = gqs;
     }
 
@@ -100,7 +102,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public void deleteEdge( EdgeKey key ) {
-        gqs.deleteEdgeData( key.getReference() );
+        cdm.deleteEntity( key.getReference() );
         edges.delete( key );
     }
 

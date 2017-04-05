@@ -359,6 +359,10 @@ public class CassandraDataManager {
                 .setString( CommonColumns.ENTITYID.cql(), entityId ) );
     }
 
+    public void deleteEntity( EntityKey entityKey ){
+        asyncDeleteEntity( entityKey.getEntitySetId(), entityKey.getEntityId() ).getUninterruptibly();
+    }
+    
     private static PreparedStatement prepareEntitySetQuery(
             Session session,
             CassandraTableBuilder ctb ) {

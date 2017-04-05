@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.datastax.driver.core.BoundStatement;
@@ -24,14 +23,12 @@ public class GraphQueryService {
     private final Session           session;
 
     private final PreparedStatement getEdgesQuery;
-    private final PreparedStatement deleteEdgeDataQuery;
     private final PreparedStatement deleteEdgesBySrcIdQuery;
 
     public GraphQueryService( Session session ) {
         this.session = session;
 
         this.getEdgesQuery = prepareGetEdgesQuery( session );
-        this.deleteEdgeDataQuery = prepareDeleteEdgeDataQuery( session );
         this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
     }
 
@@ -51,13 +48,6 @@ public class GraphQueryService {
         return Iterables.transform( rs, RowAdapters::loomEdge );
     }
 
-    public void deleteEdgeData( EntityKey entityKey ) {
-        session.execute(
-                deleteEdgeDataQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entityKey.getEntitySetId() )
-                        .setString( CommonColumns.ENTITYID.cql(), entityKey.getEntityId() )
-                        .setUUID( CommonColumns.SYNCID.cql(), entityKey.getSyncId() ) );
-    }
-    
     public void deleteEdgesBySrcId( UUID srcId ) {
         session.execute(
                 deleteEdgesBySrcIdQuery.bind().setUUID( CommonColumns.SRC_VERTEX_ID.cql(), srcId ) );
@@ -78,11 +68,6 @@ public class GraphQueryService {
                         .and( QueryBuilder.eq( CommonColumns.EDGE_TYPE_ID.cql(),
                                 CommonColumns.EDGE_TYPE_ID.bindMarker() ) ) );
 
-    }
-
-    private static PreparedStatement prepareDeleteEdgeDataQuery( Session session ) {
-        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery()
-                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
     }
 
     private static PreparedStatement prepareDeleteEdgesBySrcIdQuery( Session session ) {
