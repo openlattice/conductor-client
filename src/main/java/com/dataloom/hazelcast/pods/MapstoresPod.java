@@ -36,7 +36,6 @@ import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.data.DelegatedEntityKeySet;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
@@ -58,8 +57,6 @@ import com.dataloom.graph.core.mapstores.EdgesMapstore;
 import com.dataloom.graph.core.mapstores.VerticesLookupMapstore;
 import com.dataloom.graph.core.mapstores.VerticesMapstore;
 import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
-import com.dataloom.graph.core.objects.GraphWrappedEntityKey;
-import com.dataloom.graph.core.objects.GraphWrappedVertexId;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -274,12 +271,12 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<GraphWrappedVertexId, LoomVertex> verticesMapstore() {
+    public SelfRegisteringMapStore<UUID, LoomVertex> verticesMapstore() {
         return new VerticesMapstore( session );
     }
 
     @Bean
-    public SelfRegisteringMapStore<GraphWrappedEntityKey, UUID> verticesLookupMapstore() {
+    public SelfRegisteringMapStore<EntityKey, UUID> verticesLookupMapstore() {
         return new VerticesLookupMapstore( session );
     }
 

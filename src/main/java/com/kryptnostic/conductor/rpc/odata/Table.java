@@ -374,15 +374,13 @@ public enum Table implements TableDef {
             case VERTICES:
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()
-                        .partitionKey( GRAPH_ID, VERTEX_ID )
-                        .columns( ENTITY_KEY )
-                        .secondaryIndex( GRAPH_ID );
+                        .partitionKey( VERTEX_ID )
+                        .columns( ENTITY_KEY );
             case VERTICES_LOOKUP:
                 return new CassandraTableBuilder( VERTICES_LOOKUP )
                         .ifNotExists()
-                        .partitionKey( GRAPH_ID, ENTITY_KEY )
-                        .columns( VERTEX_ID )
-                        .secondaryIndex( VERTEX_ID );
+                        .partitionKey( ENTITY_KEY )
+                        .columns( VERTEX_ID );
 
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );

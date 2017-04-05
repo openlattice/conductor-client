@@ -10,11 +10,8 @@ import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.graph.core.objects.EdgeLabel;
 import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
-import com.dataloom.graph.core.objects.GraphWrappedEntityKey;
-import com.dataloom.graph.core.objects.GraphWrappedVertexId;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
-import com.dataloom.graph.core.objects.VertexLabel;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.base.Optional;
 import com.hazelcast.core.HazelcastInstance;
@@ -22,57 +19,39 @@ import com.hazelcast.core.IMap;
 
 public class LoomGraph implements LoomGraphApi {
 
-    private static final Logger                           logger           = LoggerFactory.getLogger( LoomGraph.class );
-    private static UUID                                   DEFAULT_GRAPH_ID = new UUID( 0, 0 );
-    private UUID                                          graphId;
+    private static final Logger                        logger           = LoggerFactory.getLogger( LoomGraph.class );
 
-    private static IMap<GraphWrappedVertexId, LoomVertex> vertices;
-    private static IMap<GraphWrappedEntityKey, UUID>      verticesLookup;
+    private IMap<UUID, LoomVertex>              vertices;
+    private IMap<EntityKey, UUID>               verticesLookup;
 
-    private static IMap<GraphWrappedEdgeKey, LoomEdge>    edges;
-    private static GraphQueryService                      gqs;
+    private IMap<GraphWrappedEdgeKey, LoomEdge> edges;
+    private GraphQueryService                   gqs;
 
-    public static void init( HazelcastInstance hazelcastInstance, GraphQueryService gqs ) {
-        LoomGraph.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
-        LoomGraph.verticesLookup = hazelcastInstance.getMap( HazelcastMap.VERTICES_LOOKUP.name() );
-        LoomGraph.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
+    public LoomGraph( HazelcastInstance hazelcastInstance, GraphQueryService gqs ) {
+        this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
+        this.verticesLookup = hazelcastInstance.getMap( HazelcastMap.VERTICES_LOOKUP.name() );
+        this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
 
-        LoomGraph.gqs = gqs;
-    }
-
-    public LoomGraph() {
-        this( DEFAULT_GRAPH_ID );
-    }
-
-    public LoomGraph( UUID graphId ) {
-        this.graphId = graphId;
-    }
-
-    @Override
-    public UUID getId() {
-        return graphId;
+        this.gqs = gqs;
     }
 
     @Override
     public LoomVertex getOrCreateVertex( EntityKey entityKey ) {
         // Put if absent in verticesLookup
         // Generate random UUID, put if absent in vertices until it succeeds
-        GraphWrappedEntityKey lookupKey = new GraphWrappedEntityKey( graphId, entityKey );
-
         while ( true ) {
             UUID proposedId = UUID.randomUUID();
-            UUID currentId = verticesLookup.putIfAbsent( lookupKey, proposedId );
+            UUID currentId = verticesLookup.putIfAbsent( entityKey, proposedId );
             if ( currentId != null ) {
-                return vertices.get( new GraphWrappedVertexId( graphId, currentId ) );
+                return vertices.get( currentId );
             } else {
-                GraphWrappedVertexId key = new GraphWrappedVertexId( graphId, proposedId );
-                LoomVertex vertex = new LoomVertex( graphId, proposedId, new VertexLabel( entityKey ) );
-                if ( vertices.putIfAbsent( key, vertex ) == null ) {
+                LoomVertex vertex = new LoomVertex( proposedId, entityKey );
+                if ( vertices.putIfAbsent( proposedId, vertex ) == null ) {
                     return vertex;
                 } else {
                     // creation failed. Rollback the insertion to verticesLookup, and restart the UUID generation
                     // process again.
-                    verticesLookup.remove( lookupKey );
+                    verticesLookup.remove( entityKey );
                 }
             }
         }
@@ -80,7 +59,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public LoomVertex getVertex( UUID vertexId ) {
-        return vertices.get( new GraphWrappedVertexId( graphId, vertexId ) );
+        return vertices.get( vertexId );
     }
 
     @Override
@@ -93,10 +72,10 @@ public class LoomGraph implements LoomGraphApi {
         EdgeKey key = new EdgeKey( src.getKey(), dst.getKey() );
         EdgeLabel label = new EdgeLabel(
                 edgeLabel,
-                src.getLabel().getReference().getEntitySetId(),
-                dst.getLabel().getReference().getEntitySetId() );
-        LoomEdge edge = new LoomEdge( graphId, key, label );
-        if ( edges.putIfAbsent( new GraphWrappedEdgeKey( graphId, key ), edge ) == null ) {
+                src.getReference().getEntitySetId(),
+                dst.getReference().getEntitySetId() );
+        LoomEdge edge = new LoomEdge( key, label );
+        if ( edges.putIfAbsent( new GraphWrappedEdgeKey( key ), edge ) == null ) {
             return edge;
         } else {
             logger.debug( "Edge creation failed: edge key was already in use." );
@@ -113,12 +92,12 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public LoomEdge getEdge( EdgeKey key ) {
-        return edges.get( new GraphWrappedEdgeKey( graphId, key ) );
+        return edges.get( new GraphWrappedEdgeKey( key ) );
     }
 
     @Override
     public Iterable<LoomEdge> getEdges( EdgeSelection selection ) {
-        return gqs.getEdges( graphId, selection );
+        return gqs.getEdges( selection );
     }
 
     @Override

@@ -17,7 +17,6 @@ import com.dataloom.graph.core.objects.LoomVertex;
  */
 public interface LoomGraphApi {
 
-    UUID getId();
     /*
      * CRUD operations of vertices
      */

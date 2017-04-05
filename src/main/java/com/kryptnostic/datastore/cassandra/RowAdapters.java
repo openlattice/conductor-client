@@ -46,11 +46,8 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.graph.core.objects.EdgeLabel;
 import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
-import com.dataloom.graph.core.objects.GraphWrappedEntityKey;
-import com.dataloom.graph.core.objects.GraphWrappedVertexId;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
-import com.dataloom.graph.core.objects.VertexLabel;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
@@ -347,18 +344,6 @@ public final class RowAdapters {
         return row.getBool( CommonColumns.FLAGS.cql() );
     }
 
-    public static GraphWrappedVertexId graphWrappedVertexId( Row row ) {
-        UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
-        UUID vertexId = row.getUUID( CommonColumns.VERTEX_ID.cql() );
-        return new GraphWrappedVertexId( graphId, vertexId );
-    }
-
-    public static GraphWrappedEntityKey graphWrappedEntityKey( Row row ) {
-        UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
-        EntityKey entityKey = row.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
-        return new GraphWrappedEntityKey( graphId, entityKey );
-    }
-
     public static EdgeKey edgeKey( Row row ) {
         UUID srcId = row.getUUID( CommonColumns.SRC_VERTEX_ID.cql() );
         UUID dstId = row.getUUID( CommonColumns.DST_VERTEX_ID.cql() );
@@ -382,10 +367,9 @@ public final class RowAdapters {
     }
 
     public static LoomVertex loomVertex( Row row ) {
-        UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
         UUID key = row.getUUID( CommonColumns.VERTEX_ID.cql() );
-        VertexLabel label = new VertexLabel( row.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class ) );
-        return new LoomVertex( graphId, key, label );
+        EntityKey reference = row.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
+        return new LoomVertex( key, reference );
     }
 
     public static LoomEdge loomEdge( Row row ) {
@@ -393,5 +377,13 @@ public final class RowAdapters {
         EdgeKey key = edgeKey( row );
         EdgeLabel label = edgeLabel( row );
         return new LoomEdge( graphId, key, label );
+    }
+
+    public static UUID vertexId( Row row ) {
+        return row.getUUID( CommonColumns.VERTEX_ID.cql() );
+    }
+
+    public static EntityKey entityKey( Row row ) {
+        return row.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
     }
 }

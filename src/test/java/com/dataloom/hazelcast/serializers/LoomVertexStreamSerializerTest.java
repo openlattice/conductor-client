@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.UUID;
 
 import com.dataloom.graph.core.objects.LoomVertex;
-import com.dataloom.graph.core.objects.VertexLabel;
 import com.dataloom.mapstores.TestDataFactory;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
@@ -15,7 +14,7 @@ public class LoomVertexStreamSerializerTest extends AbstractStreamSerializerTest
 
     @Override
     protected LoomVertex createInput() {
-        return new LoomVertex( UUID.randomUUID(), UUID.randomUUID(), new VertexLabel( TestDataFactory.entityKey() ) );
+        return new LoomVertex( UUID.randomUUID(), TestDataFactory.entityKey() );
     }
 
     @Override
