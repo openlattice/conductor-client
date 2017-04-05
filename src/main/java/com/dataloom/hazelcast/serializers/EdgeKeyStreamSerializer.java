@@ -42,14 +42,14 @@ public class EdgeKeyStreamSerializer implements SelfRegisteringStreamSerializer<
     public static void serialize( ObjectDataOutput out, EdgeKey object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getSrcId() );
         UUIDStreamSerializer.serialize( out, object.getDstId() );
-        UUIDStreamSerializer.serialize( out, object.getTimeId() );
+        UUIDStreamSerializer.serialize( out, object.getSyncId() );
     }
 
     public static EdgeKey deserialize( ObjectDataInput in ) throws IOException {
         final UUID srcId = UUIDStreamSerializer.deserialize( in );
         final UUID dstId = UUIDStreamSerializer.deserialize( in );
-        final UUID timeId = UUIDStreamSerializer.deserialize( in );
-        return new EdgeKey( srcId, dstId, timeId );
+        final UUID syncId = UUIDStreamSerializer.deserialize( in );
+        return new EdgeKey( srcId, dstId, syncId );
     }
 
 }

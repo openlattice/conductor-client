@@ -7,9 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.EdgeKey;
-import com.dataloom.graph.core.objects.EdgeLabel;
 import com.dataloom.graph.core.objects.EdgeSelection;
-import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -19,13 +17,13 @@ import com.hazelcast.core.IMap;
 
 public class LoomGraph implements LoomGraphApi {
 
-    private static final Logger                        logger           = LoggerFactory.getLogger( LoomGraph.class );
+    private static final Logger     logger = LoggerFactory.getLogger( LoomGraph.class );
 
-    private IMap<UUID, LoomVertex>              vertices;
-    private IMap<EntityKey, UUID>               verticesLookup;
+    private IMap<UUID, LoomVertex>  vertices;
+    private IMap<EntityKey, UUID>   verticesLookup;
 
-    private IMap<GraphWrappedEdgeKey, LoomEdge> edges;
-    private GraphQueryService                   gqs;
+    private IMap<EdgeKey, LoomEdge> edges;
+    private GraphQueryService       gqs;
 
     public LoomGraph( HazelcastInstance hazelcastInstance, GraphQueryService gqs ) {
         this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
@@ -68,14 +66,14 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
-    public LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey edgeLabel ) {
-        EdgeKey key = new EdgeKey( src.getKey(), dst.getKey() );
-        EdgeLabel label = new EdgeLabel(
-                edgeLabel,
+    public LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey reference ) {
+        EdgeKey key = new EdgeKey( src.getKey(), dst.getKey(), reference.getSyncId() );
+        LoomEdge edge = new LoomEdge(
+                key,
+                reference,
                 src.getReference().getEntitySetId(),
                 dst.getReference().getEntitySetId() );
-        LoomEdge edge = new LoomEdge( key, label );
-        if ( edges.putIfAbsent( new GraphWrappedEdgeKey( key ), edge ) == null ) {
+        if ( edges.putIfAbsent( key, edge ) == null ) {
             return edge;
         } else {
             logger.debug( "Edge creation failed: edge key was already in use." );
@@ -92,7 +90,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public LoomEdge getEdge( EdgeKey key ) {
-        return edges.get( new GraphWrappedEdgeKey( key ) );
+        return edges.get( key );
     }
 
     @Override
@@ -103,8 +101,7 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     public void deleteEdge( EdgeKey key ) {
         LoomEdge edge = getEdge( key );
-        gqs.deleteEdgeData( edge.getLabel().getReference().getEntitySetId(),
-                edge.getLabel().getReference().getEntityId() );
+        gqs.deleteEdgeData( edge.getReference() );
         edges.delete( key );
     }
 
@@ -116,11 +113,9 @@ public class LoomGraph implements LoomGraphApi {
                 Optional.absent(),
                 Optional.absent(),
                 Optional.absent() ) ).forEach( edge -> {
-                    gqs.deleteEdgeData( edge.getLabel().getReference().getEntitySetId(),
-                            edge.getLabel().getReference().getEntityId() );
+                    gqs.deleteEdgeData( edge.getReference() );
                     edges.delete( edge.getKey() );
                 } );
-        ;
     }
 
 }

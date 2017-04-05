@@ -56,7 +56,7 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.mapstores.EdgesMapstore;
 import com.dataloom.graph.core.mapstores.VerticesLookupMapstore;
 import com.dataloom.graph.core.mapstores.VerticesMapstore;
-import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
+import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -281,7 +281,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<GraphWrappedEdgeKey, LoomEdge> edgesMapstore() {
+    public SelfRegisteringMapStore<EdgeKey, LoomEdge> edgesMapstore() {
         return new EdgesMapstore( session );
     }
 

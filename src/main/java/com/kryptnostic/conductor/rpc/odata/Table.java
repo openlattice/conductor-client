@@ -80,7 +80,6 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_VERTEX_TYPE_
 import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_UUID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.TRUSTED_ORGANIZATIONS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
@@ -192,20 +191,17 @@ public enum Table implements TableDef {
                         .columns( ENTITYID, SYNCID )
                         .sasi( SYNCID );
             case EDGES:
-                /*
-                 * The sync id is for the edge. The entity containing data for that edge is managed independently.
-                 */
                 return new CassandraTableBuilder( EDGES )
                         .ifNotExists()
-                        .partitionKey( GRAPH_ID, SRC_VERTEX_ID )
-                        .clusteringColumns( DST_VERTEX_ID, TIME_UUID )
-                        .columns( SRC_VERTEX_TYPE_ID, DST_VERTEX_TYPE_ID, EDGE_TYPE_ID, EDGE_ENTITYID, SYNCID )
-                        .secondaryIndex( GRAPH_ID,
+                        .partitionKey( SRC_VERTEX_ID )
+                        .clusteringColumns( DST_VERTEX_ID, SYNCID )
+                        .columns( SRC_VERTEX_TYPE_ID, DST_VERTEX_TYPE_ID, EDGE_TYPE_ID, EDGE_ENTITYID )
+                        .secondaryIndex(
                                 DST_VERTEX_ID,
+                                SYNCID,
                                 SRC_VERTEX_TYPE_ID,
                                 DST_VERTEX_TYPE_ID,
-                                EDGE_TYPE_ID,
-                                SYNCID );
+                                EDGE_TYPE_ID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()

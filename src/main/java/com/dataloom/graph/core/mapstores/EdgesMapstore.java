@@ -3,8 +3,6 @@ package com.dataloom.graph.core.mapstores;
 import java.util.UUID;
 
 import com.dataloom.graph.core.objects.EdgeKey;
-import com.dataloom.graph.core.objects.EdgeLabel;
-import com.dataloom.graph.core.objects.GraphWrappedEdgeKey;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
@@ -17,36 +15,39 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
-public class EdgesMapstore extends AbstractStructuredCassandraMapstore<GraphWrappedEdgeKey, LoomEdge> {
+public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, LoomEdge> {
 
-    private static LoomEdge testValue = new LoomEdge( UUID.randomUUID(), generateTestEdgeKey(), generateTestEdgeLabel() );
-    private static GraphWrappedEdgeKey testKey = new GraphWrappedEdgeKey( testValue.getGraphId(), testValue.getKey() );
-    
+    private static EdgeKey  testKey   = generateTestEdgeKey();
+    private static LoomEdge testValue = new LoomEdge(
+            testKey,
+            TestDataFactory.entityKey(),
+            UUID.randomUUID(),
+            UUID.randomUUID() );
+
     public EdgesMapstore( Session session ) {
         super( HazelcastMap.EDGES.name(), session, Table.EDGES.getBuilder() );
     }
 
     @Override
-    protected BoundStatement bind( GraphWrappedEdgeKey key, BoundStatement bs ) {
+    protected BoundStatement bind( EdgeKey key, BoundStatement bs ) {
         return bs
-                .setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() )
-                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), key.getEdgeKey().getSrcId() )
-                .setUUID( CommonColumns.DST_VERTEX_ID.cql(), key.getEdgeKey().getDstId() )
-                .setUUID( CommonColumns.TIME_UUID.cql(), key.getEdgeKey().getTimeId() );
+                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), key.getSrcId() )
+                .setUUID( CommonColumns.DST_VERTEX_ID.cql(), key.getDstId() )
+                .setUUID( CommonColumns.SYNCID.cql(), key.getSyncId() );
     }
 
     @Override
-    protected BoundStatement bind( GraphWrappedEdgeKey key, LoomEdge value, BoundStatement bs ) {
+    protected BoundStatement bind( EdgeKey key, LoomEdge value, BoundStatement bs ) {
         return bind( key, bs )
-                .setUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), value.getLabel().getSrcType() )
-                .setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), value.getLabel().getDstType() )
-                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), value.getLabel().getReference().getEntitySetId() )
-                .setString( CommonColumns.EDGE_ENTITYID.cql(), value.getLabel().getReference().getEntityId() );
+                .setUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), value.getSrcType() )
+                .setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), value.getDstType() )
+                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), value.getReference().getEntitySetId() )
+                .setString( CommonColumns.EDGE_ENTITYID.cql(), value.getReference().getEntityId() );
     }
 
     @Override
-    protected GraphWrappedEdgeKey mapKey( Row row ) {
-        return RowAdapters.graphWrappedEdgeKey( row );
+    protected EdgeKey mapKey( Row row ) {
+        return RowAdapters.edgeKey( row );
     }
 
     @Override
@@ -59,7 +60,7 @@ public class EdgesMapstore extends AbstractStructuredCassandraMapstore<GraphWrap
     }
 
     @Override
-    public GraphWrappedEdgeKey generateTestKey() {
+    public EdgeKey generateTestKey() {
         return testKey;
     }
 
@@ -70,10 +71,6 @@ public class EdgesMapstore extends AbstractStructuredCassandraMapstore<GraphWrap
 
     public static EdgeKey generateTestEdgeKey() {
         return new EdgeKey( UUID.randomUUID(), UUID.randomUUID() );
-    }
-
-    public static EdgeLabel generateTestEdgeLabel() {
-        return new EdgeLabel( TestDataFactory.entityKey(), UUID.randomUUID(), UUID.randomUUID() );
     }
 
 }

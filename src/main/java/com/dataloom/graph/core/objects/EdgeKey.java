@@ -6,7 +6,7 @@ import com.datastax.driver.core.utils.UUIDs;
 
 /**
  * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
- * destination vertexId, and timeuuid for time written.
+ * destination vertexId, and syncid for the edge.
  * 
  * @author Ho Chung Siu
  *
@@ -14,7 +14,7 @@ import com.datastax.driver.core.utils.UUIDs;
 public class EdgeKey {
     private UUID srcId;
     private UUID dstId;
-    private UUID timeId;
+    private UUID syncId;
 
     public EdgeKey( UUID srcId, UUID dstId ) {
         this( srcId, dstId, UUIDs.timeBased() );
@@ -23,10 +23,10 @@ public class EdgeKey {
     /*
      * Only for deserialization; the time uuid should not be provided in any other case.
      */
-    public EdgeKey( UUID srcId, UUID dstId, UUID timeId ) {
+    public EdgeKey( UUID srcId, UUID dstId, UUID syncId ) {
         this.srcId = srcId;
         this.dstId = dstId;
-        this.timeId = timeId;
+        this.syncId = syncId;
     }
 
     public UUID getSrcId() {
@@ -37,8 +37,8 @@ public class EdgeKey {
         return dstId;
     }
 
-    public UUID getTimeId() {
-        return timeId;
+    public UUID getSyncId() {
+        return syncId;
     }
 
     @Override
@@ -47,7 +47,7 @@ public class EdgeKey {
         int result = 1;
         result = prime * result + ( ( dstId == null ) ? 0 : dstId.hashCode() );
         result = prime * result + ( ( srcId == null ) ? 0 : srcId.hashCode() );
-        result = prime * result + ( ( timeId == null ) ? 0 : timeId.hashCode() );
+        result = prime * result + ( ( syncId == null ) ? 0 : syncId.hashCode() );
         return result;
     }
 
@@ -63,15 +63,15 @@ public class EdgeKey {
         if ( srcId == null ) {
             if ( other.srcId != null ) return false;
         } else if ( !srcId.equals( other.srcId ) ) return false;
-        if ( timeId == null ) {
-            if ( other.timeId != null ) return false;
-        } else if ( !timeId.equals( other.timeId ) ) return false;
+        if ( syncId == null ) {
+            if ( other.syncId != null ) return false;
+        } else if ( !syncId.equals( other.syncId ) ) return false;
         return true;
     }
 
     @Override
     public String toString() {
-        return "EdgeKey [srcId=" + srcId + ", dstId=" + dstId + ", timeId=" + timeId + "]";
+        return "EdgeKey [srcId=" + srcId + ", dstId=" + dstId + ", syncId=" + syncId + "]";
     }
 
 }
