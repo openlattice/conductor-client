@@ -47,6 +47,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_DIAMETER;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.KEY;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.LATEST_SYNC_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.MEMBERS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.NAMESPACE;
@@ -349,6 +350,7 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID )
                         .clusteringColumns( SYNCID )
+                        .staticColumns( LATEST_SYNC_ID )
                         .withDescendingOrder( SYNCID );
 
             default:

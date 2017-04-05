@@ -22,20 +22,28 @@ package com.dataloom.data.events;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.base.Optional;
+
 public class EntityDataCreatedEvent {
     
     private UUID entitySetId;
+    private Optional<UUID> syncId;
     private String entityId;
     private Map<UUID, Object> propertyValues;
     
-    public EntityDataCreatedEvent( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues ) {
+    public EntityDataCreatedEvent( UUID entitySetId, Optional<UUID> syncId, String entityId, Map<UUID, Object> propertyValues ) {
         this.entitySetId = entitySetId;
+        this.syncId = syncId;
         this.entityId = entityId;
         this.propertyValues = propertyValues;
     }
     
     public UUID getEntitySetId() {
         return entitySetId;
+    }
+    
+    public Optional<UUID> getOptionalSyncId() {
+        return syncId;
     }
     
     public String getEntityId() {

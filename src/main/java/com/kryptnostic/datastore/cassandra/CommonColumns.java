@@ -73,6 +73,7 @@ public enum CommonColumns implements ColumnDef {
     SCHEMAS( DataType.set( DataType.text() ) ),
     SYNCID( DataType.timeuuid() ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
+    LATEST_SYNC_ID( DataType.uuid() ),
     TITLE( DataType.text() ),
     TYPE( DataType.text() ),
     ROLE( DataType.text() ),
