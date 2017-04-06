@@ -19,6 +19,7 @@
 
 package com.kryptnostic.datastore.services;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -73,6 +74,10 @@ public class DatasourceManager {
     public UUID getCurrentSyncId( UUID entitySetId ) {
         return currentSyncIds.get( entitySetId );
     }
+    
+    public Map<UUID, UUID> getCurrentSyncId( Set<UUID> entitySetIds ){
+        return currentSyncIds.getAll( entitySetIds );
+    }
 
     public void setCurrentSyncId( UUID entitySetId, UUID syncId ) {
         currentSyncIds.put( entitySetId, syncId );
@@ -97,6 +102,12 @@ public class DatasourceManager {
         ResultSet rs = session
                 .execute( allPreviousSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                         .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
+        return Iterables.transform( rs, RowAdapters::syncId );
+    }
+    
+    public Iterable<UUID> getAllSyncIds( UUID entitySetId ) {
+        ResultSet rs = session
+                .execute( allPreviousSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId ) );
         return Iterables.transform( rs, RowAdapters::syncId );
     }
 
