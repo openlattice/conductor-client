@@ -91,10 +91,6 @@ public class CassandraDataManager {
     private final PreparedStatement      linkedEntitiesQuery;
 
     private final PreparedStatement      readNumRPCRowsQuery;
-    
-    private final PreparedStatement      mostRecentSyncIdQuery;
-    private final PreparedStatement      writeSyncIdsQuery;
-    private final PreparedStatement      allPreviousSyncIdsQuery;
 
     public CassandraDataManager(
             Session session,
@@ -109,7 +105,6 @@ public class CassandraDataManager {
         this.dsm = dsm;
 
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
-        CassandraTableBuilder syncTableDefinitions = Table.SYNC_IDS.getBuilder();
 
         this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
         this.entityIdsQuery = prepareEntityIdsQuery( session );
@@ -119,9 +114,6 @@ public class CassandraDataManager {
 
         this.linkedEntitiesQuery = prepareLinkedEntitiesQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
-        this.mostRecentSyncIdQuery = prepareMostRecentSyncIdQuery( session );
-        this.writeSyncIdsQuery = prepareWriteQuery( session, syncTableDefinitions );
-        this.allPreviousSyncIdsQuery = prepareAllPreviousSyncIdsQuery( session );
     }
 
     public Iterable<SetMultimap<FullQualifiedName, Object>> getEntitySetData(
@@ -171,11 +163,14 @@ public class CassandraDataManager {
         Iterable<String> entityIds = getEntityIds( entitySetId );
         Iterable<ResultSetFuture> entityFutures;
         // If syncId is not specified, retrieve latest snapshot of entity
+        final UUID finalSyncId;
         if( syncId == null ){
-            syncId = dsm.getCurrentSyncId( entitySetId );
+            finalSyncId = dsm.getCurrentSyncId( entitySetId );
+        } else {
+            finalSyncId = syncId;
         }
         entityFutures = Iterables.transform( entityIds,
-                entityId -> asyncLoadEntity( entitySetId, entityId, syncId, authorizedProperties ) );
+                entityId -> asyncLoadEntity( entitySetId, entityId, finalSyncId, authorizedProperties ) );
         return Iterables.transform( entityFutures, ResultSetFuture::getUninterruptibly );
     }
 
@@ -310,24 +305,6 @@ public class CassandraDataManager {
         return StreamUtil.stream( rs )
                 .map( r -> r.getBytes( CommonColumns.RPC_VALUE.cql() ).array() );
     }
-
-    public UUID getMostRecentSyncIdForEntitySet( UUID entitySetId ) {
-        BoundStatement bs = mostRecentSyncIdQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId );
-        Row row = session.execute( bs ).one();
-        return ( row == null ) ? null : row.getUUID( CommonColumns.CURRENT_SYNC_ID.cql() );
-    }
-
-    public void addSyncIdToEntitySet( UUID entitySetId, UUID syncId ) {
-        session.execute( writeSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
-    }
-
-    public Iterable<UUID> getAllPreviousSyncIds( UUID entitySetId, UUID syncId ) {
-        ResultSet rs = session
-                .execute( allPreviousSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                        .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
-        return Iterables.transform( rs, row -> row.getUUID( CommonColumns.SYNCID.cql() ) );
-    }
     
     /**
      * Delete data of an entity set across ALL sync Ids.
@@ -430,19 +407,7 @@ public class CassandraDataManager {
         return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery()
                 .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
     }
-    
-    private static PreparedStatement prepareMostRecentSyncIdQuery( Session session ) {
-        return session.prepare( QueryBuilder.select().from( Table.SYNC_IDS.getKeyspace(), Table.SYNC_IDS.getName() )
-                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-                .limit( 1 ) );
-    }
 
-    private static PreparedStatement prepareAllPreviousSyncIdsQuery( Session session ) {
-        return session.prepare( QueryBuilder.select().column( CommonColumns.SYNCID.cql() )
-                .from( Table.SYNC_IDS.getKeyspace(), Table.SYNC_IDS.getName() )
-                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-                .and( QueryBuilder.lt( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
-    }
     /**
      * Auxiliary methods for linking entity sets
      */
