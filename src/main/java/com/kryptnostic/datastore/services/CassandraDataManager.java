@@ -325,7 +325,8 @@ public class CassandraDataManager {
         }
 
         deleteEntity( key );
-        eventBus.post( new EntityDataDeletedEvent( key.getEntitySetId(), key.getEntityId(), Optional.of( key.getSyncId() ) ) );
+        eventBus.post(
+                new EntityDataDeletedEvent( key.getEntitySetId(), key.getEntityId(), Optional.of( key.getSyncId() ) ) );
 
         createData( key.getEntitySetId(),
                 key.getSyncId(),
@@ -370,7 +371,11 @@ public class CassandraDataManager {
     }
 
     /**
-     * Delete data of an entity set across ALL sync Ids.
+     * Delete data of an entity set across ALL sync Ids. 
+     * 
+     * Note: this is currently only used when deleting an entity set,
+     * which takes care of deleting the data in elasticsearch. If this is ever called without deleting the entity set,
+     * logic must be added to delete the data from elasticsearch.
      */
     public void deleteEntitySetData( UUID entitySetId ) {
         logger.info( "Deleting data of entity set: {}", entitySetId );
@@ -391,8 +396,6 @@ public class CassandraDataManager {
             String entityId = RowAdapters.entityId( entityIdRow );
 
             results.add( asyncDeleteEntity( entitySetId, entityId ) );
-            eventBus.post( new EntityDataDeletedEvent( entitySetId, entityId, Optional.absent() ) );
-
             counter++;
         }
 
