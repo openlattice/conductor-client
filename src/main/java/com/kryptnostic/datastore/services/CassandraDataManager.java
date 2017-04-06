@@ -277,12 +277,12 @@ public class CassandraDataManager {
                     authorizedPropertiesWithDataType,
                     authorizedProperties,
                     results,
-                    connection.getEntityId(),
+                    connection.getKey().getEntityId(),
                     connection.getDetails() );
             LoomVertex src = loomGraph.getOrCreateVertex( connection.getSrc() );
             LoomVertex dst = loomGraph.getOrCreateVertex( connection.getDst() );
 
-            loomGraph.addEdge( src, dst, new EntityKey( entitySetId, connection.getEntityId(), syncId ) );
+            loomGraph.addEdge( src, dst, connection.getKey() );
         } );
 
         results.forEach( ResultSetFuture::getUninterruptibly );
