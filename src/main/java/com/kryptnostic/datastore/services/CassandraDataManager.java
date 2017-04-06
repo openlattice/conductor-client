@@ -42,7 +42,7 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
 import com.dataloom.data.requests.Connection;
-import com.dataloom.data.requests.DataCreation;
+import com.dataloom.data.requests.Entity;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.core.objects.LoomVertex;
@@ -69,6 +69,7 @@ import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class CassandraDataManager {
@@ -197,15 +198,18 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
-    public void createEntityAndConnectionData( Set<DataCreation> entities, Set<DataCreation> connections ) {
+    public void createEntityAndConnectionData(
+            Iterable<Entity> entities,
+            Iterable<Connection> connections,
+            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId ) {
         Map<EntityKey, LoomVertex> verticesCreated = Maps.newHashMap();
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
 
-        entities.stream().forEach( entity -> {
+        entities.forEach( entity -> {
             createData( entity.getKey().getEntitySetId(),
                     entity.getKey().getSyncId(),
-                    entity.getAuthorizedPropertiesWithDataType(),
-                    entity.getAuthorizedPropertiesWithDataType().keySet(),
+                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ),
+                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ).keySet(),
                     results,
                     entity.getKey().getEntityId(),
                     entity.getDetails() );
@@ -213,7 +217,7 @@ public class CassandraDataManager {
             verticesCreated.put( entity.getKey(), vertex );
         } );
 
-        connections.stream().forEach( connection -> {
+        connections.forEach( connection -> {
             LoomVertex src = verticesCreated.get( connection.getSrc() );
             LoomVertex dst = verticesCreated.get( connection.getDst() );
             if ( src == null || dst == null ) {
@@ -222,8 +226,8 @@ public class CassandraDataManager {
             } else {
                 createData( connection.getKey().getEntitySetId(),
                         connection.getKey().getSyncId(),
-                        connection.getAuthorizedPropertiesWithDataType(),
-                        connection.getAuthorizedPropertiesWithDataType().keySet(),
+                        authorizedPropertiesByEntitySetId.get( connection.getKey().getEntitySetId() ),
+                        authorizedPropertiesByEntitySetId.get( connection.getKey().getEntitySetId() ).keySet(),
                         results,
                         connection.getKey().getEntityId(),
                         connection.getDetails() );
@@ -395,7 +399,9 @@ public class CassandraDataManager {
      * elasticsearch. If this is ever called without deleting the entity set, logic must be added to delete the data
      * from elasticsearch.
      */
-    @SuppressFBWarnings(value = "UC_USELESS_OBJECT", justification = "results Object is used to execute deletes in batches")
+    @SuppressFBWarnings(
+        value = "UC_USELESS_OBJECT",
+        justification = "results Object is used to execute deletes in batches" )
     public void deleteEntitySetData( UUID entitySetId ) {
         logger.info( "Deleting data of entity set: {}", entitySetId );
         BoundStatement bs = entityIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(),
