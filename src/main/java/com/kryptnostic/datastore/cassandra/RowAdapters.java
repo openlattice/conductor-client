@@ -345,7 +345,12 @@ public final class RowAdapters {
     public static EdgeKey edgeKey( Row row ) {
         UUID srcId = row.getUUID( CommonColumns.SRC_VERTEX_ID.cql() );
         UUID dstId = row.getUUID( CommonColumns.DST_VERTEX_ID.cql() );
-        EntityKey reference = entityKey( row );
+
+        UUID edgeTypeId = row.getUUID( CommonColumns.EDGE_TYPE_ID.cql() );
+        String edgeEntityId = row.getString( CommonColumns.EDGE_ENTITYID.cql() );
+        UUID syncId = row.getUUID( CommonColumns.SYNCID.cql() );
+        EntityKey reference = new EntityKey( edgeTypeId, edgeEntityId, syncId );
+
         return new EdgeKey( srcId, dstId, reference );
     }
 

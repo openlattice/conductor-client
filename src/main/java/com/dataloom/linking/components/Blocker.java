@@ -22,7 +22,7 @@ public interface Blocker {
      * Warning: We assume that the restrictions on links are enforced/validated as specified in LinkingApi. In
      * particular, only identical property types are linked on.
      * 
-     * @param linkingEntitySets
+     * @param linkingEntitySetsWithSyncIds
      * @param linkIndexedByPropertyTypes
      * @param linkIndexedByEntitySets
      */

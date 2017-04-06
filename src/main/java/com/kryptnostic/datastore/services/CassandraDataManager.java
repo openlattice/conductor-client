@@ -68,6 +68,8 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 public class CassandraDataManager {
 
     @Inject
@@ -354,6 +356,7 @@ public class CassandraDataManager {
      * which takes care of deleting the data in elasticsearch. If this is ever called without deleting the entity set,
      * logic must be added to delete the data from elasticsearch.
      */
+    @SuppressFBWarnings(value = "UC_USELESS_OBJECT", justification = "results Object is used to execute deletes in batches")
     public void deleteEntitySetData( UUID entitySetId ) {
         logger.info( "Deleting data of entity set: {}", entitySetId );
         BoundStatement bs = entityIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(),
