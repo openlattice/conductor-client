@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.events.EntityDataCreatedEvent;
+import com.dataloom.data.events.EntityDataDeletedEvent;
 import com.dataloom.data.requests.Event;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
@@ -79,7 +80,7 @@ public class CassandraDataManager {
     private final ObjectMapper           mapper;
     private final HazelcastLinkingGraphs linkingGraph;
     private final LoomGraph              loomGraph;
-    private final DatasourceManager dsm;
+    private final DatasourceManager      dsm;
 
     private final PreparedStatement      writeDataQuery;
 
@@ -288,7 +289,47 @@ public class CassandraDataManager {
         Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream()
                 .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
 
-        eventBus.post( new EntityDataCreatedEvent( entitySetId, Optional.of( syncId ), entityId, normalizedPropertyValuesAsMap ) );
+        eventBus.post( new EntityDataCreatedEvent(
+                entitySetId,
+                Optional.of( syncId ),
+                entityId,
+                normalizedPropertyValuesAsMap ) );
+    }
+
+    public void updateEdge(
+            EntityKey key,
+            SetMultimap<UUID, Object> details,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+
+        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
+
+        updateData( key, details, authorizedPropertiesWithDataType, results );
+        results.forEach( ResultSetFuture::getUninterruptibly );
+    }
+
+    public void updateData(
+            EntityKey key,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
+            List<ResultSetFuture> results ) {
+
+        // does not update the row if some property values that user is trying to write to are not authorized.
+        if ( !authorizedPropertiesWithDataType.keySet().containsAll( entityDetails.keySet() ) ) {
+            logger.error( "Entity {} not written because not all property values are authorized.", key.getEntityId() );
+            return;
+        }
+
+        deleteEntity( key );
+        eventBus.post(
+                new EntityDataDeletedEvent( key.getEntitySetId(), key.getEntityId(), Optional.of( key.getSyncId() ) ) );
+
+        createData( key.getEntitySetId(),
+                key.getSyncId(),
+                authorizedPropertiesWithDataType,
+                authorizedPropertiesWithDataType.keySet(),
+                results,
+                key.getEntityId(),
+                entityDetails );
     }
 
     public void createOrderedRPCData( UUID requestId, double weight, byte[] value ) {
@@ -305,9 +346,13 @@ public class CassandraDataManager {
         return StreamUtil.stream( rs )
                 .map( r -> r.getBytes( CommonColumns.RPC_VALUE.cql() ).array() );
     }
-    
+
     /**
-     * Delete data of an entity set across ALL sync Ids.
+     * Delete data of an entity set across ALL sync Ids. 
+     * 
+     * Note: this is currently only used when deleting an entity set,
+     * which takes care of deleting the data in elasticsearch. If this is ever called without deleting the entity set,
+     * logic must be added to delete the data from elasticsearch.
      */
     public void deleteEntitySetData( UUID entitySetId ) {
         logger.info( "Deleting data of entity set: {}", entitySetId );
@@ -328,7 +373,6 @@ public class CassandraDataManager {
             String entityId = RowAdapters.entityId( entityIdRow );
 
             results.add( asyncDeleteEntity( entitySetId, entityId ) );
-
             counter++;
         }
 
@@ -341,7 +385,7 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setString( CommonColumns.ENTITYID.cql(), entityId ) );
     }
-    
+
     public ResultSetFuture asyncDeleteEntity( UUID entitySetId, String entityId, UUID syncId ) {
         return session.executeAsync( deleteEntityQuery.bind()
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
@@ -349,10 +393,15 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
-    public void deleteEntity( EntityKey entityKey ){
-        asyncDeleteEntity( entityKey.getEntitySetId(), entityKey.getEntityId(), entityKey.getSyncId() ).getUninterruptibly();
+    public void deleteEntity( EntityKey entityKey ) {
+        asyncDeleteEntity( entityKey.getEntitySetId(), entityKey.getEntityId(), entityKey.getSyncId() )
+                .getUninterruptibly();
+        eventBus.post( new EntityDataDeletedEvent(
+                entityKey.getEntitySetId(),
+                entityKey.getEntityId(),
+                Optional.of( entityKey.getSyncId() ) ) );
     }
-    
+
     private static PreparedStatement prepareEntitySetQuery(
             Session session,
             CassandraTableBuilder ctb ) {
@@ -448,7 +497,11 @@ public class CassandraDataManager {
                 .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
 
         eventBus.post(
-                new EntityDataCreatedEvent( linkedEntitySetId, Optional.absent(), linkedKey.getKey().toString(), indexResultAsMap ) );
+                new EntityDataCreatedEvent(
+                        linkedEntitySetId,
+                        Optional.absent(),
+                        linkedKey.getKey().toString(),
+                        indexResultAsMap ) );
         return result;
     }
 }
