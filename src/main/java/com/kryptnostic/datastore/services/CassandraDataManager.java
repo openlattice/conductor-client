@@ -41,7 +41,8 @@ import org.slf4j.LoggerFactory;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
-import com.dataloom.data.requests.Event;
+import com.dataloom.data.requests.Connection;
+import com.dataloom.data.requests.DataCreation;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.core.objects.LoomVertex;
@@ -60,6 +61,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
 import com.kryptnostic.conductor.rpc.odata.Table;
@@ -67,7 +69,6 @@ import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class CassandraDataManager {
@@ -167,7 +168,7 @@ public class CassandraDataManager {
         Iterable<ResultSetFuture> entityFutures;
         // If syncId is not specified, retrieve latest snapshot of entity
         final UUID finalSyncId;
-        if( syncId == null ){
+        if ( syncId == null ) {
             finalSyncId = dsm.getCurrentSyncId( entitySetId );
         } else {
             finalSyncId = syncId;
@@ -196,6 +197,44 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
+    public void createEntityAndConnectionData( Set<DataCreation> entities, Set<DataCreation> connections ) {
+        Map<EntityKey, LoomVertex> verticesCreated = Maps.newHashMap();
+        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
+
+        entities.stream().forEach( entity -> {
+            createData( entity.getKey().getEntitySetId(),
+                    entity.getKey().getSyncId(),
+                    entity.getAuthorizedPropertiesWithDataType(),
+                    entity.getAuthorizedPropertiesWithDataType().keySet(),
+                    results,
+                    entity.getKey().getEntityId(),
+                    entity.getDetails() );
+            LoomVertex vertex = loomGraph.getOrCreateVertex( entity.getKey() );
+            verticesCreated.put( entity.getKey(), vertex );
+        } );
+
+        connections.stream().forEach( connection -> {
+            LoomVertex src = verticesCreated.get( connection.getSrc() );
+            LoomVertex dst = verticesCreated.get( connection.getDst() );
+            if ( src == null || dst == null ) {
+                logger.debug( "Edge with id {} cannot be created because one of its vertices was not created.",
+                        connection.getKey().getEntityId() );
+            } else {
+                createData( connection.getKey().getEntitySetId(),
+                        connection.getKey().getSyncId(),
+                        connection.getAuthorizedPropertiesWithDataType(),
+                        connection.getAuthorizedPropertiesWithDataType().keySet(),
+                        results,
+                        connection.getKey().getEntityId(),
+                        connection.getDetails() );
+
+                loomGraph.addEdge( src, dst, connection.getKey() );
+            }
+        } );
+
+        results.forEach( ResultSetFuture::getUninterruptibly );
+    }
+
     public void createEntityData(
             UUID entitySetId,
             UUID syncId,
@@ -219,27 +258,27 @@ public class CassandraDataManager {
         results.forEach( ResultSetFuture::getUninterruptibly );
     }
 
-    public void createEventData(
+    public void createConnectionData(
             UUID entitySetId,
             UUID syncId,
-            Set<Event> events,
+            Set<Connection> connections,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
         Set<UUID> authorizedProperties = authorizedPropertiesWithDataType.keySet();
 
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
 
-        events.stream().forEach( event -> {
+        connections.stream().forEach( connection -> {
             createData( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
                     authorizedProperties,
                     results,
-                    event.getEntityId(),
-                    event.getDetails() );
-            LoomVertex src = loomGraph.getOrCreateVertex( event.getSrc() );
-            LoomVertex dst = loomGraph.getOrCreateVertex( event.getDst() );
+                    connection.getEntityId(),
+                    connection.getDetails() );
+            LoomVertex src = loomGraph.getOrCreateVertex( connection.getSrc() );
+            LoomVertex dst = loomGraph.getOrCreateVertex( connection.getDst() );
 
-            loomGraph.addEdge( src, dst, new EntityKey( entitySetId, event.getEntityId(), syncId ) );
+            loomGraph.addEdge( src, dst, new EntityKey( entitySetId, connection.getEntityId(), syncId ) );
         } );
 
         results.forEach( ResultSetFuture::getUninterruptibly );
@@ -350,11 +389,11 @@ public class CassandraDataManager {
     }
 
     /**
-     * Delete data of an entity set across ALL sync Ids. 
+     * Delete data of an entity set across ALL sync Ids.
      * 
-     * Note: this is currently only used when deleting an entity set,
-     * which takes care of deleting the data in elasticsearch. If this is ever called without deleting the entity set,
-     * logic must be added to delete the data from elasticsearch.
+     * Note: this is currently only used when deleting an entity set, which takes care of deleting the data in
+     * elasticsearch. If this is ever called without deleting the entity set, logic must be added to delete the data
+     * from elasticsearch.
      */
     @SuppressFBWarnings(value = "UC_USELESS_OBJECT", justification = "results Object is used to execute deletes in batches")
     public void deleteEntitySetData( UUID entitySetId ) {
