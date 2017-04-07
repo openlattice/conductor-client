@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
-import com.dataloom.data.requests.Connection;
+import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.Entity;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
@@ -198,9 +198,9 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
-    public void createEntityAndConnectionData(
+    public void createEntityAndAssociationData(
             Iterable<Entity> entities,
-            Iterable<Connection> connections,
+            Iterable<Association> associations,
             Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId ) {
         Map<EntityKey, LoomVertex> verticesCreated = Maps.newHashMap();
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
@@ -217,22 +217,22 @@ public class CassandraDataManager {
             verticesCreated.put( entity.getKey(), vertex );
         } );
 
-        connections.forEach( connection -> {
-            LoomVertex src = verticesCreated.get( connection.getSrc() );
-            LoomVertex dst = verticesCreated.get( connection.getDst() );
+        associations.forEach( association -> {
+            LoomVertex src = verticesCreated.get( association.getSrc() );
+            LoomVertex dst = verticesCreated.get( association.getDst() );
             if ( src == null || dst == null ) {
                 logger.debug( "Edge with id {} cannot be created because one of its vertices was not created.",
-                        connection.getKey().getEntityId() );
+                        association.getKey().getEntityId() );
             } else {
-                createData( connection.getKey().getEntitySetId(),
-                        connection.getKey().getSyncId(),
-                        authorizedPropertiesByEntitySetId.get( connection.getKey().getEntitySetId() ),
-                        authorizedPropertiesByEntitySetId.get( connection.getKey().getEntitySetId() ).keySet(),
+                createData( association.getKey().getEntitySetId(),
+                        association.getKey().getSyncId(),
+                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ),
+                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ).keySet(),
                         results,
-                        connection.getKey().getEntityId(),
-                        connection.getDetails() );
+                        association.getKey().getEntityId(),
+                        association.getDetails() );
 
-                loomGraph.addEdge( src, dst, connection.getKey() );
+                loomGraph.addEdge( src, dst, association.getKey() );
             }
         } );
 
@@ -262,27 +262,27 @@ public class CassandraDataManager {
         results.forEach( ResultSetFuture::getUninterruptibly );
     }
 
-    public void createConnectionData(
+    public void createAssociationData(
             UUID entitySetId,
             UUID syncId,
-            Set<Connection> connections,
+            Set<Association> associations,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
         Set<UUID> authorizedProperties = authorizedPropertiesWithDataType.keySet();
 
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
 
-        connections.stream().forEach( connection -> {
+        associations.stream().forEach( association -> {
             createData( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
                     authorizedProperties,
                     results,
-                    connection.getKey().getEntityId(),
-                    connection.getDetails() );
-            LoomVertex src = loomGraph.getOrCreateVertex( connection.getSrc() );
-            LoomVertex dst = loomGraph.getOrCreateVertex( connection.getDst() );
+                    association.getKey().getEntityId(),
+                    association.getDetails() );
+            LoomVertex src = loomGraph.getOrCreateVertex( association.getSrc() );
+            LoomVertex dst = loomGraph.getOrCreateVertex( association.getDst() );
 
-            loomGraph.addEdge( src, dst, connection.getKey() );
+            loomGraph.addEdge( src, dst, association.getKey() );
         } );
 
         results.forEach( ResultSetFuture::getUninterruptibly );
