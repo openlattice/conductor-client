@@ -22,18 +22,26 @@ public interface LoomGraphApi {
 
     /*
      * CRUD operations of vertices
-     */
+     */    
     LoomVertex getOrCreateVertex( EntityKey entityKey );
 
-    LoomVertex getVertex( UUID vertexId );
+    LoomVertexFuture createVertexAsync( EntityKey entityKey );
+
+    LoomVertex getVertexById( UUID vertexId );
+
+    LoomVertex getVertexByEntityKey( EntityKey entityKey );
 
     void deleteVertex( UUID vertexId );
+    
+    LoomVertexFuture deleteVertexAsync( UUID vertexId );
 
     /*
      * CRUD operations of edges
      */
     LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey edgeLabel );
-    
+
+    LoomEdgeFuture addEdgeAsync( LoomVertex src, LoomVertex dst, EntityKey edgeLabel );
+
     LoomEdge addEdge( EntityKey src, EntityKey dst, EntityKey label);
 
     /**
@@ -62,8 +70,8 @@ public interface LoomGraphApi {
 
     void deleteEdge( EdgeKey edgeKey );
 
-    void deleteEdges( UUID srcId );
+    LoomEdgeFuture deleteEdgeAsync( EdgeKey edgeKey );
     
-    void updateEdge( EdgeKey key, SetMultimap<UUID, Object> entityDetails, Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
+    void deleteEdges( UUID srcId );
 
 }

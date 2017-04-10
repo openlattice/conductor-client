@@ -22,20 +22,9 @@ public class LoomGraph implements LoomGraphApi {
 
     private static final Logger     logger = LoggerFactory.getLogger( LoomGraph.class );
 
-    private IMap<UUID, LoomVertex>  vertices;
-    private IMap<EntityKey, UUID>   verticesLookup;
-
-    private IMap<EdgeKey, LoomEdge> edges;
     private GraphQueryService       gqs;
 
-    private CassandraDataManager    cdm;
-
-    public LoomGraph( HazelcastInstance hazelcastInstance, CassandraDataManager cdm, GraphQueryService gqs ) {
-        this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
-        this.verticesLookup = hazelcastInstance.getMap( HazelcastMap.VERTICES_LOOKUP.name() );
-        this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
-
-        this.cdm = cdm;
+    public LoomGraph( GraphQueryService gqs ) {
         this.gqs = gqs;
     }
 
@@ -62,10 +51,20 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
-    public LoomVertex getVertex( UUID vertexId ) {
-        return vertices.get( vertexId );
+    public LoomVertex getVertexById( UUID vertexId ) {
+        return gqs.getVertexById( vertexId );
     }
 
+    @Override
+    public LoomVertex getVertexByEntityKey( EntityKey reference ) {
+        return gqs.getVertexByEntityKey( reference );
+    }
+
+    @Override
+    public LoomVertexFuture createVertexAsync( EntityKey entityKey ){
+        return LoomVertexFuture( entityKey );
+    }
+    
     @Override
     public void deleteVertex( UUID vertexId ) {
         // TODO delete all the incident edges
@@ -88,8 +87,12 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public LoomEdge addEdge( EntityKey src, EntityKey dst, EntityKey label ) {
-        LoomVertex srcVertex = getOrCreateVertex( src );
-        LoomVertex dstVertex = getOrCreateVertex( dst );
+        LoomVertex srcVertex = getVertex( src );
+        LoomVertex dstVertex = getVertex( dst );
+        if( srcVertex == null || dstVertex == null ){
+            logger.error( "Edge for entity id {} cannot be created because one of its vertices was not created.",
+                    label.getEntityId() );
+        }
         return addEdge( srcVertex, dstVertex, label );
     }
 
@@ -115,12 +118,21 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
-    public void updateEdge(
-            EdgeKey key,
-            SetMultimap<UUID, Object> entityDetails,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        cdm.updateEdge( key.getReference(), entityDetails, authorizedPropertiesWithDataType );
-
+    public LoomVertexFuture deleteVertexAsync( UUID vertexId ) {
+        // TODO Auto-generated method stub
+        return null;
     }
 
+    @Override
+    public LoomEdgeFuture addEdgeAsync( LoomVertex src, LoomVertex dst, EntityKey edgeLabel ) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public LoomEdgeFuture deleteEdgeAsync( EdgeKey edgeKey ) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
 }

@@ -83,7 +83,6 @@ public class CassandraDataManager {
     private final Session                session;
     private final ObjectMapper           mapper;
     private final HazelcastLinkingGraphs linkingGraph;
-    private final LoomGraph              loomGraph;
     private final DatasourceManager      dsm;
 
     private final PreparedStatement      writeDataQuery;
@@ -106,7 +105,6 @@ public class CassandraDataManager {
         this.session = session;
         this.mapper = mapper;
         this.linkingGraph = linkingGraph;
-        this.loomGraph = loomGraph;
         this.dsm = dsm;
 
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
@@ -198,48 +196,16 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
-    public void createEntityAndAssociationData(
-            Iterable<Entity> entities,
-            Iterable<Association> associations,
-            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId ) {
-        Map<EntityKey, LoomVertex> verticesCreated = Maps.newHashMap();
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
-
-        entities.forEach( entity -> {
-            createData( entity.getKey().getEntitySetId(),
-                    entity.getKey().getSyncId(),
-                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ),
-                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ).keySet(),
-                    results,
-                    entity.getKey().getEntityId(),
-                    entity.getDetails() );
-            LoomVertex vertex = loomGraph.getOrCreateVertex( entity.getKey() );
-            verticesCreated.put( entity.getKey(), vertex );
-        } );
-
-        associations.forEach( association -> {
-            LoomVertex src = verticesCreated.get( association.getSrc() );
-            LoomVertex dst = verticesCreated.get( association.getDst() );
-            if ( src == null || dst == null ) {
-                logger.debug( "Edge with id {} cannot be created because one of its vertices was not created.",
-                        association.getKey().getEntityId() );
-            } else {
-                createData( association.getKey().getEntitySetId(),
-                        association.getKey().getSyncId(),
-                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ),
-                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ).keySet(),
-                        results,
-                        association.getKey().getEntityId(),
-                        association.getDetails() );
-
-                loomGraph.addEdge( src, dst, association.getKey() );
-            }
-        } );
-
-        results.forEach( ResultSetFuture::getUninterruptibly );
+    public void createEntityData(
+            UUID entitySetId,
+            UUID syncId,
+            Map<String, SetMultimap<UUID, Object>> entities,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        createEntityDataAsync( entitySetId, syncId, entities, authorizedPropertiesWithDataType )
+                .forEach( ResultSetFuture::getUninterruptibly );
     }
 
-    public void createEntityData(
+    public List<ResultSetFuture> createEntityDataAsync(
             UUID entitySetId,
             UUID syncId,
             Map<String, SetMultimap<UUID, Object>> entities,
@@ -249,17 +215,16 @@ public class CassandraDataManager {
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
 
         entities.entrySet().stream().forEach( entity -> {
-            createData( entitySetId,
+            createDataAsync( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
                     authorizedProperties,
                     results,
                     entity.getKey(),
                     entity.getValue() );
-            loomGraph.getOrCreateVertex( new EntityKey( entitySetId, entity.getKey(), syncId ) );
         } );
-
-        results.forEach( ResultSetFuture::getUninterruptibly );
+        
+        return results;
     }
 
     public void createAssociationData(
@@ -272,23 +237,19 @@ public class CassandraDataManager {
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
 
         associations.stream().forEach( association -> {
-            createData( entitySetId,
+            createDataAsync( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
                     authorizedProperties,
                     results,
                     association.getKey().getEntityId(),
                     association.getDetails() );
-            LoomVertex src = loomGraph.getOrCreateVertex( association.getSrc() );
-            LoomVertex dst = loomGraph.getOrCreateVertex( association.getDst() );
-
-            loomGraph.addEdge( src, dst, association.getKey() );
         } );
 
         results.forEach( ResultSetFuture::getUninterruptibly );
     }
 
-    public void createData(
+    public void createDataAsync(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
@@ -368,7 +329,7 @@ public class CassandraDataManager {
         eventBus.post(
                 new EntityDataDeletedEvent( key.getEntitySetId(), key.getEntityId(), Optional.of( key.getSyncId() ) ) );
 
-        createData( key.getEntitySetId(),
+        createDataAsync( key.getEntitySetId(),
                 key.getSyncId(),
                 authorizedPropertiesWithDataType,
                 authorizedPropertiesWithDataType.keySet(),
