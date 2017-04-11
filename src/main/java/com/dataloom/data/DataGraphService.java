@@ -59,11 +59,11 @@ public class DataGraphService implements DataGraphManager {
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
         return cdm.getLinkedEntitySetData( linkedEntitySetId, authorizedPropertyTypesForEntitySets );
     }
-    
+
     @Override
     public void deleteEntitySetData( UUID entitySetId ) {
         cdm.deleteEntitySetData( entitySetId );
-        //TODO delete all vertices
+        // TODO delete all vertices
     }
 
     @Override
@@ -80,7 +80,12 @@ public class DataGraphService implements DataGraphManager {
             EntityKey vertexReference,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        cdm.createData( vertexReference.getEntitySetId(), vertexReference.getSyncId(), authorizedPropertiesWithDataType, authorizedPropertiesWithDataType.keySet(), vertexReference.getEntityId(), entityDetails );
+        cdm.createData( vertexReference.getEntitySetId(),
+                vertexReference.getSyncId(),
+                authorizedPropertiesWithDataType,
+                authorizedPropertiesWithDataType.keySet(),
+                vertexReference.getEntityId(),
+                entityDetails );
     }
 
     @Override
@@ -88,8 +93,13 @@ public class DataGraphService implements DataGraphManager {
             EdgeKey key,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        //Remark: current createData is really upsertData, given how Cassandra handles inserts/updates
-        cdm.createData( key.getReference().getEntitySetId(), key.getReference().getSyncId(), authorizedPropertiesWithDataType, authorizedPropertiesWithDataType.keySet(), key.getReference().getEntityId(), entityDetails );
+        // Remark: current createData is really upsertData, given how Cassandra handles inserts/updates
+        cdm.createData( key.getReference().getEntitySetId(),
+                key.getReference().getSyncId(),
+                authorizedPropertiesWithDataType,
+                authorizedPropertiesWithDataType.keySet(),
+                key.getReference().getEntityId(),
+                entityDetails );
     }
 
     @Override
@@ -104,7 +114,7 @@ public class DataGraphService implements DataGraphManager {
         lm.deleteEdge( key );
         cdm.deleteEntity( key.getReference() );
     }
-    
+
     @Override
     public void createEntities(
             UUID entitySetId,
@@ -116,7 +126,7 @@ public class DataGraphService implements DataGraphManager {
         List<ResultSetFuture> datafs = new ArrayList<ResultSetFuture>();
         List<LoomVertexFuture> vertexfs = new ArrayList<LoomVertexFuture>();
 
-        entities.entrySet().stream().forEach( entity -> {
+        for ( Map.Entry<String, SetMultimap<UUID, Object>> entity : entities.entrySet() ) {
             cdm.createDataAsync( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
@@ -129,13 +139,12 @@ public class DataGraphService implements DataGraphManager {
                 datafs = new ArrayList<ResultSetFuture>();
             }
 
-            vertexfs.add( lm.createVertexAsync( new EntityKey( entitySetId, entity.getKey(), syncId ) ) );
+            vertexfs.add( lm.getOrCreateVertexAsync( new EntityKey( entitySetId, entity.getKey(), syncId ) ) );
             if ( vertexfs.size() > bufferSize ) {
                 vertexfs.forEach( LoomVertexFuture::getUninterruptibly );
                 vertexfs = new ArrayList<LoomVertexFuture>();
             }
-        } );
-
+        }
         datafs.forEach( ResultSetFuture::getUninterruptibly );
         vertexfs.forEach( LoomVertexFuture::getUninterruptibly );
     }
@@ -150,7 +159,7 @@ public class DataGraphService implements DataGraphManager {
 
         List<ResultSetFuture> datafs = new ArrayList<ResultSetFuture>();
 
-        associations.stream().forEach( association -> {
+        for ( Association association : associations ) {
             cdm.createDataAsync( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
@@ -172,8 +181,7 @@ public class DataGraphService implements DataGraphManager {
                 datafs.forEach( ResultSetFuture::getUninterruptibly );
                 datafs = new ArrayList<ResultSetFuture>();
             }
-
-        } );
+        }
         datafs.forEach( ResultSetFuture::getUninterruptibly );
     }
 
@@ -185,7 +193,7 @@ public class DataGraphService implements DataGraphManager {
         Map<EntityKey, LoomVertexFuture> vertexfs = Maps.newHashMap();
         List<ResultSetFuture> datafs = new ArrayList<ResultSetFuture>();
 
-        entities.forEach( entity -> {
+        for ( Entity entity : entities ) {
             cdm.createDataAsync( entity.getKey().getEntitySetId(),
                     entity.getKey().getSyncId(),
                     authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ),
@@ -199,12 +207,13 @@ public class DataGraphService implements DataGraphManager {
                 datafs = new ArrayList<ResultSetFuture>();
             }
 
-            vertexfs.put( entity.getKey(), lm.createVertexAsync( entity.getKey() ) );
-        } );
-        Map<EntityKey, LoomVertex> verticesCreated = Maps.transformValues( vertexfs,
-                LoomVertexFuture::getUninteruptibly );
+            vertexfs.put( entity.getKey(), lm.getOrCreateVertexAsync( entity.getKey() ) );
+        }
 
-        associations.forEach( association -> {
+        Map<EntityKey, LoomVertex> verticesCreated = Maps.transformValues( vertexfs,
+                LoomVertexFuture::getUninterruptibly );
+
+        for ( Association association : associations ) {
             LoomVertex src = verticesCreated.get( association.getSrc() );
             LoomVertex dst = verticesCreated.get( association.getDst() );
             if ( src == null || dst == null ) {
@@ -226,8 +235,7 @@ public class DataGraphService implements DataGraphManager {
                     datafs = new ArrayList<ResultSetFuture>();
                 }
             }
-        } );
-
+        }
         datafs.forEach( ResultSetFuture::getUninterruptibly );
     }
 

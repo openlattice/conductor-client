@@ -232,4 +232,16 @@ public class LoomVertexFuture implements ListenableFuture<LoomVertex> {
             callbackExecutor.execute( callbackRunnable );
         }
     }
+
+    public LoomVertex getUninterruptibly() {
+        try {
+            return get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            logger.debug( "Getting LoomVertex with id {} failed because of exception {}.",
+                    id,
+                    e.getClass().toString() );
+            return null;
+        }
+    }
+
 }
