@@ -41,11 +41,8 @@ import org.slf4j.LoggerFactory;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
-import com.dataloom.data.requests.Association;
-import com.dataloom.data.requests.Entity;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
-import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
@@ -61,7 +58,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
 import com.kryptnostic.conductor.rpc.odata.Table;
@@ -196,16 +192,8 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
+    @Deprecated
     public void createEntityData(
-            UUID entitySetId,
-            UUID syncId,
-            Map<String, SetMultimap<UUID, Object>> entities,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        createEntityDataAsync( entitySetId, syncId, entities, authorizedPropertiesWithDataType )
-                .forEach( ResultSetFuture::getUninterruptibly );
-    }
-
-    public List<ResultSetFuture> createEntityDataAsync(
             UUID entitySetId,
             UUID syncId,
             Map<String, SetMultimap<UUID, Object>> entities,
@@ -223,29 +211,26 @@ public class CassandraDataManager {
                     entity.getKey(),
                     entity.getValue() );
         } );
-        
-        return results;
+
+        results.forEach( ResultSetFuture::getUninterruptibly );
     }
 
-    public void createAssociationData(
+    public void createData(
             UUID entitySetId,
             UUID syncId,
-            Set<Association> associations,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        Set<UUID> authorizedProperties = authorizedPropertiesWithDataType.keySet();
-
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
+            Set<UUID> authorizedProperties,
+            String entityId,
+            SetMultimap<UUID, Object> entityDetails ) {
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
-
-        associations.stream().forEach( association -> {
-            createDataAsync( entitySetId,
-                    syncId,
-                    authorizedPropertiesWithDataType,
-                    authorizedProperties,
-                    results,
-                    association.getKey().getEntityId(),
-                    association.getDetails() );
-        } );
-
+        createDataAsync(
+                entitySetId,
+                syncId,
+                authorizedPropertiesWithDataType,
+                authorizedProperties,
+                results,
+                entityId,
+                entityDetails );
         results.forEach( ResultSetFuture::getUninterruptibly );
     }
 
@@ -300,42 +285,6 @@ public class CassandraDataManager {
                 Optional.of( syncId ),
                 entityId,
                 normalizedPropertyValuesAsMap ) );
-    }
-
-    public void updateEdge(
-            EntityKey key,
-            SetMultimap<UUID, Object> details,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
-
-        updateData( key, details, authorizedPropertiesWithDataType, results );
-        results.forEach( ResultSetFuture::getUninterruptibly );
-    }
-
-    public void updateData(
-            EntityKey key,
-            SetMultimap<UUID, Object> entityDetails,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
-            List<ResultSetFuture> results ) {
-
-        // does not update the row if some property values that user is trying to write to are not authorized.
-        if ( !authorizedPropertiesWithDataType.keySet().containsAll( entityDetails.keySet() ) ) {
-            logger.error( "Entity {} not written because not all property values are authorized.", key.getEntityId() );
-            return;
-        }
-
-        deleteEntity( key );
-        eventBus.post(
-                new EntityDataDeletedEvent( key.getEntitySetId(), key.getEntityId(), Optional.of( key.getSyncId() ) ) );
-
-        createDataAsync( key.getEntitySetId(),
-                key.getSyncId(),
-                authorizedPropertiesWithDataType,
-                authorizedPropertiesWithDataType.keySet(),
-                results,
-                key.getEntityId(),
-                entityDetails );
     }
 
     public void createOrderedRPCData( UUID requestId, double weight, byte[] value ) {

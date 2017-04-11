@@ -14,38 +14,62 @@ import com.dataloom.graph.core.objects.EdgeKey;
 import com.google.common.collect.SetMultimap;
 
 public interface DataGraphManager {
-    
+
+    /*
+     * Entity set methods
+     */
     Iterable<SetMultimap<FullQualifiedName, Object>> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
-    
+
     Iterable<SetMultimap<FullQualifiedName, Object>> getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
-    
+
+    //TODO remove vertices too
     void deleteEntitySetData( UUID entitySetId );
-    
-    void createEntityData(
-            UUID entitySetId,
-            UUID syncId,
-            Map<String, SetMultimap<UUID, Object>> entities,
+
+    /*
+     * CRUD methods for entity
+     */
+    void updateEntity(
+            UUID vertexId,
+            SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
-    
+
+    void updateEntity(
+            EntityKey vertexReference,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
+
     void updateAssociation(
             EdgeKey key,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
     
-    void createAssociationData(
+    void deleteEntity( UUID vertexId );
+    
+    void deleteAssociation( EdgeKey key );
+
+    /*
+     * Bulk endpoints for entities/associations
+     */
+
+    void createEntities(
+            UUID entitySetId,
+            UUID syncId,
+            Map<String, SetMultimap<UUID, Object>> entities,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
+
+    void createAssociations(
             UUID entitySetId,
             UUID syncId,
             Set<Association> associations,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
-    
-    void createEntityAndAssociationData(
+
+    void createEntitiesAndAssociations(
             Iterable<Entity> entities,
             Iterable<Association> associations,
             Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId );
-
 }

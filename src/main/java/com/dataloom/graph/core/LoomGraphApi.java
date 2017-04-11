@@ -1,16 +1,14 @@
 package com.dataloom.graph.core;
 
-import java.util.Map;
 import java.util.UUID;
-
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
-import com.google.common.collect.SetMultimap;
+import com.dataloom.graph.core.objects.LoomVertexFuture;
+import com.datastax.driver.core.ResultSetFuture;
 
 /**
  * Graph Object supporting CRUD operations of vertices and edges to the graph.
@@ -22,27 +20,29 @@ public interface LoomGraphApi {
 
     /*
      * CRUD operations of vertices
-     */    
+     */
     LoomVertex getOrCreateVertex( EntityKey entityKey );
 
-    LoomVertexFuture createVertexAsync( EntityKey entityKey );
+    LoomVertexFuture getOrCreateVertexAsync( EntityKey entityKey );
 
     LoomVertex getVertexById( UUID vertexId );
 
     LoomVertex getVertexByEntityKey( EntityKey entityKey );
 
     void deleteVertex( UUID vertexId );
-    
-    LoomVertexFuture deleteVertexAsync( UUID vertexId );
+
+    ResultSetFuture deleteVertexAsync( UUID vertexId );
 
     /*
      * CRUD operations of edges
      */
-    LoomEdge addEdge( LoomVertex src, LoomVertex dst, EntityKey edgeLabel );
+    void addEdge( LoomVertex src, LoomVertex dst, EntityKey edgeLabel );
 
-    LoomEdgeFuture addEdgeAsync( LoomVertex src, LoomVertex dst, EntityKey edgeLabel );
+    void addEdge( EntityKey src, EntityKey dst, EntityKey edgeLabel );
 
-    LoomEdge addEdge( EntityKey src, EntityKey dst, EntityKey label);
+    ResultSetFuture addEdgeAsync( LoomVertex src, LoomVertex dst, EntityKey edgeLabel );
+
+    ResultSetFuture addEdgeAsync( EntityKey src, EntityKey dst, EntityKey edgeLabel );
 
     /**
      * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
@@ -54,7 +54,8 @@ public interface LoomGraphApi {
     LoomEdge getEdge( EdgeKey key );
 
     /**
-     * An EdgeSelection restricts the columns in the edges table. In the current setting, it should support restriction of
+     * An EdgeSelection restricts the columns in the edges table. In the current setting, it should support restriction
+     * of
      * <ul>
      * <li>source UUID</li>
      * <li>destination UUID</li>
@@ -63,6 +64,7 @@ public interface LoomGraphApi {
      * <li>edge type</li>
      * </ul>
      * and combinations of these.
+     * 
      * @param selection
      * @return
      */
@@ -70,8 +72,8 @@ public interface LoomGraphApi {
 
     void deleteEdge( EdgeKey edgeKey );
 
-    LoomEdgeFuture deleteEdgeAsync( EdgeKey edgeKey );
-    
+    ResultSetFuture deleteEdgeAsync( EdgeKey edgeKey );
+
     void deleteEdges( UUID srcId );
 
 }

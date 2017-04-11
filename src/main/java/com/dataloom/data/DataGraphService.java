@@ -65,9 +65,48 @@ public class DataGraphService implements DataGraphManager {
         cdm.deleteEntitySetData( entitySetId );
         //TODO delete all vertices
     }
+
+    @Override
+    public void updateEntity(
+            UUID vertexId,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        EntityKey vertexReference = lm.getVertexById( vertexId ).getReference();
+        updateEntity( vertexReference, entityDetails, authorizedPropertiesWithDataType );
+    }
+
+    @Override
+    public void updateEntity(
+            EntityKey vertexReference,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        cdm.createData( vertexReference.getEntitySetId(), vertexReference.getSyncId(), authorizedPropertiesWithDataType, authorizedPropertiesWithDataType.keySet(), vertexReference.getEntityId(), entityDetails );
+    }
+
+    @Override
+    public void updateAssociation(
+            EdgeKey key,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        //Remark: current createData is really upsertData, given how Cassandra handles inserts/updates
+        cdm.createData( key.getReference().getEntitySetId(), key.getReference().getSyncId(), authorizedPropertiesWithDataType, authorizedPropertiesWithDataType.keySet(), key.getReference().getEntityId(), entityDetails );
+    }
+
+    @Override
+    public void deleteEntity( UUID vertexId ) {
+        EntityKey entityKey = lm.getVertexById( vertexId ).getReference();
+        lm.deleteVertex( vertexId );
+        cdm.deleteEntity( entityKey );
+    }
+
+    @Override
+    public void deleteAssociation( EdgeKey key ) {
+        lm.deleteEdge( key );
+        cdm.deleteEntity( key.getReference() );
+    }
     
     @Override
-    public void createEntityData(
+    public void createEntities(
             UUID entitySetId,
             UUID syncId,
             Map<String, SetMultimap<UUID, Object>> entities,
@@ -101,17 +140,8 @@ public class DataGraphService implements DataGraphManager {
         vertexfs.forEach( LoomVertexFuture::getUninterruptibly );
     }
 
-
     @Override
-    public void updateAssociation(
-            EdgeKey key,
-            SetMultimap<UUID, Object> entityDetails,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        cdm.updateEdge( key.getReference(), entityDetails, authorizedPropertiesWithDataType );
-    }
-
-    @Override
-    public void createAssociationData(
+    public void createAssociations(
             UUID entitySetId,
             UUID syncId,
             Set<Association> associations,
@@ -119,7 +149,6 @@ public class DataGraphService implements DataGraphManager {
         Set<UUID> authorizedProperties = authorizedPropertiesWithDataType.keySet();
 
         List<ResultSetFuture> datafs = new ArrayList<ResultSetFuture>();
-        List<LoomEdgeFuture> edgefs = new ArrayList<LoomEdgeFuture>();
 
         associations.stream().forEach( association -> {
             cdm.createDataAsync( entitySetId,
@@ -129,10 +158,6 @@ public class DataGraphService implements DataGraphManager {
                     datafs,
                     association.getKey().getEntityId(),
                     association.getDetails() );
-            if ( datafs.size() > bufferSize ) {
-                datafs.forEach( ResultSetFuture::getUninterruptibly );
-                datafs = new ArrayList<ResultSetFuture>();
-            }
 
             LoomVertex src = lm.getVertexByEntityKey( association.getSrc() );
             LoomVertex dst = lm.getVertexByEntityKey( association.getDst() );
@@ -141,25 +166,24 @@ public class DataGraphService implements DataGraphManager {
                         association.getKey().getEntityId() );
             }
 
-            edgefs.add( lm.addEdgeAsync( src, dst, association.getKey() ) );
+            datafs.add( lm.addEdgeAsync( src, dst, association.getKey() ) );
 
-            if ( edgefs.size() > bufferSize ) {
-                edgefs.forEach( LoomEdgeFuture::getUninterruptibly );
-                edgefs = new ArrayList<LoomEdgeFuture>();
+            if ( datafs.size() > bufferSize ) {
+                datafs.forEach( ResultSetFuture::getUninterruptibly );
+                datafs = new ArrayList<ResultSetFuture>();
             }
+
         } );
         datafs.forEach( ResultSetFuture::getUninterruptibly );
-        edgefs.forEach( LoomEdgeFuture::getUninterruptibly );
     }
 
     @Override
-    public void createEntityAndAssociationData(
+    public void createEntitiesAndAssociations(
             Iterable<Entity> entities,
             Iterable<Association> associations,
             Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId ) {
         Map<EntityKey, LoomVertexFuture> vertexfs = Maps.newHashMap();
         List<ResultSetFuture> datafs = new ArrayList<ResultSetFuture>();
-        List<LoomEdgeFuture> edgefs = new ArrayList<LoomEdgeFuture>();
 
         entities.forEach( entity -> {
             cdm.createDataAsync( entity.getKey().getEntitySetId(),
@@ -195,21 +219,16 @@ public class DataGraphService implements DataGraphManager {
                         association.getKey().getEntityId(),
                         association.getDetails() );
 
+                datafs.add( lm.addEdgeAsync( src, dst, association.getKey() ) );
+
                 if ( datafs.size() > bufferSize ) {
                     datafs.forEach( ResultSetFuture::getUninterruptibly );
                     datafs = new ArrayList<ResultSetFuture>();
-                }
-
-                edgefs.add( lm.addEdge( src, dst, association.getKey() ) );
-
-                if ( edgefs.size() > bufferSize ) {
-                    edgefs.forEach( LoomEdgeFuture::getUninterruptibly );
-                    edgefs = new ArrayList<LoomEdgeFuture>();
                 }
             }
         } );
 
         datafs.forEach( ResultSetFuture::getUninterruptibly );
-        edgefs.forEach( LoomEdgeFuture::getUninterruptibly );
     }
+
 }

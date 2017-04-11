@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.EntityKey;
+import com.dataloom.graph.core.objects.EdgeKey;
 import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
@@ -31,7 +32,10 @@ public class GraphQueryService {
     private final PreparedStatement putVertexLookupIfAbsentQuery;
     private final PreparedStatement putVertexIfAbsentQuery;
     
+    private final PreparedStatement getEdgeQuery;
     private final PreparedStatement getEdgesQuery;
+    private final PreparedStatement putEdgeQuery;
+    private final PreparedStatement deleteEdgeQuery;
     private final PreparedStatement deleteEdgesBySrcIdQuery;
 
     public GraphQueryService( Session session ) {
@@ -42,7 +46,10 @@ public class GraphQueryService {
         this.putVertexLookupIfAbsentQuery = preparePutVertexLookupIfAbsentQuery( session );
         this.putVertexIfAbsentQuery = preparePutVertexIfAbsentQuery( session );
 
+        this.getEdgeQuery = prepareGetEdgeQuery( session );
         this.getEdgesQuery = prepareGetEdgesQuery( session );
+        this.putEdgeQuery = preparePutEdgeQuery( session );
+        this.deleteEdgeQuery = prepareDeleteEdgeQuery( session );
         this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
     }
 
@@ -75,6 +82,17 @@ public class GraphQueryService {
                 .set( CommonColumns.ENTITY_KEY.cql(), entityKey, EntityKey.class )
                 .setUUID( CommonColumns.VERTEX_ID.cql(), vertexId ) );
     }
+
+    public LoomEdge getEdge( EdgeKey key ) {
+        BoundStatement stmt = getEdgeQuery.bind()
+                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), key.getSrcId() )
+                .setUUID( CommonColumns.DST_VERTEX_ID.cql(), key.getDstId() )
+                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), key.getReference().getEntitySetId() )
+                .setString( CommonColumns.EDGE_ENTITYID.cql(), key.getReference().getEntityId() )
+                .setUUID( CommonColumns.SYNCID.cql(), key.getReference().getSyncId() );
+        Row row = session.execute( stmt ).one();
+        return row == null ? null : RowAdapters.loomEdge( row );
+    }
     
     public Iterable<LoomEdge> getEdges( EdgeSelection selection ) {
         BoundStatement stmt = getEdgesQuery.bind();
@@ -90,6 +108,32 @@ public class GraphQueryService {
             stmt.setUUID( CommonColumns.EDGE_TYPE_ID.cql(), selection.getOptionalEdgeType().get() );
         ResultSet rs = session.execute( stmt );
         return Iterables.transform( rs, RowAdapters::loomEdge );
+    }
+
+    public ResultSetFuture putEdgeAsync( LoomVertex src, LoomVertex dst, EntityKey edgeLabel ) {
+        BoundStatement stmt = putEdgeQuery.bind()
+                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), src.getKey() )
+                .setUUID( CommonColumns.DST_VERTEX_ID.cql(), dst.getKey() )
+                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeLabel.getEntitySetId() )
+                .setString( CommonColumns.EDGE_ENTITYID.cql(), edgeLabel.getEntityId() )
+                .setUUID( CommonColumns.SYNCID.cql(), edgeLabel.getSyncId() )
+                .setUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), src.getReference().getEntitySetId() )
+                .setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), dst.getReference().getEntitySetId() );
+        return session.executeAsync( stmt );
+    }
+
+    public void deleteEdge( EdgeKey key ){
+        deleteEdgeAsync( key ).getUninterruptibly();
+    }
+
+    public ResultSetFuture deleteEdgeAsync( EdgeKey key ){
+        BoundStatement stmt = deleteEdgeQuery.bind()
+                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), key.getSrcId() )
+                .setUUID( CommonColumns.DST_VERTEX_ID.cql(), key.getDstId() )
+                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), key.getReference().getEntitySetId() )
+                .setString( CommonColumns.EDGE_ENTITYID.cql(), key.getReference().getEntityId() )
+                .setUUID( CommonColumns.SYNCID.cql(), key.getReference().getSyncId() );
+        return session.executeAsync( stmt );
     }
 
     public void deleteEdgesBySrcId( UUID srcId ) {
@@ -116,6 +160,11 @@ public class GraphQueryService {
         return session
                 .prepare( Table.VERTICES_LOOKUP.getBuilder().buildStoreQuery().ifNotExists() );        
     }
+
+    private static PreparedStatement prepareGetEdgeQuery( Session session ) {
+        return session
+                .prepare( Table.EDGES.getBuilder().buildLoadAllQuery() );
+    }
     
     private static PreparedStatement prepareGetEdgesQuery( Session session ) {
         return session
@@ -132,6 +181,16 @@ public class GraphQueryService {
                         .and( QueryBuilder.eq( CommonColumns.EDGE_TYPE_ID.cql(),
                                 CommonColumns.EDGE_TYPE_ID.bindMarker() ) ) );
 
+    }
+
+    private static PreparedStatement preparePutEdgeQuery( Session session ) {
+        return session
+                .prepare( Table.EDGES.getBuilder().buildStoreQuery() );
+    }
+
+    private static PreparedStatement prepareDeleteEdgeQuery( Session session ) {
+        return session
+                .prepare( Table.EDGES.getBuilder().buildDeleteQuery() );
     }
 
     private static PreparedStatement prepareDeleteEdgesBySrcIdQuery( Session session ) {
