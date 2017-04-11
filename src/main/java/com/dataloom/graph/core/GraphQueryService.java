@@ -30,6 +30,7 @@ public class GraphQueryService {
     private final PreparedStatement getVertexByIdQuery;
     private final PreparedStatement getVertexByEntityKeyQuery;
     private final PreparedStatement putVertexLookupIfAbsentQuery;
+    private final PreparedStatement updateVertexLookupIfExistsQuery;
     private final PreparedStatement putVertexIfAbsentQuery;
     
     private final PreparedStatement getEdgeQuery;
@@ -44,6 +45,7 @@ public class GraphQueryService {
         this.getVertexByIdQuery = prepareGetVertexByIdQuery( session );
         this.getVertexByEntityKeyQuery = prepareGetVertexByEntityKeyQuery( session );
         this.putVertexLookupIfAbsentQuery = preparePutVertexLookupIfAbsentQuery( session );
+        this.updateVertexLookupIfExistsQuery = prepareUpdateVertexLookupIfExistsQuery( session );
         this.putVertexIfAbsentQuery = preparePutVertexIfAbsentQuery( session );
 
         this.getEdgeQuery = prepareGetEdgeQuery( session );
@@ -71,16 +73,23 @@ public class GraphQueryService {
         return RowAdapters.loomVertex( row );
     }
     
-    public ResultSetFuture putVertexIfAbsent( UUID vertexId, EntityKey entityKey ){
+    public ResultSetFuture putVertexIfAbsentAsync( UUID vertexId, EntityKey entityKey ){
         return session.executeAsync( putVertexIfAbsentQuery.bind()
-                .set( CommonColumns.ENTITY_KEY.cql(), entityKey, EntityKey.class )
-                .setUUID( CommonColumns.VERTEX_ID.cql(), vertexId ) );
+                .setUUID( CommonColumns.VERTEX_ID.cql(), vertexId )
+                .set( CommonColumns.ENTITY_KEY.cql(), entityKey, EntityKey.class ) );
     }
     
-    public ResultSetFuture putVertexLookUpIfAbsent( UUID vertexId, EntityKey entityKey ){
+    public ResultSetFuture putVertexLookUpIfAbsentAsync( UUID vertexId, EntityKey entityKey ){
         return session.executeAsync( putVertexLookupIfAbsentQuery.bind()
                 .set( CommonColumns.ENTITY_KEY.cql(), entityKey, EntityKey.class )
                 .setUUID( CommonColumns.VERTEX_ID.cql(), vertexId ) );
+    }
+
+    public ResultSetFuture updateVertexLookupIfExistsAsync( UUID vertexId, EntityKey entityKey ){
+        return session.executeAsync( updateVertexLookupIfExistsQuery.bind()
+                .setUUID( CommonColumns.VERTEX_ID.cql(), vertexId )
+                .set( CommonColumns.ENTITY_KEY.cql(), entityKey, EntityKey.class )
+                );
     }
 
     public LoomEdge getEdge( EdgeKey key ) {
@@ -159,6 +168,14 @@ public class GraphQueryService {
     private static PreparedStatement preparePutVertexLookupIfAbsentQuery( Session session ){
         return session
                 .prepare( Table.VERTICES_LOOKUP.getBuilder().buildStoreQuery().ifNotExists() );        
+    }
+
+    private static PreparedStatement prepareUpdateVertexLookupIfExistsQuery( Session session ){
+        return session
+                .prepare( QueryBuilder.update( Table.VERTICES_LOOKUP.getKeyspace(), Table.VERTICES_LOOKUP.getName() )
+                        .with( QueryBuilder.set( CommonColumns.VERTEX_ID.cql(), CommonColumns.VERTEX_ID.bindMarker() ) )
+                        .onlyIf( QueryBuilder.eq( CommonColumns.ENTITY_KEY.cql(), CommonColumns.ENTITY_KEY.bindMarker() ) )
+                        );        
     }
 
     private static PreparedStatement prepareGetEdgeQuery( Session session ) {
