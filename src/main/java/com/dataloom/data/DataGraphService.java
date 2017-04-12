@@ -170,10 +170,6 @@ public class DataGraphService implements DataGraphManager {
 
             LoomVertex src = lm.getVertexByEntityKey( association.getSrc() );
             LoomVertex dst = lm.getVertexByEntityKey( association.getDst() );
-            if ( src == null || dst == null ) {
-                logger.error( "Edge for entity id {} cannot be created because one of its vertices was not created.",
-                        association.getKey().getEntityId() );
-            }
 
             datafs.add( lm.addEdgeAsync( src, dst, association.getKey() ) );
 

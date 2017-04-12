@@ -67,6 +67,12 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public ResultSetFuture addEdgeAsync( LoomVertex src, LoomVertex dst, EntityKey edgeLabel ) {
+        if ( src == null || dst == null ) {
+            logger.error( "Edge for entity id {} cannot be created because one of its vertices was not created.",
+                    edgeLabel.getEntityId() );
+            return null;
+        }
+        
         return gqs.putEdgeAsync( src, dst, edgeLabel );
     }
 

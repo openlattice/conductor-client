@@ -39,7 +39,7 @@ import com.kryptnostic.datastore.util.Util;
  * <li>Try a cassandra insert if not exists (uuid, entity_key) into <i>vertices</i> table;
  * <ul>
  * <li>If the transaction succeeds, a <i>LoomVertex</i> object with the pair (entity_key, uuid) should be returned.</li>
- * <li>If the transaction fails, repeat step 1 with a new UUID and try again. Here <i>insert if not exists</li> should
+ * <li>If the transaction fails, repeat step 1 with a new UUID and try again. Here <i>insert if not exists</i> should
  * be changed to update id if entity_key equals (the one we are specifying)</li>
  * </ul>
  * </li>
