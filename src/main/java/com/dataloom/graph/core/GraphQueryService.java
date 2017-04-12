@@ -174,7 +174,8 @@ public class GraphQueryService {
         return session
                 .prepare( QueryBuilder.update( Table.VERTICES_LOOKUP.getKeyspace(), Table.VERTICES_LOOKUP.getName() )
                         .with( QueryBuilder.set( CommonColumns.VERTEX_ID.cql(), CommonColumns.VERTEX_ID.bindMarker() ) )
-                        .onlyIf( QueryBuilder.eq( CommonColumns.ENTITY_KEY.cql(), CommonColumns.ENTITY_KEY.bindMarker() ) )
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_KEY.cql(), CommonColumns.ENTITY_KEY.bindMarker() ) )
+                        .ifExists()
                         );        
     }
 

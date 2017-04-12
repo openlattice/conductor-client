@@ -60,10 +60,13 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
+import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -86,6 +89,7 @@ public class CassandraDataManager {
     private final PreparedStatement      entitySetQuery;
     private final PreparedStatement      entityIdsQuery;
 
+    private final PreparedStatement      deleteEntityInAllSyncsQuery;
     private final PreparedStatement      deleteEntityQuery;
 
     private final PreparedStatement      linkedEntitiesQuery;
@@ -109,6 +113,7 @@ public class CassandraDataManager {
         this.entityIdsQuery = prepareEntityIdsQuery( session );
         this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
 
+        this.deleteEntityInAllSyncsQuery = prepareDeleteEntityInAllSyncsQuery( session );
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
 
         this.linkedEntitiesQuery = prepareLinkedEntitiesQuery( session );
@@ -189,6 +194,19 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setString( CommonColumns.ENTITYID.cql(), entityId )
                 .setSet( CommonColumns.PROPERTY_TYPE_ID.cql(), authorizedProperties )
+                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
+    }
+
+    /*
+     * Warning: this loads ALL the properties of the entity, authorized or not.
+     */
+    public ResultSetFuture asyncLoadEntity(
+            UUID entitySetId,
+            String entityId,
+            UUID syncId ) {
+        return session.executeAsync( entitySetQuery.bind()
+                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                .setString( CommonColumns.ENTITYID.cql(), entityId )
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
@@ -339,16 +357,36 @@ public class CassandraDataManager {
     }
 
     public ResultSetFuture asyncDeleteEntity( UUID entitySetId, String entityId ) {
-        return session.executeAsync( deleteEntityQuery.bind()
+        return session.executeAsync( deleteEntityInAllSyncsQuery.bind()
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setString( CommonColumns.ENTITYID.cql(), entityId ) );
     }
 
     public ResultSetFuture asyncDeleteEntity( UUID entitySetId, String entityId, UUID syncId ) {
-        return session.executeAsync( deleteEntityQuery.bind()
-                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                .setString( CommonColumns.ENTITYID.cql(), entityId )
-                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
+        // load and delete, since Cassandra does not support delete by secondary index query
+        ResultSetFuture rsf = asyncLoadEntity( entitySetId, entityId, syncId );
+        Futures.addCallback( rsf, new FutureCallback<ResultSet>() {
+            @Override
+            public void onSuccess( ResultSet rs ) {
+                Row row = rs.one();
+                if ( row != null ) {
+                    session.execute( deleteEntityQuery.bind()
+                            .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                            .setString( CommonColumns.ENTITYID.cql(), entityId )
+                            .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                            .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), RowAdapters.propertyTypeId( row ) ) );
+                }
+            }
+
+            @Override
+            public void onFailure( Throwable t ) {
+                logger.debug( "Loading for entity deletion failed: entitySetId {}, entityId {}, syncId {}",
+                        entitySetId,
+                        entityId,
+                        syncId );
+            }
+        } );
+        return rsf;
     }
 
     public void deleteEntity( EntityKey entityKey ) {
@@ -409,10 +447,14 @@ public class CassandraDataManager {
                         .limit( QueryBuilder.bindMarker( "numResults" ) ) );
     }
 
+    private static PreparedStatement prepareDeleteEntityInAllSyncsQuery(
+            Session session ) {
+        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
+    }
+
     private static PreparedStatement prepareDeleteEntityQuery(
             Session session ) {
-        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery()
-                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
+        return session.prepare( Table.DATA.getBuilder().buildDeleteQuery() );
     }
 
     /**
