@@ -1,12 +1,10 @@
 package com.dataloom.graph.core.objects;
 
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,33 +15,56 @@ import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.datastore.util.Util;
 
 /**
- * Initialize by entity key; when get is called, should return a definite LoomVertex (i.e. the UUID must be obtained)
+ * LoomVertexFuture is initialized by the entity key, and would fire off async requests to obtain vertex id when
+ * initialized.
+ * 
+ * Vertex Id acquisition is an get-or-create operation. In other words, if there is already a vertex id associated to
+ * the entity key, that vertex id would be returned.
+ * 
+ * When {@link #get()} is called, the thread is blocked until a LoomVertex object is returned. It is possible, although
+ * unlikely, that null is returned, indicating a failure in obtaining a vertex id.
+ * 
+ * The mechanism of getting a vertex id is as follows:
+ * <ol>
+ * <li>Try a cassandra insert if not exists (entity_key, uuid) into <i>vertices_lookup</i> table:
+ * <ul>
+ * <li>If the transaction suceeds, proceed to 2.</li>
+ * <li>If the lightweight transaction fails, return the vertex with the id that comes in the result set.</li>
+ * </ul>
+ * </li>
+ * <li>Try a cassandra insert if not exists (uuid, entity_key) into <i>vertices</i> table;
+ * <ul>
+ * <li>If the transaction succeeds, a <i>LoomVertex</i> object with the pair (entity_key, uuid) should be returned.</li>
+ * <li>If the transaction fails, repeat step 1 with a new UUID and try again. Here <i>insert if not exists</li> should
+ * be changed to update id if entity_key equals (the one we are specifying)</li>
+ * </ul>
+ * </li>
+ * </ol>
  * 
  * @author Ho Chung Siu
  *
  */
-public class LoomVertexFuture implements ListenableFuture<LoomVertex> {
+public class LoomVertexFuture {
     private static final Logger      logger          = LoggerFactory.getLogger( LoomVertexFuture.class );
     private static GraphQueryService gqs;
-    // TODO use designated threadpool to handle those async calls
+    // use designated threadpool to handle async calls
     private static final Executor    executor;
+    // maximum number of retrying uuid's
+    private static final int         MAX_ID_RETRIES  = 3;
 
     private EntityKey                reference;
     private UUID                     id;
+    private int                      idRetries       = 0;
 
     private ResultSetFuture          vertexLookupRsf;
     private ResultSetFuture          vertexRsf;
 
     private boolean                  putVertexLookup = false;
     private boolean                  isDone          = false;
-
-    private Runnable                 callbackRunnable;
-    private Executor                 callbackExecutor;
 
     static {
         ThreadPoolExecutor tp = new ThreadPoolExecutor(
@@ -110,7 +131,6 @@ public class LoomVertexFuture implements ListenableFuture<LoomVertex> {
                     // stage 2 (put into vertex table) succeeds. The chosen id should be returned when Future.get() is
                     // called. Registered listener should be executed.
                     isDone = true;
-                    executeCallback();
                 } // otherwise stage 2 (put into vertex table) fails, because the chosen uuid is already occupied. This
                   // is a rare case, and we would not retry again until Future.get() is called.
             }
@@ -123,40 +143,31 @@ public class LoomVertexFuture implements ListenableFuture<LoomVertex> {
         }, executor );
     }
 
-    @Override
-    public boolean cancel( boolean mayInterruptIfRunning ) {
-        return vertexLookupRsf.cancel( mayInterruptIfRunning ) && vertexRsf.cancel( mayInterruptIfRunning );
-    }
-
-    @Override
-    public boolean isCancelled() {
-        return vertexLookupRsf.isCancelled() || vertexRsf.isCancelled();
-    }
-
-    @Override
-    public boolean isDone() {
-        return isDone;
-    }
-
-    @Override
-    public LoomVertex get() throws InterruptedException, ExecutionException {
-        if ( !isDone ) {
-            // finish up any unfinished tries.
-            if ( putVertexLookup ) {
-                // Stage 1 (put into vertex lookup table) is completed. Get the result for stage 2 (put into vertex
-                // table) and proceed.
-                putVertexIfAbsentResult( vertexRsf.getUninterruptibly() );
-            } else {
-                if ( !vertexRsf.isDone() ) {
-                    // Stage 1 is (put into vertex lookup table) is not completed yet; get the result and proceed.
-                    putVertexLookupIfAbsentResult( vertexRsf.getUninterruptibly() );
+    public LoomVertex get() {
+        try {
+            if ( !isDone ) {
+                // finish up any unfinished tries.
+                if ( putVertexLookup ) {
+                    // Stage 1 (put into vertex lookup table) is completed. Get the result for stage 2 (put into vertex
+                    // table) and proceed.
+                    putVertexIfAbsentResult( vertexRsf.getUninterruptibly() );
                 } else {
-                    // query for stage 1 (put into vertex lookup table) failed. Retry stage 1.
-                    putVertexLookupIfAbsent();
+                    if ( !vertexRsf.isDone() ) {
+                        // Stage 1 is (put into vertex lookup table) is not completed yet; get the result and proceed.
+                        putVertexLookupIfAbsentResult( vertexRsf.getUninterruptibly() );
+                    } else {
+                        // query for stage 1 (put into vertex lookup table) failed. Retry stage 1.
+                        putVertexLookupIfAbsent();
+                    }
                 }
             }
+            return new LoomVertex( id, reference );
+        } catch ( Exception e ) {
+            logger.debug( "Getting LoomVertex with id {} failed because: {}.",
+                    id,
+                    e.getLocalizedMessage() );
+            return null;
         }
-        return new LoomVertex( id, reference );
     }
 
     /*
@@ -171,7 +182,10 @@ public class LoomVertexFuture implements ListenableFuture<LoomVertex> {
      * Handle what happens after stage 1 (put into vertex lookup table) or stage 3 (update id of vertex lookup table) is
      * finished.
      */
-    private void putVertexLookupIfAbsentResult( ResultSet rs ) {
+    private void putVertexLookupIfAbsentResult( ResultSet rs ) throws IllegalStateException {
+        if ( ++idRetries >= MAX_ID_RETRIES ) {
+            throw new IllegalStateException( "Failed to register for vertex id because maximum number of retries is already reached." );
+        }
         if ( Util.wasLightweightTransactionApplied( rs ) ) {
             // proceed to put Vertex table
             putVertexIfAbsent();
@@ -209,39 +223,6 @@ public class LoomVertexFuture implements ListenableFuture<LoomVertex> {
         id = UUID.randomUUID();
         ResultSet rs = gqs.updateVertexLookupIfExistsAsync( id, reference ).getUninterruptibly();
         putVertexLookupIfAbsentResult( rs );
-    }
-
-    @Override
-    public LoomVertex get( long timeout, TimeUnit unit )
-            throws InterruptedException, ExecutionException, TimeoutException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public void addListener( Runnable listener, Executor executor ) {
-        this.callbackRunnable = listener;
-        this.callbackExecutor = executor;
-        if ( isDone ) {
-            executeCallback();
-        }
-    }
-
-    private void executeCallback() {
-        if ( callbackRunnable != null && callbackExecutor != null ) {
-            callbackExecutor.execute( callbackRunnable );
-        }
-    }
-
-    public LoomVertex getUninterruptibly() {
-        try {
-            return get();
-        } catch ( InterruptedException | ExecutionException e ) {
-            logger.debug( "Getting LoomVertex with id {} failed because of exception {}.",
-                    id,
-                    e.getClass().toString() );
-            return null;
-        }
     }
 
 }

@@ -141,12 +141,12 @@ public class DataGraphService implements DataGraphManager {
 
             vertexfs.add( lm.getOrCreateVertexAsync( new EntityKey( entitySetId, entity.getKey(), syncId ) ) );
             if ( vertexfs.size() > bufferSize ) {
-                vertexfs.forEach( LoomVertexFuture::getUninterruptibly );
+                vertexfs.forEach( LoomVertexFuture::get );
                 vertexfs = new ArrayList<LoomVertexFuture>();
             }
         }
         datafs.forEach( ResultSetFuture::getUninterruptibly );
-        vertexfs.forEach( LoomVertexFuture::getUninterruptibly );
+        vertexfs.forEach( LoomVertexFuture::get );
     }
 
     @Override
@@ -211,7 +211,7 @@ public class DataGraphService implements DataGraphManager {
         }
 
         Map<EntityKey, LoomVertex> verticesCreated = Maps.transformValues( vertexfs,
-                LoomVertexFuture::getUninterruptibly );
+                LoomVertexFuture::get );
 
         for ( Association association : associations ) {
             LoomVertex src = verticesCreated.get( association.getSrc() );

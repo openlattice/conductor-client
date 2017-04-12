@@ -25,7 +25,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public LoomVertex getOrCreateVertex( EntityKey entityKey ) {
-        return getOrCreateVertexAsync( entityKey ).getUninterruptibly();
+        return getOrCreateVertexAsync( entityKey ).get();
     }
 
     @Override
