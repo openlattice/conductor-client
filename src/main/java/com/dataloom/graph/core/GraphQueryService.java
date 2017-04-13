@@ -181,7 +181,7 @@ public class GraphQueryService {
 
     private static PreparedStatement prepareGetEdgeQuery( Session session ) {
         return session
-                .prepare( Table.EDGES.getBuilder().buildLoadAllQuery() );
+                .prepare( Table.EDGES.getBuilder().buildLoadQuery() );
     }
     
     private static PreparedStatement prepareGetEdgesQuery( Session session ) {

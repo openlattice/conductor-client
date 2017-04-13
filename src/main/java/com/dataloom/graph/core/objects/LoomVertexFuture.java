@@ -104,8 +104,8 @@ public class LoomVertexFuture {
                 if ( Util.wasLightweightTransactionApplied( rs ) ) {
                     // stage 1 (put into vertex lookup table) succeeds, callback should execute stage 2 (async): put
                     // into vertex table
-                    putVertexLookup = true;
                     putVertexIfAbsentAsync();
+                    putVertexLookup = true;
                 } else {
                     // stage 1 (put into vertex lookup table) fails, because uuid is already associated with the entity
                     // key. The existing id should be returned when Future.get() is called.
@@ -152,9 +152,9 @@ public class LoomVertexFuture {
                     // table) and proceed.
                     putVertexIfAbsentResult( vertexRsf.getUninterruptibly() );
                 } else {
-                    if ( !vertexRsf.isDone() ) {
+                    if ( !vertexLookupRsf.isDone() ) {
                         // Stage 1 is (put into vertex lookup table) is not completed yet; get the result and proceed.
-                        putVertexLookupIfAbsentResult( vertexRsf.getUninterruptibly() );
+                        putVertexLookupIfAbsentResult( vertexLookupRsf.getUninterruptibly() );
                     } else {
                         // query for stage 1 (put into vertex lookup table) failed. Retry stage 1.
                         putVertexLookupIfAbsent();

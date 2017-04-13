@@ -1,6 +1,8 @@
 package com.dataloom.graph.core;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,13 +13,16 @@ import com.dataloom.graph.core.objects.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.graph.core.objects.LoomVertexFuture;
+import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 
 public class LoomGraph implements LoomGraphApi {
 
-    private static final Logger     logger = LoggerFactory.getLogger( LoomGraph.class );
+    private static final Logger logger = LoggerFactory.getLogger( LoomGraph.class );
 
-    private GraphQueryService       gqs;
+    private GraphQueryService   gqs;
 
     public LoomGraph( GraphQueryService gqs ) {
         this.gqs = gqs;
@@ -30,8 +35,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public LoomVertexFuture getOrCreateVertexAsync( EntityKey entityKey ) {
-        // TODO Auto-generated method stub
-        return null;
+        return new LoomVertexFuture( entityKey );
     }
 
     @Override
@@ -46,13 +50,27 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public void deleteVertex( UUID vertexId ) {
-        // TODO delete all the incident edges
+        deleteVertexAsync( vertexId ).forEach( ResultSetFuture::getUninterruptibly );
     }
 
     @Override
-    public ResultSetFuture deleteVertexAsync( UUID vertexId ) {
-        // TODO Auto-generated method stub
-        return null;
+    public List<ResultSetFuture> deleteVertexAsync( UUID vertexId ) {
+        EdgeSelection fixSrc = new EdgeSelection(
+                Optional.of( vertexId ),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent() );
+        EdgeSelection fixDst = new EdgeSelection(
+                Optional.absent(),
+                Optional.absent(),
+                Optional.of( vertexId ),
+                Optional.absent(),
+                Optional.absent() );
+        Iterable<LoomEdge> edges = Iterables.concat( getEdges( fixSrc ), getEdges( fixDst ) );
+
+        return StreamUtil.stream( edges ).map( edge -> deleteEdgeAsync( edge.getKey() ) )
+                .collect( Collectors.toList() );
     }
 
     @Override
@@ -72,7 +90,7 @@ public class LoomGraph implements LoomGraphApi {
                     edgeLabel.getEntityId() );
             return null;
         }
-        
+
         return gqs.putEdgeAsync( src, dst, edgeLabel );
     }
 
@@ -80,10 +98,10 @@ public class LoomGraph implements LoomGraphApi {
     public ResultSetFuture addEdgeAsync( EntityKey src, EntityKey dst, EntityKey edgeLabel ) {
         LoomVertex srcVertex = getVertexByEntityKey( src );
         LoomVertex dstVertex = getVertexByEntityKey( dst );
-        
+
         return gqs.putEdgeAsync( srcVertex, dstVertex, edgeLabel );
     }
-    
+
     @Override
     public LoomEdge getEdge( EdgeKey key ) {
         return gqs.getEdge( key );
@@ -108,5 +126,5 @@ public class LoomGraph implements LoomGraphApi {
     public void deleteEdges( UUID srcId ) {
         gqs.deleteEdgesBySrcId( srcId );
     }
-    
+
 }

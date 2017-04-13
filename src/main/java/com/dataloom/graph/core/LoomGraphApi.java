@@ -1,5 +1,6 @@
 package com.dataloom.graph.core;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.dataloom.data.EntityKey;
@@ -31,7 +32,7 @@ public interface LoomGraphApi {
 
     void deleteVertex( UUID vertexId );
 
-    ResultSetFuture deleteVertexAsync( UUID vertexId );
+    List<ResultSetFuture> deleteVertexAsync( UUID vertexId );
 
     /*
      * CRUD operations of edges
