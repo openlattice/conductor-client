@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.EntitySetData;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
 import com.dataloom.edm.type.PropertyType;
@@ -66,7 +67,6 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -120,13 +120,15 @@ public class CassandraDataManager {
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
     }
 
-    public Iterable<SetMultimap<FullQualifiedName, Object>> getEntitySetData(
+    public EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        Set<FullQualifiedName> authorizedPropertyFqns = authorizedPropertyTypes.values().stream()
+                .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
-        return Iterables.transform( entityRows,
-                rs -> rowToEntity( rs, authorizedPropertyTypes ) )::iterator;
+        return new EntitySetData( authorizedPropertyFqns, Iterables.transform( entityRows,
+                rs -> rowToEntity( rs, authorizedPropertyTypes ) )::iterator );
     }
 
     public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
@@ -138,14 +140,17 @@ public class CassandraDataManager {
                 rs -> rowToEntityIndexedById( rs, authorizedPropertyTypes ) )::iterator;
     }
 
-    public Iterable<SetMultimap<FullQualifiedName, Object>> getLinkedEntitySetData(
+    public EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
+        Set<FullQualifiedName> authorizedPropertyFqns = authorizedPropertyTypesForEntitySets.values().stream()
+                .flatMap( map -> map.values().stream() )
+                .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<Pair<UUID, Set<EntityKey>>> linkedEntityKeys = getLinkedEntityKeys( linkedEntitySetId );
-        return Iterables.transform( linkedEntityKeys,
+        return new EntitySetData( authorizedPropertyFqns, Iterables.transform( linkedEntityKeys,
                 linkedKey -> getAndMergeLinkedEntities( linkedEntitySetId,
                         linkedKey,
-                        authorizedPropertyTypesForEntitySets ) )::iterator;
+                        authorizedPropertyTypesForEntitySets ) )::iterator );
     }
 
     public SetMultimap<FullQualifiedName, Object> rowToEntity(

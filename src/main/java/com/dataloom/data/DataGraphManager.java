@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.Entity;
@@ -18,16 +17,16 @@ public interface DataGraphManager {
     /*
      * Entity set methods
      */
-    Iterable<SetMultimap<FullQualifiedName, Object>> getEntitySetData(
+    EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
-    Iterable<SetMultimap<FullQualifiedName, Object>> getLinkedEntitySetData(
+    EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
 
-    //TODO remove vertices too
+    // TODO remove vertices too
     void deleteEntitySetData( UUID entitySetId );
 
     /*
@@ -47,9 +46,9 @@ public interface DataGraphManager {
             EdgeKey key,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
-    
+
     void deleteEntity( UUID vertexId );
-    
+
     void deleteAssociation( EdgeKey key );
 
     /*

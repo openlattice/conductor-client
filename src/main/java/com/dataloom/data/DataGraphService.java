@@ -9,7 +9,6 @@ import java.util.UUID;
 import javax.inject.Inject;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,7 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
-    public Iterable<SetMultimap<FullQualifiedName, Object>> getEntitySetData(
+    public EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
@@ -54,7 +53,7 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
-    public Iterable<SetMultimap<FullQualifiedName, Object>> getLinkedEntitySetData(
+    public EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
         return cdm.getLinkedEntitySetData( linkedEntitySetId, authorizedPropertyTypesForEntitySets );
