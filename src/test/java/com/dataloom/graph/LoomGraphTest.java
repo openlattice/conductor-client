@@ -1,5 +1,7 @@
 package com.dataloom.graph;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.Assert;
@@ -15,10 +17,7 @@ import com.dataloom.graph.core.objects.LoomEdge;
 import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.graph.core.objects.LoomVertexFuture;
 import com.dataloom.mapstores.TestDataFactory;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 
@@ -116,7 +115,7 @@ public class LoomGraphTest extends HzAuthzTest {
                 Optional.absent(),
                 Optional.absent(),
                 Optional.absent() );
-        Assert.assertEquals( Iterables.size( lg.getEdges( srcIdOnly ) ), 2 );
+        Assert.assertEquals( 2, Iterables.size( lg.getEdges( srcIdOnly ) ) );
 
         EdgeSelection srcTypeOnly = new EdgeSelection(
                 Optional.absent(),
@@ -124,7 +123,7 @@ public class LoomGraphTest extends HzAuthzTest {
                 Optional.absent(),
                 Optional.absent(),
                 Optional.absent() );
-        Assert.assertEquals( Iterables.size( lg.getEdges( srcTypeOnly ) ), 2 );
+        Assert.assertEquals( 2, Iterables.size( lg.getEdges( srcTypeOnly ) ) );
 
         EdgeSelection dstIdOnly = new EdgeSelection(
                 Optional.absent(),
@@ -132,15 +131,15 @@ public class LoomGraphTest extends HzAuthzTest {
                 Optional.of( vB.getKey() ),
                 Optional.absent(),
                 Optional.absent() );
-        Assert.assertEquals( Iterables.size( lg.getEdges( dstIdOnly ) ), 1 );
+        Assert.assertEquals( 1, Iterables.size( lg.getEdges( dstIdOnly ) ) );
 
         EdgeSelection dstTypeOnly = new EdgeSelection(
                 Optional.absent(),
                 Optional.absent(),
                 Optional.absent(),
-                Optional.of( vB.getReference().getEntitySetId() ),
+                Optional.of( vC.getReference().getEntitySetId() ),
                 Optional.absent() );
-        Assert.assertEquals( Iterables.size( lg.getEdges( dstTypeOnly ) ), 2 );
+        Assert.assertEquals( 2, Iterables.size( lg.getEdges( dstTypeOnly ) ) );
 
         EdgeSelection edgeTypeOnly = new EdgeSelection(
                 Optional.absent(),
@@ -148,16 +147,22 @@ public class LoomGraphTest extends HzAuthzTest {
                 Optional.absent(),
                 Optional.absent(),
                 Optional.of( edgeType1 ) );
-        Assert.assertEquals( Iterables.size( lg.getEdges( edgeTypeOnly ) ), 3 );
+        Assert.assertEquals( 3, Iterables.size( lg.getEdges( edgeTypeOnly ) ) );
     }
 
-    // @Test
+    @Test
     public void testDeleteVertex() {
         LoomVertex v = createVertex();
 
         lg.deleteVertex( v.getKey() );
 
         Assert.assertNull( lg.getVertexById( v.getKey() ) );
+        
+        //Check no edges to/from that vertex
+        EdgeSelection es1 = new EdgeSelection( Optional.of( v.getKey() ), Optional.absent(), Optional.absent(), Optional.absent(), Optional.absent() );        
+        Assert.assertEquals( 0, Iterables.size( lg.getEdges( es1 ) ) );
+        EdgeSelection es2 = new EdgeSelection( Optional.absent(), Optional.absent(), Optional.of( v.getKey() ), Optional.absent(), Optional.absent() );        
+        Assert.assertEquals( 0, Iterables.size( lg.getEdges( es2 ) ) );
     }
 
     @Test
@@ -176,5 +181,48 @@ public class LoomGraphTest extends HzAuthzTest {
         Assert.assertNull( lg.getEdge( edgeKey ) );
     }
 
-    // TODO createVertexAsync, createEdgeAsync, deleteEdges
+    @Test
+    public void testBulkCreateVertexAsync(){
+        List<LoomVertexFuture> futures = new ArrayList<>();
+
+        final int numTrials = 100;
+        EntityKey trackedKey = null;
+        for( int i = 0; i < numTrials; i++ ){
+            EntityKey key = TestDataFactory.entityKey();
+            if( i == numTrials/2 ){
+                trackedKey = key;
+            }
+            futures.add( lg.getOrCreateVertexAsync( key ) );
+        }
+        
+        futures.forEach( LoomVertexFuture::get );
+        
+        LoomVertex v = lg.getVertexByEntityKey( trackedKey );
+        Assert.assertNotNull( v );
+        Assert.assertEquals( trackedKey, v.getReference() );     
+    }
+    
+    @Test
+    public void testcreateEdgesAsync() {
+        LoomVertex vA = createVertex();
+        
+        List<ResultSetFuture> futures = new ArrayList<>();
+        
+        final int numTrials = 100;
+        for(int i = 0; i < numTrials; i++ ){
+            LoomVertex v = createVertex();
+            EntityKey label = TestDataFactory.entityKey();
+            futures.add( lg.addEdgeAsync( vA, v, label ) );
+        }
+        
+        futures.forEach( ResultSetFuture::getUninterruptibly );
+
+        EdgeSelection fixSrc = new EdgeSelection(
+                Optional.of( vA.getKey() ),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent() );
+        Assert.assertEquals( numTrials, Iterables.size( lg.getEdges( fixSrc ) ) );
+    }
 }

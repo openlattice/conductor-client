@@ -1,5 +1,6 @@
 package com.dataloom.graph.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -55,6 +56,11 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public List<ResultSetFuture> deleteVertexAsync( UUID vertexId ) {
+        LoomVertex vertex = getVertexById( vertexId );
+        List<ResultSetFuture> futures = new ArrayList<>();
+        if( vertex != null ){
+            futures.add( gqs.deleteVertexLookupAsync( vertex.getReference() ) );
+            futures.add( gqs.deleteVertexAsync( vertexId ) );
         EdgeSelection fixSrc = new EdgeSelection(
                 Optional.of( vertexId ),
                 Optional.absent(),
@@ -69,8 +75,10 @@ public class LoomGraph implements LoomGraphApi {
                 Optional.absent() );
         Iterable<LoomEdge> edges = Iterables.concat( getEdges( fixSrc ), getEdges( fixDst ) );
 
-        return StreamUtil.stream( edges ).map( edge -> deleteEdgeAsync( edge.getKey() ) )
-                .collect( Collectors.toList() );
+        StreamUtil.stream( edges ).map( edge -> deleteEdgeAsync( edge.getKey() ) )
+                .collect( Collectors.toCollection( () -> futures ) );
+        }
+        return futures;
     }
 
     @Override
