@@ -128,7 +128,7 @@ public class CassandraDataManager {
                 .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
         return new EntitySetData( authorizedPropertyFqns, Iterables.transform( entityRows,
-                rs -> rowToEntity( rs, authorizedPropertyTypes ) )::iterator );
+                rs -> rowToEntity( rs, authorizedPropertyTypes ) ) );
     }
 
     public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
