@@ -373,5 +373,10 @@ public final class RowAdapters {
 
     public static EntityKey entityKey( Row row ) {
         return row.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
+    }    
+
+    public static UUID propertyTypeId( Row row ) {
+        return row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
     }
+
 }

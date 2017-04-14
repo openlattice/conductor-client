@@ -39,13 +39,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.EntitySetData;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
-import com.dataloom.data.requests.Association;
-import com.dataloom.data.requests.Entity;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
-import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
@@ -61,9 +59,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -83,7 +82,6 @@ public class CassandraDataManager {
     private final Session                session;
     private final ObjectMapper           mapper;
     private final HazelcastLinkingGraphs linkingGraph;
-    private final LoomGraph              loomGraph;
     private final DatasourceManager      dsm;
 
     private final PreparedStatement      writeDataQuery;
@@ -91,6 +89,7 @@ public class CassandraDataManager {
     private final PreparedStatement      entitySetQuery;
     private final PreparedStatement      entityIdsQuery;
 
+    private final PreparedStatement      deleteEntityInAllSyncsQuery;
     private final PreparedStatement      deleteEntityQuery;
 
     private final PreparedStatement      linkedEntitiesQuery;
@@ -106,7 +105,6 @@ public class CassandraDataManager {
         this.session = session;
         this.mapper = mapper;
         this.linkingGraph = linkingGraph;
-        this.loomGraph = loomGraph;
         this.dsm = dsm;
 
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
@@ -115,19 +113,22 @@ public class CassandraDataManager {
         this.entityIdsQuery = prepareEntityIdsQuery( session );
         this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
 
+        this.deleteEntityInAllSyncsQuery = prepareDeleteEntityInAllSyncsQuery( session );
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
 
         this.linkedEntitiesQuery = prepareLinkedEntitiesQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
     }
 
-    public Iterable<SetMultimap<FullQualifiedName, Object>> getEntitySetData(
+    public EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        Set<FullQualifiedName> authorizedPropertyFqns = authorizedPropertyTypes.values().stream()
+                .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
-        return Iterables.transform( entityRows,
-                rs -> rowToEntity( rs, authorizedPropertyTypes ) )::iterator;
+        return new EntitySetData( authorizedPropertyFqns, Iterables.transform( entityRows,
+                rs -> rowToEntity( rs, authorizedPropertyTypes ) ) );
     }
 
     public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
@@ -139,14 +140,17 @@ public class CassandraDataManager {
                 rs -> rowToEntityIndexedById( rs, authorizedPropertyTypes ) )::iterator;
     }
 
-    public Iterable<SetMultimap<FullQualifiedName, Object>> getLinkedEntitySetData(
+    public EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
+        Set<FullQualifiedName> authorizedPropertyFqns = authorizedPropertyTypesForEntitySets.values().stream()
+                .flatMap( map -> map.values().stream() )
+                .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<Pair<UUID, Set<EntityKey>>> linkedEntityKeys = getLinkedEntityKeys( linkedEntitySetId );
-        return Iterables.transform( linkedEntityKeys,
+        return new EntitySetData( authorizedPropertyFqns, Iterables.transform( linkedEntityKeys,
                 linkedKey -> getAndMergeLinkedEntities( linkedEntitySetId,
                         linkedKey,
-                        authorizedPropertyTypesForEntitySets ) )::iterator;
+                        authorizedPropertyTypesForEntitySets ) )::iterator );
     }
 
     public SetMultimap<FullQualifiedName, Object> rowToEntity(
@@ -198,47 +202,20 @@ public class CassandraDataManager {
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
-    public void createEntityAndAssociationData(
-            Iterable<Entity> entities,
-            Iterable<Association> associations,
-            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId ) {
-        Map<EntityKey, LoomVertex> verticesCreated = Maps.newHashMap();
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
-
-        entities.forEach( entity -> {
-            createData( entity.getKey().getEntitySetId(),
-                    entity.getKey().getSyncId(),
-                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ),
-                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ).keySet(),
-                    results,
-                    entity.getKey().getEntityId(),
-                    entity.getDetails() );
-            LoomVertex vertex = loomGraph.getOrCreateVertex( entity.getKey() );
-            verticesCreated.put( entity.getKey(), vertex );
-        } );
-
-        associations.forEach( association -> {
-            LoomVertex src = verticesCreated.get( association.getSrc() );
-            LoomVertex dst = verticesCreated.get( association.getDst() );
-            if ( src == null || dst == null ) {
-                logger.debug( "Edge with id {} cannot be created because one of its vertices was not created.",
-                        association.getKey().getEntityId() );
-            } else {
-                createData( association.getKey().getEntitySetId(),
-                        association.getKey().getSyncId(),
-                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ),
-                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ).keySet(),
-                        results,
-                        association.getKey().getEntityId(),
-                        association.getDetails() );
-
-                loomGraph.addEdge( src, dst, association.getKey() );
-            }
-        } );
-
-        results.forEach( ResultSetFuture::getUninterruptibly );
+    /*
+     * Warning: this loads ALL the properties of the entity, authorized or not.
+     */
+    public ResultSetFuture asyncLoadEntity(
+            UUID entitySetId,
+            String entityId,
+            UUID syncId ) {
+        return session.executeAsync( entitySetQuery.bind()
+                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                .setString( CommonColumns.ENTITYID.cql(), entityId )
+                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
+    @Deprecated
     public void createEntityData(
             UUID entitySetId,
             UUID syncId,
@@ -249,46 +226,38 @@ public class CassandraDataManager {
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
 
         entities.entrySet().stream().forEach( entity -> {
-            createData( entitySetId,
+            createDataAsync( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
                     authorizedProperties,
                     results,
                     entity.getKey(),
                     entity.getValue() );
-            loomGraph.getOrCreateVertex( new EntityKey( entitySetId, entity.getKey(), syncId ) );
-        } );
-
-        results.forEach( ResultSetFuture::getUninterruptibly );
-    }
-
-    public void createAssociationData(
-            UUID entitySetId,
-            UUID syncId,
-            Set<Association> associations,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        Set<UUID> authorizedProperties = authorizedPropertiesWithDataType.keySet();
-
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
-
-        associations.stream().forEach( association -> {
-            createData( entitySetId,
-                    syncId,
-                    authorizedPropertiesWithDataType,
-                    authorizedProperties,
-                    results,
-                    association.getKey().getEntityId(),
-                    association.getDetails() );
-            LoomVertex src = loomGraph.getOrCreateVertex( association.getSrc() );
-            LoomVertex dst = loomGraph.getOrCreateVertex( association.getDst() );
-
-            loomGraph.addEdge( src, dst, association.getKey() );
         } );
 
         results.forEach( ResultSetFuture::getUninterruptibly );
     }
 
     public void createData(
+            UUID entitySetId,
+            UUID syncId,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
+            Set<UUID> authorizedProperties,
+            String entityId,
+            SetMultimap<UUID, Object> entityDetails ) {
+        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
+        createDataAsync(
+                entitySetId,
+                syncId,
+                authorizedPropertiesWithDataType,
+                authorizedProperties,
+                results,
+                entityId,
+                entityDetails );
+        results.forEach( ResultSetFuture::getUninterruptibly );
+    }
+
+    public void createDataAsync(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
@@ -339,42 +308,6 @@ public class CassandraDataManager {
                 Optional.of( syncId ),
                 entityId,
                 normalizedPropertyValuesAsMap ) );
-    }
-
-    public void updateEdge(
-            EntityKey key,
-            SetMultimap<UUID, Object> details,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
-
-        updateData( key, details, authorizedPropertiesWithDataType, results );
-        results.forEach( ResultSetFuture::getUninterruptibly );
-    }
-
-    public void updateData(
-            EntityKey key,
-            SetMultimap<UUID, Object> entityDetails,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
-            List<ResultSetFuture> results ) {
-
-        // does not update the row if some property values that user is trying to write to are not authorized.
-        if ( !authorizedPropertiesWithDataType.keySet().containsAll( entityDetails.keySet() ) ) {
-            logger.error( "Entity {} not written because not all property values are authorized.", key.getEntityId() );
-            return;
-        }
-
-        deleteEntity( key );
-        eventBus.post(
-                new EntityDataDeletedEvent( key.getEntitySetId(), key.getEntityId(), Optional.of( key.getSyncId() ) ) );
-
-        createData( key.getEntitySetId(),
-                key.getSyncId(),
-                authorizedPropertiesWithDataType,
-                authorizedPropertiesWithDataType.keySet(),
-                results,
-                key.getEntityId(),
-                entityDetails );
     }
 
     public void createOrderedRPCData( UUID requestId, double weight, byte[] value ) {
@@ -429,16 +362,36 @@ public class CassandraDataManager {
     }
 
     public ResultSetFuture asyncDeleteEntity( UUID entitySetId, String entityId ) {
-        return session.executeAsync( deleteEntityQuery.bind()
+        return session.executeAsync( deleteEntityInAllSyncsQuery.bind()
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setString( CommonColumns.ENTITYID.cql(), entityId ) );
     }
 
     public ResultSetFuture asyncDeleteEntity( UUID entitySetId, String entityId, UUID syncId ) {
-        return session.executeAsync( deleteEntityQuery.bind()
-                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                .setString( CommonColumns.ENTITYID.cql(), entityId )
-                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
+        // load and delete, since Cassandra does not support delete by secondary index query
+        ResultSetFuture rsf = asyncLoadEntity( entitySetId, entityId, syncId );
+        Futures.addCallback( rsf, new FutureCallback<ResultSet>() {
+            @Override
+            public void onSuccess( ResultSet rs ) {
+                Row row = rs.one();
+                if ( row != null ) {
+                    session.execute( deleteEntityQuery.bind()
+                            .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                            .setString( CommonColumns.ENTITYID.cql(), entityId )
+                            .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                            .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), RowAdapters.propertyTypeId( row ) ) );
+                }
+            }
+
+            @Override
+            public void onFailure( Throwable t ) {
+                logger.debug( "Loading for entity deletion failed: entitySetId {}, entityId {}, syncId {}",
+                        entitySetId,
+                        entityId,
+                        syncId );
+            }
+        } );
+        return rsf;
     }
 
     public void deleteEntity( EntityKey entityKey ) {
@@ -499,10 +452,14 @@ public class CassandraDataManager {
                         .limit( QueryBuilder.bindMarker( "numResults" ) ) );
     }
 
+    private static PreparedStatement prepareDeleteEntityInAllSyncsQuery(
+            Session session ) {
+        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
+    }
+
     private static PreparedStatement prepareDeleteEntityQuery(
             Session session ) {
-        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery()
-                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
+        return session.prepare( Table.DATA.getBuilder().buildDeleteQuery() );
     }
 
     /**
