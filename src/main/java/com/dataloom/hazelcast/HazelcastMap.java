@@ -23,6 +23,7 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 
 public enum HazelcastMap {
     ACL_KEYS( Table.ACL_KEYS ),
+    AUDIT_LOG( Table.AUDIT_LOG ),
     AUDIT_EVENTS( Table.AUDIT_EVENTS ),
     AUDIT_METRICS( Table.AUDIT_METRICS ),
     COMPLEX_TYPES( Table.COMPLEX_TYPES ),
