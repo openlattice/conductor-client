@@ -56,5 +56,5 @@ public interface ConductorSparkApi {
 
     Void clustering( UUID linkedEntitySetId );
 
-    UUID getTopUtilizers( UUID entitySetId, Set<UUID> propertyTypeIds, Map<UUID, PropertyType> propertyTypes );
+    UUID getTopUtilizers( UUID entitySetId, UUID syncId, Set<UUID> propertyTypeIds, Map<UUID, PropertyType> propertyTypes );
 }

@@ -66,9 +66,10 @@ public class Lambdas implements Serializable {
 
     public static Function<ConductorSparkApi, UUID> getTopUtilizers(
             UUID entitySetId,
+            UUID syncId,
             Set<UUID> propertyTypeIds,
             Map<UUID, PropertyType> propertyTypes ) {
         return (Function<ConductorSparkApi, UUID> & Serializable) ( api ) -> api
-                .getTopUtilizers( entitySetId, propertyTypeIds, propertyTypes );
+                .getTopUtilizers( entitySetId, syncId, propertyTypeIds, propertyTypes );
     }
 }
