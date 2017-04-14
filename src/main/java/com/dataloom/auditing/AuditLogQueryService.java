@@ -13,7 +13,7 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_KEYS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.AUDIT_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.DATA_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.EVENT_TYPE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
@@ -38,7 +38,7 @@ public class AuditLogQueryService {
                 .set( PRINCIPAL_TYPE.cql(), signal.getPrincipal().getType(), PrincipalType.class )
                 .setString( PRINCIPAL_ID.cql(), signal.getPrincipal().getId() )
                 .setUUID( TIME_UUID.cql(), signal.getTimeId() )
-                .setUUID( ENTITY_ID.cql(), signal.getEntityId() )
+                .setUUID( DATA_ID.cql(), signal.getDataId() )
                 .setUUID( AUDIT_ID.cql(), signal.getAuditId() )
                 .setUUID( BLOCK_ID.cql(), signal.getBlockId() );
 
