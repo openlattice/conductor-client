@@ -19,7 +19,7 @@
 
 package com.dataloom.neuron;
 
-public interface Synapse<T extends Signal> {
+public interface Receptor<T extends Signal> {
 
     void process( T signal );
 }

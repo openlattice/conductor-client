@@ -20,14 +20,14 @@
 package com.dataloom.neuron;
 
 import java.util.EnumMap;
-import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.auditing.AuditLogQueryService;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 public class Neuron {
 
@@ -35,19 +35,19 @@ public class Neuron {
 
     private final AuditLogQueryService auditLogQueryService;
 
-    private final EnumMap<SignalType, List<Synapse>> synapses = Maps.newEnumMap( SignalType.class );
+    private final EnumMap<SignalType, Set<Receptor>> receptors = Maps.newEnumMap( SignalType.class );
 
     public Neuron( AuditLogQueryService auditLogQueryService ) {
 
         this.auditLogQueryService = auditLogQueryService;
     }
 
-    public void activate( SignalType type, Synapse synapse ) {
+    public void activateReceptor( SignalType type, Receptor receptor ) {
 
-        if ( synapses.containsKey( type ) ) {
-            synapses.get( type ).add( synapse );
+        if ( receptors.containsKey( type ) ) {
+            receptors.get( type ).add( receptor );
         } else {
-            synapses.put( type, Lists.newArrayList( synapse ) );
+            receptors.put( type, Sets.newHashSet( receptor ) );
         }
     }
 
@@ -56,9 +56,9 @@ public class Neuron {
         // 1. audit event
         this.auditLogQueryService.store( signal );
 
-        // 2. hand off event to synapses
-        // List<Synapse> synapses = this.synapses.get( signal.getType() );
-        // synapses.forEach( synapse -> synapse.process( signal ) );
+        // 2. hand off event to receptors
+        // List<Receptor> receptors = this.receptors.get( signal.getType() );
+        // receptors.forEach( synapse -> synapse.process( signal ) );
 
     }
 }
