@@ -25,7 +25,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.auditing.HazelcastAuditLogService;
+import com.dataloom.auditing.AuditLogQueryService;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -33,13 +33,13 @@ public class Neuron {
 
     private static final Logger logger = LoggerFactory.getLogger( Neuron.class );
 
-    private final HazelcastAuditLogService hzAuditLogService;
+    private final AuditLogQueryService auditLogQueryService;
 
     private final EnumMap<SignalType, List<Synapse>> synapses = Maps.newEnumMap( SignalType.class );
 
-    public Neuron( HazelcastAuditLogService hzAuditLogService ) {
+    public Neuron( AuditLogQueryService auditLogQueryService ) {
 
-        this.hzAuditLogService = hzAuditLogService;
+        this.auditLogQueryService = auditLogQueryService;
     }
 
     public void activate( SignalType type, Synapse synapse ) {
@@ -54,7 +54,7 @@ public class Neuron {
     public void transmit( AuditableSignal signal ) {
 
         // 1. audit event
-        this.hzAuditLogService.log( signal );
+        this.auditLogQueryService.store( signal );
 
         // 2. hand off event to synapses
         // List<Synapse> synapses = this.synapses.get( signal.getType() );

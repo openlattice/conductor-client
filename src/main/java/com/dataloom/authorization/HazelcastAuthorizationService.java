@@ -69,6 +69,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         this.aqs = checkNotNull( aqs );
         this.eventBus = checkNotNull( eventBus );
 
+        // TODO: this is just a placeholder to help with Neuron implementation. remove before merging into develop.
         aces.addEntryListener( (EntryUpdatedListener) event -> {
 
             // TODO: use actual values instead of null
