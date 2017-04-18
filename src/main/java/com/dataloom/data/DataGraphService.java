@@ -128,13 +128,12 @@ public class DataGraphService implements DataGraphManager {
         List<ResultSetFuture> datafs = new ArrayList<ResultSetFuture>();
 
         for ( Association association : associations ) {
-            cdm.createDataAsync( entitySetId,
+            datafs.addAll( cdm.createDataAsync( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
                     authorizedProperties,
-                    datafs,
                     association.getKey().getEntityId(),
-                    association.getDetails() );
+                    association.getDetails() ) );
 
             LoomVertexKey src = lm.getVertexByEntityKey( association.getSrc() );
             LoomVertexKey dst = lm.getVertexByEntityKey( association.getDst() );
@@ -158,13 +157,12 @@ public class DataGraphService implements DataGraphManager {
         List<ResultSetFuture> datafs = new ArrayList<>();
 
         for ( Entity entity : entities ) {
-            cdm.createDataAsync( entity.getKey().getEntitySetId(),
+            datafs.addAll( cdm.createDataAsync( entity.getKey().getEntitySetId(),
                     entity.getKey().getSyncId(),
                     authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ),
                     authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ).keySet(),
-                    datafs,
                     entity.getKey().getEntityId(),
-                    entity.getDetails() );
+                    entity.getDetails() ) );
 
             if ( datafs.size() > bufferSize ) {
                 datafs.forEach( ResultSetFuture::getUninterruptibly );
@@ -180,17 +178,17 @@ public class DataGraphService implements DataGraphManager {
         for ( Association association : associations ) {
             LoomVertexKey src = verticesCreated.get( association.getSrc() );
             LoomVertexKey dst = verticesCreated.get( association.getDst() );
-            if ( src == null || dst == null ) {
+            LoomVertexKey edge = verticesCreated.get( association.getKey() );
+            if ( src == null || dst == null || edge == null ) {
                 logger.debug( "Edge with id {} cannot be created because one of its vertices was not created.",
                         association.getKey().getEntityId() );
             } else {
-                cdm.createDataAsync( association.getKey().getEntitySetId(),
+                datafs.addAll( cdm.createDataAsync( association.getKey().getEntitySetId(),
                         association.getKey().getSyncId(),
                         authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ),
                         authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ).keySet(),
-                        datafs,
                         association.getKey().getEntityId(),
-                        association.getDetails() );
+                        association.getDetails() ) );
 
                 datafs.add( lm.addEdgeAsync( src, dst, association.getKey() ) );
 

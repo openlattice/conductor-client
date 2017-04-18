@@ -155,7 +155,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-
+        createData( entityKey.getEntitySetId(),
+                entityKey.getSyncId(),
+                authorizedPropertiesWithDataType,
+                authorizedPropertiesWithDataType.keySet(),
+                entityKey.getEntityId(),
+                entityDetails );
     }
 
     @Override
@@ -163,7 +168,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        return null;
+        return Futures.successfulAsList( createDataAsync( entityKey.getEntitySetId(),
+                entityKey.getSyncId(),
+                authorizedPropertiesWithDataType,
+                authorizedPropertiesWithDataType.keySet(),
+                entityKey.getEntityId(),
+                entityDetails ) );
     }
 
     public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
@@ -248,13 +258,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
         List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
 
         entities.entrySet().stream().forEach( entity -> {
-            createDataAsync( entitySetId,
+            results.addAll( createDataAsync( entitySetId,
                     syncId,
                     authorizedPropertiesWithDataType,
                     authorizedProperties,
-                    results,
                     entity.getKey(),
-                    entity.getValue() );
+                    entity.getValue() ) );
         } );
 
         results.forEach( ResultSetFuture::getUninterruptibly );
@@ -267,30 +276,28 @@ public class CassandraEntityDatastore implements EntityDatastore {
             Set<UUID> authorizedProperties,
             String entityId,
             SetMultimap<UUID, Object> entityDetails ) {
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
         createDataAsync(
                 entitySetId,
                 syncId,
                 authorizedPropertiesWithDataType,
                 authorizedProperties,
-                results,
                 entityId,
-                entityDetails );
-        results.forEach( ResultSetFuture::getUninterruptibly );
+                entityDetails ).forEach( ResultSetFuture::getUninterruptibly );
     }
 
-    public void createDataAsync(
+    public List<ResultSetFuture> createDataAsync(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
             Set<UUID> authorizedProperties,
-            List<ResultSetFuture> results,
             String entityId,
             SetMultimap<UUID, Object> entityDetails ) {
+        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
+        
         // does not write the row if some property values that user is trying to write to are not authorized.
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
             logger.error( "Entity {} not written because not all property values are authorized.", entityId );
-            return;
+            return results;
         }
 
         SetMultimap<UUID, Object> normalizedPropertyValues = null;
@@ -300,7 +307,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         } catch ( Exception e ) {
             logger.error( "Entity {} not written because some property values are of invalid format.",
                     entityId );
-            return;
+            return results;
         }
 
         // Stream<Entry<UUID, Object>> authorizedPropertyValues = propertyValues.entries().stream().filter( entry ->
@@ -330,6 +337,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 Optional.of( syncId ),
                 entityId,
                 normalizedPropertyValuesAsMap ) );
+        
+        return results;
     }
 
     public void createOrderedRPCData( UUID requestId, double weight, byte[] value ) {
