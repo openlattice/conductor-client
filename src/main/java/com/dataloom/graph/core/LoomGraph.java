@@ -20,14 +20,15 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.EdmService;
+import com.kryptnostic.datastore.util.FuturesAdapter;
 import com.kryptnostic.datastore.util.Util;
 
 public class LoomGraph implements LoomGraphApi {
 
-    private static final Logger logger = LoggerFactory.getLogger( LoomGraph.class );
+    private static final Logger         logger = LoggerFactory.getLogger( LoomGraph.class );
 
-    private final EdmService                   edm;
-    private final GraphQueryService            gqs;
+    private final EdmService            edm;
+    private final GraphQueryService     gqs;
     private final IMap<EntityKey, UUID> vertices;
 
     public LoomGraph( EdmService edm, GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
@@ -43,18 +44,14 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public ListenableFuture<Void> createVertexAsync(
-            UUID vertexId, EntityKey entityKey ) {
-        return vertices.setAsync( entityKey, vertexId );
+            UUID vertexId,
+            EntityKey entityKey ) {
+        return FuturesAdapter.wrap( vertices.setAsync( entityKey, vertexId ) );
     }
 
     @Override
     public UUID getVertexId( EntityKey entityKey ) {
-        return Util.getSafely( vertices, entityKey ).getId();
-    }
-
-    @Override
-    public Stream<LoomVertexKey> getVerticesOfType( UUID entityTypeId ) {
-        return gqs.getVerticesOfType( entityTypeId );
+        return Util.getSafely( vertices, entityKey );
     }
 
     @Override

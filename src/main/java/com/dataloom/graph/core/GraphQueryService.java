@@ -188,10 +188,6 @@ public class GraphQueryService {
                 deleteEdgesBySrcIdQuery.bind().setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcId ) );
     }
 
-    public Stream<LoomVertexKey> getVerticesOfType( UUID entityTypeId ) {
-    }
-
-
     public Stream<EdgeKey> getNeighborhood( NeighborhoodSelection ns ) {
     }
 

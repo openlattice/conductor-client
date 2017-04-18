@@ -33,11 +33,6 @@ public interface LoomGraphApi {
     List<ResultSetFuture> deleteVertexAsync( UUID vertexId );
 
     /*
-     * Listing vertices
-     */
-    Stream<LoomVertexKey> getVerticesOfType( UUID entityTypeId );
-
-    /*
      * CRUD operations of edges
      */
     void addEdge(
