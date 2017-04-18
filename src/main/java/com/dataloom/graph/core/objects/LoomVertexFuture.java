@@ -13,6 +13,7 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.GraphQueryService;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
@@ -65,6 +66,7 @@ public class LoomVertexFuture {
 
     private boolean                  putVertexLookup = false;
     private boolean                  isDone          = false;
+    private boolean                  userCalledGet   = false;
 
     static {
         ThreadPoolExecutor tp = new ThreadPoolExecutor(
@@ -101,16 +103,21 @@ public class LoomVertexFuture {
         Futures.addCallback( vertexLookupRsf, new FutureCallback<ResultSet>() {
             @Override
             public void onSuccess( ResultSet rs ) {
-                if ( Util.wasLightweightTransactionApplied( rs ) ) {
-                    // stage 1 (put into vertex lookup table) succeeds, callback should execute stage 2 (async): put
-                    // into vertex table
-                    putVertexIfAbsentAsync();
-                    putVertexLookup = true;
-                } else {
-                    // stage 1 (put into vertex lookup table) fails, because uuid is already associated with the entity
-                    // key. The existing id should be returned when Future.get() is called.
-                    id = RowAdapters.vertexId( rs.one() );
-                    isDone = true;
+                if ( !userCalledGet ) {
+                    Row row = rs.one();
+                    // Callback is executed only if user hasn't called get yet
+                    if ( Util.wasLightweightTransactionApplied( row ) ) {
+                        // stage 1 (put into vertex lookup table) succeeds, callback should execute stage 2 (async): put
+                        // into vertex table
+                        putVertexIfAbsentAsync();
+                        putVertexLookup = true;
+                    } else {
+                        // stage 1 (put into vertex lookup table) fails, because uuid is already associated with the
+                        // entity
+                        // key. The existing id should be returned when Future.get() is called.
+                        id = RowAdapters.vertexId( row );
+                        isDone = true;
+                    }
                 }
             }
 
@@ -127,12 +134,16 @@ public class LoomVertexFuture {
         Futures.addCallback( vertexRsf, new FutureCallback<ResultSet>() {
             @Override
             public void onSuccess( ResultSet rs ) {
-                if ( Util.wasLightweightTransactionApplied( rs ) ) {
-                    // stage 2 (put into vertex table) succeeds. The chosen id should be returned when Future.get() is
-                    // called. Registered listener should be executed.
-                    isDone = true;
-                } // otherwise stage 2 (put into vertex table) fails, because the chosen uuid is already occupied. This
-                  // is a rare case, and we would not retry again until Future.get() is called.
+                if ( !userCalledGet ) {
+                    if ( Util.wasLightweightTransactionApplied( rs ) ) {
+                        // stage 2 (put into vertex table) succeeds. The chosen id should be returned when Future.get()
+                        // is
+                        // called. Registered listener should be executed.
+                        isDone = true;
+                    } // otherwise stage 2 (put into vertex table) fails, because the chosen uuid is already occupied.
+                      // This
+                      // is a rare case, and we would not retry again until Future.get() is called.
+                }
             }
 
             @Override
@@ -184,7 +195,8 @@ public class LoomVertexFuture {
      */
     private void putVertexLookupIfAbsentResult( ResultSet rs ) throws IllegalStateException {
         if ( ++idRetries >= MAX_ID_RETRIES ) {
-            throw new IllegalStateException( "Failed to register for vertex id because maximum number of retries is already reached." );
+            throw new IllegalStateException(
+                    "Failed to register for vertex id because maximum number of retries is already reached." );
         }
         if ( Util.wasLightweightTransactionApplied( rs ) ) {
             // proceed to put Vertex table
