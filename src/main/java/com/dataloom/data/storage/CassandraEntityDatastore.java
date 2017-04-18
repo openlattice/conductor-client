@@ -17,7 +17,7 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.datastore.services;
+package com.dataloom.data.storage;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -31,6 +31,11 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import com.dataloom.data.DatasourceManager;
+import com.dataloom.data.EntityDatastore;
+import com.dataloom.data.EntityKey;
+import com.dataloom.data.EntitySetData;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
@@ -38,8 +43,6 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.data.EntitySetData;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
 import com.dataloom.edm.type.PropertyType;
@@ -71,13 +74,13 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
-public class CassandraDataManager {
+public class CassandraEntityDatastore implements EntityDatastore {
 
     @Inject
     private EventBus                     eventBus;
 
     private static final Logger          logger = LoggerFactory
-            .getLogger( CassandraDataManager.class );
+            .getLogger( CassandraEntityDatastore.class );
 
     private final Session                session;
     private final ObjectMapper           mapper;
@@ -96,7 +99,7 @@ public class CassandraDataManager {
 
     private final PreparedStatement      readNumRPCRowsQuery;
 
-    public CassandraDataManager(
+    public CassandraEntityDatastore(
             Session session,
             ObjectMapper mapper,
             HazelcastLinkingGraphs linkingGraph,
@@ -120,6 +123,7 @@ public class CassandraDataManager {
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
     }
 
+    @Override
     public EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
@@ -131,15 +135,8 @@ public class CassandraDataManager {
                 rs -> rowToEntity( rs, authorizedPropertyTypes ) ) );
     }
 
-    public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
-            UUID entitySetId,
-            UUID syncId,
-            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
-        return Iterables.transform( entityRows,
-                rs -> rowToEntityIndexedById( rs, authorizedPropertyTypes ) )::iterator;
-    }
 
+    @Override
     public EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
@@ -151,6 +148,31 @@ public class CassandraDataManager {
                 linkedKey -> getAndMergeLinkedEntities( linkedEntitySetId,
                         linkedKey,
                         authorizedPropertyTypesForEntitySets ) )::iterator );
+    }
+
+    @Override
+    public void updateEntity(
+            EntityKey entityKey,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+
+    }
+
+    @Override
+    public ListenableFuture<List<ResultSet>> updateEntityAsync(
+            EntityKey entityKey,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        return null;
+    }
+
+    public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
+            UUID entitySetId,
+            UUID syncId,
+            Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
+        return Iterables.transform( entityRows,
+                rs -> rowToEntityIndexedById( rs, authorizedPropertyTypes ) )::iterator;
     }
 
     public SetMultimap<FullQualifiedName, Object> rowToEntity(

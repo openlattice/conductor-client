@@ -56,9 +56,9 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.mapstores.EdgesMapstore;
 import com.dataloom.graph.core.mapstores.VerticesLookupMapstore;
 import com.dataloom.graph.core.mapstores.VerticesMapstore;
-import com.dataloom.graph.core.objects.EdgeKey;
-import com.dataloom.graph.core.objects.LoomEdge;
-import com.dataloom.graph.core.objects.LoomVertex;
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.core.objects.LoomEdgeKey;
+import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
@@ -74,7 +74,6 @@ import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.mapstores.StringMapstore;
 import com.dataloom.organizations.mapstores.StringSetMapstore;
-import com.dataloom.organizations.mapstores.UUIDSetMapstore;
 import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.organizations.roles.mapstores.RolesMapstore;
 import com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore;
@@ -261,7 +260,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, LoomVertex> verticesMapstore() {
+    public SelfRegisteringMapStore<UUID, LoomVertexKey> verticesMapstore() {
         return new VerticesMapstore( session );
     }
 
@@ -271,7 +270,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<EdgeKey, LoomEdge> edgesMapstore() {
+    public SelfRegisteringMapStore<EdgeKey, LoomEdgeKey> edgesMapstore() {
         return new EdgesMapstore( session );
     }
 

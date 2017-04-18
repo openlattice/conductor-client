@@ -4,13 +4,12 @@ import java.util.UUID;
 
 import com.dataloom.data.EntityKey;
 
-public class LoomVertex {
+public class LoomVertexKey {
 
     private UUID      key;
-
     private EntityKey reference;
 
-    public LoomVertex( UUID key, EntityKey reference ) {
+    public LoomVertexKey( UUID key, EntityKey reference ) {
         this.key = key;
         this.reference = reference;
     }
@@ -37,7 +36,7 @@ public class LoomVertex {
         if ( this == obj ) return true;
         if ( obj == null ) return false;
         if ( getClass() != obj.getClass() ) return false;
-        LoomVertex other = (LoomVertex) obj;
+        LoomVertexKey other = (LoomVertexKey) obj;
         if ( key == null ) {
             if ( other.key != null ) return false;
         } else if ( !key.equals( other.key ) ) return false;
@@ -49,7 +48,7 @@ public class LoomVertex {
 
     @Override
     public String toString() {
-        return "LoomVertex [key=" + key + ", reference=" + reference + "]";
+        return "LoomVertexKey [key=" + key + ", reference=" + reference + "]";
     }
 
 }

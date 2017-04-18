@@ -25,7 +25,7 @@ import com.kryptnostic.datastore.util.Util;
  * Vertex Id acquisition is an get-or-create operation. In other words, if there is already a vertex id associated to
  * the entity key, that vertex id would be returned.
  * 
- * When {@link #get()} is called, the thread is blocked until a LoomVertex object is returned. It is possible, although
+ * When {@link #get()} is called, the thread is blocked until a LoomVertexKey object is returned. It is possible, although
  * unlikely, that null is returned, indicating a failure in obtaining a vertex id.
  * 
  * The mechanism of getting a vertex id is as follows:
@@ -38,7 +38,7 @@ import com.kryptnostic.datastore.util.Util;
  * </li>
  * <li>Try a cassandra insert if not exists (uuid, entity_key) into <i>vertices</i> table;
  * <ul>
- * <li>If the transaction succeeds, a <i>LoomVertex</i> object with the pair (entity_key, uuid) should be returned.</li>
+ * <li>If the transaction succeeds, a <i>LoomVertexKey</i> object with the pair (entity_key, uuid) should be returned.</li>
  * <li>If the transaction fails, repeat step 1 with a new UUID and try again. Here <i>insert if not exists</i> should
  * be changed to update id if entity_key equals (the one we are specifying)</li>
  * </ul>
@@ -143,7 +143,7 @@ public class LoomVertexFuture {
         }, executor );
     }
 
-    public LoomVertex get() {
+    public LoomVertexKey get() {
         try {
             if ( !isDone ) {
                 // finish up any unfinished tries.
@@ -161,9 +161,9 @@ public class LoomVertexFuture {
                     }
                 }
             }
-            return new LoomVertex( id, reference );
+            return new LoomVertexKey( id, reference );
         } catch ( Exception e ) {
-            logger.debug( "Getting LoomVertex with id {} failed because: {}.",
+            logger.debug( "Getting LoomVertexKey with id {} failed because: {}.",
                     id,
                     e.getLocalizedMessage() );
             return null;

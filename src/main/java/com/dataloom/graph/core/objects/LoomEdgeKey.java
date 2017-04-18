@@ -3,14 +3,15 @@ package com.dataloom.graph.core.objects;
 import java.util.UUID;
 
 import com.dataloom.data.EntityKey;
+import com.dataloom.graph.edge.EdgeKey;
 
-public class LoomEdge {
+public class LoomEdgeKey {
     private EdgeKey key;
 
     private UUID      srcType;
     private UUID      dstType;
 
-    public LoomEdge( EdgeKey key, UUID srcType, UUID dstType ) {
+    public LoomEdgeKey( EdgeKey key, UUID srcType, UUID dstType ) {
         this.key = key;
         this.srcType = srcType;
         this.dstType = dstType;
@@ -50,7 +51,7 @@ public class LoomEdge {
         if ( this == obj ) return true;
         if ( obj == null ) return false;
         if ( getClass() != obj.getClass() ) return false;
-        LoomEdge other = (LoomEdge) obj;
+        LoomEdgeKey other = (LoomEdgeKey) obj;
         if ( dstType == null ) {
             if ( other.dstType != null ) return false;
         } else if ( !dstType.equals( other.dstType ) ) return false;
@@ -65,7 +66,7 @@ public class LoomEdge {
 
     @Override
     public String toString() {
-        return "LoomEdge [key=" + key + ", srcType=" + srcType + ", dstType=" + dstType + "]";
+        return "LoomEdgeKey [key=" + key + ", srcType=" + srcType + ", dstType=" + dstType + "]";
     }
 
 }

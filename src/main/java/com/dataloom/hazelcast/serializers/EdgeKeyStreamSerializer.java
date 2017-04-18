@@ -6,7 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.core.objects.EdgeKey;
+import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

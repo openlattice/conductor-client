@@ -17,7 +17,7 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.kryptnostic.datastore.services;
+package com.dataloom.data;
 
 import java.util.Map;
 import java.util.Set;
@@ -135,21 +135,5 @@ public class DatasourceManager {
     private void addSyncIdToEntitySet( UUID entitySetId, UUID syncId ) {
         session.execute( writeSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
-    }
-
-    public UUID createDatasource( UUID aclId, String name, String description, UUID syncId ) {
-        throw new NotImplementedException( "MTR WAS HERE." );
-    }
-
-    public UUID initializeSync( UUID datasourceId ) {
-        throw new NotImplementedException( "MTR WAS HERE." );
-    }
-
-    public void finalizeSync( UUID syncId ) {
-        throw new NotImplementedException( "MTR WAS HERE." );
-    }
-
-    public Set<UUID> getOutstandingSyncs( UUID datasourceId ) {
-        throw new NotImplementedException( "MTR WAS HERE." );
     }
 }

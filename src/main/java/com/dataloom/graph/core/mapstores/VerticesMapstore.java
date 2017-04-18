@@ -3,7 +3,7 @@ package com.dataloom.graph.core.mapstores;
 import java.util.UUID;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.core.objects.LoomVertex;
+import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
@@ -15,11 +15,11 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
-public class VerticesMapstore extends AbstractStructuredCassandraMapstore<UUID, LoomVertex> {
-    private static LoomVertex testValue = new LoomVertex(
+public class VerticesMapstore extends AbstractStructuredCassandraMapstore<UUID, LoomVertexKey> {
+    private static LoomVertexKey testValue = new LoomVertexKey(
             UUID.randomUUID(),
             TestDataFactory.entityKey() );
-    private static UUID       testKey   = testValue.getKey();
+    private static UUID          testKey   = testValue.getKey();
 
     public VerticesMapstore( Session session ) {
         super( HazelcastMap.VERTICES.name(), session, Table.VERTICES.getBuilder() );
@@ -31,7 +31,7 @@ public class VerticesMapstore extends AbstractStructuredCassandraMapstore<UUID, 
     }
 
     @Override
-    protected BoundStatement bind( UUID key, LoomVertex value, BoundStatement bs ) {
+    protected BoundStatement bind( UUID key, LoomVertexKey value, BoundStatement bs ) {
         return bind( key, bs ).set( CommonColumns.ENTITY_KEY.cql(), value.getReference(), EntityKey.class );
     }
 
@@ -41,7 +41,7 @@ public class VerticesMapstore extends AbstractStructuredCassandraMapstore<UUID, 
     }
 
     @Override
-    protected LoomVertex mapValue( ResultSet rs ) {
+    protected LoomVertexKey mapValue( ResultSet rs ) {
         Row row = rs.one();
         if ( row == null ) {
             return null;
@@ -55,7 +55,7 @@ public class VerticesMapstore extends AbstractStructuredCassandraMapstore<UUID, 
     }
 
     @Override
-    public LoomVertex generateTestValue() {
+    public LoomVertexKey generateTestValue() {
         return testValue;
     }
 

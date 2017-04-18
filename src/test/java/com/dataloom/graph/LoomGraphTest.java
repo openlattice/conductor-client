@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.dataloom.graph.core.objects.*;
+import com.dataloom.graph.edge.EdgeKey;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,11 +13,7 @@ import com.dataloom.authorization.HzAuthzTest;
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.core.GraphQueryService;
 import com.dataloom.graph.core.LoomGraph;
-import com.dataloom.graph.core.objects.EdgeKey;
-import com.dataloom.graph.core.objects.EdgeSelection;
-import com.dataloom.graph.core.objects.LoomEdge;
-import com.dataloom.graph.core.objects.LoomVertex;
-import com.dataloom.graph.core.objects.LoomVertexFuture;
+import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.base.Optional;
@@ -32,12 +30,12 @@ public class LoomGraphTest extends HzAuthzTest {
         LoomVertexFuture.setGraphQueryService( gqs );
     }
 
-    private LoomVertex createVertex() {
+    private LoomVertexKey createVertex() {
         return getOrCreateVertex( TestDataFactory.entityKey() );
     }
 
-    private LoomVertex getOrCreateVertex( EntityKey entityKey ) {
-        LoomVertex v = lg.getOrCreateVertex( entityKey );
+    private LoomVertexKey getOrCreateVertex( EntityKey entityKey ) {
+        LoomVertexKey v = lg.getOrCreateVertex( entityKey );
         // verification
         Assert.assertNotNull( v );
         Assert.assertEquals( v, lg.getVertexByEntityKey( entityKey ) );
@@ -59,8 +57,8 @@ public class LoomGraphTest extends HzAuthzTest {
         LoomVertexFuture v1Async = lg.getOrCreateVertexAsync( key1 );
         LoomVertexFuture v2Async = lg.getOrCreateVertexAsync( key2 );
 
-        LoomVertex v1 = v1Async.get();
-        LoomVertex v2 = v2Async.get();
+        LoomVertexKey v1 = v1Async.get();
+        LoomVertexKey v2 = v2Async.get();
 
         // verification
         Assert.assertEquals( v1, lg.getVertexByEntityKey( key1 ) );
@@ -71,12 +69,12 @@ public class LoomGraphTest extends HzAuthzTest {
 
     @Test
     public void testCreateEdge() {
-        LoomVertex v1 = createVertex();
-        LoomVertex v2 = createVertex();
+        LoomVertexKey v1 = createVertex();
+        LoomVertexKey v2 = createVertex();
         EntityKey label = TestDataFactory.entityKey();
 
         lg.addEdge( v1, v2, label );
-        LoomEdge edge = lg.getEdge( new EdgeKey( v1.getKey(), v2.getKey(), label ) );
+        LoomEdgeKey edge = lg.getEdge( new EdgeKey( v1.getKey(), v2.getKey(), label ) );
 
         // verification
         Assert.assertNotNull( edge );
@@ -89,9 +87,9 @@ public class LoomGraphTest extends HzAuthzTest {
 
     @Test
     public void testGetEdges() {
-        LoomVertex vA = createVertex();
-        LoomVertex vB = createVertex();
-        LoomVertex vC = createVertex();
+        LoomVertexKey vA = createVertex();
+        LoomVertexKey vB = createVertex();
+        LoomVertexKey vC = createVertex();
 
         UUID edgeType1 = UUID.randomUUID();
         UUID edgeType2;
@@ -152,7 +150,7 @@ public class LoomGraphTest extends HzAuthzTest {
 
     @Test
     public void testDeleteVertex() {
-        LoomVertex v = createVertex();
+        LoomVertexKey v = createVertex();
 
         lg.deleteVertex( v.getKey() );
 
@@ -167,13 +165,13 @@ public class LoomGraphTest extends HzAuthzTest {
 
     @Test
     public void testDeleteEdge() {
-        LoomVertex v1 = createVertex();
-        LoomVertex v2 = createVertex();
+        LoomVertexKey v1 = createVertex();
+        LoomVertexKey v2 = createVertex();
         EntityKey label = TestDataFactory.entityKey();
         EdgeKey edgeKey = new EdgeKey( v1.getKey(), v2.getKey(), label );
 
         lg.addEdge( v1, v2, label );
-        LoomEdge edge = lg.getEdge( edgeKey );
+        LoomEdgeKey edge = lg.getEdge( edgeKey );
         Assert.assertNotNull( edge );
 
         lg.deleteEdge( edgeKey );
@@ -197,20 +195,20 @@ public class LoomGraphTest extends HzAuthzTest {
         
         futures.forEach( LoomVertexFuture::get );
         
-        LoomVertex v = lg.getVertexByEntityKey( trackedKey );
+        LoomVertexKey v = lg.getVertexByEntityKey( trackedKey );
         Assert.assertNotNull( v );
         Assert.assertEquals( trackedKey, v.getReference() );     
     }
     
     @Test
     public void testcreateEdgesAsync() {
-        LoomVertex vA = createVertex();
+        LoomVertexKey vA = createVertex();
         
         List<ResultSetFuture> futures = new ArrayList<>();
         
         final int numTrials = 100;
         for(int i = 0; i < numTrials; i++ ){
-            LoomVertex v = createVertex();
+            LoomVertexKey v = createVertex();
             EntityKey label = TestDataFactory.entityKey();
             futures.add( lg.addEdgeAsync( vA, v, label ) );
         }

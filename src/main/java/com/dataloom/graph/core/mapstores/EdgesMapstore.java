@@ -2,8 +2,8 @@ package com.dataloom.graph.core.mapstores;
 
 import java.util.UUID;
 
-import com.dataloom.graph.core.objects.EdgeKey;
-import com.dataloom.graph.core.objects.LoomEdge;
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
@@ -15,10 +15,10 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
-public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, LoomEdge> {
+public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, LoomEdgeKey> {
 
-    private static EdgeKey  testKey   = generateTestEdgeKey();
-    private static LoomEdge testValue = new LoomEdge(
+    private static EdgeKey     testKey   = generateTestEdgeKey();
+    private static LoomEdgeKey testValue = new LoomEdgeKey(
             testKey,
             UUID.randomUUID(),
             UUID.randomUUID() );
@@ -30,18 +30,18 @@ public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, 
     @Override
     protected BoundStatement bind( EdgeKey key, BoundStatement bs ) {
         return bs
-                .setUUID( CommonColumns.SRC_VERTEX_ID.cql(), key.getSrcId() )
-                .setUUID( CommonColumns.DST_VERTEX_ID.cql(), key.getDstId() )
+                .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), key.getSrcId() )
+                .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), key.getDstId() )
                 .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), key.getReference().getEntitySetId() )
                 .setString( CommonColumns.EDGE_ENTITYID.cql(), key.getReference().getEntityId() )
                 .setUUID( CommonColumns.SYNCID.cql(), key.getReference().getSyncId() );
     }
 
     @Override
-    protected BoundStatement bind( EdgeKey key, LoomEdge value, BoundStatement bs ) {
+    protected BoundStatement bind( EdgeKey key, LoomEdgeKey value, BoundStatement bs ) {
         return bind( key, bs )
                 .setUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), value.getSrcType() )
-                .setUUID( CommonColumns.DST_VERTEX_TYPE_ID.cql(), value.getDstType() );
+                .setUUID( CommonColumns.DST_TYPE_ID.cql(), value.getDstType() );
     }
 
     @Override
@@ -50,7 +50,7 @@ public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, 
     }
 
     @Override
-    protected LoomEdge mapValue( ResultSet rs ) {
+    protected LoomEdgeKey mapValue( ResultSet rs ) {
         Row row = rs.one();
         if ( row == null ) {
             return null;
@@ -64,7 +64,7 @@ public class EdgesMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, 
     }
 
     @Override
-    public LoomEdge generateTestValue() {
+    public LoomEdgeKey generateTestValue() {
         return testValue;
     }
 

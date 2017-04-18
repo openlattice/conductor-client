@@ -145,5 +145,6 @@ public interface EdmManager {
     EdgeType getEdgeType( UUID edgeTypeId );
         
     void deleteEdgeType( UUID edgeTypeId );
-        
+
+    Set<UUID> getEdgeTypes();
 }

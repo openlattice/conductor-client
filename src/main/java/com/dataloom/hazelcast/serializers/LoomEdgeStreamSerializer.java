@@ -5,29 +5,28 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.graph.core.objects.EdgeKey;
-import com.dataloom.graph.core.objects.LoomEdge;
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @Component
-public class LoomEdgeStreamSerializer implements SelfRegisteringStreamSerializer<LoomEdge> {
+public class LoomEdgeStreamSerializer implements SelfRegisteringStreamSerializer<LoomEdgeKey> {
 
     @Override
-    public Class<? extends LoomEdge> getClazz() {
-        return LoomEdge.class;
+    public Class<? extends LoomEdgeKey> getClazz() {
+        return LoomEdgeKey.class;
     }
 
     @Override
-    public void write( ObjectDataOutput out, LoomEdge object ) throws IOException {
+    public void write( ObjectDataOutput out, LoomEdgeKey object ) throws IOException {
         serialize( out, object );
     }
 
     @Override
-    public LoomEdge read( ObjectDataInput in ) throws IOException {
+    public LoomEdgeKey read( ObjectDataInput in ) throws IOException {
         return deserialize( in );
     }
 
@@ -41,17 +40,17 @@ public class LoomEdgeStreamSerializer implements SelfRegisteringStreamSerializer
 
     }
 
-    public static void serialize( ObjectDataOutput out, LoomEdge object ) throws IOException {
+    public static void serialize( ObjectDataOutput out, LoomEdgeKey object ) throws IOException {
         EdgeKeyStreamSerializer.serialize( out, object.getKey() );
         UUIDStreamSerializer.serialize( out, object.getSrcType() );
         UUIDStreamSerializer.serialize( out, object.getDstType() );
     }
 
-    public static LoomEdge deserialize( ObjectDataInput in ) throws IOException {
+    public static LoomEdgeKey deserialize( ObjectDataInput in ) throws IOException {
         final EdgeKey key = EdgeKeyStreamSerializer.deserialize( in );
         final UUID srcType = UUIDStreamSerializer.deserialize( in );
         final UUID dstType = UUIDStreamSerializer.deserialize( in );
-        return new LoomEdge( key, srcType, dstType );
+        return new LoomEdgeKey( key, srcType, dstType );
     }
 
 }

@@ -3,30 +3,30 @@ package com.dataloom.hazelcast.serializers;
 import java.io.IOException;
 import java.util.UUID;
 
+import com.dataloom.graph.core.objects.LoomVertexKey;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.core.objects.LoomVertex;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @Component
-public class LoomVertexStreamSerializer implements SelfRegisteringStreamSerializer<LoomVertex> {
+public class LoomVertexStreamSerializer implements SelfRegisteringStreamSerializer<LoomVertexKey> {
 
     @Override
-    public Class<? extends LoomVertex> getClazz() {
-        return LoomVertex.class;
+    public Class<? extends LoomVertexKey> getClazz() {
+        return LoomVertexKey.class;
     }
 
     @Override
-    public void write( ObjectDataOutput out, LoomVertex object ) throws IOException {
+    public void write( ObjectDataOutput out, LoomVertexKey object ) throws IOException {
         serialize( out, object );
     }
 
     @Override
-    public LoomVertex read( ObjectDataInput in ) throws IOException {
+    public LoomVertexKey read( ObjectDataInput in ) throws IOException {
         return deserialize( in );
     }
 
@@ -40,15 +40,15 @@ public class LoomVertexStreamSerializer implements SelfRegisteringStreamSerializ
 
     }
 
-    public static void serialize( ObjectDataOutput out, LoomVertex object ) throws IOException {
+    public static void serialize( ObjectDataOutput out, LoomVertexKey object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getKey() );
         EntityKeyStreamSerializer.serialize( out, object.getReference() );
     }
 
-    public static LoomVertex deserialize( ObjectDataInput in ) throws IOException {
+    public static LoomVertexKey deserialize( ObjectDataInput in ) throws IOException {
         final UUID key = UUIDStreamSerializer.deserialize( in );
         final EntityKey reference = EntityKeyStreamSerializer.deserialize( in );
-        return new LoomVertex( key, reference );
+        return new LoomVertexKey( key, reference );
     }
 
 }

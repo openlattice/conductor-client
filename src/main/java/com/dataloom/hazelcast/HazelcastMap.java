@@ -58,7 +58,6 @@ public enum HazelcastMap {
     ENTITY_EDGES( Table.ENTITY_EDGES ),
     EDGES( Table.EDGES ),
     VERTICES( Table.VERTICES ),
-    VERTICES_LOOKUP( Table.VERTICES_LOOKUP ),
     SYNC_IDS( Table.SYNC_IDS );
 
     private final Table table;
