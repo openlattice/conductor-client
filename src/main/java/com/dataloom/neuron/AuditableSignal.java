@@ -26,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.Principal;
+import com.dataloom.client.serialization.SerializationConstants;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class AuditableSignal extends Signal {
 
@@ -39,13 +41,13 @@ public class AuditableSignal extends Signal {
     private UUID       blockId;
 
     public AuditableSignal(
-            SignalType type,
-            List<UUID> aclKey,
-            Principal principal,
-            UUID timeId,
-            UUID entityId,
-            UUID auditId,
-            UUID blockId ) {
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
+            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
+            @JsonProperty( SerializationConstants.TIME_ID ) UUID timeId,
+            @JsonProperty( SerializationConstants.ENTITY_ID ) UUID entityId,
+            @JsonProperty( SerializationConstants.AUDIT_ID ) UUID auditId,
+            @JsonProperty( SerializationConstants.BLOCK_ID ) UUID blockId ) {
 
         super( type );
 
@@ -57,26 +59,32 @@ public class AuditableSignal extends Signal {
         this.blockId = blockId;
     }
 
+    @JsonProperty( SerializationConstants.ACL_KEY )
     public List<UUID> getAclKey() {
         return aclKey;
     }
 
+    @JsonProperty( SerializationConstants.PRINCIPAL )
     public Principal getPrincipal() {
         return principal;
     }
 
+    @JsonProperty( SerializationConstants.TIME_ID )
     public UUID getTimeId() {
         return timeId;
     }
 
+    @JsonProperty( SerializationConstants.ENTITY_ID )
     public UUID getEntityId() {
         return entityId;
     }
 
+    @JsonProperty( SerializationConstants.AUDIT_ID )
     public UUID getAuditId() {
         return auditId;
     }
 
+    @JsonProperty( SerializationConstants.BLOCK_ID )
     public UUID getBlockId() {
         return blockId;
     }
