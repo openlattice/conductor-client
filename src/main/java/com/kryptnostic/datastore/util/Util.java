@@ -53,7 +53,10 @@ public final class Util {
     }
 
     public static boolean wasLightweightTransactionApplied( ResultSet rs ) {
-        Row row = rs.one();
+        return wasLightweightTransactionApplied( rs.one() );
+    }
+    
+    public static boolean wasLightweightTransactionApplied( Row row ){
         if ( row == null ) {
             return true;
         } else {
