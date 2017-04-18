@@ -45,6 +45,8 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public class AuditQueryService {
     private static final byte[] RESERVED = "Reserved for future use." .getBytes( Charsets.UTF_8 );
     private final Session           session;

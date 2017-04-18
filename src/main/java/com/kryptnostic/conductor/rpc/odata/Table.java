@@ -88,8 +88,9 @@ import com.kryptnostic.rhizome.cassandra.TableDef;
 
 public enum Table implements TableDef {
     ACL_KEYS,
-    AUDIT_EVENTS,
-    AUDIT_METRICS,
+    AUDIT_LOG,
+    AUDIT_EVENTS, // TODO: this needs to be removed
+    AUDIT_METRICS, // TODO: this needs to be removed
     COMPLEX_TYPES,
     DATA,
     ENTITY_EDGES,
@@ -137,6 +138,35 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( NAME )
                         .columns( SECURABLE_OBJECTID );
+
+            // TODO: ENTITY_ID( DataType.uuid() ) or ENTITYID( DataType.text() )
+            case AUDIT_LOG:
+                return new CassandraTableBuilder( AUDIT_LOG )
+                        .ifNotExists()
+                        .partitionKey(
+                                CommonColumns.ACL_KEYS,
+                                CommonColumns.EVENT_TYPE
+                        )
+                        .clusteringColumns(
+                                CommonColumns.PRINCIPAL_TYPE,
+                                CommonColumns.PRINCIPAL_ID,
+                                CommonColumns.TIME_UUID
+                        )
+                        .columns(
+                                CommonColumns.DATA_ID,
+                                CommonColumns.AUDIT_ID,
+                                CommonColumns.BLOCK_ID
+                        )
+                        .sasi(
+                                CommonColumns.PRINCIPAL_TYPE,
+                                CommonColumns.PRINCIPAL_ID,
+                                CommonColumns.TIME_UUID
+                        )
+                        .withDescendingOrder(
+                                CommonColumns.TIME_UUID
+                        );
+
+            // TODO: remove AUDIT_EVENTS, AUDIT_LOG replaces AUDIT_EVENTS
             case AUDIT_EVENTS:
                 return new CassandraTableBuilder( AUDIT_EVENTS )
                         .ifNotExists()
@@ -144,6 +174,8 @@ public enum Table implements TableDef {
                         .clusteringColumns( TIME_ID, PRINCIPAL_TYPE, PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS, AUDIT_EVENT_DETAILS, BLOCK )
                         .sasi( PRINCIPAL_TYPE, PRINCIPAL_ID );
+
+            // TODO: remove AUDIT_METRICS
             case AUDIT_METRICS:
                 return new CassandraTableBuilder( AUDIT_METRICS )
                         .ifNotExists()
