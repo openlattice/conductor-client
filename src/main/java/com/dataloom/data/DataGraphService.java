@@ -69,20 +69,6 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
-    public void updateAssociation(
-            EdgeKey key,
-            SetMultimap<UUID, Object> entityDetails,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        // Remark: current createData is really upsertData, given how Cassandra handles inserts/updates
-        cdm.createData( key.getReference().getEntitySetId(),
-                key.getReference().getSyncId(),
-                authorizedPropertiesWithDataType,
-                authorizedPropertiesWithDataType.keySet(),
-                key.getReference().getEntityId(),
-                entityDetails );
-    }
-
-    @Override
     public void deleteEntity( UUID vertexId ) {
         EntityKey entityKey = lm.getVertexById( vertexId ).getReference();
         lm.deleteVertex( vertexId );
@@ -135,10 +121,11 @@ public class DataGraphService implements DataGraphManager {
                     association.getKey().getEntityId(),
                     association.getDetails() ) );
 
-            LoomVertexKey src = lm.getVertexByEntityKey( association.getSrc() );
-            LoomVertexKey dst = lm.getVertexByEntityKey( association.getDst() );
+            LoomVertex src = lm.getVertex( association.getSrc() );
+            LoomVertex dst = lm.getVertex( association.getDst() );
+            LoomVertex edge = lm.getVertex( association.getKey() );
 
-            datafs.add( lm.addEdgeAsync( src, dst, association.getKey() ) );
+            datafs.add( lm.addEdgeAsync( src.getVertexId(), src.getEntityTypeId(), dst.getVertexId(), dst.getEntityTypeId(), edge.getVertexId(), edge.getEntityTypeId() ) );
 
             if ( datafs.size() > bufferSize ) {
                 datafs.forEach( ResultSetFuture::getUninterruptibly );
@@ -172,13 +159,13 @@ public class DataGraphService implements DataGraphManager {
             vertexfs.put( entity.getKey(), lm.getOrCreateVertexAsync( entity.getKey() ) );
         }
 
-        Map<EntityKey, LoomVertexKey> verticesCreated = Maps.transformValues( vertexfs,
+        Map<EntityKey, LoomVertex> verticesCreated = Maps.transformValues( vertexfs,
                 LoomVertexFuture::get );
 
         for ( Association association : associations ) {
-            LoomVertexKey src = verticesCreated.get( association.getSrc() );
-            LoomVertexKey dst = verticesCreated.get( association.getDst() );
-            LoomVertexKey edge = verticesCreated.get( association.getKey() );
+            LoomVertex src = verticesCreated.get( association.getSrc() );
+            LoomVertex dst = verticesCreated.get( association.getDst() );
+            LoomVertex edge = verticesCreated.get( association.getKey() );
             if ( src == null || dst == null || edge == null ) {
                 logger.debug( "Edge with id {} cannot be created because one of its vertices was not created.",
                         association.getKey().getEntityId() );
@@ -190,7 +177,7 @@ public class DataGraphService implements DataGraphManager {
                         association.getKey().getEntityId(),
                         association.getDetails() ) );
 
-                datafs.add( lm.addEdgeAsync( src, dst, association.getKey() ) );
+                datafs.add( lm.addEdgeAsync( src.getVertexId(), src.getEntityTypeId(), dst.getVertexId(), dst.getEntityTypeId(), edge.getVertexId(), edge.getEntityTypeId() ) );
 
                 if ( datafs.size() > bufferSize ) {
                     datafs.forEach( ResultSetFuture::getUninterruptibly );

@@ -25,8 +25,8 @@ public interface LoomGraphApi {
 
     ICompletableFuture<Void> createVertexAsync( UUID vertexId, EntityKey entityKey, UUID entityTypeId );
 
-    UUID getVertexId( EntityKey entityKey );
-
+    LoomVertex getVertex( EntityKey entityKey );
+    
     void deleteVertex( UUID vertexId );
 
     List<ResultSetFuture> deleteVertexAsync( UUID vertexId );
@@ -44,8 +44,8 @@ public interface LoomGraphApi {
             UUID srcVertexEntityTypeId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
-            UUID entityId,
-            UUID entityTypeId );
+            UUID edgeId,
+            UUID edgeTypeId );
 
     void addEdge( EntityKey srcVertexKey, EntityKey dstVertexKey, EntityKey edgeEntityKey );
 
@@ -54,8 +54,8 @@ public interface LoomGraphApi {
             UUID srcVertexEntityTypeId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
-            UUID entityId,
-            UUID entityTypeId );
+            UUID edgeId,
+            UUID edgeTypeId );
 
     ResultSetFuture addEdgeAsync( EntityKey srcVertexKey, EntityKey dstVertexKey, EntityKey edgeEntityKey );
 
