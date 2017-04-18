@@ -17,21 +17,16 @@ public interface DataGraphManager {
      * CRUD methods for entity
      */
     void updateEntity(
-            UUID vertexId,
+            UUID elementId,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
 
     void updateEntity(
-            EntityKey vertexReference,
+            EntityKey elementReference,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
 
-    void updateAssociation(
-            EdgeKey key,
-            SetMultimap<UUID, Object> entityDetails,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
-
-    void deleteEntity( UUID vertexId );
+    void deleteEntity( UUID elementId );
 
     void deleteAssociation( EdgeKey key );
 
@@ -50,10 +45,12 @@ public interface DataGraphManager {
             UUID entitySetId,
             UUID syncId,
             Set<Association> associations,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
+                    throws ExecutionException, InterruptedException;
 
     void createEntitiesAndAssociations(
             Iterable<Entity> entities,
             Iterable<Association> associations,
-            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId );
+            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
+                    throws ExecutionException, InterruptedException;
 }

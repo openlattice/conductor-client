@@ -41,7 +41,7 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
     }
 
     @Override
-    public Optional<UUID> getEntityKeyId( EntityKey entityKey ) {
+    public UUID getEntityKeyId( EntityKey entityKey ) {
         return null;
     }
 

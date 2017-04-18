@@ -19,16 +19,15 @@
 
 package com.dataloom.data;
 
-import com.dataloom.edm.type.PropertyType;
-import com.datastax.driver.core.ResultSet;
-import com.google.common.collect.SetMultimap;
-import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+
+import com.dataloom.edm.type.PropertyType;
+import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.collect.SetMultimap;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -62,6 +61,7 @@ public interface EntityDatastore {
     // TODO remove vertices too
     void deleteEntitySetData( UUID entitySetId );
 
+    void deleteEntity( EntityKey entityKey );
     /**
      * @param entityKey
      * @param entityDetails
@@ -79,7 +79,7 @@ public interface EntityDatastore {
      * @param authorizedPropertiesWithDataType
      * @return
      */
-    ListenableFuture<List<ResultSet>> updateEntityAsync(
+    List<ResultSetFuture> updateEntityAsync(
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );

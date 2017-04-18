@@ -164,16 +164,16 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
-    public ListenableFuture<List<ResultSet>> updateEntityAsync(
+    public List<ResultSetFuture> updateEntityAsync(
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        return Futures.successfulAsList( createDataAsync( entityKey.getEntitySetId(),
+        return createDataAsync( entityKey.getEntitySetId(),
                 entityKey.getSyncId(),
                 authorizedPropertiesWithDataType,
                 authorizedPropertiesWithDataType.keySet(),
                 entityKey.getEntityId(),
-                entityDetails ) );
+                entityDetails );
     }
 
     public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
@@ -425,6 +425,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return rsf;
     }
 
+    @Override
     public void deleteEntity( EntityKey entityKey ) {
         asyncDeleteEntity( entityKey.getEntitySetId(), entityKey.getEntityId(), entityKey.getSyncId() )
                 .getUninterruptibly();

@@ -52,7 +52,7 @@ public interface EntityKeyIdService {
      * @return An entity key id, if this entity key previously had one assigned.
      */
     //TODO: Change this to throwing an exception.
-    Optional<UUID> getEntityKeyId( EntityKey entityKey );
+    UUID getEntityKeyId( EntityKey entityKey );
 
     EntityKey getEntityKey( UUID entityKeyId );
 

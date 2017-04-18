@@ -1,84 +1,105 @@
 package com.dataloom.data;
 
-import com.dataloom.data.requests.Association;
-import com.dataloom.data.requests.Entity;
-import com.dataloom.data.storage.CassandraEntityDatastore;
-import com.dataloom.graph.core.LoomGraph;
-import com.dataloom.graph.edge.EdgeKey;
-import com.dataloom.graph.core.objects.LoomVertexKey;
-import com.dataloom.graph.core.objects.LoomVertexFuture;
-import com.datastax.driver.core.ResultSetFuture;
-import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
-import com.google.common.eventbus.EventBus;
-import com.google.common.util.concurrent.ListenableFuture;
+import static com.google.common.util.concurrent.Futures.transformAsync;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import javax.inject.Inject;
+
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-
-import static com.google.common.util.concurrent.Futures.transformAsync;
+import com.dataloom.data.requests.Association;
+import com.dataloom.data.requests.Entity;
+import com.dataloom.data.storage.CassandraEntityDatastore;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.graph.core.LoomGraph;
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.SetMultimap;
+import com.google.common.eventbus.EventBus;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class DataGraphService implements DataGraphManager {
-    private static final Logger logger     = LoggerFactory
+    private static final Logger      logger = LoggerFactory
             .getLogger( DataGraphService.class );
-    private static final int    bufferSize = 1000;
     @Inject
     private EventBus                 eventBus;
-    private CassandraEntityDatastore cdm;
     private LoomGraph                lm;
     private EntityKeyIdService       idService;
     private EntityDatastore          eds;
+    // Get entity type id by entity set id, cached.
+    // TODO HC: Local caching is needed because this would be called very often, so direct calls to IMap should be
+    // minimized. Nonetheless, this certainly should be refactored into EdmService or something.
+    private IMap<UUID, EntitySet>    entitySets;
+    private LoadingCache<UUID, UUID> typeIds;
 
     public DataGraphService(
-            CassandraEntityDatastore cdm,
+            HazelcastInstance hazelcastInstance,
+            CassandraEntityDatastore eds,
             LoomGraph lm,
             EntityKeyIdService ids ) {
-        this.cdm = cdm;
         this.lm = lm;
         this.idService = ids;
-        this.eds = cdm;
+        this.eds = eds;
+
+        this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
+        this.typeIds = CacheBuilder.newBuilder().expireAfterWrite( 1000, TimeUnit.MILLISECONDS )
+                .build( new CacheLoader<UUID, UUID>() {
+
+                    @Override
+                    public UUID load( UUID key ) throws Exception {
+                        return entitySets.get( key ).getEntityTypeId();
+                    }
+                } );
     }
 
     @Override
     public void updateEntity(
-            UUID vertexId,
+            UUID id,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        EntityKey vertexReference = lm.getVertexById( vertexId ).getReference();
-        updateEntity( vertexReference, entityDetails, authorizedPropertiesWithDataType );
+        EntityKey elementReference = idService.getEntityKey( id );
+        updateEntity( elementReference, entityDetails, authorizedPropertiesWithDataType );
     }
 
     @Override
     public void updateEntity(
-            EntityKey vertexReference,
+            EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        cdm.createData( vertexReference.getEntitySetId(),
-                vertexReference.getSyncId(),
-                authorizedPropertiesWithDataType,
-                authorizedPropertiesWithDataType.keySet(),
-                vertexReference.getEntityId(),
-                entityDetails );
+        eds.updateEntity( entityKey, entityDetails, authorizedPropertiesWithDataType );
     }
 
     @Override
-    public void deleteEntity( UUID vertexId ) {
-        EntityKey entityKey = lm.getVertexById( vertexId ).getReference();
-        lm.deleteVertex( vertexId );
-        cdm.deleteEntity( entityKey );
+    public void deleteEntity( UUID elementId ) {
+        EntityKey entityKey = idService.getEntityKey( elementId );
+        lm.deleteVertex( elementId );
+        eds.deleteEntity( entityKey );
     }
 
     @Override
     public void deleteAssociation( EdgeKey key ) {
+        EntityKey entityKey = idService.getEntityKey( key.getEdgeEntityKeyId() );
         lm.deleteEdge( key );
-        cdm.deleteEntity( key.getReference() );
+        eds.deleteEntity( entityKey );
     }
 
     @Override
@@ -95,10 +116,11 @@ public class DataGraphService implements DataGraphManager {
             EntityKey key = new EntityKey( entitySetId, entityId, syncId );
             futures.add( transformAsync( idService.getOrCreateAsync( key ),
                     id -> lm.createVertexAsync( id, key ) ) );
-            futures.add( eds.updateEntityAsync( key, entity.getValue(), authorizedPropertiesWithDataType ) );
+            futures.add( Futures.successfulAsList(
+                    eds.updateEntityAsync( key, entity.getValue(), authorizedPropertiesWithDataType ) ) );
         }
 
-        for( ListenableFuture f : futures ) {
+        for ( ListenableFuture f : futures ) {
             f.get();
         }
     }
@@ -108,84 +130,77 @@ public class DataGraphService implements DataGraphManager {
             UUID entitySetId,
             UUID syncId,
             Set<Association> associations,
-            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        Set<UUID> authorizedProperties = authorizedPropertiesWithDataType.keySet();
-
-        List<ResultSetFuture> datafs = new ArrayList<ResultSetFuture>();
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
+            throws InterruptedException, ExecutionException {
+        List<ListenableFuture> futures = new ArrayList<ListenableFuture>( 2 * associations.size() );
 
         for ( Association association : associations ) {
-            datafs.addAll( cdm.createDataAsync( entitySetId,
-                    syncId,
-                    authorizedPropertiesWithDataType,
-                    authorizedProperties,
-                    association.getKey().getEntityId(),
-                    association.getDetails() ) );
+            UUID edgeId = idService.getOrCreate( association.getKey() );
+            futures.add( Futures.successfulAsList( eds.updateEntityAsync( association.getKey(),
+                    association.getDetails(),
+                    authorizedPropertiesWithDataType ) ) );
 
-            LoomVertex src = lm.getVertex( association.getSrc() );
-            LoomVertex dst = lm.getVertex( association.getDst() );
-            LoomVertex edge = lm.getVertex( association.getKey() );
+            UUID srcId = idService.getEntityKeyId( association.getSrc() );
+            UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
+            UUID dstId = idService.getEntityKeyId( association.getDst() );
+            UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
+            UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
 
-            datafs.add( lm.addEdgeAsync( src.getVertexId(), src.getEntityTypeId(), dst.getVertexId(), dst.getEntityTypeId(), edge.getVertexId(), edge.getEntityTypeId() ) );
-
-            if ( datafs.size() > bufferSize ) {
-                datafs.forEach( ResultSetFuture::getUninterruptibly );
-                datafs = new ArrayList<ResultSetFuture>();
-            }
+            futures.add( lm.addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId ) );
         }
-        datafs.forEach( ResultSetFuture::getUninterruptibly );
+        for ( ListenableFuture f : futures ) {
+            f.get();
+        }
     }
 
     @Override
     public void createEntitiesAndAssociations(
             Iterable<Entity> entities,
             Iterable<Association> associations,
-            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId ) {
-        Map<EntityKey, LoomVertexFuture> vertexfs = Maps.newHashMap();
-        List<ResultSetFuture> datafs = new ArrayList<>();
+            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
+            throws InterruptedException, ExecutionException {
+        Map<EntityKey, UUID> idsRegistered = new HashMap<>();
+        List<ListenableFuture> entityFutures = new ArrayList<>();
+        List<ListenableFuture> dataFutures = new ArrayList<>();
 
         for ( Entity entity : entities ) {
-            datafs.addAll( cdm.createDataAsync( entity.getKey().getEntitySetId(),
-                    entity.getKey().getSyncId(),
-                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ),
-                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ).keySet(),
-                    entity.getKey().getEntityId(),
-                    entity.getDetails() ) );
+            entityFutures.add( transformAsync( idService.getOrCreateAsync( entity.getKey() ),
+                    id -> {
+                        idsRegistered.put( entity.getKey(), id );
+                        return lm.createVertexAsync( id, entity.getKey() );
+                    } ) );
 
-            if ( datafs.size() > bufferSize ) {
-                datafs.forEach( ResultSetFuture::getUninterruptibly );
-                datafs = new ArrayList<ResultSetFuture>();
-            }
-
-            vertexfs.put( entity.getKey(), lm.getOrCreateVertexAsync( entity.getKey() ) );
+            dataFutures.addAll( eds.updateEntityAsync( entity.getKey(),
+                    entity.getDetails(),
+                    authorizedPropertiesByEntitySetId.get( entity.getKey().getEntitySetId() ) ) );
         }
 
-        Map<EntityKey, LoomVertex> verticesCreated = Maps.transformValues( vertexfs,
-                LoomVertexFuture::get );
+        for ( ListenableFuture f : entityFutures ) {
+            f.get();
+        }
 
         for ( Association association : associations ) {
-            LoomVertex src = verticesCreated.get( association.getSrc() );
-            LoomVertex dst = verticesCreated.get( association.getDst() );
-            LoomVertex edge = verticesCreated.get( association.getKey() );
-            if ( src == null || dst == null || edge == null ) {
-                logger.debug( "Edge with id {} cannot be created because one of its vertices was not created.",
+            UUID srcId = idsRegistered.get( association.getSrc() );
+            UUID dstId = idsRegistered.get( association.getDst() );
+            if ( srcId == null || dstId == null ) {
+                logger.debug( "Edge with id {} cannot be created because some vertices failed to register for an id.",
                         association.getKey().getEntityId() );
             } else {
-                datafs.addAll( cdm.createDataAsync( association.getKey().getEntitySetId(),
-                        association.getKey().getSyncId(),
-                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ),
-                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ).keySet(),
-                        association.getKey().getEntityId(),
-                        association.getDetails() ) );
+                dataFutures.add( Futures.successfulAsList( eds.updateEntityAsync( association.getKey(),
+                        association.getDetails(),
+                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ) ) ) );
 
-                datafs.add( lm.addEdgeAsync( src.getVertexId(), src.getEntityTypeId(), dst.getVertexId(), dst.getEntityTypeId(), edge.getVertexId(), edge.getEntityTypeId() ) );
+                UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
+                UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
+                UUID edgeId = idService.getOrCreate( association.getKey() );
+                UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
 
-                if ( datafs.size() > bufferSize ) {
-                    datafs.forEach( ResultSetFuture::getUninterruptibly );
-                    datafs = new ArrayList<ResultSetFuture>();
-                }
+                dataFutures.add( lm.addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId ) );
             }
         }
-        datafs.forEach( ResultSetFuture::getUninterruptibly );
+        for ( ListenableFuture f : dataFutures ) {
+            f.get();
+        }
     }
 
 }

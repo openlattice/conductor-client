@@ -5,6 +5,7 @@ import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.ICompletableFuture;
 
 import java.util.List;
@@ -21,11 +22,11 @@ public interface LoomGraphApi {
     /*
      * CRUD operations of vertices
      */
-    void createVertex( UUID vertexId, EntityKey entityKey, UUID entityTypeId );
+    void createVertex( UUID vertexId, EntityKey entityKey );
 
-    ICompletableFuture<Void> createVertexAsync( UUID vertexId, EntityKey entityKey, UUID entityTypeId );
+    ListenableFuture<Void> createVertexAsync( UUID vertexId, EntityKey entityKey );
 
-    LoomVertex getVertex( EntityKey entityKey );
+    UUID getVertexId( EntityKey entityKey );
     
     void deleteVertex( UUID vertexId );
 
