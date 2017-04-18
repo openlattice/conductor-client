@@ -2,16 +2,13 @@ package com.dataloom.graph.core;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.LoomElement;
-import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
+import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.vertex.NeighborhoodSelection;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.ResultSetFuture;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
@@ -20,7 +17,6 @@ import com.kryptnostic.datastore.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -104,29 +100,7 @@ public class LoomGraph implements LoomGraphApi {
     public List<ResultSetFuture> deleteVertexAsync( UUID vertex ) {
         NeighborhoodSelection ns = new NeighborhoodSelection( vertex, ImmutableSet.of(), ImmutableSet.of() );
         Stream<EdgeKey> edgesKey = gqs.getNeighborhood( ns );
-        edgesKey.forEach( this::deleteEdgeAsync );
-        List<ResultSetFuture> futures = new ArrayList<>();
-        if ( vertex != null ) {
-            futures.add( gqs.deleteVertexLookupAsync( vertex.getReference() ) );
-            futures.add( gqs.deleteVertexAsync( vertexId ) );
-            EdgeSelection fixSrc = new EdgeSelection(
-                    Optional.of( vertexId ),
-                    Optional.absent(),
-                    Optional.absent(),
-                    Optional.absent(),
-                    Optional.absent() );
-            EdgeSelection fixDst = new EdgeSelection(
-                    Optional.absent(),
-                    Optional.absent(),
-                    Optional.of( vertexId ),
-                    Optional.absent(),
-                    Optional.absent() );
-            Iterable<LoomEdgeKey> edges = Iterables.concat( getEdges( fixSrc ), getEdges( fixDst ) );
-
-            StreamUtil.stream( edges ).map( edge -> deleteEdgeAsync( edge.getKey() ) )
-                    .collect( Collectors.toCollection( () -> futures ) );
-        }
-        return futures;
+        return edgesKey.map( this::deleteEdgeAsync ).collect( Collectors.toList() );
     }
 
     @Override
