@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.LoomElement;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
@@ -29,25 +28,23 @@ public class LoomGraph implements LoomGraphApi {
 
     private final EdmService                   edm;
     private final GraphQueryService            gqs;
-    private final IMap<EntityKey, LoomElement> vertices;
-    private final IMap<EntityKey, LoomElement> edges;
+    private final IMap<EntityKey, UUID> vertices;
 
     public LoomGraph( EdmService edm, GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
         this.gqs = gqs;
         this.edm = edm;
         this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
-        this.edges = hazelcastInstance.getMap( HazelcastMap.ENTITY_EDGES.name() );
     }
 
     @Override
     public void createVertex( UUID vertexId, EntityKey entityKey ) {
-        vertices.set( entityKey, new LoomElement( vertexId ) );
+        vertices.set( entityKey, vertexId );
     }
 
     @Override
     public ListenableFuture<Void> createVertexAsync(
             UUID vertexId, EntityKey entityKey ) {
-        return vertices.setAsync( entityKey, new LoomElement( vertexId ) );
+        return vertices.setAsync( entityKey, vertexId );
     }
 
     @Override

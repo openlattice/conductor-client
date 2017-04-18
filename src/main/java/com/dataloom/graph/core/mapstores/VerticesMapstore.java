@@ -3,7 +3,6 @@ package com.dataloom.graph.core.mapstores;
 import java.util.UUID;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
@@ -15,48 +14,45 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
-public class VerticesMapstore extends AbstractStructuredCassandraMapstore<UUID, LoomVertexKey> {
-    private static LoomVertexKey testValue = new LoomVertexKey(
-            UUID.randomUUID(),
-            TestDataFactory.entityKey() );
-    private static UUID          testKey   = testValue.getKey();
+public class VerticesMapstore
+        extends AbstractStructuredCassandraMapstore<EntityKey, UUID> {
 
     public VerticesMapstore( Session session ) {
         super( HazelcastMap.VERTICES.name(), session, Table.VERTICES.getBuilder() );
     }
 
     @Override
-    protected BoundStatement bind( UUID key, BoundStatement bs ) {
-        return bs.setUUID( CommonColumns.VERTEX_ID.cql(), key );
+    protected BoundStatement bind( EntityKey key, BoundStatement bs ) {
+        return bs.set( CommonColumns.ENTITY_KEY.cql(), key, EntityKey.class );
     }
 
     @Override
-    protected BoundStatement bind( UUID key, LoomVertexKey value, BoundStatement bs ) {
-        return bind( key, bs ).set( CommonColumns.ENTITY_KEY.cql(), value.getReference(), EntityKey.class );
+    protected BoundStatement bind( EntityKey key, UUID value, BoundStatement bs ) {
+        return bind( key, bs ).setUUID( CommonColumns.VERTEX_ID.cql(), value );
     }
 
     @Override
-    protected UUID mapKey( Row row ) {
-        return RowAdapters.vertexId( row );
+    protected EntityKey mapKey( Row row ) {
+        return RowAdapters.entityKey( row );
     }
 
     @Override
-    protected LoomVertexKey mapValue( ResultSet rs ) {
+    protected UUID mapValue( ResultSet rs ) {
         Row row = rs.one();
         if ( row == null ) {
             return null;
         }
-        return RowAdapters.loomVertex( row );
+        return row.getUUID( CommonColumns.VERTEX_ID.cql() );
     }
 
     @Override
-    public UUID generateTestKey() {
-        return testKey;
+    public EntityKey generateTestKey() {
+        return TestDataFactory.entityKey();
     }
 
     @Override
-    public LoomVertexKey generateTestValue() {
-        return testValue;
+    public UUID generateTestValue() {
+        return UUID.randomUUID();
     }
 
 }
