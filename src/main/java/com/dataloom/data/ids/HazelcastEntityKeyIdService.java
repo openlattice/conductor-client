@@ -22,6 +22,7 @@ package com.dataloom.data.ids;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.ListenableHazelcastFuture;
+import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
@@ -35,13 +36,16 @@ import com.kryptnostic.datastore.util.Util;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Most of the logic for this class is handled by the map store, which ensures a unique id
  * is assigned on read.
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastEntityKeyIdService implements EntityKeyIdService {
-
+    private static final Logger logger = LoggerFactory.getLogger( HazelcastEntityKeyIdService.class );
     private final ListeningExecutorService executor;
 
     private final IMap<EntityKey, UUID> ids;
@@ -71,24 +75,13 @@ public class HazelcastEntityKeyIdService implements EntityKeyIdService {
 
     @Override
     public ListenableFuture<UUID> getEntityKeyIdAsync( EntityKey entityKey ) {
+        logger.error( "Spot2" );
         return new ListenableHazelcastFuture<>( ids.getAsync( entityKey ) );
     }
 
     @Override
     public ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId ) {
         return new ListenableHazelcastFuture<>( keys.getAsync( entityKeyId ) );
-    }
-
-    private static PreparedStatement prepareReadEntityKey( Session session ) {
-        return session.prepare( Table.IDS.getBuilder().buildLoadQuery() );
-    }
-
-    private static PreparedStatement prepareInsert( Session session ) {
-        return session.prepare( Table.IDS.getBuilder().buildStoreQuery() );
-    }
-
-    private static PreparedStatement prepareInsertIfNotExists( Session session ) {
-        return session.prepare( Table.IDS.getBuilder().buildStoreQuery().ifNotExists() );
     }
 
 }

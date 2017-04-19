@@ -116,9 +116,9 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( PROPERTY_TYPE_ID, SYNCID, PROPERTY_VALUE )
-                        .sasi( SYNCID, ENTITY_SET_ID );
+                        .secondaryIndex( SYNCID, ENTITY_SET_ID );
             case BACK_EDGES:
-                return new CassandraTableBuilder( EDGES )
+                return new CassandraTableBuilder( BACK_EDGES )
                         .ifNotExists()
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
@@ -184,13 +184,13 @@ public enum Table implements TableDef {
             case IDS:
                 return new CassandraTableBuilder( IDS )
                         .ifNotExists()
-                        .partitionKey( ID )
-                        .columns( ENTITY_KEY );
-            case KEYS:
-                return new CassandraTableBuilder( IDS )
-                        .ifNotExists()
                         .partitionKey( ENTITY_KEY )
                         .columns( ID );
+            case KEYS:
+                return new CassandraTableBuilder( KEYS )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .columns( ENTITY_KEY );
             case WEIGHTED_LINKING_EDGES:
                 return new CassandraTableBuilder( WEIGHTED_LINKING_EDGES )
                         .ifNotExists()
@@ -322,8 +322,7 @@ public enum Table implements TableDef {
             case VERTICES:
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()
-                        .partitionKey( ENTITY_KEY )
-                        .columns( VERTEX_ID );
+                        .partitionKey( VERTEX_ID );
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

@@ -1,9 +1,23 @@
 package com.dataloom.graph.core;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.cache.CacheBuilder;
@@ -13,14 +27,9 @@ import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.stream.Stream;
 
 public class GraphQueryService {
-    private static final Logger logger = LoggerFactory
+    private static final Logger                                       logger = LoggerFactory
             .getLogger( GraphQueryService.class );
 
     private final Session                                             session;
@@ -34,7 +43,7 @@ public class GraphQueryService {
     private final PreparedStatement                                   createVertexQuery;
     private final PreparedStatement                                   putBackEdgeQuery;
 
-    public GraphQueryService( String keyspace, Session session ) {
+    public GraphQueryService( Session session ) {
         this.session = session;
         this.createVertexQuery = prepareCreateVertexQuery( session );
         this.getEdgeQuery = prepareGetEdgeQuery( session );
@@ -49,9 +58,11 @@ public class GraphQueryService {
                 .build( new CacheLoader<Set<CommonColumns>, PreparedStatement>() {
                     @Override
                     public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
-                        Select.Where q = QueryBuilder.select().all().from( keyspace, Table.EDGES.getName() ).where();
+                        Select.Where q = QueryBuilder.select().all()
+                                .from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).allowFiltering().where();
                         for ( CommonColumns c : key ) {
-                            q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
+                            q = q.and( c.eq() );
+                         //   q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
                         }
                         return session.prepare( q );
                     }
@@ -62,9 +73,11 @@ public class GraphQueryService {
                 .build( new CacheLoader<Set<CommonColumns>, PreparedStatement>() {
                     @Override
                     public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
-                        Select.Where q = QueryBuilder.select().all().from( keyspace, Table.EDGES.getName() ).where();
+                        Select.Where q = QueryBuilder.select().all()
+                                .from( Table.BACK_EDGES.getKeyspace(), Table.BACK_EDGES.getName() ).allowFiltering().where();
                         for ( CommonColumns c : key ) {
-                            q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
+                            q = q.and( c.eq() );
+                      //      q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
                         }
                         return session.prepare( q );
                     }
@@ -130,7 +143,7 @@ public class GraphQueryService {
                 treeBind( neighborhoodSelections.entrySet().iterator(), backedgeBs )
                         .map( ResultSetFuture::getUninterruptibly )
                         .flatMap( StreamUtil::stream )
-                        .map( RowAdapters::loomEdge ) )
+                        .map( RowAdapters::loomBackEdge ) )
                 .distinct();
     }
 
