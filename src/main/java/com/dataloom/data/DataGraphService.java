@@ -189,6 +189,19 @@ public class DataGraphService implements DataGraphManager {
 
     }
 
+    ListenableFuture<ResultSet> asyncSetEntityKeyId( UUID entityKeyId, EntityKey key ) {
+        return transformAsync( reservation,
+                rs -> {
+                    if ( Util.wasLightweightTransactionApplied( rs ) ) {
+                        return idService.setEntityKeyId( entityKey, vertexId );
+                    }
+                    /*
+                     * If transaction was not applied a vertex id has already been set. This completes the reservation.
+                     */
+                    return Futures.immediateFuture( rs );
+                }, executor );
+    }
+
     @Override
     public void createAssociations(
             UUID entitySetId,
@@ -199,7 +212,8 @@ public class DataGraphService implements DataGraphManager {
         List<ListenableFuture> futures = new ArrayList<ListenableFuture>( 2 * associations.size() );
 
         for ( Association association : associations ) {
-            UUID edgeId = idService.getOrCreate( association.getKey() );
+            UUID edgeId = UUID.randomUUID();
+            idService.getOrCreate( association.getKey() );
             futures.add( Futures.successfulAsList( eds.updateEntityAsync( association.getKey(),
                     association.getDetails(),
                     authorizedPropertiesWithDataType ) ) );

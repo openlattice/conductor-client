@@ -29,6 +29,10 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public interface EntityKeyIdService {
+
+    ListenableFuture<UUID> getEntityKeyId( EntityKey entityKey );
+    ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId );
+
     /**
      * Retrieves the entity key id previously assigned for this entity key
      *
@@ -39,8 +43,6 @@ public interface EntityKeyIdService {
     Optional<EntityKey> tryGetEntityKey( UUID entityKeyId );
 
     EntityKey getEntityKey( UUID entityKeyId );
-
-    ResultSetFuture getEntityKeyAsync( UUID entityKeyId );
 
     ResultSetFuture setEntityKeyId( EntityKey entityKey, UUID entityKeyId );
 

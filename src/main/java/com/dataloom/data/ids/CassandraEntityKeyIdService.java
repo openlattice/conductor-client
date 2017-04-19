@@ -21,8 +21,11 @@ package com.dataloom.data.ids;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
+import com.dataloom.data.ListenableHazelcastFuture;
 import com.datastax.driver.core.*;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
@@ -39,7 +42,11 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
     private final Session           session;
     private final PreparedStatement insertNewId;
     private final PreparedStatement insertNewIdIfNotExists;
+
     private final PreparedStatement readEntityKey;
+
+    private final IMap<EntityKey,UUID>  ids;
+    private final IMap<UUID, EntityKey> keys;
 
     public CassandraEntityKeyIdService(
             ListeningExecutorService executor,
@@ -48,6 +55,7 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
         this.session = session;
         this.insertNewId = prepareInsert( session );
         this.insertNewIdIfNotExists = prepareInsertIfNotExists( session );
+
         this.readEntityKey = prepareReadEntityKey( session );
     }
 
@@ -66,7 +74,12 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
     }
 
     @Override
-    public ResultSetFuture getEntityKeyAsync( UUID entityKeyId ) {
+    public ListenableFuture<UUID> getEntityKeyId( EntityKey entityKey ) {
+        return new ListenableHazelcastFuture<>( ids.getAsync( entityKey ) );
+    }
+
+    @Override
+    public ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId ) {
         BoundStatement bs = readEntityKey.bind()
                 .setUUID( CommonColumns.ID.cql(), entityKeyId );
         return session.executeAsync( bs );
@@ -85,6 +98,59 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
         return session.executeAsync( bs );
     }
 
+    private ListenableFuture<UUID> asyncReserve( EntityKey entityKey ) {
+        return asyncReserve( entityKey, 1, Optional.empty() );
+    }
+
+    private ListenableFuture<Void> asyncReserve( EntityKey entityKey, int backoffMillis, Optional<UUID> oldValue ) {
+        final UUID vertexId = UUID.randomUUID();
+        final ResultSetFuture reservation;
+        final ListenableFuture<ResultSet> f;
+
+        if ( !oldValue.isPresent() ) {
+            reservation = lm.createVertexAsync( vertexId, entityKey );
+        } else {
+            reservation = lm.setVertexAsync( entityKey, oldValue.get(), vertexId );
+        }
+
+        f = transformAsync( reservation,
+                rs -> {
+                    if ( Util.wasLightweightTransactionApplied( rs ) ) {
+                        return idService.setEntityKeyId( entityKey, vertexId );
+                    }
+                    /*
+                     * If transaction was not applied a vertex id has already been set. This completes the reservation.
+                     */
+                    return Futures.immediateFuture( rs );
+                }, executor );
+
+        return transformAsync( f, rs -> {
+            if ( Util.wasLightweightTransactionApplied( rs ) ) {
+                return Futures.immediateFuture( null );
+            } else {
+                Thread.sleep( backoffMillis );
+                return asyncReserve( entityKey, backoffMillis << 1, Optional.of( vertexId ) );
+            }
+        }, executor );
+
+    }
+
+    ListenableFuture<ResultSet> asyncSetEntityKeyId( UUID entityKeyId, EntityKey key ) {
+        return transformAsync( reservation,
+                rs -> {
+                    if ( Util.wasLightweightTransactionApplied( rs ) ) {
+                        return idService.setEntityKeyId( entityKey, vertexId );
+                    }
+                    /*
+                     * If transaction was not applied a vertex id has already been set. This completes the reservation.
+                     */
+                    return Futures.immediateFuture( rs );
+                }, executor );
+    }
+
+    private ResuletSetFuture assignId( EntityKey entityKey, UUID entityKeyId ) {
+        insertNewIdIfNotExists
+    }
     private static PreparedStatement prepareReadEntityKey( Session session ) {
         return session.prepare( Table.IDS.getBuilder().buildLoadQuery() );
     }
@@ -96,4 +162,6 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
     private static PreparedStatement prepareInsertIfNotExists( Session session ) {
         return session.prepare( Table.IDS.getBuilder().buildStoreQuery().ifNotExists() );
     }
+
+
 }
