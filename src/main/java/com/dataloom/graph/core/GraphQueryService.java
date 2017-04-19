@@ -131,7 +131,6 @@ public class GraphQueryService {
                         .map( ResultSetFuture::getUninterruptibly )
                         .flatMap( StreamUtil::stream )
                         .map( RowAdapters::loomEdge ) );
-        );
     }
 
     private Stream<ResultSetFuture> treeBind( Iterator<Map.Entry<CommonColumns, Set<UUID>>> i, BoundStatement bs ) {
