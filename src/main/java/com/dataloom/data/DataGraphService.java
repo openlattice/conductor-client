@@ -149,11 +149,11 @@ public class DataGraphService implements DataGraphManager {
                                     authorizedPropertiesWithDataType );
                             return Stream.of( reservation, writes );
                         } )
-                .forEach( ListenableFuture::get );
+                .forEach( DataGraphService::tryGetAndLogErrors );
     }
 
     private ListenableFuture<Void> asyncReserve( EntityKey entityKey ) {
-        asyncReserve( entityKey, 1, Optional.empty() );
+        return asyncReserve( entityKey, 1, Optional.empty() );
     }
 
     private ListenableFuture<Void> asyncReserve( EntityKey entityKey, int backoffMillis, Optional<UUID> oldValue ) {
@@ -164,7 +164,7 @@ public class DataGraphService implements DataGraphManager {
         if ( !oldValue.isPresent() ) {
             reservation = lm.createVertexAsync( vertexId, entityKey );
         } else {
-            reservation = lm.setVertexAsync( vertexId, entityKey );
+            reservation = lm.setVertexAsync( entityKey, oldValue.get(), vertexId );
         }
 
         f = transformAsync( reservation,
@@ -178,20 +178,14 @@ public class DataGraphService implements DataGraphManager {
                     return Futures.immediateFuture( rs );
                 }, executor );
 
-        try {
-            if ( Util.wasLightweightTransactionApplied( f.get() ) {
-                return Futures.immediateFuture( new Void() );
-            } else{
+        return transformAsync( f, rs -> {
+            if ( Util.wasLightweightTransactionApplied( rs ) ) {
+                return Futures.immediateFuture( null );
+            } else {
                 Thread.sleep( backoffMillis );
                 return asyncReserve( entityKey, backoffMillis << 1, Optional.of( vertexId ) );
             }
-        } catch ( InterruptedException | ExecutionException e ) {
-            Thread.sleep( backoffMillis );
-            /*
-             * We force choosing a new uuid if anything goes wrong to make sure the id service is in a good state.
-             */
-            return asyncReserve( entityKey, backoffMillis << 1, Optional.of( vertexId ) );
-        }
+        }, executor );
 
     }
 
@@ -218,9 +212,8 @@ public class DataGraphService implements DataGraphManager {
 
             futures.add( lm.addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId ) );
         }
-        for ( ListenableFuture f : futures ) {
-            f.get();
-        }
+
+        futures.forEach( DataGraphService::tryGetAndLogErrors );
     }
 
     @Override
@@ -274,4 +267,11 @@ public class DataGraphService implements DataGraphManager {
         }
     }
 
+    public static void tryGetAndLogErrors( ListenableFuture<?> f ) {
+        try {
+            f.get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            logger.error( "Future execution failed.", e );
+        }
+    }
 }
