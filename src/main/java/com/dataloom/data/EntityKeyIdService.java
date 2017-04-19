@@ -19,6 +19,7 @@
  */
 package com.dataloom.data;
 
+import com.datastax.driver.core.ResultSet;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Optional;
@@ -56,4 +57,5 @@ public interface EntityKeyIdService {
 
     EntityKey getEntityKey( UUID entityKeyId );
 
+    ListenableFuture<ResultSet> setEntityKeyId( EntityKey entityKey, UUID vertexId );
 }

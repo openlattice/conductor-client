@@ -7,6 +7,7 @@ import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.core.objects.LoomVertexFuture;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import static com.google.common.util.concurrent.Futures.transformAsync;
 import static org.apache.olingo.server.api.uri.UriInfoKind.entityId;
@@ -95,28 +97,37 @@ public class DataGraphService implements DataGraphManager {
             throws ExecutionException, InterruptedException {
         entities.entrySet()
                 .parallelStream()
-                .map(
+                .flatMap(
                         entity -> {
-
-                            final String entityId = entity.getKey();
-                            EntityKey key = new EntityKey( entitySetId, entityId, syncId );
-
-                            futures.add( asyncStub( key ) );
-                            futures.add( eds
-                                    .updateEntityAsync( key, entity.getValue(), authorizedPropertiesWithDataType ) );
+                            final EntityKey key = new EntityKey( entitySetId, entity.getKey(), syncId );
+                            final ListenableFuture reservation = asyncStub( key );
+                            final ListenableFuture writes = eds.updateEntityAsync( key,
+                                    entity.getValue(),
+                                    authorizedPropertiesWithDataType ) );
+                            return Stream.of( reservation, writes );
                         } )
                 .forEach( ListenableFuture::get );
     }
 
-    private ListenableFuture<UUID> asyncStub( EntityKey entityKey ) {
+    private ListenableFuture<Void> asyncStub( EntityKey entityKey ) {
+        asyncStub( entityKey, 100 );
+    }
+
+    private ListenableFuture<Void> asyncStub( EntityKey entityKey, int backoffMillis =100 ) {
         final UUID vertexId = UUID.randomUUID();
-        transformAsync( lm.createVertexAsync( entityId, key ), rs -> {
+        ListenableFuture<ResultSet> f = transformAsync( lm.createVertexAsync( entityId, entityKey ), rs -> {
             if ( Util.wasLightweightTransactionApplied( rs ) ) {
-                return Futures.immediateFuture( vertexId );
-            } else {
-                return new ListenableHazelcastFuture<UUID>( lm.getVertexIdAsync( entityKey ) );
+                return idService.setEntityKeyId( entityKey, vertexId );
             }
+            return Futures.immediateFuture( rs );
         } );
+
+        if ( Util.wasLightweightTransactionApplied( f.get() ) {
+            return Futures.immediateFuture( new Void() );
+        } else{
+            Thread.sleep( backoffMillis );
+            return asyncStub( backoffMillis << 1 );
+        }
     }
 
     @Override
