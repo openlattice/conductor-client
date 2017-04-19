@@ -2,6 +2,7 @@ package com.dataloom.data;
 
 import static com.google.common.util.concurrent.Futures.transformAsync;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,13 +11,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.Entity;
 import com.dataloom.data.storage.CassandraEntityDatastore;
@@ -25,9 +29,13 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.mappers.ObjectMappers;
+import com.datastax.driver.core.ResultSetFuture;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.Futures;
@@ -71,7 +79,7 @@ public class DataGraphService implements DataGraphManager {
                     }
                 } );
     }
-    
+
     @Override
     public EntitySetData getEntitySetData(
             UUID entitySetId,
@@ -92,6 +100,7 @@ public class DataGraphService implements DataGraphManager {
         eds.deleteEntitySetData( entitySetId );
         // TODO delete all vertices
     }
+
     @Override
     public void updateEntity(
             UUID id,
@@ -222,6 +231,58 @@ public class DataGraphService implements DataGraphManager {
         for ( ListenableFuture f : dataFutures ) {
             f.get();
         }
+    }
+
+    @Override
+    public EntitySetData getTopUtilizers(
+            UUID entitySetId,
+            UUID syncId,
+            List<TopUtilizerDetails> topUtilizerDetailsList,
+            int numResults,
+            Map<UUID, PropertyType> authorizedPropertyTypes )
+            throws InterruptedException, ExecutionException {
+        ByteBuffer queryId;
+        try {
+            queryId = ByteBuffer.wrap( ObjectMappers.getSmileMapper().writeValueAsBytes( topUtilizerDetailsList ) );
+        } catch ( JsonProcessingException e1 ) {
+            logger.debug( "Unable to generate query id." );
+            return null;
+        }
+        eds.getEntityKeysForEntitySet( entitySetId, syncId ).parallel().map( entityKey -> {
+            UUID vertexId = lm.getVertexId( entityKey );
+            List<ResultSetFuture> countFutures = new ArrayList<>();
+            for ( TopUtilizerDetails details : topUtilizerDetailsList ) {
+                countFutures.add( lm.getEdgeCount( vertexId,
+                        details.getAssociationTypeId(),
+                        details.getNeighborTypeIds(),
+                        details.getUtilizerIsSrc() ) );
+            }
+
+            int score = 0;
+            for ( ResultSetFuture f : countFutures ) {
+                try {
+                    score += f.get().one().getInt( 0 );
+                } catch ( InterruptedException | ExecutionException e ) {
+                    logger.debug( "Unable to count edges for vertex id." );
+                }
+            }
+            eds.writeVertexCount( queryId, vertexId, score * 1.0 );
+            return score;
+        } ).collect( Collectors.toList() );
+
+        Iterable<SetMultimap<FullQualifiedName, Object>> entities = Iterables
+                .transform( eds.readTopUtilizers( queryId, numResults ), vertexId -> {
+                    EntityKey key = idService.getEntityKey( vertexId );
+                    return eds.getEntity( key.getEntitySetId(),
+                            key.getSyncId(),
+                            key.getEntityId(),
+                            authorizedPropertyTypes );
+                } );
+
+        Set<FullQualifiedName> properties = authorizedPropertyTypes.values().stream()
+                .map( propertyType -> propertyType.getType() ).collect( Collectors.toSet() );
+
+        return new EntitySetData( properties, entities );
     }
 
 }

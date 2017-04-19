@@ -1,12 +1,27 @@
 package com.dataloom.graph.core;
 
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
-import com.dataloom.graph.core.objects.LoomVertexKey;
+import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.vertex.NeighborhoodSelection;
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
@@ -14,28 +29,25 @@ import com.google.common.collect.Sets;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import jersey.repackaged.com.google.common.collect.Iterables;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Stream;
+import jersey.repackaged.com.google.common.collect.Iterables;
 
 public class GraphQueryService {
-    private static final Logger logger = LoggerFactory
+    private static final Logger                              logger = LoggerFactory
             .getLogger( GraphQueryService.class );
-    private final Session session;
+    private final Session                                    session;
 
-    private final PreparedStatement getVertexByEntityKeyQuery;
-    private final PreparedStatement putVertexLookupIfAbsentQuery;
-    private final PreparedStatement deleteVertexQuery;
+    private final PreparedStatement                          getVertexByEntityKeyQuery;
+    private final PreparedStatement                          putVertexLookupIfAbsentQuery;
+    private final PreparedStatement                          deleteVertexQuery;
 
     private final PreparedStatement                          getEdgeQuery;
     private final Map<Set<EdgeAttribute>, PreparedStatement> getEdgesQuery;
     private final PreparedStatement                          putEdgeQuery;
     private final PreparedStatement                          deleteEdgeQuery;
     private final PreparedStatement                          deleteEdgesBySrcIdQuery;
+    private final PreparedStatement                          getEdgeCountForSrcQuery;
+    private final PreparedStatement                          getEdgeCountForDstQuery;
 
     public GraphQueryService( Session session ) {
         this.session = session;
@@ -49,6 +61,8 @@ public class GraphQueryService {
         this.putEdgeQuery = preparePutEdgeQuery( session );
         this.deleteEdgeQuery = prepareDeleteEdgeQuery( session );
         this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
+        this.getEdgeCountForSrcQuery = prepareGetEdgeCountForSrcQuery( session );
+        this.getEdgeCountForDstQuery = prepareGetEdgeCountForDstQuery( session );
     }
 
     private static PreparedStatement prepareGetVertexByEntityKeyQuery( Session session ) {
@@ -102,6 +116,28 @@ public class GraphQueryService {
     private static PreparedStatement prepareDeleteEdgesBySrcIdQuery( Session session ) {
         return session
                 .prepare( Table.EDGES.getBuilder().buildDeleteByPartitionKeyQuery() );
+    }
+
+    private static PreparedStatement prepareGetEdgeCountForSrcQuery( Session session ) {
+        return session
+                .prepare( QueryBuilder.select().all().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() )
+                        .where( QueryBuilder.eq( CommonColumns.SRC_ENTITY_KEY_ID.cql(),
+                                CommonColumns.SRC_ENTITY_KEY_ID.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.EDGE_TYPE_ID.cql(),
+                                CommonColumns.EDGE_TYPE_ID.bindMarker() ) )
+                        .and( QueryBuilder.in( CommonColumns.DST_TYPE_ID.cql(),
+                                CommonColumns.DST_TYPE_ID.bindMarker() ) ) );
+    }
+
+    private static PreparedStatement prepareGetEdgeCountForDstQuery( Session session ) {
+        return session
+                .prepare( QueryBuilder.select().countAll().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() )
+                        .where( QueryBuilder.eq( CommonColumns.DST_ENTITY_KEY_ID.cql(),
+                                CommonColumns.DST_ENTITY_KEY_ID.bindMarker() ) )
+                        .and( QueryBuilder.eq( CommonColumns.EDGE_TYPE_ID.cql(),
+                                CommonColumns.EDGE_TYPE_ID.bindMarker() ) )
+                        .and( QueryBuilder.in( CommonColumns.SRC_VERTEX_TYPE_ID.cql(),
+                                CommonColumns.SRC_VERTEX_TYPE_ID.bindMarker() ) ) );
     }
 
     public UUID getVertexByEntityKey( EntityKey entityKey ) {
@@ -189,12 +225,31 @@ public class GraphQueryService {
                 deleteEdgesBySrcIdQuery.bind().setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcId ) );
     }
 
-    public Stream<EdgeKey> getNeighborhood( NeighborhoodSelection ns ) {
+    public Stream<EdgeKey> getNeighborhood( NeighborhoodSelection ns ) {}
+
+    public ResultSetFuture getNeighborEdgeCountAsync(
+            UUID vertexId,
+            UUID edgeTypeId,
+            Set<UUID> neighborTypeIds,
+            boolean vertexIsSrc ) {
+        BoundStatement bs;
+        if ( vertexIsSrc ) {
+            bs = getEdgeCountForSrcQuery.bind()
+                    .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), vertexId )
+                    .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeTypeId )
+                    .setSet( CommonColumns.DST_TYPE_ID.cql(), neighborTypeIds, UUID.class );
+        } else {
+            bs = getEdgeCountForDstQuery.bind()
+                    .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), vertexId )
+                    .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeTypeId )
+                    .setSet( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), neighborTypeIds, UUID.class );
+        }
+        return session.executeAsync( bs );
     }
 
     /*
-     * Used to help creating all the prepared statements needed for getEdges
-     * TODO Marked for refactoring (to HC), this is too terrible
+     * Used to help creating all the prepared statements needed for getEdges TODO Marked for refactoring (to HC), this
+     * is too terrible
      */
     private enum EdgeAttribute {
         SRC_VERTEX_ID( CommonColumns.SRC_ENTITY_KEY_ID, es -> es.getOptionalSrcId().isPresent() ),

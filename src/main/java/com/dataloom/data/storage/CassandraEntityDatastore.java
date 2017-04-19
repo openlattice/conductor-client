@@ -31,11 +31,6 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
-import com.dataloom.data.DatasourceManager;
-import com.dataloom.data.EntityDatastore;
-import com.dataloom.data.EntityKey;
-import com.dataloom.data.EntitySetData;
-import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
@@ -43,6 +38,10 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.data.DatasourceManager;
+import com.dataloom.data.EntityDatastore;
+import com.dataloom.data.EntityKey;
+import com.dataloom.data.EntitySetData;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
 import com.dataloom.edm.type.PropertyType;
@@ -85,6 +84,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final Session                session;
     private final ObjectMapper           mapper;
     private final HazelcastLinkingGraphs linkingGraph;
+
     private final DatasourceManager      dsm;
 
     private final PreparedStatement      writeDataQuery;
@@ -98,6 +98,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final PreparedStatement      linkedEntitiesQuery;
 
     private final PreparedStatement      readNumRPCRowsQuery;
+    private final PreparedStatement      readEntityKeysForEntitySetQuery;
+    private final PreparedStatement      writeUtilizerScoreQuery;
+    private final PreparedStatement      readNumTopUtilizerRowsQuery;
 
     public CassandraEntityDatastore(
             Session session,
@@ -121,6 +124,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
         this.linkedEntitiesQuery = prepareLinkedEntitiesQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
+        this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
+        this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
+        this.readNumTopUtilizerRowsQuery = prepareReadNumTopUtilizerRowsQuery( session );
     }
 
     @Override
@@ -367,6 +373,20 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .map( r -> r.getBytes( CommonColumns.RPC_VALUE.cql() ).array() );
     }
 
+    @Override
+    public void writeVertexCount( ByteBuffer queryId, UUID vertexId, double score ) {
+        session.execute( writeUtilizerScoreQuery.bind().setBytes( CommonColumns.QUERY_ID.cql(), queryId )
+                .setUUID( CommonColumns.VERTEX_ID.cql(), vertexId ).setDouble( CommonColumns.WEIGHT.cql(), score ) );
+    }
+
+    @Override
+    public Iterable<UUID> readTopUtilizers( ByteBuffer queryId, int numResults ) {
+        ResultSet rs = session
+                .execute( readNumTopUtilizerRowsQuery.bind().setBytes( CommonColumns.QUERY_ID.cql(), queryId )
+                        .setInt( "numResults", numResults ) );
+        return Iterables.transform( rs, row -> row.getUUID( CommonColumns.VERTEX_ID.cql() ) );
+    }
+
     /**
      * Delete data of an entity set across ALL sync Ids.
      * 
@@ -446,6 +466,14 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 Optional.of( entityKey.getSyncId() ) ) );
     }
 
+    @Override
+    public Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId ) {
+        return StreamUtil.stream( Iterables.transform( session.execute(
+                readEntityKeysForEntitySetQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                        .setUUID( CommonColumns.SYNCID.cql(), syncId ) ),
+                RowAdapters::entityKeyFromData ) );
+    }
+
     private static PreparedStatement prepareEntitySetQuery(
             Session session,
             CassandraTableBuilder ctb ) {
@@ -492,6 +520,24 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 QueryBuilder.select().from( Table.RPC_DATA_ORDERED.getKeyspace(), Table.RPC_DATA_ORDERED.getName() )
                         .where( QueryBuilder.eq( CommonColumns.RPC_REQUEST_ID.cql(),
                                 CommonColumns.RPC_REQUEST_ID.bindMarker() ) )
+                        .limit( QueryBuilder.bindMarker( "numResults" ) ) );
+    }
+
+    private static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
+        return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+                .allowFiltering().where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
+                        CommonColumns.ENTITY_SET_ID.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
+    }
+
+    private static PreparedStatement prepareWriteUtilizerScoreQuery( Session session ) {
+        return session.prepare( Table.TOP_UTILIZER_DATA.getBuilder().buildStoreQuery() );
+    }
+
+    private static PreparedStatement prepareReadNumTopUtilizerRowsQuery( Session session ) {
+        return session.prepare(
+                QueryBuilder.select().from( Table.TOP_UTILIZER_DATA.getKeyspace(), Table.TOP_UTILIZER_DATA.getName() )
+                        .where( QueryBuilder.eq( CommonColumns.QUERY_ID.cql(), CommonColumns.QUERY_ID.bindMarker() ) )
                         .limit( QueryBuilder.bindMarker( "numResults" ) ) );
     }
 

@@ -60,7 +60,8 @@ public enum Table implements TableDef {
     WEIGHTED_LINKING_EDGES,
     EDGE_TYPES,
     VERTICES,
-    SYNC_IDS;
+    SYNC_IDS,
+    TOP_UTILIZER_DATA;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -291,6 +292,14 @@ public enum Table implements TableDef {
                         .clusteringColumns( SYNCID )
                         .staticColumns( CURRENT_SYNC_ID )
                         .withDescendingOrder( SYNCID );
+                
+            case TOP_UTILIZER_DATA:
+                return new CassandraTableBuilder( TOP_UTILIZER_DATA )
+                        .ifNotExists()
+                        .partitionKey( QUERY_ID )
+                        .clusteringColumns( WEIGHT, VERTEX_ID )
+                        .withDescendingOrder( WEIGHT );
+                
             case VERTICES:
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()

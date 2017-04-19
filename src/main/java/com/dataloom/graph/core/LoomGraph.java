@@ -1,6 +1,7 @@
 package com.dataloom.graph.core;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -144,6 +145,15 @@ public class LoomGraph implements LoomGraphApi {
                 Optional.absent(),
                 Optional.absent() ) ) );
         return Pair.of( srcEdges, dstEdges );
+    }
+
+    @Override
+    public ResultSetFuture getEdgeCount(
+            UUID vertexId,
+            UUID associationTypeId,
+            Set<UUID> neighborTypeIds,
+            boolean vertexIsSrc ) {
+        return gqs.getNeighborEdgeCountAsync( vertexId, associationTypeId, neighborTypeIds, vertexIsSrc );
     }
 
 }

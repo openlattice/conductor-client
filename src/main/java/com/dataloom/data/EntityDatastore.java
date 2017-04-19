@@ -19,9 +19,12 @@
 
 package com.dataloom.data;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -47,7 +50,7 @@ public interface EntityDatastore {
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
-    
+
     /**
      * Reads a single row from an entity set.
      * 
@@ -78,6 +81,7 @@ public interface EntityDatastore {
     void deleteEntitySetData( UUID entitySetId );
 
     void deleteEntity( EntityKey entityKey );
+
     /**
      * @param entityKey
      * @param entityDetails
@@ -90,6 +94,7 @@ public interface EntityDatastore {
 
     /**
      * Performs async storage of an entity.
+     * 
      * @param entityKey
      * @param entityDetails
      * @param authorizedPropertiesWithDataType
@@ -99,5 +104,11 @@ public interface EntityDatastore {
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
+
+    Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId );
+    
+    void writeVertexCount( ByteBuffer queryId, UUID vertexId, double score );
+    
+    Iterable<UUID> readTopUtilizers( ByteBuffer queryId, int numResults );
 
 }

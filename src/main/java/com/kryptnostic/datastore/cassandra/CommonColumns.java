@@ -115,7 +115,9 @@ public enum CommonColumns implements ColumnDef {
     CATEGORY( DataType.text() ),
     SRC_ENTITY_KEY_ID( DataType.uuid() ),
     SRC_VERTEX_TYPE_ID( DataType.uuid() ),
-    TIME_UUID( DataType.timeuuid() );
+    TIME_UUID( DataType.timeuuid() ),
+    QUERY_ID( DataType.blob() ),
+    WEIGHT( DataType.cdouble() );
 
     private transient final DataType type;
 

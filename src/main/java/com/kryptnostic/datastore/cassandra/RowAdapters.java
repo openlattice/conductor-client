@@ -372,6 +372,13 @@ public final class RowAdapters {
         return row.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
     }
 
+    public static EntityKey entityKeyFromData( Row row ) {
+        UUID entitySetId = row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
+        String entityId = row.getString( CommonColumns.ENTITYID.cql() );
+        UUID syncId = row.getUUID( CommonColumns.SYNCID.cql() );
+        return new EntityKey( entitySetId, entityId, syncId );
+    }
+
     public static UUID propertyTypeId( Row row ) {
         return row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
     }

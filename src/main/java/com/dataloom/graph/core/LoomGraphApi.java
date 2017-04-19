@@ -2,6 +2,7 @@ package com.dataloom.graph.core;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -19,7 +20,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.ICompletableFuture;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 /**
@@ -96,5 +96,11 @@ public interface LoomGraphApi {
     void deleteEdges( UUID srcId );
 
     Pair<List<LoomEdgeKey>, List<LoomEdgeKey>> getEdgesAndNeighborsForVertex( UUID vertexId );
-    
+
+    ResultSetFuture getEdgeCount(
+            UUID vertexId,
+            UUID associationTypeId,
+            Set<UUID> neighborTypeIds,
+            boolean vertexIsSrc );
+
 }
