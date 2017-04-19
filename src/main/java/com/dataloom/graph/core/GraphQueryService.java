@@ -4,20 +4,23 @@ import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.vertex.NeighborhoodSelection;
 import com.datastax.driver.core.*;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 public class GraphQueryService {
     private static final Logger logger = LoggerFactory
             .getLogger( GraphQueryService.class );
-    private final Session session;
-
+    private final Session                  session;
+    private final Cache<Set<CommonColumns>, PreparedStatement> edgeQueries;
     private final PreparedStatement getEdgeQuery;
     private final PreparedStatement putEdgeQuery;
     private final PreparedStatement deleteEdgeQuery;
@@ -31,6 +34,7 @@ public class GraphQueryService {
         this.putEdgeQuery = preparePutEdgeQuery( session );
         this.deleteEdgeQuery = prepareDeleteEdgeQuery( session );
         this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
+        this.edgeQueries = CacheBuilder<Set<CommonColumns>,PreparedStatement>
     }
 
     private static PreparedStatement prepareCreateVertexQuery( Session session ) {

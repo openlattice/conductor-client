@@ -7,7 +7,6 @@ import com.datastax.driver.core.querybuilder.Insert;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.map.eviction.LRUEvictionPolicy;
-import com.hazelcast.map.eviction.MapEvictionPolicy;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.util.Util;
@@ -125,7 +124,7 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
 
     @Override
     protected Insert storeQuery() {
-        return super.storeQuery().ifNotExists();
+        return tableBuilder.buildStoreQuery().ifNotExists();
     }
 
     @Override public MapConfig getMapConfig() {

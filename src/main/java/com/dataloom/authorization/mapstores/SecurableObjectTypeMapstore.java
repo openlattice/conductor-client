@@ -24,6 +24,7 @@ import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Update;
 import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -56,7 +57,7 @@ public class SecurableObjectTypeMapstore
     }
 
     @Override
-    protected RegularStatement storeQuery() {
+    protected Update.Where storeQuery() {
         return QueryBuilder
                 .update( Table.PERMISSIONS.getKeyspace(), Table.PERMISSIONS.getName() )
                 .with( QueryBuilder.set( CommonColumns.SECURABLE_OBJECT_TYPE.cql(),

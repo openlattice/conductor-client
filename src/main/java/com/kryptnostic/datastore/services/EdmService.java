@@ -169,6 +169,10 @@ public class EdmService implements EdmManager {
         }
     }
 
+    @Override public Set<UUID> getEdgeTypes() {
+        return null;
+    }
+
     @Override
     public void deletePropertyType( UUID propertyTypeId ) {
         Stream<EntityType> entityTypes = entityTypeManager
