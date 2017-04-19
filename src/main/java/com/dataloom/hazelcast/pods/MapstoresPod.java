@@ -37,6 +37,8 @@ import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
+import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
@@ -257,6 +259,16 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<EntityKey, UUID> verticesLookupMapstore() {
         return new VerticesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<EntityKey, UUID> idsMapstore() {
+        return new EntityKeyIdsMapstore( HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, EntityKey> keysMapstore() {
+        return new EntityKeysMapstore( HazelcastMap.KEYS.name(), session, Table.KEYS.getBuilder() );
     }
 
 }

@@ -35,8 +35,8 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class EntitKeysMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, EntityKey> {
-    public EntitKeysMapstore(
+public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, EntityKey> {
+    public EntityKeysMapstore(
             String mapName,
             Session session,
             CassandraTableBuilder tableBuilder ) {

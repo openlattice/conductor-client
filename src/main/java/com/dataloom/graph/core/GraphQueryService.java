@@ -64,9 +64,10 @@ public class GraphQueryService {
                     @Override
                     public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
                         Select.Where q = QueryBuilder.select().all()
-                                .from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).where();
+                                .from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).allowFiltering().where();
                         for ( CommonColumns c : key ) {
-                            q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
+                            q = q.and( c.eq() );
+                            // q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
                         }
                         return session.prepare( q );
                     }
@@ -78,9 +79,11 @@ public class GraphQueryService {
                     @Override
                     public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
                         Select.Where q = QueryBuilder.select().all()
-                                .from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).where();
+                                .from( Table.BACK_EDGES.getKeyspace(), Table.BACK_EDGES.getName() ).allowFiltering()
+                                .where();
                         for ( CommonColumns c : key ) {
-                            q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
+                            q = q.and( c.eq() );
+                            // q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
                         }
                         return session.prepare( q );
                     }
@@ -129,8 +132,8 @@ public class GraphQueryService {
                                 CommonColumns.DST_ENTITY_KEY_ID.bindMarker() ) )
                         .and( QueryBuilder.eq( CommonColumns.EDGE_TYPE_ID.cql(),
                                 CommonColumns.EDGE_TYPE_ID.bindMarker() ) )
-                        .and( QueryBuilder.in( CommonColumns.SRC_VERTEX_TYPE_ID.cql(),
-                                CommonColumns.SRC_VERTEX_TYPE_ID.bindMarker() ) ) );
+                        .and( QueryBuilder.in( CommonColumns.SRC_TYPE_ID.cql(),
+                                CommonColumns.SRC_TYPE_ID.bindMarker() ) ) );
     }
 
     private static PreparedStatement prepareDeleteBackEdgeQuery( Session session ) {
@@ -168,7 +171,7 @@ public class GraphQueryService {
                 treeBind( neighborhoodSelections.entrySet().iterator(), backedgeBs )
                         .map( ResultSetFuture::getUninterruptibly )
                         .flatMap( StreamUtil::stream )
-                        .map( RowAdapters::loomEdge ) )
+                        .map( RowAdapters::loomBackEdge ) )
                 .distinct();
     }
 
@@ -286,7 +289,7 @@ public class GraphQueryService {
             bs = getEdgeCountForDstQuery.bind()
                     .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), vertexId )
                     .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeTypeId )
-                    .setSet( CommonColumns.SRC_VERTEX_TYPE_ID.cql(), neighborTypeIds, UUID.class );
+                    .setSet( CommonColumns.SRC_TYPE_ID.cql(), neighborTypeIds, UUID.class );
         }
         return session.executeAsync( bs );
     }

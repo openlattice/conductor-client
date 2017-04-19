@@ -351,6 +351,16 @@ public final class RowAdapters {
 
         return new EdgeKey( srcEntityKeyId, dstTypeId, edgeTypeId, dstEntityKeyId, edgeEntityKeyId );
     }
+    
+    public static EdgeKey backEdgeKey( Row row ) {
+        UUID srcEntityKeyId = row.getUUID( CommonColumns.DST_ENTITY_KEY_ID.cql() );
+        UUID dstTypeId = row.getUUID( CommonColumns.SRC_TYPE_ID.cql() );
+        UUID edgeTypeId = row.getUUID( CommonColumns.EDGE_TYPE_ID.cql() );
+        UUID dstEntityKeyId = row.getUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql() );
+        UUID edgeEntityKeyId = row.getUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql() );
+        
+        return new EdgeKey( srcEntityKeyId, dstTypeId, edgeTypeId, dstEntityKeyId, edgeEntityKeyId );
+    }
 
     public static LoomVertexKey loomVertex( Row row ) {
         UUID key = row.getUUID( CommonColumns.VERTEX_ID.cql() );
@@ -361,6 +371,12 @@ public final class RowAdapters {
     public static LoomEdge loomEdge( Row row ) {
         EdgeKey key = edgeKey( row );
         UUID srcType = row.getUUID( CommonColumns.SRC_TYPE_ID.cql() );
+        return new LoomEdge( key, srcType );
+    }
+    
+    public static LoomEdge loomBackEdge( Row row ) {
+        EdgeKey key = backEdgeKey( row );
+        UUID srcType = row.getUUID( CommonColumns.DST_TYPE_ID.cql() );
         return new LoomEdge( key, srcType );
     }
 
