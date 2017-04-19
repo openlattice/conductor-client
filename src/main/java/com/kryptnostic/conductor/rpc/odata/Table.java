@@ -116,7 +116,7 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( PROPERTY_TYPE_ID, SYNCID, PROPERTY_VALUE )
-                        .sasi( SYNCID, ENTITY_SET_ID );
+                        .secondaryIndex( SYNCID, ENTITY_SET_ID );
             case BACK_EDGES:
                 return new CassandraTableBuilder( EDGES )
                         .ifNotExists()
@@ -322,8 +322,7 @@ public enum Table implements TableDef {
             case VERTICES:
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()
-                        .partitionKey( ENTITY_KEY )
-                        .columns( VERTEX_ID );
+                        .partitionKey( VERTEX_ID );
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );
