@@ -54,6 +54,11 @@ public class LoomGraph implements LoomGraphApi {
         return Util.getSafely( vertices, entityKey ).getId();
     }
 
+
+    @Override public ICompletableFuture<UUID> getVertexIdAsync( EntityKey entityKey ) {
+        return vertices.getAsync( entityKey );
+    }
+
     @Override
     public Stream<LoomVertexKey> getVerticesOfType( UUID entityTypeId ) {
         return gqs.getVerticesOfType( entityTypeId );

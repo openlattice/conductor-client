@@ -114,7 +114,7 @@ public class DataGraphService implements DataGraphManager {
             if ( Util.wasLightweightTransactionApplied( rs ) ) {
                 return Futures.immediateFuture( vertexId );
             } else {
-                return new ListenableHazelcastFuture<UUID>( lm.getVertexIdAsync() );
+                return new ListenableHazelcastFuture<UUID>( lm.getVertexIdAsync( entityKey ) );
             }
         } );
     }
