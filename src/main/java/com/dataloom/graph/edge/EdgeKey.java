@@ -30,12 +30,12 @@ import java.util.UUID;
  */
 public class EdgeKey {
     private final UUID srcEntityKeyId;
-    private final UUID dstEntityKeyId;
     private final UUID dstTypeId;
     private final UUID edgeTypeId;
+    private final UUID dstEntityKeyId;
     private final UUID edgeEntityKeyId;
 
-    public EdgeKey( UUID srcEntityKeyId, UUID dstEntityKeyId, UUID dstTypeId, UUID edgeTypeId, UUID edgeEntityKeyId ) {
+    public EdgeKey( UUID srcEntityKeyId, UUID dstTypeId, UUID edgeTypeId, UUID dstEntityKeyId, UUID edgeEntityKeyId ) {
         this.srcEntityKeyId = srcEntityKeyId;
         this.dstTypeId = dstTypeId;
         this.edgeTypeId = edgeTypeId;
@@ -47,16 +47,16 @@ public class EdgeKey {
         return srcEntityKeyId;
     }
 
-    public UUID getDstEntityKeyId() {
-        return dstEntityKeyId;
-    }
-
     public UUID getDstTypeId() {
         return dstTypeId;
     }
 
     public UUID getEdgeTypeId() {
         return edgeTypeId;
+    }
+
+    public UUID getDstEntityKeyId() {
+        return dstEntityKeyId;
     }
 
     public UUID getEdgeEntityKeyId() {

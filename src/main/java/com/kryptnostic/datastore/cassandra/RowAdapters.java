@@ -344,13 +344,12 @@ public final class RowAdapters {
 
     public static EdgeKey edgeKey( Row row ) {
         UUID srcEntityKeyId = row.getUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql() );
-        UUID dstEntityKeyId = row.getUUID( CommonColumns.DST_ENTITY_KEY_ID.cql() );
         UUID dstTypeId = row.getUUID( CommonColumns.DST_TYPE_ID.cql() );
-
         UUID edgeTypeId = row.getUUID( CommonColumns.EDGE_TYPE_ID.cql() );
+        UUID dstEntityKeyId = row.getUUID( CommonColumns.DST_ENTITY_KEY_ID.cql() );
         UUID edgeEntityKeyId = row.getUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql() );
 
-        return new EdgeKey( srcEntityKeyId, dstEntityKeyId, dstTypeId, edgeTypeId, edgeEntityKeyId );
+        return new EdgeKey( srcEntityKeyId, dstTypeId, edgeTypeId, dstEntityKeyId, edgeEntityKeyId );
     }
 
     public static LoomVertexKey loomVertex( Row row ) {
