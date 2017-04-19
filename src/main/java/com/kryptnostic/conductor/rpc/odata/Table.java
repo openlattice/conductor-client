@@ -123,7 +123,7 @@ public enum Table implements TableDef {
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
                         .columns( SRC_TYPE_ID )
-                        .sasi(
+                        .secondaryIndex(
                                 DST_TYPE_ID,
                                 EDGE_TYPE_ID,
                                 DST_ENTITY_KEY_ID,
@@ -138,7 +138,7 @@ public enum Table implements TableDef {
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
                         .columns( SRC_TYPE_ID )
-                        .sasi(
+                        .secondaryIndex(
                                 DST_TYPE_ID,
                                 EDGE_TYPE_ID,
                                 DST_ENTITY_KEY_ID,

@@ -271,7 +271,7 @@ public class DataGraphService implements DataGraphManager {
             int score = 0;
             for ( ResultSetFuture f : countFutures ) {
                 try {
-                    score += f.get().one().getInt( 0 );
+                    score += f.get().one().getLong( 0 );
                 } catch ( InterruptedException | ExecutionException e ) {
                     logger.debug( "Unable to count edges for vertex id." );
                 }
