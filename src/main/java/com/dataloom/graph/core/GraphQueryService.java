@@ -9,12 +9,14 @@ import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -127,21 +129,47 @@ public class GraphQueryService {
         );
     }
 
-    public ResultSetFuture putEdgeAsync(
+    public List<ResultSetFuture> putEdgeAsync(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
             UUID edgeEntityId,
             UUID edgeEntityTypeId ) {
-        BoundStatement stmt = putEdgeQuery.bind()
+
+        BoundStatement edgeBs = bindEdge( putEdgeQuery.bind(),
+                srcVertexId,
+                srcVertexEntityTypeId,
+                dstVertexId,
+                dstVertexEntityTypeId,
+                edgeEntityId,
+                edgeEntityTypeId );
+
+        BoundStatement backedgeBs = bindEdge( putBackEdgeQuery.bind(),
+                srcVertexId,
+                srcVertexEntityTypeId,
+                dstVertexId,
+                dstVertexEntityTypeId,
+                edgeEntityId,
+                edgeEntityTypeId );
+        return ImmutableList.of( session.executeAsync( edgeBs ), session.executeAsync( backedgeBs ) );
+    }
+
+    private BoundStatement bindEdge(
+            BoundStatement bs,
+            UUID srcVertexId,
+            UUID srcVertexEntityTypeId,
+            UUID dstVertexId,
+            UUID dstVertexEntityTypeId,
+            UUID edgeEntityId,
+            UUID edgeEntityTypeId ) {
+        return bs
                 .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcVertexId )
                 .setUUID( CommonColumns.DST_TYPE_ID.cql(), dstVertexEntityTypeId )
                 .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeEntityTypeId )
                 .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), dstVertexId )
                 .setUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql(), edgeEntityId )
                 .setUUID( CommonColumns.SRC_TYPE_ID.cql(), srcVertexEntityTypeId );
-        return session.executeAsync( stmt );
     }
 
     public void deleteEdge( EdgeKey key ) {

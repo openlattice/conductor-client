@@ -10,6 +10,7 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -46,11 +47,12 @@ public class LoomGraph implements LoomGraphApi {
                 dstVertexId,
                 dstVertexEntityTypeId,
                 edgeEntityId,
-                edgeEntityTypeId ).getUninterruptibly();
+                edgeEntityTypeId )
+                .forEach( ResultSetFuture::getUninterruptibly );
     }
 
     @Override
-    public ResultSetFuture addEdgeAsync(
+    public List<ResultSetFuture> addEdgeAsync(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
             UUID dstVertexId,

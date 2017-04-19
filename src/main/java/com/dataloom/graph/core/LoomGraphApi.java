@@ -4,6 +4,7 @@ import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.edge.EdgeKey;
 import com.datastax.driver.core.ResultSetFuture;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -36,7 +37,7 @@ public interface LoomGraphApi {
             UUID edgeId,
             UUID edgeTypeId );
 
-    ResultSetFuture addEdgeAsync(
+    List<ResultSetFuture> addEdgeAsync(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
             UUID dstVertexId,
