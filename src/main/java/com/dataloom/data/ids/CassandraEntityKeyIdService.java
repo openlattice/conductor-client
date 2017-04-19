@@ -21,8 +21,10 @@ package com.dataloom.data.ids;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.datastax.driver.core.*;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.kryptnostic.conductor.rpc.odata.Table;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -34,8 +36,9 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
 
     private final ListeningExecutorService executor;
 
-    private final Session session;
+    private final Session           session;
     private final PreparedStatement insertNewId;
+    private final PreparedStatement readEntityKey;
 
     public CassandraEntityKeyIdService(
             ListeningExecutorService executor,
@@ -44,30 +47,45 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
         this.executor = executor;
         this.session = session;
         this.insertNewId = insertNewId;
+        this.insertNewId = prepareInsertIfNotExists( session );
+        this.readEntityKey = prepareReadEntityKey( session );
     }
 
     @Override
-    public UUID getOrCreate( EntityKey entityKey ) {
-        return null;
-    }
-
-    @Override
-    public ListenableFuture<UUID> getOrCreateAsync( EntityKey entityKey ) {
-        return null;
-    }
-
-    @Override
-    public Optional<UUID> getEntityKeyId( EntityKey entityKey ) {
-        return null;
+    public Optional<EntityKey> getEntityKey( UUID entityKey ) {
+        return Optional.ofNullable( getEntityKey( entityKey ) );
     }
 
     @Override
     public EntityKey getEntityKey( UUID entityKeyId ) {
+        final Row row = getEntityKeyAsync( entityKeyId ).getUninterruptibly().one();
+        if ( row != null ) {
+            return row.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
+        }
         return null;
     }
 
-    private ListenableFuture<UUID> getOrCreateAsync( EntityKey entityKey ) {
+    @Override
+    public ResultSetFuture getEntityKeyAsync( UUID entityKeyId ) {
+        BoundStatement bs = readEntityKey.bind()
+                .setUUID( CommonColumns.ID.cql(), entityKeyId );
+        return session.executeAsync( bs );
+    }
 
+    @Override
+    public ResultSetFuture setEntityKeyId(
+            EntityKey entityKey, UUID entityKeyId ) {
+        BoundStatement bs = insertNewId.bind()
+                .setUUID( CommonColumns.ID.cql(), entityKeyId )
+                .set( CommonColumns.ENTITY_KEY.cql(), entityKey, EntityKey.class );
+        return session.executeAsync( bs );
+    }
 
+    private static PreparedStatement prepareReadEntityKey( Session session ) {
+        return session.prepare( Table.IDS.getBuilder().buildLoadQuery() );
+    }
+
+    private static PreparedStatement prepareInsertIfNotExists( Session session ) {
+        return session.prepare( Table.IDS.getBuilder().buildStoreQuery().ifNotExists() );
     }
 }

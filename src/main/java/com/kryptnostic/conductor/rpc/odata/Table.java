@@ -38,7 +38,6 @@ public enum Table implements TableDef {
     COMPLEX_TYPES,
     DATA,
     EDGES,
-    ENTITY_EDGES,
     ENTITY_SETS,
     ENTITY_TYPES,
     ENUM_TYPES,
@@ -60,7 +59,7 @@ public enum Table implements TableDef {
     WEIGHTED_LINKING_EDGES,
     EDGE_TYPES,
     VERTICES,
-    SYNC_IDS;
+    SYNC_IDS, IDS;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -163,6 +162,11 @@ public enum Table implements TableDef {
                                 PII_FIELD,
                                 ANALYZER )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case IDS:
+                return new CassandraTableBuilder( IDS )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .columns( ENTITY_KEY );
             case WEIGHTED_LINKING_EDGES:
                 return new CassandraTableBuilder( WEIGHTED_LINKING_EDGES )
                         .ifNotExists()

@@ -19,8 +19,7 @@
  */
 package com.dataloom.data;
 
-import com.datastax.driver.core.ResultSet;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.datastax.driver.core.ResultSetFuture;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -29,23 +28,6 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public interface EntityKeyIdService {
-
-    /**
-     * Assigns an unused entity key id to an entity key.
-     *
-     * @param entityKey The entity key to assign an unused id.
-     * @return The id that was assigned.
-     */
-    UUID getOrCreate( EntityKey entityKey );
-
-    /**
-     * Assigns an unused entity key id to an entity key.
-     *
-     * @param entityKey The entity key to assign an unused id.
-     * @return A future the will yield an entity key id if successful.
-     */
-    ListenableFuture<UUID> getOrCreateAsync( EntityKey entityKey );
-
     /**
      * Retrieves the entity key id previously assigned for this entity key
      *
@@ -53,9 +35,11 @@ public interface EntityKeyIdService {
      * @return An entity key id, if this entity key previously had one assigned.
      */
     //TODO: Change this to throwing an exception.
-    Optional<UUID> getEntityKeyId( EntityKey entityKey );
+    Optional<EntityKey> getEntityKey( UUID entityKey );
 
     EntityKey getEntityKey( UUID entityKeyId );
 
-    ListenableFuture<ResultSet> setEntityKeyId( EntityKey entityKey, UUID vertexId );
+    ResultSetFuture getEntityKeyAsync( UUID entityKeyId );
+
+    ResultSetFuture setEntityKeyId( EntityKey entityKey, UUID entityKeyId )
 }
