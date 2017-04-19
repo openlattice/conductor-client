@@ -52,6 +52,11 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
     }
 
     @Override
+    protected RegularStatement loadAllKeysQuery() {
+        return tableBuilder.buildLoadAllPartitionKeysQuery();
+    }
+
+    @Override
     protected EntityKey mapKey( Row rs ) {
         return rs.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
     }
