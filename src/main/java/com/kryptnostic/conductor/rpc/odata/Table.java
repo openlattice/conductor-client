@@ -187,7 +187,7 @@ public enum Table implements TableDef {
                         .partitionKey( ID )
                         .columns( ENTITY_KEY );
             case KEYS:
-                return new CassandraTableBuilder( IDS )
+                return new CassandraTableBuilder( KEYS )
                         .ifNotExists()
                         .partitionKey( ENTITY_KEY )
                         .columns( ID );

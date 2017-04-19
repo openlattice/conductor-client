@@ -152,9 +152,14 @@ public class DataGraphService implements DataGraphManager {
             EntityKey key,
             SetMultimap<UUID, Object> details,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        logger.error( "Spot1" );
         final ListenableFuture reservationAndVertex = transformAsync( idService.getEntityKeyIdAsync( key ),
-                lm::createVertexAsync,
+                stuff -> {
+                    logger.error( "Spot3" );
+                    return lm.createVertexAsync( stuff );
+                },
                 executor );
+        logger.error( "Spot4" );
         final ListenableFuture writes = eds.updateEntityAsync( key, details, authorizedPropertiesWithDataType );
         return Stream.of( reservationAndVertex, writes );
     }
