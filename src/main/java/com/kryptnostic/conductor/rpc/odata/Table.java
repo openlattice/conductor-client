@@ -118,12 +118,14 @@ public enum Table implements TableDef {
                         .clusteringColumns( PROPERTY_TYPE_ID, SYNCID, PROPERTY_VALUE )
                         .sasi( SYNCID, ENTITY_SET_ID );
             case BACK_EDGES:
-                return new CassandraTableBuilder( BACK_EDGES )
+                return new CassandraTableBuilder( EDGES )
                         .ifNotExists()
-                        .partitionKey( DST_ENTITY_KEY_ID )
-                        .clusteringColumns( SRC_TYPE_ID, EDGE_TYPE_ID, SRC_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
-                        .columns( DST_TYPE_ID )
-                        .sasi( SRC_ENTITY_KEY_ID, DST_TYPE_ID );
+                        .partitionKey( SRC_ENTITY_KEY_ID )
+                        .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
+                        .columns( SRC_TYPE_ID )
+                        .sasi(
+                                DST_ENTITY_KEY_ID,
+                                SRC_TYPE_ID );
             case EDGES:
                 /*
                  * Allows for efficient selection of edges as long as types are provided.

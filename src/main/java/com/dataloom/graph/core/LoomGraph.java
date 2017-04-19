@@ -2,10 +2,11 @@ package com.dataloom.graph.core;
 
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.graph.vertex.NeighborhoodSelection;
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,9 +72,10 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public Stream<ResultSetFuture> deleteVertexAsync( UUID vertex ) {
-        NeighborhoodSelection ns = new NeighborhoodSelection( vertex, ImmutableSet.of(), ImmutableSet.of() );
-        Stream<EdgeKey> edgesKey = gqs.getNeighborhood( ns );
-        return edgesKey.map( this::deleteEdgeAsync );
+        return gqs
+                .getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, ImmutableSet.of( vertex ) ) )
+                .map( LoomEdge::getKey )
+                .map( this::deleteEdgeAsync );
     }
 
     @Override
@@ -98,21 +100,8 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public Stream<LoomEdge> getEdgesAndNeighborsForVertex( UUID vertexId ) {
-        NeighborhoodSelection ns = new NeighborhoodSelection( vertexId, ImmutableSet.of(), ImmutableSet.of() );
-        //        List<LoomEdge> srcEdges = Lists.newArrayList( getEdges( new EdgeSelection(
-        //                Optional.of( vertexId ),
-        //                Optional.absent(),
-        //                Optional.absent(),
-        //                Optional.absent(),
-        //                Optional.absent() ) ) );
-        //        List<LoomEdge> dstEdges = Lists.newArrayList( getEdges( new EdgeSelection(
-        //                Optional.absent(),
-        //                Optional.absent(),
-        //                Optional.of( vertexId ),
-        //                Optional.absent(),
-        //                Optional.absent() ) ) );
-        //        return Pair.of( srcEdges, dstEdges );
-        return Stream.of();
+        return gqs
+                .getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, ImmutableSet.of( vertexId ) ) );
     }
 
 }

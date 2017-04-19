@@ -2,16 +2,20 @@ package com.dataloom.graph.core;
 
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.graph.vertex.NeighborhoodSelection;
+import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.*;
-import com.google.common.cache.Cache;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -19,22 +23,48 @@ import java.util.stream.Stream;
 public class GraphQueryService {
     private static final Logger logger = LoggerFactory
             .getLogger( GraphQueryService.class );
-    private final Session                  session;
-    private final Cache<Set<CommonColumns>, PreparedStatement> edgeQueries;
-    private final PreparedStatement getEdgeQuery;
-    private final PreparedStatement putEdgeQuery;
-    private final PreparedStatement deleteEdgeQuery;
-    private final PreparedStatement deleteEdgesBySrcIdQuery;
-    private final PreparedStatement createVertexQuery;
+    private final Session                                             session;
+    private final LoadingCache<Set<CommonColumns>, PreparedStatement> edgeQueries;
+    private final LoadingCache<Set<CommonColumns>, PreparedStatement> backEdgeQueries;
+    private final PreparedStatement                                   getEdgeQuery;
+    private final PreparedStatement                                   putEdgeQuery;
+    private final PreparedStatement                                   deleteEdgeQuery;
+    private final PreparedStatement                                   deleteEdgesBySrcIdQuery;
+    private final PreparedStatement                                   createVertexQuery;
 
-    public GraphQueryService( Session session ) {
+    public GraphQueryService( String keyspace, Session session ) {
         this.session = session;
         this.createVertexQuery = prepareCreateVertexQuery( session );
         this.getEdgeQuery = prepareGetEdgeQuery( session );
         this.putEdgeQuery = preparePutEdgeQuery( session );
         this.deleteEdgeQuery = prepareDeleteEdgeQuery( session );
         this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
-        this.edgeQueries = CacheBuilder<Set<CommonColumns>,PreparedStatement>
+        this.edgeQueries = CacheBuilder
+                .newBuilder()
+                .maximumSize( 32 )
+                .build( new CacheLoader<Set<CommonColumns>, PreparedStatement>() {
+                    @Override
+                    public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
+                        Select.Where q = QueryBuilder.select().all().from( keyspace, Table.EDGES.getName() ).where();
+                        for ( CommonColumns c : key ) {
+                            q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
+                        }
+                        return session.prepare( q );
+                    }
+                } );
+        this.backEdgeQueries = CacheBuilder
+                .newBuilder()
+                .maximumSize( 32 )
+                .build( new CacheLoader<Set<CommonColumns>, PreparedStatement>() {
+                    @Override
+                    public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
+                        Select.Where q = QueryBuilder.select().all().from( keyspace, Table.EDGES.getName() ).where();
+                        for ( CommonColumns c : key ) {
+                            q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
+                        }
+                        return session.prepare( q );
+                    }
+                } );
     }
 
     private static PreparedStatement prepareCreateVertexQuery( Session session ) {
@@ -72,23 +102,19 @@ public class GraphQueryService {
         return row == null ? null : RowAdapters.loomEdge( row );
     }
 
-    public Iterable<LoomEdge> getEdges( NeighborhoodSelection selection ) {
-        //        Set<EdgeAttribute> attrs = EdgeAttribute.fromSelection( selection );
-        //        BoundStatement stmt = getEdgesQuery.get( attrs ).bind();
-        //        if ( selection.getOptionalSrcId().isPresent() )
-        //            stmt.setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), selection.getOptionalSrcId().get() );
-        //        if ( selection.getOptionalSrcType().isPresent() )
-        //            stmt.setUUID( CommonColumns.SRC_TYPE_ID.cql(), selection.getOptionalSrcType().get() );
-        //        if ( selection.getOptionalDstId().isPresent() )
-        //            stmt.setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), selection.getOptionalDstId().get() );
-        //        if ( selection.getOptionalDstType().isPresent() )
-        //            stmt.setUUID( CommonColumns.DST_TYPE_ID.cql(), selection.getOptionalDstType().get() );
-        //        if ( selection.getOptionalEdgeType().isPresent() )
-        //            stmt.setUUID( CommonColumns.EDGE_TYPE_ID.cql(), selection.getOptionalEdgeType().get() );
-        //        ResultSet rs = session.execute( stmt );
-        //        return Iterables.transform( rs, RowAdapters::loomEdge );
-        return null;
+    public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> neighborhoodSelections ) {
+        BoundStatement backedgeBs = backEdgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
+        for ( Map.Entry<CommonColumns, Set<UUID>> e : neighborhoodSelections.entrySet() ) {
+            backedgeBs.setSet( e.getKey().cql(), e.getValue(), UUID.class );
+        }
 
+        BoundStatement edgeBs = backEdgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
+        for ( Map.Entry<CommonColumns, Set<UUID>> e : neighborhoodSelections.entrySet() ) {
+            edgeBs.setSet( e.getKey().cql(), e.getValue(), UUID.class );
+        }
+        return Stream.concat(
+                StreamUtil.stream( session.execute( backedgeBs ) ).map( RowAdapters::loomEdge ),
+                StreamUtil.stream( session.execute( edgeBs ) ).map( RowAdapters::loomEdge ) );
     }
 
     public ResultSetFuture putEdgeAsync(
@@ -125,10 +151,6 @@ public class GraphQueryService {
     public void deleteEdgesBySrcId( UUID srcId ) {
         session.execute(
                 deleteEdgesBySrcIdQuery.bind().setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcId ) );
-    }
-
-    public Stream<EdgeKey> getNeighborhood( NeighborhoodSelection ns ) {
-        return Stream.of();
     }
 
     public ResultSetFuture createVertexAsync( UUID vertexId ) {
