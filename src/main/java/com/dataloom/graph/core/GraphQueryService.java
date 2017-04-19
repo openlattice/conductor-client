@@ -34,7 +34,7 @@ public class GraphQueryService {
     private final PreparedStatement                                   createVertexQuery;
     private final PreparedStatement                                   putBackEdgeQuery;
 
-    public GraphQueryService( String keyspace, Session session ) {
+    public GraphQueryService( Session session ) {
         this.session = session;
         this.createVertexQuery = prepareCreateVertexQuery( session );
         this.getEdgeQuery = prepareGetEdgeQuery( session );
@@ -49,7 +49,7 @@ public class GraphQueryService {
                 .build( new CacheLoader<Set<CommonColumns>, PreparedStatement>() {
                     @Override
                     public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
-                        Select.Where q = QueryBuilder.select().all().from( keyspace, Table.EDGES.getName() ).where();
+                        Select.Where q = QueryBuilder.select().all().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).where();
                         for ( CommonColumns c : key ) {
                             q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
                         }
@@ -62,7 +62,7 @@ public class GraphQueryService {
                 .build( new CacheLoader<Set<CommonColumns>, PreparedStatement>() {
                     @Override
                     public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
-                        Select.Where q = QueryBuilder.select().all().from( keyspace, Table.EDGES.getName() ).where();
+                        Select.Where q = QueryBuilder.select().all().from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).where();
                         for ( CommonColumns c : key ) {
                             q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
                         }
