@@ -77,7 +77,8 @@ public class LoomGraph implements LoomGraphApi {
         return gqs
                 .getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, ImmutableSet.of( vertex ) ) )
                 .map( LoomEdge::getKey )
-                .map( this::deleteEdgeAsync );
+                .map( this::deleteEdgeAsync )
+                .flatMap( List::stream );
     }
 
     @Override
@@ -87,12 +88,12 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public void deleteEdge( EdgeKey key ) {
-        gqs.deleteEdge( key );
+        gqs.deleteEdge( getEdge( key ) );
     }
 
     @Override
-    public ResultSetFuture deleteEdgeAsync( EdgeKey edgeKey ) {
-        return gqs.deleteEdgeAsync( edgeKey );
+    public List<ResultSetFuture> deleteEdgeAsync( EdgeKey edgeKey ) {
+        return gqs.deleteEdgeAsync( getEdge( edgeKey ) );
     }
 
     @Override

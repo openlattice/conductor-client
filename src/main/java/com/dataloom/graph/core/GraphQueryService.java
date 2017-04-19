@@ -32,6 +32,7 @@ public class GraphQueryService {
     private final PreparedStatement                                   getEdgeQuery;
     private final PreparedStatement                                   putEdgeQuery;
     private final PreparedStatement                                   deleteEdgeQuery;
+    private final PreparedStatement                                   deleteBackEdgeQuery;
     private final PreparedStatement                                   deleteEdgesBySrcIdQuery;
     private final PreparedStatement                                   createVertexQuery;
     private final PreparedStatement                                   putBackEdgeQuery;
@@ -43,6 +44,7 @@ public class GraphQueryService {
         this.putEdgeQuery = preparePutEdgeQuery( session );
         this.putBackEdgeQuery = preparePutBackEdgeQuery( session );
         this.deleteEdgeQuery = prepareDeleteEdgeQuery( session );
+        this.deleteBackEdgeQuery = prepareDeleteBackEdgeQuery( session );
         this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
         this.edgeQueries = CacheBuilder
                 .newBuilder()
@@ -94,6 +96,11 @@ public class GraphQueryService {
     private static PreparedStatement prepareDeleteEdgeQuery( Session session ) {
         return session
                 .prepare( Table.EDGES.getBuilder().buildDeleteQuery() );
+    }
+
+    private static PreparedStatement prepareDeleteBackEdgeQuery( Session session ) {
+        return session
+                .prepare( Table.BACK_EDGES.getBuilder().buildDeleteQuery() );
     }
 
     private static PreparedStatement prepareDeleteEdgesBySrcIdQuery( Session session ) {
@@ -172,18 +179,42 @@ public class GraphQueryService {
                 .setUUID( CommonColumns.SRC_TYPE_ID.cql(), srcVertexEntityTypeId );
     }
 
-    public void deleteEdge( EdgeKey key ) {
-        deleteEdgeAsync( key ).getUninterruptibly();
+    public void deleteEdge( LoomEdge key ) {
+        deleteEdgeAsync( key ).forEach( ResultSetFuture::getUninterruptibly );
     }
 
-    public ResultSetFuture deleteEdgeAsync( EdgeKey key ) {
-        BoundStatement stmt = deleteEdgeQuery.bind()
-                .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), key.getSrcEntityKeyId() )
-                .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), key.getDstEntityKeyId() )
-                .setUUID( CommonColumns.DST_TYPE_ID.cql(), key.getDstTypeId() )
-                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), key.getEdgeTypeId() )
-                .setUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql(), key.getEdgeEntityKeyId() );
-        return session.executeAsync( stmt );
+    public List<ResultSetFuture> deleteEdgeAsync( LoomEdge edge ) {
+        EdgeKey key = edge.getKey();
+        BoundStatement edgeBs = bindDeleteEdge( deleteEdgeQuery.bind(),
+                key.getSrcEntityKeyId(),
+                key.getDstEntityKeyId(),
+                key.getDstTypeId(),
+                key.getEdgeEntityKeyId(),
+                key.getEdgeTypeId() );
+
+        BoundStatement backedgeBs = bindDeleteEdge( deleteEdgeQuery.bind(),
+                key.getDstEntityKeyId(),
+                key.getSrcEntityKeyId(),
+                edge.getSrcType(),
+                key.getEdgeEntityKeyId(),
+                key.getEdgeTypeId() );
+
+        return ImmutableList.of( session.executeAsync( edgeBs ), session.executeAsync( backedgeBs ) );
+    }
+
+    private BoundStatement bindDeleteEdge(
+            BoundStatement bs,
+            UUID srcVertexId,
+            UUID dstVertexId,
+            UUID dstVertexEntityTypeId,
+            UUID edgeEntityId,
+            UUID edgeEntityTypeId ) {
+        return bs
+                .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcVertexId )
+                .setUUID( CommonColumns.DST_TYPE_ID.cql(), dstVertexEntityTypeId )
+                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeEntityTypeId )
+                .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), dstVertexId )
+                .setUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql(), edgeEntityId );
     }
 
     public void deleteEdgesBySrcId( UUID srcId ) {

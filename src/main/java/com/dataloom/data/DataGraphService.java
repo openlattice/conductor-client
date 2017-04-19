@@ -183,8 +183,8 @@ public class DataGraphService implements DataGraphManager {
                     UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
                     UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
 
-                    ListenableFuture addEdge = lm
-                            .addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId );
+                    ListenableFuture addEdge = Futures.allAsList( lm
+                            .addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId ) );
                     return Stream.of( writes, addEdge );
                 } ).forEach( DataGraphService::tryGetAndLogErrors );
     }
@@ -223,7 +223,8 @@ public class DataGraphService implements DataGraphManager {
                 UUID edgeId = idService.getEntityKeyId( association.getKey() );
                 UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
 
-                ListenableFuture addEdge = lm.addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId );
+                ListenableFuture addEdge = Futures
+                        .allAsList( lm.addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId ) );
                 return Stream.of( writes, addEdge );
             }
         } ).forEach( DataGraphService::tryGetAndLogErrors );

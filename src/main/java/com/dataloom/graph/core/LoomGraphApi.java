@@ -56,7 +56,7 @@ public interface LoomGraphApi {
 
     void deleteEdge( EdgeKey edgeKey );
 
-    ResultSetFuture deleteEdgeAsync( EdgeKey edgeKey );
+    List<ResultSetFuture> deleteEdgeAsync( EdgeKey edgeKey );
 
     void deleteEdges( UUID srcId );
 
