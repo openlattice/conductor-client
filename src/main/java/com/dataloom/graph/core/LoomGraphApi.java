@@ -91,4 +91,5 @@ public interface LoomGraphApi {
 
     void deleteEdges( UUID srcId );
 
+    ICompletableFuture<UUID> getVertexIdAsync();
 }

@@ -44,9 +44,9 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
-    public ICompletableFuture<Void> createVertexAsync(
+    public ResultSetFuture createVertexAsync(
             UUID vertexId, EntityKey entityKey, UUID entityTypeId ) {
-        return vertices.setAsync( entityKey, new LoomElement( vertexId, entityTypeId ) );
+        return gqs.putVertexIfAbsentAsync( vertexId, entityKey );
     }
 
     @Override

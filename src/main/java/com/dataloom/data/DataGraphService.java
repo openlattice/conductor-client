@@ -11,7 +11,10 @@ import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.kryptnostic.datastore.util.Util;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.util.concurrent.Futures.transformAsync;
+import static org.apache.olingo.server.api.uri.UriInfoKind.entityId;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -30,11 +34,12 @@ public class DataGraphService implements DataGraphManager {
             .getLogger( DataGraphService.class );
     private static final int    bufferSize = 1000;
     @Inject
-    private EventBus                 eventBus;
-    private CassandraEntityDatastore cdm;
-    private LoomGraph                lm;
-    private EntityKeyIdService       idService;
-    private EntityDatastore          eds;
+    private       EventBus                 eventBus;
+    private       CassandraEntityDatastore cdm;
+    private       LoomGraph                lm;
+    private       EntityKeyIdService       idService;
+    private       EntityDatastore          eds;
+    private final ListeningExecutorService executor;
 
     public DataGraphService(
             CassandraEntityDatastore cdm,
@@ -88,19 +93,30 @@ public class DataGraphService implements DataGraphManager {
             Map<String, SetMultimap<UUID, Object>> entities,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
             throws ExecutionException, InterruptedException {
-        List<ListenableFuture> futures = new ArrayList<>( 2 * entities.size() );
+        entities.entrySet()
+                .parallelStream()
+                .map(
+                        entity -> {
 
-        for ( Map.Entry<String, SetMultimap<UUID, Object>> entity : entities.entrySet() ) {
-            final String entityId = entity.getKey();
-            EntityKey key = new EntityKey( entitySetId, entityId, syncId );
-            futures.add( transformAsync( idService.getOrCreateAsync( key ),
-                    id -> lm.createVertexAsync( id, key ) ) );
-            futures.add( eds.updateEntityAsync( key, entity.getValue(), authorizedPropertiesWithDataType ) );
-        }
+                            final String entityId = entity.getKey();
+                            EntityKey key = new EntityKey( entitySetId, entityId, syncId );
 
-        for( ListenableFuture f : futures ) {
-            f.get();
-        }
+                            futures.add( asyncStub( key ) );
+                            futures.add( eds
+                                    .updateEntityAsync( key, entity.getValue(), authorizedPropertiesWithDataType ) );
+                        } )
+                .forEach( ListenableFuture::get );
+    }
+
+    private ListenableFuture<UUID> asyncStub( EntityKey entityKey ) {
+        final UUID vertexId = UUID.randomUUID();
+        transformAsync( lm.createVertexAsync( entityId, key ), rs -> {
+            if ( Util.wasLightweightTransactionApplied( rs ) ) {
+                return Futures.immediateFuture( vertexId );
+            } else {
+                return new ListenableHazelcastFuture<UUID>( lm.getVertexIdAsync() );
+            }
+        } );
     }
 
     @Override
@@ -125,7 +141,12 @@ public class DataGraphService implements DataGraphManager {
             LoomVertex dst = lm.getVertex( association.getDst() );
             LoomVertex edge = lm.getVertex( association.getKey() );
 
-            datafs.add( lm.addEdgeAsync( src.getVertexId(), src.getEntityTypeId(), dst.getVertexId(), dst.getEntityTypeId(), edge.getVertexId(), edge.getEntityTypeId() ) );
+            datafs.add( lm.addEdgeAsync( src.getVertexId(),
+                    src.getEntityTypeId(),
+                    dst.getVertexId(),
+                    dst.getEntityTypeId(),
+                    edge.getVertexId(),
+                    edge.getEntityTypeId() ) );
 
             if ( datafs.size() > bufferSize ) {
                 datafs.forEach( ResultSetFuture::getUninterruptibly );
@@ -177,7 +198,12 @@ public class DataGraphService implements DataGraphManager {
                         association.getKey().getEntityId(),
                         association.getDetails() ) );
 
-                datafs.add( lm.addEdgeAsync( src.getVertexId(), src.getEntityTypeId(), dst.getVertexId(), dst.getEntityTypeId(), edge.getVertexId(), edge.getEntityTypeId() ) );
+                datafs.add( lm.addEdgeAsync( src.getVertexId(),
+                        src.getEntityTypeId(),
+                        dst.getVertexId(),
+                        dst.getEntityTypeId(),
+                        edge.getVertexId(),
+                        edge.getEntityTypeId() ) );
 
                 if ( datafs.size() > bufferSize ) {
                     datafs.forEach( ResultSetFuture::getUninterruptibly );

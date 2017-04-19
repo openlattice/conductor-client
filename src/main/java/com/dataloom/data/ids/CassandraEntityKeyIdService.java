@@ -22,6 +22,7 @@ package com.dataloom.data.ids;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -30,6 +31,21 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class CassandraEntityKeyIdService implements EntityKeyIdService {
+
+    private final ListeningExecutorService executor;
+
+    private final Session session;
+    private final PreparedStatement insertNewId;
+
+    public CassandraEntityKeyIdService(
+            ListeningExecutorService executor,
+            Session session,
+            PreparedStatement insertNewId ) {
+        this.executor = executor;
+        this.session = session;
+        this.insertNewId = insertNewId;
+    }
+
     @Override
     public UUID getOrCreate( EntityKey entityKey ) {
         return null;
@@ -48,5 +64,10 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
     @Override
     public EntityKey getEntityKey( UUID entityKeyId ) {
         return null;
+    }
+
+    private ListenableFuture<UUID> getOrCreateAsync( EntityKey entityKey ) {
+
+
     }
 }

@@ -24,10 +24,13 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 
+import java.util.UUID;
+
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public abstract class HazelcastEntityGraph {
+    private final IMap<UUID,Vertex> vertices;
     private final IMap<DirectedEdge, EntityKey> edges;
     //    private final IMap<EntityKey, SetMultimap<UUID,Object>> entities;
 
@@ -35,6 +38,9 @@ public abstract class HazelcastEntityGraph {
         this.edges = hazelcastInstance.getMap( HazelcastMap.ENTITY_EDGES.name() );
     }
 
+    public void createVertex( UUID vertexId, Vertex vertex ) {
+        this.vertices.set( vertexId, vertex );
+    }
     public EntityKey getEdge( DirectedEdge edge ) {
         return edges.get( edge );
     }
