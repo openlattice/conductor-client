@@ -135,6 +135,17 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 rs -> rowToEntity( rs, authorizedPropertyTypes ) ) );
     }
 
+    @Override
+    public SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        return RowAdapters.entity(
+                asyncLoadEntity( entitySetId, entityId, syncId, authorizedPropertyTypes.keySet() ).getUninterruptibly(),
+                authorizedPropertyTypes,
+                mapper );
+    }
 
     @Override
     public EntitySetData getLinkedEntitySetData(

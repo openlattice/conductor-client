@@ -5,10 +5,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.EntityKey;
+import com.dataloom.graph.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
@@ -22,6 +25,10 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.EdmService;
 import com.kryptnostic.datastore.util.FuturesAdapter;
 import com.kryptnostic.datastore.util.Util;
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.SetMultimap;
 
 public class LoomGraph implements LoomGraphApi {
 
@@ -97,24 +104,6 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
-    public void addEdge( EntityKey src, EntityKey dst, EntityKey edgeLabel ) {
-        addEdgeAsync( src, dst, edgeLabel ).getUninterruptibly();
-    }
-
-    @Override
-    public ResultSetFuture addEdgeAsync( EntityKey src, EntityKey dst, EntityKey edgeKey ) {
-        LoomElement srcVertex = Util.getSafely( vertices, src );
-        LoomElement dstVertex = Util.getSafely( vertices, dst );
-        LoomElement edge = Util.getSafely( edges, edgeKey );
-        return gqs.putEdgeAsync( srcVertex.getId(),
-                srcVertex.getTypeId(),
-                dstVertex.getId(),
-                dstVertex.getTypeId(),
-                edge.getId(),
-                edge.getTypeId() );
-    }
-
-    @Override
     public LoomEdgeKey getEdge( EdgeKey key ) {
         return gqs.getEdge( key );
     }
@@ -137,6 +126,24 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     public void deleteEdges( UUID srcId ) {
         gqs.deleteEdgesBySrcId( srcId );
+    }
+
+
+    @Override
+    public Pair<List<LoomEdgeKey>, List<LoomEdgeKey>> getEdgesAndNeighborsForVertex( UUID vertexId ) {
+        List<LoomEdgeKey> srcEdges = Lists.newArrayList( getEdges( new EdgeSelection(
+                Optional.of( vertexId ),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent() ) ) );
+        List<LoomEdgeKey> dstEdges = Lists.newArrayList( getEdges( new EdgeSelection(
+                Optional.absent(),
+                Optional.absent(),
+                Optional.of( vertexId ),
+                Optional.absent(),
+                Optional.absent() ) ) );
+        return Pair.of( srcEdges, dstEdges );
     }
 
 }

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.type.PropertyType;
 import com.datastax.driver.core.ResultSetFuture;
@@ -45,6 +46,21 @@ public interface EntityDatastore {
     EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
+            Map<UUID, PropertyType> authorizedPropertyTypes );
+    
+    /**
+     * Reads a single row from an entity set.
+     * 
+     * @param entitySetId
+     * @param syncId
+     * @param entityId
+     * @param authorizedPropertyTypes
+     * @return
+     */
+    SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
     /**

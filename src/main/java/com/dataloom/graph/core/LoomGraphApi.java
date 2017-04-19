@@ -1,10 +1,20 @@
 package com.dataloom.graph.core;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
+import com.dataloom.graph.edge.EdgeKey;
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.ICompletableFuture;
 
@@ -42,8 +52,6 @@ public interface LoomGraphApi {
             UUID dstVertexEntityTypeId,
             UUID edgeId,
             UUID edgeTypeId );
-
-    void addEdge( EntityKey srcVertexKey, EntityKey dstVertexKey, EntityKey edgeEntityKey );
 
     ResultSetFuture addEdgeAsync(
             UUID srcVertexId,
@@ -87,4 +95,6 @@ public interface LoomGraphApi {
 
     void deleteEdges( UUID srcId );
 
+    Pair<List<LoomEdgeKey>, List<LoomEdgeKey>> getEdgesAndNeighborsForVertex( UUID vertexId );
+    
 }
