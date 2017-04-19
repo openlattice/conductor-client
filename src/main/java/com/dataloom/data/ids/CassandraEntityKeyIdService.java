@@ -42,18 +42,16 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
 
     public CassandraEntityKeyIdService(
             ListeningExecutorService executor,
-            Session session,
-            PreparedStatement insertNewId ) {
+            Session session ) {
         this.executor = executor;
         this.session = session;
-        this.insertNewId = insertNewId;
         this.insertNewId = prepareInsertIfNotExists( session );
         this.readEntityKey = prepareReadEntityKey( session );
     }
 
     @Override
-    public Optional<EntityKey> getEntityKey( UUID entityKey ) {
-        return Optional.ofNullable( getEntityKey( entityKey ) );
+    public Optional<EntityKey> tryGetEntityKey( UUID entityKeyId ) {
+        return Optional.ofNullable( getEntityKey( entityKeyId ) );
     }
 
     @Override
