@@ -1,7 +1,16 @@
 package com.dataloom.graph.core;
 
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.LoomElement;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
@@ -9,59 +18,42 @@ import com.dataloom.graph.vertex.NeighborhoodSelection;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.EdmService;
+import com.kryptnostic.datastore.util.FuturesAdapter;
 import com.kryptnostic.datastore.util.Util;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.SetMultimap;
 
 public class LoomGraph implements LoomGraphApi {
 
     private static final Logger logger = LoggerFactory.getLogger( LoomGraph.class );
 
-    private final EdmService                   edm;
-    private final GraphQueryService            gqs;
-    private final IMap<EntityKey, LoomElement> vertices;
-    private final IMap<EntityKey, LoomElement> edges;
+    private final GraphQueryService     gqs;
+    private final IMap<EntityKey, UUID> vertices;
 
-    public LoomGraph( EdmService edm, GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
+    public LoomGraph( GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
         this.gqs = gqs;
-        this.edm = edm;
         this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
-        this.edges = hazelcastInstance.getMap( HazelcastMap.ENTITY_EDGES.name() );
     }
 
     @Override
-    public void createVertex( UUID vertexId, EntityKey entityKey, UUID entityTypeId ) {
-        vertices.set( entityKey, new LoomElement( vertexId, entityTypeId ) );
+    public void createVertex( UUID vertexId, EntityKey entityKey ) {
+        vertices.set( entityKey, vertexId );
     }
 
     @Override
-    public ResultSetFuture createVertexAsync(
-            UUID vertexId, EntityKey entityKey, UUID entityTypeId ) {
+    public ResultSetFuture createVertexAsync( UUID vertexId, EntityKey entityKey ) {
         return gqs.putVertexIfAbsentAsync( vertexId, entityKey );
     }
 
     @Override
     public UUID getVertexId( EntityKey entityKey ) {
-        return Util.getSafely( vertices, entityKey ).getId();
-    }
-
-
-    @Override public ICompletableFuture<UUID> getVertexIdAsync( EntityKey entityKey ) {
-        return vertices.getAsync( entityKey );
-    }
-
-    @Override
-    public Stream<LoomVertexKey> getVerticesOfType( UUID entityTypeId ) {
-        return gqs.getVerticesOfType( entityTypeId );
+        return Util.getSafely( vertices, entityKey );
     }
 
     @Override
@@ -78,6 +70,11 @@ public class LoomGraph implements LoomGraphApi {
                 dstVertexEntityTypeId,
                 edgeEntityId,
                 edgeEntityTypeId ).getUninterruptibly();
+    }
+
+    @Override
+    public ResultSetFuture addEdgeAsync( EntityKey srcVertexKey, EntityKey dstVertexKey, EntityKey edgeEntityKey ) {
+        return null;
     }
 
     @Override
@@ -109,31 +106,8 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
-    public void addEdge( EntityKey src, EntityKey dst, EntityKey edgeLabel ) {
-        addEdgeAsync( src, dst, edgeLabel ).getUninterruptibly();
-    }
-
-    @Override
-    public ResultSetFuture addEdgeAsync( EntityKey src, EntityKey dst, EntityKey edgeKey ) {
-        LoomElement srcVertex = Util.getSafely( vertices, src );
-        LoomElement dstVertex = Util.getSafely( vertices, dst );
-        LoomElement edge = Util.getSafely( edges, edgeKey );
-        return gqs.putEdgeAsync( srcVertex.getId(),
-                srcVertex.getTypeId(),
-                dstVertex.getId(),
-                dstVertex.getTypeId(),
-                edge.getId(),
-                edge.getTypeId() );
-    }
-
-    @Override
     public LoomEdgeKey getEdge( EdgeKey key ) {
         return gqs.getEdge( key );
-    }
-
-    @Override
-    public Iterable<LoomEdgeKey> getEdges( EdgeSelection selection ) {
-        return gqs.getEdges( selection );
     }
 
     @Override
@@ -149,6 +123,23 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     public void deleteEdges( UUID srcId ) {
         gqs.deleteEdgesBySrcId( srcId );
+    }
+
+    @Override
+    public Pair<List<LoomEdgeKey>, List<LoomEdgeKey>> getEdgesAndNeighborsForVertex( UUID vertexId ) {
+        List<LoomEdgeKey> srcEdges = Lists.newArrayList( getEdges( new EdgeSelection(
+                Optional.of( vertexId ),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.absent() ) ) );
+        List<LoomEdgeKey> dstEdges = Lists.newArrayList( getEdges( new EdgeSelection(
+                Optional.absent(),
+                Optional.absent(),
+                Optional.of( vertexId ),
+                Optional.absent(),
+                Optional.absent() ) ) );
+        return Pair.of( srcEdges, dstEdges );
     }
 
 }

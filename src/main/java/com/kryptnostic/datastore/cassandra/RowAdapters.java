@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import com.dataloom.graph.core.objects.LoomVertexKey;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
@@ -44,8 +43,9 @@ import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
+import com.dataloom.graph.core.objects.LoomVertexKey;
+import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
@@ -343,15 +343,13 @@ public final class RowAdapters {
     }
 
     public static EdgeKey edgeKey( Row row ) {
-        UUID srcId = row.getUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql() );
-        UUID dstId = row.getUUID( CommonColumns.DST_ENTITY_KEY_ID.cql() );
-
+        UUID srcEntityKeyId = row.getUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql() );
+        UUID dstTypeId = row.getUUID( CommonColumns.DST_TYPE_ID.cql() );
         UUID edgeTypeId = row.getUUID( CommonColumns.EDGE_TYPE_ID.cql() );
-        String edgeEntityId = row.getString( CommonColumns.EDGE_ENTITYID.cql() );
-        UUID syncId = row.getUUID( CommonColumns.SYNCID.cql() );
-        EntityKey reference = new EntityKey( edgeTypeId, edgeEntityId, syncId );
+        UUID dstEntityKeyId = row.getUUID( CommonColumns.DST_ENTITY_KEY_ID.cql() );
+        UUID edgeEntityKeyId = row.getUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql() );
 
-        return new EdgeKey( srcId, dstId, reference );
+        return new EdgeKey( srcEntityKeyId, dstTypeId, edgeTypeId, dstEntityKeyId, edgeEntityKeyId );
     }
 
     public static LoomVertexKey loomVertex( Row row ) {
@@ -363,8 +361,7 @@ public final class RowAdapters {
     public static LoomEdgeKey loomEdge( Row row ) {
         EdgeKey key = edgeKey( row );
         UUID srcType = row.getUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql() );
-        UUID dstType = row.getUUID( CommonColumns.DST_TYPE_ID.cql() );
-        return new LoomEdgeKey( key, srcType, dstType );
+        return new LoomEdgeKey( key, srcType );
     }
 
     public static UUID vertexId( Row row ) {
@@ -373,7 +370,7 @@ public final class RowAdapters {
 
     public static EntityKey entityKey( Row row ) {
         return row.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
-    }    
+    }
 
     public static UUID propertyTypeId( Row row ) {
         return row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );

@@ -1,10 +1,20 @@
 package com.dataloom.graph.core;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
+import com.dataloom.graph.edge.EdgeKey;
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.collect.SetMultimap;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.ICompletableFuture;
 
 import java.util.List;
@@ -21,20 +31,15 @@ public interface LoomGraphApi {
     /*
      * CRUD operations of vertices
      */
-    void createVertex( UUID vertexId, EntityKey entityKey, UUID entityTypeId );
+    void createVertex( UUID vertexId, EntityKey entityKey );
 
-    ICompletableFuture<Void> createVertexAsync( UUID vertexId, EntityKey entityKey, UUID entityTypeId );
+    ResultSetFuture createVertexAsync( UUID vertexId, EntityKey entityKey );
 
-    LoomVertex getVertex( EntityKey entityKey );
-    
+    UUID getVertexId( EntityKey entityKey );
+
     void deleteVertex( UUID vertexId );
 
     List<ResultSetFuture> deleteVertexAsync( UUID vertexId );
-
-    /*
-     * Listing vertices
-     */
-    Stream<LoomVertexKey> getVerticesOfType( UUID entityTypeId );
 
     /*
      * CRUD operations of edges
@@ -46,8 +51,6 @@ public interface LoomGraphApi {
             UUID dstVertexEntityTypeId,
             UUID edgeId,
             UUID edgeTypeId );
-
-    void addEdge( EntityKey srcVertexKey, EntityKey dstVertexKey, EntityKey edgeEntityKey );
 
     ResultSetFuture addEdgeAsync(
             UUID srcVertexId,
@@ -68,28 +71,11 @@ public interface LoomGraphApi {
      */
     LoomEdgeKey getEdge( EdgeKey key );
 
-    /**
-     * An EdgeSelection restricts the columns in the edges table. In the current setting, it should support restriction
-     * of
-     * <ul>
-     * <li>source UUID</li>
-     * <li>destination UUID</li>
-     * <li>source type</li>
-     * <li>destination type</li>
-     * <li>edge type</li>
-     * </ul>
-     * and combinations of these.
-     *
-     * @param selection
-     * @return
-     */
-    Iterable<LoomEdgeKey> getEdges( EdgeSelection selection );
-
     void deleteEdge( EdgeKey edgeKey );
 
     ResultSetFuture deleteEdgeAsync( EdgeKey edgeKey );
 
     void deleteEdges( UUID srcId );
 
-    ICompletableFuture<UUID> getVertexIdAsync( EntityKey entityKey );
+    Pair<List<LoomEdgeKey>, List<LoomEdgeKey>> getEdgesAndNeighborsForVertex( UUID vertexId );
 }

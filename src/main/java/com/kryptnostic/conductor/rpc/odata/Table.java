@@ -296,13 +296,10 @@ public enum Table implements TableDef {
                         .staticColumns( CURRENT_SYNC_ID )
                         .withDescendingOrder( SYNCID );
             case VERTICES:
-                //We use a clustering column of vertex id to guarantee iteration order.
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()
                         .partitionKey( ENTITY_KEY )
-                        .clusteringColumns( VERTEX_ID )
-                        .columns( ENTITY_TYPE_ID )
-                        .sasi( ENTITY_TYPE_ID  );
+                        .columns( VERTEX_ID );
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

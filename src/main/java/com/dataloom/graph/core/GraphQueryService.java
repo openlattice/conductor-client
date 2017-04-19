@@ -2,6 +2,7 @@ package com.dataloom.graph.core;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.EdgeSelection;
 import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.vertex.NeighborhoodSelection;
@@ -126,10 +127,10 @@ public class GraphQueryService {
 
     public LoomEdgeKey getEdge( EdgeKey key ) {
         BoundStatement stmt = getEdgeQuery.bind()
-                .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), key.getSrcVertexId() )
+                .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), key.getSrcEntityKeyId() )
                 .setUUID( CommonColumns.DST_TYPE_ID.cql(), key.getDstTypeId() )
                 .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), key.getEdgeTypeId() )
-                .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), key.getDstVertexId() )
+                .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), key.getDstEntityKeyId() )
                 .setUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql(), key.getEdgeEntityKeyId() );
         Row row = session.execute( stmt ).one();
         return row == null ? null : RowAdapters.loomEdge( row );
@@ -175,11 +176,11 @@ public class GraphQueryService {
 
     public ResultSetFuture deleteEdgeAsync( EdgeKey key ) {
         BoundStatement stmt = deleteEdgeQuery.bind()
-                .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), key.getSrcId() )
-                .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), key.getDstId() )
-                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), key.getReference().getEntitySetId() )
-                .setString( CommonColumns.EDGE_ENTITYID.cql(), key.getReference().getEntityId() )
-                .setUUID( CommonColumns.SYNCID.cql(), key.getReference().getSyncId() );
+                .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), key.getSrcEntityKeyId() )
+                .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), key.getDstEntityKeyId() )
+                .setUUID( CommonColumns.DST_TYPE_ID.cql(), key.getDstTypeId() )
+                .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), key.getEdgeTypeId() )
+                .setUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql(), key.getEdgeEntityKeyId() );
         return session.executeAsync( stmt );
     }
 
@@ -187,10 +188,6 @@ public class GraphQueryService {
         session.execute(
                 deleteEdgesBySrcIdQuery.bind().setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcId ) );
     }
-
-    public Stream<LoomVertexKey> getVerticesOfType( UUID entityTypeId ) {
-    }
-
 
     public Stream<EdgeKey> getNeighborhood( NeighborhoodSelection ns ) {
     }

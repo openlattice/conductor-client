@@ -31,16 +31,15 @@ public interface EntityKeyIdService {
     /**
      * Retrieves the entity key id previously assigned for this entity key
      *
-     * @param entityKey
+     * @param entityKeyId The id of the entity key to be retrieved.
      * @return An entity key id, if this entity key previously had one assigned.
      */
     //TODO: Change this to throwing an exception.
-
     Optional<EntityKey> tryGetEntityKey( UUID entityKeyId );
 
     EntityKey getEntityKey( UUID entityKeyId );
 
     ResultSetFuture getEntityKeyAsync( UUID entityKeyId );
 
-    ResultSetFuture setEntityKeyId( EntityKey entityKey, UUID entityKeyId )
+    ResultSetFuture setEntityKeyId( EntityKey entityKey, UUID entityKeyId );
 }
