@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 public class GraphQueryService {
     private static final Logger logger = LoggerFactory
             .getLogger( GraphQueryService.class );
+
     private final Session                                             session;
     private final LoadingCache<Set<CommonColumns>, PreparedStatement> edgeQueries;
     private final LoadingCache<Set<CommonColumns>, PreparedStatement> backEdgeQueries;
@@ -31,12 +32,14 @@ public class GraphQueryService {
     private final PreparedStatement                                   deleteEdgeQuery;
     private final PreparedStatement                                   deleteEdgesBySrcIdQuery;
     private final PreparedStatement                                   createVertexQuery;
+    private final PreparedStatement                                   putBackEdgeQuery;
 
     public GraphQueryService( String keyspace, Session session ) {
         this.session = session;
         this.createVertexQuery = prepareCreateVertexQuery( session );
         this.getEdgeQuery = prepareGetEdgeQuery( session );
         this.putEdgeQuery = preparePutEdgeQuery( session );
+        this.putBackEdgeQuery = preparePutBackEdgeQuery( session );
         this.deleteEdgeQuery = prepareDeleteEdgeQuery( session );
         this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
         this.edgeQueries = CacheBuilder
@@ -81,6 +84,11 @@ public class GraphQueryService {
                 .prepare( Table.EDGES.getBuilder().buildStoreQuery() );
     }
 
+    private static PreparedStatement preparePutBackEdgeQuery( Session session ) {
+        return session
+                .prepare( Table.BACK_EDGES.getBuilder().buildStoreQuery() );
+    }
+
     private static PreparedStatement prepareDeleteEdgeQuery( Session session ) {
         return session
                 .prepare( Table.EDGES.getBuilder().buildDeleteQuery() );
@@ -103,18 +111,20 @@ public class GraphQueryService {
     }
 
     public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> neighborhoodSelections ) {
+        BoundStatement edgeBs = edgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
+        for ( Map.Entry<CommonColumns, Set<UUID>> e : neighborhoodSelections.entrySet() ) {
+            edgeBs.setSet( e.getKey().cql(), e.getValue(), UUID.class );
+        }
+
         BoundStatement backedgeBs = backEdgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
         for ( Map.Entry<CommonColumns, Set<UUID>> e : neighborhoodSelections.entrySet() ) {
             backedgeBs.setSet( e.getKey().cql(), e.getValue(), UUID.class );
         }
 
-        BoundStatement edgeBs = backEdgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
-        for ( Map.Entry<CommonColumns, Set<UUID>> e : neighborhoodSelections.entrySet() ) {
-            edgeBs.setSet( e.getKey().cql(), e.getValue(), UUID.class );
-        }
         return Stream.concat(
-                StreamUtil.stream( session.execute( backedgeBs ) ).map( RowAdapters::loomEdge ),
-                StreamUtil.stream( session.execute( edgeBs ) ).map( RowAdapters::loomEdge ) );
+                StreamUtil.stream( session.execute( edgeBs ) ).map( RowAdapters::loomEdge ),
+                StreamUtil.stream( session.execute( backedgeBs ) ).map( RowAdapters::loomEdge )
+        );
     }
 
     public ResultSetFuture putEdgeAsync(
