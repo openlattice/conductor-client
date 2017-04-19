@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import com.dataloom.graph.edge.LoomEdge;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
@@ -43,7 +44,6 @@ import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.graph.core.objects.LoomEdgeKey;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.organization.roles.OrganizationRole;
@@ -358,10 +358,10 @@ public final class RowAdapters {
         return new LoomVertexKey( key, reference );
     }
 
-    public static LoomEdgeKey loomEdge( Row row ) {
+    public static LoomEdge loomEdge( Row row ) {
         EdgeKey key = edgeKey( row );
-        UUID srcType = row.getUUID( CommonColumns.SRC_VERTEX_TYPE_ID.cql() );
-        return new LoomEdgeKey( key, srcType );
+        UUID srcType = row.getUUID( CommonColumns.SRC_TYPE_ID.cql() );
+        return new LoomEdge( key, srcType );
     }
 
     public static UUID vertexId( Row row ) {

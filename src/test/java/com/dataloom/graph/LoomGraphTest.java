@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import com.dataloom.graph.core.objects.*;
 import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.edge.LoomEdge;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -73,7 +73,7 @@ public class LoomGraphTest extends HzAuthzTest {
         EntityKey label = TestDataFactory.entityKey();
 
         lg.addEdge( v1, v2, label );
-        LoomEdgeKey edge = lg.getEdge( new EdgeKey( v1.getKey(), v2.getKey(), label ) );
+        LoomEdge edge = lg.getEdge( new EdgeKey( v1.getKey(), v2.getKey(), label ) );
 
         // verification
         Assert.assertNotNull( edge );
@@ -170,7 +170,7 @@ public class LoomGraphTest extends HzAuthzTest {
         EdgeKey edgeKey = new EdgeKey( v1.getKey(), v2.getKey(), label );
 
         lg.addEdge( v1, v2, label );
-        LoomEdgeKey edge = lg.getEdge( edgeKey );
+        LoomEdge edge = lg.getEdge( edgeKey );
         Assert.assertNotNull( edge );
 
         lg.deleteEdge( edgeKey );

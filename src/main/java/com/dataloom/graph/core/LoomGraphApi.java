@@ -1,12 +1,9 @@
 package com.dataloom.graph.core;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.graph.core.objects.LoomEdgeKey;
+import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.edge.EdgeKey;
 import com.datastax.driver.core.ResultSetFuture;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -54,7 +51,7 @@ public interface LoomGraphApi {
      * @param key
      * @return
      */
-    LoomEdgeKey getEdge( EdgeKey key );
+    LoomEdge getEdge( EdgeKey key );
 
     void deleteEdge( EdgeKey edgeKey );
 
@@ -62,5 +59,5 @@ public interface LoomGraphApi {
 
     void deleteEdges( UUID srcId );
 
-    Pair<List<LoomEdgeKey>, List<LoomEdgeKey>> getEdgesAndNeighborsForVertex( UUID vertexId );
+    Stream<LoomEdge> getEdgesAndNeighborsForVertex( UUID vertexId );
 }
