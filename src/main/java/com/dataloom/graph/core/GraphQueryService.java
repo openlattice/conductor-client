@@ -16,10 +16,7 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class GraphQueryService {
@@ -120,20 +117,34 @@ public class GraphQueryService {
     }
 
     public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> neighborhoodSelections ) {
+
         BoundStatement edgeBs = edgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
-        for ( Map.Entry<CommonColumns, Set<UUID>> e : neighborhoodSelections.entrySet() ) {
-            edgeBs.setSet( e.getKey().cql(), e.getValue(), UUID.class );
-        }
 
         BoundStatement backedgeBs = backEdgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
-        for ( Map.Entry<CommonColumns, Set<UUID>> e : neighborhoodSelections.entrySet() ) {
-            backedgeBs.setSet( e.getKey().cql(), e.getValue(), UUID.class );
-        }
 
         return Stream.concat(
-                StreamUtil.stream( session.execute( edgeBs ) ).map( RowAdapters::loomEdge ),
-                StreamUtil.stream( session.execute( backedgeBs ) ).map( RowAdapters::loomEdge )
+                treeBind( neighborhoodSelections.entrySet().iterator(), edgeBs )
+                        .map( ResultSetFuture::getUninterruptibly )
+                        .flatMap( StreamUtil::stream )
+                        .map( RowAdapters::loomEdge ),
+                treeBind( neighborhoodSelections.entrySet().iterator(), backedgeBs )
+                        .map( ResultSetFuture::getUninterruptibly )
+                        .flatMap( StreamUtil::stream )
+                        .map( RowAdapters::loomEdge ) );
         );
+    }
+
+    private Stream<ResultSetFuture> treeBind( Iterator<Map.Entry<CommonColumns, Set<UUID>>> i, BoundStatement bs ) {
+        if ( i.hasNext() ) {
+            final Map.Entry<CommonColumns, Set<UUID>> e = i.next();
+            final Set<UUID> ids = e.getValue();
+            return ids.parallelStream().flatMap( id -> {
+                bs.setUUID( e.getKey().cql(), id );
+                return treeBind( i, bs );
+            } );
+        } else {
+            return Stream.of( session.executeAsync( bs ) );
+        }
     }
 
     public List<ResultSetFuture> putEdgeAsync(
