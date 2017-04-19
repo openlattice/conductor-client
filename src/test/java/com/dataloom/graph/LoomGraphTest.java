@@ -26,8 +26,7 @@ public class LoomGraphTest extends HzAuthzTest {
 
     static {
         gqs = new GraphQueryService( session );
-        lg = new LoomGraph( gqs );
-        LoomVertexFuture.setGraphQueryService( gqs );
+        lg = new LoomGraph( gqs, hazelcastInstance );
     }
 
     private LoomVertexKey createVertex() {

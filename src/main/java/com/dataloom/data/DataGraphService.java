@@ -21,6 +21,7 @@ import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.Entity;
 import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -70,7 +71,27 @@ public class DataGraphService implements DataGraphManager {
                     }
                 } );
     }
+    
+    @Override
+    public EntitySetData getEntitySetData(
+            UUID entitySetId,
+            UUID syncId,
+            Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        return eds.getEntitySetData( entitySetId, syncId, authorizedPropertyTypes );
+    }
 
+    @Override
+    public EntitySetData getLinkedEntitySetData(
+            UUID linkedEntitySetId,
+            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
+        return eds.getLinkedEntitySetData( linkedEntitySetId, authorizedPropertyTypesForEntitySets );
+    }
+
+    @Override
+    public void deleteEntitySetData( UUID entitySetId ) {
+        eds.deleteEntitySetData( entitySetId );
+        // TODO delete all vertices
+    }
     @Override
     public void updateEntity(
             UUID id,

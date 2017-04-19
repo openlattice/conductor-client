@@ -27,13 +27,11 @@ public class LoomGraph implements LoomGraphApi {
 
     private static final Logger         logger = LoggerFactory.getLogger( LoomGraph.class );
 
-    private final EdmService            edm;
     private final GraphQueryService     gqs;
     private final IMap<EntityKey, UUID> vertices;
 
-    public LoomGraph( EdmService edm, GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
+    public LoomGraph( GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
         this.gqs = gqs;
-        this.edm = edm;
         this.vertices = hazelcastInstance.getMap( HazelcastMap.VERTICES.name() );
     }
 
