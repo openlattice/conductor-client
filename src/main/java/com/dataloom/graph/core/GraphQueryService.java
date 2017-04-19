@@ -146,10 +146,10 @@ public class GraphQueryService {
                 edgeEntityTypeId );
 
         BoundStatement backedgeBs = bindEdge( putBackEdgeQuery.bind(),
-                srcVertexId,
-                srcVertexEntityTypeId,
                 dstVertexId,
                 dstVertexEntityTypeId,
+                srcVertexId,
+                srcVertexEntityTypeId,
                 edgeEntityId,
                 edgeEntityTypeId );
         return ImmutableList.of( session.executeAsync( edgeBs ), session.executeAsync( backedgeBs ) );
