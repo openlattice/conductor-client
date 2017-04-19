@@ -169,10 +169,6 @@ public class EdmService implements EdmManager {
         }
     }
 
-    @Override public Set<UUID> getEdgeTypes() {
-        return null;
-    }
-
     @Override
     public void deletePropertyType( UUID propertyTypeId ) {
         Stream<EntityType> entityTypes = entityTypeManager
@@ -458,6 +454,11 @@ public class EdmService implements EdmManager {
 
     public Iterable<EntityType> getEntityTypes() {
         return entityTypeManager.getEntityTypes();
+    }
+    
+    @Override
+    public Iterable<EntityType> getAssociationEntityTypes() {
+        return entityTypeManager.getAssociationEntityTypes();
     }
 
     @Override

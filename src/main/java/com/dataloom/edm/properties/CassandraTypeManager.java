@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import org.spark_project.guava.collect.Sets;
 
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.streams.StreamUtil;
@@ -53,6 +54,7 @@ public class CassandraTypeManager {
     private final PreparedStatement getComplexTypeIds;
     private final PreparedStatement getEnumTypeIds;
     private final PreparedStatement getEntityTypeChildIds;
+    private final Select.Where      getEdgeEntityTypes;
 
     public CassandraTypeManager( String keyspace, Session session ) {
         this.session = session;
@@ -86,6 +88,9 @@ public class CassandraTypeManager {
                         .allowFiltering().where(
                                 QueryBuilder.eq( CommonColumns.BASE_TYPE.cql(),
                                         CommonColumns.BASE_TYPE.bindMarker() ) ) );
+        this.getEdgeEntityTypes = QueryBuilder.select().all().from( keyspace,
+                Table.ENTITY_TYPES.getName() ).allowFiltering()
+                .where( QueryBuilder.eq( CommonColumns.CATEGORY.cql(), SecurableObjectType.EdgeType ) );
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
@@ -111,6 +116,10 @@ public class CassandraTypeManager {
 
     public Iterable<EntityType> getEntityTypes() {
         return Iterables.transform( session.execute( getEntityTypes ), RowAdapters::entityType );
+    }
+
+    public Iterable<EntityType> getAssociationEntityTypes() {
+        return Iterables.transform( session.execute( getEdgeEntityTypes ), RowAdapters::entityType );
     }
 
     public Stream<UUID> getComplexTypeIds() {
@@ -154,5 +163,5 @@ public class CassandraTypeManager {
         }
         return StreamUtil.stream( children );
     }
-    
+
 }
