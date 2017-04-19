@@ -113,7 +113,6 @@ public interface ConductorElasticsearchApi {
     final String SRC                           = "src";
     final String DEST                          = "dest";
     final String BIDIRECTIONAL                 = "bidirectional";
-    final String ID_FIELD                      = "_id";
 
     boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 
