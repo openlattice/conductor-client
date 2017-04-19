@@ -35,10 +35,10 @@ public enum Table implements TableDef {
     ACL_KEYS,
     AUDIT_EVENTS,
     AUDIT_METRICS,
+    BACK_EDGES,
     COMPLEX_TYPES,
     DATA,
     EDGES,
-    ENTITY_EDGES,
     ENTITY_SETS,
     ENTITY_TYPES,
     ENUM_TYPES,
@@ -61,6 +61,8 @@ public enum Table implements TableDef {
     EDGE_TYPES,
     VERTICES,
     SYNC_IDS,
+    IDS,
+    KEYS,
     TOP_UTILIZER_DATA;
 
     private static final Logger                                logger   = LoggerFactory
@@ -115,6 +117,18 @@ public enum Table implements TableDef {
                         .partitionKey( ENTITY_SET_ID, ENTITYID )
                         .clusteringColumns( PROPERTY_TYPE_ID, SYNCID, PROPERTY_VALUE )
                         .sasi( SYNCID, ENTITY_SET_ID );
+            case BACK_EDGES:
+                return new CassandraTableBuilder( EDGES )
+                        .ifNotExists()
+                        .partitionKey( SRC_ENTITY_KEY_ID )
+                        .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
+                        .columns( SRC_TYPE_ID )
+                        .sasi(
+                                DST_TYPE_ID,
+                                EDGE_TYPE_ID,
+                                DST_ENTITY_KEY_ID,
+                                EDGE_ENTITY_KEY_ID,
+                                SRC_TYPE_ID );
             case EDGES:
                 /*
                  * Allows for efficient selection of edges as long as types are provided.
@@ -123,10 +137,13 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
-                        .columns( SRC_VERTEX_TYPE_ID )
+                        .columns( SRC_TYPE_ID )
                         .sasi(
+                                DST_TYPE_ID,
+                                EDGE_TYPE_ID,
                                 DST_ENTITY_KEY_ID,
-                                SRC_VERTEX_TYPE_ID );
+                                EDGE_ENTITY_KEY_ID,
+                                SRC_TYPE_ID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
@@ -164,6 +181,16 @@ public enum Table implements TableDef {
                                 PII_FIELD,
                                 ANALYZER )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
+            case IDS:
+                return new CassandraTableBuilder( IDS )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .columns( ENTITY_KEY );
+            case KEYS:
+                return new CassandraTableBuilder( IDS )
+                        .ifNotExists()
+                        .partitionKey( ENTITY_KEY )
+                        .columns( ID );
             case WEIGHTED_LINKING_EDGES:
                 return new CassandraTableBuilder( WEIGHTED_LINKING_EDGES )
                         .ifNotExists()

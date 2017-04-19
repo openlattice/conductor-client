@@ -114,8 +114,9 @@ public enum CommonColumns implements ColumnDef {
     FLAGS( DataType.cboolean() ),
     CATEGORY( DataType.text() ),
     SRC_ENTITY_KEY_ID( DataType.uuid() ),
-    SRC_VERTEX_TYPE_ID( DataType.uuid() ),
+    SRC_TYPE_ID( DataType.uuid() ),
     TIME_UUID( DataType.timeuuid() ),
+    SRC_VERTEX_TYPE_ID( DataType.uuid() ),
     QUERY_ID( DataType.blob() ),
     WEIGHT( DataType.cdouble() );
 

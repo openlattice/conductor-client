@@ -68,8 +68,8 @@ public interface DataGraphManager {
             throws ExecutionException, InterruptedException;
 
     void createEntitiesAndAssociations(
-            Iterable<Entity> entities,
-            Iterable<Association> associations,
+            Set<Entity> entities,
+            Set<Association> associations,
             Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
             throws ExecutionException, InterruptedException;
 

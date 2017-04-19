@@ -30,30 +30,24 @@ import java.util.UUID;
 public interface EntityKeyIdService {
 
     /**
-     * Assigns an unused entity key id to an entity key.
-     *
-     * @param entityKey The entity key to assign an unused id.
-     * @return The id that was assigned.
+     * Retrieves the assigned id for an entity key. Assigns one if entity key hasn't been assigned.
+     * @param entityKey The entity key for which to retrieve an assigned id.
+     * @return The id assigned to entity key.
      */
-    UUID getOrCreate( EntityKey entityKey );
+    UUID getEntityKeyId( EntityKey entityKey );
 
-    /**
-     * Assigns an unused entity key id to an entity key.
-     *
-     * @param entityKey The entity key to assign an unused id.
-     * @return A future the will yield an entity key id if successful.
-     */
-    ListenableFuture<UUID> getOrCreateAsync( EntityKey entityKey );
+    ListenableFuture<UUID> getEntityKeyIdAsync( EntityKey entityKey );
 
     /**
      * Retrieves the entity key id previously assigned for this entity key
      *
-     * @param entityKey
+     * @param entityKeyId The id of the entity key to be retrieved.
      * @return An entity key id, if this entity key previously had one assigned.
      */
     //TODO: Change this to throwing an exception.
-    UUID getEntityKeyId( EntityKey entityKey );
+    Optional<EntityKey> tryGetEntityKey( UUID entityKeyId );
 
     EntityKey getEntityKey( UUID entityKeyId );
 
+    ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId );
 }

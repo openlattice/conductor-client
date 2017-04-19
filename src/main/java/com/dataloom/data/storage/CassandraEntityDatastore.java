@@ -181,16 +181,16 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
-    public List<ResultSetFuture> updateEntityAsync(
+    public ListenableFuture<List<ResultSet>> updateEntityAsync(
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        return createDataAsync( entityKey.getEntitySetId(),
+        return Futures.allAsList( createDataAsync( entityKey.getEntitySetId(),
                 entityKey.getSyncId(),
                 authorizedPropertiesWithDataType,
                 authorizedPropertiesWithDataType.keySet(),
                 entityKey.getEntityId(),
-                entityDetails );
+                entityDetails ) );
     }
 
     public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
@@ -309,7 +309,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             Set<UUID> authorizedProperties,
             String entityId,
             SetMultimap<UUID, Object> entityDetails ) {
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
+        List<ResultSetFuture> results = new ArrayList<>();
         
         // does not write the row if some property values that user is trying to write to are not authorized.
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
