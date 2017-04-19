@@ -184,13 +184,13 @@ public enum Table implements TableDef {
             case IDS:
                 return new CassandraTableBuilder( IDS )
                         .ifNotExists()
-                        .partitionKey( ID )
-                        .columns( ENTITY_KEY );
+                        .partitionKey( ENTITY_KEY )
+                        .columns( ID );
             case KEYS:
                 return new CassandraTableBuilder( KEYS )
                         .ifNotExists()
-                        .partitionKey( ENTITY_KEY )
-                        .columns( ID );
+                        .partitionKey( ID )
+                        .columns( ENTITY_KEY );
             case WEIGHTED_LINKING_EDGES:
                 return new CassandraTableBuilder( WEIGHTED_LINKING_EDGES )
                         .ifNotExists()
