@@ -84,16 +84,4 @@ public class HazelcastEntityKeyIdService implements EntityKeyIdService {
         return new ListenableHazelcastFuture<>( keys.getAsync( entityKeyId ) );
     }
 
-    private static PreparedStatement prepareReadEntityKey( Session session ) {
-        return session.prepare( Table.IDS.getBuilder().buildLoadQuery() );
-    }
-
-    private static PreparedStatement prepareInsert( Session session ) {
-        return session.prepare( Table.IDS.getBuilder().buildStoreQuery() );
-    }
-
-    private static PreparedStatement prepareInsertIfNotExists( Session session ) {
-        return session.prepare( Table.IDS.getBuilder().buildStoreQuery().ifNotExists() );
-    }
-
 }
