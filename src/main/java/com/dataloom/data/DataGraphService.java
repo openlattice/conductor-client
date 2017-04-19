@@ -205,8 +205,8 @@ public class DataGraphService implements DataGraphManager {
                 .forEach( DataGraphService::tryGetAndLogErrors );
 
         associations.parallelStream().flatMap( association -> {
-            UUID srcId = idsRegistered.get( association.getSrc() );
-            UUID dstId = idsRegistered.get( association.getDst() );
+            UUID srcId = idService.getEntityKeyId( association.getSrc() );
+            UUID dstId = idService.getEntityKeyId( association.getDst() );
             if ( srcId == null || dstId == null ) {
                 String err = String.format(
                         "Edge %s cannot be created because some vertices failed to register for an id.",
