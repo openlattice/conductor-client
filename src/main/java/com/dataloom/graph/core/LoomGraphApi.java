@@ -78,4 +78,6 @@ public interface LoomGraphApi {
     void deleteEdges( UUID srcId );
 
     Pair<List<LoomEdgeKey>, List<LoomEdgeKey>> getEdgesAndNeighborsForVertex( UUID vertexId );
+
+    ResultSetFuture setVertexAsync( EntityKey entityKey, UUID oldVertexId, UUID newVertexId );
 }

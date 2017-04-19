@@ -38,6 +38,7 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
 
     private final Session           session;
     private final PreparedStatement insertNewId;
+    private final PreparedStatement insertNewIdIfNotExists;
     private final PreparedStatement readEntityKey;
 
     public CassandraEntityKeyIdService(
@@ -45,7 +46,8 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
             Session session ) {
         this.executor = executor;
         this.session = session;
-        this.insertNewId = prepareInsertIfNotExists( session );
+        this.insertNewId = prepareInsert( session );
+        this.insertNewIdIfNotExists = prepareInsertIfNotExists( session );
         this.readEntityKey = prepareReadEntityKey( session );
     }
 
@@ -70,10 +72,14 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
         return session.executeAsync( bs );
     }
 
+    @Override public ResultSetFuture createEntityKeyId( EntityKey entityKey, UUID vertexId ) {
+        return null;
+    }
+
     @Override
     public ResultSetFuture setEntityKeyId(
             EntityKey entityKey, UUID entityKeyId ) {
-        BoundStatement bs = insertNewId.bind()
+        BoundStatement bs = insertNewIdIfNotExists.bind()
                 .setUUID( CommonColumns.ID.cql(), entityKeyId )
                 .set( CommonColumns.ENTITY_KEY.cql(), entityKey, EntityKey.class );
         return session.executeAsync( bs );
@@ -81,6 +87,10 @@ public class CassandraEntityKeyIdService implements EntityKeyIdService {
 
     private static PreparedStatement prepareReadEntityKey( Session session ) {
         return session.prepare( Table.IDS.getBuilder().buildLoadQuery() );
+    }
+
+    private static PreparedStatement prepareInsert( Session session ) {
+        return session.prepare( Table.IDS.getBuilder().buildStoreQuery() );
     }
 
     private static PreparedStatement prepareInsertIfNotExists( Session session ) {

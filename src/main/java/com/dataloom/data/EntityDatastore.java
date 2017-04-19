@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.datastax.driver.core.ResultSet;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -95,7 +97,7 @@ public interface EntityDatastore {
      * @param authorizedPropertiesWithDataType
      * @return
      */
-    List<ResultSetFuture> updateEntityAsync(
+    ListenableFuture<List<ResultSet>> updateEntityAsync(
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );

@@ -52,6 +52,11 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
+    public ResultSetFuture setVertexAsync( EntityKey entityKey, UUID oldVertexId, UUID newVertexId ) {
+        return gqs.updateVertexAsync( EntityKey entityKey, oldVertexId, newVertexId );
+    }
+
+    @Override
     public UUID getVertexId( EntityKey entityKey ) {
         return Util.getSafely( vertices, entityKey );
     }

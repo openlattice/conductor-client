@@ -20,6 +20,7 @@
 package com.dataloom.data;
 
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -42,4 +43,6 @@ public interface EntityKeyIdService {
     ResultSetFuture getEntityKeyAsync( UUID entityKeyId );
 
     ResultSetFuture setEntityKeyId( EntityKey entityKey, UUID entityKeyId );
+
+    ResultSetFuture createEntityKeyId( EntityKey entityKey, UUID vertexId );
 }

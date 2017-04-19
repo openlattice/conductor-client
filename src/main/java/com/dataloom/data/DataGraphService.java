@@ -2,17 +2,12 @@ package com.dataloom.data;
 
 import static com.google.common.util.concurrent.Futures.transformAsync;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +29,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.kryptnostic.datastore.util.Util;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static com.google.common.util.concurrent.Futures.transformAsync;
@@ -154,34 +143,56 @@ public class DataGraphService implements DataGraphManager {
                 .flatMap(
                         entity -> {
                             final EntityKey key = new EntityKey( entitySetId, entity.getKey(), syncId );
-                            final ListenableFuture reservation = asyncStub( key );
+                            final ListenableFuture reservation = asyncReserve( key );
                             final ListenableFuture writes = eds.updateEntityAsync( key,
                                     entity.getValue(),
-                                    authorizedPropertiesWithDataType ) );
+                                    authorizedPropertiesWithDataType );
                             return Stream.of( reservation, writes );
                         } )
                 .forEach( ListenableFuture::get );
     }
 
-    private ListenableFuture<Void> asyncStub( EntityKey entityKey ) {
-        asyncStub( entityKey, 100 );
+    private ListenableFuture<Void> asyncReserve( EntityKey entityKey ) {
+        asyncReserve( entityKey, 1, Optional.empty() );
     }
 
-    private ListenableFuture<Void> asyncStub( EntityKey entityKey, int backoffMillis =100 ) {
+    private ListenableFuture<Void> asyncReserve( EntityKey entityKey, int backoffMillis, Optional<UUID> oldValue ) {
         final UUID vertexId = UUID.randomUUID();
-        ListenableFuture<ResultSet> f = transformAsync( lm.createVertexAsync( entityId, entityKey ), rs -> {
-            if ( Util.wasLightweightTransactionApplied( rs ) ) {
-                return idService.setEntityKeyId( entityKey, vertexId );
-            }
-            return Futures.immediateFuture( rs );
-        } );
+        final ResultSetFuture reservation;
+        final ListenableFuture<ResultSet> f;
 
-        if ( Util.wasLightweightTransactionApplied( f.get() ) {
-            return Futures.immediateFuture( new Void() );
-        } else{
-            Thread.sleep( backoffMillis );
-            return asyncStub( backoffMillis << 1 );
+        if ( !oldValue.isPresent() ) {
+            reservation = lm.createVertexAsync( vertexId, entityKey );
+        } else {
+            reservation = lm.setVertexAsync( vertexId, entityKey );
         }
+
+        f = transformAsync( reservation,
+                rs -> {
+                    if ( Util.wasLightweightTransactionApplied( rs ) ) {
+                        return idService.setEntityKeyId( entityKey, vertexId );
+                    }
+                    /*
+                     * If transaction was not applied a vertex id has already been set. This completes the reservation.
+                     */
+                    return Futures.immediateFuture( rs );
+                }, executor );
+
+        try {
+            if ( Util.wasLightweightTransactionApplied( f.get() ) {
+                return Futures.immediateFuture( new Void() );
+            } else{
+                Thread.sleep( backoffMillis );
+                return asyncReserve( entityKey, backoffMillis << 1, Optional.of( vertexId ) );
+            }
+        } catch ( InterruptedException | ExecutionException e ) {
+            Thread.sleep( backoffMillis );
+            /*
+             * We force choosing a new uuid if anything goes wrong to make sure the id service is in a good state.
+             */
+            return asyncReserve( entityKey, backoffMillis << 1, Optional.of( vertexId ) );
+        }
+
     }
 
     @Override
@@ -223,6 +234,7 @@ public class DataGraphService implements DataGraphManager {
         List<ListenableFuture> dataFutures = new ArrayList<>();
 
         for ( Entity entity : entities ) {
+
             entityFutures.add( transformAsync( idService.getOrCreateAsync( entity.getKey() ),
                     id -> {
                         idsRegistered.put( entity.getKey(), id );
