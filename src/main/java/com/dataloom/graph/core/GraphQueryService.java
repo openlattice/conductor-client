@@ -130,7 +130,8 @@ public class GraphQueryService {
                 treeBind( neighborhoodSelections.entrySet().iterator(), backedgeBs )
                         .map( ResultSetFuture::getUninterruptibly )
                         .flatMap( StreamUtil::stream )
-                        .map( RowAdapters::loomEdge ) );
+                        .map( RowAdapters::loomEdge ) )
+                .distinct();
     }
 
     private Stream<ResultSetFuture> treeBind( Iterator<Map.Entry<CommonColumns, Set<UUID>>> i, BoundStatement bs ) {
