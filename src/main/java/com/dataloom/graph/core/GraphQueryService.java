@@ -192,6 +192,9 @@ public class GraphQueryService {
     public Stream<EdgeKey> getNeighborhood( NeighborhoodSelection ns ) {
     }
 
+    public ResultSetFuture createVertexAsync( UUID vertexId ) {
+    }
+
     /*
      * Used to help creating all the prepared statements needed for getEdges
      * TODO Marked for refactoring (to HC), this is too terrible

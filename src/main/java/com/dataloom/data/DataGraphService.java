@@ -1,17 +1,5 @@
 package com.dataloom.data;
 
-import static com.google.common.util.concurrent.Futures.transformAsync;
-
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.Entity;
 import com.dataloom.data.storage.CassandraEntityDatastore;
@@ -28,15 +16,18 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.kryptnostic.datastore.util.Util;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static com.google.common.util.concurrent.Futures.transformAsync;
-import static org.apache.olingo.server.api.uri.UriInfoKind.entityId;
-
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -69,7 +60,8 @@ public class DataGraphService implements DataGraphManager {
         this.eventBus = eventBus;
 
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
-        this.typeIds = CacheBuilder.newBuilder().expireAfterWrite( 1000, TimeUnit.MILLISECONDS )
+        this.typeIds = CacheBuilder.newBuilder()
+                .maximumSize( 100000 ) //100K * 16 = 16000K = 16MB
                 .build( new CacheLoader<UUID, UUID>() {
 
                     @Override
@@ -77,6 +69,14 @@ public class DataGraphService implements DataGraphManager {
                         return entitySets.get( key ).getEntityTypeId();
                     }
                 } );
+    }
+
+    public static void tryGetAndLogErrors( ListenableFuture<?> f ) {
+        try {
+            f.get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            logger.error( "Future execution failed.", e );
+        }
     }
 
     @Override
@@ -143,63 +143,13 @@ public class DataGraphService implements DataGraphManager {
                 .flatMap(
                         entity -> {
                             final EntityKey key = new EntityKey( entitySetId, entity.getKey(), syncId );
-                            final ListenableFuture reservation = asyncReserve( key );
+                            final ListenableFuture reservation = idService.getEntityKeyIdAsync( key );
                             final ListenableFuture writes = eds.updateEntityAsync( key,
                                     entity.getValue(),
                                     authorizedPropertiesWithDataType );
                             return Stream.of( reservation, writes );
                         } )
                 .forEach( DataGraphService::tryGetAndLogErrors );
-    }
-
-    private ListenableFuture<Void> asyncReserve( EntityKey entityKey ) {
-        return asyncReserve( entityKey, 1, Optional.empty() );
-    }
-
-    private ListenableFuture<Void> asyncReserve( EntityKey entityKey, int backoffMillis, Optional<UUID> oldValue ) {
-        final UUID vertexId = UUID.randomUUID();
-        final ResultSetFuture reservation;
-        final ListenableFuture<ResultSet> f;
-
-        if ( !oldValue.isPresent() ) {
-            reservation = lm.createVertexAsync( vertexId, entityKey );
-        } else {
-            reservation = lm.setVertexAsync( entityKey, oldValue.get(), vertexId );
-        }
-
-        f = transformAsync( reservation,
-                rs -> {
-                    if ( Util.wasLightweightTransactionApplied( rs ) ) {
-                        return idService.setEntityKeyId( entityKey, vertexId );
-                    }
-                    /*
-                     * If transaction was not applied a vertex id has already been set. This completes the reservation.
-                     */
-                    return Futures.immediateFuture( rs );
-                }, executor );
-
-        return transformAsync( f, rs -> {
-            if ( Util.wasLightweightTransactionApplied( rs ) ) {
-                return Futures.immediateFuture( null );
-            } else {
-                Thread.sleep( backoffMillis );
-                return asyncReserve( entityKey, backoffMillis << 1, Optional.of( vertexId ) );
-            }
-        }, executor );
-
-    }
-
-    ListenableFuture<ResultSet> asyncSetEntityKeyId( UUID entityKeyId, EntityKey key ) {
-        return transformAsync( reservation,
-                rs -> {
-                    if ( Util.wasLightweightTransactionApplied( rs ) ) {
-                        return idService.setEntityKeyId( entityKey, vertexId );
-                    }
-                    /*
-                     * If transaction was not applied a vertex id has already been set. This completes the reservation.
-                     */
-                    return Futures.immediateFuture( rs );
-                }, executor );
     }
 
     @Override
@@ -211,23 +161,25 @@ public class DataGraphService implements DataGraphManager {
             throws InterruptedException, ExecutionException {
         List<ListenableFuture> futures = new ArrayList<ListenableFuture>( 2 * associations.size() );
 
-        for ( Association association : associations ) {
-            UUID edgeId = UUID.randomUUID();
-            idService.getOrCreate( association.getKey() );
-            futures.add( Futures.successfulAsList( eds.updateEntityAsync( association.getKey(),
-                    association.getDetails(),
-                    authorizedPropertiesWithDataType ) ) );
+        associations
+                .parallelStream()
+                .flatMap( association -> {
+                    UUID edgeId = idService.getEntityKeyId( association.getKey() );
 
-            UUID srcId = idService.getEntityKeyId( association.getSrc() );
-            UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
-            UUID dstId = idService.getEntityKeyId( association.getDst() );
-            UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
-            UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
+                    ListenableFuture writes = Futures.allAsList( eds.updateEntityAsync( association.getKey(),
+                            association.getDetails(),
+                            authorizedPropertiesWithDataType ) );
 
-            futures.add( lm.addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId ) );
-        }
+                    UUID srcId = idService.getEntityKeyId( association.getSrc() );
+                    UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
+                    UUID dstId = idService.getEntityKeyId( association.getDst() );
+                    UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
+                    UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
 
-        futures.forEach( DataGraphService::tryGetAndLogErrors );
+                    ListenableFuture addEdge = lm
+                            .addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId );
+                    return Stream.of( writes, addEdge );
+                } ).forEach( DataGraphService::tryGetAndLogErrors );
     }
 
     @Override
@@ -278,14 +230,6 @@ public class DataGraphService implements DataGraphManager {
         }
         for ( ListenableFuture f : dataFutures ) {
             f.get();
-        }
-    }
-
-    public static void tryGetAndLogErrors( ListenableFuture<?> f ) {
-        try {
-            f.get();
-        } catch ( InterruptedException | ExecutionException e ) {
-            logger.error( "Future execution failed.", e );
         }
     }
 }

@@ -37,7 +37,7 @@ import java.util.UUID;
 
 /**
  * Most of the logic for this class is handled by the map store, which ensures a unique id
- * is assigned on read. 
+ * is assigned on read.
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastEntityKeyIdService implements EntityKeyIdService {
