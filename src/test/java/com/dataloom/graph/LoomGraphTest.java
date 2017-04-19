@@ -25,7 +25,7 @@ public class LoomGraphTest extends HzAuthzTest {
     protected static final GraphQueryService gqs;
 
     static {
-        gqs = new GraphQueryService( "sparks", session );
+        gqs = new GraphQueryService( session );
         lg = new LoomGraph( gqs, hazelcastInstance );
     }
 
