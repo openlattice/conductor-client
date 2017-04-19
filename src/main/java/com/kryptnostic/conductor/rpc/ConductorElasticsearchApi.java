@@ -113,11 +113,12 @@ public interface ConductorElasticsearchApi {
     final String SRC                           = "src";
     final String DEST                          = "dest";
     final String BIDIRECTIONAL                 = "bidirectional";
+    final String ID_FIELD                      = "_id";
 
     boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
-    
+
     boolean createSecurableObjectIndex( UUID entitySetId, UUID syncId, List<PropertyType> propertyTypes );
-    
+
     boolean deleteEntitySet( UUID entitySetId );
 
     boolean deleteEntitySetForSyncId( UUID entitySetId, UUID syncId );
@@ -147,7 +148,7 @@ public interface ConductorElasticsearchApi {
     boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
 
     boolean createEntityData( UUID entitySetId, UUID syncId, String entityId, Map<UUID, Object> propertyValues );
-    
+
     boolean deleteEntityData( UUID entitySetId, UUID syncId, String entityId );
 
     SearchResult executeEntitySetDataSearch(

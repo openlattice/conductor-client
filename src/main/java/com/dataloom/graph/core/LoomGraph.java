@@ -102,19 +102,6 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
-    public ResultSetFuture addEdgeAsync( EntityKey src, EntityKey dst, EntityKey edgeKey ) {
-        LoomElement srcVertex = Util.getSafely( vertices, src );
-        LoomElement dstVertex = Util.getSafely( vertices, dst );
-        LoomElement edge = Util.getSafely( edges, edgeKey );
-        return gqs.putEdgeAsync( srcVertex.getId(),
-                srcVertex.getTypeId(),
-                dstVertex.getId(),
-                dstVertex.getTypeId(),
-                edge.getId(),
-                edge.getTypeId() );
-    }
-
-    @Override
     public LoomEdgeKey getEdge( EdgeKey key ) {
         return gqs.getEdge( key );
     }

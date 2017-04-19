@@ -137,6 +137,20 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
 
     @Override
+    public SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        ResultSet entity = session.execute( entitySetQuery.bind()
+                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                .setString( CommonColumns.ENTITYID.cql(), entityId )
+                .setSet( CommonColumns.PROPERTY_TYPE_ID.cql(), authorizedPropertyTypes.keySet() )
+                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
+        return RowAdapters.entity( entity, authorizedPropertyTypes, mapper );
+    }
+
+    @Override
     public EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {

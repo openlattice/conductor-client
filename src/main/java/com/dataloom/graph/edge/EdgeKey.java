@@ -21,8 +21,6 @@ package com.dataloom.graph.edge;
 
 import java.util.UUID;
 
-import com.dataloom.data.EntityKey;
-
 /**
  * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
  * destination vertexId, and the entity key referencing the edge in the edge entity set.
@@ -31,22 +29,26 @@ import com.dataloom.data.EntityKey;
  *
  */
 public class EdgeKey {
-    private final UUID srcVertexId;
+    private final UUID srcEntityKeyId;
+    private final UUID dstEntityKeyId;
     private final UUID dstTypeId;
     private final UUID edgeTypeId;
-    private final UUID dstVertexId;
     private final UUID edgeEntityKeyId;
 
-    public EdgeKey( UUID srcVertexId, UUID dstTypeId, UUID edgeTypeId, UUID dstVertexId, UUID edgeEntityKeyId ) {
-        this.srcVertexId = srcVertexId;
+    public EdgeKey( UUID srcEntityKeyId, UUID dstEntityKeyId, UUID dstTypeId, UUID edgeTypeId, UUID edgeEntityKeyId ) {
+        this.srcEntityKeyId = srcEntityKeyId;
         this.dstTypeId = dstTypeId;
         this.edgeTypeId = edgeTypeId;
-        this.dstVertexId = dstVertexId;
+        this.dstEntityKeyId = dstEntityKeyId;
         this.edgeEntityKeyId = edgeEntityKeyId;
     }
 
-    public UUID getSrcVertexId() {
-        return srcVertexId;
+    public UUID getSrcEntityKeyId() {
+        return srcEntityKeyId;
+    }
+
+    public UUID getDstEntityKeyId() {
+        return dstEntityKeyId;
     }
 
     public UUID getDstTypeId() {
@@ -57,13 +59,8 @@ public class EdgeKey {
         return edgeTypeId;
     }
 
-    public UUID getDstVertexId() {
-        return dstVertexId;
-    }
-
     public UUID getEdgeEntityKeyId() {
         return edgeEntityKeyId;
     }
-
 
 }
