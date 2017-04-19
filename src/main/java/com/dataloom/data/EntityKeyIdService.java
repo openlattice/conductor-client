@@ -19,7 +19,6 @@
  */
 package com.dataloom.data;
 
-import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.Optional;
@@ -30,8 +29,14 @@ import java.util.UUID;
  */
 public interface EntityKeyIdService {
 
-    ListenableFuture<UUID> getEntityKeyId( EntityKey entityKey );
-    ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId );
+    /**
+     * Retrieves the assigned id for an entity key. Assigns one if entity key hasn't been assigned.
+     * @param entityKey The entity key for which to retrieve an assigned id.
+     * @return The id assigned to entity key.
+     */
+    UUID getEntityKeyId( EntityKey entityKey );
+
+    ListenableFuture<UUID> getEntityKeyIdAsync( EntityKey entityKey );
 
     /**
      * Retrieves the entity key id previously assigned for this entity key
@@ -44,7 +49,5 @@ public interface EntityKeyIdService {
 
     EntityKey getEntityKey( UUID entityKeyId );
 
-    ResultSetFuture setEntityKeyId( EntityKey entityKey, UUID entityKeyId );
-
-    ResultSetFuture createEntityKeyId( EntityKey entityKey, UUID vertexId );
+    ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId );
 }
