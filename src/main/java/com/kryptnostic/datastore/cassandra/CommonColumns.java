@@ -80,7 +80,7 @@ public enum CommonColumns implements ColumnDef {
     PROPERTY_VALUE( DataType.blob() ),
     PROPERTIES( DataType.set( DataType.uuid() ) ),
     SCHEMAS( DataType.set( DataType.text() ) ),
-    SYNCID( DataType.timeuuid() ),
+    SYNCID( DataType.uuid() ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
     TYPE( DataType.text() ),
