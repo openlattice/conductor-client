@@ -102,6 +102,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final PreparedStatement      readEntityKeysForEntitySetQuery;
     private final PreparedStatement      writeUtilizerScoreQuery;
     private final PreparedStatement      readNumTopUtilizerRowsQuery;
+    private final PreparedStatement      topUtilizersQueryIdExistsQuery;
 
     public CassandraEntityDatastore(
             Session session,
@@ -128,6 +129,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
         this.readNumTopUtilizerRowsQuery = prepareReadNumTopUtilizerRowsQuery( session );
+        this.topUtilizersQueryIdExistsQuery = prepareTopUtilizersQueryIdExistsQuery( session );
     }
 
     @Override
@@ -311,7 +313,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             String entityId,
             SetMultimap<UUID, Object> entityDetails ) {
         List<ResultSetFuture> results = new ArrayList<>();
-        
+
         // does not write the row if some property values that user is trying to write to are not authorized.
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
             logger.error( "Entity {} not written because not all property values are authorized.", entityId );
@@ -355,7 +357,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 Optional.of( syncId ),
                 entityId,
                 normalizedPropertyValuesAsMap ) );
-        
+
         return results;
     }
 
@@ -372,6 +374,13 @@ public class CassandraEntityDatastore implements EntityDatastore {
         ResultSet rs = session.execute( bs );
         return StreamUtil.stream( rs )
                 .map( r -> r.getBytes( CommonColumns.RPC_VALUE.cql() ).array() );
+    }
+
+    @Override
+    public boolean queryAlreadyExecuted( ByteBuffer queryId ) {
+        ResultSet rs = session
+                .execute( topUtilizersQueryIdExistsQuery.bind().setBytes( CommonColumns.QUERY_ID.cql(), queryId ) );
+        return ( rs.one() != null );
     }
 
     @Override
@@ -540,6 +549,13 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 QueryBuilder.select().from( Table.TOP_UTILIZER_DATA.getKeyspace(), Table.TOP_UTILIZER_DATA.getName() )
                         .where( QueryBuilder.eq( CommonColumns.QUERY_ID.cql(), CommonColumns.QUERY_ID.bindMarker() ) )
                         .limit( QueryBuilder.bindMarker( "numResults" ) ) );
+    }
+
+    private static PreparedStatement prepareTopUtilizersQueryIdExistsQuery( Session session ) {
+        return session.prepare(
+                QueryBuilder.select().from( Table.TOP_UTILIZER_DATA.getKeyspace(), Table.TOP_UTILIZER_DATA.getName() )
+                        .where( QueryBuilder.eq( CommonColumns.QUERY_ID.cql(), CommonColumns.QUERY_ID.bindMarker() ) )
+                        .limit( 1 ) );
     }
 
     private static PreparedStatement prepareDeleteEntityInAllSyncsQuery(

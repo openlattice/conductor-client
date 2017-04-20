@@ -260,20 +260,22 @@ public class DataGraphService implements DataGraphManager {
             return null;
         }
 
-        eds.getEntityKeysForEntitySet( entitySetId, syncId )
-                .parallel()
-                .map( idService::getEntityKeyId )
-                .forEach( vertexId -> {
-                    long score = topUtilizerDetailsList.parallelStream()
-                            .map( details -> lm.getEdgeCount( vertexId,
-                                    details.getAssociationTypeId(),
-                                    details.getNeighborTypeIds(),
-                                    details.getUtilizerIsSrc() ) )
-                            .map( ResultSetFuture::getUninterruptibly )
-                            .mapToLong( Util::getCount )
-                            .sum();
-                    eds.writeVertexCount( queryId, vertexId, 1.0D * score );
-                } );
+        if ( !eds.queryAlreadyExecuted( queryId ) ) {
+            eds.getEntityKeysForEntitySet( entitySetId, syncId )
+                    .parallel()
+                    .map( idService::getEntityKeyId )
+                    .forEach( vertexId -> {
+                        long score = topUtilizerDetailsList.parallelStream()
+                                .map( details -> lm.getEdgeCount( vertexId,
+                                        details.getAssociationTypeId(),
+                                        details.getNeighborTypeIds(),
+                                        details.getUtilizerIsSrc() ) )
+                                .map( ResultSetFuture::getUninterruptibly )
+                                .mapToLong( Util::getCount )
+                                .sum();
+                        eds.writeVertexCount( queryId, vertexId, 1.0D * score );
+                    } );
+        }
 
         Iterable<SetMultimap<FullQualifiedName, Object>> entities = Iterables
                 .transform( eds.readTopUtilizers( queryId, numResults ), vertexId -> {
