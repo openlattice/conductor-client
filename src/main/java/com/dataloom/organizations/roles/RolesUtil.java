@@ -13,10 +13,11 @@ import com.dataloom.organization.roles.OrganizationRole;
 
 public class RolesUtil {
     private static final Logger logger = LoggerFactory.getLogger( RolesUtil.class );
+
     private RolesUtil() {}
 
     public static boolean belongsToOrganization( UUID organizationId, String roleKeyStr ) {
-        if( organizationId.equals( DatastoreConstants.DEFAULT_ORGANIZATION_ID ) ){
+        if ( organizationId.equals( DatastoreConstants.DEFAULT_ORGANIZATION_ID ) ) {
             return SystemRole.contains( roleKeyStr );
         } else {
             return roleKeyStr.startsWith( organizationId.toString() );
@@ -29,6 +30,10 @@ public class RolesUtil {
         } else {
             return organizationId + "|" + title;
         }
+    }
+
+    public static String getStringRepresentation( OrganizationRole role ) {
+        return getStringRepresentation( role.getOrganizationId(), role.getTitle() );
     }
 
     /**
@@ -49,7 +54,9 @@ public class RolesUtil {
         }
     }
 
-    public static Principal getPrincipal( OrganizationRole role ){
-        return new Principal( PrincipalType.ROLE, getStringRepresentation( role.getOrganizationId(), role.getTitle() ) );
+    public static Principal getPrincipal( OrganizationRole role ) {
+        return new Principal(
+                PrincipalType.ROLE,
+                getStringRepresentation( role.getOrganizationId(), role.getTitle() ) );
     }
 }
