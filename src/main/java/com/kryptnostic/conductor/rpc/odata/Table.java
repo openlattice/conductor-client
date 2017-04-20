@@ -62,8 +62,8 @@ public enum Table implements TableDef {
     VERTICES,
     SYNC_IDS,
     IDS,
-    KEYS
-    ;
+    KEYS,
+    TOP_UTILIZER_DATA;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -123,7 +123,7 @@ public enum Table implements TableDef {
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
                         .columns( SRC_TYPE_ID )
-                        .sasi(
+                        .secondaryIndex(
                                 DST_TYPE_ID,
                                 EDGE_TYPE_ID,
                                 DST_ENTITY_KEY_ID,
@@ -138,7 +138,7 @@ public enum Table implements TableDef {
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
                         .columns( SRC_TYPE_ID )
-                        .sasi(
+                        .secondaryIndex(
                                 DST_TYPE_ID,
                                 EDGE_TYPE_ID,
                                 DST_ENTITY_KEY_ID,
@@ -319,6 +319,14 @@ public enum Table implements TableDef {
                         .clusteringColumns( SYNCID )
                         .staticColumns( CURRENT_SYNC_ID )
                         .withDescendingOrder( SYNCID );
+                
+            case TOP_UTILIZER_DATA:
+                return new CassandraTableBuilder( TOP_UTILIZER_DATA )
+                        .ifNotExists()
+                        .partitionKey( QUERY_ID )
+                        .clusteringColumns( WEIGHT, VERTEX_ID )
+                        .withDescendingOrder( WEIGHT );
+                
             case VERTICES:
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()

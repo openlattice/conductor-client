@@ -42,6 +42,8 @@ public class GraphQueryService {
     private final PreparedStatement                                   deleteEdgesBySrcIdQuery;
     private final PreparedStatement                                   createVertexQuery;
     private final PreparedStatement                                   putBackEdgeQuery;
+    private final PreparedStatement                                   getEdgeCountForSrcQuery;
+    private final PreparedStatement                                   getEdgeCountForDstQuery;
 
     public GraphQueryService( Session session ) {
         this.session = session;
@@ -52,6 +54,9 @@ public class GraphQueryService {
         this.deleteEdgeQuery = prepareDeleteEdgeQuery( session );
         this.deleteBackEdgeQuery = prepareDeleteBackEdgeQuery( session );
         this.deleteEdgesBySrcIdQuery = prepareDeleteEdgesBySrcIdQuery( session );
+        this.getEdgeCountForSrcQuery = prepareGetEdgeCountForSrcQuery( session );
+        this.getEdgeCountForDstQuery = prepareGetEdgeCountForDstQuery( session );
+
         this.edgeQueries = CacheBuilder
                 .newBuilder()
                 .maximumSize( 32 )
@@ -62,7 +67,7 @@ public class GraphQueryService {
                                 .from( Table.EDGES.getKeyspace(), Table.EDGES.getName() ).allowFiltering().where();
                         for ( CommonColumns c : key ) {
                             q = q.and( c.eq() );
-                         //   q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
+                            // q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
                         }
                         return session.prepare( q );
                     }
@@ -74,10 +79,11 @@ public class GraphQueryService {
                     @Override
                     public PreparedStatement load( Set<CommonColumns> key ) throws Exception {
                         Select.Where q = QueryBuilder.select().all()
-                                .from( Table.BACK_EDGES.getKeyspace(), Table.BACK_EDGES.getName() ).allowFiltering().where();
+                                .from( Table.BACK_EDGES.getKeyspace(), Table.BACK_EDGES.getName() ).allowFiltering()
+                                .where();
                         for ( CommonColumns c : key ) {
                             q = q.and( c.eq() );
-                      //      q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
+                            // q = q.and( QueryBuilder.in( c.cql(), c.bindMarker() ) );
                         }
                         return session.prepare( q );
                     }
@@ -106,6 +112,28 @@ public class GraphQueryService {
     private static PreparedStatement prepareDeleteEdgeQuery( Session session ) {
         return session
                 .prepare( Table.EDGES.getBuilder().buildDeleteQuery() );
+    }
+
+    private static PreparedStatement prepareGetEdgeCountForSrcQuery( Session session ) {
+        return session
+                .prepare( restrictEdgeSearch( QueryBuilder.select().countAll().from( Table.EDGES.getKeyspace(),
+                        Table.EDGES.getName() ) ) );
+    }
+
+    private static PreparedStatement prepareGetEdgeCountForDstQuery( Session session ) {
+        return session
+                .prepare( restrictEdgeSearch( QueryBuilder.select().countAll().from( Table.BACK_EDGES.getKeyspace(),
+                        Table.BACK_EDGES.getName() ) ) );
+    }
+
+    private static Select.Where restrictEdgeSearch( Select query ) {
+        return query
+                .where( QueryBuilder.eq( CommonColumns.SRC_ENTITY_KEY_ID.cql(),
+                        CommonColumns.SRC_ENTITY_KEY_ID.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.EDGE_TYPE_ID.cql(),
+                        CommonColumns.EDGE_TYPE_ID.bindMarker() ) )
+                .and( QueryBuilder.in( CommonColumns.DST_TYPE_ID.cql(),
+                        CommonColumns.DST_TYPE_ID.bindMarker() ) );
     }
 
     private static PreparedStatement prepareDeleteBackEdgeQuery( Session session ) {
@@ -244,6 +272,26 @@ public class GraphQueryService {
     public void deleteEdgesBySrcId( UUID srcId ) {
         session.execute(
                 deleteEdgesBySrcIdQuery.bind().setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcId ) );
+    }
+
+    public ResultSetFuture getNeighborEdgeCountAsync(
+            UUID vertexId,
+            UUID edgeTypeId,
+            Set<UUID> neighborTypeIds,
+            boolean vertexIsSrc ) {
+        BoundStatement bs;
+        if ( vertexIsSrc ) {
+            bs = getEdgeCountForSrcQuery.bind()
+                    .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), vertexId )
+                    .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeTypeId )
+                    .setSet( CommonColumns.DST_TYPE_ID.cql(), neighborTypeIds );
+        } else {
+            bs = getEdgeCountForDstQuery.bind()
+                    .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), vertexId )
+                    .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeTypeId )
+                    .setSet( CommonColumns.DST_TYPE_ID.cql(), neighborTypeIds );
+        }
+        return session.executeAsync( bs );
     }
 
     public ResultSetFuture createVertexAsync( UUID vertexId ) {

@@ -1,5 +1,13 @@
 package com.dataloom.graph.core;
 
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.datastax.driver.core.ResultSetFuture;
@@ -7,16 +15,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Stream;
 
 public class LoomGraph implements LoomGraphApi {
 
-    private static final Logger logger = LoggerFactory.getLogger( LoomGraph.class );
+    private static final Logger     logger = LoggerFactory.getLogger( LoomGraph.class );
 
     private final GraphQueryService gqs;
 
@@ -48,7 +50,7 @@ public class LoomGraph implements LoomGraphApi {
                 dstVertexEntityTypeId,
                 edgeEntityId,
                 edgeEntityTypeId )
-                .forEach( ResultSetFuture::getUninterruptibly );
+                        .forEach( ResultSetFuture::getUninterruptibly );
     }
 
     @Override
@@ -105,6 +107,15 @@ public class LoomGraph implements LoomGraphApi {
     public Stream<LoomEdge> getEdgesAndNeighborsForVertex( UUID vertexId ) {
         return gqs
                 .getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, ImmutableSet.of( vertexId ) ) );
+    }
+
+    @Override
+    public ResultSetFuture getEdgeCount(
+            UUID vertexId,
+            UUID associationTypeId,
+            Set<UUID> neighborTypeIds,
+            boolean vertexIsSrc ) {
+        return gqs.getNeighborEdgeCountAsync( vertexId, associationTypeId, neighborTypeIds, vertexIsSrc );
     }
 
 }

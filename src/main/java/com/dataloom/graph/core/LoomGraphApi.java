@@ -1,12 +1,13 @@
 package com.dataloom.graph.core;
 
-import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.graph.edge.EdgeKey;
-import com.datastax.driver.core.ResultSetFuture;
-
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
+
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.edge.LoomEdge;
+import com.datastax.driver.core.ResultSetFuture;
 
 /**
  * Graph Object supporting CRUD operations of vertices and edges to the graph.
@@ -61,4 +62,11 @@ public interface LoomGraphApi {
     void deleteEdges( UUID srcId );
 
     Stream<LoomEdge> getEdgesAndNeighborsForVertex( UUID vertexId );
+
+    ResultSetFuture getEdgeCount(
+            UUID vertexId,
+            UUID associationTypeId,
+            Set<UUID> neighborTypeIds,
+            boolean vertexIsSrc );
+
 }
