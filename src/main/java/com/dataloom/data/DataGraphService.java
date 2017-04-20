@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.kryptnostic.datastore.util.Util;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -258,27 +259,21 @@ public class DataGraphService implements DataGraphManager {
             logger.debug( "Unable to generate query id." );
             return null;
         }
-        eds.getEntityKeysForEntitySet( entitySetId, syncId ).parallel().map( entityKey -> {
-            UUID vertexId = idService.getEntityKeyId( entityKey );
-            List<ResultSetFuture> countFutures = new ArrayList<>();
-            for ( TopUtilizerDetails details : topUtilizerDetailsList ) {
-                countFutures.add( lm.getEdgeCount( vertexId,
-                        details.getAssociationTypeId(),
-                        details.getNeighborTypeIds(),
-                        details.getUtilizerIsSrc() ) );
-            }
 
-            int score = 0;
-            for ( ResultSetFuture f : countFutures ) {
-                try {
-                    score += f.get().one().getLong( 0 );
-                } catch ( InterruptedException | ExecutionException e ) {
-                    logger.debug( "Unable to count edges for vertex id." );
-                }
-            }
-            eds.writeVertexCount( queryId, vertexId, score * 1.0 );
-            return score;
-        } ).collect( Collectors.toList() );
+        eds.getEntityKeysForEntitySet( entitySetId, syncId )
+                .parallel()
+                .map( idService::getEntityKeyId )
+                .forEach( vertexId -> {
+                    long score = topUtilizerDetailsList.parallelStream()
+                            .map( details -> lm.getEdgeCount( vertexId,
+                                    details.getAssociationTypeId(),
+                                    details.getNeighborTypeIds(),
+                                    details.getUtilizerIsSrc() ) )
+                            .map( ResultSetFuture::getUninterruptibly )
+                            .mapToLong( Util::getCount )
+                            .sum();
+                    eds.writeVertexCount( queryId, vertexId, 1.0D * score );
+                } );
 
         Iterable<SetMultimap<FullQualifiedName, Object>> entities = Iterables
                 .transform( eds.readTopUtilizers( queryId, numResults ), vertexId -> {
