@@ -34,8 +34,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -245,7 +247,7 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
-    public EntitySetData getTopUtilizers(
+    public Iterable<SetMultimap<Object, Object>> getTopUtilizers(
             UUID entitySetId,
             UUID syncId,
             List<TopUtilizerDetails> topUtilizerDetailsList,
@@ -277,18 +279,19 @@ public class DataGraphService implements DataGraphManager {
                     } );
         }
 
-        Iterable<SetMultimap<FullQualifiedName, Object>> entities = Iterables
+        Iterable<SetMultimap<Object, Object>> entities = Iterables
                 .transform( eds.readTopUtilizers( queryId, numResults ), vertexId -> {
                     EntityKey key = idService.getEntityKey( vertexId );
-                    return eds.getEntity( key.getEntitySetId(),
-                            key.getSyncId(),
-                            key.getEntityId(),
-                            authorizedPropertyTypes );
+                    SetMultimap<Object, Object> entity = HashMultimap.create();
+                    entity.putAll(
+                            eds.getEntity( key.getEntitySetId(),
+                                    key.getSyncId(),
+                                    key.getEntityId(),
+                                    authorizedPropertyTypes ) );
+                    entity.put( "id", vertexId.toString() );
+                    return entity;
                 } );
 
-        Set<FullQualifiedName> properties = authorizedPropertyTypes.values().stream()
-                .map( propertyType -> propertyType.getType() ).collect( Collectors.toSet() );
-
-        return new EntitySetData( properties, entities );
+        return entities;
     }
 }

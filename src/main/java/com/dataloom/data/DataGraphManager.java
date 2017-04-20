@@ -73,7 +73,7 @@ public interface DataGraphManager {
             Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
             throws ExecutionException, InterruptedException;
 
-    EntitySetData getTopUtilizers(
+    public Iterable<SetMultimap<Object, Object>> getTopUtilizers(
             UUID entitySetId,
             UUID syncId,
             List<TopUtilizerDetails> topUtilizerDetails,
