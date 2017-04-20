@@ -258,27 +258,29 @@ public class DataGraphService implements DataGraphManager {
             logger.debug( "Unable to generate query id." );
             return null;
         }
-        eds.getEntityKeysForEntitySet( entitySetId, syncId ).parallel().map( entityKey -> {
-            UUID vertexId = idService.getEntityKeyId( entityKey );
-            List<ResultSetFuture> countFutures = new ArrayList<>();
-            for ( TopUtilizerDetails details : topUtilizerDetailsList ) {
-                countFutures.add( lm.getEdgeCount( vertexId,
-                        details.getAssociationTypeId(),
-                        details.getNeighborTypeIds(),
-                        details.getUtilizerIsSrc() ) );
-            }
-
-            int score = 0;
-            for ( ResultSetFuture f : countFutures ) {
-                try {
-                    score += f.get().one().getLong( 0 );
-                } catch ( InterruptedException | ExecutionException e ) {
-                    logger.debug( "Unable to count edges for vertex id." );
+        if ( !eds.queryAlreadyExecuted( queryId ) ) {
+            eds.getEntityKeysForEntitySet( entitySetId, syncId ).parallel().map( entityKey -> {
+                UUID vertexId = idService.getEntityKeyId( entityKey );
+                List<ResultSetFuture> countFutures = new ArrayList<>();
+                for ( TopUtilizerDetails details : topUtilizerDetailsList ) {
+                    countFutures.add( lm.getEdgeCount( vertexId,
+                            details.getAssociationTypeId(),
+                            details.getNeighborTypeIds(),
+                            details.getUtilizerIsSrc() ) );
                 }
-            }
-            eds.writeVertexCount( queryId, vertexId, score * 1.0 );
-            return score;
-        } ).collect( Collectors.toList() );
+    
+                int score = 0;
+                for ( ResultSetFuture f : countFutures ) {
+                    try {
+                        score += f.get().one().getLong( 0 );
+                    } catch ( InterruptedException | ExecutionException e ) {
+                        logger.debug( "Unable to count edges for vertex id." );
+                    }
+                }
+                eds.writeVertexCount( queryId, vertexId, score * 1.0 );
+                return score;
+            } ).collect( Collectors.toList() );
+        }
 
         Iterable<SetMultimap<FullQualifiedName, Object>> entities = Iterables
                 .transform( eds.readTopUtilizers( queryId, numResults ), vertexId -> {
