@@ -19,15 +19,15 @@
 
 package com.dataloom.typecodecs;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.mappers.ObjectMappers;
-import com.dataloom.mapstores.TestDataFactory;
-import com.datastax.driver.core.ProtocolVersion;
-import com.kryptnostic.conductor.codecs.EntityKeyTypeCodec;
+import java.nio.ByteBuffer;
+
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
+import com.dataloom.data.EntityKey;
+import com.dataloom.mapstores.TestDataFactory;
+import com.datastax.driver.core.ProtocolVersion;
+import com.kryptnostic.conductor.codecs.EntityKeyTypeCodec;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -36,11 +36,11 @@ public class TypeCodecTests {
 
     @Test
     public void testEntityKeyTypeCodec() {
-        EntityKeyTypeCodec codec = new EntityKeyTypeCodec( ObjectMappers.getJsonMapper() );
+        EntityKeyTypeCodec codec = new EntityKeyTypeCodec();
         EntityKey expected = TestDataFactory.entityKey();
 
         ByteBuffer b = codec.serialize( expected, ProtocolVersion.NEWEST_SUPPORTED );
-        EntityKey actual = codec.deserialize( b , ProtocolVersion.NEWEST_SUPPORTED );
+        EntityKey actual = codec.deserialize( b, ProtocolVersion.NEWEST_SUPPORTED );
         Assert.assertTrue( expected.equals( actual ) );
     }
 }
