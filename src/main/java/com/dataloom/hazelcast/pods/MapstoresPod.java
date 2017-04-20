@@ -55,7 +55,6 @@ import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.graph.core.mapstores.VerticesMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
@@ -254,11 +253,6 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, UUID> syncIdsMapstore() {
         return new SyncIdsMapstore( session );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<EntityKey, UUID> verticesLookupMapstore() {
-        return new VerticesMapstore( session );
     }
 
     @Bean
