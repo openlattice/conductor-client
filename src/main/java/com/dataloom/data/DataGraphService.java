@@ -181,7 +181,7 @@ public class DataGraphService implements DataGraphManager {
             Set<Association> associations,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
             throws InterruptedException, ExecutionException {
-        List<ListenableFuture> futures = new ArrayList<ListenableFuture>( 2 * associations.size() );
+     //   List<ListenableFuture> futures = new ArrayList<ListenableFuture>( 2 * associations.size() );
 
         associations
                 .parallelStream()
@@ -210,7 +210,7 @@ public class DataGraphService implements DataGraphManager {
             Set<Association> associations,
             Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
             throws InterruptedException, ExecutionException {
-        Map<EntityKey, UUID> idsRegistered = new HashMap<>();
+      //  Map<EntityKey, UUID> idsRegistered = new HashMap<>();
 
         entities.parallelStream()
                 .flatMap( entity -> createEntity( entity.getKey(),
