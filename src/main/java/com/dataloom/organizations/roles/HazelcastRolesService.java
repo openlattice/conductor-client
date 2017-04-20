@@ -85,9 +85,6 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
         Preconditions.checkState(
                 roles.putIfAbsent( role.getRoleKey(), role ) == null,
                 "Organization Role already exists." );
-
-        securableObjectTypes.createSecurableObjectType( role.getAclKey(),
-                SecurableObjectType.OrganizationRole );
     }
 
     @Override
