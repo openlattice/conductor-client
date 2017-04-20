@@ -19,11 +19,11 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import org.springframework.stereotype.Component;
-
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractUUIDStreamSerializer;
+import org.springframework.stereotype.Component;
 
+@Component
 public class UUIDStreamSerializer extends AbstractUUIDStreamSerializer {
 
     @Override
