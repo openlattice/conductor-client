@@ -24,6 +24,7 @@ public class LinkingEntityVerticesMapstore extends AbstractStructuredCassandraMa
         EntityKey ek = key.getEntityKey();
         return bs.setUUID( CommonColumns.ENTITY_SET_ID.cql(), ek.getEntitySetId() )
                 .setString( CommonColumns.ENTITYID.cql(), ek.getEntityId() )
+                .setUUID( CommonColumns.SYNCID.cql(), ek.getSyncId() )
                 .setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() );
     }
 
@@ -41,7 +42,8 @@ public class LinkingEntityVerticesMapstore extends AbstractStructuredCassandraMa
         UUID entitySetId = row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
         UUID graphId = row.getUUID( CommonColumns.GRAPH_ID.cql() );
         String entityId = row.getString( CommonColumns.ENTITYID.cql() );
-        return new LinkingEntityKey( graphId, new EntityKey( entitySetId, entityId ) );
+        UUID syncId = row.getUUID( CommonColumns.SYNCID.cql() );
+        return new LinkingEntityKey( graphId, new EntityKey( entitySetId, entityId, syncId ) );
     }
 
     @Override

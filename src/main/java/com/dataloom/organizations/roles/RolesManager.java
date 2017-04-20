@@ -8,6 +8,11 @@ import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
 
 public interface RolesManager {
+    /*
+     * Internal use only
+     */
+    void createRoleIfNotExists( OrganizationRole role );
+
     void createRoleIfNotExists( Principal principal, OrganizationRole role );
 
     void updateTitle( RoleKey roleKey, String title );

@@ -1,6 +1,6 @@
 package com.dataloom.linking.components;
 
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
 
 import com.dataloom.linking.Entity;
@@ -23,12 +23,12 @@ public interface Matcher {
      * Warning: We assume that the restrictions on links are enforced/validated as specified in LinkingApi. In
      * particular, only identical property types are linked on.
      * 
-     * @param linkingEntitySets
+     * @param linkingEntitySetsWithSyncId
      * @param linkIndexedByPropertyTypes
      * @param linkIndexedByEntitySets
      */
     default void setLinking(
-            Set<UUID> linkingEntitySets,
+            Map<UUID, UUID> linkingEntitySetsWithSyncId,
             SetMultimap<UUID, UUID> linkIndexedByPropertyTypes,
             SetMultimap<UUID, UUID> linkIndexedByEntitySets ) {}
 

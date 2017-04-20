@@ -31,6 +31,7 @@ import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.linking.Entity;
 import com.dataloom.organization.Organization;
+import com.dataloom.search.requests.SearchDetails;
 import com.dataloom.search.requests.SearchResult;
 import com.google.common.base.Optional;
 
@@ -101,6 +102,7 @@ public interface ConductorElasticsearchApi {
     final String TYPE_FIELD                    = "_type";
     final String ENTITY_SET                    = "entitySet";
     final String ENTITY_SET_ID                 = "entitySetId";
+    final String SYNC_ID                       = "syncId";
     final String PROPERTY_TYPES                = "propertyTypes";
     final String ACLS                          = "acls";
     final String NAME                          = "name";
@@ -115,7 +117,11 @@ public interface ConductorElasticsearchApi {
 
     boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 
+    boolean createSecurableObjectIndex( UUID entitySetId, UUID syncId, List<PropertyType> propertyTypes );
+
     boolean deleteEntitySet( UUID entitySetId );
+
+    boolean deleteEntitySetForSyncId( UUID entitySetId, UUID syncId );
 
     SearchResult executeEntitySetMetadataSearch(
             Optional<String> optionalSearchTerm,
@@ -141,24 +147,28 @@ public interface ConductorElasticsearchApi {
 
     boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
 
-    boolean createEntityData( UUID entitySetId, String entityId, Map<UUID, Object> propertyValues );
+    boolean createEntityData( UUID entitySetId, UUID syncId, String entityId, Map<UUID, Object> propertyValues );
+
+    boolean deleteEntityData( UUID entitySetId, UUID syncId, String entityId );
 
     SearchResult executeEntitySetDataSearch(
             UUID entitySetId,
+            UUID syncId,
             String searchTerm,
             int start,
             int maxHits,
             Set<UUID> authorizedPropertyTypes );
 
     List<Entity> executeEntitySetDataSearchAcrossIndices(
-            Set<UUID> entitySetIds,
+            Map<UUID, UUID> entitySetAndSyncIds,
             Map<UUID, Set<String>> fieldSearches,
             int size,
             boolean explain );
 
     SearchResult executeAdvancedEntitySetDataSearch(
             UUID entitySetId,
-            Map<UUID, String> searches,
+            UUID syncId,
+            List<SearchDetails> searches,
             int start,
             int maxHits,
             Set<UUID> authorizedPropertyTypes );
@@ -176,7 +186,7 @@ public interface ConductorElasticsearchApi {
     SearchResult executePropertyTypeSearch( String searchTerm, int start, int maxHits );
 
     SearchResult executeFQNEntityTypeSearch( String namespace, String name, int start, int maxHits );
-  
+
     SearchResult executeFQNPropertyTypeSearch( String namespace, String name, int start, int maxHits );
 
 }

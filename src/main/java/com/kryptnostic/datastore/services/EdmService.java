@@ -455,6 +455,11 @@ public class EdmService implements EdmManager {
     public Iterable<EntityType> getEntityTypes() {
         return entityTypeManager.getEntityTypes();
     }
+    
+    @Override
+    public Iterable<EntityType> getAssociationEntityTypes() {
+        return entityTypeManager.getAssociationEntityTypes();
+    }
 
     @Override
     public EntityType getEntityType( String namespace, String name ) {
