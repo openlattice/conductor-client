@@ -38,6 +38,7 @@ import com.dataloom.authorization.securable.AbstractSecurableObject;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organizations.roles.RolesUtil;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
@@ -144,7 +145,7 @@ public class HazelcastAclKeyReservationService {
     }
 
     public void reserveIdAndValidateType( OrganizationRole role ) {
-        reserveIdAndValidateType( role, () -> role.toString() );
+        reserveIdAndValidateType( role, () -> RolesUtil.getStringRepresentation( role ) );
     }
 
     /**

@@ -73,7 +73,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
     }
 
-    private void createRoleIfNotExists( OrganizationRole role ) {
+    public void createRoleIfNotExists( OrganizationRole role ) {
 
         /**
          * WARNING We really want to use both organizationId and roleId to specify the role; using only the roleId in
@@ -85,9 +85,6 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
         Preconditions.checkState(
                 roles.putIfAbsent( role.getRoleKey(), role ) == null,
                 "Organization Role already exists." );
-
-        securableObjectTypes.createSecurableObjectType( role.getAclKey(),
-                SecurableObjectType.OrganizationRole );
     }
 
     @Override
@@ -113,7 +110,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     @Override
     public void updateTitle( RoleKey roleKey, String title ) {
         String oldName = getRole( roleKey ).toString();
-        String newName = OrganizationRole.getStringRepresentation( roleKey.getOrganizationId(), title );
+        String newName = RolesUtil.getStringRepresentation( roleKey.getOrganizationId(), title );
         reservations.renameReservation( roleKey.getRoleId(), newName );
 
         roles.executeOnKey( roleKey, new RoleTitleUpdater( title ) );
@@ -206,7 +203,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     @Override
     public RoleKey getRoleKey( Principal principal ) {
         Preconditions.checkArgument( principal.getType() == PrincipalType.ROLE, "Only roles may have a role key." );
-        return getRoleKey( OrganizationRole.getOrganizationId( principal.getId() ), principal );
+        return getRoleKey( RolesUtil.getOrganizationId( principal.getId() ), principal );
     }
 
     @Override
