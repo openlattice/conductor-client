@@ -67,6 +67,8 @@ public interface EdmManager {
 
     Iterable<EntityType> getEntityTypes();
     
+    Iterable<EntityType> getAssociationEntityTypes();
+    
     void deleteEntityType( UUID entityTypeId );
 
     EntityType getEntityType( UUID entityTypeId );
@@ -146,5 +148,4 @@ public interface EdmManager {
         
     void deleteEdgeType( UUID edgeTypeId );
 
-    Set<UUID> getEdgeTypes();
 }
