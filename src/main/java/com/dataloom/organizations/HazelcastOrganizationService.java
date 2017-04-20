@@ -56,6 +56,7 @@ import com.dataloom.organizations.processors.EmailDomainsRemover;
 import com.dataloom.organizations.processors.PrincipalMerger;
 import com.dataloom.organizations.processors.PrincipalRemover;
 import com.dataloom.organizations.roles.RolesManager;
+import com.dataloom.organizations.roles.RolesUtil;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
@@ -109,19 +110,22 @@ public class HazelcastOrganizationService {
     }
 
     public void createOrganization( Principal principal, Organization organization ) {
-        reservations.reserveId( organization );
+        createOrganization( organization );
         authorizations.addPermission( ImmutableList.of( organization.getId() ),
                 principal,
                 EnumSet.allOf( Permission.class ) );
         authorizations.createEmptyAcl( ImmutableList.of( organization.getId() ), SecurableObjectType.Organization );
+        eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
+    }
+    
+    public void createOrganization( Organization organization ){
+        reservations.reserveId( organization );
         UUID organizationId = organization.getId();
         titles.set( organizationId, organization.getTitle() );
         descriptions.set( organizationId, organization.getDescription() );
         autoApprovedEmailDomainsOf.set( organizationId,
                 DelegatedStringSet.wrap( organization.getAutoApprovedEmails() ) );
         membersOf.set( organizationId, PrincipalSet.wrap( organization.getMembers() ) );
-        eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
-
     }
 
     public Organization getOrganization( UUID organizationId ) {
@@ -289,7 +293,7 @@ public class HazelcastOrganizationService {
     }
 
     public Set<Principal> getRoles( UUID organizationId ) {
-        return StreamUtil.stream( getRolesInFull( organizationId ) ).map( role -> role.getPrincipal() )
+        return StreamUtil.stream( getRolesInFull( organizationId ) ).map( role -> RolesUtil.getPrincipal( role ) )
                 .collect( Collectors.toSet() );
     }
 

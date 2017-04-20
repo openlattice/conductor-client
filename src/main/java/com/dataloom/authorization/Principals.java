@@ -76,7 +76,7 @@ public final class Principals {
     }
 
     public static Principal getAdminRole() {
-        return Role.ADMIN.getPrincipal();
+        return SystemRole.ADMIN.getPrincipal();
     }
 
 }
