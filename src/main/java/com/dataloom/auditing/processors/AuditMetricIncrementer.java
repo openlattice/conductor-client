@@ -29,6 +29,8 @@ import java.util.Map;
  * This class is intended to increment the in memory count for audit events for an aclkey.
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public class AuditMetricIncrementer extends AbstractRhizomeEntryProcessor<AclKey, AuditMetric, Void> {
     private static final long serialVersionUID = 3920888304011438731L;
 
