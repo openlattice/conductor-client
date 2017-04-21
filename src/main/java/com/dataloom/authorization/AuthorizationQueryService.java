@@ -26,14 +26,7 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PagingState;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
@@ -43,18 +36,13 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.NavigableSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AuthorizationQueryService {
-    private static final Logger                            logger = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( AuthorizationQueryService.class );
     private final Session                                  session;
     private final PreparedStatement                        authorizedAclKeysQuery;
@@ -101,7 +89,8 @@ public class AuthorizationQueryService {
                 .from( keyspace, Table.PERMISSIONS.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.ACL_KEYS.cql(),
                         CommonColumns.ACL_KEYS.bindMarker() ) )
-                .and( QueryBuilder.contains( CommonColumns.PERMISSIONS.cql(), Permission.OWNER ) ) );
+                .and( QueryBuilder
+                        .contains( CommonColumns.PERMISSIONS.cql(), CommonColumns.PERMISSIONS.bindMarker() ) ) );
 
         deletePermissionsByAclKeysQuery = session
                 .prepare( QueryBuilder.delete().from( keyspace, Table.PERMISSIONS.getName() ).where(
@@ -118,7 +107,7 @@ public class AuthorizationQueryService {
     private Stream<List<UUID>> getAuthorizedAclKeys(
             Function<Permission, BoundStatement> binder,
             EnumSet<Permission> desiredPermissions
-            ){
+    ) {
         return desiredPermissions
                 .stream()
                 .map( desiredPermission -> binder.apply( desiredPermission ) )
@@ -127,9 +116,10 @@ public class AuthorizationQueryService {
                 .flatMap( StreamUtil::stream )
                 .map( AuthorizationUtils::aclKey );
     }
-    
+
     /**
      * get all authorized acl keys for a principal, of a fixed object type, with desired permissions.
+     *
      * @param principal
      * @param objectType
      * @param desiredPermissions
@@ -147,6 +137,7 @@ public class AuthorizationQueryService {
 
     /**
      * get all authorized acl keys for a set of principals, of a fixed object type, with desired permissions.
+     *
      * @param principals
      * @param objectType
      * @param desiredPermissions
@@ -174,51 +165,53 @@ public class AuthorizationQueryService {
             Permission permission,
             AuthorizedObjectsPagingInfo pagingInfo,
             int pageSize
-            ) {
+    ) {
         Set<List<UUID>> results = new HashSet<>();
         int currentFetchSize = pageSize;
         Principal currentPrincipal = ( pagingInfo == null ) ? principals.first() : pagingInfo.getPrincipal();
         PagingState currentPagingState = ( pagingInfo == null ) ? null : pagingInfo.getPagingState();
         boolean exhausted = false;
-        
+
         do {
-            Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission ).setFetchSize( currentFetchSize );
-            
-            if( currentPagingState != null ){
+            Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission )
+                    .setFetchSize( currentFetchSize );
+
+            if ( currentPagingState != null ) {
                 query.setPagingState( currentPagingState );
             }
-            
+
             ResultSet rs = session.execute( query );
-            
+
             int remaining = rs.getAvailableWithoutFetching();
-            for( Row row : rs ){
-                if( results.add( AuthorizationUtils.aclKey( row ) ) ){
+            for ( Row row : rs ) {
+                if ( results.add( AuthorizationUtils.aclKey( row ) ) ) {
                     currentFetchSize--;
                 }
-                
-                if( --remaining == 0 ){
+
+                if ( --remaining == 0 ) {
                     break;
                 }
             }
-            
+
             currentPagingState = rs.getExecutionInfo().getPagingState();
-            if( currentPagingState == null || rs.isExhausted() ){
+            if ( currentPagingState == null || rs.isExhausted() ) {
                 currentPrincipal = principals.higher( currentPrincipal );
                 currentPagingState = null;
-                
-                if( currentPrincipal == null ){
+
+                if ( currentPrincipal == null ) {
                     exhausted = true;
                 }
             }
         } while ( currentFetchSize > 0 && !exhausted );
-        
+
         //When all needed results are fetched, traverse to the next principal so that the next query returns nonzero results.
-        while( currentFetchSize == 0 && currentPagingState == null && !exhausted ){
-            Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission ).setFetchSize( 1 );
+        while ( currentFetchSize == 0 && currentPagingState == null && !exhausted ) {
+            Statement query = bindAuthorizedAclKeysForObjectTypeQuery( currentPrincipal, objectType, permission )
+                    .setFetchSize( 1 );
             ResultSet rs = session.execute( query );
-            if( rs.one() == null ){
+            if ( rs.one() == null ) {
                 currentPrincipal = principals.higher( currentPrincipal );
-                if( currentPrincipal == null ){
+                if ( currentPrincipal == null ) {
                     exhausted = true;
                     break;
                 }
@@ -226,15 +219,18 @@ public class AuthorizationQueryService {
                 break;
             }
         }
-        
-        AuthorizedObjectsPagingInfo newPagingInfo = exhausted ? null : AuthorizedObjectsPagingFactory.createSafely( currentPrincipal, currentPagingState );
+
+        AuthorizedObjectsPagingInfo newPagingInfo = exhausted ?
+                null :
+                AuthorizedObjectsPagingFactory.createSafely( currentPrincipal, currentPagingState );
         String pagingToken = AuthorizedObjectsPagingFactory.encode( newPagingInfo );
-        
+
         return new AuthorizedObjectsSearchResult( pagingToken, results );
     }
 
     /**
      * get all authorized acl keys for a principal, of all object types, with desired permissions.
+     *
      * @param principal
      * @param desiredPermissions
      * @return
@@ -248,6 +244,7 @@ public class AuthorizationQueryService {
 
     /**
      * get all authorized acl keys for a set of principals, of all object types, with desired permissions.
+     *
      * @param principals
      * @param desiredPermissions
      * @return
@@ -317,12 +314,13 @@ public class AuthorizationQueryService {
         session.execute( bs );
         logger.info( "Deleted all permissions for aclKey " + aclKey );
     }
-    
+
     public Iterable<Principal> getOwnersForSecurableObject( List<UUID> aclKeys ) {
-        BoundStatement bs = ownersForSecurableObjectQuery.bind().setList( CommonColumns.ACL_KEYS.cql(),
-                aclKeys,
-                UUID.class );
-        return Iterables.transform( session.execute( bs ), AuthorizationUtils::getPrincipalFromRow ) ;
+        BoundStatement bs = ownersForSecurableObjectQuery
+                .bind()
+                .setList( CommonColumns.ACL_KEYS.cql(),aclKeys,UUID.class )
+                .set( CommonColumns.PERMISSIONS.cql(), Permission.OWNER , Permission.class );
+        return Iterables.transform( session.execute( bs ), AuthorizationUtils::getPrincipalFromRow );
     }
 
 }

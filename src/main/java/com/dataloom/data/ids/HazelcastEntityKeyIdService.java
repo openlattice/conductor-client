@@ -21,16 +21,12 @@ package com.dataloom.data.ids;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
-import com.dataloom.data.ListenableHazelcastFuture;
-import com.dataloom.graph.core.LoomGraph;
+import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.Session;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.util.Util;
 
 import java.util.Optional;
