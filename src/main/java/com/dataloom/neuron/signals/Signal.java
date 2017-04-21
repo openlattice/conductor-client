@@ -17,7 +17,7 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.neuron;
+package com.dataloom.neuron.signals;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,36 +27,38 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.client.serialization.SerializationConstants;
+import com.dataloom.neuron.SignalType;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Optional;
 
-public class AuditableSignal extends Signal {
+import static com.google.common.base.Preconditions.checkNotNull;
 
-    private static final Logger logger = LoggerFactory.getLogger( AuditableSignal.class );
+public class Signal {
 
-    private List<UUID> aclKey;
-    private Principal  principal;
-    private UUID       timeId;
-    private UUID       entityId;
-    private UUID       auditId;
-    private UUID       blockId;
+    private static final Logger logger = LoggerFactory.getLogger( Signal.class );
 
-    public AuditableSignal(
+    private SignalType       type;
+    private List<UUID>       aclKey;
+    private Principal        principal;
+    private Optional<String> details;
+
+    @JsonCreator
+    public Signal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
             @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
             @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
-            @JsonProperty( SerializationConstants.TIME_ID ) UUID timeId,
-            @JsonProperty( SerializationConstants.ENTITY_ID ) UUID entityId,
-            @JsonProperty( SerializationConstants.AUDIT_ID ) UUID auditId,
-            @JsonProperty( SerializationConstants.BLOCK_ID ) UUID blockId ) {
+            @JsonProperty( SerializationConstants.DETAILS_FIELD ) Optional<String> details ) {
 
-        super( type );
+        this.type = checkNotNull( type );
+        this.details = checkNotNull( details );
+        this.aclKey = checkNotNull( aclKey );
+        this.principal = checkNotNull( principal );
+    }
 
-        this.aclKey = aclKey;
-        this.principal = principal;
-        this.timeId = timeId;
-        this.entityId = entityId;
-        this.auditId = auditId;
-        this.blockId = blockId;
+    @JsonProperty( SerializationConstants.TYPE_FIELD )
+    public SignalType getType() {
+        return type;
     }
 
     @JsonProperty( SerializationConstants.ACL_KEY )
@@ -69,23 +71,9 @@ public class AuditableSignal extends Signal {
         return principal;
     }
 
-    @JsonProperty( SerializationConstants.TIME_ID )
-    public UUID getTimeId() {
-        return timeId;
+    @JsonProperty( SerializationConstants.DETAILS_FIELD )
+    public Optional<String> getDetails() {
+        return details;
     }
 
-    @JsonProperty( SerializationConstants.ENTITY_ID )
-    public UUID getEntityId() {
-        return entityId;
-    }
-
-    @JsonProperty( SerializationConstants.AUDIT_ID )
-    public UUID getAuditId() {
-        return auditId;
-    }
-
-    @JsonProperty( SerializationConstants.BLOCK_ID )
-    public UUID getBlockId() {
-        return blockId;
-    }
 }
