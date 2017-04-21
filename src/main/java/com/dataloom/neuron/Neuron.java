@@ -119,14 +119,17 @@ public class Neuron {
         UUID auditEntitySetId = AUDIT_ENTITY_SET.getId();
         UUID auditEntitySetSyncId = dataSourceManager.getCurrentSyncId( auditEntitySetId );
 
+        // TODO: there has to be a better way to get "Map<UUID, EdmPrimitiveTypeKind> entityDataTypes"
         Map<UUID, EdmPrimitiveTypeKind> entityDataTypes = Maps.newHashMap();
         entityDataTypes.put( DETAILS_PT.getId(), DETAILS_PT.getDatatype() );
         entityDataTypes.put( TYPE_PT.getId(), TYPE_PT.getDatatype() );
 
+        // TODO: there has to be a better way to get "SetMultimap<UUID, Object> entityProperties"
         SetMultimap<UUID, Object> entityProperties = HashMultimap.create();
         entityProperties.put( DETAILS_PT.getId(), signal.getDetails() );
         entityProperties.put( TYPE_PT.getId(), signal.getType() );
 
+        // TODO: there has to be a better way to get Map<String, SetMultimap<UUID, Object>> entity
         Map<String, SetMultimap<UUID, Object>> entity = Maps.newHashMap();
         entity.put( AUDIT_ENTITY_SET.getName(), entityProperties );
 
