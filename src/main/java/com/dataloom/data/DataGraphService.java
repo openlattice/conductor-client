@@ -49,7 +49,7 @@ public class DataGraphService implements DataGraphManager {
     private static final Logger logger = LoggerFactory
             .getLogger( DataGraphService.class );
     private final ListeningExecutorService executor;
-    private final Cache<ByteBuffer, TopUtilizers> queryCache = CacheBuilder.newBuilder()
+    private final Cache<List<TopUtilizerDetails>, TopUtilizers> queryCache = CacheBuilder.newBuilder()
             .maximumSize( 1000 )
             .expireAfterWrite( 2, TimeUnit.HOURS )
             .build();
@@ -254,14 +254,14 @@ public class DataGraphService implements DataGraphManager {
             int numResults,
             Map<UUID, PropertyType> authorizedPropertyTypes )
             throws InterruptedException, ExecutionException {
-        ByteBuffer queryId;
+        /*ByteBuffer queryId;
         try {
             queryId = ByteBuffer.wrap( ObjectMappers.getSmileMapper().writeValueAsBytes( topUtilizerDetailsList ) );
         } catch ( JsonProcessingException e1 ) {
             logger.debug( "Unable to generate query id." );
             return null;
-        }
-        TopUtilizers maybeUtilizers = queryCache.getIfPresent( queryId );
+        }*/
+        TopUtilizers maybeUtilizers = queryCache.getIfPresent( topUtilizerDetailsList );
         final TopUtilizers utilizers;
         //        if ( !eds.queryAlreadyExecuted( queryId ) ) {
         if ( maybeUtilizers == null ) {
@@ -281,7 +281,7 @@ public class DataGraphService implements DataGraphManager {
                         utilizers.accumulate( vertexId, score );
                         //eds.writeVertexCount( queryId, vertexId, 1.0D * score );
                     } );
-            queryCache.put( queryId, utilizers );
+            queryCache.put( topUtilizerDetailsList, utilizers );
         } else {
             utilizers = maybeUtilizers;
         }
