@@ -70,6 +70,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         aces.addEntryListener( (EntryUpdatedListener) event -> {
 
             // TODO: how will this work in multiple JVMs?
+            // TODO: use actual values instead of null
             neuron.transmit( new Signal(
                     SignalType.ACL_KEY_PERMISSION_UPDATE,
                     null,
