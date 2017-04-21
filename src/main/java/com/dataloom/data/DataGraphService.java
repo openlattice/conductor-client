@@ -248,13 +248,13 @@ public class DataGraphService implements DataGraphManager {
             int numResults,
             Map<UUID, PropertyType> authorizedPropertyTypes )
             throws InterruptedException, ExecutionException {
-        ByteBuffer queryId;
+        /*ByteBuffer queryId;
         try {
             queryId = ByteBuffer.wrap( ObjectMappers.getSmileMapper().writeValueAsBytes( topUtilizerDetailsList ) );
         } catch ( JsonProcessingException e1 ) {
             logger.debug( "Unable to generate query id." );
             return null;
-        }
+        }*/
         TopUtilizers utilizers = new TopUtilizers( numResults );
         //if ( !eds.queryAlreadyExecuted( queryId ) ) {
         eds.getEntityKeysForEntitySet( entitySetId, syncId )
