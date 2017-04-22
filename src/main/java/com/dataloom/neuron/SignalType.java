@@ -21,5 +21,6 @@ package com.dataloom.neuron;
 
 public enum SignalType {
 
-    ACL_KEY_PERMISSION_UPDATE
+    ACL_KEY_PERMISSION_UPDATE,
+    ORG_TITLE_UPDATE
 }

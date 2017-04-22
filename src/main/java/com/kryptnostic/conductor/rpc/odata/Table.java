@@ -102,8 +102,8 @@ public enum Table implements TableDef {
                                 CommonColumns.TIME_UUID
                         )
                         .columns(
-                                CommonColumns.DATA_ID,
                                 CommonColumns.AUDIT_ID,
+                                CommonColumns.DATA_ID,
                                 CommonColumns.BLOCK_ID
                         )
                         .sasi(

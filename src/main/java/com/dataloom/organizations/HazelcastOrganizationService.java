@@ -45,6 +45,9 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.neuron.Neuron;
+import com.dataloom.neuron.SignalType;
+import com.dataloom.neuron.signals.Signal;
 import com.dataloom.organization.Organization;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
@@ -65,6 +68,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.map.listener.EntryUpdatedListener;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 
@@ -94,6 +98,7 @@ public class HazelcastOrganizationService {
             HazelcastAclKeyReservationService reservations,
             AuthorizationManager authorizations,
             UserDirectoryService principals,
+            Neuron neuron,
             RolesManager rolesManager ) {
         this.titles = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_TITLES.name() );
         this.descriptions = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS.name() );
@@ -107,6 +112,24 @@ public class HazelcastOrganizationService {
                 membersOf );
         this.principals = checkNotNull( principals );
         this.rolesManager = rolesManager;
+
+        // TODO: this is just a placeholder to help with Neuron implementation. remove before merging into develop.
+        titles.addEntryListener( (EntryUpdatedListener) event -> {
+
+            // TODO: how will this work in multiple JVMs?
+            // TODO: use actual values instead of null
+            if ( neuron != null ) {
+
+                List<UUID> aclKey = ImmutableList.of( (UUID) event.getKey() );
+
+                neuron.transmit( new Signal(
+                        SignalType.ORG_TITLE_UPDATE,
+                        Optional.of( aclKey ),
+                        Optional.absent(),
+                        Optional.absent()
+                ) );
+            }
+        }, true );
     }
 
     public void createOrganization( Principal principal, Organization organization ) {
@@ -117,7 +140,7 @@ public class HazelcastOrganizationService {
         authorizations.createEmptyAcl( ImmutableList.of( organization.getId() ), SecurableObjectType.Organization );
         eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
     }
-    
+
     public void createOrganization( Organization organization ){
         reservations.reserveId( organization );
         UUID organizationId = organization.getId();

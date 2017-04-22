@@ -38,16 +38,16 @@ public class Signal {
 
     private static final Logger logger = LoggerFactory.getLogger( Signal.class );
 
-    private SignalType       type;
-    private List<UUID>       aclKey;
-    private Principal        principal;
-    private Optional<String> details;
+    private SignalType           type;
+    private Optional<List<UUID>> aclKey;
+    private Optional<Principal>  principal;
+    private Optional<String>     details;
 
     @JsonCreator
     public Signal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
-            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
-            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
+            @JsonProperty( SerializationConstants.ACL_KEY ) Optional<List<UUID>> aclKey,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Optional<Principal> principal,
             @JsonProperty( SerializationConstants.DETAILS_FIELD ) Optional<String> details ) {
 
         this.type = checkNotNull( type );
@@ -62,12 +62,12 @@ public class Signal {
     }
 
     @JsonProperty( SerializationConstants.ACL_KEY )
-    public List<UUID> getAclKey() {
+    public Optional<List<UUID>> getAclKey() {
         return aclKey;
     }
 
     @JsonProperty( SerializationConstants.PRINCIPAL )
-    public Principal getPrincipal() {
+    public Optional<Principal> getPrincipal() {
         return principal;
     }
 

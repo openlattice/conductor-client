@@ -71,12 +71,14 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
             // TODO: how will this work in multiple JVMs?
             // TODO: use actual values instead of null
-            neuron.transmit( new Signal(
-                    SignalType.ACL_KEY_PERMISSION_UPDATE,
-                    null,
-                    null,
-                    Optional.absent()
-            ) );
+            if ( neuron != null ) {
+                neuron.transmit( new Signal(
+                        SignalType.ACL_KEY_PERMISSION_UPDATE,
+                        null,
+                        null,
+                        Optional.absent()
+                ) );
+            }
         }, true );
     }
 

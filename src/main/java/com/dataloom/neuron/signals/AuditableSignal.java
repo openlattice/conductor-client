@@ -35,26 +35,26 @@ public class AuditableSignal extends Signal {
 
     private static final Logger logger = LoggerFactory.getLogger( AuditableSignal.class );
 
-    private UUID timeId;
-    private UUID entityId;
     private UUID auditId;
-    private UUID blockId;
+    private UUID timeId;
+    private Optional<UUID> entityId;
+    private Optional<UUID> blockId;
 
     public AuditableSignal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
-            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
-            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
+            @JsonProperty( SerializationConstants.ACL_KEY ) Optional<List<UUID>> aclKey,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Optional<Principal> principal,
             @JsonProperty( SerializationConstants.DETAILS_FIELD ) Optional<String> details,
             @JsonProperty( SerializationConstants.AUDIT_ID ) UUID auditId,
-            @JsonProperty( SerializationConstants.ENTITY_ID ) UUID entityId,
-            @JsonProperty( SerializationConstants.BLOCK_ID ) UUID blockId,
-            @JsonProperty( SerializationConstants.TIME_ID ) UUID timeId ) {
+            @JsonProperty( SerializationConstants.TIME_ID ) UUID timeId,
+            @JsonProperty( SerializationConstants.ENTITY_ID ) Optional<UUID> entityId,
+            @JsonProperty( SerializationConstants.BLOCK_ID ) Optional<UUID> blockId) {
 
         super( type, aclKey, principal, details );
 
+        this.auditId = auditId;
         this.timeId = timeId;
         this.entityId = entityId;
-        this.auditId = auditId;
         this.blockId = blockId;
     }
 
@@ -63,18 +63,18 @@ public class AuditableSignal extends Signal {
         return timeId;
     }
 
-    @JsonProperty( SerializationConstants.ENTITY_ID )
-    public UUID getEntityId() {
-        return entityId;
-    }
-
     @JsonProperty( SerializationConstants.AUDIT_ID )
     public UUID getAuditId() {
         return auditId;
     }
 
+    @JsonProperty( SerializationConstants.ENTITY_ID )
+    public Optional<UUID> getEntityId() {
+        return entityId;
+    }
+
     @JsonProperty( SerializationConstants.BLOCK_ID )
-    public UUID getBlockId() {
+    public Optional<UUID> getBlockId() {
         return blockId;
     }
 }
