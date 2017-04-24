@@ -22,7 +22,7 @@ package com.dataloom.hazelcast;
 /**
  * Simplifies management of type ids within Hazelcast for serialization. Can be re-ordered safely unless doing hot
  * upgrade. <b>NOTE: Leave first entry in place</b>
- * 
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  *
  */
@@ -94,4 +94,5 @@ public enum StreamSerializerTypeIds {
     EDGE_KEY,
     LOOM_VERTEX,
     LOOM_EDGE,
+    SIGNAL_TYPE,
 }

@@ -25,6 +25,7 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.edm.type.Analyzer;
+import com.dataloom.neuron.SignalType;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
@@ -129,4 +130,8 @@ public class TypeCodecsPod {
         return new EntityKeyTypeCodec();
     }
 
+    @Bean
+    public EnumNameCodec<SignalType> signalTypeCodec() {
+        return new EnumNameCodec<>( SignalType.class );
+    }
 }
