@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.data.DataGraphManager;
 import com.dataloom.data.DatasourceManager;
+import com.dataloom.data.EntityKey;
+import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.neuron.audit.AuditEntitySet;
 import com.dataloom.neuron.audit.AuditLogQueryService;
 import com.dataloom.neuron.signals.AuditableSignal;
@@ -47,12 +49,14 @@ public class Neuron {
     private final AuditLogQueryService auditLogQueryService;
     private final DataGraphManager     dataGraphManager;
     private final DatasourceManager    dataSourceManager;
+    private final EntityKeyIdService   entityKeyIdService;
 
     private final EnumMap<SignalType, Set<Receptor>> receptors = Maps.newEnumMap( SignalType.class );
 
     public Neuron(
             DataGraphManager dataGraphManager,
             DatasourceManager dataSourceManager,
+            EntityKeyIdService entityKeyIdService,
             CassandraConfiguration cassandraConfig,
             Session session ) {
 
@@ -60,6 +64,7 @@ public class Neuron {
 
         this.dataGraphManager = dataGraphManager;
         this.dataSourceManager = dataSourceManager;
+        this.entityKeyIdService = entityKeyIdService;
     }
 
     public void activateReceptor( SignalType type, Receptor receptor ) {
@@ -94,16 +99,18 @@ public class Neuron {
 
             UUID auditEntitySetId = AuditEntitySet.getId();
             UUID auditEntitySetSyncId = dataSourceManager.getCurrentSyncId( auditEntitySetId );
+            String auditEntityId = UUIDs.random().toString();
 
             this.dataGraphManager.createEntities(
                     auditEntitySetId,
                     auditEntitySetSyncId,
-                    AuditEntitySet.prepareEntityData( signal ),
+                    AuditEntitySet.prepareAuditEntityData( signal, auditEntityId ),
                     AuditEntitySet.getPropertyDataTypesMap()
             );
 
-            // TODO: still need to get the audit ID
-            return null;
+            // TODO: remove dependency on EntityKeyIdService once DataGraphManager can return the UUID after creation
+            EntityKey auditEntityKey = new EntityKey( auditEntitySetId, auditEntityId, auditEntitySetSyncId );
+            return entityKeyIdService.getEntityKeyId( auditEntityKey );
 
         } catch ( ExecutionException | InterruptedException e ) {
             logger.error( e.getMessage(), e );
@@ -113,11 +120,11 @@ public class Neuron {
 
     private void writeToAuditLog( Signal signal, UUID auditId ) {
 
-        // TODO: still need entityId and blockId
+        // TODO: still need to figure out entityId and blockId
         AuditableSignal auditableSignal = new AuditableSignal(
                 signal.getType(),
-                signal.getAclKey(),
-                signal.getPrincipal(),
+                signal.getAclKey().get(),
+                signal.getPrincipal().get(),
                 signal.getDetails(),
                 auditId,
                 UUIDs.timeBased(),

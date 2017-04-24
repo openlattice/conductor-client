@@ -43,6 +43,7 @@ public class Signal {
     private Optional<Principal>  principal;
     private Optional<String>     details;
 
+    // TODO: should aclKey and principal be required?
     @JsonCreator
     public Signal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,

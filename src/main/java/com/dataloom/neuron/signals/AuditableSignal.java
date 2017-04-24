@@ -35,22 +35,22 @@ public class AuditableSignal extends Signal {
 
     private static final Logger logger = LoggerFactory.getLogger( AuditableSignal.class );
 
-    private UUID auditId;
-    private UUID timeId;
+    private UUID           auditId;
+    private UUID           timeId;
     private Optional<UUID> entityId;
     private Optional<UUID> blockId;
 
     public AuditableSignal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
-            @JsonProperty( SerializationConstants.ACL_KEY ) Optional<List<UUID>> aclKey,
-            @JsonProperty( SerializationConstants.PRINCIPAL ) Optional<Principal> principal,
+            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.DETAILS_FIELD ) Optional<String> details,
             @JsonProperty( SerializationConstants.AUDIT_ID ) UUID auditId,
             @JsonProperty( SerializationConstants.TIME_ID ) UUID timeId,
             @JsonProperty( SerializationConstants.ENTITY_ID ) Optional<UUID> entityId,
-            @JsonProperty( SerializationConstants.BLOCK_ID ) Optional<UUID> blockId) {
+            @JsonProperty( SerializationConstants.BLOCK_ID ) Optional<UUID> blockId ) {
 
-        super( type, aclKey, principal, details );
+        super( type, Optional.of( aclKey ), Optional.of( principal ), details );
 
         this.auditId = auditId;
         this.timeId = timeId;

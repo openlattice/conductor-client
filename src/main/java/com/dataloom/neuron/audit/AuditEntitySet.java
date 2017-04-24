@@ -165,15 +165,15 @@ public class AuditEntitySet {
                 );
     }
 
-    public static Map<String, SetMultimap<UUID, Object>> prepareEntityData( Signal signal ) {
+    public static Map<String, SetMultimap<UUID, Object>> prepareAuditEntityData( Signal signal, String entityId ) {
 
         SetMultimap<UUID, Object> propertyValuesMap = HashMultimap.create();
         propertyValuesMap.put( DETAILS_PROPERTY_TYPE.getId(), signal.getDetails().or( "" ) );
         propertyValuesMap.put( TYPE_PROPERTY_TYPE.getId(), signal.getType().name() );
 
-        Map<String, SetMultimap<UUID, Object>> entityDataMap = Maps.newHashMap();
-        entityDataMap.put( UUIDs.random().toString(), propertyValuesMap );
+        Map<String, SetMultimap<UUID, Object>> auditEntityDataMap = Maps.newHashMap();
+        auditEntityDataMap.put( entityId, propertyValuesMap );
 
-        return entityDataMap;
+        return auditEntityDataMap;
     }
 }
