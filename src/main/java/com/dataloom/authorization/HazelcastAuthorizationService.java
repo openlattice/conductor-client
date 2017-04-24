@@ -26,15 +26,10 @@ import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.neuron.Neuron;
-import com.dataloom.neuron.signals.Signal;
-import com.dataloom.neuron.SignalType;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.map.listener.EntryUpdatedListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,26 +55,10 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public HazelcastAuthorizationService(
             HazelcastInstance hazelcastInstance,
             AuthorizationQueryService aqs,
-            EventBus eventBus,
-            Neuron neuron ) {
+            EventBus eventBus ) {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         this.aqs = checkNotNull( aqs );
         this.eventBus = checkNotNull( eventBus );
-
-        // TODO: this is just a placeholder to help with Neuron implementation. remove before merging into develop.
-        aces.addEntryListener( (EntryUpdatedListener) event -> {
-
-            // TODO: how will this work in multiple JVMs?
-            // TODO: use actual values instead of null
-            if ( neuron != null ) {
-                neuron.transmit( new Signal(
-                        SignalType.ACL_KEY_PERMISSION_UPDATE,
-                        null,
-                        null,
-                        Optional.absent()
-                ) );
-            }
-        }, true );
     }
 
     @Override
