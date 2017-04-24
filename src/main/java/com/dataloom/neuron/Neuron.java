@@ -20,7 +20,6 @@
 package com.dataloom.neuron;
 
 import java.util.EnumMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -37,9 +36,7 @@ import com.dataloom.neuron.signals.Signal;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 
@@ -79,12 +76,11 @@ public class Neuron {
         // 1. write to the Audit Entity Set
         UUID auditId = writeToAuditEntitySet( signal );
 
-        if ( auditId == null ) {
-            return;
-        }
+        if ( auditId != null ) {
 
-        // 2. write to the Audit Log Table
-        writeToAuditLog( signal, auditId );
+            // 2. write to the Audit Log Table
+            writeToAuditLog( signal, auditId );
+        }
 
         // 3. hand off event to receptors
         // List<Receptor> receptors = this.receptors.get( signal.getType() );
@@ -94,24 +90,15 @@ public class Neuron {
 
     private UUID writeToAuditEntitySet( Signal signal ) {
 
-        UUID auditEntitySetId = AuditEntitySet.AUDIT_ES.getId();
-        UUID auditEntitySetSyncId = dataSourceManager.getCurrentSyncId( auditEntitySetId );
-
-        // TODO: there has to be a better way to get "SetMultimap<UUID, Object> entityProperties"
-        SetMultimap<UUID, Object> entityProperties = HashMultimap.create();
-        entityProperties.put( AuditEntitySet.DETAILS_PT.getId(), signal.getDetails().or( "" ) );
-        entityProperties.put( AuditEntitySet.TYPE_PT.getId(), signal.getType().name() );
-
-        // TODO: there has to be a better way to get Map<String, SetMultimap<UUID, Object>> entity
-        Map<String, SetMultimap<UUID, Object>> entity = Maps.newHashMap();
-        entity.put( UUIDs.random().toString(), entityProperties );
-
         try {
+
+            UUID auditEntitySetId = AuditEntitySet.getId();
+            UUID auditEntitySetSyncId = dataSourceManager.getCurrentSyncId( auditEntitySetId );
 
             this.dataGraphManager.createEntities(
                     auditEntitySetId,
                     auditEntitySetSyncId,
-                    entity,
+                    AuditEntitySet.prepareEntityData( signal ),
                     AuditEntitySet.getPropertyDataTypesMap()
             );
 
