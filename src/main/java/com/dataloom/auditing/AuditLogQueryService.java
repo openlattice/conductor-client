@@ -38,7 +38,7 @@ public class AuditLogQueryService {
                 .set( PRINCIPAL_TYPE.cql(), signal.getPrincipal().getType(), PrincipalType.class )
                 .setString( PRINCIPAL_ID.cql(), signal.getPrincipal().getId() )
                 .setUUID( TIME_UUID.cql(), signal.getTimeId() )
-                .setUUID( DATA_ID.cql(), signal.getDataId() )
+                .setUUID( DATA_ID.cql(), signal.getEntityId() )
                 .setUUID( AUDIT_ID.cql(), signal.getAuditId() )
                 .setUUID( BLOCK_ID.cql(), signal.getBlockId() );
 

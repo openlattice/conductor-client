@@ -63,26 +63,10 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public HazelcastAuthorizationService(
             HazelcastInstance hazelcastInstance,
             AuthorizationQueryService aqs,
-            EventBus eventBus,
-            Neuron neuron ) {
+            EventBus eventBus ) {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         this.aqs = checkNotNull( aqs );
         this.eventBus = checkNotNull( eventBus );
-
-        // TODO: this is just a placeholder to help with Neuron implementation. remove before merging into develop.
-        aces.addEntryListener( (EntryUpdatedListener) event -> {
-
-            // TODO: use actual values instead of null
-            neuron.transmit( new AuditableSignal(
-                    SignalType.ACL_KEY_PERMISSION_UPDATE,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-            ) );
-        }, true );
     }
 
     @Override
