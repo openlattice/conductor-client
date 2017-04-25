@@ -21,8 +21,8 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchCall;
+import com.kryptnostic.conductor.rpc.ElasticsearchLambdas;
 import com.kryptnostic.conductor.rpc.EntityDataLambdas;
-import com.kryptnostic.conductor.rpc.Lambdas;
 import com.kryptnostic.conductor.rpc.SearchEntitySetDataLambda;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
@@ -45,7 +45,7 @@ public class ConductorElasticsearchCallStreamSerializer implements SelfRegisteri
             kryo.register( java.lang.Class.class );
             kryo.register( Organization.class );
             // Shared Lambdas
-            kryo.register( Lambdas.class );
+            kryo.register( ElasticsearchLambdas.class );
             kryo.register( EntityDataLambdas.class );
             kryo.register( SearchEntitySetDataLambda.class );
             kryo.register( SerializedLambda.class );
