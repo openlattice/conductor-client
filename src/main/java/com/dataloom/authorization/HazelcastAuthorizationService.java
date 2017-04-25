@@ -26,18 +26,10 @@ import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.neuron.AuditableSignal;
-import com.dataloom.neuron.Neuron;
-import com.dataloom.neuron.Signal;
-import com.dataloom.neuron.SignalType;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
-import com.hazelcast.core.EntryEvent;
-import com.hazelcast.core.EntryListener;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.map.listener.EntryUpdatedListener;
-import com.kryptnostic.datastore.util.Util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
