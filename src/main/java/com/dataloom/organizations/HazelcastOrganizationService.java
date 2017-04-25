@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
@@ -42,9 +43,6 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.neuron.Neuron;
-import com.dataloom.neuron.SignalType;
-import com.dataloom.neuron.signals.Signal;
 import com.dataloom.organization.Organization;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
@@ -68,14 +66,12 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 public class HazelcastOrganizationService {
 
     @Inject
-    private EventBus eventBus;
+    private EventBus                                eventBus;
 
-    private static final Logger logger = LoggerFactory
+    private static final Logger                     logger = LoggerFactory
             .getLogger( HazelcastOrganizationService.class );
 
     private final AuthorizationManager              authorizations;
@@ -120,7 +116,7 @@ public class HazelcastOrganizationService {
         eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
     }
 
-    public void createOrganization( Organization organization ) {
+    public void createOrganization( Organization organization ){
         reservations.reserveId( organization );
         UUID organizationId = organization.getId();
         titles.set( organizationId, organization.getTitle() );
