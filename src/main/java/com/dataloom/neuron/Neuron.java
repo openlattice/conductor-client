@@ -67,7 +67,9 @@ public class Neuron {
         this.entityKeyIdService = entityKeyIdService;
     }
 
-    public void activateReceptor( SignalType type, Receptor receptor ) {
+    public void activateReceptor( Receptor receptor ) {
+
+        SignalType type = receptor.getSignalType();
 
         if ( receptors.containsKey( type ) ) {
             receptors.get( type ).add( receptor );
@@ -88,9 +90,8 @@ public class Neuron {
         }
 
         // 3. hand off event to receptors
-        // List<Receptor> receptors = this.receptors.get( signal.getType() );
-        // receptors.forEach( receptor -> receptor.process( signal ) );
-
+        Set<Receptor> receptors = this.receptors.get( signal.getType() );
+        receptors.forEach( receptor -> receptor.process( signal ) );
     }
 
     private UUID writeToAuditEntitySet( Signal signal ) {
