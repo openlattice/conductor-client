@@ -8,14 +8,15 @@ import java.util.UUID;
  */
 public class LongWeightedId implements Comparable<LongWeightedId> {
     private final @Nonnull UUID id;
-    private final long weight;
+    private final long          weight;
 
     public LongWeightedId( @Nonnull UUID id, long weight ) {
         this.id = id;
         this.weight = weight;
     }
 
-    @Override public boolean equals( Object o ) {
+    @Override
+    public boolean equals( Object o ) {
         if ( this == o )
             return true;
         if ( !( o instanceof LongWeightedId ) )
@@ -28,7 +29,8 @@ public class LongWeightedId implements Comparable<LongWeightedId> {
         return id.equals( that.id );
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = id.hashCode();
         result = 31 * result + (int) ( weight ^ ( weight >>> 32 ) );
         return result;
@@ -36,7 +38,11 @@ public class LongWeightedId implements Comparable<LongWeightedId> {
 
     @Override
     public int compareTo( LongWeightedId o ) {
-        return Long.compare( weight, o.weight );
+        int value = Long.compare( weight, o.weight );
+        if ( value == 0 ) {
+            value = id.compareTo( o.id );
+        }
+        return value;
     }
 
     public long getWeight() {
