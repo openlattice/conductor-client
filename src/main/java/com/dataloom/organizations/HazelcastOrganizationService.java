@@ -19,6 +19,8 @@
 
 package com.dataloom.organizations;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -115,7 +117,7 @@ public class HazelcastOrganizationService {
         authorizations.createEmptyAcl( ImmutableList.of( organization.getId() ), SecurableObjectType.Organization );
         eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
     }
-
+    
     public void createOrganization( Organization organization ){
         reservations.reserveId( organization );
         UUID organizationId = organization.getId();
