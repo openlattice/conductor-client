@@ -91,6 +91,9 @@ public class Neuron {
 
         // 3. hand off event to receptors
         Set<Receptor> receptors = this.receptors.get( signal.getType() );
+
+        // TODO: does order matter?
+        // TODO: what about parallelization?
         receptors.forEach( receptor -> receptor.process( signal ) );
     }
 
