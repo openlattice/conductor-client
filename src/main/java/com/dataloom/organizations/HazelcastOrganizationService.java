@@ -19,8 +19,6 @@
 
 package com.dataloom.organizations;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
 import javax.inject.Inject;
 
 import org.slf4j.Logger;
@@ -68,16 +65,17 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.map.listener.EntryUpdatedListener;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastOrganizationService {
 
     @Inject
-    private EventBus                                eventBus;
+    private EventBus eventBus;
 
-    private static final Logger                     logger = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( HazelcastOrganizationService.class );
 
     private final AuthorizationManager              authorizations;
@@ -98,7 +96,6 @@ public class HazelcastOrganizationService {
             HazelcastAclKeyReservationService reservations,
             AuthorizationManager authorizations,
             UserDirectoryService principals,
-            Neuron neuron,
             RolesManager rolesManager ) {
         this.titles = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_TITLES.name() );
         this.descriptions = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS.name() );
@@ -112,24 +109,6 @@ public class HazelcastOrganizationService {
                 membersOf );
         this.principals = checkNotNull( principals );
         this.rolesManager = rolesManager;
-
-        // TODO: this is just a placeholder to help with Neuron implementation. remove before merging into develop.
-        titles.addEntryListener( (EntryUpdatedListener) event -> {
-
-            // TODO: how will this work in multiple JVMs?
-            // TODO: use actual values instead of null
-            if ( neuron != null ) {
-
-                List<UUID> aclKey = ImmutableList.of( (UUID) event.getKey() );
-
-                neuron.transmit( new Signal(
-                        SignalType.ORG_TITLE_UPDATE,
-                        Optional.of( aclKey ),
-                        Optional.absent(),
-                        Optional.absent()
-                ) );
-            }
-        }, true );
     }
 
     public void createOrganization( Principal principal, Organization organization ) {
@@ -141,7 +120,7 @@ public class HazelcastOrganizationService {
         eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
     }
 
-    public void createOrganization( Organization organization ){
+    public void createOrganization( Organization organization ) {
         reservations.reserveId( organization );
         UUID organizationId = organization.getId();
         titles.set( organizationId, organization.getTitle() );
