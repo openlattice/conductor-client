@@ -53,13 +53,21 @@ public interface DataGraphManager {
      * Bulk endpoints for entities/associations
      */
 
+    UUID createEntity(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
+            throws ExecutionException, InterruptedException;
+
     void createEntities(
             UUID entitySetId,
             UUID syncId,
             Map<String, SetMultimap<UUID, Object>> entities,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
             throws ExecutionException, InterruptedException;
-
+    
     void createAssociations(
             UUID entitySetId,
             UUID syncId,
