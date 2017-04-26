@@ -1,6 +1,6 @@
 package com.dataloom.data;
 
-import java.nio.ByteBuffer;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.requests.Association;
@@ -23,10 +24,12 @@ public interface DataGraphManager {
     EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
+            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
     EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
+            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
 
     // TODO remove vertices too

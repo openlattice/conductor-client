@@ -1,5 +1,21 @@
 package com.dataloom.data;
 
+import static com.google.common.util.concurrent.Futures.transformAsync;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.analytics.TopUtilizers;
 import com.dataloom.data.requests.Association;
@@ -10,9 +26,7 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mappers.ObjectMappers;
 import com.datastax.driver.core.ResultSetFuture;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -27,20 +41,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import com.kryptnostic.datastore.util.Util;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import static com.google.common.util.concurrent.Futures.transformAsync;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -100,15 +100,17 @@ public class DataGraphService implements DataGraphManager {
     public EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
+            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return eds.getEntitySetData( entitySetId, syncId, authorizedPropertyTypes );
+        return eds.getEntitySetData( entitySetId, syncId, orderedPropertyFqns, authorizedPropertyTypes );
     }
 
     @Override
     public EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
+            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
-        return eds.getLinkedEntitySetData( linkedEntitySetId, authorizedPropertyTypesForEntitySets );
+        return eds.getLinkedEntitySetData( linkedEntitySetId, orderedPropertyFqns, authorizedPropertyTypesForEntitySets );
     }
 
     @Override

@@ -1,31 +1,32 @@
 package com.dataloom.data;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.common.collect.SetMultimap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.SetMultimap;
 
 public class EntitySetData implements Iterable<SetMultimap<FullQualifiedName, Object>> {
 
     private static final Logger                              logger = LoggerFactory
             .getLogger( EntitySetData.class );
 
-    private Set<FullQualifiedName>                           authorizedPropertyFqns;
+    private LinkedHashSet<FullQualifiedName>                           authorizedPropertyFqns;
     private Iterable<SetMultimap<FullQualifiedName, Object>> entities;
 
     public EntitySetData(
-            Set<FullQualifiedName> authorizedPropertyFqns,
+            LinkedHashSet<FullQualifiedName> authorizedPropertyFqns,
             Iterable<SetMultimap<FullQualifiedName, Object>> entities ) {
         this.authorizedPropertyFqns = authorizedPropertyFqns;
         this.entities = entities;
     }
 
-    public Set<FullQualifiedName> getAuthorizedPropertyFqns() {
+    public LinkedHashSet<FullQualifiedName> getAuthorizedPropertyFqns() {
         return authorizedPropertyFqns;
     }
 

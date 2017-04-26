@@ -22,6 +22,7 @@ package com.dataloom.data.storage;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -136,11 +137,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
     public EntitySetData getEntitySetData(
             UUID entitySetId,
             UUID syncId,
+            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        Set<FullQualifiedName> authorizedPropertyFqns = authorizedPropertyTypes.values().stream()
-                .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
-        return new EntitySetData( authorizedPropertyFqns, Iterables.transform( entityRows,
+        return new EntitySetData( orderedPropertyFqns, Iterables.transform( entityRows,
                 rs -> rowToEntity( rs, authorizedPropertyTypes ) ) );
     }
 
@@ -159,12 +159,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
     @Override
     public EntitySetData getLinkedEntitySetData(
             UUID linkedEntitySetId,
+            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
-        Set<FullQualifiedName> authorizedPropertyFqns = authorizedPropertyTypesForEntitySets.values().stream()
-                .flatMap( map -> map.values().stream() )
-                .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<Pair<UUID, Set<EntityKey>>> linkedEntityKeys = getLinkedEntityKeys( linkedEntitySetId );
-        return new EntitySetData( authorizedPropertyFqns, Iterables.transform( linkedEntityKeys,
+        return new EntitySetData( orderedPropertyFqns, Iterables.transform( linkedEntityKeys,
                 linkedKey -> getAndMergeLinkedEntities( linkedEntitySetId,
                         linkedKey,
                         authorizedPropertyTypesForEntitySets ) )::iterator );
