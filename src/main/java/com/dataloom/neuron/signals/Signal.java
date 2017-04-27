@@ -17,14 +17,20 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.neuron;
+package com.dataloom.neuron.signals;
+
+import java.util.List;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.authorization.Principal;
 import com.dataloom.client.serialization.SerializationConstants;
+import com.dataloom.neuron.SignalType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Optional;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -32,16 +38,43 @@ public class Signal {
 
     private static final Logger logger = LoggerFactory.getLogger( Signal.class );
 
-    private SignalType type;
+    private SignalType           type;
+    private Optional<List<UUID>> aclKey;
+    private Optional<Principal>  principal;
+    private Optional<String>     details;
 
+    // TODO: should aclKey and principal be required?
     @JsonCreator
-    public Signal( @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type ) {
+    public Signal(
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
+            @JsonProperty( SerializationConstants.ACL_KEY ) Optional<List<UUID>> aclKey,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Optional<Principal> principal,
+            @JsonProperty( SerializationConstants.DETAILS_FIELD ) Optional<String> details ) {
 
         this.type = checkNotNull( type );
+        this.details = checkNotNull( details );
+        this.aclKey = checkNotNull( aclKey );
+        this.principal = checkNotNull( principal );
     }
 
     @JsonProperty( SerializationConstants.TYPE_FIELD )
     public SignalType getType() {
         return type;
     }
+
+    @JsonProperty( SerializationConstants.ACL_KEY )
+    public Optional<List<UUID>> getAclKey() {
+        return aclKey;
+    }
+
+    @JsonProperty( SerializationConstants.PRINCIPAL )
+    public Optional<Principal> getPrincipal() {
+        return principal;
+    }
+
+    @JsonProperty( SerializationConstants.DETAILS_FIELD )
+    public Optional<String> getDetails() {
+        return details;
+    }
+
 }

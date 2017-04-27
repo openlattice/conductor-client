@@ -21,28 +21,55 @@ package com.dataloom.neuron;
 
 import java.util.EnumMap;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.auditing.AuditLogQueryService;
+import com.dataloom.data.DataGraphManager;
+import com.dataloom.data.DatasourceManager;
+import com.dataloom.data.EntityKey;
+import com.dataloom.data.EntityKeyIdService;
+import com.dataloom.neuron.audit.AuditEntitySet;
+import com.dataloom.neuron.audit.AuditLogQueryService;
+import com.dataloom.neuron.signals.AuditableSignal;
+import com.dataloom.neuron.signals.Signal;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 
 public class Neuron {
 
     private static final Logger logger = LoggerFactory.getLogger( Neuron.class );
 
     private final AuditLogQueryService auditLogQueryService;
+    private final DataGraphManager     dataGraphManager;
+    private final DatasourceManager    dataSourceManager;
+    private final EntityKeyIdService   entityKeyIdService;
 
     private final EnumMap<SignalType, Set<Receptor>> receptors = Maps.newEnumMap( SignalType.class );
 
-    public Neuron( AuditLogQueryService auditLogQueryService ) {
+    public Neuron(
+            DataGraphManager dataGraphManager,
+            DatasourceManager dataSourceManager,
+            EntityKeyIdService entityKeyIdService,
+            CassandraConfiguration cassandraConfig,
+            Session session ) {
 
-        this.auditLogQueryService = auditLogQueryService;
+        this.auditLogQueryService = new AuditLogQueryService( cassandraConfig, session );
+
+        this.dataGraphManager = dataGraphManager;
+        this.dataSourceManager = dataSourceManager;
+        this.entityKeyIdService = entityKeyIdService;
     }
 
-    public void activateReceptor( SignalType type, Receptor receptor ) {
+    public void activateReceptor( Receptor receptor ) {
+
+        SignalType type = receptor.getSignalType();
 
         if ( receptors.containsKey( type ) ) {
             receptors.get( type ).add( receptor );
@@ -51,14 +78,65 @@ public class Neuron {
         }
     }
 
-    public void transmit( AuditableSignal signal ) {
+    public void transmit( Signal signal ) {
 
-        // 1. audit event
-        this.auditLogQueryService.store( signal );
+        // 1. write to the Audit Entity Set
+        UUID auditId = writeToAuditEntitySet( signal );
 
-        // 2. hand off event to receptors
-        // List<Receptor> receptors = this.receptors.get( signal.getType() );
-        // receptors.forEach( synapse -> synapse.process( signal ) );
+        if ( auditId != null ) {
 
+            // 2. write to the Audit Log Table
+            writeToAuditLog( signal, auditId );
+        }
+
+        // 3. hand off event to receptors
+        Set<Receptor> receptors = this.receptors.get( signal.getType() );
+
+        // TODO: does order matter?
+        // TODO: what about parallelization?
+        receptors.forEach( receptor -> receptor.process( signal ) );
+    }
+
+    private UUID writeToAuditEntitySet( Signal signal ) {
+
+        try {
+
+            UUID auditEntitySetId = AuditEntitySet.getId();
+            UUID auditEntitySetSyncId = dataSourceManager.getCurrentSyncId( auditEntitySetId );
+            String auditEntityId = UUIDs.random().toString();
+
+            this.dataGraphManager.createEntities(
+                    auditEntitySetId,
+                    auditEntitySetSyncId,
+                    AuditEntitySet.prepareAuditEntityData( signal, auditEntityId ),
+                    AuditEntitySet.getPropertyDataTypesMap()
+            );
+
+            // TODO: remove dependency on EntityKeyIdService once DataGraphManager can return the UUID after creation
+            EntityKey auditEntityKey = new EntityKey( auditEntitySetId, auditEntityId, auditEntitySetSyncId );
+            return entityKeyIdService.getEntityKeyId( auditEntityKey );
+
+        } catch ( ExecutionException | InterruptedException e ) {
+            logger.error( e.getMessage(), e );
+            return null;
+        }
+    }
+
+    private void writeToAuditLog( Signal signal, UUID auditId ) {
+
+        // TODO: still need to figure out entityId and blockId
+        AuditableSignal auditableSignal = new AuditableSignal(
+                signal.getType(),
+                signal.getAclKey().get(),
+                signal.getPrincipal().get(),
+                signal.getDetails(),
+                auditId,
+                UUIDs.timeBased(),
+                Optional.absent(),
+                Optional.absent()
+        );
+
+        // TODO: still needs to be implemented
+        this.auditLogQueryService.store( auditableSignal );
     }
 }

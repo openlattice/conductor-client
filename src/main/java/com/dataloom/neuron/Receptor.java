@@ -19,7 +19,11 @@
 
 package com.dataloom.neuron;
 
-public interface Receptor<T extends Signal> {
+import com.dataloom.neuron.signals.Signal;
 
-    void process( T signal );
+public interface Receptor {
+
+    SignalType getSignalType();
+
+    void process( Signal signal );
 }
