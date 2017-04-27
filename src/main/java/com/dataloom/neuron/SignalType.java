@@ -21,8 +21,9 @@ package com.dataloom.neuron;
 
 public enum SignalType {
 
-    ACL_KEY_PERMISSION_UPDATE(),
-    ORG_TITLE_UPDATE();
+    PERMISSION_REQUEST_APPROVED(),
+    PERMISSION_REQUEST_DECLINED(),
+    PERMISSION_REQUEST_SUBMITTED();
 
     private final String hzName;
 

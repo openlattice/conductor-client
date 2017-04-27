@@ -19,6 +19,7 @@
 
 package com.dataloom.neuron.signals;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,7 +35,7 @@ import com.google.common.base.Optional;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class Signal {
+public class Signal implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( Signal.class );
 
@@ -43,7 +44,8 @@ public class Signal {
     private Optional<Principal>  principal;
     private Optional<String>     details;
 
-    // TODO: should aclKey and principal be required?
+    // TODO: should aclKey and principal be optional or required?
+    // TODO: should details be Optional<String>, or Optional<Object>?
     @JsonCreator
     public Signal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,

@@ -44,6 +44,7 @@ public class AuditLogQueryService {
     private final Session           session;
     private final PreparedStatement storeQuery;
 
+    // TODO: what would CassandraConfiguration be needed for in the future?
     public AuditLogQueryService( CassandraConfiguration cassandraConfig, Session session ) {
 
         this.session = session;
