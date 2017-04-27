@@ -32,6 +32,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public class AuditableEventKey {
     private final List<UUID>          aclKey;
     private final UUID                timestamp;

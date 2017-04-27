@@ -42,6 +42,8 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public class LeaderboardMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<AclKey, AuditMetric> {
     private static AclKey TEST_KEY = AclKey.wrap( TestDataFactory.aclKey() );
     private final PreparedStatement bookkeeper;
