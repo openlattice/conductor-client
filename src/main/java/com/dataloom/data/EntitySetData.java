@@ -1,41 +1,41 @@
 package com.dataloom.data;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.common.collect.SetMultimap;
-import org.apache.commons.lang3.NotImplementedException;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Iterator;
 import java.util.Set;
 
-public class EntitySetData implements Iterable<SetMultimap<FullQualifiedName, Object>> {
+import org.apache.commons.lang3.NotImplementedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    private static final Logger                              logger = LoggerFactory
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.collect.SetMultimap;
+
+public class EntitySetData<T> implements Iterable<SetMultimap<T, Object>> {
+
+    private static final Logger              logger = LoggerFactory
             .getLogger( EntitySetData.class );
 
-    private Set<FullQualifiedName>                           authorizedPropertyFqns;
-    private Iterable<SetMultimap<FullQualifiedName, Object>> entities;
+    private Set<T>                           authorizedPropertyFqns;
+    private Iterable<SetMultimap<T, Object>> entities;
 
     public EntitySetData(
-            Set<FullQualifiedName> authorizedPropertyFqns,
-            Iterable<SetMultimap<FullQualifiedName, Object>> entities ) {
+            Set<T> authorizedPropertyFqns,
+            Iterable<SetMultimap<T, Object>> entities ) {
         this.authorizedPropertyFqns = authorizedPropertyFqns;
         this.entities = entities;
     }
 
-    public Set<FullQualifiedName> getAuthorizedPropertyFqns() {
+    public Set<T> getAuthorizedPropertyFqns() {
         return authorizedPropertyFqns;
     }
 
     @JsonValue
-    public Iterable<SetMultimap<FullQualifiedName, Object>> getEntities() {
+    public Iterable<SetMultimap<T, Object>> getEntities() {
         return entities::iterator;
     }
 
     @Override
-    public Iterator<SetMultimap<FullQualifiedName, Object>> iterator() {
+    public Iterator<SetMultimap<T, Object>> iterator() {
         throw new NotImplementedException( "Purposefully not implemented." );
     }
 }

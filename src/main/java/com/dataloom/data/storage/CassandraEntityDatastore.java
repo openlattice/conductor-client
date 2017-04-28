@@ -133,14 +133,14 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
-    public EntitySetData getEntitySetData(
+    public EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
         Set<FullQualifiedName> authorizedPropertyFqns = authorizedPropertyTypes.values().stream()
                 .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
-        return new EntitySetData( authorizedPropertyFqns, Iterables.transform( entityRows,
+        return new EntitySetData<FullQualifiedName>( authorizedPropertyFqns, Iterables.transform( entityRows,
                 rs -> rowToEntity( rs, authorizedPropertyTypes ) ) );
     }
 
@@ -157,14 +157,14 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
-    public EntitySetData getLinkedEntitySetData(
+    public EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
         Set<FullQualifiedName> authorizedPropertyFqns = authorizedPropertyTypesForEntitySets.values().stream()
                 .flatMap( map -> map.values().stream() )
                 .map( pt -> pt.getType() ).collect( Collectors.toSet() );
         Iterable<Pair<UUID, Set<EntityKey>>> linkedEntityKeys = getLinkedEntityKeys( linkedEntitySetId );
-        return new EntitySetData( authorizedPropertyFqns, Iterables.transform( linkedEntityKeys,
+        return new EntitySetData<FullQualifiedName>( authorizedPropertyFqns, Iterables.transform( linkedEntityKeys,
                 linkedKey -> getAndMergeLinkedEntities( linkedEntitySetId,
                         linkedKey,
                         authorizedPropertyTypesForEntitySets ) )::iterator );

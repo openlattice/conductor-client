@@ -48,7 +48,7 @@ public interface EntityDatastore {
      * @param authorizedPropertyTypes
      * @return
      */
-    EntitySetData getEntitySetData(
+    EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
@@ -75,7 +75,7 @@ public interface EntityDatastore {
      * @param authorizedPropertyTypesForEntitySets
      * @return
      */
-    EntitySetData getLinkedEntitySetData(
+    EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
 
