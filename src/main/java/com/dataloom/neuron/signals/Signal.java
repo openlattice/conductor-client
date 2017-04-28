@@ -31,7 +31,6 @@ import com.dataloom.client.serialization.SerializationConstants;
 import com.dataloom.neuron.SignalType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -39,24 +38,32 @@ public class Signal implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( Signal.class );
 
-    private SignalType           type;
-    private Optional<List<UUID>> aclKey;
-    private Optional<Principal>  principal;
-    private Optional<String>     details;
+    private SignalType type;
+    private List<UUID> aclKey;
+    private Principal  principal;
+    private String     details;
 
-    // TODO: should aclKey and principal be optional or required?
-    // TODO: should details be Optional<String>, or Optional<Object>?
     @JsonCreator
     public Signal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
-            @JsonProperty( SerializationConstants.ACL_KEY ) Optional<List<UUID>> aclKey,
-            @JsonProperty( SerializationConstants.PRINCIPAL ) Optional<Principal> principal,
-            @JsonProperty( SerializationConstants.DETAILS_FIELD ) Optional<String> details ) {
+            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
+            @JsonProperty( SerializationConstants.DETAILS_FIELD ) String details ) {
 
         this.type = checkNotNull( type );
-        this.details = checkNotNull( details );
-        this.aclKey = checkNotNull( aclKey );
-        this.principal = checkNotNull( principal );
+        this.aclKey = aclKey;
+        this.principal = principal;
+
+        // TODO: should details be String, or Object?
+        this.details = details;
+    }
+
+    public Signal(
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
+            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
+            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal ) {
+
+        this( type, aclKey, principal, null );
     }
 
     @JsonProperty( SerializationConstants.TYPE_FIELD )
@@ -65,17 +72,17 @@ public class Signal implements Serializable {
     }
 
     @JsonProperty( SerializationConstants.ACL_KEY )
-    public Optional<List<UUID>> getAclKey() {
+    public List<UUID> getAclKey() {
         return aclKey;
     }
 
     @JsonProperty( SerializationConstants.PRINCIPAL )
-    public Optional<Principal> getPrincipal() {
+    public Principal getPrincipal() {
         return principal;
     }
 
     @JsonProperty( SerializationConstants.DETAILS_FIELD )
-    public Optional<String> getDetails() {
+    public String getDetails() {
         return details;
     }
 

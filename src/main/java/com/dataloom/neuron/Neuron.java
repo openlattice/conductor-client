@@ -123,13 +123,13 @@ public class Neuron {
         // TODO: still need to figure out entityId and blockId
         AuditableSignal auditableSignal = new AuditableSignal(
                 signal.getType(),
-                signal.getAclKey().get(),
-                signal.getPrincipal().get(),
+                signal.getAclKey(),
+                signal.getPrincipal(),
                 signal.getDetails(),
                 auditId,
                 UUIDs.timeBased(),
-                Optional.absent(),
-                Optional.absent()
+                null,
+                null
         );
 
         // TODO: still needs to be implemented

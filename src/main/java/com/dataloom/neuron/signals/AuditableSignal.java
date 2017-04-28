@@ -29,31 +29,32 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.client.serialization.SerializationConstants;
 import com.dataloom.neuron.SignalType;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AuditableSignal extends Signal {
 
     private static final Logger logger = LoggerFactory.getLogger( AuditableSignal.class );
 
-    private UUID           auditId;
-    private UUID           timeId;
-    private Optional<UUID> dataId;
-    private Optional<UUID> blockId;
+    private UUID auditId;
+    private UUID timeId;
+    private UUID dataId;
+    private UUID blockId;
 
     public AuditableSignal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
             @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
             @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
-            @JsonProperty( SerializationConstants.DETAILS_FIELD ) Optional<String> details,
+            @JsonProperty( SerializationConstants.DETAILS_FIELD ) String details,
             @JsonProperty( SerializationConstants.AUDIT_ID ) UUID auditId,
             @JsonProperty( SerializationConstants.TIME_ID ) UUID timeId,
-            @JsonProperty( SerializationConstants.DATA_ID ) Optional<UUID> dataId,
-            @JsonProperty( SerializationConstants.BLOCK_ID ) Optional<UUID> blockId ) {
+            @JsonProperty( SerializationConstants.DATA_ID ) UUID dataId,
+            @JsonProperty( SerializationConstants.BLOCK_ID ) UUID blockId ) {
 
-        super( type, Optional.of( aclKey ), Optional.of( principal ), details );
+        super( type, checkNotNull( aclKey ), checkNotNull( principal ), details );
 
-        this.auditId = auditId;
-        this.timeId = timeId;
+        this.auditId = checkNotNull( auditId );
+        this.timeId = checkNotNull( timeId );
         this.dataId = dataId;
         this.blockId = blockId;
     }
@@ -69,12 +70,12 @@ public class AuditableSignal extends Signal {
     }
 
     @JsonProperty( SerializationConstants.DATA_ID )
-    public Optional<UUID> getDataId() {
+    public UUID getDataId() {
         return dataId;
     }
 
     @JsonProperty( SerializationConstants.BLOCK_ID )
-    public Optional<UUID> getBlockId() {
+    public UUID getBlockId() {
         return blockId;
     }
 }
