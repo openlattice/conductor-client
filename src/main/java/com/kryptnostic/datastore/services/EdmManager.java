@@ -30,6 +30,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.requests.MetadataUpdate;
+import com.dataloom.edm.type.AssociationDetails;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
@@ -145,6 +146,8 @@ public interface EdmManager {
     UUID createEdgeType( EdgeType edgeType, UUID entityTypeId );
     
     EdgeType getEdgeType( UUID edgeTypeId );
+    
+    AssociationDetails getAssociationDetails( UUID associationTypeId );
         
     void deleteEdgeType( UUID edgeTypeId );
 

@@ -58,6 +58,7 @@ import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
+import com.dataloom.edm.type.AssociationDetails;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
@@ -455,7 +456,7 @@ public class EdmService implements EdmManager {
     public Iterable<EntityType> getEntityTypes() {
         return entityTypeManager.getEntityTypes();
     }
-    
+
     @Override
     public Iterable<EntityType> getAssociationEntityTypes() {
         return entityTypeManager.getAssociationEntityTypes();
@@ -730,6 +731,20 @@ public class EdmService implements EdmManager {
     @Override
     public void deleteEdgeType( UUID edgeTypeId ) {
         edgeTypes.delete( edgeTypeId );
+    }
+
+    @Override
+    public AssociationDetails getAssociationDetails( UUID associationTypeId ) {
+        EdgeType associationType = getEdgeType( associationTypeId );
+        LinkedHashSet<EntityType> srcEntityTypes = associationType.getSrc()
+                .stream()
+                .map( entityTypeId -> getEntityType( entityTypeId ) )
+                .collect( Collectors.toCollection( () -> new LinkedHashSet<>() ) );
+        LinkedHashSet<EntityType> dstEntityTypes = associationType.getDest()
+                .stream()
+                .map( entityTypeId -> getEntityType( entityTypeId ) )
+                .collect( Collectors.toCollection( () -> new LinkedHashSet<>() ) );
+        return new AssociationDetails( srcEntityTypes, dstEntityTypes, associationType.isBidirectional() );
     }
 
 }
