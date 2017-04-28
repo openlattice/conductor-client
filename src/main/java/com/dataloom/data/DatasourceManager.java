@@ -89,14 +89,8 @@ public class DatasourceManager {
     }
 
     public UUID createNewSyncIdForEntitySet( UUID entitySetId ) {
-
         UUID newSyncId = UUIDs.timeBased();
         addSyncIdToEntitySet( entitySetId, newSyncId );
-
-        if ( entitySetId.equals( AuditEntitySet.getId() ) ) {
-            AuditEntitySet.setSyncId( newSyncId );
-        }
-
         eventBus.post( new SyncIdCreatedEvent( entitySetId, newSyncId ) );
         return newSyncId;
     }
