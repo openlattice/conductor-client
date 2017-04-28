@@ -22,6 +22,7 @@ package com.dataloom.neuron.receptors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.hazelcast.HazelcastQueue;
 import com.dataloom.neuron.Receptor;
 import com.dataloom.neuron.SignalType;
 import com.dataloom.neuron.signals.Signal;
@@ -50,7 +51,7 @@ public class HazelcastQueueReceptor implements Receptor {
     @Override
     public void process( Signal signal ) {
 
-        IQueue<Signal> queue = hazelcastInstance.getQueue( signalType.getHzName() );
+        IQueue<Signal> queue = hazelcastInstance.getQueue( HazelcastQueue.NEURON.name() );
 
         try {
             queue.put( signal );

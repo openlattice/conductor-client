@@ -21,21 +21,11 @@ package com.dataloom.neuron;
 
 public enum SignalType {
 
-    PERMISSION_REQUEST_APPROVED(),
-    PERMISSION_REQUEST_DECLINED(),
-    PERMISSION_REQUEST_SUBMITTED();
+    ACL_KEY_PERMISSION_ADDED,
+    ACL_KEY_PERMISSION_REMOVED,
+    ACL_KEY_PERMISSION_UPDATED,
 
-    private final String hzName;
-
-    SignalType() {
-
-        // not entirely sure if this is necessary, just want to avoid having to type this prefix, but also have at
-        // least a little bit of protection against name clashes
-        this.hzName = "NEURON_SIGNAL_" + this.name();
-    }
-
-    public String getHzName() {
-
-        return this.hzName;
-    }
+    PERMISSION_REQUEST_APPROVED,
+    PERMISSION_REQUEST_DECLINED,
+    PERMISSION_REQUEST_SUBMITTED
 }

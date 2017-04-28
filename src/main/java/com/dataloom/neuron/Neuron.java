@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 
 import com.dataloom.data.DataGraphManager;
 import com.dataloom.data.EntityKey;
@@ -36,7 +37,6 @@ import com.dataloom.neuron.signals.AuditableSignal;
 import com.dataloom.neuron.signals.Signal;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
@@ -74,6 +74,7 @@ public class Neuron {
         }
     }
 
+    @Async
     public void transmit( Signal signal ) {
 
         // 1. write to the Audit Entity Set
