@@ -183,7 +183,7 @@ public class AuditEntitySet {
     public static Map<String, SetMultimap<UUID, Object>> prepareAuditEntityData( Signal signal, String entityId ) {
 
         SetMultimap<UUID, Object> propertyValuesMap = HashMultimap.create();
-        propertyValuesMap.put( DETAILS_PROPERTY_TYPE.getId(), signal.getDetails().or( "" ) );
+        propertyValuesMap.put( DETAILS_PROPERTY_TYPE.getId(), signal.getDetails() );
         propertyValuesMap.put( TYPE_PROPERTY_TYPE.getId(), signal.getType().name() );
 
         Map<String, SetMultimap<UUID, Object>> auditEntityDataMap = Maps.newHashMap();

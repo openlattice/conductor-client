@@ -55,14 +55,14 @@ public class AuditLogQueryService {
 
         // TODO: how do I deal with Optionals?
         BoundStatement storeStatement = storeQuery.bind()
-                .setList( ACL_KEYS.cql(), signal.getAclKey().get(), UUID.class )
+                .setList( ACL_KEYS.cql(), signal.getAclKey(), UUID.class )
                 .set( EVENT_TYPE.cql(), signal.getType(), SignalType.class )
-                .set( PRINCIPAL_TYPE.cql(), signal.getPrincipal().get().getType(), PrincipalType.class )
-                .setString( PRINCIPAL_ID.cql(), signal.getPrincipal().get().getId() )
+                .set( PRINCIPAL_TYPE.cql(), signal.getPrincipal().getType(), PrincipalType.class )
+                .setString( PRINCIPAL_ID.cql(), signal.getPrincipal().getId() )
                 .setUUID( AUDIT_ID.cql(), signal.getAuditId() )
                 .setUUID( TIME_UUID.cql(), signal.getTimeId() )
-                .setUUID( DATA_ID.cql(), signal.getDataId().orNull() )
-                .setUUID( BLOCK_ID.cql(), signal.getBlockId().orNull() );
+                .setUUID( DATA_ID.cql(), signal.getDataId() )
+                .setUUID( BLOCK_ID.cql(), signal.getBlockId() );
 
         session.executeAsync( storeStatement );
     }
