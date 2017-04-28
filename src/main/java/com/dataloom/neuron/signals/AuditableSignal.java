@@ -37,7 +37,7 @@ public class AuditableSignal extends Signal {
 
     private UUID           auditId;
     private UUID           timeId;
-    private Optional<UUID> entityId;
+    private Optional<UUID> dataId;
     private Optional<UUID> blockId;
 
     public AuditableSignal(
@@ -47,14 +47,14 @@ public class AuditableSignal extends Signal {
             @JsonProperty( SerializationConstants.DETAILS_FIELD ) Optional<String> details,
             @JsonProperty( SerializationConstants.AUDIT_ID ) UUID auditId,
             @JsonProperty( SerializationConstants.TIME_ID ) UUID timeId,
-            @JsonProperty( SerializationConstants.ENTITY_ID ) Optional<UUID> entityId,
+            @JsonProperty( SerializationConstants.DATA_ID ) Optional<UUID> dataId,
             @JsonProperty( SerializationConstants.BLOCK_ID ) Optional<UUID> blockId ) {
 
         super( type, Optional.of( aclKey ), Optional.of( principal ), details );
 
         this.auditId = auditId;
         this.timeId = timeId;
-        this.entityId = entityId;
+        this.dataId = dataId;
         this.blockId = blockId;
     }
 
@@ -68,9 +68,9 @@ public class AuditableSignal extends Signal {
         return auditId;
     }
 
-    @JsonProperty( SerializationConstants.ENTITY_ID )
-    public Optional<UUID> getEntityId() {
-        return entityId;
+    @JsonProperty( SerializationConstants.DATA_ID )
+    public Optional<UUID> getDataId() {
+        return dataId;
     }
 
     @JsonProperty( SerializationConstants.BLOCK_ID )
