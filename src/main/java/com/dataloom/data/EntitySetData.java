@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.collect.SetMultimap;
 
+/* 
+ * Note: T must have a good .toString() method, as this will be used for serialization
+ */
 public class EntitySetData<T> implements Iterable<SetMultimap<T, Object>> {
 
     private static final Logger              logger = LoggerFactory
