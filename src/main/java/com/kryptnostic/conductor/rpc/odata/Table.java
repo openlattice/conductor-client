@@ -58,7 +58,7 @@ public enum Table implements TableDef {
     RPC_DATA_ORDERED,
     SCHEMAS,
     WEIGHTED_LINKING_EDGES,
-    EDGE_TYPES,
+    ASSOCIATION_TYPES,
     VERTICES,
     SYNC_IDS,
     IDS,
@@ -224,12 +224,12 @@ public enum Table implements TableDef {
                         .partitionKey( ENTITY_SET_ID, ENTITYID, SYNCID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( VERTEX_ID );
-            case EDGE_TYPES:
-                return new CassandraTableBuilder( EDGE_TYPES )
+            case ASSOCIATION_TYPES:
+                return new CassandraTableBuilder( ASSOCIATION_TYPES )
                         .ifNotExists()
                         .partitionKey( ID )
                         .columns( SRC,
-                                DEST,
+                                DST,
                                 BIDIRECTIONAL );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
@@ -319,14 +319,14 @@ public enum Table implements TableDef {
                         .clusteringColumns( SYNCID )
                         .staticColumns( CURRENT_SYNC_ID )
                         .withDescendingOrder( SYNCID );
-                
+
             case TOP_UTILIZER_DATA:
                 return new CassandraTableBuilder( TOP_UTILIZER_DATA )
                         .ifNotExists()
                         .partitionKey( QUERY_ID )
                         .clusteringColumns( WEIGHT, VERTEX_ID )
                         .withDescendingOrder( WEIGHT );
-                
+
             case VERTICES:
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()

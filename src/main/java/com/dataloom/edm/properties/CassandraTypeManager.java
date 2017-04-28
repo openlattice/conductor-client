@@ -54,7 +54,7 @@ public class CassandraTypeManager {
     private final PreparedStatement getComplexTypeIds;
     private final PreparedStatement getEnumTypeIds;
     private final PreparedStatement getEntityTypeChildIds;
-    private final Select.Where      getEdgeEntityTypes;
+    private final Select.Where      getAssociationEntityTypes;
 
     public CassandraTypeManager( String keyspace, Session session ) {
         this.session = session;
@@ -88,9 +88,9 @@ public class CassandraTypeManager {
                         .allowFiltering().where(
                                 QueryBuilder.eq( CommonColumns.BASE_TYPE.cql(),
                                         CommonColumns.BASE_TYPE.bindMarker() ) ) );
-        this.getEdgeEntityTypes = QueryBuilder.select().all().from( keyspace,
+        this.getAssociationEntityTypes = QueryBuilder.select().all().from( keyspace,
                 Table.ENTITY_TYPES.getName() ).allowFiltering()
-                .where( QueryBuilder.eq( CommonColumns.CATEGORY.cql(), SecurableObjectType.EdgeType ) );
+                .where( QueryBuilder.eq( CommonColumns.CATEGORY.cql(), SecurableObjectType.AssociationType ) );
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
@@ -119,7 +119,7 @@ public class CassandraTypeManager {
     }
 
     public Iterable<EntityType> getAssociationEntityTypes() {
-        return Iterables.transform( session.execute( getEdgeEntityTypes ), RowAdapters::entityType );
+        return Iterables.transform( session.execute( getAssociationEntityTypes ), RowAdapters::entityType );
     }
 
     public Stream<UUID> getComplexTypeIds() {

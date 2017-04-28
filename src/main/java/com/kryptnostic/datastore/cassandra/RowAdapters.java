@@ -40,7 +40,7 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.Analyzer;
 import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EdgeType;
+import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
@@ -227,11 +227,11 @@ public final class RowAdapters {
         return new ComplexType( id, type, title, description, schemas, properties, baseType, category );
     }
 
-    public static EdgeType edgeType( Row row ) {
+    public static AssociationType associationType( Row row ) {
         LinkedHashSet<UUID> src = (LinkedHashSet<UUID>) row.getSet( CommonColumns.SRC.cql(), UUID.class );
-        LinkedHashSet<UUID> dest = (LinkedHashSet<UUID>) row.getSet( CommonColumns.DEST.cql(), UUID.class );
+        LinkedHashSet<UUID> dest = (LinkedHashSet<UUID>) row.getSet( CommonColumns.DST.cql(), UUID.class );
         boolean bidirectional = bidirectional( row );
-        return new EdgeType( Optional.absent(), src, dest, bidirectional );
+        return new AssociationType( Optional.absent(), src, dest, bidirectional );
     }
 
     public static FullQualifiedName splitFqn( Row row ) {
@@ -330,8 +330,8 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.SRC.cql() );
     }
 
-    public static UUID dest( Row row ) {
-        return row.getUUID( CommonColumns.DEST.cql() );
+    public static UUID dst( Row row ) {
+        return row.getUUID( CommonColumns.DST.cql() );
     }
 
     public static boolean bidirectional( Row row ) {
