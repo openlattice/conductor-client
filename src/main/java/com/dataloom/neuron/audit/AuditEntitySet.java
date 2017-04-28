@@ -68,6 +68,7 @@ public class AuditEntitySet {
     private static PropertyType             DETAILS_PROPERTY_TYPE;
     private static EntityType               AUDIT_ENTITY_TYPE;
     private static EntitySet                AUDIT_ENTITY_SET;
+    private static UUID                     AUDIT_ENTITY_SET_SYNC_ID;
 
     private final DatasourceManager dataSourceManager;
     private final EdmManager        entityDataModelManager;
@@ -151,13 +152,23 @@ public class AuditEntitySet {
             AUDIT_ENTITY_SET = entityDataModelManager.getEntitySet( AUDIT_ENTITY_SET_NAME );
         }
 
-        UUID syncId = dataSourceManager.createNewSyncIdForEntitySet( AUDIT_ENTITY_SET.getId() );
-        dataSourceManager.setCurrentSyncId( AUDIT_ENTITY_SET.getId(), syncId );
+        AUDIT_ENTITY_SET_SYNC_ID = dataSourceManager.createNewSyncIdForEntitySet( AUDIT_ENTITY_SET.getId() );
+        dataSourceManager.setCurrentSyncId( AUDIT_ENTITY_SET.getId(), AUDIT_ENTITY_SET_SYNC_ID );
     }
 
     public static UUID getId() {
 
         return AUDIT_ENTITY_SET.getId();
+    }
+
+    public static UUID getSyncId() {
+
+        return AUDIT_ENTITY_SET_SYNC_ID;
+    }
+
+    public static void setSyncId( UUID syncId ) {
+
+        AUDIT_ENTITY_SET_SYNC_ID = syncId;
     }
 
     public static Map<UUID, EdmPrimitiveTypeKind> getPropertyDataTypesMap() {

@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import com.dataloom.data.DataGraphManager;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
-import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.neuron.audit.AuditEntitySet;
 import com.dataloom.neuron.audit.AuditLogQueryService;
 import com.dataloom.neuron.signals.AuditableSignal;
@@ -40,8 +39,6 @@ import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 
 public class Neuron {
@@ -51,19 +48,16 @@ public class Neuron {
     private final AuditLogQueryService auditLogQueryService;
     private final DataGraphManager     dataGraphManager;
     private final EntityKeyIdService   entityKeyIdService;
-    private final IMap<UUID, UUID>     syncIds;
 
     private final EnumMap<SignalType, Set<Receptor>> receptors = Maps.newEnumMap( SignalType.class );
 
     public Neuron(
-            HazelcastInstance hazelcastInstance,
             DataGraphManager dataGraphManager,
             EntityKeyIdService entityKeyIdService,
             CassandraConfiguration cassandraConfig,
             Session session ) {
 
         this.auditLogQueryService = new AuditLogQueryService( cassandraConfig, session );
-        this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
 
         this.dataGraphManager = dataGraphManager;
         this.entityKeyIdService = entityKeyIdService;
@@ -104,7 +98,7 @@ public class Neuron {
         try {
 
             UUID auditEntitySetId = AuditEntitySet.getId();
-            UUID auditEntitySetSyncId = syncIds.get( auditEntitySetId );
+            UUID auditEntitySetSyncId = AuditEntitySet.getSyncId();
             String auditEntityId = UUID.randomUUID().toString();
 
             this.dataGraphManager.createEntities(
