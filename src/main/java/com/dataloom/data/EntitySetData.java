@@ -18,18 +18,18 @@ public class EntitySetData<T> implements Iterable<SetMultimap<T, Object>> {
     private static final Logger              logger = LoggerFactory
             .getLogger( EntitySetData.class );
 
-    private Set<T>                           authorizedPropertyFqns;
+    private Set<T>                           columnTitles;
     private Iterable<SetMultimap<T, Object>> entities;
 
     public EntitySetData(
-            Set<T> authorizedPropertyFqns,
+            Set<T> columnTitles,
             Iterable<SetMultimap<T, Object>> entities ) {
-        this.authorizedPropertyFqns = authorizedPropertyFqns;
+        this.columnTitles = columnTitles;
         this.entities = entities;
     }
 
-    public Set<T> getAuthorizedPropertyFqns() {
-        return authorizedPropertyFqns;
+    public Set<T> getColumnTitles() {
+        return columnTitles;
     }
 
     @JsonValue
