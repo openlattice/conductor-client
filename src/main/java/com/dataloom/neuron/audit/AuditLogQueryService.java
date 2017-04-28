@@ -61,7 +61,7 @@ public class AuditLogQueryService {
                 .setString( PRINCIPAL_ID.cql(), signal.getPrincipal().get().getId() )
                 .setUUID( AUDIT_ID.cql(), signal.getAuditId() )
                 .setUUID( TIME_UUID.cql(), signal.getTimeId() )
-                .setUUID( DATA_ID.cql(), signal.getEntityId().orNull() )
+                .setUUID( DATA_ID.cql(), signal.getDataId().orNull() )
                 .setUUID( BLOCK_ID.cql(), signal.getBlockId().orNull() );
 
         session.executeAsync( storeStatement );
