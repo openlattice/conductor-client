@@ -24,34 +24,25 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.hazelcast.HazelcastQueue;
 import com.dataloom.neuron.Receptor;
-import com.dataloom.neuron.SignalType;
 import com.dataloom.neuron.signals.Signal;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IQueue;
 
-public class HazelcastQueueReceptor implements Receptor {
+public class SignalQueueReceptor implements Receptor {
 
-    private static final Logger logger = LoggerFactory.getLogger( HazelcastQueueReceptor.class );
+    private static final Logger logger = LoggerFactory.getLogger( SignalQueueReceptor.class );
 
     private final HazelcastInstance hazelcastInstance;
-    private final SignalType        signalType;
 
-    public HazelcastQueueReceptor( HazelcastInstance hazelcastInstance, SignalType signalType ) {
+    public SignalQueueReceptor( HazelcastInstance hazelcastInstance ) {
 
         this.hazelcastInstance = hazelcastInstance;
-        this.signalType = signalType;
-    }
-
-    @Override
-    public SignalType getSignalType() {
-
-        return signalType;
     }
 
     @Override
     public void process( Signal signal ) {
 
-        IQueue<Signal> queue = hazelcastInstance.getQueue( HazelcastQueue.NEURON.name() );
+        IQueue<Signal> queue = hazelcastInstance.getQueue( HazelcastQueue.SIGNAL.name() );
 
         try {
             queue.put( signal );

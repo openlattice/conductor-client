@@ -23,7 +23,5 @@ import com.dataloom.neuron.signals.Signal;
 
 public interface Receptor {
 
-    SignalType getSignalType();
-
     void process( Signal signal );
 }

@@ -24,5 +24,5 @@ package com.dataloom.hazelcast;
  */
 public enum HazelcastQueue {
     EMAIL_SPOOL,
-    NEURON
+    SIGNAL
 }

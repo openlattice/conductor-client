@@ -63,9 +63,7 @@ public class Neuron {
         this.entityKeyIdService = entityKeyIdService;
     }
 
-    public void activateReceptor( Receptor receptor ) {
-
-        SignalType type = receptor.getSignalType();
+    public void activateReceptor( SignalType type, Receptor receptor ) {
 
         if ( receptors.containsKey( type ) ) {
             receptors.get( type ).add( receptor );
