@@ -167,6 +167,9 @@ public class EdmService implements EdmManager {
             entityTypes.delete( entityTypeId );
             aclKeyReservations.release( entityTypeId );
             eventBus.post( new EntityTypeDeletedEvent( entityTypeId ) );
+        } else {
+            throw new ForbiddenException(
+                    "Entity type (id: " + entityTypeId + ") cannot be deleted because it is already in use." );
         }
     }
 
