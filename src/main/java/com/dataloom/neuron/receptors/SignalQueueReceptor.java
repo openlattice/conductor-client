@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.hazelcast.HazelcastQueue;
-import com.dataloom.neuron.Receptor;
 import com.dataloom.neuron.signals.Signal;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IQueue;

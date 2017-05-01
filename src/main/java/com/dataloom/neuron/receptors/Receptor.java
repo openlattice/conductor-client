@@ -17,7 +17,7 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.neuron;
+package com.dataloom.neuron.receptors;
 
 import com.dataloom.neuron.signals.Signal;
 

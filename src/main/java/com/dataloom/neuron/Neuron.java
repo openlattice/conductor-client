@@ -33,6 +33,7 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.neuron.audit.AuditEntitySet;
 import com.dataloom.neuron.audit.AuditLogQueryService;
+import com.dataloom.neuron.receptors.Receptor;
 import com.dataloom.neuron.signals.AuditableSignal;
 import com.dataloom.neuron.signals.Signal;
 import com.datastax.driver.core.Session;
