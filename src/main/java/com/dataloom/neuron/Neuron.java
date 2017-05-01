@@ -43,6 +43,8 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class Neuron {
 
     private static final Logger logger = LoggerFactory.getLogger( Neuron.class );
@@ -66,6 +68,9 @@ public class Neuron {
     }
 
     public void activateReceptor( EnumSet<SignalType> types, Receptor receptor ) {
+
+        checkNotNull( types );
+        checkNotNull( receptor );
 
         types.forEach( type -> {
             if ( receptors.containsKey( type ) ) {
