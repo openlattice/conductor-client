@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.dataloom.authorization.AuthorizationManager;
+import com.dataloom.authorization.ForbiddenException;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
@@ -166,6 +167,9 @@ public class EdmService implements EdmManager {
             entityTypes.delete( entityTypeId );
             aclKeyReservations.release( entityTypeId );
             eventBus.post( new EntityTypeDeletedEvent( entityTypeId ) );
+        } else {
+            throw new ForbiddenException(
+                    "Entity type (id: " + entityTypeId + ") cannot be deleted because it is already in use." );
         }
     }
 
@@ -178,6 +182,9 @@ public class EdmService implements EdmManager {
             propertyTypes.delete( propertyTypeId );
             aclKeyReservations.release( propertyTypeId );
             eventBus.post( new PropertyTypeDeletedEvent( propertyTypeId ) );
+        } else {
+            throw new ForbiddenException(
+                    "Property type (id: " + propertyTypeId + ") cannot be deleted because it is already in use." );
         }
     }
 
