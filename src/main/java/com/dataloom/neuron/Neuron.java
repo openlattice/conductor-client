@@ -20,6 +20,7 @@
 package com.dataloom.neuron;
 
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -64,13 +65,15 @@ public class Neuron {
         this.entityKeyIdService = entityKeyIdService;
     }
 
-    public void activateReceptor( SignalType type, Receptor receptor ) {
+    public void activateReceptor( EnumSet<SignalType> types, Receptor receptor ) {
 
-        if ( receptors.containsKey( type ) ) {
-            receptors.get( type ).add( receptor );
-        } else {
-            receptors.put( type, Sets.newHashSet( receptor ) );
-        }
+        types.forEach( type -> {
+            if ( receptors.containsKey( type ) ) {
+                receptors.get( type ).add( receptor );
+            } else {
+                receptors.put( type, Sets.newHashSet( receptor ) );
+            }
+        } );
     }
 
     @Async
