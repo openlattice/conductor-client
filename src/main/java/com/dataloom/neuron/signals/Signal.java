@@ -55,7 +55,11 @@ public class Signal implements Serializable {
         this.principal = principal;
 
         // TODO: should details be String, or Object?
-        this.details = details;
+        if ( details == null ) {
+            this.details = "";
+        } else {
+            this.details = details;
+        }
     }
 
     public Signal(
@@ -63,7 +67,7 @@ public class Signal implements Serializable {
             @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
             @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal ) {
 
-        this( type, aclKey, principal, null );
+        this( type, aclKey, principal, "" );
     }
 
     @JsonProperty( SerializationConstants.TYPE_FIELD )
