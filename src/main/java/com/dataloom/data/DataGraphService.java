@@ -100,18 +100,18 @@ public class DataGraphService implements DataGraphManager {
     public EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
-            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
+            LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return eds.getEntitySetData( entitySetId, syncId, orderedPropertyFqns, authorizedPropertyTypes );
+        return eds.getEntitySetData( entitySetId, syncId, orderedPropertyNames, authorizedPropertyTypes );
     }
 
     @Override
     public EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
-            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
+            LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
         return eds.getLinkedEntitySetData( linkedEntitySetId,
-                orderedPropertyFqns,
+                orderedPropertyNames,
                 authorizedPropertyTypesForEntitySets );
     }
 

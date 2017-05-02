@@ -52,7 +52,7 @@ public interface EntityDatastore {
     EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
-            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
+            LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
     /**
@@ -79,7 +79,7 @@ public interface EntityDatastore {
      */
     EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
-            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
+            LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
 
     // TODO remove vertices too

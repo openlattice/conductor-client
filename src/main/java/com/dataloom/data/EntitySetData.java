@@ -18,17 +18,17 @@ public class EntitySetData<T> implements Iterable<SetMultimap<T, Object>> {
     private static final Logger              logger = LoggerFactory
             .getLogger( EntitySetData.class );
 
-    private LinkedHashSet<T>                 columnTitles;
+    private LinkedHashSet<String>            columnTitles;
     private Iterable<SetMultimap<T, Object>> entities;
 
     public EntitySetData(
-            LinkedHashSet<T> columnTitles,
+            LinkedHashSet<String> columnTitles,
             Iterable<SetMultimap<T, Object>> entities ) {
         this.columnTitles = columnTitles;
         this.entities = entities;
     }
 
-    public LinkedHashSet<T> getColumnTitles() {
+    public LinkedHashSet<String> getColumnTitles() {
         return columnTitles;
     }
 

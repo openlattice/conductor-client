@@ -137,10 +137,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
     public EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
-            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
+            LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
         Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
-        return new EntitySetData<FullQualifiedName>( orderedPropertyFqns, Iterables.transform( entityRows,
+        return new EntitySetData<FullQualifiedName>( orderedPropertyNames, Iterables.transform( entityRows,
                 rs -> rowToEntity( rs, authorizedPropertyTypes ) ) );
     }
 
@@ -159,10 +159,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
     @Override
     public EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
-            LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
+            LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
         Iterable<Pair<UUID, Set<EntityKey>>> linkedEntityKeys = getLinkedEntityKeys( linkedEntitySetId );
-        return new EntitySetData<FullQualifiedName>( orderedPropertyFqns, Iterables.transform( linkedEntityKeys,
+        return new EntitySetData<FullQualifiedName>( orderedPropertyNames, Iterables.transform( linkedEntityKeys,
                 linkedKey -> getAndMergeLinkedEntities( linkedEntitySetId,
                         linkedKey,
                         authorizedPropertyTypesForEntitySets ) )::iterator );
