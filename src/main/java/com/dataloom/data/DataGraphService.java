@@ -46,22 +46,22 @@ import com.kryptnostic.datastore.util.Util;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class DataGraphService implements DataGraphManager {
-    private static final Logger logger = LoggerFactory
+    private static final Logger                                 logger     = LoggerFactory
             .getLogger( DataGraphService.class );
-    private final ListeningExecutorService executor;
+    private final ListeningExecutorService                      executor;
     private final Cache<List<TopUtilizerDetails>, TopUtilizers> queryCache = CacheBuilder.newBuilder()
             .maximumSize( 1000 )
             .expireAfterWrite( 2, TimeUnit.HOURS )
             .build();
-    private EventBus                 eventBus;
-    private LoomGraph                lm;
-    private EntityKeyIdService       idService;
-    private EntityDatastore          eds;
+    private EventBus                                            eventBus;
+    private LoomGraph                                           lm;
+    private EntityKeyIdService                                  idService;
+    private EntityDatastore                                     eds;
     // Get entity type id by entity set id, cached.
     // TODO HC: Local caching is needed because this would be called very often, so direct calls to IMap should be
     // minimized. Nonetheless, this certainly should be refactored into EdmService or something.
-    private IMap<UUID, EntitySet>    entitySets;
-    private LoadingCache<UUID, UUID> typeIds;
+    private IMap<UUID, EntitySet>                               entitySets;
+    private LoadingCache<UUID, UUID>                            typeIds;
 
     public DataGraphService(
             HazelcastInstance hazelcastInstance,
@@ -97,7 +97,7 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
-    public EntitySetData getEntitySetData(
+    public EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
@@ -106,11 +106,13 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
-    public EntitySetData getLinkedEntitySetData(
+    public EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
             LinkedHashSet<FullQualifiedName> orderedPropertyFqns,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
-        return eds.getLinkedEntitySetData( linkedEntitySetId, orderedPropertyFqns, authorizedPropertyTypesForEntitySets );
+        return eds.getLinkedEntitySetData( linkedEntitySetId,
+                orderedPropertyFqns,
+                authorizedPropertyTypesForEntitySets );
     }
 
     @Override
@@ -151,6 +153,21 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
+    public UUID createEntity(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
+            throws ExecutionException, InterruptedException {
+
+        final EntityKey key = new EntityKey( entitySetId, entityId, syncId );
+        createEntity( key, entityDetails, authorizedPropertiesWithDataType )
+                .forEach( DataGraphService::tryGetAndLogErrors );
+        return idService.getEntityKeyId( key );
+    }
+
+    @Override
     public void createEntities(
             UUID entitySetId,
             UUID syncId,
@@ -185,7 +202,7 @@ public class DataGraphService implements DataGraphManager {
             Set<Association> associations,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
             throws InterruptedException, ExecutionException {
-        //   List<ListenableFuture> futures = new ArrayList<ListenableFuture>( 2 * associations.size() );
+        // List<ListenableFuture> futures = new ArrayList<ListenableFuture>( 2 * associations.size() );
 
         associations
                 .parallelStream()
@@ -214,7 +231,7 @@ public class DataGraphService implements DataGraphManager {
             Set<Association> associations,
             Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
             throws InterruptedException, ExecutionException {
-        //  Map<EntityKey, UUID> idsRegistered = new HashMap<>();
+        // Map<EntityKey, UUID> idsRegistered = new HashMap<>();
 
         entities.parallelStream()
                 .flatMap( entity -> createEntity( entity.getKey(),
@@ -256,16 +273,14 @@ public class DataGraphService implements DataGraphManager {
             int numResults,
             Map<UUID, PropertyType> authorizedPropertyTypes )
             throws InterruptedException, ExecutionException {
-        /*ByteBuffer queryId;
-        try {
-            queryId = ByteBuffer.wrap( ObjectMappers.getSmileMapper().writeValueAsBytes( topUtilizerDetailsList ) );
-        } catch ( JsonProcessingException e1 ) {
-            logger.debug( "Unable to generate query id." );
-            return null;
-        }*/
+        /*
+         * ByteBuffer queryId; try { queryId = ByteBuffer.wrap( ObjectMappers.getSmileMapper().writeValueAsBytes(
+         * topUtilizerDetailsList ) ); } catch ( JsonProcessingException e1 ) { logger.debug(
+         * "Unable to generate query id." ); return null; }
+         */
         TopUtilizers maybeUtilizers = queryCache.getIfPresent( topUtilizerDetailsList );
         final TopUtilizers utilizers;
-        //        if ( !eds.queryAlreadyExecuted( queryId ) ) {
+        // if ( !eds.queryAlreadyExecuted( queryId ) ) {
         if ( maybeUtilizers == null ) {
             utilizers = new TopUtilizers( numResults );
             eds.getEntityKeysForEntitySet( entitySetId, syncId )
@@ -282,7 +297,7 @@ public class DataGraphService implements DataGraphManager {
                                 .mapToLong( Util::getCount )
                                 .sum();
                         utilizers.accumulate( vertexId, score );
-                        //eds.writeVertexCount( queryId, vertexId, 1.0D * score );
+                        // eds.writeVertexCount( queryId, vertexId, 1.0D * score );
                     } );
             queryCache.put( topUtilizerDetailsList, utilizers );
         } else {
@@ -305,19 +320,12 @@ public class DataGraphService implements DataGraphManager {
                     return entity;
                 } )::iterator;
 
-        /*Iterable<SetMultimap<Object, Object>> entities = Iterables
-                .transform( eds.readTopUtilizers( queryId, numResults ), vertexId -> {
-                    EntityKey key = idService.getEntityKey( vertexId );
-                    SetMultimap<Object, Object> entity = HashMultimap.create();
-                    entity.putAll(
-                            eds.getEntity( key.getEntitySetId(),
-                                    key.getSyncId(),
-                                    key.getEntityId(),
-                                    authorizedPropertyTypes ) );
-                    entity.put( "id", vertexId.toString() );
-                    return entity;
-                } );
-
-        return entities;*/
+        /*
+         * Iterable<SetMultimap<Object, Object>> entities = Iterables .transform( eds.readTopUtilizers( queryId,
+         * numResults ), vertexId -> { EntityKey key = idService.getEntityKey( vertexId ); SetMultimap<Object, Object>
+         * entity = HashMultimap.create(); entity.putAll( eds.getEntity( key.getEntitySetId(), key.getSyncId(),
+         * key.getEntityId(), authorizedPropertyTypes ) ); entity.put( "id", vertexId.toString() ); return entity; } );
+         * return entities;
+         */
     }
 }

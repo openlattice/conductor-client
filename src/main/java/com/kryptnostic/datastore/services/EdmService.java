@@ -58,8 +58,9 @@ import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
+import com.dataloom.edm.type.AssociationDetails;
+import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EdgeType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
@@ -95,7 +96,7 @@ public class EdmService implements EdmManager {
     private final IMap<UUID, EntitySet>             entitySets;
     private final IMap<String, UUID>                aclKeys;
     private final IMap<UUID, String>                names;
-    private final IMap<UUID, EdgeType>              edgeTypes;
+    private final IMap<UUID, AssociationType>       associationTypes;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -127,7 +128,7 @@ public class EdmService implements EdmManager {
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
         this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
-        this.edgeTypes = hazelcastInstance.getMap( HazelcastMap.EDGE_TYPES.name() );
+        this.associationTypes = hazelcastInstance.getMap( HazelcastMap.ASSOCIATION_TYPES.name() );
         this.aclKeyReservations = aclKeyReservations;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
@@ -715,8 +716,8 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public UUID createEdgeType( EdgeType edgeType, UUID entityTypeId ) {
-        final EdgeType existing = edgeTypes.putIfAbsent( entityTypeId, edgeType );
+    public UUID createAssociationType( AssociationType associationType, UUID entityTypeId ) {
+        final AssociationType existing = associationTypes.putIfAbsent( entityTypeId, associationType );
 
         if ( existing != null ) {
             logger.error(
@@ -726,16 +727,30 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public EdgeType getEdgeType( UUID edgeTypeId ) {
+    public AssociationType getAssociationType( UUID associationTypeId ) {
         return Preconditions.checkNotNull(
-                Util.getSafely( edgeTypes, edgeTypeId ),
+                Util.getSafely( associationTypes, associationTypeId ),
                 "Edge type of id %s does not exist.",
-                edgeTypeId.toString() );
+                associationTypeId.toString() );
     }
 
     @Override
-    public void deleteEdgeType( UUID edgeTypeId ) {
-        edgeTypes.delete( edgeTypeId );
+    public void deleteAssociationType( UUID associationTypeId ) {
+        associationTypes.delete( associationTypeId );
+    }
+
+    @Override
+    public AssociationDetails getAssociationDetails( UUID associationTypeId ) {
+        AssociationType associationType = getAssociationType( associationTypeId );
+        LinkedHashSet<EntityType> srcEntityTypes = associationType.getSrc()
+                .stream()
+                .map( entityTypeId -> getEntityType( entityTypeId ) )
+                .collect( Collectors.toCollection( () -> new LinkedHashSet<>() ) );
+        LinkedHashSet<EntityType> dstEntityTypes = associationType.getDst()
+                .stream()
+                .map( entityTypeId -> getEntityType( entityTypeId ) )
+                .collect( Collectors.toCollection( () -> new LinkedHashSet<>() ) );
+        return new AssociationDetails( srcEntityTypes, dstEntityTypes, associationType.isBidirectional() );
     }
 
 }
