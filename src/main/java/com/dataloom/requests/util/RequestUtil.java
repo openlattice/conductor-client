@@ -56,7 +56,7 @@ public final class RequestUtil {
     }
 
     public static AceKey aceKey( Status status ) {
-        return new AceKey( status.getAclKey(), status.getPrincipal() );
+        return new AceKey( status.getRequest().getAclKey(), status.getPrincipal() );
     }
 
     public static Status status( Row row ) {
@@ -82,10 +82,10 @@ public final class RequestUtil {
     }
 
     public static Status approve( Status s ) {
-        return new Status( s.getAclKey(), s.getPermissions(), s.getReason(), s.getPrincipal(), RequestStatus.APPROVED );
+        return new Status( s.getRequest(), s.getPrincipal(), RequestStatus.APPROVED );
     }
 
     public static Status decline( Status s ) {
-        return new Status( s.getAclKey(), s.getPermissions(), s.getReason(), s.getPrincipal(), RequestStatus.DECLINED );
+        return new Status( s.getRequest(), s.getPrincipal(), RequestStatus.DECLINED );
     }
 }
