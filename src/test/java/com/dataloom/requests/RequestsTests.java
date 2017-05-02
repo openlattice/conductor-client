@@ -19,51 +19,48 @@
 
 package com.dataloom.requests;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.requests.util.RequestUtil;
-import com.google.common.collect.ImmutableSet;
-import org.junit.Assert;
-import org.junit.Test;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import org.junit.Assert;
+import org.junit.Test;
+
+import com.dataloom.authorization.AceKey;
+import com.dataloom.authorization.HzAuthzTest;
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.requests.util.RequestUtil;
+import com.google.common.collect.ImmutableSet;
+
 public class RequestsTests extends HzAuthzTest {
     protected static final RequestQueryService      aqs;
     protected static final HazelcastRequestsManager hzRequests;
-    protected static final Lock        lock      = new ReentrantLock();
-    protected static final Status      expected  = TestDataFactory.status();
-    protected static final Status      expected2 = new Status(
-            expected.getAclKey(),
-            expected.getPermissions(),
-            expected.getReason(),
+    protected static final Lock                     lock      = new ReentrantLock();
+    protected static final Status                   expected  = TestDataFactory.status();
+    protected static final Status                   expected2 = new Status(
+            expected.getRequest(),
             TestDataFactory.userPrincipal(),
             RequestStatus.SUBMITTED );
-    protected static final Status      expected3 = new Status(
-            expected.getAclKey(),
-            expected.getPermissions(),
-            expected.getReason(),
+    protected static final Status                   expected3 = new Status(
+            expected.getRequest(),
             TestDataFactory.userPrincipal(),
             RequestStatus.SUBMITTED );
-    protected static final Status      expected4 = new Status(
+    protected static final Status                   expected4 = new Status(
             TestDataFactory.aclKey(),
-            expected.getPermissions(),
-            expected.getReason(),
+            expected.getRequest().getPermissions(),
+            expected.getRequest().getReason(),
             expected.getPrincipal(),
             RequestStatus.SUBMITTED );
-    protected static final Set<Status> ss        = ImmutableSet.of( expected,
+    protected static final Set<Status>              ss        = ImmutableSet.of( expected,
             expected2,
             expected3,
             expected4,
             TestDataFactory.status(),
             TestDataFactory.status(),
             TestDataFactory.status() );
-    protected static final Set<Status> submitted = ImmutableSet.of(
+    protected static final Set<Status>              submitted = ImmutableSet.of(
             expected2,
             expected3,
             expected4 );
@@ -109,32 +106,39 @@ public class RequestsTests extends HzAuthzTest {
     @Test
     public void testSubmitAndGetByAclKey() {
         long c = ss.stream()
-                .map( Status::getAclKey )
-                .filter( aclKey -> aclKey.equals( expected.getAclKey() ) )
+                .map( Status::getRequest )
+                .map( Request::getAclKey )
+                .filter( aclKey -> aclKey.equals( expected.getRequest().getAclKey() ) )
                 .count();
-        Assert.assertEquals( c, hzRequests.getStatusesForAllUser( expected.getAclKey() ).count() );
+        Assert.assertEquals( c, hzRequests.getStatusesForAllUser( expected.getRequest().getAclKey() ).count() );
     }
 
     @Test
     public void testSubmitAndGetByAclKeyAndStatus() {
         long c = ss.stream()
-                .filter( status -> status.getAclKey().equals( expected.getAclKey() ) && status.getStatus()
-                        .equals( RequestStatus.SUBMITTED ) )
+                .filter( status -> status.getRequest().getAclKey().equals( expected.getRequest().getAclKey() )
+                        && status.getStatus()
+                                .equals( RequestStatus.SUBMITTED ) )
                 .count();
         Assert.assertEquals( c,
-                hzRequests.getStatusesForAllUser( expected.getAclKey(), RequestStatus.SUBMITTED ).count() );
+                hzRequests.getStatusesForAllUser( expected.getRequest().getAclKey(), RequestStatus.SUBMITTED )
+                        .count() );
     }
 
     @Test
     public void testApproval() {
         Assert.assertTrue( submitted.stream().allMatch( s -> !hzAuthz
-                .checkIfHasPermissions( s.getAclKey(), ImmutableSet.of( s.getPrincipal() ), s.getPermissions() ) ) );
+                .checkIfHasPermissions( s.getRequest().getAclKey(),
+                        ImmutableSet.of( s.getPrincipal() ),
+                        s.getRequest().getPermissions() ) ) );
         ;
         hzRequests.submitAll( RequestUtil
                 .statusMap( submitted.stream().map( RequestUtil::approve ).collect( Collectors.toSet() ) ) );
 
         Assert.assertTrue( submitted.stream().allMatch( s -> hzAuthz
-                .checkIfHasPermissions( s.getAclKey(), ImmutableSet.of( s.getPrincipal() ), s.getPermissions() ) ) );
+                .checkIfHasPermissions( s.getRequest().getAclKey(),
+                        ImmutableSet.of( s.getPrincipal() ),
+                        s.getRequest().getPermissions() ) ) );
 
     }
 }
