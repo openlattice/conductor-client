@@ -150,6 +150,21 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
+    public UUID createEntity(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
+            throws ExecutionException, InterruptedException {
+
+        final EntityKey key = new EntityKey( entitySetId, entityId, syncId );
+        createEntity( key, entityDetails, authorizedPropertiesWithDataType )
+                .forEach( DataGraphService::tryGetAndLogErrors );
+        return idService.getEntityKeyId( key );
+    }
+    
+    @Override
     public void createEntities(
             UUID entitySetId,
             UUID syncId,
