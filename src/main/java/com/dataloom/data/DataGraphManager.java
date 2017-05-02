@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.requests.Association;
@@ -20,12 +21,12 @@ public interface DataGraphManager {
     /*
      * Entity set methods
      */
-    EntitySetData getEntitySetData(
+    EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
-    EntitySetData getLinkedEntitySetData(
+    EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
 
