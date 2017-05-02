@@ -43,7 +43,7 @@ import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.ComplexTypeMapstore;
-import com.dataloom.edm.mapstores.EdgeTypeMapstore;
+import com.dataloom.edm.mapstores.AssociationTypeMapstore;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.EnumTypesMapstore;
@@ -51,7 +51,7 @@ import com.dataloom.edm.mapstores.NamesMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EdgeType;
+import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
@@ -236,8 +236,8 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, EdgeType> edgeTypeMapstore() {
-        return new EdgeTypeMapstore( session );
+    public SelfRegisteringMapStore<UUID, AssociationType> edgeTypeMapstore() {
+        return new AssociationTypeMapstore( session );
     }
 
     @Bean

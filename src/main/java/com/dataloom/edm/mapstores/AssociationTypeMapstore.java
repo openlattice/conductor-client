@@ -2,28 +2,24 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.spark_project.guava.collect.Sets;
-
-import com.dataloom.edm.type.EdgeType;
+import com.dataloom.edm.type.AssociationType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.base.Optional;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
-public class EdgeTypeMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, EdgeType> {
-    private static final CassandraTableBuilder ctb = Table.EDGE_TYPES.getBuilder();
+public class AssociationTypeMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, AssociationType> {
+    private static final CassandraTableBuilder ctb = Table.ASSOCIATION_TYPES.getBuilder();
 
-    public EdgeTypeMapstore( Session session ) {
-        super( HazelcastMap.EDGE_TYPES.name(), session, ctb );
+    public AssociationTypeMapstore( Session session ) {
+        super( HazelcastMap.ASSOCIATION_TYPES.name(), session, ctb );
     }
 
     @Override
@@ -32,10 +28,10 @@ public class EdgeTypeMapstore extends AbstractStructuredCassandraPartitionKeyVal
     }
 
     @Override
-    protected BoundStatement bind( UUID key, EdgeType value, BoundStatement bs ) {
+    protected BoundStatement bind( UUID key, AssociationType value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ID.cql(), key )
                 .setSet( CommonColumns.SRC.cql(), value.getSrc(), UUID.class )
-                .setSet( CommonColumns.DEST.cql(), value.getDest(), UUID.class )
+                .setSet( CommonColumns.DST.cql(), value.getDst(), UUID.class )
                 .setBool( CommonColumns.BIDIRECTIONAL.cql(), value.isBidirectional() );
     }
 
@@ -45,12 +41,12 @@ public class EdgeTypeMapstore extends AbstractStructuredCassandraPartitionKeyVal
     }
 
     @Override
-    protected EdgeType mapValue( ResultSet rs ) {
+    protected AssociationType mapValue( ResultSet rs ) {
         Row row = rs.one();
         if ( row == null ) {
             return null;
         }
-        return RowAdapters.edgeType( row );
+        return RowAdapters.associationType( row );
     }
 
     @Override
@@ -59,8 +55,8 @@ public class EdgeTypeMapstore extends AbstractStructuredCassandraPartitionKeyVal
     }
 
     @Override
-    public EdgeType generateTestValue() {
-        return TestDataFactory.edgeType();
+    public AssociationType generateTestValue() {
+        return TestDataFactory.associationType();
     }
 
 }

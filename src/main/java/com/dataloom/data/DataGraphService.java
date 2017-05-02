@@ -28,6 +28,7 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import com.kryptnostic.datastore.util.Util;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
-    public EntitySetData getEntitySetData(
+    public EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
@@ -105,7 +106,7 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
-    public EntitySetData getLinkedEntitySetData(
+    public EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
         return eds.getLinkedEntitySetData( linkedEntitySetId, authorizedPropertyTypesForEntitySets );
@@ -148,6 +149,21 @@ public class DataGraphService implements DataGraphManager {
         eds.deleteEntity( entityKey );
     }
 
+    @Override
+    public UUID createEntity(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
+            throws ExecutionException, InterruptedException {
+
+        final EntityKey key = new EntityKey( entitySetId, entityId, syncId );
+        createEntity( key, entityDetails, authorizedPropertiesWithDataType )
+                .forEach( DataGraphService::tryGetAndLogErrors );
+        return idService.getEntityKeyId( key );
+    }
+    
     @Override
     public void createEntities(
             UUID entitySetId,
@@ -267,6 +283,7 @@ public class DataGraphService implements DataGraphManager {
         if ( maybeUtilizers == null ) {
             utilizers = new TopUtilizers( numResults );
             eds.getEntityKeysForEntitySet( entitySetId, syncId )
+                    .distinct()
                     .parallel()
                     .map( idService::getEntityKeyId )
                     .forEach( vertexId -> {

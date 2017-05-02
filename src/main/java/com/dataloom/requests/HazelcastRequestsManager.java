@@ -59,7 +59,7 @@ public class HazelcastRequestsManager {
         statusMap.entrySet().stream()
                 .filter( e -> e.getValue().getStatus().equals( RequestStatus.APPROVED ) )
                 .forEach( e -> aces.submitToKey( e.getKey(),
-                        new PermissionMerger(  e.getValue().getPermissions() ) ) );
+                        new PermissionMerger(  e.getValue().getRequest().getPermissions() ) ) );
         requests.putAll( statusMap );
     }
 
