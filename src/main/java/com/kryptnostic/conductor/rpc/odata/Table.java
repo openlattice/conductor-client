@@ -92,7 +92,7 @@ public enum Table implements TableDef {
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( TIME_ID, PRINCIPAL_TYPE, PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS, AUDIT_EVENT_DETAILS, BLOCK )
-                        .sasi( PRINCIPAL_TYPE, PRINCIPAL_ID );
+                        .secondaryIndex( PRINCIPAL_TYPE, PRINCIPAL_ID );
             case AUDIT_METRICS:
                 return new CassandraTableBuilder( AUDIT_METRICS )
                         .ifNotExists()
@@ -196,7 +196,7 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( GRAPH_ID )
                         .clusteringColumns( EDGE_VALUE, SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID )
-                        .sasi( SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID );
+                        .secondaryIndex( SOURCE_LINKING_VERTEX_ID, DESTINATION_LINKING_VERTEX_ID );
             case LINKING_EDGES:
                 return new CassandraTableBuilder( LINKING_EDGES )
                         .ifNotExists()
@@ -282,7 +282,7 @@ public enum Table implements TableDef {
                         .partitionKey( ACL_ROOT )
                         .clusteringColumns( PRINCIPAL_ID )
                         .columns( ACL_CHILDREN_PERMISSIONS, STATUS )
-                        .sasi( STATUS );
+                        .secondaryIndex( STATUS );
             case PERMISSIONS_REQUESTS_RESOLVED:
                 return new CassandraTableBuilder( PERMISSIONS_REQUESTS_RESOLVED )
                         .ifNotExists()
@@ -290,14 +290,14 @@ public enum Table implements TableDef {
                         .clusteringColumns( REQUESTID )
                         .columns( ACL_ROOT, ACL_CHILDREN_PERMISSIONS, STATUS )
                         .fullCollectionIndex( ACL_ROOT )
-                        .sasi( STATUS );
+                        .secondaryIndex( STATUS );
             case REQUESTS:
                 return new CassandraTableBuilder( REQUESTS )
                         .ifNotExists()
                         .partitionKey( CommonColumns.ACL_KEYS )
                         .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
                         .columns( CommonColumns.PERMISSIONS, REASON, STATUS )
-                        .sasi( PRINCIPAL_TYPE,
+                        .secondaryIndex( PRINCIPAL_TYPE,
                                 PRINCIPAL_ID,
                                 STATUS );
             case RPC_DATA_ORDERED:
