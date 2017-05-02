@@ -27,6 +27,7 @@ import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.edm.type.Analyzer;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.TypeCodec;
+import com.datastax.driver.extras.codecs.date.SimpleTimestampCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
 import com.datastax.driver.extras.codecs.joda.LocalDateCodec;
 import com.datastax.driver.extras.codecs.joda.LocalTimeCodec;
@@ -127,6 +128,11 @@ public class TypeCodecsPod {
     @Bean
     public TypeCodec<EntityKey> entitykeyCodec() {
         return new EntityKeyTypeCodec();
+    }
+    
+    @Bean
+    public TypeCodec<Long> simpleTimestampCodec() {
+        return SimpleTimestampCodec.instance;
     }
 
 }

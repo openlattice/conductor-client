@@ -190,7 +190,8 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( KEYS )
                         .ifNotExists()
                         .partitionKey( ID )
-                        .columns( ENTITY_KEY );
+                        .clusteringColumns( ENTITY_KEY )
+                        .columns( TIMESTAMP );
             case WEIGHTED_LINKING_EDGES:
                 return new CassandraTableBuilder( WEIGHTED_LINKING_EDGES )
                         .ifNotExists()

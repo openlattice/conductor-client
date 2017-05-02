@@ -118,7 +118,8 @@ public enum CommonColumns implements ColumnDef {
     TIME_UUID( DataType.timeuuid() ),
     SRC_VERTEX_TYPE_ID( DataType.uuid() ),
     QUERY_ID( DataType.blob() ),
-    WEIGHT( DataType.cdouble() );
+    WEIGHT( DataType.cdouble() ),
+    TIMESTAMP( DataType.timestamp() );
 
     private transient final DataType type;
 

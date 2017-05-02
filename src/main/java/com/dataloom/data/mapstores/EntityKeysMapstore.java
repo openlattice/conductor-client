@@ -19,23 +19,31 @@
 
 package com.dataloom.data.mapstores;
 
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.data.EntityKey;
 import com.dataloom.mapstores.TestDataFactory;
+import com.datastax.driver.core.AtomicMonotonicTimestampGenerator;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.TimestampGenerator;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
-import java.util.UUID;
-
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, EntityKey> {
+    private static final Logger logger = LoggerFactory.getLogger( EntityKeysMapstore.class );
+    public static final TimestampGenerator tg = new AtomicMonotonicTimestampGenerator();
+
     public EntityKeysMapstore(
             String mapName,
             Session session,
@@ -53,18 +61,18 @@ public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyV
         return TestDataFactory.entityKey();
     }
 
-    @Override protected BoundStatement bind( UUID key, BoundStatement bs ) {
+    @Override
+    protected BoundStatement bind( UUID key, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ID.cql(), key );
     }
 
     @Override
     protected BoundStatement bind( UUID key, EntityKey value, BoundStatement bs ) {
-        return bs
-                .setUUID( CommonColumns.ID.cql(), key )
-                .set( CommonColumns.ENTITY_KEY.cql(), value, EntityKey.class );
+        return bindStoreQuery( key, value, bs );
     }
 
-    @Override protected UUID mapKey( Row rs ) {
+    @Override
+    protected UUID mapKey( Row rs ) {
         return RowAdapters.id( rs );
     }
 
@@ -74,7 +82,18 @@ public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyV
         if ( r == null ) {
             return null;
         } else {
-            return RowAdapters.entityKey( r );
+            EntityKey value = RowAdapters.entityKey( r );
+            if( rs.one() != null ){
+                logger.error( "UUID {} corresponds to multiple entity keys.", RowAdapters.id( r ) );
+            }
+            return value;
         }
+    }
+    
+    public static BoundStatement bindStoreQuery( UUID key, EntityKey value, BoundStatement bs ) {
+        return bs
+                .setUUID( CommonColumns.ID.cql(), key )
+                .set( CommonColumns.ENTITY_KEY.cql(), value, EntityKey.class )
+                .set( CommonColumns.TIMESTAMP.cql(), tg.next(), Long.class );
     }
 }
