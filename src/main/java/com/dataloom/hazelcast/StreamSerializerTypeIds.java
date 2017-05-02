@@ -68,6 +68,7 @@ public enum StreamSerializerTypeIds {
     PRINCIPAL_SET,
     TICKET_KEY,
     REQUEST_STATUS,
+    REQUEST,
     STATUS,
     EDM_PRIMITIVE_TYPE_KIND_GETTER,
     ADD_SCHEMAS_TO_TYPE,
