@@ -30,10 +30,11 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.requests.MetadataUpdate;
+import com.dataloom.edm.type.AssociationDetails;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.EdgeType;
+import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.PropertyType;
 import com.hazelcast.map.EntryProcessor;
 
@@ -142,10 +143,12 @@ public interface EdmManager {
 
     Set<ComplexType> getComplexTypeHierarchy( UUID complexTypeId );
     
-    UUID createEdgeType( EdgeType edgeType, UUID entityTypeId );
+    UUID createAssociationType( AssociationType associationType, UUID entityTypeId );
     
-    EdgeType getEdgeType( UUID edgeTypeId );
-        
-    void deleteEdgeType( UUID edgeTypeId );
+    AssociationType getAssociationType( UUID associationTypeId );
+            
+    void deleteAssociationType( UUID associationTypeId );
+
+    AssociationDetails getAssociationDetails( UUID associationTypeId );
 
 }

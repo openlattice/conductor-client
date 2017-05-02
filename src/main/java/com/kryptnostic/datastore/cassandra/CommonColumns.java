@@ -44,7 +44,7 @@ public enum CommonColumns implements ColumnDef {
     CURRENT_SYNC_ID( DataType.uuid() ),
     DATATYPE( DataType.text() ),
     DESCRIPTION( DataType.text() ),
-    DEST( DataType.set( DataType.uuid() ) ),
+    DST( DataType.set( DataType.uuid() ) ),
     DST_ENTITY_KEY_ID( DataType.uuid() ),
     DST_TYPE_ID( DataType.uuid() ),
     EDGE_ENTITY_KEY_ID(DataType.uuid()),
