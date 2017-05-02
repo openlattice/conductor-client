@@ -20,22 +20,16 @@
 package com.dataloom.hazelcast.serializers;
 
 import java.io.IOException;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.UUID;
 
-import com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers;
 import org.springframework.stereotype.Component;
 
-import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.dataloom.requests.Request;
 import com.dataloom.requests.RequestStatus;
 import com.dataloom.requests.Status;
-import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @Component
@@ -43,9 +37,7 @@ public class StatusStreamSerializer implements SelfRegisteringStreamSerializer<S
 
     @Override
     public void write( ObjectDataOutput out, Status object ) throws IOException {
-        SetStreamSerializers.fastUUIDSetSerialize( out, object.getAclKey() );
-        DelegatedPermissionEnumSetStreamSerializer.serialize( out, object.getPermissions() );
-        out.writeUTF( object.getReason() );
+        RequestStreamSerializer.serialize( out, object.getRequest() );
         PrincipalStreamSerializer.serialize( out, object.getPrincipal() );
         RequestStatusStreamSerializer.serialize( out, object.getStatus() );
 
@@ -53,12 +45,10 @@ public class StatusStreamSerializer implements SelfRegisteringStreamSerializer<S
 
     @Override
     public Status read( ObjectDataInput in ) throws IOException {
-        List<UUID> aclKey = ListStreamSerializers.fastUUIDListDeserialize( in );
-        EnumSet<Permission> permissions = DelegatedPermissionEnumSetStreamSerializer.deserialize( in );
-        Optional<String> reason = Optional.fromNullable( in.readUTF() );
+        Request request = RequestStreamSerializer.deserialize( in );
         Principal principal = PrincipalStreamSerializer.deserialize( in );
         RequestStatus requestStatus = RequestStatusStreamSerializer.deserialize( in );
-        return new Status( aclKey, permissions, reason, principal, requestStatus );
+        return new Status( request, principal, requestStatus );
     }
 
     @Override

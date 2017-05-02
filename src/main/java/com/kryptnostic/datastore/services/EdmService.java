@@ -167,6 +167,9 @@ public class EdmService implements EdmManager {
             entityTypes.delete( entityTypeId );
             aclKeyReservations.release( entityTypeId );
             eventBus.post( new EntityTypeDeletedEvent( entityTypeId ) );
+        } else {
+            throw new IllegalArgumentException(
+                    "Unable to delete entity type because it is associated with an entity set." );
         }
     }
 
@@ -179,6 +182,9 @@ public class EdmService implements EdmManager {
             propertyTypes.delete( propertyTypeId );
             aclKeyReservations.release( propertyTypeId );
             eventBus.post( new PropertyTypeDeletedEvent( propertyTypeId ) );
+        } else {
+            throw new IllegalArgumentException(
+                    "Unable to delete property type because it is associated with an entity set." );
         }
     }
 
