@@ -17,31 +17,36 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.neuron;
+package com.dataloom.neuron.receptors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.client.serialization.SerializationConstants;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.dataloom.hazelcast.HazelcastQueue;
+import com.dataloom.neuron.signals.Signal;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IQueue;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+public class SignalQueueReceptor implements Receptor {
 
-public class Signal {
+    private static final Logger logger = LoggerFactory.getLogger( SignalQueueReceptor.class );
 
-    private static final Logger logger = LoggerFactory.getLogger( Signal.class );
+    private final HazelcastInstance hazelcastInstance;
 
-    private SignalType type;
+    public SignalQueueReceptor( HazelcastInstance hazelcastInstance ) {
 
-    @JsonCreator
-    public Signal( @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type ) {
-
-        this.type = checkNotNull( type );
+        this.hazelcastInstance = hazelcastInstance;
     }
 
-    @JsonProperty( SerializationConstants.TYPE_FIELD )
-    public SignalType getType() {
-        return type;
+    @Override
+    public void process( Signal signal ) {
+
+        IQueue<Signal> queue = hazelcastInstance.getQueue( HazelcastQueue.SIGNAL.name() );
+
+        try {
+            queue.put( signal );
+        } catch ( InterruptedException e ) {
+            logger.error( e.getMessage(), e );
+        }
     }
 }

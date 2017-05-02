@@ -17,9 +17,11 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.neuron;
+package com.dataloom.neuron.receptors;
 
-public interface Receptor<T extends Signal> {
+import com.dataloom.neuron.signals.Signal;
 
-    void process( T signal );
+public interface Receptor {
+
+    void process( Signal signal );
 }

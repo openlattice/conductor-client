@@ -22,12 +22,10 @@ package com.dataloom.data;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
 import javax.inject.Inject;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.neuron.audit.AuditEntitySet;
 import com.dataloom.sync.events.CurrentSyncUpdatedEvent;
 import com.dataloom.sync.events.SyncIdCreatedEvent;
 import com.datastax.driver.core.BoundStatement;
@@ -49,11 +47,11 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 public class DatasourceManager {
 
     @Inject
-    private EventBus                eventBus;
+    private EventBus eventBus;
 
-    private final Session           session;
+    private final Session session;
 
-    private final IMap<UUID, UUID>  currentSyncIds;
+    private final IMap<UUID, UUID> currentSyncIds;
 
     private final PreparedStatement mostRecentSyncIdQuery;
     private final PreparedStatement writeSyncIdsQuery;
@@ -74,20 +72,25 @@ public class DatasourceManager {
     public UUID getCurrentSyncId( UUID entitySetId ) {
         return currentSyncIds.get( entitySetId );
     }
-    
-    public Map<UUID, UUID> getCurrentSyncId( Set<UUID> entitySetIds ){
+
+    public Map<UUID, UUID> getCurrentSyncId( Set<UUID> entitySetIds ) {
         return currentSyncIds.getAll( entitySetIds );
     }
 
     public void setCurrentSyncId( UUID entitySetId, UUID syncId ) {
+
         currentSyncIds.put( entitySetId, syncId );
+
+        if ( entitySetId.equals( AuditEntitySet.getId() ) ) {
+            AuditEntitySet.setSyncId( syncId );
+        }
+
         eventBus.post( new CurrentSyncUpdatedEvent( entitySetId, syncId ) );
     }
 
     public UUID createNewSyncIdForEntitySet( UUID entitySetId ) {
         UUID newSyncId = UUIDs.timeBased();
         addSyncIdToEntitySet( entitySetId, newSyncId );
-
         eventBus.post( new SyncIdCreatedEvent( entitySetId, newSyncId ) );
         return newSyncId;
     }
@@ -104,7 +107,7 @@ public class DatasourceManager {
                         .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
         return Iterables.transform( rs, RowAdapters::syncId );
     }
-    
+
     public Iterable<UUID> getAllSyncIds( UUID entitySetId ) {
         ResultSet rs = session
                 .execute( allPreviousSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId ) );
