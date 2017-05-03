@@ -120,7 +120,8 @@ public class Neuron {
             EntityKey auditEntityKey = new EntityKey( auditEntitySetId, auditEntityId, auditEntitySetSyncId );
             return entityKeyIdService.getEntityKeyId( auditEntityKey );
 
-        } catch ( ExecutionException | InterruptedException e ) {
+        } catch ( ExecutionException | InterruptedException | NullPointerException e ) {
+            logger.error( "Failed to write to Audit EntitySet." );
             logger.error( e.getMessage(), e );
             return null;
         }

@@ -23,6 +23,7 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.pods.MapstoresPod;
 import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.neuron.Neuron;
 import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
@@ -72,7 +73,8 @@ public class HzAuthzTest extends CassandraBootstrap {
         aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
         hzAuthz = new HazelcastAuthorizationService( hazelcastInstance,
                 aqs,
-                testServer.getContext().getBean( EventBus.class ) );
+                testServer.getContext().getBean( EventBus.class ),
+                testServer.getContext().getBean( Neuron.class ) );
 
     }
 
