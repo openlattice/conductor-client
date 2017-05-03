@@ -324,6 +324,7 @@ public class EdmService implements EdmManager {
         } catch ( Exception e ) {
             logger.error( "Unable to create entity set {} for principal {}", entitySet, principal, e );
             Util.deleteSafely( entitySets, entitySet.getId() );
+            aclKeyReservations.release( entitySet.getId() );
             throw new IllegalStateException( "Unable to create entity set: " + entitySet.getId() );
         }
     }
