@@ -55,11 +55,11 @@ public class HzAuthzTest extends CassandraBootstrap {
     protected static final CassandraConfiguration        cc;
     protected static final AuthorizationQueryService     aqs;
     protected static final HazelcastAuthorizationService hzAuthz;
+    protected static final Neuron                        neuron;
     private static final Logger logger = LoggerFactory.getLogger( HzAuthzTest.class );
 
     static {
         EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
-        ;
         testServer = new RhizomeApplicationServer(
                 MapstoresPod.class,
                 CassandraPod.class,
@@ -70,12 +70,14 @@ public class HzAuthzTest extends CassandraBootstrap {
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
         session = testServer.getContext().getBean( Session.class );
         cc = testServer.getContext().getBean( CassandraConfiguration.class );
-        aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
-        hzAuthz = new HazelcastAuthorizationService( hazelcastInstance,
-                aqs,
-                testServer.getContext().getBean( EventBus.class ),
-                testServer.getContext().getBean( Neuron.class ) );
 
+        neuron = testServer.getContext().getBean( Neuron.class );
+        aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
+        hzAuthz = new HazelcastAuthorizationService(
+                hazelcastInstance,
+                aqs,
+                testServer.getContext().getBean( EventBus.class )
+        );
     }
 
     @Test
