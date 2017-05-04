@@ -24,6 +24,7 @@ import com.dataloom.hazelcast.pods.MapstoresPod;
 import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.neuron.Neuron;
+import com.dataloom.neuron.pods.NeuronPod;
 import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
@@ -60,12 +61,16 @@ public class HzAuthzTest extends CassandraBootstrap {
 
     static {
         EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
+
         testServer = new RhizomeApplicationServer(
                 MapstoresPod.class,
                 CassandraPod.class,
                 TypeCodecsPod.class,
                 SharedStreamSerializersPod.class,
-                CassandraTablesPod.class );
+                CassandraTablesPod.class,
+                NeuronPod.class
+        );
+
         testServer.sprout( "local", CassandraPod.CASSANDRA_PROFILE );
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
         session = testServer.getContext().getBean( Session.class );
