@@ -45,9 +45,9 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.kryptnostic.datastore.services.EdmManager;
 
-public class AuditEntitySet {
+public class AuditEntitySetUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger( AuditEntitySet.class );
+    private static final Logger logger = LoggerFactory.getLogger( AuditEntitySetUtils.class );
 
     private static final String AUDIT_ENTITY_SET_NAME = "Loom Audit Entity Set";
     private static final String LOOM_AUDIT_NAMESPACE  = "LOOM_AUDIT";
@@ -67,7 +67,7 @@ public class AuditEntitySet {
     private static UUID                     AUDIT_ENTITY_SET_SYNC_ID;
 
     // @formatter:off
-    public AuditEntitySet() {}
+    public AuditEntitySetUtils() {}
     // @formatter:on
 
     // PlasmaCoupling magic
