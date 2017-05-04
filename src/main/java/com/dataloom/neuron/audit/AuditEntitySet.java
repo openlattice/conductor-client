@@ -33,7 +33,6 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.neuron.signals.Signal;
@@ -46,10 +45,6 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.kryptnostic.datastore.services.EdmManager;
 
-/*
- * temporary solution for initializing the Audit EntitySet until we can figure out a better place for initializing
- * system-wide dependencies
- */
 public class AuditEntitySet {
 
     private static final Logger logger = LoggerFactory.getLogger( AuditEntitySet.class );
@@ -71,20 +66,19 @@ public class AuditEntitySet {
     private static EntitySet                AUDIT_ENTITY_SET;
     private static UUID                     AUDIT_ENTITY_SET_SYNC_ID;
 
-    private final DatasourceManager dataSourceManager;
-    private final EdmManager        entityDataModelManager;
+    // @formatter:off
+    public AuditEntitySet() {}
+    // @formatter:on
 
-    public AuditEntitySet( DatasourceManager dataSourceManager, EdmManager entityDataModelManager ) {
+    // PlasmaCoupling magic
+    public static void initialize( DatasourceManager dataSourceManager, EdmManager entityDataModelManager ) {
 
-        this.dataSourceManager = dataSourceManager;
-        this.entityDataModelManager = entityDataModelManager;
-
-        initializePropertyTypes();
-        initializeEntityType();
-        initializeEntitySet();
+        initializePropertyTypes( entityDataModelManager );
+        initializeEntityType( entityDataModelManager );
+        initializeEntitySet( dataSourceManager, entityDataModelManager );
     }
 
-    private void initializePropertyTypes() {
+    private static void initializePropertyTypes( EdmManager entityDataModelManager ) {
 
         // TYPE_PROPERTY_TYPE
         try {
@@ -93,7 +87,7 @@ public class AuditEntitySet {
             TYPE_PROPERTY_TYPE = null;
         }
 
-        if (TYPE_PROPERTY_TYPE == null) {
+        if ( TYPE_PROPERTY_TYPE == null ) {
             TYPE_PROPERTY_TYPE = new PropertyType(
                     TYPE_PT_FQN,
                     "Type",
@@ -111,7 +105,7 @@ public class AuditEntitySet {
             DETAILS_PROPERTY_TYPE = null;
         }
 
-        if (DETAILS_PROPERTY_TYPE == null) {
+        if ( DETAILS_PROPERTY_TYPE == null ) {
             DETAILS_PROPERTY_TYPE = new PropertyType(
                     DETAILS_PT_FQN,
                     "Details",
@@ -128,7 +122,7 @@ public class AuditEntitySet {
         );
     }
 
-    private void initializeEntityType() {
+    private static void initializeEntityType( EdmManager entityDataModelManager ) {
 
         try {
             AUDIT_ENTITY_TYPE = entityDataModelManager.getEntityType( AUDIT_ET_FQN );
@@ -155,7 +149,7 @@ public class AuditEntitySet {
         }
     }
 
-    private void initializeEntitySet() {
+    private static void initializeEntitySet( DatasourceManager dataSourceManager, EdmManager entityDataModelManager ) {
 
         try {
             AUDIT_ENTITY_SET = entityDataModelManager.getEntitySet( AUDIT_ENTITY_SET_NAME );
@@ -163,7 +157,7 @@ public class AuditEntitySet {
             AUDIT_ENTITY_SET = null;
         }
 
-        if (AUDIT_ENTITY_SET == null) {
+        if ( AUDIT_ENTITY_SET == null ) {
             AUDIT_ENTITY_SET = new EntitySet(
                     AUDIT_ENTITY_TYPE.getId(),
                     AUDIT_ENTITY_SET_NAME,

@@ -82,7 +82,8 @@ public class NeuronPod {
                 defaultObjectMapper(),
                 linkingGraph(),
                 loomGraph(),
-                datasourceManager() );
+                datasourceManager()
+        );
     }
 
     @Bean
@@ -93,7 +94,8 @@ public class NeuronPod {
                 loomGraph(),
                 idService(),
                 executor,
-                eventBus );
+                eventBus
+        );
     }
 
     @Bean
