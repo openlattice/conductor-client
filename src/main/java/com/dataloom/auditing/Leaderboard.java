@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public class Leaderboard {
     private final ConcurrentSkipListMap<Integer, Object> leaderboard;
     //Actually cap minus one.

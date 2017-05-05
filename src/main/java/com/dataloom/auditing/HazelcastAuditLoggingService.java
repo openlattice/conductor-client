@@ -31,6 +31,8 @@ import com.hazelcast.map.EntryProcessor;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public class HazelcastAuditLoggingService {
     private static EntryProcessor<AclKey, AuditMetric> INCREMENTER = new AuditMetricIncrementer();
 //    private final IMap<AuditableEventKey, AuditableEvent<?>> auditEvents;
