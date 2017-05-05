@@ -20,6 +20,7 @@
 package com.dataloom.data;
 
 import java.nio.ByteBuffer;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,6 +52,7 @@ public interface EntityDatastore {
     EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
             UUID syncId,
+            LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
     /**
@@ -77,6 +79,7 @@ public interface EntityDatastore {
      */
     EntitySetData<FullQualifiedName> getLinkedEntitySetData(
             UUID linkedEntitySetId,
+            LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
 
     // TODO remove vertices too
