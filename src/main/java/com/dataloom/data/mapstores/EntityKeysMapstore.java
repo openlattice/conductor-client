@@ -83,7 +83,7 @@ public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyV
             return null;
         } else {
             EntityKey value = RowAdapters.entityKey( r );
-            if( rs.one() != null ){
+            if( !rs.isExhausted() ){
                 logger.error( "UUID {} corresponds to multiple entity keys.", RowAdapters.id( r ) );
             }
             return value;
