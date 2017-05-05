@@ -45,13 +45,9 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.kryptnostic.datastore.services.EdmManager;
 
-/*
- * temporary solution for initializing the Audit EntitySet until we can figure out a better place for initializing
- * system-wide dependencies
- */
-public class AuditEntitySet {
+public class AuditEntitySetUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger( AuditEntitySet.class );
+    private static final Logger logger = LoggerFactory.getLogger( AuditEntitySetUtils.class );
 
     private static final String AUDIT_ENTITY_SET_NAME = "Loom Audit Entity Set";
     private static final String LOOM_AUDIT_NAMESPACE  = "LOOM_AUDIT";
@@ -70,22 +66,28 @@ public class AuditEntitySet {
     private static EntitySet                AUDIT_ENTITY_SET;
     private static UUID                     AUDIT_ENTITY_SET_SYNC_ID;
 
-    private final DatasourceManager dataSourceManager;
-    private final EdmManager        entityDataModelManager;
+    // @formatter:off
+    public AuditEntitySetUtils() {}
+    // @formatter:on
 
-    public AuditEntitySet( DatasourceManager dataSourceManager, EdmManager entityDataModelManager ) {
+    // PlasmaCoupling magic
+    public static void initialize( DatasourceManager dataSourceManager, EdmManager entityDataModelManager ) {
 
-        this.dataSourceManager = dataSourceManager;
-        this.entityDataModelManager = entityDataModelManager;
-
-        initializePropertyTypes();
-        initializeEntityType();
-        initializeEntitySet();
+        initializePropertyTypes( entityDataModelManager );
+        initializeEntityType( entityDataModelManager );
+        initializeEntitySet( dataSourceManager, entityDataModelManager );
     }
 
-    private void initializePropertyTypes() {
+    private static void initializePropertyTypes( EdmManager entityDataModelManager ) {
 
+        // TYPE_PROPERTY_TYPE
         try {
+            TYPE_PROPERTY_TYPE = entityDataModelManager.getPropertyType( TYPE_PT_FQN );
+        } catch ( NullPointerException e ) {
+            TYPE_PROPERTY_TYPE = null;
+        }
+
+        if ( TYPE_PROPERTY_TYPE == null ) {
             TYPE_PROPERTY_TYPE = new PropertyType(
                     TYPE_PT_FQN,
                     "Type",
@@ -94,11 +96,16 @@ public class AuditEntitySet {
                     EdmPrimitiveTypeKind.String
             );
             entityDataModelManager.createPropertyTypeIfNotExists( TYPE_PROPERTY_TYPE );
-        } catch ( Exception e ) {
-            TYPE_PROPERTY_TYPE = entityDataModelManager.getPropertyType( TYPE_PT_FQN );
         }
 
+        // DETAILS_PROPERTY_TYPE
         try {
+            DETAILS_PROPERTY_TYPE = entityDataModelManager.getPropertyType( DETAILS_PT_FQN );
+        } catch ( NullPointerException e ) {
+            DETAILS_PROPERTY_TYPE = null;
+        }
+
+        if ( DETAILS_PROPERTY_TYPE == null ) {
             DETAILS_PROPERTY_TYPE = new PropertyType(
                     DETAILS_PT_FQN,
                     "Details",
@@ -107,8 +114,6 @@ public class AuditEntitySet {
                     EdmPrimitiveTypeKind.String
             );
             entityDataModelManager.createPropertyTypeIfNotExists( DETAILS_PROPERTY_TYPE );
-        } catch ( Exception e ) {
-            DETAILS_PROPERTY_TYPE = entityDataModelManager.getPropertyType( DETAILS_PT_FQN );
         }
 
         PROPERTIES = ImmutableList.of(
@@ -117,29 +122,42 @@ public class AuditEntitySet {
         );
     }
 
-    private void initializeEntityType() {
+    private static void initializeEntityType( EdmManager entityDataModelManager ) {
 
         try {
+            AUDIT_ENTITY_TYPE = entityDataModelManager.getEntityType( AUDIT_ET_FQN );
+        } catch ( NullPointerException e ) {
+            AUDIT_ENTITY_TYPE = null;
+        }
+
+        if ( AUDIT_ENTITY_TYPE == null ) {
             AUDIT_ENTITY_TYPE = new EntityType(
                     AUDIT_ET_FQN,
                     "Loom Audit",
                     "The Loom Audit Entity Type.",
                     ImmutableSet.of(),
-                    Sets.newLinkedHashSet( Sets.newHashSet( TYPE_PROPERTY_TYPE.getId() ) ),
-                    Sets.newLinkedHashSet( Sets
-                            .newHashSet( TYPE_PROPERTY_TYPE.getId(), DETAILS_PROPERTY_TYPE.getId() ) ),
+                    Sets.newLinkedHashSet(
+                            Sets.newHashSet( TYPE_PROPERTY_TYPE.getId() )
+                    ),
+                    Sets.newLinkedHashSet(
+                            Sets.newHashSet( TYPE_PROPERTY_TYPE.getId(), DETAILS_PROPERTY_TYPE.getId() )
+                    ),
                     Optional.absent(),
                     Optional.absent()
             );
             entityDataModelManager.createEntityType( AUDIT_ENTITY_TYPE );
-        } catch ( Exception e ) {
-            AUDIT_ENTITY_TYPE = entityDataModelManager.getEntityType( AUDIT_ET_FQN );
         }
     }
 
-    private void initializeEntitySet() {
+    private static void initializeEntitySet( DatasourceManager dataSourceManager, EdmManager entityDataModelManager ) {
 
         try {
+            AUDIT_ENTITY_SET = entityDataModelManager.getEntitySet( AUDIT_ENTITY_SET_NAME );
+        } catch ( NullPointerException e ) {
+            AUDIT_ENTITY_SET = null;
+        }
+
+        if ( AUDIT_ENTITY_SET == null ) {
             AUDIT_ENTITY_SET = new EntitySet(
                     AUDIT_ENTITY_TYPE.getId(),
                     AUDIT_ENTITY_SET_NAME,
@@ -148,8 +166,6 @@ public class AuditEntitySet {
                     ImmutableSet.of( "info@thedataloom.com" )
             );
             entityDataModelManager.createEntitySet( LOOM_PRINCIPAL, AUDIT_ENTITY_SET );
-        } catch ( Exception e ) {
-            AUDIT_ENTITY_SET = entityDataModelManager.getEntitySet( AUDIT_ENTITY_SET_NAME );
         }
 
         AUDIT_ENTITY_SET_SYNC_ID = dataSourceManager.createNewSyncIdForEntitySet( AUDIT_ENTITY_SET.getId() );

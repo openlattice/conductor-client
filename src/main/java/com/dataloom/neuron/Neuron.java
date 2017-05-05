@@ -32,7 +32,7 @@ import org.springframework.scheduling.annotation.Async;
 import com.dataloom.data.DataGraphManager;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
-import com.dataloom.neuron.audit.AuditEntitySet;
+import com.dataloom.neuron.audit.AuditEntitySetUtils;
 import com.dataloom.neuron.audit.AuditLogQueryService;
 import com.dataloom.neuron.receptors.Receptor;
 import com.dataloom.neuron.signals.AuditableSignal;
@@ -105,22 +105,23 @@ public class Neuron {
 
         try {
 
-            UUID auditEntitySetId = AuditEntitySet.getId();
-            UUID auditEntitySetSyncId = AuditEntitySet.getSyncId();
+            UUID auditEntitySetId = AuditEntitySetUtils.getId();
+            UUID auditEntitySetSyncId = AuditEntitySetUtils.getSyncId();
             String auditEntityId = UUID.randomUUID().toString();
 
             this.dataGraphManager.createEntities(
                     auditEntitySetId,
                     auditEntitySetSyncId,
-                    AuditEntitySet.prepareAuditEntityData( signal, auditEntityId ),
-                    AuditEntitySet.getPropertyDataTypesMap()
+                    AuditEntitySetUtils.prepareAuditEntityData( signal, auditEntityId ),
+                    AuditEntitySetUtils.getPropertyDataTypesMap()
             );
 
             // TODO: remove dependency on EntityKeyIdService once DataGraphManager can return the UUID after creation
             EntityKey auditEntityKey = new EntityKey( auditEntitySetId, auditEntityId, auditEntitySetSyncId );
             return entityKeyIdService.getEntityKeyId( auditEntityKey );
 
-        } catch ( ExecutionException | InterruptedException e ) {
+        } catch ( ExecutionException | InterruptedException | NullPointerException e ) {
+            logger.error( "Failed to write to Audit EntitySet." );
             logger.error( e.getMessage(), e );
             return null;
         }

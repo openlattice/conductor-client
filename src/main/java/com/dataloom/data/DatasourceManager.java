@@ -25,7 +25,7 @@ import java.util.UUID;
 import javax.inject.Inject;
 
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.neuron.audit.AuditEntitySet;
+import com.dataloom.neuron.audit.AuditEntitySetUtils;
 import com.dataloom.sync.events.CurrentSyncUpdatedEvent;
 import com.dataloom.sync.events.SyncIdCreatedEvent;
 import com.datastax.driver.core.BoundStatement;
@@ -81,8 +81,8 @@ public class DatasourceManager {
 
         currentSyncIds.put( entitySetId, syncId );
 
-        if ( entitySetId.equals( AuditEntitySet.getId() ) ) {
-            AuditEntitySet.setSyncId( syncId );
+        if ( entitySetId.equals( AuditEntitySetUtils.getId() ) ) {
+            AuditEntitySetUtils.setSyncId( syncId );
         }
 
         eventBus.post( new CurrentSyncUpdatedEvent( entitySetId, syncId ) );

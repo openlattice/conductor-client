@@ -62,10 +62,7 @@ public class Signal implements Serializable {
         }
     }
 
-    public Signal(
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
-            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
-            @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal ) {
+    public Signal(SignalType type, List<UUID> aclKey, Principal principal ) {
 
         this( type, aclKey, principal, "" );
     }
