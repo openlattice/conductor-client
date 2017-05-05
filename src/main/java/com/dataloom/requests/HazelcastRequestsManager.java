@@ -19,6 +19,7 @@
 
 package com.dataloom.requests;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ import com.dataloom.neuron.SignalType;
 import com.dataloom.neuron.receptors.SignalQueueReceptor;
 import com.dataloom.neuron.signals.Signal;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -50,24 +52,30 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastRequestsManager {
+
     private static final Logger logger = LoggerFactory.getLogger( HazelcastRequestsManager.class );
+
+    private final Neuron                                   neuron;
     private final RequestQueryService                      rqs;
     private final IMap<AceKey, Status>                     requests;
     private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
 
-    private final Neuron neuron;
+    private static final Map<RequestStatus, SignalType> STATE_TO_SIGNAL_MAP = Maps.newEnumMap( RequestStatus.class );
 
-    public HazelcastRequestsManager(
-            HazelcastInstance hazelcastInstance,
-            RequestQueryService rqs,
-            Neuron neuron ) {
+    static {
+        STATE_TO_SIGNAL_MAP.put( RequestStatus.APPROVED, SignalType.PERMISSION_REQUEST_APPROVED );
+        STATE_TO_SIGNAL_MAP.put( RequestStatus.DECLINED, SignalType.PERMISSION_REQUEST_DECLINED );
+        STATE_TO_SIGNAL_MAP.put( RequestStatus.SUBMITTED, SignalType.PERMISSION_REQUEST_SUBMITTED );
+    }
+
+    public HazelcastRequestsManager( HazelcastInstance hazelcastInstance, RequestQueryService rqs, Neuron neuron ) {
+
         this.requests = hazelcastInstance.getMap( HazelcastMap.REQUESTS.name() );
         this.aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
         this.rqs = checkNotNull( rqs );
 
-        this.neuron = neuron;
-
         // TODO: it's not ideal to have to do "new SignalQueueReceptor( hazelcastInstance )"
+        this.neuron = neuron;
         this.neuron.activateReceptor(
                 EnumSet.of(
                         SignalType.PERMISSION_REQUEST_APPROVED,
@@ -112,51 +120,39 @@ public class HazelcastRequestsManager {
         return requestKeys.map( Util.getSafeMapper( requests ) );
     }
 
-    private void signalPermissionRequestStatusUpdates( Map<AceKey, Status> aceKeyRequestStatusMap ) {
+    private void signalPermissionRequestStatusUpdates( Map<AceKey, Status> aceKeyRequestStateMap ) {
 
-        Set<AceKey> approved = Sets.newHashSet();
-        Set<AceKey> declined = Sets.newHashSet();
-        Set<AceKey> submitted = Sets.newHashSet();
+        /*
+         * TODO: figure out a better approach to prepping this signal. since this is a very specific use case,
+         * perhaps it makes sense to have a specific Signal or Receptor that handles this logic.
+         */
 
-        aceKeyRequestStatusMap.forEach( ( aceKey, requestStatus ) -> {
+        Map<RequestStatus, Set<AceKey>> requestStateToAceKeysMap = Maps.newEnumMap( RequestStatus.class );
+        requestStateToAceKeysMap.put( RequestStatus.APPROVED, Sets.newHashSet() );
+        requestStateToAceKeysMap.put( RequestStatus.DECLINED, Sets.newHashSet() );
+        requestStateToAceKeysMap.put( RequestStatus.SUBMITTED, Sets.newHashSet() );
 
-            List<UUID> newAclKey = Lists.newArrayList( aceKey.getKey() );
+        aceKeyRequestStateMap.forEach( ( aceKey, requestStatus ) -> {
+
+            List<UUID> newAclKey = Collections.unmodifiableList( aceKey.getKey() );
             if ( newAclKey.size() > 1 ) {
-                newAclKey.remove( newAclKey.size() - 1 );
+                // we need a new ArrayList, otherwise we get "java.io.NotSerializableException: java.util.ArrayList$SubList"
+                newAclKey = Lists.newArrayList( newAclKey.subList( 0, newAclKey.size() - 1 ) );
             }
 
-            AceKey newAceKey = new AceKey( newAclKey, requestStatus.getPrincipal() );
-            if ( requestStatus.getStatus().equals( RequestStatus.APPROVED ) ) {
-                approved.add( newAceKey );
-            } else if ( requestStatus.getStatus().equals( RequestStatus.DECLINED ) ) {
-                declined.add( newAceKey );
-            } else if ( requestStatus.getStatus().equals( RequestStatus.SUBMITTED ) ) {
-                submitted.add( newAceKey );
-            }
+            requestStateToAceKeysMap
+                    .get( requestStatus.getStatus() )
+                    .add( new AceKey( newAclKey, requestStatus.getPrincipal() ) );
         } );
 
-        approved.forEach( aceKey -> {
-            this.neuron.transmit( new Signal(
-                    SignalType.PERMISSION_REQUEST_APPROVED,
-                    aceKey.getKey(),
-                    aceKey.getPrincipal()
-            ) );
-        } );
-
-        declined.forEach( aceKey -> {
-            this.neuron.transmit( new Signal(
-                    SignalType.PERMISSION_REQUEST_DECLINED,
-                    aceKey.getKey(),
-                    aceKey.getPrincipal()
-            ) );
-        } );
-
-        submitted.forEach( aceKey -> {
-            this.neuron.transmit( new Signal(
-                    SignalType.PERMISSION_REQUEST_SUBMITTED,
-                    aceKey.getKey(),
-                    aceKey.getPrincipal()
-            ) );
+        requestStateToAceKeysMap.forEach( ( state, aceKeys ) -> {
+            aceKeys.forEach( aceKey -> {
+                this.neuron.transmit( new Signal(
+                        STATE_TO_SIGNAL_MAP.get( state ),
+                        aceKey.getKey(),
+                        aceKey.getPrincipal()
+                ) );
+            } );
         } );
     }
 }
