@@ -127,10 +127,10 @@ public class HazelcastRequestsManager {
          * perhaps it makes sense to have a specific Signal or Receptor that handles this logic.
          */
 
-        Map<RequestStatus, Set<AceKey>> requestStateToAceKeysMap = Maps.newEnumMap( RequestStatus.class );
-        requestStateToAceKeysMap.put( RequestStatus.APPROVED, Sets.newHashSet() );
-        requestStateToAceKeysMap.put( RequestStatus.DECLINED, Sets.newHashSet() );
-        requestStateToAceKeysMap.put( RequestStatus.SUBMITTED, Sets.newHashSet() );
+        Map<RequestStatus, Set<AceKey>> stateToAceKeysMap = Maps.newEnumMap( RequestStatus.class );
+        stateToAceKeysMap.put( RequestStatus.APPROVED, Sets.newHashSet() );
+        stateToAceKeysMap.put( RequestStatus.DECLINED, Sets.newHashSet() );
+        stateToAceKeysMap.put( RequestStatus.SUBMITTED, Sets.newHashSet() );
 
         aceKeyRequestStateMap.forEach( ( aceKey, requestStatus ) -> {
 
@@ -140,12 +140,12 @@ public class HazelcastRequestsManager {
                 newAclKey = Lists.newArrayList( newAclKey.subList( 0, newAclKey.size() - 1 ) );
             }
 
-            requestStateToAceKeysMap
+            stateToAceKeysMap
                     .get( requestStatus.getStatus() )
                     .add( new AceKey( newAclKey, requestStatus.getPrincipal() ) );
         } );
 
-        requestStateToAceKeysMap.forEach( ( state, aceKeys ) -> {
+        stateToAceKeysMap.forEach( ( state, aceKeys ) -> {
             aceKeys.forEach( aceKey -> {
                 this.neuron.transmit( new Signal(
                         STATE_TO_SIGNAL_MAP.get( state ),

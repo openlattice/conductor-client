@@ -82,7 +82,7 @@ public class NeuronPod {
                 defaultObjectMapper(),
                 linkingGraph(),
                 loomGraph(),
-                datasourceManager()
+                dataSourceManager()
         );
     }
 
@@ -99,7 +99,7 @@ public class NeuronPod {
     }
 
     @Bean
-    public DatasourceManager datasourceManager() {
+    public DatasourceManager dataSourceManager() {
         return new DatasourceManager( session, hazelcastInstance );
     }
 
