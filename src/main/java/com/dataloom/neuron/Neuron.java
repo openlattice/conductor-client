@@ -84,7 +84,7 @@ public class Neuron {
     @Async
     public void transmit( Signal signal ) {
 
-        // 1. write to the Audit Entity Set
+        // 1. write to the Audit EntitySet
         UUID auditId = writeToAuditEntitySet( signal );
 
         if ( auditId != null ) {
@@ -129,7 +129,7 @@ public class Neuron {
 
     private void writeToAuditLog( Signal signal, UUID auditId ) {
 
-        // TODO: still need to figure out entityId and blockId
+        // TODO: still need to figure out dataId and blockId
         AuditableSignal auditableSignal = new AuditableSignal(
                 signal.getType(),
                 signal.getAclKey(),

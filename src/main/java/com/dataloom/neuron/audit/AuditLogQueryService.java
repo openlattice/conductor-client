@@ -53,7 +53,6 @@ public class AuditLogQueryService {
 
     public void store( AuditableSignal signal ) {
 
-        // TODO: how do I deal with Optionals?
         BoundStatement storeStatement = storeQuery.bind()
                 .setList( ACL_KEYS.cql(), signal.getAclKey(), UUID.class )
                 .set( EVENT_TYPE.cql(), signal.getType(), SignalType.class )
