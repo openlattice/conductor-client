@@ -1,7 +1,7 @@
 package com.dataloom.data;
 
 import java.util.Iterator;
-import java.util.Set;
+import java.util.LinkedHashSet;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
@@ -18,17 +18,17 @@ public class EntitySetData<T> implements Iterable<SetMultimap<T, Object>> {
     private static final Logger              logger = LoggerFactory
             .getLogger( EntitySetData.class );
 
-    private Set<T>                           columnTitles;
+    private LinkedHashSet<String>            columnTitles;
     private Iterable<SetMultimap<T, Object>> entities;
 
     public EntitySetData(
-            Set<T> columnTitles,
+            LinkedHashSet<String> columnTitles,
             Iterable<SetMultimap<T, Object>> entities ) {
         this.columnTitles = columnTitles;
         this.entities = entities;
     }
 
-    public Set<T> getColumnTitles() {
+    public LinkedHashSet<String> getColumnTitles() {
         return columnTitles;
     }
 
