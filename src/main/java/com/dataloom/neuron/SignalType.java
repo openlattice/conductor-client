@@ -17,12 +17,15 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.hazelcast;
+package com.dataloom.neuron;
 
-/**
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
- */
-public enum HazelcastQueue {
-    EMAIL_SPOOL,
-    SIGNAL
+public enum SignalType {
+
+    ACL_KEY_PERMISSION_ADDED,
+    ACL_KEY_PERMISSION_REMOVED,
+    ACL_KEY_PERMISSION_UPDATED,
+
+    PERMISSION_REQUEST_APPROVED,
+    PERMISSION_REQUEST_DECLINED,
+    PERMISSION_REQUEST_SUBMITTED
 }

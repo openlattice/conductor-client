@@ -28,6 +28,8 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public final class AuditUtil {
     private AuditUtil() {
     }

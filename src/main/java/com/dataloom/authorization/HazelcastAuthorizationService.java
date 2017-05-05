@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.kryptnostic.datastore.util.Util;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

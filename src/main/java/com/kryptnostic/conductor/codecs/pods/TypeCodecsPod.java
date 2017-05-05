@@ -19,12 +19,22 @@
 
 package com.kryptnostic.conductor.codecs.pods;
 
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
-import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.edm.type.Analyzer;
+import com.dataloom.neuron.SignalType;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;
@@ -34,17 +44,6 @@ import com.kryptnostic.conductor.codecs.EntityKeyTypeCodec;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.codecs.FullQualifiedNameTypeCodec;
 import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
-import com.kryptnostic.conductor.codecs.TreeSetCodec;
-
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 import static com.dataloom.auditing.AuditableEventKey.AuditableEventType;
 
@@ -129,4 +128,8 @@ public class TypeCodecsPod {
         return new EntityKeyTypeCodec();
     }
 
+    @Bean
+    public EnumNameCodec<SignalType> signalTypeCodec() {
+        return new EnumNameCodec<>( SignalType.class );
+    }
 }

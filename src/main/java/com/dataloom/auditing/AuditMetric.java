@@ -27,6 +27,8 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public class AuditMetric implements Comparable<AuditMetric> {
     private final List<UUID> aclKey;
     private       long       counter;

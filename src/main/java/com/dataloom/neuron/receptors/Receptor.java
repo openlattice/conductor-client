@@ -17,12 +17,11 @@
  * You can contact the owner of the copyright at support@thedataloom.com
  */
 
-package com.dataloom.hazelcast;
+package com.dataloom.neuron.receptors;
 
-/**
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
- */
-public enum HazelcastQueue {
-    EMAIL_SPOOL,
-    SIGNAL
+import com.dataloom.neuron.signals.Signal;
+
+public interface Receptor {
+
+    void process( Signal signal );
 }
