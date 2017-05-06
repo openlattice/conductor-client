@@ -25,12 +25,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import com.dataloom.authorization.AuthorizationManager;
+import com.dataloom.authorization.AuthorizationQueryService;
+import com.dataloom.authorization.HazelcastAclKeyReservationService;
+import com.dataloom.authorization.HazelcastAuthorizationService;
 import com.dataloom.data.DataGraphManager;
 import com.dataloom.data.DataGraphService;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.ids.HazelcastEntityKeyIdService;
 import com.dataloom.data.storage.CassandraEntityDatastore;
+import com.dataloom.edm.properties.CassandraTypeManager;
+import com.dataloom.edm.schemas.SchemaQueryService;
+import com.dataloom.edm.schemas.cassandra.CassandraSchemaQueryService;
+import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.graph.core.GraphQueryService;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.linking.HazelcastLinkingGraphs;
@@ -41,11 +49,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
+import com.kryptnostic.datastore.services.CassandraEntitySetManager;
+import com.kryptnostic.datastore.services.EdmManager;
+import com.kryptnostic.datastore.services.EdmService;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 
 @Configuration
 @Import( {
+        AuditEntitySetPod.class,
         CassandraPod.class
 } )
 public class NeuronPod {
@@ -65,6 +77,12 @@ public class NeuronPod {
     @Inject
     private Session session;
 
+    /*
+     *
+     * Neuron bean
+     *
+     */
+
     @Bean
     public Neuron neuron() {
         return new Neuron(
@@ -73,6 +91,22 @@ public class NeuronPod {
                 cassandraConfiguration,
                 session
         );
+    }
+
+    /*
+     *
+     * other dependency beans
+     *
+     */
+
+    @Bean
+    public AuthorizationQueryService authorizationQueryService() {
+        return new AuthorizationQueryService( cassandraConfiguration.getKeyspace(), session, hazelcastInstance );
+    }
+
+    @Bean
+    public AuthorizationManager authorizationManager() {
+        return new HazelcastAuthorizationService( hazelcastInstance, authorizationQueryService(), eventBus );
     }
 
     @Bean
@@ -84,6 +118,16 @@ public class NeuronPod {
                 loomGraph(),
                 dataSourceManager()
         );
+    }
+
+    @Bean
+    public CassandraEntitySetManager entitySetManager() {
+        return new CassandraEntitySetManager( cassandraConfiguration.getKeyspace(), session, authorizationManager() );
+    }
+
+    @Bean
+    public CassandraTypeManager entityTypeManager() {
+        return new CassandraTypeManager( cassandraConfiguration.getKeyspace(), session );
     }
 
     @Bean
@@ -104,10 +148,22 @@ public class NeuronPod {
     }
 
     @Bean
+    public EdmManager dataModelService() {
+        return new EdmService(
+                cassandraConfiguration.getKeyspace(),
+                session,
+                hazelcastInstance,
+                aclKeyReservationService(),
+                authorizationManager(),
+                entitySetManager(),
+                entityTypeManager(),
+                schemaManager() );
+    }
+
+    @Bean
     public EntityKeyIdService idService() {
         return new HazelcastEntityKeyIdService( hazelcastInstance, executor );
     }
-
 
     @Bean
     public GraphQueryService graphQueryService() {
@@ -115,8 +171,21 @@ public class NeuronPod {
     }
 
     @Bean
+    public HazelcastAclKeyReservationService aclKeyReservationService() {
+        return new HazelcastAclKeyReservationService( hazelcastInstance );
+    }
+
+    @Bean
     public HazelcastLinkingGraphs linkingGraph() {
         return new HazelcastLinkingGraphs( hazelcastInstance );
+    }
+
+    @Bean
+    public HazelcastSchemaManager schemaManager() {
+        return new HazelcastSchemaManager(
+                cassandraConfiguration.getKeyspace(),
+                hazelcastInstance,
+                schemaQueryService() );
     }
 
     @Bean
@@ -127,5 +196,10 @@ public class NeuronPod {
     @Bean
     public ObjectMapper defaultObjectMapper() {
         return ObjectMappers.getJsonMapper();
+    }
+
+    @Bean
+    public SchemaQueryService schemaQueryService() {
+        return new CassandraSchemaQueryService( cassandraConfiguration.getKeyspace(), session );
     }
 }
