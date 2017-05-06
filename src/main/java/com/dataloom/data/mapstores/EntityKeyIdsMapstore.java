@@ -1,8 +1,22 @@
 package com.dataloom.data.mapstores;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.data.EntityKey;
 import com.dataloom.mapstores.TestDataFactory;
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.RegularStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MaxSizeConfig;
@@ -12,23 +26,16 @@ import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<EntityKey, UUID> {
-    private static final Logger logger = LoggerFactory.getLogger( EntityKeyIdsMapstore.class );
+    private static final Logger     logger = LoggerFactory.getLogger( EntityKeyIdsMapstore.class );
     private final PreparedStatement updateQuery;
-    private final PreparedStatement insertLookupIfNotExists;
+    private final PreparedStatement insertLookup;
 
     public EntityKeyIdsMapstore( String mapName, Session session, CassandraTableBuilder tableBuilder ) {
         super( mapName, session, tableBuilder );
         updateQuery = session.prepare( super.storeQuery() );
-        insertLookupIfNotExists = session.prepare( Table.KEYS.getBuilder().buildStoreQuery().ifNotExists() );
+        insertLookup = session.prepare( Table.KEYS.getBuilder().buildStoreQuery() );
     }
 
     @Override
@@ -92,22 +99,12 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
         final ResultSet rs = assignment.getUninterruptibly();
 
         if ( Util.wasLightweightTransactionApplied( rs ) ) {
-            if ( Util.wasLightweightTransactionApplied( insertLookupIfNotExists( id, key ) ) ) {
-                return id;
-            } else {
-                //Successfully wrote new assignment
-                try {
-                    Thread.sleep( backoffMillis );
-                    return startLoading( key, backoffMillis << 1, false );
-                } catch ( InterruptedException e ) {
-                    logger.error( "Error while sleeping during backoff.", e );
-                }
-            }
+            insertLookup( id, key );
+            return id;
         } else {
-            //Return existing assignment
+            // Return existing assignment
             return mapValue( asyncLoad( key ).getUninterruptibly() );
         }
-        return null;
     }
 
     @Override
@@ -119,8 +116,8 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
 
     }
 
-    private ResultSet insertLookupIfNotExists( UUID id, EntityKey entityKey ) {
-        return session.execute( bind( entityKey, id, insertLookupIfNotExists.bind() ) );
+    private ResultSet insertLookup( UUID id, EntityKey entityKey ) {
+        return session.execute( EntityKeysMapstore.bindStoreQuery( id, entityKey, insertLookup.bind() ) );
     }
 
     private ResultSetFuture asyncUpdate( EntityKey key, UUID id ) {
@@ -132,8 +129,9 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
         return tableBuilder.buildStoreQuery().ifNotExists();
     }
 
-    @Override public MapConfig getMapConfig() {
-        //Don't let this map use more than 10% of heap
+    @Override
+    public MapConfig getMapConfig() {
+        // Don't let this map use more than 10% of heap
         return super.getMapConfig()
                 .setMaxSizeConfig(
                         new MaxSizeConfig()
