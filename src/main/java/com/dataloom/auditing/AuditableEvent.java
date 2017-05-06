@@ -35,6 +35,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
+
+@Deprecated
 public class AuditableEvent {
     private final AuditableEventKey   eventKey;
     private final SecurableObjectType objectType;

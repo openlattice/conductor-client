@@ -30,19 +30,22 @@ import java.util.function.Function;
 
 public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
+    AUDIT_ID( DataType.uuid() ),
     ANALYZER( DataType.text() ),
     FROZEN_PERMISSIONS( DataType.frozenSet( DataType.text() ) ),
     ACL_CHILDREN_PERMISSIONS( DataType.map( DataType.uuid(), FROZEN_PERMISSIONS.getType() ) ),
     ACL_KEY_VALUE( DataType.frozenList( DataType.uuid() ) ),
+    // TODO: ACL_KEYS should really be ACL_KEY
     ACL_KEYS( DataType.frozenList( DataType.uuid() ) ), // partition index within a table for distribution purpose,
     ACL_ROOT( DataType.frozenList( DataType.uuid() ) ),
     ALLOWED_EMAIL_DOMAINS( DataType.set( DataType.text() ) ),
     AUDIT_EVENT_DETAILS( DataType.text() ),
-    AUDIT_EVENT_TYPE( DataType.text() ),
     BIDIRECTIONAL( DataType.cboolean() ),
+    BLOCK_ID( DataType.uuid() ),
     CLOCK( DataType.timestamp() ),
     CURRENT_SYNC_ID( DataType.uuid() ),
     DATATYPE( DataType.text() ),
+    DATA_ID( DataType.uuid() ),
     DESCRIPTION( DataType.text() ),
     DST( DataType.set( DataType.uuid() ) ),
     DST_ENTITY_KEY_ID( DataType.uuid() ),
@@ -61,6 +64,7 @@ public enum CommonColumns implements ColumnDef {
     ENTITY_TYPES( DataType.set( DataType.text() ) ),
     ENTITY_KEY( DataType.blob() ),
     ENTITY_KEYS( DataType.frozenSet( DataType.blob() ) ),
+    EVENT_TYPE( DataType.text() ),
     FQN( DataType.text() ),
     ID( DataType.uuid() ),
     KEY( DataType.set( DataType.uuid() ) ),
@@ -95,6 +99,7 @@ public enum CommonColumns implements ColumnDef {
     SRC( DataType.set( DataType.uuid() ) ),
     STATUS( DataType.text() ),
     TIME_ID( DataType.uuid() ),
+    TIME_UUID( DataType.timeuuid() ),
     TYPE_ID( DataType.uuid() ),
     ORGANIZATION_ID( DataType.uuid() ),
     USER( DataType.text() ),
@@ -115,10 +120,10 @@ public enum CommonColumns implements ColumnDef {
     CATEGORY( DataType.text() ),
     SRC_ENTITY_KEY_ID( DataType.uuid() ),
     SRC_TYPE_ID( DataType.uuid() ),
-    TIME_UUID( DataType.timeuuid() ),
     SRC_VERTEX_TYPE_ID( DataType.uuid() ),
     QUERY_ID( DataType.blob() ),
-    WEIGHT( DataType.cdouble() );
+    WEIGHT( DataType.cdouble() ),
+    TIMESTAMP( DataType.timestamp() );
 
     private transient final DataType type;
 

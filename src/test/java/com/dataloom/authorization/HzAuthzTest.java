@@ -23,6 +23,8 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.pods.MapstoresPod;
 import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.neuron.Neuron;
+import com.dataloom.neuron.pods.NeuronPod;
 import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableList;
@@ -54,26 +56,33 @@ public class HzAuthzTest extends CassandraBootstrap {
     protected static final CassandraConfiguration        cc;
     protected static final AuthorizationQueryService     aqs;
     protected static final HazelcastAuthorizationService hzAuthz;
+    protected static final Neuron                        neuron;
     private static final Logger logger = LoggerFactory.getLogger( HzAuthzTest.class );
 
     static {
         EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
-        ;
+
         testServer = new RhizomeApplicationServer(
                 MapstoresPod.class,
                 CassandraPod.class,
                 TypeCodecsPod.class,
                 SharedStreamSerializersPod.class,
-                CassandraTablesPod.class );
+                CassandraTablesPod.class,
+                NeuronPod.class
+        );
+
         testServer.sprout( "local", CassandraPod.CASSANDRA_PROFILE );
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
         session = testServer.getContext().getBean( Session.class );
         cc = testServer.getContext().getBean( CassandraConfiguration.class );
-        aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
-        hzAuthz = new HazelcastAuthorizationService( hazelcastInstance,
-                aqs,
-                testServer.getContext().getBean( EventBus.class ) );
 
+        neuron = testServer.getContext().getBean( Neuron.class );
+        aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
+        hzAuthz = new HazelcastAuthorizationService(
+                hazelcastInstance,
+                aqs,
+                testServer.getContext().getBean( EventBus.class )
+        );
     }
 
     @Test
