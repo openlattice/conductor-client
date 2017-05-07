@@ -347,7 +347,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
                                                     entityId ) ) ) );
                 } );
 
-        Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream()
+        Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream().filter(
+                entry -> !authorizedPropertiesWithDataType.get( entry.getKey() ).equals( EdmPrimitiveTypeKind.Binary ) )
                 .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
 
         eventBus.post( new EntityDataCreatedEvent(
