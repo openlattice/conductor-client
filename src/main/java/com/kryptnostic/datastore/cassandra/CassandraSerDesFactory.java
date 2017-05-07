@@ -28,7 +28,7 @@ import com.google.common.collect.SetMultimap;
 
 public class CassandraSerDesFactory {
     private static final ProtocolVersion protocolVersion = ProtocolVersion.NEWEST_SUPPORTED;
-    private static final Base64.Decoder  decoder         = Base64.getUrlDecoder();
+    private static final Base64.Decoder  decoder         = Base64.getDecoder();
 
     private static final String geographyPointRegex = "(\\-)?[0-9]+(\\.){1}[0-9]+(\\,){1}(\\-)?[0-9]+(\\.){1}[0-9]+";
     private CassandraSerDesFactory() {}
