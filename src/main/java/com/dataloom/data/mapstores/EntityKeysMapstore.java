@@ -78,6 +78,10 @@ public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyV
         return RowAdapters.id( rs );
     }
 
+    @Override public Iterable<UUID> loadAllKeys() {
+        return null;
+    }
+
     @Override
     protected EntityKey mapValue( ResultSet rs ) {
         Row r = rs.one();
@@ -99,7 +103,7 @@ public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyV
                 .set( CommonColumns.TIMESTAMP.cql(), tg.next(), Long.class );
     }
 
-    @Override public MapStoreConfig getMapStoreConfig() {
-        return super.getMapStoreConfig().setInitialLoadMode( MapStoreConfig.InitialLoadMode.EAGER );
-    }
+//    @Override public MapStoreConfig getMapStoreConfig() {
+//        return super.getMapStoreConfig().setInitialLoadMode( MapStoreConfig.InitialLoadMode.LAZY );
+//    }
 }

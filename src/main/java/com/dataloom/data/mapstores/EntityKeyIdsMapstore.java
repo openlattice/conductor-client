@@ -38,6 +38,10 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
         insertLookup = session.prepare( Table.KEYS.getBuilder().buildStoreQuery() );
     }
 
+    @Override public Iterable<EntityKey> loadAllKeys() {
+        return null;
+    }
+
     @Override
     public EntityKey generateTestKey() {
         return TestDataFactory.entityKey();
