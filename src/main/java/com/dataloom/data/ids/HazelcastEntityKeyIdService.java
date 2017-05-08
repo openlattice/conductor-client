@@ -71,7 +71,6 @@ public class HazelcastEntityKeyIdService implements EntityKeyIdService {
 
     @Override
     public ListenableFuture<UUID> getEntityKeyIdAsync( EntityKey entityKey ) {
-        logger.error( "Spot2" );
         return new ListenableHazelcastFuture<>( ids.getAsync( entityKey ) );
     }
 
