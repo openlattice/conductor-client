@@ -237,6 +237,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return Iterables.filter( Iterables.transform( entityIds, RowAdapters::entityId ), StringUtils::isNotBlank );
     }
 
+    @Override
     public ResultSetFuture asyncLoadEntity(
             UUID entitySetId,
             String entityId,
@@ -252,6 +253,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     /*
      * Warning: this loads ALL the properties of the entity, authorized or not.
      */
+    @Override
     public ResultSetFuture asyncLoadEntity(
             UUID entitySetId,
             String entityId,
