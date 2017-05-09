@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.Futures;
@@ -39,6 +41,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import com.kryptnostic.datastore.util.Util;
 
@@ -327,5 +330,5 @@ public class DataGraphService implements DataGraphManager {
          * key.getEntityId(), authorizedPropertyTypes ) ); entity.put( "id", vertexId.toString() ); return entity; } );
          * return entities;
          */
-    }
+    }    
 }

@@ -91,5 +91,4 @@ public interface DataGraphManager {
             int numResults,
             Map<UUID, PropertyType> authorizedPropertyTypes )
             throws InterruptedException, ExecutionException;
-
 }
