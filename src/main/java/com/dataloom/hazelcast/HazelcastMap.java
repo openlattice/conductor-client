@@ -60,7 +60,8 @@ public enum HazelcastMap {
     TOKEN_ACCEPTANCE_TIME( null ),
     EDGES( Table.EDGES ),
     VERTICES( Table.VERTICES ),
-    SYNC_IDS( Table.SYNC_IDS );
+    SYNC_IDS( Table.SYNC_IDS ),
+    VERTEX_IDS_AFTER_LINKING( Table.VERTEX_IDS_AFTER_LINKING );
 
     private final Table table;
 

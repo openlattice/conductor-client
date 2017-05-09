@@ -92,6 +92,10 @@ public final class Util {
         return m.get( key );
     }
 
+    public static <K, V> Map<K,V> getSafely( IMap<K, V> m, Set<K> keys ) {
+        return m.getAll( keys );
+    }
+
     public static <K, V> V getSafely( Map<K, V> m, K key ) {
         return m.get( key );
     }

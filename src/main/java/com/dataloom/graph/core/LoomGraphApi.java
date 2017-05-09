@@ -1,6 +1,7 @@
 package com.dataloom.graph.core;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -8,6 +9,7 @@ import java.util.stream.Stream;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.datastax.driver.core.ResultSetFuture;
+import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 /**
  * Graph Object supporting CRUD operations of vertices and edges to the graph.
@@ -33,18 +35,24 @@ public interface LoomGraphApi {
     void addEdge(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeId,
-            UUID edgeTypeId );
+            UUID edgeTypeId,
+            UUID edgeEntitySetId );
 
     List<ResultSetFuture> addEdgeAsync(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeId,
-            UUID edgeTypeId );
+            UUID edgeTypeId,
+            UUID edgeEntitySetId );
 
     /**
      * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
@@ -54,6 +62,13 @@ public interface LoomGraphApi {
      * @return
      */
     LoomEdge getEdge( EdgeKey key );
+
+    /**
+     * Select edges where the column values must lie in the Set\<UUID\> specified. 
+     * @param edgeSelection
+     * @return
+     */
+    Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> edgeSelection );
 
     void deleteEdge( EdgeKey edgeKey );
 

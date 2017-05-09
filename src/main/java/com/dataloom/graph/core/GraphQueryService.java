@@ -191,26 +191,35 @@ public class GraphQueryService {
     public List<ResultSetFuture> putEdgeAsync(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeEntityId,
-            UUID edgeEntityTypeId ) {
+            UUID edgeEntityTypeId,
+            UUID edgeEntitySetId ) {
 
         BoundStatement edgeBs = bindEdge( putEdgeQuery.bind(),
                 srcVertexId,
                 srcVertexEntityTypeId,
+                srcVertexEntitySetId,
                 dstVertexId,
                 dstVertexEntityTypeId,
+                dstVertexEntitySetId,
                 edgeEntityId,
-                edgeEntityTypeId );
+                edgeEntityTypeId,
+                edgeEntitySetId );
 
         BoundStatement backedgeBs = bindEdge( putBackEdgeQuery.bind(),
                 dstVertexId,
                 dstVertexEntityTypeId,
+                dstVertexEntitySetId,
                 srcVertexId,
                 srcVertexEntityTypeId,
+                srcVertexEntitySetId,
                 edgeEntityId,
-                edgeEntityTypeId );
+                edgeEntityTypeId,
+                edgeEntitySetId );
         return ImmutableList.of( session.executeAsync( edgeBs ), session.executeAsync( backedgeBs ) );
     }
 
@@ -218,17 +227,23 @@ public class GraphQueryService {
             BoundStatement bs,
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeEntityId,
-            UUID edgeEntityTypeId ) {
+            UUID edgeEntityTypeId,
+            UUID edgeEntitySetId ) {
         return bs
                 .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcVertexId )
                 .setUUID( CommonColumns.DST_TYPE_ID.cql(), dstVertexEntityTypeId )
                 .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeEntityTypeId )
                 .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), dstVertexId )
                 .setUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql(), edgeEntityId )
-                .setUUID( CommonColumns.SRC_TYPE_ID.cql(), srcVertexEntityTypeId );
+                .setUUID( CommonColumns.SRC_TYPE_ID.cql(), srcVertexEntityTypeId )
+                .setUUID( CommonColumns.SRC_ENTITY_SET_ID.cql(), srcVertexEntitySetId )
+                .setUUID( CommonColumns.DST_ENTITY_SET_ID.cql(), dstVertexEntitySetId )
+                .setUUID( CommonColumns.EDGE_ENTITY_SET_ID.cql(), edgeEntitySetId );
     }
 
     public void deleteEdge( LoomEdge key ) {

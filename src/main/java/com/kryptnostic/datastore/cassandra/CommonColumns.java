@@ -123,7 +123,11 @@ public enum CommonColumns implements ColumnDef {
     SRC_VERTEX_TYPE_ID( DataType.uuid() ),
     QUERY_ID( DataType.blob() ),
     WEIGHT( DataType.cdouble() ),
-    TIMESTAMP( DataType.timestamp() );
+    TIMESTAMP( DataType.timestamp() ),
+    NEW_VERTEX_ID( DataType.uuid() ),
+    SRC_ENTITY_SET_ID( DataType.uuid() ),
+    DST_ENTITY_SET_ID( DataType.uuid() ),
+    EDGE_ENTITY_SET_ID( DataType.uuid() );
 
     private transient final DataType type;
 

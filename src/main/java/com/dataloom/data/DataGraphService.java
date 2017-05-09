@@ -218,12 +218,15 @@ public class DataGraphService implements DataGraphManager {
 
                     UUID srcId = idService.getEntityKeyId( association.getSrc() );
                     UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
+                    UUID srcSetId = association.getSrc().getEntitySetId();
                     UUID dstId = idService.getEntityKeyId( association.getDst() );
                     UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
+                    UUID dstSetId = association.getDst().getEntitySetId();
                     UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
+                    UUID edgeSetId = association.getKey().getEntitySetId();
 
                     ListenableFuture addEdge = Futures.allAsList( lm
-                            .addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId ) );
+                            .addEdgeAsync( srcId, srcTypeId, srcSetId, dstId, dstTypeId, dstSetId, edgeId, edgeTypeId, edgeSetId ) );
                     return Stream.of( writes, addEdge );
                 } ).forEach( DataGraphService::tryGetAndLogErrors );
     }
@@ -257,12 +260,15 @@ public class DataGraphService implements DataGraphManager {
                         authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ) ) );
 
                 UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
+                UUID srcSetId = association.getSrc().getEntitySetId();
                 UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
+                UUID dstSetId = association.getDst().getEntitySetId();
                 UUID edgeId = idService.getEntityKeyId( association.getKey() );
                 UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
+                UUID edgeSetId = association.getKey().getEntitySetId();
 
                 ListenableFuture addEdge = Futures
-                        .allAsList( lm.addEdgeAsync( srcId, srcTypeId, dstId, dstTypeId, edgeId, edgeTypeId ) );
+                        .allAsList( lm.addEdgeAsync( srcId, srcTypeId, srcSetId, dstId, dstTypeId, dstSetId, edgeId, edgeTypeId, edgeSetId ) );
                 return Stream.of( writes, addEdge );
             }
         } ).forEach( DataGraphService::tryGetAndLogErrors );

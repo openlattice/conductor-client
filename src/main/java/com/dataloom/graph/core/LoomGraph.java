@@ -1,6 +1,7 @@
 package com.dataloom.graph.core;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -40,16 +41,23 @@ public class LoomGraph implements LoomGraphApi {
     public void addEdge(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeEntityId,
-            UUID edgeEntityTypeId ) {
+            UUID edgeEntityTypeId,
+            UUID edgeEntitySetId
+            ) {
         addEdgeAsync( srcVertexId,
                 srcVertexEntityTypeId,
+                srcVertexEntitySetId,
                 dstVertexId,
                 dstVertexEntityTypeId,
+                dstVertexEntitySetId,
                 edgeEntityId,
-                edgeEntityTypeId )
+                edgeEntityTypeId,
+                edgeEntitySetId )
                         .forEach( ResultSetFuture::getUninterruptibly );
     }
 
@@ -57,16 +65,22 @@ public class LoomGraph implements LoomGraphApi {
     public List<ResultSetFuture> addEdgeAsync(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeEntityId,
-            UUID edgeEntityTypeId ) {
+            UUID edgeEntityTypeId,
+            UUID edgeEntitySetId ) {
         return gqs.putEdgeAsync( srcVertexId,
                 srcVertexEntityTypeId,
+                srcVertexEntitySetId,
                 dstVertexId,
                 dstVertexEntityTypeId,
+                dstVertexEntitySetId,
                 edgeEntityId,
-                edgeEntityTypeId );
+                edgeEntityTypeId,
+                edgeEntitySetId );
     }
 
     @Override
@@ -86,6 +100,11 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     public LoomEdge getEdge( EdgeKey key ) {
         return gqs.getEdge( key );
+    }
+
+    @Override
+    public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> edgeSelection ) {
+        return gqs.getEdges( edgeSelection );
     }
 
     @Override
