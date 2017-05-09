@@ -97,8 +97,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final PreparedStatement      deleteEntityInAllSyncsQuery;
     private final PreparedStatement      deleteEntityQuery;
 
-    private final PreparedStatement      linkedEntitiesQuery;
-
     private final PreparedStatement      readNumRPCRowsQuery;
     private final PreparedStatement      readEntityKeysForEntitySetQuery;
     private final PreparedStatement      writeUtilizerScoreQuery;
@@ -125,7 +123,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.deleteEntityInAllSyncsQuery = prepareDeleteEntityInAllSyncsQuery( session );
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
 
-        this.linkedEntitiesQuery = prepareLinkedEntitiesQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
         this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
@@ -517,13 +514,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), QueryBuilder.bindMarker() ) ) );
     }
 
-    private static PreparedStatement prepareLinkedEntitiesQuery( Session session ) {
-        return session.prepare( QueryBuilder
-                .select().all()
-                .from( Table.LINKING_VERTICES.getKeyspace(), Table.LINKING_VERTICES.getName() ).allowFiltering()
-                .where( QueryBuilder.eq( CommonColumns.GRAPH_ID.cql(), QueryBuilder.bindMarker() ) ) );
-    }
-
     private static PreparedStatement prepareReadNumRPCRowsQuery( Session session ) {
         return session.prepare(
                 QueryBuilder.select().from( Table.RPC_DATA_ORDERED.getKeyspace(), Table.RPC_DATA_ORDERED.getName() )
@@ -570,14 +560,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
     /**
      * Auxiliary methods for linking entity sets
      */
-
-    private Iterable<Pair<UUID, Set<EntityKey>>> getLinkedEntityKeys(
-            UUID linkedEntitySetId ) {
-        UUID graphId = linkingGraph.getGraphIdFromEntitySetId( linkedEntitySetId );
-        ResultSet rs = session
-                .execute( linkedEntitiesQuery.bind().setUUID( CommonColumns.GRAPH_ID.cql(), graphId ) );
-        return Iterables.transform( rs, RowAdapters::linkedEntity );
-    }
 
     private SetMultimap<FullQualifiedName, Object> getAndMergeLinkedEntities(
             UUID linkedEntitySetId,

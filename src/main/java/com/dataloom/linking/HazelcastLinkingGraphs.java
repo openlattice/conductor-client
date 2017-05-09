@@ -30,6 +30,8 @@ import com.kryptnostic.datastore.util.Util;
 import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 /**
  * Implements a multiple simple graphs over by imposing a canonical ordering on vertex order for linkingEdges.
  *
@@ -39,11 +41,12 @@ public class HazelcastLinkingGraphs {
     private static final UUID DEFAULT_ID = new UUID( 0, 0 );
     private final IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
     private final IMap<LinkingEntityKey, UUID>          vertices;
+    private final CassandraLinkingGraphsQueryService clgqs;
 
-    public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
+    public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance, CassandraLinkingGraphsQueryService clgqs ) {
         this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
         this.vertices = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_VERTICES.name() );
-
+        this.clgqs = clgqs;
     }
 
     public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ) {
@@ -99,5 +102,10 @@ public class HazelcastLinkingGraphs {
 
     public boolean verticesExists( LinkingEdge edge ) {
         return linkingVertices.containsKey( edge.getSrc() ) && linkingVertices.containsKey( edge.getDst() );
+    }
+    
+    public Iterable<Pair<UUID, Set<EntityKey>>> getLinkedEntityKeys( UUID linkedEntitySetId ){
+        UUID graphId = getGraphIdFromEntitySetId( linkedEntitySetId );
+        return clgqs.getLinkedEntityKeys( graphId );
     }
 }
