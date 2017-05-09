@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.Futures;
@@ -41,7 +39,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import com.kryptnostic.datastore.util.Util;
 
@@ -106,16 +103,6 @@ public class DataGraphService implements DataGraphManager {
             LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
         return eds.getEntitySetData( entitySetId, syncId, orderedPropertyNames, authorizedPropertyTypes );
-    }
-
-    @Override
-    public EntitySetData<FullQualifiedName> getLinkedEntitySetData(
-            UUID linkedEntitySetId,
-            LinkedHashSet<String> orderedPropertyNames,
-            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
-        return eds.getLinkedEntitySetData( linkedEntitySetId,
-                orderedPropertyNames,
-                authorizedPropertyTypesForEntitySets );
     }
 
     @Override
@@ -226,7 +213,15 @@ public class DataGraphService implements DataGraphManager {
                     UUID edgeSetId = association.getKey().getEntitySetId();
 
                     ListenableFuture addEdge = Futures.allAsList( lm
-                            .addEdgeAsync( srcId, srcTypeId, srcSetId, dstId, dstTypeId, dstSetId, edgeId, edgeTypeId, edgeSetId ) );
+                            .addEdgeAsync( srcId,
+                                    srcTypeId,
+                                    srcSetId,
+                                    dstId,
+                                    dstTypeId,
+                                    dstSetId,
+                                    edgeId,
+                                    edgeTypeId,
+                                    edgeSetId ) );
                     return Stream.of( writes, addEdge );
                 } ).forEach( DataGraphService::tryGetAndLogErrors );
     }
@@ -268,7 +263,15 @@ public class DataGraphService implements DataGraphManager {
                 UUID edgeSetId = association.getKey().getEntitySetId();
 
                 ListenableFuture addEdge = Futures
-                        .allAsList( lm.addEdgeAsync( srcId, srcTypeId, srcSetId, dstId, dstTypeId, dstSetId, edgeId, edgeTypeId, edgeSetId ) );
+                        .allAsList( lm.addEdgeAsync( srcId,
+                                srcTypeId,
+                                srcSetId,
+                                dstId,
+                                dstTypeId,
+                                dstSetId,
+                                edgeId,
+                                edgeTypeId,
+                                edgeSetId ) );
                 return Stream.of( writes, addEdge );
             }
         } ).forEach( DataGraphService::tryGetAndLogErrors );
@@ -336,5 +339,5 @@ public class DataGraphService implements DataGraphManager {
          * key.getEntityId(), authorizedPropertyTypes ) ); entity.put( "id", vertexId.toString() ); return entity; } );
          * return entities;
          */
-    }    
+    }
 }

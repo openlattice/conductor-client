@@ -33,7 +33,6 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -60,7 +59,6 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
@@ -151,18 +149,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 asyncLoadEntity( entitySetId, entityId, syncId, authorizedPropertyTypes.keySet() ).getUninterruptibly(),
                 authorizedPropertyTypes,
                 mapper );
-    }
-
-    @Override
-    public EntitySetData<FullQualifiedName> getLinkedEntitySetData(
-            UUID linkedEntitySetId,
-            LinkedHashSet<String> orderedPropertyNames,
-            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
-        Iterable<Pair<UUID, Set<EntityKey>>> linkedEntityKeys = getLinkedEntityKeys( linkedEntitySetId );
-        return new EntitySetData<FullQualifiedName>( orderedPropertyNames, Iterables.transform( linkedEntityKeys,
-                linkedKey -> getAndMergeLinkedEntities( linkedEntitySetId,
-                        linkedKey,
-                        authorizedPropertyTypesForEntitySets ) )::iterator );
     }
 
     @Override
@@ -557,45 +543,5 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private static PreparedStatement prepareDeleteEntityQuery(
             Session session ) {
         return session.prepare( Table.DATA.getBuilder().buildDeleteQuery() );
-    }
-
-    /**
-     * Auxiliary methods for linking entity sets
-     */
-
-    private SetMultimap<FullQualifiedName, Object> getAndMergeLinkedEntities(
-            UUID linkedEntitySetId,
-            Pair<UUID, Set<EntityKey>> linkedKey,
-            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
-        SetMultimap<FullQualifiedName, Object> result = HashMultimap.create();
-        SetMultimap<UUID, Object> indexResult = HashMultimap.create();
-
-        linkedKey.getValue().stream()
-                .map( key -> Pair.of( key.getEntitySetId(),
-                        asyncLoadEntity( key.getEntitySetId(),
-                                key.getEntityId(),
-                                key.getSyncId(),
-                                authorizedPropertyTypesForEntitySets.get( key.getEntitySetId() ).keySet() ) ) )
-                .map( rsfPair -> Pair.of( rsfPair.getKey(), rsfPair.getValue().getUninterruptibly() ) )
-                .map( rsPair -> RowAdapters.entityIdFQNPair( rsPair.getValue(),
-                        authorizedPropertyTypesForEntitySets.get( rsPair.getKey() ),
-                        mapper ) )
-                .forEach( pair -> {
-                    result.putAll( pair.getValue() );
-                    indexResult.putAll( pair.getKey() );
-                } );
-
-        // Using HashSet here is necessary for serialization, to avoid kryo not knowing how to serialize guava
-        // WrappedCollection
-        Map<UUID, Object> indexResultAsMap = indexResult.asMap().entrySet().stream()
-                .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
-
-        eventBus.post(
-                new EntityDataCreatedEvent(
-                        linkedEntitySetId,
-                        Optional.absent(),
-                        linkedKey.getKey().toString(),
-                        indexResultAsMap ) );
-        return result;
     }
 }

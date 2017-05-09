@@ -27,11 +27,6 @@ public interface DataGraphManager {
             LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
-    EntitySetData<FullQualifiedName> getLinkedEntitySetData(
-            UUID linkedEntitySetId,
-            LinkedHashSet<String> orderedPropertyNames,
-            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
-
     // TODO remove vertices too
     void deleteEntitySetData( UUID entitySetId );
 

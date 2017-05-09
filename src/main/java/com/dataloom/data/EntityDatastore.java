@@ -95,18 +95,6 @@ public interface EntityDatastore {
             UUID entitySetId,
             String entityId,
             UUID syncId );
-    
-    /**
-     * Reads data from an linked entity set.
-     *
-     * @param linkedEntitySetId
-     * @param authorizedPropertyTypesForEntitySets
-     * @return
-     */
-    EntitySetData<FullQualifiedName> getLinkedEntitySetData(
-            UUID linkedEntitySetId,
-            LinkedHashSet<String> orderedPropertyNames,
-            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
 
     // TODO remove vertices too
     void deleteEntitySetData( UUID entitySetId );
