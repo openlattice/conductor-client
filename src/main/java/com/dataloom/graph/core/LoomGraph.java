@@ -9,21 +9,30 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.dataloom.graph.core.objects.EdgeCountEntryProcessor;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 
 public class LoomGraph implements LoomGraphApi {
 
-    private static final Logger     logger = LoggerFactory.getLogger( LoomGraph.class );
+    private static final Logger            logger = LoggerFactory.getLogger( LoomGraph.class );
 
-    private final GraphQueryService gqs;
+    private final GraphQueryService        gqs;
+
+    private final IMap<UUID, Neighborhood> edges;
+    // vertex id -> dst type id -> edge type id -> dst entity key id
+    private final IMap<UUID, Neighborhood> backedges;
 
     public LoomGraph( GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
+        this.edges = hazelcastInstance.getMap( "" );
+        this.backedges = hazelcastInstance.getMap( "" );
+
         this.gqs = gqs;
     }
 
@@ -47,8 +56,7 @@ public class LoomGraph implements LoomGraphApi {
             UUID dstVertexEntitySetId,
             UUID edgeEntityId,
             UUID edgeEntityTypeId,
-            UUID edgeEntitySetId
-            ) {
+            UUID edgeEntitySetId ) {
         addEdgeAsync( srcVertexId,
                 srcVertexEntityTypeId,
                 srcVertexEntitySetId,
@@ -72,6 +80,8 @@ public class LoomGraph implements LoomGraphApi {
             UUID edgeEntityId,
             UUID edgeEntityTypeId,
             UUID edgeEntitySetId ) {
+        edges.evict( srcVertexId );
+        backedges.evict( dstVertexId );
         return gqs.putEdgeAsync( srcVertexId,
                 srcVertexEntityTypeId,
                 srcVertexEntitySetId,
@@ -90,6 +100,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public Stream<ResultSetFuture> deleteVertexAsync( UUID vertex ) {
+        // TODO: Implement delete for neighborhoods
         return gqs
                 .getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, ImmutableSet.of( vertex ) ) )
                 .map( LoomEdge::getKey )
@@ -114,6 +125,8 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public List<ResultSetFuture> deleteEdgeAsync( EdgeKey edgeKey ) {
+        edges.evict( edgeKey.getSrcEntityKeyId() );
+        backedges.evict( edgeKey.getDstEntityKeyId() );
         return gqs.deleteEdgeAsync( getEdge( edgeKey ) );
     }
 
@@ -134,7 +147,23 @@ public class LoomGraph implements LoomGraphApi {
             UUID associationTypeId,
             Set<UUID> neighborTypeIds,
             boolean vertexIsSrc ) {
+
         return gqs.getNeighborEdgeCountAsync( vertexId, associationTypeId, neighborTypeIds, vertexIsSrc );
+    }
+
+    @Override
+    public int getHazelcastEdgeCount(
+            UUID vertexId,
+            UUID associationTypeId,
+            Set<UUID> neighborTypeIds,
+            boolean vertexIsSrc ) {
+        if ( vertexIsSrc ) {
+            return (Integer) edges.executeOnKey( vertexId,
+                    new EdgeCountEntryProcessor( associationTypeId, neighborTypeIds ) );
+        }
+
+        return (Integer) backedges
+                .executeOnKey( vertexId, new EdgeCountEntryProcessor( associationTypeId, neighborTypeIds ) );
     }
 
 }

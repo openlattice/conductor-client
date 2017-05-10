@@ -24,6 +24,9 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
+import com.dataloom.graph.core.Neighborhood;
+import com.dataloom.graph.mapstores.BackedgesMapstore;
+import com.dataloom.graph.mapstores.EdgesMapstore;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -100,6 +103,16 @@ public class MapstoresPod {
 
     @Inject
     CassandraConfiguration cc;
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
+        return new EdgesMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
+        return new BackedgesMapstore( session );
+    }
 
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {

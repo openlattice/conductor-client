@@ -37,6 +37,7 @@ public enum StreamSerializerTypeIds {
     RUNNABLE,
     CALLABLE,
     CONDUCTOR_CALL,
+    EDGE_COUNT_ENTRY_PROCESSOR,
     EMPLOYEE,
     ENTITY_KEY,
     ENTITY_SET,
@@ -47,6 +48,7 @@ public enum StreamSerializerTypeIds {
     LINKING_VERTEX,
     LINKING_ENTITY_KEY,
     LINKING_VERTEX_KEY,
+    NEIGHBORHOOD_STREAM_SERIALIZER,
     PROPERTY_TYPE,
     PERMISSION_MERGER,
     PERMISSION_REMOVER,
@@ -95,5 +97,6 @@ public enum StreamSerializerTypeIds {
     EDGE_KEY,
     LOOM_VERTEX,
     LOOM_EDGE,
-    SIGNAL_TYPE,
+    SIGNAL_TYPE,;
+
 }
