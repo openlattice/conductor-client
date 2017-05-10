@@ -64,7 +64,7 @@ public interface LoomGraphApi {
     LoomEdge getEdge( EdgeKey key );
 
     /**
-     * Select edges where the column values must lie in the Set\<UUID\> specified. 
+     * Select edges where the column values must lie in the Set &lt; UUID &gt; specified. 
      * @param edgeSelection
      * @return
      */

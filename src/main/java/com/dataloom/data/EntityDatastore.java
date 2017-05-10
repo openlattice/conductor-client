@@ -75,7 +75,7 @@ public interface EntityDatastore {
      * @param entitySetId
      * @param entityId
      * @param syncId
-     * @param authorizedProperties
+     * @param properties
      * @return
      */
     ResultSetFuture asyncLoadEntity(
