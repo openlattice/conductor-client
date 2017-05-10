@@ -754,4 +754,10 @@ public class EdmService implements EdmManager {
         return new AssociationDetails( srcEntityTypes, dstEntityTypes, associationType.isBidirectional() );
     }
 
+    @Override
+    public Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId ) {
+        return entityTypeManager.getAssociationIdsForEntityType( entityTypeId ).map( id -> entityTypes.get( id ) )
+                .collect( Collectors.toList() );
+    }
+
 }
