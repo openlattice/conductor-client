@@ -150,5 +150,7 @@ public interface EdmManager {
     void deleteAssociationType( UUID associationTypeId );
 
     AssociationDetails getAssociationDetails( UUID associationTypeId );
+    
+    Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId );
 
 }
