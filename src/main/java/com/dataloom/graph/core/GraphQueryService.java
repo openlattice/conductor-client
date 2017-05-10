@@ -251,6 +251,9 @@ public class GraphQueryService {
     }
 
     public List<ResultSetFuture> deleteEdgeAsync( LoomEdge edge ) {
+        if( edge == null ){
+            return ImmutableList.of();
+        }
         EdgeKey key = edge.getKey();
         BoundStatement edgeBs = bindDeleteEdge( deleteEdgeQuery.bind(),
                 key.getSrcEntityKeyId(),
