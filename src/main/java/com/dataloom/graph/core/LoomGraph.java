@@ -115,12 +115,12 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> edgeSelection ) {
-        return gqs.getEdges( edgeSelection );
+        return gqs.getFromEdgesTable( edgeSelection );
     }
 
     @Override
     public void deleteEdge( EdgeKey key ) {
-        gqs.deleteEdge( getEdge( key ) );
+        deleteEdgeAsync( key ).forEach( ResultSetFuture::getUninterruptibly );
     }
 
     @Override

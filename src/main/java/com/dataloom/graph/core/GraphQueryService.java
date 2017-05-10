@@ -157,6 +157,19 @@ public class GraphQueryService {
         return row == null ? null : RowAdapters.loomEdge( row );
     }
 
+    public Stream<LoomEdge> getFromEdgesTable( Map<CommonColumns, Set<UUID>> neighborhoodSelections ) {
+        BoundStatement edgeBs = edgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
+
+        return treeBind( neighborhoodSelections.entrySet().iterator(), edgeBs )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( StreamUtil::stream )
+                .map( RowAdapters::loomEdge )
+                .distinct();
+    }
+    
+    /**
+     * This is getting edges in both forward/backward edge table
+     */
     public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> neighborhoodSelections ) {
 
         BoundStatement edgeBs = edgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
