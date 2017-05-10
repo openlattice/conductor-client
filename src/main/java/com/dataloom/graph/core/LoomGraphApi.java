@@ -69,4 +69,9 @@ public interface LoomGraphApi {
             Set<UUID> neighborTypeIds,
             boolean vertexIsSrc );
 
+    int getHazelcastEdgeCount(
+            UUID vertexId,
+            UUID associationTypeId,
+            Set<UUID> neighborTypeIds,
+            boolean vertexIsSrc );
 }

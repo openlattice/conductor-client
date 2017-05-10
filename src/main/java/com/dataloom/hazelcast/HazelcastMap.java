@@ -59,6 +59,7 @@ public enum HazelcastMap {
     ASSOCIATION_TYPES( Table.ASSOCIATION_TYPES ),
     TOKEN_ACCEPTANCE_TIME( null ),
     EDGES( Table.EDGES ),
+    BACKEDGES( Table.BACK_EDGES ),
     VERTICES( Table.VERTICES ),
     SYNC_IDS( Table.SYNC_IDS );
 
