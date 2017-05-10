@@ -19,31 +19,31 @@
 
 package com.dataloom.mapstores;
 
-import java.util.Collection;
-import java.util.UUID;
-
+import com.dataloom.authorization.HzAuthzTest;
+import com.dataloom.authorization.securable.AbstractSecurableObject;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.collect.ImmutableSet;
+import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.authorization.securable.AbstractSecurableObject;
-import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import java.util.Collection;
+import java.util.Set;
+import java.util.UUID;
 
 public class MapstoresTest extends HzAuthzTest {
-    private static final Logger logger = LoggerFactory
+    private static final Logger      logger   = LoggerFactory
             .getLogger( MapstoresTest.class );
+    private static final Set<String> excluded =
+            ImmutableSet.of( HazelcastMap.EDGES.name(),
+                    HazelcastMap.BACKEDGES.name() );
     @SuppressWarnings( "rawtypes" )
     private static final Collection<TestableSelfRegisteringMapStore> mapstores;
 
     static {
         mapstores = testServer.getContext().getBeansOfType( TestableSelfRegisteringMapStore.class ).values();
-    }
-
-    @Test
-    public void testMapstore() {
-        mapstores.stream().forEach( MapstoresTest::test );
     }
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )
@@ -70,5 +70,12 @@ public class MapstoresTest extends HzAuthzTest {
             throw e;
         }
         Assert.assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testMapstore() {
+        mapstores.stream()
+                .filter( ms -> !excluded.contains( ms.getMapName() ) )
+                .forEach( MapstoresTest::test );
     }
 }

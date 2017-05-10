@@ -1,21 +1,5 @@
 package com.dataloom.data;
 
-import static com.google.common.util.concurrent.Futures.transformAsync;
-
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.analytics.TopUtilizers;
 import com.dataloom.data.requests.Association;
@@ -26,7 +10,6 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -40,28 +23,38 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
-import com.kryptnostic.datastore.util.Util;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+import static com.google.common.util.concurrent.Futures.transformAsync;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class DataGraphService implements DataGraphManager {
-    private static final Logger                                 logger     = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( DataGraphService.class );
-    private final ListeningExecutorService                      executor;
+    private final ListeningExecutorService executor;
     private final Cache<List<TopUtilizerDetails>, TopUtilizers> queryCache = CacheBuilder.newBuilder()
             .maximumSize( 1000 )
             .expireAfterWrite( 2, TimeUnit.HOURS )
             .build();
-    private EventBus                                            eventBus;
-    private LoomGraph                                           lm;
-    private EntityKeyIdService                                  idService;
-    private EntityDatastore                                     eds;
+    private EventBus                 eventBus;
+    private LoomGraph                lm;
+    private EntityKeyIdService       idService;
+    private EntityDatastore          eds;
     // Get entity type id by entity set id, cached.
     // TODO HC: Local caching is needed because this would be called very often, so direct calls to IMap should be
     // minimized. Nonetheless, this certainly should be refactored into EdmService or something.
-    private IMap<UUID, EntitySet>                               entitySets;
-    private LoadingCache<UUID, UUID>                            typeIds;
+    private IMap<UUID, EntitySet>    entitySets;
+    private LoadingCache<UUID, UUID> typeIds;
 
     public DataGraphService(
             HazelcastInstance hazelcastInstance,
@@ -289,12 +282,16 @@ public class DataGraphService implements DataGraphManager {
                     .map( idService::getEntityKeyId )
                     .forEach( vertexId -> {
                         long score = topUtilizerDetailsList.parallelStream()
-                                .map( details -> lm.getEdgeCount( vertexId,
+                                /*.map( details -> lm.getEdgeCount( vertexId,
                                         details.getAssociationTypeId(),
                                         details.getNeighborTypeIds(),
                                         details.getUtilizerIsSrc() ) )
-                                .map( ResultSetFuture::getUninterruptibly )
-                                .mapToLong( Util::getCount )
+                                .map( ResultSetFuture::getUninterruptibly )*/
+                                .mapToLong( details -> lm.getHazelcastEdgeCount( vertexId,
+                                        details.getAssociationTypeId(),
+                                        details.getNeighborTypeIds(),
+                                        details.getUtilizerIsSrc() ) )
+                                //.mapToLong( Util::getCount )
                                 .sum();
                         utilizers.accumulate( vertexId, score );
                         // eds.writeVertexCount( queryId, vertexId, 1.0D * score );
