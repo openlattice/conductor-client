@@ -42,16 +42,16 @@ import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
-import com.dataloom.edm.mapstores.ComplexTypeMapstore;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
+import com.dataloom.edm.mapstores.ComplexTypeMapstore;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.EnumTypesMapstore;
 import com.dataloom.edm.mapstores.NamesMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
-import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
@@ -65,6 +65,7 @@ import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
 import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
 import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
+import com.dataloom.linking.mapstores.VertexIdsAfterLinkingMapstore;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
@@ -263,6 +264,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, EntityKey> keysMapstore() {
         return new EntityKeysMapstore( HazelcastMap.KEYS.name(), session, Table.KEYS.getBuilder() );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<LinkingVertexKey, UUID> vertexIdsAfterLinkingMapstore() {
+        return new VertexIdsAfterLinkingMapstore( session );
     }
 
 }
