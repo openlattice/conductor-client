@@ -21,6 +21,8 @@ package com.dataloom.data.mapstores;
 
 import java.util.UUID;
 
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapStoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +78,10 @@ public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyV
         return RowAdapters.id( rs );
     }
 
+    @Override public Iterable<UUID> loadAllKeys() {
+        return null;
+    }
+
     @Override
     protected EntityKey mapValue( ResultSet rs ) {
         Row r = rs.one();
@@ -96,4 +102,8 @@ public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyV
                 .set( CommonColumns.ENTITY_KEY.cql(), value, EntityKey.class )
                 .set( CommonColumns.TIMESTAMP.cql(), tg.next(), Long.class );
     }
+
+//    @Override public MapStoreConfig getMapStoreConfig() {
+//        return super.getMapStoreConfig().setInitialLoadMode( MapStoreConfig.InitialLoadMode.LAZY );
+//    }
 }

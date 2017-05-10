@@ -260,9 +260,8 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( ASSOCIATION_TYPES )
                         .ifNotExists()
                         .partitionKey( ID )
-                        .columns( SRC,
-                                DST,
-                                BIDIRECTIONAL );
+                        .clusteringColumns( SRC, DST )
+                        .columns( BIDIRECTIONAL );
             case NAMES:
                 return new CassandraTableBuilder( NAMES )
                         .ifNotExists()

@@ -55,6 +55,8 @@ public class CassandraTypeManager {
     private final PreparedStatement getEnumTypeIds;
     private final PreparedStatement getEntityTypeChildIds;
     private final Select.Where      getAssociationEntityTypes;
+    private final PreparedStatement getAssociationTypeIdsForSrc;
+    private final PreparedStatement getAssociationTypeIdsForDst;
 
     public CassandraTypeManager( String keyspace, Session session ) {
         this.session = session;
@@ -91,6 +93,12 @@ public class CassandraTypeManager {
         this.getAssociationEntityTypes = QueryBuilder.select().all().from( keyspace,
                 Table.ENTITY_TYPES.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.CATEGORY.cql(), SecurableObjectType.AssociationType ) );
+        this.getAssociationTypeIdsForSrc = session.prepare( QueryBuilder.select().all().from( keyspace,
+                Table.ASSOCIATION_TYPES.getName() ).allowFiltering()
+                .where( QueryBuilder.contains( CommonColumns.SRC.cql(), CommonColumns.SRC.bindMarker() ) ) );
+        this.getAssociationTypeIdsForDst = session.prepare( QueryBuilder.select().all().from( keyspace,
+                Table.ASSOCIATION_TYPES.getName() ).allowFiltering()
+                .where( QueryBuilder.contains( CommonColumns.DST.cql(), CommonColumns.DST.bindMarker() ) ) );
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
@@ -120,6 +128,19 @@ public class CassandraTypeManager {
 
     public Iterable<EntityType> getAssociationEntityTypes() {
         return Iterables.transform( session.execute( getAssociationEntityTypes ), RowAdapters::entityType );
+    }
+
+    public Stream<UUID> getAssociationIdsForEntityType( UUID entityTypeId ) {
+        Iterable<UUID> srcAssociationIds = Iterables.transform(
+                session.execute(
+                        getAssociationTypeIdsForSrc.bind().setUUID( CommonColumns.SRC.cql(), entityTypeId ) ),
+                row -> row.getUUID( CommonColumns.ID.cql() ) );
+        Iterable<UUID> dstAssociationIds = Iterables.transform(
+                session.execute(
+                        getAssociationTypeIdsForDst.bind().setUUID( CommonColumns.DST.cql(), entityTypeId ) ),
+                row -> row.getUUID( CommonColumns.ID.cql() ) );
+        
+        return Stream.concat( StreamUtil.stream( srcAssociationIds ), StreamUtil.stream( dstAssociationIds ) ).distinct();
     }
 
     public Stream<UUID> getComplexTypeIds() {
