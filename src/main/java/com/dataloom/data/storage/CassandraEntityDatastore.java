@@ -90,9 +90,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final PreparedStatement      writeDataQuery;
 
     private final PreparedStatement      entitySetQuery;
+    private final PreparedStatement      entityIdsInAllSyncQuery;
     private final PreparedStatement      entityIdsQuery;
 
-    private final PreparedStatement      deleteEntityInAllSyncsQuery;
     private final PreparedStatement      deleteEntityQuery;
 
     private final PreparedStatement      readNumRPCRowsQuery;
@@ -115,10 +115,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
 
         this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
+        this.entityIdsInAllSyncQuery = prepareEntityIdsInAllSyncQuery( session );
         this.entityIdsQuery = prepareEntityIdsQuery( session );
         this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
 
-        this.deleteEntityInAllSyncsQuery = prepareDeleteEntityInAllSyncsQuery( session );
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
 
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
@@ -202,8 +202,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID entitySetId,
             UUID syncId,
             Set<UUID> authorizedProperties ) {
-        Iterable<String> entityIds = getEntityIds( entitySetId );
-        Iterable<ResultSetFuture> entityFutures;
         // If syncId is not specified, retrieve latest snapshot of entity
         final UUID finalSyncId;
         if ( syncId == null ) {
@@ -211,14 +209,18 @@ public class CassandraEntityDatastore implements EntityDatastore {
         } else {
             finalSyncId = syncId;
         }
+
+        Iterable<String> entityIds = getEntityIds( entitySetId, finalSyncId );
+        Iterable<ResultSetFuture> entityFutures;
         entityFutures = Iterables.transform( entityIds,
                 entityId -> asyncLoadEntity( entitySetId, entityId, finalSyncId, authorizedProperties ) );
         return Iterables.transform( entityFutures, ResultSetFuture::getUninterruptibly );
     }
 
-    public Iterable<String> getEntityIds( UUID entitySetId ) {
+    public Iterable<String> getEntityIds( UUID entitySetId, UUID syncId ) {
         BoundStatement boundEntityIdsQuery = entityIdsQuery.bind()
-                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId );
+                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                .setUUID( CommonColumns.SYNCID.cql(), syncId );
         ResultSet entityIds = session.execute( boundEntityIdsQuery );
         return Iterables.filter( Iterables.transform( entityIds, RowAdapters::entityId ), StringUtils::isNotBlank );
     }
@@ -393,7 +395,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         justification = "results Object is used to execute deletes in batches" )
     public void deleteEntitySetData( UUID entitySetId ) {
         logger.info( "Deleting data of entity set: {}", entitySetId );
-        BoundStatement bs = entityIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(),
+        BoundStatement bs = entityIdsInAllSyncQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(),
                 entitySetId );
         ResultSet rs = session.execute( bs );
 
@@ -408,8 +410,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 results = new ArrayList<ResultSetFuture>();
             }
             String entityId = RowAdapters.entityId( entityIdRow );
-
-            results.add( asyncDeleteEntity( entitySetId, entityId ) );
+            UUID syncId = RowAdapters.syncId( entityIdRow );
+            
+            results.add( asyncDeleteEntity( entitySetId, entityId, syncId ) );
             counter++;
         }
 
@@ -417,37 +420,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
         logger.info( "Finish deletion of entity set data: {}", entitySetId );
     }
 
-    public ResultSetFuture asyncDeleteEntity( UUID entitySetId, String entityId ) {
-        return session.executeAsync( deleteEntityInAllSyncsQuery.bind()
-                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                .setString( CommonColumns.ENTITYID.cql(), entityId ) );
-    }
-
     public ResultSetFuture asyncDeleteEntity( UUID entitySetId, String entityId, UUID syncId ) {
-        // load and delete, since Cassandra does not support delete by secondary index query
-        ResultSetFuture rsf = asyncLoadEntity( entitySetId, entityId, syncId );
-        Futures.addCallback( rsf, new FutureCallback<ResultSet>() {
-            @Override
-            public void onSuccess( ResultSet rs ) {
-                Row row = rs.one();
-                if ( row != null ) {
-                    session.execute( deleteEntityQuery.bind()
-                            .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                            .setString( CommonColumns.ENTITYID.cql(), entityId )
-                            .setUUID( CommonColumns.SYNCID.cql(), syncId )
-                            .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), RowAdapters.propertyTypeId( row ) ) );
-                }
-            }
-
-            @Override
-            public void onFailure( Throwable t ) {
-                logger.debug( "Loading for entity deletion failed: entitySetId {}, entityId {}, syncId {}",
-                        entitySetId,
-                        entityId,
-                        syncId );
-            }
-        } );
-        return rsf;
+        return session.executeAsync( deleteEntityQuery.bind()
+                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                .setString( CommonColumns.ENTITYID.cql(), entityId )
+                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
     @Override
@@ -496,9 +473,21 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private static PreparedStatement prepareEntityIdsQuery( Session session ) {
         return session.prepare( QueryBuilder
                 .select()
-                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
+                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() ).column( CommonColumns.SYNCID.cql() )
                 .distinct()
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+                .allowFiltering()
+                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), QueryBuilder.bindMarker() ) )
+                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), QueryBuilder.bindMarker() ) ) );
+    }
+
+    private static PreparedStatement prepareEntityIdsInAllSyncQuery( Session session ) {
+        return session.prepare( QueryBuilder
+                .select()
+                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() ).column( CommonColumns.SYNCID.cql() )
+                .distinct()
+                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+                .allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), QueryBuilder.bindMarker() ) ) );
     }
 
@@ -535,13 +524,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         .limit( 1 ) );
     }
 
-    private static PreparedStatement prepareDeleteEntityInAllSyncsQuery(
-            Session session ) {
-        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
-    }
-
     private static PreparedStatement prepareDeleteEntityQuery(
             Session session ) {
-        return session.prepare( Table.DATA.getBuilder().buildDeleteQuery() );
+        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
     }
 }

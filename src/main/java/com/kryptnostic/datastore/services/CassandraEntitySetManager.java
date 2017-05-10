@@ -65,7 +65,7 @@ public class CassandraEntitySetManager {
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Table.ENTITY_SETS.getName() );
         this.getEntities = session
                 .prepare( QueryBuilder.select()
-                        .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
+                        .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() ).column( CommonColumns.SYNCID.cql() )
                         .distinct()
                         .from( keyspace, Table.DATA.getName() )
                         .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
