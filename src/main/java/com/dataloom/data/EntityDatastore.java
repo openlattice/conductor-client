@@ -71,16 +71,30 @@ public interface EntityDatastore {
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
     /**
-     * Reads data from an linked entity set.
-     *
-     * @param linkedEntitySetId
-     * @param authorizedPropertyTypesForEntitySets
+     * Asynchronously load an entity with specified properties
+     * @param entitySetId
+     * @param entityId
+     * @param syncId
+     * @param properties
      * @return
      */
-    EntitySetData<FullQualifiedName> getLinkedEntitySetData(
-            UUID linkedEntitySetId,
-            LinkedHashSet<String> orderedPropertyNames,
-            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets );
+    ResultSetFuture asyncLoadEntity(
+            UUID entitySetId,
+            String entityId,
+            UUID syncId,
+            Set<UUID> properties );
+    
+    /**
+     * Asynchronously load an entity with all properties
+     * @param entitySetId
+     * @param entityId
+     * @param syncId
+     * @return
+     */
+    ResultSetFuture asyncLoadEntity(
+            UUID entitySetId,
+            String entityId,
+            UUID syncId );
 
     // TODO remove vertices too
     void deleteEntitySetData( UUID entitySetId );

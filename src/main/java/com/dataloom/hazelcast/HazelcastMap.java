@@ -61,7 +61,8 @@ public enum HazelcastMap {
     EDGES( Table.EDGES ),
     BACKEDGES( Table.BACK_EDGES ),
     VERTICES( Table.VERTICES ),
-    SYNC_IDS( Table.SYNC_IDS );
+    SYNC_IDS( Table.SYNC_IDS ),
+    VERTEX_IDS_AFTER_LINKING( Table.VERTEX_IDS_AFTER_LINKING );
 
     private final Table table;
 

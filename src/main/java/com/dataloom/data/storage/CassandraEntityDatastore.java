@@ -33,7 +33,6 @@ import java.util.stream.Stream;
 import javax.inject.Inject;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -60,7 +59,6 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
@@ -97,8 +95,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
     private final PreparedStatement      deleteEntityQuery;
 
-    private final PreparedStatement      linkedEntitiesQuery;
-
     private final PreparedStatement      readNumRPCRowsQuery;
     private final PreparedStatement      readEntityKeysForEntitySetQuery;
     private final PreparedStatement      writeUtilizerScoreQuery;
@@ -125,7 +121,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
 
-        this.linkedEntitiesQuery = prepareLinkedEntitiesQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
         this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
@@ -154,18 +149,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 asyncLoadEntity( entitySetId, entityId, syncId, authorizedPropertyTypes.keySet() ).getUninterruptibly(),
                 authorizedPropertyTypes,
                 mapper );
-    }
-
-    @Override
-    public EntitySetData<FullQualifiedName> getLinkedEntitySetData(
-            UUID linkedEntitySetId,
-            LinkedHashSet<String> orderedPropertyNames,
-            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
-        Iterable<Pair<UUID, Set<EntityKey>>> linkedEntityKeys = getLinkedEntityKeys( linkedEntitySetId );
-        return new EntitySetData<FullQualifiedName>( orderedPropertyNames, Iterables.transform( linkedEntityKeys,
-                linkedKey -> getAndMergeLinkedEntities( linkedEntitySetId,
-                        linkedKey,
-                        authorizedPropertyTypesForEntitySets ) )::iterator );
     }
 
     @Override
@@ -242,6 +225,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return Iterables.filter( Iterables.transform( entityIds, RowAdapters::entityId ), StringUtils::isNotBlank );
     }
 
+    @Override
     public ResultSetFuture asyncLoadEntity(
             UUID entitySetId,
             String entityId,
@@ -257,6 +241,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     /*
      * Warning: this loads ALL the properties of the entity, authorized or not.
      */
+    @Override
     public ResultSetFuture asyncLoadEntity(
             UUID entitySetId,
             String entityId,
@@ -506,13 +491,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), QueryBuilder.bindMarker() ) ) );
     }
 
-    private static PreparedStatement prepareLinkedEntitiesQuery( Session session ) {
-        return session.prepare( QueryBuilder
-                .select().all()
-                .from( Table.LINKING_VERTICES.getKeyspace(), Table.LINKING_VERTICES.getName() ).allowFiltering()
-                .where( QueryBuilder.eq( CommonColumns.GRAPH_ID.cql(), QueryBuilder.bindMarker() ) ) );
-    }
-
     private static PreparedStatement prepareReadNumRPCRowsQuery( Session session ) {
         return session.prepare(
                 QueryBuilder.select().from( Table.RPC_DATA_ORDERED.getKeyspace(), Table.RPC_DATA_ORDERED.getName() )
@@ -549,53 +527,5 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private static PreparedStatement prepareDeleteEntityQuery(
             Session session ) {
         return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
-    }
-
-    /**
-     * Auxiliary methods for linking entity sets
-     */
-
-    private Iterable<Pair<UUID, Set<EntityKey>>> getLinkedEntityKeys(
-            UUID linkedEntitySetId ) {
-        UUID graphId = linkingGraph.getGraphIdFromEntitySetId( linkedEntitySetId );
-        ResultSet rs = session
-                .execute( linkedEntitiesQuery.bind().setUUID( CommonColumns.GRAPH_ID.cql(), graphId ) );
-        return Iterables.transform( rs, RowAdapters::linkedEntity );
-    }
-
-    private SetMultimap<FullQualifiedName, Object> getAndMergeLinkedEntities(
-            UUID linkedEntitySetId,
-            Pair<UUID, Set<EntityKey>> linkedKey,
-            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesForEntitySets ) {
-        SetMultimap<FullQualifiedName, Object> result = HashMultimap.create();
-        SetMultimap<UUID, Object> indexResult = HashMultimap.create();
-
-        linkedKey.getValue().stream()
-                .map( key -> Pair.of( key.getEntitySetId(),
-                        asyncLoadEntity( key.getEntitySetId(),
-                                key.getEntityId(),
-                                key.getSyncId(),
-                                authorizedPropertyTypesForEntitySets.get( key.getEntitySetId() ).keySet() ) ) )
-                .map( rsfPair -> Pair.of( rsfPair.getKey(), rsfPair.getValue().getUninterruptibly() ) )
-                .map( rsPair -> RowAdapters.entityIdFQNPair( rsPair.getValue(),
-                        authorizedPropertyTypesForEntitySets.get( rsPair.getKey() ),
-                        mapper ) )
-                .forEach( pair -> {
-                    result.putAll( pair.getValue() );
-                    indexResult.putAll( pair.getKey() );
-                } );
-
-        // Using HashSet here is necessary for serialization, to avoid kryo not knowing how to serialize guava
-        // WrappedCollection
-        Map<UUID, Object> indexResultAsMap = indexResult.asMap().entrySet().stream()
-                .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
-
-        eventBus.post(
-                new EntityDataCreatedEvent(
-                        linkedEntitySetId,
-                        Optional.absent(),
-                        linkedKey.getKey().toString(),
-                        indexResultAsMap ) );
-        return result;
     }
 }

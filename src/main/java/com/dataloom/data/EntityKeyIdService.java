@@ -19,10 +19,12 @@
  */
 package com.dataloom.data;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -35,6 +37,8 @@ public interface EntityKeyIdService {
      * @return The id assigned to entity key.
      */
     UUID getEntityKeyId( EntityKey entityKey );
+
+    Map<EntityKey, UUID> getEntityKeyIds( Set<EntityKey> entityKeys );
 
     ListenableFuture<UUID> getEntityKeyIdAsync( EntityKey entityKey );
 

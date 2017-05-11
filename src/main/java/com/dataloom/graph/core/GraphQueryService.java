@@ -157,6 +157,19 @@ public class GraphQueryService {
         return row == null ? null : RowAdapters.loomEdge( row );
     }
 
+    public Stream<LoomEdge> getFromEdgesTable( Map<CommonColumns, Set<UUID>> neighborhoodSelections ) {
+        BoundStatement edgeBs = edgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
+
+        return treeBind( neighborhoodSelections.entrySet().iterator(), edgeBs )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( StreamUtil::stream )
+                .map( RowAdapters::loomEdge )
+                .distinct();
+    }
+    
+    /**
+     * This is getting edges in both forward/backward edge table
+     */
     public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> neighborhoodSelections ) {
 
         BoundStatement edgeBs = edgeQueries.getUnchecked( neighborhoodSelections.keySet() ).bind();
@@ -191,26 +204,35 @@ public class GraphQueryService {
     public List<ResultSetFuture> putEdgeAsync(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeEntityId,
-            UUID edgeEntityTypeId ) {
+            UUID edgeEntityTypeId,
+            UUID edgeEntitySetId ) {
 
         BoundStatement edgeBs = bindEdge( putEdgeQuery.bind(),
                 srcVertexId,
                 srcVertexEntityTypeId,
+                srcVertexEntitySetId,
                 dstVertexId,
                 dstVertexEntityTypeId,
+                dstVertexEntitySetId,
                 edgeEntityId,
-                edgeEntityTypeId );
+                edgeEntityTypeId,
+                edgeEntitySetId );
 
         BoundStatement backedgeBs = bindEdge( putBackEdgeQuery.bind(),
                 dstVertexId,
                 dstVertexEntityTypeId,
+                dstVertexEntitySetId,
                 srcVertexId,
                 srcVertexEntityTypeId,
+                srcVertexEntitySetId,
                 edgeEntityId,
-                edgeEntityTypeId );
+                edgeEntityTypeId,
+                edgeEntitySetId );
         return ImmutableList.of( session.executeAsync( edgeBs ), session.executeAsync( backedgeBs ) );
     }
 
@@ -218,17 +240,23 @@ public class GraphQueryService {
             BoundStatement bs,
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeEntityId,
-            UUID edgeEntityTypeId ) {
+            UUID edgeEntityTypeId,
+            UUID edgeEntitySetId ) {
         return bs
                 .setUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql(), srcVertexId )
                 .setUUID( CommonColumns.DST_TYPE_ID.cql(), dstVertexEntityTypeId )
                 .setUUID( CommonColumns.EDGE_TYPE_ID.cql(), edgeEntityTypeId )
                 .setUUID( CommonColumns.DST_ENTITY_KEY_ID.cql(), dstVertexId )
                 .setUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql(), edgeEntityId )
-                .setUUID( CommonColumns.SRC_TYPE_ID.cql(), srcVertexEntityTypeId );
+                .setUUID( CommonColumns.SRC_TYPE_ID.cql(), srcVertexEntityTypeId )
+                .setUUID( CommonColumns.SRC_ENTITY_SET_ID.cql(), srcVertexEntitySetId )
+                .setUUID( CommonColumns.DST_ENTITY_SET_ID.cql(), dstVertexEntitySetId )
+                .setUUID( CommonColumns.EDGE_ENTITY_SET_ID.cql(), edgeEntitySetId );
     }
 
     public void deleteEdge( LoomEdge key ) {
@@ -236,6 +264,9 @@ public class GraphQueryService {
     }
 
     public List<ResultSetFuture> deleteEdgeAsync( LoomEdge edge ) {
+        if( edge == null ){
+            return ImmutableList.of();
+        }
         EdgeKey key = edge.getKey();
         BoundStatement edgeBs = bindDeleteEdge( deleteEdgeQuery.bind(),
                 key.getSrcEntityKeyId(),
@@ -244,7 +275,7 @@ public class GraphQueryService {
                 key.getEdgeEntityKeyId(),
                 key.getEdgeTypeId() );
 
-        BoundStatement backedgeBs = bindDeleteEdge( deleteEdgeQuery.bind(),
+        BoundStatement backedgeBs = bindDeleteEdge( deleteBackEdgeQuery.bind(),
                 key.getDstEntityKeyId(),
                 key.getSrcEntityKeyId(),
                 edge.getSrcType(),

@@ -1,5 +1,14 @@
 package com.dataloom.graph.core;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.graph.core.objects.EdgeCountEntryProcessor;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
@@ -9,19 +18,12 @@ import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
 
 public class LoomGraph implements LoomGraphApi {
 
-    private static final Logger logger = LoggerFactory.getLogger( LoomGraph.class );
+    private static final Logger            logger = LoggerFactory.getLogger( LoomGraph.class );
 
-    private final GraphQueryService gqs;
+    private final GraphQueryService        gqs;
 
     private final IMap<UUID, Neighborhood> edges;
     // vertex id -> dst type id -> edge type id -> dst entity key id
@@ -48,35 +50,47 @@ public class LoomGraph implements LoomGraphApi {
     public void addEdge(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeEntityId,
-            UUID edgeEntityTypeId ) {
+            UUID edgeEntityTypeId,
+            UUID edgeEntitySetId ) {
         addEdgeAsync( srcVertexId,
                 srcVertexEntityTypeId,
+                srcVertexEntitySetId,
                 dstVertexId,
                 dstVertexEntityTypeId,
+                dstVertexEntitySetId,
                 edgeEntityId,
-                edgeEntityTypeId )
-                .forEach( ResultSetFuture::getUninterruptibly );
+                edgeEntityTypeId,
+                edgeEntitySetId )
+                        .forEach( ResultSetFuture::getUninterruptibly );
     }
 
     @Override
     public List<ResultSetFuture> addEdgeAsync(
             UUID srcVertexId,
             UUID srcVertexEntityTypeId,
+            UUID srcVertexEntitySetId,
             UUID dstVertexId,
             UUID dstVertexEntityTypeId,
+            UUID dstVertexEntitySetId,
             UUID edgeEntityId,
-            UUID edgeEntityTypeId ) {
+            UUID edgeEntityTypeId,
+            UUID edgeEntitySetId ) {
         edges.evict( srcVertexId );
         backedges.evict( dstVertexId );
         return gqs.putEdgeAsync( srcVertexId,
                 srcVertexEntityTypeId,
+                srcVertexEntitySetId,
                 dstVertexId,
                 dstVertexEntityTypeId,
+                dstVertexEntitySetId,
                 edgeEntityId,
-                edgeEntityTypeId );
+                edgeEntityTypeId,
+                edgeEntitySetId );
     }
 
     @Override
@@ -86,7 +100,7 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public Stream<ResultSetFuture> deleteVertexAsync( UUID vertex ) {
-        //TODO: Implement delete for neighborhoods
+        // TODO: Implement delete for neighborhoods
         return gqs
                 .getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, ImmutableSet.of( vertex ) ) )
                 .map( LoomEdge::getKey )
@@ -100,8 +114,13 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
+    public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> edgeSelection ) {
+        return gqs.getFromEdgesTable( edgeSelection );
+    }
+
+    @Override
     public void deleteEdge( EdgeKey key ) {
-        gqs.deleteEdge( getEdge( key ) );
+        deleteEdgeAsync( key ).forEach( ResultSetFuture::getUninterruptibly );
     }
 
     @Override
@@ -139,7 +158,8 @@ public class LoomGraph implements LoomGraphApi {
             Set<UUID> neighborTypeIds,
             boolean vertexIsSrc ) {
         if ( vertexIsSrc ) {
-            return (Integer) edges.executeOnKey( vertexId, new EdgeCountEntryProcessor( associationTypeId, neighborTypeIds ) );
+            return (Integer) edges.executeOnKey( vertexId,
+                    new EdgeCountEntryProcessor( associationTypeId, neighborTypeIds ) );
         }
 
         return (Integer) backedges

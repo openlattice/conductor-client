@@ -20,8 +20,12 @@
 package com.dataloom.linking;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import com.dataloom.data.EntityKey;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -30,8 +34,10 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.cassandra.RowAdapters;
 
 import jersey.repackaged.com.google.common.collect.Maps;
 
@@ -45,12 +51,16 @@ public class CassandraLinkingGraphsQueryService {
     private final PreparedStatement srcNeighbors;
     private final PreparedStatement dstNeighbors;
     private final PreparedStatement lighestEdge;
+    
+    private final PreparedStatement linkedEntitiesQuery;
 
     public CassandraLinkingGraphsQueryService( String keyspace, Session session ) {
         this.session = session;
         this.srcNeighbors = session.prepare( srcNeighborsQuery( keyspace ) );
         this.dstNeighbors = session.prepare( dstNeighborsQuery( keyspace ) );
         this.lighestEdge = session.prepare( lighestEdgeQuery( keyspace ) );
+        
+        this.linkedEntitiesQuery = session.prepare( linkedEntitiesQuery( keyspace ) );
     }
 
     public static Select lighestEdgeQuery( String keyspace ) {
@@ -78,6 +88,13 @@ public class CassandraLinkingGraphsQueryService {
                 .select( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), CommonColumns.EDGE_VALUE.cql() )
                 .from( keyspace, Table.WEIGHTED_LINKING_EDGES.getName() )
                 .where( CommonColumns.GRAPH_ID.eq() ).and( CommonColumns.DESTINATION_LINKING_VERTEX_ID.eq() );
+    }
+
+    private static Select.Where linkedEntitiesQuery( String keyspace ) {
+        return QueryBuilder
+                .select().all()
+                .from( keyspace, Table.LINKING_VERTICES.getName() ).allowFiltering()
+                .where( QueryBuilder.eq( CommonColumns.GRAPH_ID.cql(), QueryBuilder.bindMarker() ) );
     }
 
     public WeightedLinkingEdge getLightestEdge( UUID graphId, double lowerbound, double upperbound ) {
@@ -166,5 +183,12 @@ public class CassandraLinkingGraphsQueryService {
                 .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), vertexId );
 
         return session.execute( dstbs );
+    }
+
+    public Iterable<Pair<UUID, Set<EntityKey>>> getLinkedEntityKeys(
+            UUID graphId ) {
+        ResultSet rs = session
+                .execute( linkedEntitiesQuery.bind().setUUID( CommonColumns.GRAPH_ID.cql(), graphId ) );
+        return Iterables.transform( rs, RowAdapters::linkedEntity );
     }
 }

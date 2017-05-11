@@ -29,7 +29,9 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -67,6 +69,11 @@ public class HazelcastEntityKeyIdService implements EntityKeyIdService {
 
     @Override public UUID getEntityKeyId( EntityKey entityKey ) {
         return Util.getSafely( ids, entityKey );
+    }
+
+    @Override 
+    public Map<EntityKey, UUID> getEntityKeyIds( Set<EntityKey> entityKeys ) {
+        return Util.getSafely( ids, entityKeys );
     }
 
     @Override

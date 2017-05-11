@@ -25,10 +25,16 @@ public class LoomEdge {
     private EdgeKey key;
 
     private UUID    srcType;
+    private UUID srcSetId;
+    private UUID dstSetId;
+    private UUID edgeSetId;
 
-    public LoomEdge( EdgeKey key, UUID srcType ) {
+    public LoomEdge( EdgeKey key, UUID srcType, UUID srcSetId, UUID dstSetId, UUID edgeSetId ) {
         this.key = key;
         this.srcType = srcType;
+        this.srcSetId = srcSetId;
+        this.dstSetId = dstSetId;
+        this.edgeSetId = edgeSetId;
     }
 
     public EdgeKey getKey() {
@@ -39,11 +45,26 @@ public class LoomEdge {
         return srcType;
     }
 
+    public UUID getSrcSetId() {
+        return srcSetId;
+    }
+
+    public UUID getDstSetId() {
+        return dstSetId;
+    }
+
+    public UUID getEdgeSetId() {
+        return edgeSetId;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ( ( dstSetId == null ) ? 0 : dstSetId.hashCode() );
+        result = prime * result + ( ( edgeSetId == null ) ? 0 : edgeSetId.hashCode() );
         result = prime * result + ( ( key == null ) ? 0 : key.hashCode() );
+        result = prime * result + ( ( srcSetId == null ) ? 0 : srcSetId.hashCode() );
         result = prime * result + ( ( srcType == null ) ? 0 : srcType.hashCode() );
         return result;
     }
@@ -54,18 +75,21 @@ public class LoomEdge {
         if ( obj == null ) return false;
         if ( getClass() != obj.getClass() ) return false;
         LoomEdge other = (LoomEdge) obj;
+        if ( dstSetId == null ) {
+            if ( other.dstSetId != null ) return false;
+        } else if ( !dstSetId.equals( other.dstSetId ) ) return false;
+        if ( edgeSetId == null ) {
+            if ( other.edgeSetId != null ) return false;
+        } else if ( !edgeSetId.equals( other.edgeSetId ) ) return false;
         if ( key == null ) {
             if ( other.key != null ) return false;
         } else if ( !key.equals( other.key ) ) return false;
+        if ( srcSetId == null ) {
+            if ( other.srcSetId != null ) return false;
+        } else if ( !srcSetId.equals( other.srcSetId ) ) return false;
         if ( srcType == null ) {
             if ( other.srcType != null ) return false;
         } else if ( !srcType.equals( other.srcType ) ) return false;
         return true;
     }
-
-    @Override
-    public String toString() {
-        return "LoomEdge [key=" + key + ", srcType=" + srcType + "]";
-    }
-
 }

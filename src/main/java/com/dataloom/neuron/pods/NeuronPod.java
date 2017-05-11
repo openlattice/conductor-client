@@ -41,6 +41,7 @@ import com.dataloom.edm.schemas.cassandra.CassandraSchemaQueryService;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.graph.core.GraphQueryService;
 import com.dataloom.graph.core.LoomGraph;
+import com.dataloom.linking.CassandraLinkingGraphsQueryService;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.neuron.Neuron;
@@ -126,6 +127,10 @@ public class NeuronPod {
     }
 
     @Bean
+    public CassandraLinkingGraphsQueryService linkingGraphQueryService() {
+        return new CassandraLinkingGraphsQueryService( cassandraConfiguration.getKeyspace(), session );
+    }
+    @Bean
     public CassandraTypeManager entityTypeManager() {
         return new CassandraTypeManager( cassandraConfiguration.getKeyspace(), session );
     }
@@ -177,7 +182,7 @@ public class NeuronPod {
 
     @Bean
     public HazelcastLinkingGraphs linkingGraph() {
-        return new HazelcastLinkingGraphs( hazelcastInstance );
+        return new HazelcastLinkingGraphs( hazelcastInstance, linkingGraphQueryService() );
     }
 
     @Bean

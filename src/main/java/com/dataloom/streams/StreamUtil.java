@@ -33,6 +33,10 @@ public class StreamUtil {
         return StreamSupport.stream( rs.spliterator(), false );
     }
 
+    public static <T> Stream<T> parallelStream( Iterable<T> rs ) {
+        return StreamSupport.stream( rs.spliterator(), true );
+    }
+
     /**
      * Useful adapter for {@code Iterables#transform(Iterable, com.google.common.base.Function)} that allows lazy
      * evaluation of result set future. See the same function in AuthorizationUtils as well.

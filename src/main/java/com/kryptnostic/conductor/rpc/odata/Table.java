@@ -64,7 +64,8 @@ public enum Table implements TableDef {
     SYNC_IDS,
     IDS,
     KEYS,
-    TOP_UTILIZER_DATA;
+    TOP_UTILIZER_DATA,
+    VERTEX_IDS_AFTER_LINKING;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -153,13 +154,16 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
-                        .columns( SRC_TYPE_ID )
+                        .columns( SRC_TYPE_ID, SRC_ENTITY_SET_ID, DST_ENTITY_SET_ID, EDGE_ENTITY_SET_ID )
                         .secondaryIndex(
                                 DST_TYPE_ID,
                                 EDGE_TYPE_ID,
                                 DST_ENTITY_KEY_ID,
                                 EDGE_ENTITY_KEY_ID,
-                                SRC_TYPE_ID );
+                                SRC_TYPE_ID,
+                                SRC_ENTITY_SET_ID,
+                                DST_ENTITY_SET_ID,
+                                EDGE_ENTITY_SET_ID );
             case EDGES:
                 /*
                  * Allows for efficient selection of edges as long as types are provided.
@@ -168,13 +172,16 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
-                        .columns( SRC_TYPE_ID )
+                        .columns( SRC_TYPE_ID, SRC_ENTITY_SET_ID, DST_ENTITY_SET_ID, EDGE_ENTITY_SET_ID )
                         .secondaryIndex(
                                 DST_TYPE_ID,
                                 EDGE_TYPE_ID,
                                 DST_ENTITY_KEY_ID,
                                 EDGE_ENTITY_KEY_ID,
-                                SRC_TYPE_ID );
+                                SRC_TYPE_ID,
+                                SRC_ENTITY_SET_ID,
+                                DST_ENTITY_SET_ID,
+                                EDGE_ENTITY_SET_ID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
@@ -362,6 +369,12 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( VERTICES )
                         .ifNotExists()
                         .partitionKey( VERTEX_ID );
+            case VERTEX_IDS_AFTER_LINKING:
+                return new CassandraTableBuilder( VERTEX_IDS_AFTER_LINKING )
+                        .ifNotExists()
+                        .partitionKey( VERTEX_ID )
+                        .clusteringColumns( GRAPH_ID )
+                        .columns( NEW_VERTEX_ID );
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

@@ -52,8 +52,8 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
             .getLogger( HazelcastLinkingGraphsTest.class );
 
     static {
-        graphs = new HazelcastLinkingGraphs( hazelcastInstance );
         cgqs = new CassandraLinkingGraphsQueryService( cc.getKeyspace(), session );
+        graphs = new HazelcastLinkingGraphs( hazelcastInstance, cgqs );
         partitioner = new ClusteringPartitioner( cc.getKeyspace(), session, cgqs, graphs );
         lvm = new LinkingVerticesMapstore( session );
         buffer = new SortedCassandraLinkingEdgeBuffer(
