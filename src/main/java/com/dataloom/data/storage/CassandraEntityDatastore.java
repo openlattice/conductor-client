@@ -311,7 +311,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                     authorizedPropertiesWithDataType );
         } catch ( Exception e ) {
             logger.error( "Entity {} not written because some property values are of invalid format.",
-                    entityId );
+                    entityId , e);
             return results;
         }
 
