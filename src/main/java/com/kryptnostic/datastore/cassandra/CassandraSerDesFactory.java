@@ -203,7 +203,7 @@ public class CassandraSerDesFactory {
                 }
                 break;
             case Date:
-                if ( value instanceof String && LocalDateTime.parse( (String) value ) != null ) {
+                if ( value instanceof String && DateTime.parse( (String) value ) != null ) {
                     return value;
                 }
                 break;
