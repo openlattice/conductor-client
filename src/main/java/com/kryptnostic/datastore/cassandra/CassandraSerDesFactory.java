@@ -31,10 +31,13 @@ public class CassandraSerDesFactory {
     private static final Base64.Decoder  decoder         = Base64.getDecoder();
 
     private static final String geographyPointRegex = "(\\-)?[0-9]+(\\.){1}[0-9]+(\\,){1}(\\-)?[0-9]+(\\.){1}[0-9]+";
-    private CassandraSerDesFactory() {}
+
+    private CassandraSerDesFactory() {
+    }
 
     /**
      * This directly depends on output format of {@link #validateFormatAndNormalize(EdmPrimitiveTypeKind, Object)}
+     *
      * @param mapper
      * @param value
      * @param type
@@ -100,6 +103,7 @@ public class CassandraSerDesFactory {
 
     /**
      * This directly depends on output of {@link #validateFormatAndNormalize(EdmPrimitiveTypeKind, Object)}
+     *
      * @param mapper
      * @param bytes
      * @param type
@@ -180,6 +184,7 @@ public class CassandraSerDesFactory {
 
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
+     *
      * @param dataType
      * @param value
      * @return
@@ -192,6 +197,8 @@ public class CassandraSerDesFactory {
             case Boolean:
                 if ( value instanceof Boolean ) {
                     return value;
+                } else if ( value instanceof String ) {
+                    return Boolean.valueOf( (String) value );
                 }
                 break;
             /**
@@ -265,7 +272,7 @@ public class CassandraSerDesFactory {
                     if ( point.getGeoType() == Type.POINT && point.getDimension() == Dimension.GEOGRAPHY ) {
                         return point.getY() + "," + point.getX();
                     }
-                } else if ( value instanceof String && ( (String) value ).matches( geographyPointRegex ) ){
+                } else if ( value instanceof String && ( (String) value ).matches( geographyPointRegex ) ) {
                     return value;
                 }
                 break;

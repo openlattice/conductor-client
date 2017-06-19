@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import com.dataloom.hazelcast.HazelcastMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,8 +31,8 @@ public class LoomGraph implements LoomGraphApi {
     private final IMap<UUID, Neighborhood> backedges;
 
     public LoomGraph( GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
-        this.edges = hazelcastInstance.getMap( "" );
-        this.backedges = hazelcastInstance.getMap( "" );
+        this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
+        this.backedges = hazelcastInstance.getMap( HazelcastMap.BACKEDGES.name() );
 
         this.gqs = gqs;
     }
