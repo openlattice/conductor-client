@@ -737,6 +737,12 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deleteAssociationType( UUID associationTypeId ) {
+    	AssociationType associationType = getAssociationType( associationTypeId );
+    	if( associationType.getAssociationEntityType() == null ){
+    		logger.error( "Inconsistency found: association type of id %s has no associated entity type", associationTypeId );
+    		throw new IllegalStateException( "Failed to delete association type of id " + associationTypeId );
+    	}
+    	deleteEntityType( associationType.getAssociationEntityType().getId() );
         associationTypes.delete( associationTypeId );
     }
 
