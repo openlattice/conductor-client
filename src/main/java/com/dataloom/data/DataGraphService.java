@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
+import org.apache.commons.collections.keyvalue.MultiKey;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -42,7 +43,7 @@ public class DataGraphService implements DataGraphManager {
     private static final Logger logger = LoggerFactory
             .getLogger( DataGraphService.class );
     private final ListeningExecutorService executor;
-    private final Cache<List<TopUtilizerDetails>, TopUtilizers> queryCache = CacheBuilder.newBuilder()
+    private final Cache<MultiKey, TopUtilizers> queryCache = CacheBuilder.newBuilder()
             .maximumSize( 1000 )
             .expireAfterWrite( 2, TimeUnit.HOURS )
             .build();
@@ -79,14 +80,6 @@ public class DataGraphService implements DataGraphManager {
                         return entitySets.get( key ).getEntityTypeId();
                     }
                 } );
-    }
-
-    public static void tryGetAndLogErrors( ListenableFuture<?> f ) {
-        try {
-            f.get();
-        } catch ( InterruptedException | ExecutionException e ) {
-            logger.error( "Future execution failed.", e );
-        }
     }
 
     @Override
@@ -283,7 +276,7 @@ public class DataGraphService implements DataGraphManager {
          * topUtilizerDetailsList ) ); } catch ( JsonProcessingException e1 ) { logger.debug(
          * "Unable to generate query id." ); return null; }
          */
-        TopUtilizers maybeUtilizers = queryCache.getIfPresent( topUtilizerDetailsList );
+        TopUtilizers maybeUtilizers = queryCache.getIfPresent( new MultiKey( entitySetId, topUtilizerDetailsList ) );
         final TopUtilizers utilizers;
         // if ( !eds.queryAlreadyExecuted( queryId ) ) {
         if ( maybeUtilizers == null ) {
@@ -308,7 +301,7 @@ public class DataGraphService implements DataGraphManager {
                         utilizers.accumulate( vertexId, score );
                         // eds.writeVertexCount( queryId, vertexId, 1.0D * score );
                     } );
-            queryCache.put( topUtilizerDetailsList, utilizers );
+            queryCache.put( new MultiKey( entitySetId, topUtilizerDetailsList ), utilizers );
         } else {
             utilizers = maybeUtilizers;
         }
@@ -336,5 +329,13 @@ public class DataGraphService implements DataGraphManager {
          * key.getEntityId(), authorizedPropertyTypes ) ); entity.put( "id", vertexId.toString() ); return entity; } );
          * return entities;
          */
+    }
+
+    public static void tryGetAndLogErrors( ListenableFuture<?> f ) {
+        try {
+            f.get();
+        } catch ( InterruptedException | ExecutionException e ) {
+            logger.error( "Future execution failed.", e );
+        }
     }
 }
