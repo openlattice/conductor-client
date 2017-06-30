@@ -333,7 +333,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                                         .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
                                         .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), pValue )
                                         .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
-                                                ByteBuffer.wrap( hf.hashBytes( pValue.array() ).asBytes() ) ) );
+                                                ByteBuffer.wrap( hf.hashBytes( pValue.array() ).asBytes() ) ) ) );
                     } else {
                         results.add( session.executeAsync(
                                 writeDataQuery.bind()
