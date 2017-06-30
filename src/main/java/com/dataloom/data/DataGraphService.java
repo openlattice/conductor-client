@@ -283,7 +283,7 @@ public class DataGraphService implements DataGraphManager {
             utilizers = new TopUtilizers( numResults );
             eds.getEntityKeysForEntitySet( entitySetId, syncId )
 //                    .distinct()
-                    .parallel()
+                    //.parallel()
                     .map( idService::getEntityKeyId )
                     .forEach( vertexId -> {
                         long score = topUtilizerDetailsList.parallelStream()

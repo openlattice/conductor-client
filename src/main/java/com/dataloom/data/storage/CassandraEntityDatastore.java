@@ -76,6 +76,10 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
+
 public class CassandraEntityDatastore implements EntityDatastore {
 
     private static final Logger       logger = LoggerFactory
@@ -516,7 +520,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     private static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
-        return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+        return session.prepare( QueryBuilder.select(ENTITY_SET_ID.cql(), ENTITYID.cql(), SYNCID.cql())
+                .distinct()
+                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
                 .where( CommonColumns.SYNCID.eq() ) );
         //        return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
         //                .allowFiltering().where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
