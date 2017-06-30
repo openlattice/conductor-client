@@ -451,7 +451,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
     @Override
     public Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId ) {
         return StreamUtil.stream( Iterables.transform( session.execute(
-                readEntityKeysForEntitySetQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                readEntityKeysForEntitySetQuery.bind()
+                        //.setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                         .setUUID( CommonColumns.SYNCID.cql(), syncId ) ),
                 RowAdapters::entityKeyFromData ) )
                 .filter( ek -> ek.getEntitySetId().equals( entitySetId ) )
