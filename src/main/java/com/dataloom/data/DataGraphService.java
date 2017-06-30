@@ -282,7 +282,7 @@ public class DataGraphService implements DataGraphManager {
         if ( maybeUtilizers == null ) {
             utilizers = new TopUtilizers( numResults );
             eds.getEntityKeysForEntitySet( entitySetId, syncId )
-                    .distinct()
+//                    .distinct()
                     .parallel()
                     .map( idService::getEntityKeyId )
                     .forEach( vertexId -> {

@@ -453,7 +453,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return StreamUtil.stream( Iterables.transform( session.execute(
                 readEntityKeysForEntitySetQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                         .setUUID( CommonColumns.SYNCID.cql(), syncId ) ),
-                RowAdapters::entityKeyFromData ) );
+                RowAdapters::entityKeyFromData ) )
+                .filter( ek -> ek.getEntitySetId().equals( entitySetId ) )
+                .distinct();
     }
 
     private static PreparedStatement prepareEntitySetQuery(
@@ -514,9 +516,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
     private static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
         return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-                .allowFiltering().where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
-                        CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
+                .where( CommonColumns.SYNCID.eq() ) );
+        //        return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+        //                .allowFiltering().where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
+        //                        CommonColumns.ENTITY_SET_ID.bindMarker() ) )
+        //                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
     }
 
     private static PreparedStatement prepareWriteUtilizerScoreQuery( Session session ) {
