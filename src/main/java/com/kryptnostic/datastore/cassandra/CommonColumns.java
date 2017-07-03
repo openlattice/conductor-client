@@ -127,7 +127,7 @@ public enum CommonColumns implements ColumnDef {
     NEW_VERTEX_ID( DataType.uuid() ),
     SRC_ENTITY_SET_ID( DataType.uuid() ),
     DST_ENTITY_SET_ID( DataType.uuid() ),
-    EDGE_ENTITY_SET_ID( DataType.uuid() );
+    EDGE_ENTITY_SET_ID( DataType.uuid() ), PROPERTY_BUFFER( DataType.blob() );
 
     private transient final DataType type;
 

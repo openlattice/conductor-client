@@ -32,6 +32,9 @@ import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -73,33 +76,31 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
+
 public class CassandraEntityDatastore implements EntityDatastore {
 
-    @Inject
-    private EventBus                     eventBus;
-
-    private static final Logger          logger = LoggerFactory
+    private static final Logger       logger = LoggerFactory
             .getLogger( CassandraEntityDatastore.class );
-
+    private static final HashFunction hf     = Hashing.murmur3_128();
     private final Session                session;
     private final ObjectMapper           mapper;
     private final HazelcastLinkingGraphs linkingGraph;
-
     private final DatasourceManager      dsm;
-
     private final PreparedStatement      writeDataQuery;
-
     private final PreparedStatement      entitySetQuery;
     private final PreparedStatement      entityIdsInAllSyncQuery;
     private final PreparedStatement      entityIdsQuery;
-
     private final PreparedStatement      deleteEntityQuery;
-
     private final PreparedStatement      readNumRPCRowsQuery;
     private final PreparedStatement      readEntityKeysForEntitySetQuery;
     private final PreparedStatement      writeUtilizerScoreQuery;
     private final PreparedStatement      readNumTopUtilizerRowsQuery;
     private final PreparedStatement      topUtilizersQueryIdExistsQuery;
+    @Inject
+    private       EventBus               eventBus;
 
     public CassandraEntityDatastore(
             Session session,
@@ -311,7 +312,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                     authorizedPropertiesWithDataType );
         } catch ( Exception e ) {
             logger.error( "Entity {} not written because some property values are of invalid format.",
-                    entityId , e);
+                    entityId, e );
             return results;
         }
 
@@ -319,19 +320,33 @@ public class CassandraEntityDatastore implements EntityDatastore {
         // authorizedProperties.contains( entry.getKey() ) );
         normalizedPropertyValues.entries().stream()
                 .forEach( entry -> {
-                    results.add( session.executeAsync(
-                            writeDataQuery.bind()
-                                    .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                                    .setString( CommonColumns.ENTITYID.cql(), entityId )
-                                    .setUUID( CommonColumns.SYNCID.cql(), syncId )
-                                    .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
-                                    .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
-                                            CassandraSerDesFactory.serializeValue(
-                                                    mapper,
-                                                    entry.getValue(),
-                                                    authorizedPropertiesWithDataType
-                                                            .get( entry.getKey() ),
-                                                    entityId ) ) ) );
+                    EdmPrimitiveTypeKind datatype = authorizedPropertiesWithDataType
+                            .get( entry.getKey() );
+                    ByteBuffer pValue = CassandraSerDesFactory.serializeValue(
+                            mapper,
+                            entry.getValue(),
+                            datatype,
+                            entityId );
+                    //TODO: Considering using hash for all properties.
+                    if ( datatype.equals( EdmPrimitiveTypeKind.Binary ) ) {
+                        results.add( session.executeAsync(
+                                writeDataQuery.bind()
+                                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                                        .setString( CommonColumns.ENTITYID.cql(), entityId )
+                                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                                        .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
+                                        .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), pValue )
+                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
+                                                ByteBuffer.wrap( hf.hashBytes( pValue.array() ).asBytes() ) ) ) );
+                    } else {
+                        results.add( session.executeAsync(
+                                writeDataQuery.bind()
+                                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                                        .setString( CommonColumns.ENTITYID.cql(), entityId )
+                                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                                        .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
+                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(), pValue ) ) );
+                    }
                 } );
 
         Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream().filter(
@@ -385,14 +400,14 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
     /**
      * Delete data of an entity set across ALL sync Ids.
-     * 
+     * <p>
      * Note: this is currently only used when deleting an entity set, which takes care of deleting the data in
      * elasticsearch. If this is ever called without deleting the entity set, logic must be added to delete the data
      * from elasticsearch.
      */
     @SuppressFBWarnings(
-        value = "UC_USELESS_OBJECT",
-        justification = "results Object is used to execute deletes in batches" )
+            value = "UC_USELESS_OBJECT",
+            justification = "results Object is used to execute deletes in batches" )
     public void deleteEntitySetData( UUID entitySetId ) {
         logger.info( "Deleting data of entity set: {}", entitySetId );
         BoundStatement bs = entityIdsInAllSyncQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(),
@@ -411,7 +426,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             }
             String entityId = RowAdapters.entityId( entityIdRow );
             UUID syncId = RowAdapters.syncId( entityIdRow );
-            
+
             results.add( asyncDeleteEntity( entitySetId, entityId, syncId ) );
             counter++;
         }
@@ -440,9 +455,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
     @Override
     public Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId ) {
         return StreamUtil.stream( Iterables.transform( session.execute(
-                readEntityKeysForEntitySetQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                readEntityKeysForEntitySetQuery.bind()
+                        //.setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                         .setUUID( CommonColumns.SYNCID.cql(), syncId ) ),
-                RowAdapters::entityKeyFromData ) );
+                RowAdapters::entityKeyFromData ) )
+                .filter( ek -> ek.getEntitySetId().equals( entitySetId ) )
+                .distinct();
     }
 
     private static PreparedStatement prepareEntitySetQuery(
@@ -473,7 +491,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private static PreparedStatement prepareEntityIdsQuery( Session session ) {
         return session.prepare( QueryBuilder
                 .select()
-                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() ).column( CommonColumns.SYNCID.cql() )
+                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
+                .column( CommonColumns.SYNCID.cql() )
                 .distinct()
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
                 .allowFiltering()
@@ -484,7 +503,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private static PreparedStatement prepareEntityIdsInAllSyncQuery( Session session ) {
         return session.prepare( QueryBuilder
                 .select()
-                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() ).column( CommonColumns.SYNCID.cql() )
+                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
+                .column( CommonColumns.SYNCID.cql() )
                 .distinct()
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
                 .allowFiltering()
@@ -500,10 +520,14 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     private static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
-        return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-                .allowFiltering().where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
-                        CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
+        return session.prepare( QueryBuilder.select(ENTITY_SET_ID.cql(), ENTITYID.cql(), SYNCID.cql())
+                .distinct()
+                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+                .where( CommonColumns.SYNCID.eq() ) );
+        //        return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+        //                .allowFiltering().where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
+        //                        CommonColumns.ENTITY_SET_ID.bindMarker() ) )
+        //                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
     }
 
     private static PreparedStatement prepareWriteUtilizerScoreQuery( Session session ) {
