@@ -97,6 +97,7 @@ public class EdmService implements EdmManager {
     private final IMap<String, UUID>                aclKeys;
     private final IMap<UUID, String>                names;
     private final IMap<UUID, AssociationType>       associationTypes;
+    private final IMap<UUID, UUID>                  syncIds;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -129,6 +130,7 @@ public class EdmService implements EdmManager {
         this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
         this.associationTypes = hazelcastInstance.getMap( HazelcastMap.ASSOCIATION_TYPES.name() );
+        this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
         this.aclKeyReservations = aclKeyReservations;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
@@ -280,6 +282,7 @@ public class EdmService implements EdmManager {
 
         Util.deleteSafely( entitySets, entitySetId );
         aclKeyReservations.release( entitySetId );
+        syncIds.remove( entitySetId );
         eventBus.post( new EntitySetDeletedEvent( entitySetId ) );
     }
 
