@@ -732,10 +732,13 @@ public class EdmService implements EdmManager {
 
     @Override
     public AssociationType getAssociationType( UUID associationTypeId ) {
-        return Preconditions.checkNotNull(
+        AssociationType associationDetails = Preconditions.checkNotNull(
                 Util.getSafely( associationTypes, associationTypeId ),
                 "Association type of id %s does not exist.",
                 associationTypeId.toString() );
+        Optional<EntityType> entityType = Optional.fromNullable(
+        		Util.getSafely( entityTypes, associationTypeId ) );
+        return new AssociationType( entityType, associationDetails.getSrc(), associationDetails.getDst(), associationDetails.isBidirectional() );
     }
 
     @Override
