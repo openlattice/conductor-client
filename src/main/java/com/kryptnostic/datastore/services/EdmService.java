@@ -316,10 +316,13 @@ public class EdmService implements EdmManager {
                     .forEach( aclKey -> authorizations.createEmptyAcl( aclKey,
                             SecurableObjectType.PropertyTypeInEntitySet ) );
 
-            eventBus.post( new EntitySetCreatedEvent(
-                    entitySet,
-                    Lists.newArrayList( propertyTypes.getAll( ownablePropertyTypes ).values() ),
-                    principal ) );
+            if ( !getEntityType( entitySet.getEntityTypeId() ).getCategory()
+                    .equals( SecurableObjectType.AssociationType ) ) {
+                eventBus.post( new EntitySetCreatedEvent(
+                        entitySet,
+                        Lists.newArrayList( propertyTypes.getAll( ownablePropertyTypes ).values() ),
+                        principal ) );
+            }
 
         } catch ( Exception e ) {
             logger.error( "Unable to create entity set {} for principal {}", entitySet, principal, e );
@@ -737,12 +740,13 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deleteAssociationType( UUID associationTypeId ) {
-    	AssociationType associationType = getAssociationType( associationTypeId );
-    	if( associationType.getAssociationEntityType() == null ){
-    		logger.error( "Inconsistency found: association type of id %s has no associated entity type", associationTypeId );
-    		throw new IllegalStateException( "Failed to delete association type of id " + associationTypeId );
-    	}
-    	deleteEntityType( associationType.getAssociationEntityType().getId() );
+        AssociationType associationType = getAssociationType( associationTypeId );
+        if ( associationType.getAssociationEntityType() == null ) {
+            logger.error( "Inconsistency found: association type of id %s has no associated entity type",
+                    associationTypeId );
+            throw new IllegalStateException( "Failed to delete association type of id " + associationTypeId );
+        }
+        deleteEntityType( associationType.getAssociationEntityType().getId() );
         associationTypes.delete( associationTypeId );
     }
 
