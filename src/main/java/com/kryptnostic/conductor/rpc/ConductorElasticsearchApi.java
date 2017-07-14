@@ -27,6 +27,7 @@ import java.util.UUID;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.linking.Entity;
@@ -98,6 +99,10 @@ public interface ConductorElasticsearchApi {
     final String PROPERTY_TYPE_INDEX           = "property_type_index";
     final String PROPERTY_TYPE                 = "property_type";
 
+    // association_type_index setup consts
+    final String ASSOCIATION_TYPE_INDEX        = "association_type_index";
+    final String ASSOCIATION_TYPE              = "association_type";
+
     // entity set field consts
     final String TYPE_FIELD                    = "_type";
     final String ENTITY_SET                    = "entitySet";
@@ -112,7 +117,7 @@ public interface ConductorElasticsearchApi {
     final String ENTITY_TYPE_ID                = "entityTypeId";
     final String ID                            = "id";
     final String SRC                           = "src";
-    final String DEST                          = "dest";
+    final String DST                          = "dst";
     final String BIDIRECTIONAL                 = "bidirectional";
 
     boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
@@ -175,13 +180,19 @@ public interface ConductorElasticsearchApi {
 
     boolean saveEntityTypeToElasticsearch( EntityType entityType );
 
+    boolean saveAssociationTypeToElasticsearch( AssociationType associationType );
+
     boolean savePropertyTypeToElasticsearch( PropertyType propertyType );
 
     boolean deleteEntityType( UUID entityTypeId );
 
+    boolean deleteAssociationType( UUID associationTypeId );
+
     boolean deletePropertyType( UUID propertyTypeId );
 
     SearchResult executeEntityTypeSearch( String searchTerm, int start, int maxHits );
+
+    SearchResult executeAssociationTypeSearch( String searchTerm, int start, int maxHits );
 
     SearchResult executePropertyTypeSearch( String searchTerm, int start, int maxHits );
 
