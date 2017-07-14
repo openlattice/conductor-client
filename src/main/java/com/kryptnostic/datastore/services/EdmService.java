@@ -46,6 +46,8 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.events.AssociationTypeCreatedEvent;
+import com.dataloom.edm.events.AssociationTypeDeletedEvent;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
@@ -230,7 +232,9 @@ public class EdmService implements EdmManager {
              * services are loosely coupled in a way that makes it easy to break accidentally.
              */
             schemaManager.upsertSchemas( entityType.getSchemas() );
-            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+            if ( !entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
+                eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+            }
         } else {
             /*
              * Only allow updates if entity type is not already in use.
@@ -542,7 +546,12 @@ public class EdmService implements EdmManager {
                             } );
                 }
             }
-            eventBus.post( new EntityTypeCreatedEvent( getEntityType( id ) ) );
+            EntityType entityType = getEntityType( id );
+            if ( !entityType.getCategory().equals( SecurableObjectType.AssociationType )) {
+                eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+            } else {
+                eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( id ) ) );
+            }
         } );
         childrenIdsToLocks.entrySet().forEach( entry -> {
             if ( entry.getValue() ) propertyTypes.unlock( entry.getKey() );
@@ -580,7 +589,12 @@ public class EdmService implements EdmManager {
         } );
         childrenIds.forEach( id -> {
             entityTypes.executeOnKey( id, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
-            eventBus.post( new EntityTypeCreatedEvent( getEntityType( id ) ) );
+            EntityType childEntityType = getEntityType( id );
+            if ( !childEntityType.getCategory().equals( SecurableObjectType.AssociationType )) {
+                eventBus.post( new EntityTypeCreatedEvent( childEntityType ) );
+            } else {
+                eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( id ) ) );
+            }
         } );
         childrenIds.forEach( propertyTypes::unlock );
 
@@ -611,7 +625,11 @@ public class EdmService implements EdmManager {
             aclKeyReservations.renameReservation( entityTypeId, update.getType().get() );
         }
         entityTypes.executeOnKey( entityTypeId, new UpdateEntityTypeMetadataProcessor( update ) );
-        eventBus.post( new EntityTypeCreatedEvent( getEntityType( entityTypeId ) ) );
+        if ( !getEntityType( entityTypeId ).getCategory().equals( SecurableObjectType.AssociationType )) {
+            eventBus.post( new EntityTypeCreatedEvent( getEntityType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
+        }
     }
 
     @Override
@@ -727,6 +745,8 @@ public class EdmService implements EdmManager {
             logger.error(
                     "Inconsistency encountered in database. Verify that existing association types have all their acl keys reserved." );
         }
+        
+        eventBus.post( new AssociationTypeCreatedEvent( associationType ) );
         return entityTypeId;
     }
 
@@ -743,13 +763,15 @@ public class EdmService implements EdmManager {
 
     @Override
     public void deleteAssociationType( UUID associationTypeId ) {
-    	AssociationType associationType = getAssociationType( associationTypeId );
-    	if( associationType.getAssociationEntityType() == null ){
-    		logger.error( "Inconsistency found: association type of id %s has no associated entity type", associationTypeId );
-    		throw new IllegalStateException( "Failed to delete association type of id " + associationTypeId );
-    	}
-    	deleteEntityType( associationType.getAssociationEntityType().getId() );
+        AssociationType associationType = getAssociationType( associationTypeId );
+        if ( associationType.getAssociationEntityType() == null ) {
+            logger.error( "Inconsistency found: association type of id %s has no associated entity type",
+                    associationTypeId );
+            throw new IllegalStateException( "Failed to delete association type of id " + associationTypeId );
+        }
+        deleteEntityType( associationType.getAssociationEntityType().getId() );
         associationTypes.delete( associationTypeId );
+        eventBus.post( new AssociationTypeDeletedEvent( associationTypeId ) );
     }
 
     @Override

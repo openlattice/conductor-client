@@ -41,6 +41,28 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
 
     @Override
     public void write( ObjectDataOutput out, EntityType object ) throws IOException {
+        serialize( out, object );
+    }
+
+    @Override
+    public EntityType read( ObjectDataInput in ) throws IOException {
+        return deserialize( in );
+    }
+
+    @Override
+    public int getTypeId() {
+        return StreamSerializerTypeIds.ENTITY_TYPE.ordinal();
+    }
+
+    @Override
+    public void destroy() {}
+
+    @Override
+    public Class<EntityType> getClazz() {
+        return EntityType.class;
+    }
+
+    public static void serialize( ObjectDataOutput out, EntityType object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getId() );
         FullQualifiedNameStreamSerializer.serialize( out, object.getType() );
         out.writeUTF( object.getTitle() );
@@ -66,8 +88,7 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
         out.writeUTF( object.getCategory().toString() );
     }
 
-    @Override
-    public EntityType read( ObjectDataInput in ) throws IOException {
+    public static EntityType deserialize( ObjectDataInput in ) throws IOException {
         UUID id = UUIDStreamSerializer.deserialize( in );
         FullQualifiedName type = FullQualifiedNameStreamSerializer.deserialize( in );
         String title = in.readUTF();
@@ -88,19 +109,6 @@ public class EntityTypeStreamSerializer implements SelfRegisteringStreamSerializ
         Optional<SecurableObjectType> category = Optional.of( SecurableObjectType.valueOf( in.readUTF() ) );
 
         return new EntityType( id, type, title, description, schemas, keys, properties, baseType, category );
-    }
-
-    @Override
-    public int getTypeId() {
-        return StreamSerializerTypeIds.ENTITY_TYPE.ordinal();
-    }
-
-    @Override
-    public void destroy() {}
-
-    @Override
-    public Class<EntityType> getClazz() {
-        return EntityType.class;
     }
 
 }
