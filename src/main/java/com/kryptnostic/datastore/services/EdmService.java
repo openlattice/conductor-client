@@ -323,10 +323,13 @@ public class EdmService implements EdmManager {
                     .forEach( aclKey -> authorizations.createEmptyAcl( aclKey,
                             SecurableObjectType.PropertyTypeInEntitySet ) );
 
-            eventBus.post( new EntitySetCreatedEvent(
-                    entitySet,
-                    Lists.newArrayList( propertyTypes.getAll( ownablePropertyTypes ).values() ),
-                    principal ) );
+            if ( !getEntityType( entitySet.getEntityTypeId() ).getCategory()
+                    .equals( SecurableObjectType.AssociationType ) ) {
+                eventBus.post( new EntitySetCreatedEvent(
+                        entitySet,
+                        Lists.newArrayList( propertyTypes.getAll( ownablePropertyTypes ).values() ),
+                        principal ) );
+            }
 
         } catch ( Exception e ) {
             logger.error( "Unable to create entity set {} for principal {}", entitySet, principal, e );
