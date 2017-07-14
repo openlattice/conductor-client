@@ -614,6 +614,8 @@ public class EdmService implements EdmManager {
         entityTypes.executeOnKey( entityTypeId, new UpdateEntityTypeMetadataProcessor( update ) );
         if ( !getEntityType( entityTypeId ).getCategory().equals( SecurableObjectType.AssociationType )) {
             eventBus.post( new EntityTypeCreatedEvent( getEntityType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
         }
     }
 
