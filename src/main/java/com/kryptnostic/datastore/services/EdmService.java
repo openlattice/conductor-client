@@ -543,7 +543,12 @@ public class EdmService implements EdmManager {
                             } );
                 }
             }
-            eventBus.post( new EntityTypeCreatedEvent( getEntityType( id ) ) );
+            EntityType entityType = getEntityType( id );
+            if ( !entityType.getCategory().equals( SecurableObjectType.AssociationType )) {
+                eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+            } else {
+                eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( id ) ) );
+            }
         } );
         childrenIdsToLocks.entrySet().forEach( entry -> {
             if ( entry.getValue() ) propertyTypes.unlock( entry.getKey() );
@@ -581,7 +586,12 @@ public class EdmService implements EdmManager {
         } );
         childrenIds.forEach( id -> {
             entityTypes.executeOnKey( id, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
-            eventBus.post( new EntityTypeCreatedEvent( getEntityType( id ) ) );
+            EntityType childEntityType = getEntityType( id );
+            if ( !childEntityType.getCategory().equals( SecurableObjectType.AssociationType )) {
+                eventBus.post( new EntityTypeCreatedEvent( childEntityType ) );
+            } else {
+                eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( id ) ) );
+            }
         } );
         childrenIds.forEach( propertyTypes::unlock );
 
