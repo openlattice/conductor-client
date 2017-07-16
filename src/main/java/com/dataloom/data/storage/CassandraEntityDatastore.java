@@ -19,27 +19,9 @@
 
 package com.dataloom.data.storage;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.inject.Inject;
-
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityDatastore;
@@ -62,10 +44,14 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
-import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.kryptnostic.conductor.rpc.odata.Table;
@@ -73,18 +59,39 @@ import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.inject.Inject;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CassandraEntityDatastore implements EntityDatastore {
 
     private static final Logger       logger = LoggerFactory
             .getLogger( CassandraEntityDatastore.class );
     private static final HashFunction hf     = Hashing.murmur3_128();
+
+    private static final LoadingCache<UUID, AtomicInteger> PARTTIONS = CacheBuilder.newBuilder()
+            .expireAfterAccess( 1, TimeUnit.MINUTES ).build( new CacheLoader<UUID, AtomicInteger>() {
+                @Override public AtomicInteger load( UUID key ) throws Exception {
+                    return new AtomicInteger();
+                }
+            } );
+
     private final Session                session;
     private final ObjectMapper           mapper;
     private final HazelcastLinkingGraphs linkingGraph;
@@ -112,7 +119,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.mapper = mapper;
         this.linkingGraph = linkingGraph;
         this.dsm = dsm;
-
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
 
         this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
@@ -327,13 +333,21 @@ public class CassandraEntityDatastore implements EntityDatastore {
                             entry.getValue(),
                             datatype,
                             entityId );
+                    /*
+                     * Plan here is to use entity_set_id, sync_id, and bucket to distribute data in data table.
+                     *
+                     */
+                    AtomicInteger partitionIndex = PARTTIONS.getUnchecked( entitySetId );
+
                     //TODO: Considering using hash for all properties.
                     if ( datatype.equals( EdmPrimitiveTypeKind.Binary ) ) {
                         results.add( session.executeAsync(
                                 writeDataQuery.bind()
                                         .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                                        .setString( CommonColumns.ENTITYID.cql(), entityId )
+                                        .setByte( CommonColumns.PARTITION_INDEX.cql(),
+                                                (byte) partitionIndex.getAndIncrement() )
                                         .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                                        .setString( CommonColumns.ENTITYID.cql(), entityId )
                                         .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
                                         .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), pValue )
                                         .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
@@ -342,10 +356,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         results.add( session.executeAsync(
                                 writeDataQuery.bind()
                                         .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                                        .setString( CommonColumns.ENTITYID.cql(), entityId )
                                         .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                                        .setByte( CommonColumns.PARTITION_INDEX.cql(),
+                                                (byte) partitionIndex.getAndIncrement() )
                                         .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
-                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(), pValue ) ) );
+                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(), pValue )
+                                        .setString( CommonColumns.ENTITYID.cql(), entityId ) ) );
                     }
                 } );
 
@@ -520,7 +536,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     private static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
-        return session.prepare( QueryBuilder.select(ENTITY_SET_ID.cql(), ENTITYID.cql(), SYNCID.cql())
+        return session.prepare( QueryBuilder.select( ENTITY_SET_ID.cql(), ENTITYID.cql(), SYNCID.cql() )
                 .distinct()
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
                 .where( CommonColumns.SYNCID.eq() ) );
