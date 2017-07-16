@@ -136,7 +136,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
 
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
-        this.readEntityKeysForEntitySetQuery = prepareReadEntityIdsForEntitySetQuery( session );
+        this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
         this.readNumTopUtilizerRowsQuery = prepareReadNumTopUtilizerRowsQuery( session );
         this.topUtilizersQueryIdExistsQuery = prepareTopUtilizersQueryIdExistsQuery( session );
@@ -479,7 +479,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     public Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId ) {
         return StreamUtil.stream( Iterables.transform( session.execute(
                 readEntityKeysForEntitySetQuery.bind()
-                        //.setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                         .setUUID( CommonColumns.SYNCID.cql(), syncId ) ),
                 RowAdapters::entityKeyFromData ) )
                 .filter( ek -> ek.getEntitySetId().equals( entitySetId ) )
@@ -542,7 +542,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         .limit( QueryBuilder.bindMarker( "numResults" ) ) );
     }
 
-    private static PreparedStatement prepareReadEntityIdsForEntitySetQuery( Session session ) {
+    private static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
         return session.prepare( QueryBuilder.select( ENTITYID.cql() )
                 .distinct()
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
