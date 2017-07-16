@@ -32,4 +32,24 @@ public class RemoveSrcEntityTypesFromAssociationTypeProcessor
         return entityTypeIds;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ( ( entityTypeIds == null ) ? 0 : entityTypeIds.hashCode() );
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj ) {
+        if ( this == obj ) return true;
+        if ( obj == null ) return false;
+        if ( getClass() != obj.getClass() ) return false;
+        RemoveSrcEntityTypesFromAssociationTypeProcessor other = (RemoveSrcEntityTypesFromAssociationTypeProcessor) obj;
+        if ( entityTypeIds == null ) {
+            if ( other.entityTypeIds != null ) return false;
+        } else if ( !entityTypeIds.equals( other.entityTypeIds ) ) return false;
+        return true;
+    }
+
 }

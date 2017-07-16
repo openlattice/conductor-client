@@ -9,10 +9,11 @@ import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcesso
 
 public class RemoveDstEntityTypesFromAssociationTypeProcessor
         extends AbstractRhizomeEntryProcessor<UUID, AssociationType, Object> {
+
     private static final long serialVersionUID = -6159761227440370275L;
-    
+
     private final Set<UUID>   entityTypeIds;
-    
+
     public RemoveDstEntityTypesFromAssociationTypeProcessor( Set<UUID> entityTypeIds ) {
         this.entityTypeIds = entityTypeIds;
     }
@@ -26,9 +27,29 @@ public class RemoveDstEntityTypesFromAssociationTypeProcessor
         }
         return null;
     }
-    
+
     public Set<UUID> getEntityTypeIds() {
         return entityTypeIds;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ( ( entityTypeIds == null ) ? 0 : entityTypeIds.hashCode() );
+        return result;
+    }
+
+    @Override
+    public boolean equals( Object obj ) {
+        if ( this == obj ) return true;
+        if ( obj == null ) return false;
+        if ( getClass() != obj.getClass() ) return false;
+        RemoveDstEntityTypesFromAssociationTypeProcessor other = (RemoveDstEntityTypesFromAssociationTypeProcessor) obj;
+        if ( entityTypeIds == null ) {
+            if ( other.entityTypeIds != null ) return false;
+        } else if ( !entityTypeIds.equals( other.entityTypeIds ) ) return false;
+        return true;
     }
 
 }
