@@ -19,11 +19,12 @@
 
 package com.kryptnostic.datastore.services;
 
-import java.util.UUID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.PARTITION_INDEX;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.clearspring.analytics.util.Preconditions;
 import com.dataloom.authorization.AuthorizationManager;
+import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.edm.EntitySet;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
@@ -36,16 +37,18 @@ import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
+import java.util.Arrays;
+import java.util.UUID;
 
 public class CassandraEntitySetManager {
     private final String               keyspace;
     private final Session              session;
     private final AuthorizationManager authorizations;
 
-    private final PreparedStatement    getEntities;
-    private final PreparedStatement    getEntitySetsByType;
-    private final PreparedStatement    getEntitySet;
-    private final Select               getAllEntitySets;
+    private final PreparedStatement getEntities;
+    private final PreparedStatement getEntitySetsByType;
+    private final PreparedStatement getEntitySet;
+    private final Select            getAllEntitySets;
 
     public CassandraEntitySetManager( String keyspace, Session session, AuthorizationManager authorizations ) {
         Preconditions.checkArgument( StringUtils.isNotBlank( keyspace ), "Keyspace cannot be blank." );
@@ -60,16 +63,19 @@ public class CassandraEntitySetManager {
         this.getEntitySetsByType = session
                 .prepare( QueryBuilder.select().all()
                         .from( this.keyspace, Table.ENTITY_SETS.getName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE_ID.cql(), CommonColumns.ENTITY_TYPE_ID.bindMarker() ) ) );
+                        .where( QueryBuilder.eq( CommonColumns.ENTITY_TYPE_ID.cql(),
+                                CommonColumns.ENTITY_TYPE_ID.bindMarker() ) ) );
 
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Table.ENTITY_SETS.getName() );
         this.getEntities = session
                 .prepare( QueryBuilder.select()
-                        .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() ).column( CommonColumns.SYNCID.cql() )
-                        .distinct()
+                        .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
+                        .column( CommonColumns.SYNCID.cql() )
                         .from( keyspace, Table.DATA.getName() )
-                        .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
-                                CommonColumns.ENTITY_SET_ID.bindMarker() ) ) );
+                        .where( QueryBuilder.in( PARTITION_INDEX.cql(), Arrays.asList(
+                                CassandraEntityDatastore.PARTITION_INDEXES ) ) )
+                        .and( CommonColumns.ENTITY_SET_ID.eq() )
+                        .and( CommonColumns.SYNCID.eq() ) );
     }
 
     public EntitySet getEntitySet( String entitySetName ) {
@@ -79,9 +85,8 @@ public class CassandraEntitySetManager {
 
     /**
      * This method retrieve all entities (that may have been historical) in an entity set
-     * @param entitySetName
-     * @return
      */
+    @Deprecated
     public Iterable<String> getEntitiesInEntitySet( String entitySetName ) {
         ResultSet rs = session
                 .execute( getEntities.bind()

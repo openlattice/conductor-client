@@ -19,33 +19,19 @@
 
 package com.kryptnostic.datastore.cassandra;
 
-import java.util.EnumSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import com.dataloom.graph.edge.LoomEdge;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.Analyzer;
-import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
@@ -57,11 +43,24 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class RowAdapters {
     static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
 
-    private RowAdapters() {}
+    private RowAdapters() {
+    }
 
     public static SetMultimap<FullQualifiedName, Object> entity(
             ResultSet rs,
@@ -73,19 +72,19 @@ public final class RowAdapters {
             String entityId = row.getString( CommonColumns.ENTITYID.cql() );
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
-//                if( pt.getDatatype().equals( EdmPrimitiveTypeKind.Binary ) ) {
-                logger.info("Completed ELT of data in Cassandra");   m.put( pt.getType(),
-                            CassandraSerDesFactory.deserializeValue( mapper,
-                                    row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
-                                    pt.getDatatype(),
-                                    entityId ) );
-//                } else {
-//                    m.put( pt.getType(),
-//                            CassandraSerDesFactory.deserializeValue( mapper,
-//                                    row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
-//                                    pt.getDatatype(),
-//                                    entityId ) );
-//                }
+                //                if( pt.getDatatype().equals( EdmPrimitiveTypeKind.Binary ) ) {
+                m.put( pt.getType(),
+                        CassandraSerDesFactory.deserializeValue( mapper,
+                                row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
+                                pt.getDatatype(),
+                                entityId ) );
+                //                } else {
+                //                    m.put( pt.getType(),
+                //                            CassandraSerDesFactory.deserializeValue( mapper,
+                //                                    row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                //                                    pt.getDatatype(),
+                //                                    entityId ) );
+                //                }
             }
         }
         return m;
@@ -359,14 +358,14 @@ public final class RowAdapters {
 
         return new EdgeKey( srcEntityKeyId, dstTypeId, edgeTypeId, dstEntityKeyId, edgeEntityKeyId );
     }
-    
+
     public static EdgeKey backEdgeKey( Row row ) {
         UUID srcEntityKeyId = row.getUUID( CommonColumns.DST_ENTITY_KEY_ID.cql() );
         UUID dstTypeId = row.getUUID( CommonColumns.SRC_TYPE_ID.cql() );
         UUID edgeTypeId = row.getUUID( CommonColumns.EDGE_TYPE_ID.cql() );
         UUID dstEntityKeyId = row.getUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql() );
         UUID edgeEntityKeyId = row.getUUID( CommonColumns.EDGE_ENTITY_KEY_ID.cql() );
-        
+
         return new EdgeKey( srcEntityKeyId, dstTypeId, edgeTypeId, dstEntityKeyId, edgeEntityKeyId );
     }
 
@@ -384,7 +383,7 @@ public final class RowAdapters {
         UUID srcEdgeId = row.getUUID( CommonColumns.EDGE_ENTITY_SET_ID.cql() );
         return new LoomEdge( key, srcType, srcSetId, srcDstId, srcEdgeId );
     }
-    
+
     public static LoomEdge loomBackEdge( Row row ) {
         EdgeKey key = backEdgeKey( row );
         UUID srcType = row.getUUID( CommonColumns.DST_TYPE_ID.cql() );

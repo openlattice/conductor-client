@@ -347,7 +347,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                     AtomicInteger partitionIndex = PARTTIONS.getUnchecked( entitySetId );
 
                     //TODO: Considering using hash for all properties.
-                    if ( datatype.equals( EdmPrimitiveTypeKind.Binary ) ) {
+//                    if ( datatype.equals( EdmPrimitiveTypeKind.Binary ) ) {
                         results.add( session.executeAsync(
                                 writeDataQuery.bind()
                                         .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
@@ -359,17 +359,17 @@ public class CassandraEntityDatastore implements EntityDatastore {
                                         .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), pValue )
                                         .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
                                                 ByteBuffer.wrap( hf.hashBytes( pValue.array() ).asBytes() ) ) ) );
-                    } else {
-                        results.add( session.executeAsync(
-                                writeDataQuery.bind()
-                                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
-                                        .setByte( CommonColumns.PARTITION_INDEX.cql(),
-                                                (byte) partitionIndex.getAndIncrement() )
-                                        .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
-                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(), pValue )
-                                        .setString( CommonColumns.ENTITYID.cql(), entityId ) ) );
-                    }
+//                    } else {
+//                        results.add( session.executeAsync(
+//                                writeDataQuery.bind()
+//                                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+//                                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
+//                                        .setByte( CommonColumns.PARTITION_INDEX.cql(),
+//                                                (byte) partitionIndex.getAndIncrement() )
+//                                        .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
+//                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(), pValue )
+//                                        .setString( CommonColumns.ENTITYID.cql(), entityId ) ) );
+//                    }
                 } );
 
         Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream().filter(
