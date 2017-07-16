@@ -60,7 +60,6 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -79,10 +78,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CassandraEntityDatastore implements EntityDatastore {
-
-    private static final Logger       logger = LoggerFactory
+    private static final int          NUM_PARTITIONS = 256;
+    private static final Logger       logger         = LoggerFactory
             .getLogger( CassandraEntityDatastore.class );
-    private static final HashFunction hf     = Hashing.murmur3_128();
+    private static final HashFunction hf             = Hashing.murmur3_128();
 
     private static final LoadingCache<UUID, AtomicInteger> PARTTIONS = CacheBuilder.newBuilder()
             .expireAfterAccess( 1, TimeUnit.MINUTES ).build( new CacheLoader<UUID, AtomicInteger>() {
@@ -91,11 +90,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 }
             } );
 
-    public static byte[] PARTITION_INDEXES = new byte[ 256 ];
+    public static List<Byte> PARTITION_INDEXES = new ArrayList( NUM_PARTITIONS );
 
     static {
-        for ( int i = 0; i < PARTITION_INDEXES.length; ++i ) {
-            PARTITION_INDEXES[ i ] = (byte) i;
+        for ( int i = 0; i < NUM_PARTITIONS; ++i ) {
+            PARTITION_INDEXES.add( (byte) i );
         }
     }
 
@@ -347,29 +346,29 @@ public class CassandraEntityDatastore implements EntityDatastore {
                     AtomicInteger partitionIndex = PARTTIONS.getUnchecked( entitySetId );
 
                     //TODO: Considering using hash for all properties.
-//                    if ( datatype.equals( EdmPrimitiveTypeKind.Binary ) ) {
-                        results.add( session.executeAsync(
-                                writeDataQuery.bind()
-                                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                                        .setByte( CommonColumns.PARTITION_INDEX.cql(),
-                                                (byte) partitionIndex.getAndIncrement() )
-                                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
-                                        .setString( CommonColumns.ENTITYID.cql(), entityId )
-                                        .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
-                                        .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), pValue )
-                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
-                                                ByteBuffer.wrap( hf.hashBytes( pValue.array() ).asBytes() ) ) ) );
-//                    } else {
-//                        results.add( session.executeAsync(
-//                                writeDataQuery.bind()
-//                                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-//                                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
-//                                        .setByte( CommonColumns.PARTITION_INDEX.cql(),
-//                                                (byte) partitionIndex.getAndIncrement() )
-//                                        .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
-//                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(), pValue )
-//                                        .setString( CommonColumns.ENTITYID.cql(), entityId ) ) );
-//                    }
+                    //                    if ( datatype.equals( EdmPrimitiveTypeKind.Binary ) ) {
+                    results.add( session.executeAsync(
+                            writeDataQuery.bind()
+                                    .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                                    .setByte( CommonColumns.PARTITION_INDEX.cql(),
+                                            (byte) partitionIndex.getAndIncrement() )
+                                    .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                                    .setString( CommonColumns.ENTITYID.cql(), entityId )
+                                    .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
+                                    .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), pValue )
+                                    .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
+                                            ByteBuffer.wrap( hf.hashBytes( pValue.array() ).asBytes() ) ) ) );
+                    //                    } else {
+                    //                        results.add( session.executeAsync(
+                    //                                writeDataQuery.bind()
+                    //                                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                    //                                        .setUUID( CommonColumns.SYNCID.cql(), syncId )
+                    //                                        .setByte( CommonColumns.PARTITION_INDEX.cql(),
+                    //                                                (byte) partitionIndex.getAndIncrement() )
+                    //                                        .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), entry.getKey() )
+                    //                                        .setBytes( CommonColumns.PROPERTY_VALUE.cql(), pValue )
+                    //                                        .setString( CommonColumns.ENTITYID.cql(), entityId ) ) );
+                    //                    }
                 } );
 
         Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream().filter(
@@ -547,7 +546,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
                 .where( CommonColumns.ENTITY_SET_ID.eq() )
                 .and( CommonColumns.SYNCID.eq() )
-                .and( QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), Arrays.asList( PARTITION_INDEXES ) ) ) );
+                .and( QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES ) ) );
         //        return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
         //                .allowFiltering().where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
         //                        CommonColumns.ENTITY_SET_ID.bindMarker() ) )

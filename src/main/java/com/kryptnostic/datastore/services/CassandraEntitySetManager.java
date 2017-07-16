@@ -37,7 +37,8 @@ import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class CassandraEntitySetManager {
@@ -67,13 +68,13 @@ public class CassandraEntitySetManager {
                                 CommonColumns.ENTITY_TYPE_ID.bindMarker() ) ) );
 
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Table.ENTITY_SETS.getName() );
+
         this.getEntities = session
                 .prepare( QueryBuilder.select()
                         .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
                         .column( CommonColumns.SYNCID.cql() )
                         .from( keyspace, Table.DATA.getName() )
-                        .where( QueryBuilder.in( PARTITION_INDEX.cql(), Arrays.asList(
-                                CassandraEntityDatastore.PARTITION_INDEXES ) ) )
+                        .where( QueryBuilder.in( PARTITION_INDEX.cql(), CassandraEntityDatastore.PARTITION_INDEXES ) )
                         .and( CommonColumns.ENTITY_SET_ID.eq() )
                         .and( CommonColumns.SYNCID.eq() ) );
     }
