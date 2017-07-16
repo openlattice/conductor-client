@@ -102,6 +102,7 @@ public interface ConductorElasticsearchApi {
     // association_type_index setup consts
     final String ASSOCIATION_TYPE_INDEX        = "association_type_index";
     final String ASSOCIATION_TYPE              = "association_type";
+    final String ENTITY_TYPE_FIELD             = "entityType";
 
     // entity set field consts
     final String TYPE_FIELD                    = "_type";
@@ -117,7 +118,7 @@ public interface ConductorElasticsearchApi {
     final String ENTITY_TYPE_ID                = "entityTypeId";
     final String ID                            = "id";
     final String SRC                           = "src";
-    final String DST                          = "dst";
+    final String DST                           = "dst";
     final String BIDIRECTIONAL                 = "bidirectional";
 
     boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
