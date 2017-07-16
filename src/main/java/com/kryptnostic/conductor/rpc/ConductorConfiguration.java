@@ -20,6 +20,7 @@
 package com.kryptnostic.conductor.rpc;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -86,5 +87,14 @@ public class ConductorConfiguration implements Configuration {
 
     public String[] getSparkJars() {
         return sparkJars.clone();
+    }
+
+    @Override public String toString() {
+        return "ConductorConfiguration{" +
+                "reportEmailAddress='" + reportEmailAddress + '\'' +
+                ", sparkMasters=" + sparkMasters +
+                ", sparkJars=" + Arrays.toString( sparkJars ) +
+                ", searchConfiguration=" + searchConfiguration +
+                '}';
     }
 }
