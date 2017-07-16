@@ -65,7 +65,7 @@ public enum Table implements TableDef {
     IDS,
     KEYS,
     TOP_UTILIZER_DATA,
-    VERTEX_IDS_AFTER_LINKING;
+    VERTEX_IDS_AFTER_LINKING, DATA2;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
