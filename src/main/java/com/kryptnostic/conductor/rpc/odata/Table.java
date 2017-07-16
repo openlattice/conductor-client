@@ -146,10 +146,9 @@ public enum Table implements TableDef {
             case DATA:
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
-                        .partitionKey( ENTITY_SET_ID, ENTITYID, SYNCID )
-                        .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE )
-                        .columns( PROPERTY_BUFFER )
-                        .secondaryIndex( SYNCID, ENTITY_SET_ID );
+                        .partitionKey( ENTITY_SET_ID, SYNCID, PARTITION_INDEX )
+                        .clusteringColumns( PROPERTY_TYPE_ID, PROPERTY_VALUE, ENTITYID )
+                        .columns( PROPERTY_BUFFER );
             case BACK_EDGES:
                 return new CassandraTableBuilder( BACK_EDGES )
                         .ifNotExists()
