@@ -50,6 +50,11 @@ public class AssociationTypeMapstore extends AbstractStructuredCassandraPartitio
     }
 
     @Override
+    public void store( UUID key, AssociationType value ) {
+        replace( key, value );
+    }
+
+    @Override
     public UUID generateTestKey() {
         return UUID.randomUUID();
     }

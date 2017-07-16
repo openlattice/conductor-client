@@ -66,8 +66,12 @@ import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.types.processors.AddDstEntityTypesToAssociationTypeProcessor;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
+import com.dataloom.edm.types.processors.AddSrcEntityTypesToAssociationTypeProcessor;
+import com.dataloom.edm.types.processors.RemoveDstEntityTypesFromAssociationTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
+import com.dataloom.edm.types.processors.RemoveSrcEntityTypesFromAssociationTypeProcessor;
 import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
@@ -550,7 +554,7 @@ public class EdmService implements EdmManager {
                 }
             }
             EntityType entityType = getEntityType( id );
-            if ( !entityType.getCategory().equals( SecurableObjectType.AssociationType )) {
+            if ( !entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
                 eventBus.post( new EntityTypeCreatedEvent( entityType ) );
             } else {
                 eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( id ) ) );
@@ -593,7 +597,7 @@ public class EdmService implements EdmManager {
         childrenIds.forEach( id -> {
             entityTypes.executeOnKey( id, new RemovePropertyTypesFromEntityTypeProcessor( propertyTypeIds ) );
             EntityType childEntityType = getEntityType( id );
-            if ( !childEntityType.getCategory().equals( SecurableObjectType.AssociationType )) {
+            if ( !childEntityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
                 eventBus.post( new EntityTypeCreatedEvent( childEntityType ) );
             } else {
                 eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( id ) ) );
@@ -601,6 +605,38 @@ public class EdmService implements EdmManager {
         } );
         childrenIds.forEach( propertyTypes::unlock );
 
+    }
+
+    @Override
+    public void addSrcEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds ) {
+        Preconditions.checkArgument( checkEntityTypesExist( entityTypeIds ) );
+        associationTypes.executeOnKey( associationTypeId,
+                new AddSrcEntityTypesToAssociationTypeProcessor( entityTypeIds ) );
+        eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( associationTypeId ) ) );
+    }
+
+    @Override
+    public void addDstEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds ) {
+        Preconditions.checkArgument( checkEntityTypesExist( entityTypeIds ) );
+        associationTypes.executeOnKey( associationTypeId,
+                new AddDstEntityTypesToAssociationTypeProcessor( entityTypeIds ) );
+        eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( associationTypeId ) ) );
+    }
+
+    @Override
+    public void removeSrcEntityTypesFromAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds ) {
+        Preconditions.checkArgument( checkEntityTypesExist( entityTypeIds ) );
+        associationTypes.executeOnKey( associationTypeId,
+                new RemoveSrcEntityTypesFromAssociationTypeProcessor( entityTypeIds ) );
+        eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( associationTypeId ) ) );
+    }
+
+    @Override
+    public void removeDstEntityTypesFromAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds ) {
+        Preconditions.checkArgument( checkEntityTypesExist( entityTypeIds ) );
+        associationTypes.executeOnKey( associationTypeId,
+                new RemoveDstEntityTypesFromAssociationTypeProcessor( entityTypeIds ) );
+        eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( associationTypeId ) ) );
     }
 
     @Override
@@ -628,7 +664,7 @@ public class EdmService implements EdmManager {
             aclKeyReservations.renameReservation( entityTypeId, update.getType().get() );
         }
         entityTypes.executeOnKey( entityTypeId, new UpdateEntityTypeMetadataProcessor( update ) );
-        if ( !getEntityType( entityTypeId ).getCategory().equals( SecurableObjectType.AssociationType )) {
+        if ( !getEntityType( entityTypeId ).getCategory().equals( SecurableObjectType.AssociationType ) ) {
             eventBus.post( new EntityTypeCreatedEvent( getEntityType( entityTypeId ) ) );
         } else {
             eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
@@ -655,6 +691,11 @@ public class EdmService implements EdmManager {
     @Override
     public boolean checkPropertyTypeExists( UUID propertyTypeId ) {
         return propertyTypes.containsKey( propertyTypeId );
+    }
+
+    @Override
+    public boolean checkEntityTypesExist( Set<UUID> entityTypeIds ) {
+        return entityTypeIds.stream().allMatch( entityTypes::containsKey );
     }
 
     @Override
@@ -748,7 +789,7 @@ public class EdmService implements EdmManager {
             logger.error(
                     "Inconsistency encountered in database. Verify that existing association types have all their acl keys reserved." );
         }
-        
+
         eventBus.post( new AssociationTypeCreatedEvent( associationType ) );
         return entityTypeId;
     }

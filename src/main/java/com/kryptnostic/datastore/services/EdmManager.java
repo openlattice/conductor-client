@@ -77,6 +77,14 @@ public interface EdmManager {
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+    
+    void addSrcEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
+    
+    void addDstEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
+    
+    void removeSrcEntityTypesFromAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
+    
+    void removeDstEntityTypesFromAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
 
     void updatePropertyTypeMetadata( UUID typeId, MetadataUpdate update );
 
@@ -88,6 +96,8 @@ public interface EdmManager {
     boolean checkPropertyTypesExist( Set<UUID> properties );
 
     boolean checkPropertyTypeExists( UUID propertyTypeId );
+    
+    boolean checkEntityTypesExist( Set<UUID> entityTypeIds );
 
     boolean checkEntityTypeExists( UUID entityTypeId );
 
