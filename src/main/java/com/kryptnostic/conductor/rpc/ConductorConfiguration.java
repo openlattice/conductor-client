@@ -19,31 +19,32 @@
 
 package com.kryptnostic.conductor.rpc;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kryptnostic.rhizome.configuration.Configuration;
 import com.kryptnostic.rhizome.configuration.ConfigurationKey;
 import com.kryptnostic.rhizome.configuration.SimpleConfigurationKey;
+import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration;
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
+@ReloadableConfiguration( uri = "conductor.yaml" )
 public class ConductorConfiguration implements Configuration {
-    private static final long             serialVersionUID           = -3847142110887587615L;
-    private static final ConfigurationKey key                        = new SimpleConfigurationKey( "conductor.yaml" );
+    private static final long             serialVersionUID = -3847142110887587615L;
+    private static final ConfigurationKey key              = new SimpleConfigurationKey( "conductor.yaml" );
 
-    private static final String           REPORT_EMAIL_ADDRESS_FIELD = "reportEmailAddress";
-    private static final String           SPARK_JARS_FIELD           = "sparkJars";
-    private static final String           SPARK_MASTERS_FIELD        = "sparkMasters";
-    private static final String			  SEARCH_CONFIGURATION_FIELD = "searchConfiguration";
+    private static final String REPORT_EMAIL_ADDRESS_FIELD = "reportEmailAddress";
+    private static final String SPARK_JARS_FIELD           = "sparkJars";
+    private static final String SPARK_MASTERS_FIELD        = "sparkMasters";
+    private static final String SEARCH_CONFIGURATION_FIELD = "searchConfiguration";
 
-    private final String                  reportEmailAddress;
-    private final List<String>            sparkMasters;
-    private final String[]                sparkJars;
-    private final SearchConfiguration     searchConfiguration;
+    private final String              reportEmailAddress;
+    private final List<String>        sparkMasters;
+    private final String[]            sparkJars;
+    private final SearchConfiguration searchConfiguration;
 
     @JsonCreator
     public ConductorConfiguration(
@@ -68,20 +69,15 @@ public class ConductorConfiguration implements Configuration {
     public String getReportEmailAddress() {
         return reportEmailAddress;
     }
-    
+
     @JsonProperty( SEARCH_CONFIGURATION_FIELD )
     public SearchConfiguration getSearchConfiguration() {
-    	return searchConfiguration;
+        return searchConfiguration;
     }
 
     @Override
     @JsonIgnore
     public ConfigurationKey getKey() {
-        return key;
-    }
-
-    @JsonIgnore
-    public static ConfigurationKey key() {
         return key;
     }
 
@@ -96,5 +92,10 @@ public class ConductorConfiguration implements Configuration {
                 ", sparkJars=" + Arrays.toString( sparkJars ) +
                 ", searchConfiguration=" + searchConfiguration +
                 '}';
+    }
+
+    @JsonIgnore
+    public static ConfigurationKey key() {
+        return key;
     }
 }
