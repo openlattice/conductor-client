@@ -482,7 +482,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                         .setUUID( CommonColumns.SYNCID.cql(), syncId ) ),
                 RowAdapters::entityKeyFromData ) )
-                .filter( ek -> ek.getEntitySetId().equals( entitySetId ) )
                 .distinct();
     }
 
