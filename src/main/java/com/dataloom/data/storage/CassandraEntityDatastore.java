@@ -48,6 +48,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
@@ -416,6 +417,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
                     //TODO: Considering using hash for all properties.
                     //                    if ( datatype.equals( EdmPrimitiveTypeKind.Binary ) ) {
+
                     results.add( session.executeAsync(
                             writeDataQuery.bind()
                                     .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
@@ -427,6 +429,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
                                     .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), pValue )
                                     .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
                                             ByteBuffer.wrap( hf.hashBytes( pValue.array() ).asBytes() ) ) ) );
+                    EntityKey ek = new EntityKey(  entitySetId,entityId,syncId);
+                    data.evict( ek );
                     //                    } else {
                     //                        results.add( session.executeAsync(
                     //                                writeDataQuery.bind()
