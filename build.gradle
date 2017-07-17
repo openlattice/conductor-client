@@ -104,7 +104,7 @@ dependencies {
         logger.quiet(project.name + " using jar dependencies.")
         compile "com.kryptnostic:loom-api:${loom_api_version}"
         compile "com.kryptnostic:rhizome:${rhizome_version}"
-        //testCompile "com.kryptnostic:rhizome:${rhizome_version}:tests"
+
         testCompile "com.kryptnostic:loom-api:${loom_api_version}:tests"
         testCompile "com.kryptnostic:rhizome:${rhizome_version}:tests"
         testCompile "com.kryptnostic:rhizome-client:${rhizome_client_version}:tests"
