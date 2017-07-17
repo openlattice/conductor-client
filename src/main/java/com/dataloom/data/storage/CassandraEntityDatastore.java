@@ -192,6 +192,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        data.k
         SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) );
         SetMultimap<FullQualifiedName, Object> m = HashMultimap
                 .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );

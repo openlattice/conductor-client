@@ -98,9 +98,8 @@ public class DataMapstore
         return session.prepare( Table.DATA.getBuilder().buildLoadAllQuery().where( CommonColumns.ENTITY_SET_ID.eq() )
                 .and( SYNCID.eq() )
                 .and( CassandraEntityDatastore.partitionIndexClause() )
-                .and( CommonColumns.ENTITYID.eq() )
-                .and( QueryBuilder.in( CommonColumns.PROPERTY_TYPE_ID.cql(),
-                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) ) );
+                .and( CommonColumns.ENTITYID.eq() );
+
     }
 
     @Override protected PreparedStatement getLoadQuery() {
