@@ -10,50 +10,25 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
-import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
-import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class EdgesMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, Neighborhood> {
     private static final Logger logger = LoggerFactory.getLogger( EdgesMapstore.class );
+
     public EdgesMapstore( Session session ) {
         super( HazelcastMap.EDGES.name(), session, Table.EDGES.getBuilder() );
-    }
-
-    private static void addToNeighborhood( LoomEdge e, Map<UUID, Map<UUID, SetMultimap<UUID, UUID>>> neighborhood ) {
-        UUID dstTypeId = e.getKey().getDstTypeId();
-
-        Map<UUID, SetMultimap<UUID, UUID>> m = neighborhood.get( dstTypeId );
-
-        if ( m == null ) {
-            m = new HashMap<>();
-            neighborhood.put( dstTypeId, m );
-        }
-
-        UUID edgeTypeId = e.getKey().getEdgeTypeId();
-        SetMultimap<UUID, UUID> sm = m.get( edgeTypeId );
-
-        if ( sm == null ) {
-            sm = HashMultimap.create();
-            m.put( edgeTypeId, sm );
-        }
-
-        sm.put( e.getKey().getDstEntityKeyId(), e.getKey().getEdgeEntityKeyId() );
-
     }
 
     @Override public void store( UUID key, Neighborhood value ) {
@@ -85,7 +60,6 @@ public class EdgesMapstore extends AbstractStructuredCassandraPartitionKeyValueS
 
     @Override
     public MapStoreConfig getMapStoreConfig() {
-        super.getMapStoreConfig().setInitialLoadMode( InitialLoadMode.EAGER );
         return super.getMapStoreConfig();
     }
 
@@ -96,5 +70,27 @@ public class EdgesMapstore extends AbstractStructuredCassandraPartitionKeyValueS
                 .map( RowAdapters::loomEdge )
                 .forEach( edge -> addToNeighborhood( edge, neighborhood ) );
         return new Neighborhood( neighborhood );
+    }
+
+    private static void addToNeighborhood( LoomEdge e, Map<UUID, Map<UUID, SetMultimap<UUID, UUID>>> neighborhood ) {
+        UUID dstTypeId = e.getKey().getDstTypeId();
+
+        Map<UUID, SetMultimap<UUID, UUID>> m = neighborhood.get( dstTypeId );
+
+        if ( m == null ) {
+            m = new HashMap<>();
+            neighborhood.put( dstTypeId, m );
+        }
+
+        UUID edgeTypeId = e.getKey().getEdgeTypeId();
+        SetMultimap<UUID, UUID> sm = m.get( edgeTypeId );
+
+        if ( sm == null ) {
+            sm = HashMultimap.create();
+            m.put( edgeTypeId, sm );
+        }
+
+        sm.put( e.getKey().getDstEntityKeyId(), e.getKey().getEdgeEntityKeyId() );
+
     }
 }
