@@ -415,4 +415,8 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
     }
 
+    public static UUID currentSyncId( Row row ) {
+        return row.getUUID( CommonColumns.CURRENT_SYNC_ID.cql() );
+    }
+
 }

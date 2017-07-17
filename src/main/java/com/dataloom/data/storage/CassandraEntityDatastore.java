@@ -19,8 +19,6 @@
 
 package com.dataloom.data.storage;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
-
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityDatastore;
@@ -28,8 +26,10 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntitySetData;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
+import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
@@ -47,6 +47,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
@@ -54,6 +55,8 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -116,11 +119,14 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final PreparedStatement      writeUtilizerScoreQuery;
     private final PreparedStatement      readNumTopUtilizerRowsQuery;
     private final PreparedStatement      topUtilizersQueryIdExistsQuery;
+
+    private final IMap<EntityKey, SetMultimap<UUID, Object>> data;
     @Inject
-    private       EventBus               eventBus;
+    private       EventBus                                   eventBus;
 
     public CassandraEntityDatastore(
             Session session,
+            HazelcastInstance hazelastInstance,
             ObjectMapper mapper,
             HazelcastLinkingGraphs linkingGraph,
             LoomGraph loomGraph,
@@ -140,10 +146,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
         this.deleteEntitySetQuery = prepareDeleteEntitySetPartitionQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
-        this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
+        this.readEntityKeysForEntitySetQuery = DataMapstore.prepareReadEntityKeysForEntitySetQuery( session );
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
         this.readNumTopUtilizerRowsQuery = prepareReadNumTopUtilizerRowsQuery( session );
         this.topUtilizersQueryIdExistsQuery = prepareTopUtilizersQueryIdExistsQuery( session );
+
+        this.data = hazelastInstance.getMap( HazelcastMap.DATA.name() );
     }
 
     @Override
@@ -165,10 +173,16 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return RowAdapters.entity(
-                asyncLoadEntity( entitySetId, entityId, syncId, authorizedPropertyTypes.keySet() ).getUninterruptibly(),
-                authorizedPropertyTypes,
-                mapper );
+        SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) );
+        SetMultimap<FullQualifiedName, Object> m = HashMultimap
+                .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );
+        authorizedPropertyTypes.values().forEach( v -> m.put( v.getType(), rawEntity.get( v.getId() ) ) );
+
+        return m;
+//        return RowAdapters.entity(
+//                asyncLoadEntity( entitySetId, entityId, syncId, authorizedPropertyTypes.keySet() ).getUninterruptibly(),
+//                authorizedPropertyTypes,
+//                mapper );
     }
 
     @Override
@@ -178,10 +192,16 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return RowAdapters.entity(
-                asyncLoadEntity( entitySetId, entityId, syncId ).getUninterruptibly(),
-                authorizedPropertyTypes,
-                mapper );
+        SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) );
+        SetMultimap<FullQualifiedName, Object> m = HashMultimap
+                .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );
+        authorizedPropertyTypes.values().forEach( v -> m.put( v.getType(), rawEntity.get( v.getId() ) ) );
+
+        return m;
+//        return RowAdapters.entity(
+//                asyncLoadEntity( entitySetId, entityId, syncId ).getUninterruptibly(),
+//                authorizedPropertyTypes,
+//                mapper );
     }
 
     @Override
@@ -262,8 +282,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
                     ResultSet rs = rsf.getUninterruptibly();
                     logger.info( "Load entity took: {}", w.elapsed( TimeUnit.MILLISECONDS ) );
                     return rs;
-                });
-                //.map( ResultSetFuture::getUninterruptibly );
+                } );
+        //.map( ResultSetFuture::getUninterruptibly );
     }
 
     public Stream<String> getEntityIds( UUID entitySetId, UUID syncId ) {
@@ -539,6 +559,15 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return session.prepare( entityQueryWithoutPropertyTypes( ctb ) );
     }
 
+    public static Select.Where entityQueryWithoutPropertyTypes( CassandraTableBuilder ctb ) {
+        return ctb.buildLoadAllQuery()
+                .where( CommonColumns.ENTITY_SET_ID.eq() )
+                .and( CommonColumns.SYNCID.eq() )
+                .and( QueryBuilder
+                        .in( CommonColumns.PARTITION_INDEX.cql(), CassandraEntityDatastore.PARTITION_INDEXES ) )
+                .and( CommonColumns.ENTITYID.eq() );
+    }
+
     //    private static PreparedStatement prepareEntitySetQuery(
     //            Session session,
     //            CassandraTableBuilder ctb ) {
@@ -565,14 +594,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
     }
 
-    private static Select.Where entityQueryWithoutPropertyTypes( CassandraTableBuilder ctb ) {
-        return ctb.buildLoadAllQuery()
-                .where( CommonColumns.ENTITY_SET_ID.eq() )
-                .and( CommonColumns.SYNCID.eq() )
-                .and( QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES ) )
-                .and( CommonColumns.ENTITYID.eq() );
-    }
-
     //    @Deprecated
     //    private static Select.Where entitySetQuery( CassandraTableBuilder ctb ) {
     //        return ctb.buildLoadAllQuery()
@@ -595,7 +616,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .and( partitionIndexClause() ) );
     }
 
-    private static Clause partitionIndexClause() {
+    public static Clause partitionIndexClause() {
         return QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES );
     }
 
@@ -605,14 +626,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         .where( QueryBuilder.eq( CommonColumns.RPC_REQUEST_ID.cql(),
                                 CommonColumns.RPC_REQUEST_ID.bindMarker() ) )
                         .limit( QueryBuilder.bindMarker( "numResults" ) ) );
-    }
-
-    private static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
-        return session.prepare( QueryBuilder.select( ENTITYID.cql() )
-                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-                .where( CommonColumns.ENTITY_SET_ID.eq() )
-                .and( CommonColumns.SYNCID.eq() )
-                .and( partitionIndexClause() ) );
     }
 
     private static PreparedStatement prepareWriteUtilizerScoreQuery( Session session ) {

@@ -19,18 +19,6 @@
 
 package com.dataloom.hazelcast.pods;
 
-import java.util.List;
-import java.util.UUID;
-
-import javax.inject.Inject;
-
-import com.dataloom.graph.core.Neighborhood;
-import com.dataloom.graph.mapstores.BackedgesMapstore;
-import com.dataloom.graph.mapstores.EdgesMapstore;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-
 import com.dataloom.auditing.AuditMetric;
 import com.dataloom.auditing.mapstores.LeaderboardMapstore;
 import com.dataloom.authorization.AceKey;
@@ -40,9 +28,12 @@ import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
 import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
+import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
+import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
@@ -58,6 +49,9 @@ import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.graph.core.Neighborhood;
+import com.dataloom.graph.mapstores.BackedgesMapstore;
+import com.dataloom.graph.mapstores.EdgesMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
@@ -69,6 +63,7 @@ import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
 import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
 import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.linking.mapstores.VertexIdsAfterLinkingMapstore;
+import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
@@ -86,6 +81,8 @@ import com.dataloom.requests.mapstores.RequestMapstore;
 import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
 import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.SetMultimap;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
@@ -93,13 +90,19 @@ import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
+import java.util.List;
+import java.util.UUID;
+import javax.inject.Inject;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Configuration
 @Import( CassandraPod.class )
 public class MapstoresPod {
 
     @Inject
-    Session                session;
+    Session session;
 
     @Inject
     CassandraConfiguration cc;
@@ -282,6 +285,18 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, UUID> vertexIdsAfterLinkingMapstore() {
         return new VertexIdsAfterLinkingMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<EntityKey, SetMultimap<UUID, Object>> dataMapstore() {
+        ObjectMapper mapper = ObjectMappers.getJsonMapper();
+        FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
+        FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
+        return new DataMapstore( HazelcastMap.DATA.name(),
+                Table.DATA.getBuilder(),
+                session,
+                propertyTypeMapstore(),
+                mapper );
     }
 
 }
