@@ -98,7 +98,7 @@ public class DataMapstore
         return session.prepare( Table.DATA.getBuilder().buildLoadAllQuery().where( CommonColumns.ENTITY_SET_ID.eq() )
                 .and( SYNCID.eq() )
                 .and( CassandraEntityDatastore.partitionIndexClause() )
-                .and( CommonColumns.ENTITYID.eq() );
+                .and( CommonColumns.ENTITYID.eq() ) );
 
     }
 
