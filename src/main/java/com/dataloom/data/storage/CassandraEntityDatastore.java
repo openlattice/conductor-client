@@ -35,8 +35,8 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
@@ -104,9 +104,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final DatasourceManager      dsm;
     private final PreparedStatement      writeDataQuery;
     private final PreparedStatement      entitySetQuery;
-    private final PreparedStatement      entityIdsInAllSyncQuery;
     private final PreparedStatement      entityIdsQuery;
     private final PreparedStatement      deleteEntityQuery;
+    private final PreparedStatement      deleteEntitySetQuery;
     private final PreparedStatement      readNumRPCRowsQuery;
     private final PreparedStatement      readEntityKeysForEntitySetQuery;
     private final PreparedStatement      writeUtilizerScoreQuery;
@@ -128,12 +128,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
 
         this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
-        this.entityIdsInAllSyncQuery = prepareEntityIdsInAllSyncQuery( session );
         this.entityIdsQuery = prepareEntityIdsQuery( session );
         this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
 
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
-
+        this.deleteEntitySetQuery = prepareDeleteEntitySetPartitionQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
         this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
@@ -147,9 +146,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
-        return new EntitySetData<FullQualifiedName>( orderedPropertyNames, Iterables.transform( entityRows,
-                rs -> rowToEntity( rs, authorizedPropertyTypes ) ) );
+        return new EntitySetData<>( orderedPropertyNames,
+                getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() )
+                        .map( rs -> rowToEntity( rs, authorizedPropertyTypes ) )::iterator );
     }
 
     @Override
@@ -190,13 +189,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 entityDetails ) );
     }
 
-    public Iterable<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
+    public Stream<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        Iterable<ResultSet> entityRows = getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() );
-        return Iterables.transform( entityRows,
-                rs -> rowToEntityIndexedById( rs, authorizedPropertyTypes ) )::iterator;
+        return getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() )
+                .map( rs -> rowToEntityIndexedById( rs, authorizedPropertyTypes ) );
     }
 
     public SetMultimap<FullQualifiedName, Object> rowToEntity(
@@ -211,7 +209,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return RowAdapters.entityIndexedById( rs, authorizedPropertyTypes, mapper );
     }
 
-    private Iterable<ResultSet> getRows(
+    private Stream<ResultSet> getRows(
             UUID entitySetId,
             UUID syncId,
             Set<UUID> authorizedProperties ) {
@@ -223,19 +221,21 @@ public class CassandraEntityDatastore implements EntityDatastore {
             finalSyncId = syncId;
         }
 
-        Iterable<String> entityIds = getEntityIds( entitySetId, finalSyncId );
-        Iterable<ResultSetFuture> entityFutures;
-        entityFutures = Iterables.transform( entityIds,
-                entityId -> asyncLoadEntity( entitySetId, entityId, finalSyncId, authorizedProperties ) );
-        return Iterables.transform( entityFutures, ResultSetFuture::getUninterruptibly );
+        return getEntityIds( entitySetId, finalSyncId )
+                .map( entityId -> asyncLoadEntity( entitySetId, entityId, finalSyncId, authorizedProperties ) )
+                .map( ResultSetFuture::getUninterruptibly );
     }
 
-    public Iterable<String> getEntityIds( UUID entitySetId, UUID syncId ) {
+    public Stream<String> getEntityIds( UUID entitySetId, UUID syncId ) {
         BoundStatement boundEntityIdsQuery = entityIdsQuery.bind()
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setUUID( CommonColumns.SYNCID.cql(), syncId );
         ResultSet entityIds = session.execute( boundEntityIdsQuery );
-        return Iterables.filter( Iterables.transform( entityIds, RowAdapters::entityId ), StringUtils::isNotBlank );
+        return StreamUtil
+                .stream( entityIds )
+                .map( RowAdapters::entityId )
+                .distinct()
+                .filter( StringUtils::isNotBlank );
     }
 
     @Override
@@ -432,29 +432,23 @@ public class CassandraEntityDatastore implements EntityDatastore {
             justification = "results Object is used to execute deletes in batches" )
     public void deleteEntitySetData( UUID entitySetId ) {
         logger.info( "Deleting data of entity set: {}", entitySetId );
-        BoundStatement bs = entityIdsInAllSyncQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(),
-                entitySetId );
-        ResultSet rs = session.execute( bs );
 
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
-        final int bufferSize = 1000;
-        int counter = 0;
+        asyncDeleteEntitySet( entitySetId ).forEach( ResultSetFuture::getUninterruptibly );
 
-        for ( Row entityIdRow : rs ) {
-            if ( counter > bufferSize ) {
-                results.forEach( ResultSetFuture::getUninterruptibly );
-                counter = 0;
-                results = new ArrayList<ResultSetFuture>();
-            }
-            String entityId = RowAdapters.entityId( entityIdRow );
-            UUID syncId = RowAdapters.syncId( entityIdRow );
+        logger.info( "Finished deletion of entity set data: {}", entitySetId );
+    }
 
-            results.add( asyncDeleteEntity( entitySetId, entityId, syncId ) );
-            counter++;
-        }
-
-        results.forEach( ResultSetFuture::getUninterruptibly );
-        logger.info( "Finish deletion of entity set data: {}", entitySetId );
+    public Stream<ResultSetFuture> asyncDeleteEntitySet( UUID entitySetId ) {
+        return StreamUtil.stream( dsm.getAllSyncIds( entitySetId ) )
+                .parallel()
+                .flatMap( syncId ->
+                        PARTITION_INDEXES
+                                .stream()
+                                .map( partitionIndex -> deleteEntitySetQuery.bind()
+                                        .setByte( CommonColumns.PARTITION_INDEX.cql(), partitionIndex )
+                                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                                        .setUUID( CommonColumns.SYNCID.cql(), syncId ) ) )
+                .map( session::executeAsync );
     }
 
     public ResultSetFuture asyncDeleteEntity( UUID entitySetId, String entityId, UUID syncId ) {
@@ -501,35 +495,28 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     private static Select.Where entitySetQuery( CassandraTableBuilder ctb ) {
-        return ctb.buildLoadAllQuery().where( QueryBuilder
-                .eq( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-                .and( QueryBuilder.eq( CommonColumns.ENTITYID.cql(), CommonColumns.ENTITYID.bindMarker() ) )
+        return ctb.buildLoadAllQuery()
+                .where( CommonColumns.ENTITY_SET_ID.eq() )
+                .and( CommonColumns.SYNCID.eq() )
+                .and( QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES ) )
                 .and( QueryBuilder.in( CommonColumns.PROPERTY_TYPE_ID.cql(),
-                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) )
-                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) );
+                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
     }
 
     private static PreparedStatement prepareEntityIdsQuery( Session session ) {
         return session.prepare( QueryBuilder
                 .select()
-                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
+                .column( CommonColumns.ENTITY_SET_ID.cql() )
                 .column( CommonColumns.SYNCID.cql() )
-                .distinct()
+                .column( CommonColumns.ENTITYID.cql() )
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-                .allowFiltering()
-                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), QueryBuilder.bindMarker() ) )
-                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), QueryBuilder.bindMarker() ) ) );
+                .where( CommonColumns.ENTITY_SET_ID.eq() )
+                .and( CommonColumns.SYNCID.eq() )
+                .and( partitionIndexClause() ) );
     }
 
-    private static PreparedStatement prepareEntityIdsInAllSyncQuery( Session session ) {
-        return session.prepare( QueryBuilder
-                .select()
-                .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
-                .column( CommonColumns.SYNCID.cql() )
-                .distinct()
-                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-                .allowFiltering()
-                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), QueryBuilder.bindMarker() ) ) );
+    private static Clause partitionIndexClause() {
+        return QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES );
     }
 
     private static PreparedStatement prepareReadNumRPCRowsQuery( Session session ) {
@@ -542,15 +529,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
     private static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
         return session.prepare( QueryBuilder.select( ENTITYID.cql() )
-                .distinct()
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
                 .where( CommonColumns.ENTITY_SET_ID.eq() )
                 .and( CommonColumns.SYNCID.eq() )
-                .and( QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES ) ) );
-        //        return session.prepare( QueryBuilder.select().all().from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-        //                .allowFiltering().where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
-        //                        CommonColumns.ENTITY_SET_ID.bindMarker() ) )
-        //                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
+                .and( partitionIndexClause() ) );
     }
 
     private static PreparedStatement prepareWriteUtilizerScoreQuery( Session session ) {
@@ -571,8 +553,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         .limit( 1 ) );
     }
 
-    private static PreparedStatement prepareDeleteEntityQuery(
-            Session session ) {
+    private static PreparedStatement prepareDeleteEntitySetPartitionQuery( Session session ) {
+        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
+    }
+
+    private static PreparedStatement prepareDeleteEntityQuery( Session session ) {
         return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
     }
 }

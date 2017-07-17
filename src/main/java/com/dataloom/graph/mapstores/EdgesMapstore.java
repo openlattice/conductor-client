@@ -11,6 +11,8 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
@@ -79,6 +81,12 @@ public class EdgesMapstore extends AbstractStructuredCassandraPartitionKeyValueS
     @Override
     protected UUID mapKey( Row rs ) {
         return rs.getUUID( CommonColumns.SRC_ENTITY_KEY_ID.cql() );
+    }
+
+    @Override
+    public MapStoreConfig getMapStoreConfig() {
+        super.getMapStoreConfig().setInitialLoadMode( InitialLoadMode.EAGER );
+        return super.getMapStoreConfig();
     }
 
     @Override
