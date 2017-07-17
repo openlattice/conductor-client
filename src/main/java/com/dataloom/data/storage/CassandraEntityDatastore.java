@@ -48,8 +48,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.hash.HashFunction;
@@ -162,9 +162,18 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
+
         return new EntitySetData<>( orderedPropertyNames,
-                getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() )
-                        .map( rs -> rowToEntity( rs, authorizedPropertyTypes ) )::iterator );
+                getRowsFromMap( entitySetId, syncId, authorizedPropertyTypes.keySet() )
+                        .map( idm -> {
+                            SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
+                            authorizedPropertyTypes.forEach( ( id, pt ) -> m.put( pt.getType(), idm.get( id ) ) );
+                            return m;
+                        } )::iterator
+        );
+        //        return new EntitySetData<>( orderedPropertyNames,
+        //                getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() )
+        //                        .map( rs -> rowToEntity( rs, authorizedPropertyTypes ) )::iterator );
     }
 
     @Override
@@ -180,10 +189,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
         authorizedPropertyTypes.values().forEach( v -> m.put( v.getType(), rawEntity.get( v.getId() ) ) );
 
         return m;
-//        return RowAdapters.entity(
-//                asyncLoadEntity( entitySetId, entityId, syncId, authorizedPropertyTypes.keySet() ).getUninterruptibly(),
-//                authorizedPropertyTypes,
-//                mapper );
+        //        return RowAdapters.entity(
+        //                asyncLoadEntity( entitySetId, entityId, syncId, authorizedPropertyTypes.keySet() ).getUninterruptibly(),
+        //                authorizedPropertyTypes,
+        //                mapper );
     }
 
     @Override
@@ -199,10 +208,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
         authorizedPropertyTypes.values().forEach( v -> m.put( v.getType(), rawEntity.get( v.getId() ) ) );
 
         return m;
-//        return RowAdapters.entity(
-//                asyncLoadEntity( entitySetId, entityId, syncId ).getUninterruptibly(),
-//                authorizedPropertyTypes,
-//                mapper );
+        //        return RowAdapters.entity(
+        //                asyncLoadEntity( entitySetId, entityId, syncId ).getUninterruptibly(),
+        //                authorizedPropertyTypes,
+        //                mapper );
     }
 
     @Override
@@ -259,6 +268,31 @@ public class CassandraEntityDatastore implements EntityDatastore {
             ResultSet rs,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
         return RowAdapters.entityIndexedById( rs, authorizedPropertyTypes, mapper );
+    }
+
+    private Stream<SetMultimap<UUID, Object>> getRowsFromMap(
+            UUID entitySetId,
+            UUID syncId,
+            Set<UUID> authorizedProperties ) {
+        // If syncId is not specified, retrieve latest snapshot of entity
+        final UUID finalSyncId;
+        if ( syncId == null ) {
+            finalSyncId = dsm.getCurrentSyncId( entitySetId );
+        } else {
+            finalSyncId = syncId;
+        }
+
+        //        return StreamUtil
+        //                .stream( asyncLoadEntitySet( entitySetId, finalSyncId, authorizedProperties ).getUninterruptibly() )
+        //                .map( row -> RowAdapters.entity(  ) );
+
+        SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
+        return getEntityIds( entitySetId, finalSyncId )
+                .map( entityId -> data.get( new EntityKey( entitySetId, entityId, syncId ) ) )
+                .map( entity -> Multimaps.filterKeys( entity, authorizedProperties::contains ) );
+        //        data.getAll( data.keySet( Predicates
+        //                .and( Predicates.equal( "entitySetId", entitySetId ), Predicates.equal( "syncId", syncId ) ) )
+        //                .stream();
     }
 
     private Stream<ResultSet> getRows(
@@ -429,7 +463,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                                     .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), pValue )
                                     .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
                                             ByteBuffer.wrap( hf.hashBytes( pValue.array() ).asBytes() ) ) ) );
-                    EntityKey ek = new EntityKey(  entitySetId,entityId,syncId);
+                    EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
                     data.evict( ek );
                     //                    } else {
                     //                        results.add( session.executeAsync(
