@@ -130,7 +130,9 @@ public class DataMapstore
                 .map( this::getEntityKeys )
                 .map( ResultSetFuture::getUninterruptibly )
                 .flatMap( StreamUtil::stream )
-                .map( RowAdapters::entityKeyFromData )::iterator;
+                .map( RowAdapters::entityKeyFromData )
+                .unordered()
+                .distinct()::iterator;
     }
 
     @Override protected EntityKey mapKey( Row rs ) {
