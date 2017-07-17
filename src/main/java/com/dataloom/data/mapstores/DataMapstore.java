@@ -163,7 +163,7 @@ public class DataMapstore
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {
-        return super.getMapStoreConfig().setInitialLoadMode( InitialLoadMode.EAGER );
+        return super.getMapStoreConfig();//.setInitialLoadMode( InitialLoadMode.EAGER );
     }
 
     @Override public MapConfig getMapConfig() {
