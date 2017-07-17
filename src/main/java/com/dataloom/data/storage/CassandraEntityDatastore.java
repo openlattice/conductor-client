@@ -105,7 +105,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final DatasourceManager      dsm;
     private final PreparedStatement      writeDataQuery;
     private final PreparedStatement      entityQuery;
-//    private final PreparedStatement      entitySetQuery;
+    private final PreparedStatement      entityQueryWithoutPropertyTypes;
+    //    private final PreparedStatement      entitySetQuery;
     private final PreparedStatement      entityIdsQuery;
     private final PreparedStatement      deleteEntityQuery;
     private final PreparedStatement      deleteEntitySetQuery;
@@ -130,7 +131,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
 
         this.entityQuery = prepareEntityQuery( session, dataTableDefinitions );
-//        this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
+        this.entityQueryWithoutPropertyTypes = prepareEntityQueryWithoutPropertyTypes( session, dataTableDefinitions );
+        //        this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
         this.entityIdsQuery = prepareEntityIdsQuery( session );
         this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
 
@@ -269,12 +271,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .filter( StringUtils::isNotBlank );
     }
 
-//    public ResultSetFuture asyncLoadEntitySet( UUID entitySetId, UUID syncId, Set<UUID> authorizedProperties ) {
-//        return session.executeAsync( entitySetQuery.bind()
-//                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-//                .setUUID( CommonColumns.SYNCID.cql(), syncId )
-//                .setSet( CommonColumns.PRINCIPAL_TYPE.cql(), authorizedProperties ) );
-//    }
+    //    public ResultSetFuture asyncLoadEntitySet( UUID entitySetId, UUID syncId, Set<UUID> authorizedProperties ) {
+    //        return session.executeAsync( entitySetQuery.bind()
+    //                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+    //                .setUUID( CommonColumns.SYNCID.cql(), syncId )
+    //                .setSet( CommonColumns.PRINCIPAL_TYPE.cql(), authorizedProperties ) );
+    //    }
 
     @Override
     public ResultSetFuture asyncLoadEntity(
@@ -297,7 +299,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID entitySetId,
             String entityId,
             UUID syncId ) {
-        return session.executeAsync( entityQuery.bind()
+        return session.executeAsync( entityQueryWithoutPropertyTypes.bind()
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setUUID( CommonColumns.SYNCID.cql(), syncId )
                 .setString( CommonColumns.ENTITYID.cql(), entityId ) );
@@ -522,11 +524,17 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return session.prepare( entityQuery( ctb ) );
     }
 
-//    private static PreparedStatement prepareEntitySetQuery(
-//            Session session,
-//            CassandraTableBuilder ctb ) {
-//        return session.prepare( entitySetQuery( ctb ) );
-//    }
+    private static PreparedStatement prepareEntityQueryWithoutPropertyTypes(
+            Session session,
+            CassandraTableBuilder ctb ) {
+        return session.prepare( entityQueryWithoutPropertyTypes( ctb ) );
+    }
+
+    //    private static PreparedStatement prepareEntitySetQuery(
+    //            Session session,
+    //            CassandraTableBuilder ctb ) {
+    //        return session.prepare( entitySetQuery( ctb ) );
+    //    }
 
     private static PreparedStatement prepareWriteQuery(
             Session session,
@@ -548,15 +556,23 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
     }
 
-//    @Deprecated
-//    private static Select.Where entitySetQuery( CassandraTableBuilder ctb ) {
-//        return ctb.buildLoadAllQuery()
-//                .where( CommonColumns.ENTITY_SET_ID.eq() )
-//                .and( CommonColumns.SYNCID.eq() )
-//                .and( partitionIndexClause() )
-//                .and( QueryBuilder.in( CommonColumns.PROPERTY_TYPE_ID.cql(),
-//                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
-//    }
+    private static Select.Where entityQueryWithoutPropertyTypes( CassandraTableBuilder ctb ) {
+        return ctb.buildLoadAllQuery()
+                .where( CommonColumns.ENTITY_SET_ID.eq() )
+                .and( CommonColumns.SYNCID.eq() )
+                .and( QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES ) )
+                .and( CommonColumns.ENTITYID.eq() );
+    }
+
+    //    @Deprecated
+    //    private static Select.Where entitySetQuery( CassandraTableBuilder ctb ) {
+    //        return ctb.buildLoadAllQuery()
+    //                .where( CommonColumns.ENTITY_SET_ID.eq() )
+    //                .and( CommonColumns.SYNCID.eq() )
+    //                .and( partitionIndexClause() )
+    //                .and( QueryBuilder.in( CommonColumns.PROPERTY_TYPE_ID.cql(),
+    //                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
+    //    }
 
     private static PreparedStatement prepareEntityIdsQuery( Session session ) {
         return session.prepare( QueryBuilder
