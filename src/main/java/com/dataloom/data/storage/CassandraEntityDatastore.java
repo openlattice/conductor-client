@@ -255,7 +255,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         //                .stream( asyncLoadEntitySet( entitySetId, finalSyncId, authorizedProperties ).getUninterruptibly() )
         //                .map( row -> RowAdapters.entity(  ) );
         return getEntityIds( entitySetId, finalSyncId )
-                .map( entityId -> asyncLoadEntity( entitySetId, entityId, finalSyncId, authorizedProperties ) )
+                .map( entityId -> asyncLoadEntity( entitySetId, entityId, finalSyncId ) )
                 .map( ResultSetFuture::getUninterruptibly );
     }
 
@@ -266,6 +266,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
         ResultSet entityIds = session.execute( boundEntityIdsQuery );
         return StreamUtil
                 .stream( entityIds )
+                .parallel()
+                .unordered()
                 .map( RowAdapters::entityId )
                 .distinct()
                 .filter( StringUtils::isNotBlank );
@@ -577,8 +579,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private static PreparedStatement prepareEntityIdsQuery( Session session ) {
         return session.prepare( QueryBuilder
                 .select()
-                .column( CommonColumns.ENTITY_SET_ID.cql() )
-                .column( CommonColumns.SYNCID.cql() )
+                //.column( CommonColumns.ENTITY_SET_ID.cql() )
+                //.column( CommonColumns.SYNCID.cql() )
                 .column( CommonColumns.ENTITYID.cql() )
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
                 .where( CommonColumns.ENTITY_SET_ID.eq() )
