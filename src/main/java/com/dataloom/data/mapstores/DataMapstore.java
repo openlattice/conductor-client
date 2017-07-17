@@ -42,8 +42,11 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -51,6 +54,7 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
+import com.sun.org.apache.xml.internal.security.Init;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -163,8 +167,13 @@ public class DataMapstore
                 .setUUID( SYNCID.cql(), syncId ) );
     }
 
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig().setInitialLoadMode( InitialLoadMode.EAGER );
+    }
+
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
+                .setInMemoryFormat( InMemoryFormat.OBJECT )
                 .addMapIndexConfig( new MapIndexConfig( "entitySetId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "syncId", false ) );
     }
