@@ -166,9 +166,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return new EntitySetData<>( orderedPropertyNames,
                 getRowsFromMap( entitySetId, syncId, authorizedPropertyTypes.keySet() )
                         .map( idm -> {
-                            logger.info("Entity row: {}", idm.asMap() );
+                            //logger.info("Entity row: {}", idm.asMap() );
                             SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
-                            authorizedPropertyTypes.forEach( ( id, pt ) -> m.put( pt.getType(), idm.get( id ) ) );
+                            authorizedPropertyTypes.forEach( ( id, pt ) -> m.putAll( pt.getType(), idm.get( id ) ) );
                             return m;
                         } )::iterator
         );
@@ -187,7 +187,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) );
         SetMultimap<FullQualifiedName, Object> m = HashMultimap
                 .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );
-        authorizedPropertyTypes.values().forEach( v -> m.put( v.getType(), rawEntity.get( v.getId() ) ) );
+        authorizedPropertyTypes.values().forEach( v -> m.putAll( v.getType(), rawEntity.get( v.getId() ) ) );
 
         return m;
         //        return RowAdapters.entity(
@@ -206,7 +206,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) );
         SetMultimap<FullQualifiedName, Object> m = HashMultimap
                 .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );
-        authorizedPropertyTypes.values().forEach( v -> m.put( v.getType(), rawEntity.get( v.getId() ) ) );
+        authorizedPropertyTypes.values().forEach( v -> m.putAll( v.getType(), rawEntity.get( v.getId() ) ) );
 
         return m;
         //        return RowAdapters.entity(
