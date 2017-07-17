@@ -172,9 +172,7 @@ public class DataMapstore
 
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
-                .setInMemoryFormat( InMemoryFormat.OBJECT )
-                .addMapIndexConfig( new MapIndexConfig( "entitySetId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "syncId", false ) );
+                .setInMemoryFormat( InMemoryFormat.OBJECT );
     }
 
     public static Select currentSyncs( Session session ) {
