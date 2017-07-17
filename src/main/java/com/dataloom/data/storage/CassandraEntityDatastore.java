@@ -43,6 +43,7 @@ import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
+import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -256,7 +257,13 @@ public class CassandraEntityDatastore implements EntityDatastore {
         //                .map( row -> RowAdapters.entity(  ) );
         return getEntityIds( entitySetId, finalSyncId )
                 .map( entityId -> asyncLoadEntity( entitySetId, entityId, finalSyncId ) )
-                .map( ResultSetFuture::getUninterruptibly );
+                .map( rsf -> {
+                    Stopwatch w = Stopwatch.createStarted();
+                    ResultSet rs = rsf.getUninterruptibly();
+                    logger.info( "Load entity took: {}", w.elapsed( TimeUnit.MILLISECONDS ) );
+                    return rs;
+                });
+                //.map( ResultSetFuture::getUninterruptibly );
     }
 
     public Stream<String> getEntityIds( UUID entitySetId, UUID syncId ) {
