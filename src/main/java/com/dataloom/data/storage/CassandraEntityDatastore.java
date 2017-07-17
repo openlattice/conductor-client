@@ -166,6 +166,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return new EntitySetData<>( orderedPropertyNames,
                 getRowsFromMap( entitySetId, syncId, authorizedPropertyTypes.keySet() )
                         .map( idm -> {
+                            logger.info("Entity row: {}", idm.asMap() );
                             SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
                             authorizedPropertyTypes.forEach( ( id, pt ) -> m.put( pt.getType(), idm.get( id ) ) );
                             return m;
@@ -288,8 +289,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
         SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
         return getEntityIds( entitySetId, finalSyncId )
-                .map( entityId -> data.get( new EntityKey( entitySetId, entityId, syncId ) ) )
-                .map( entity -> Multimaps.filterKeys( entity, authorizedProperties::contains ) );
+                .map( entityId -> data.get( new EntityKey( entitySetId, entityId, syncId ) ) );
+                //.map( entity -> Multimaps.filterKeys( entity, authorizedProperties::contains ) );
         //        data.getAll( data.keySet( Predicates
         //                .and( Predicates.equal( "entitySetId", entitySetId ), Predicates.equal( "syncId", syncId ) ) )
         //                .stream();
