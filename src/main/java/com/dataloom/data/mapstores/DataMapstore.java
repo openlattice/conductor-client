@@ -108,10 +108,6 @@ public class DataMapstore
 
     }
 
-    @Override protected PreparedStatement getLoadQuery() {
-        return super.getLoadQuery();
-    }
-
     @Override public void store( EntityKey key, SetMultimap<UUID, Object> value ) {
         throw new UnsupportedOperationException( "Data map store is read only!" );
     }
