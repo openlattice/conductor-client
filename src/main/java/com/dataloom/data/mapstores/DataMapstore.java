@@ -42,9 +42,8 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
-import com.hazelcast.query.IndexAwarePredicate;
-import com.hazelcast.query.impl.QueryContext;
-import com.hazelcast.query.impl.QueryableEntry;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -53,8 +52,6 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -160,10 +157,16 @@ public class DataMapstore
 
     public ResultSetFuture getEntityKeys( Row row ) {
         final UUID entitySetId = RowAdapters.entitySetId( row );
-        final UUID syncId = RowAdapters.syncId( row );
+        final UUID syncId = RowAdapters.currentSyncId( row );
         return session.executeAsync( readEntityKeysForEntitySetQuery.bind()
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                 .setUUID( SYNCID.cql(), syncId ) );
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( "entitySetId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "syncId", false ) );
     }
 
     public static Select currentSyncs( Session session ) {
