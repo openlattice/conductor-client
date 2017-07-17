@@ -42,6 +42,9 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import com.hazelcast.query.IndexAwarePredicate;
+import com.hazelcast.query.impl.QueryContext;
+import com.hazelcast.query.impl.QueryableEntry;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -49,6 +52,9 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -107,6 +113,10 @@ public class DataMapstore
     }
 
     @Override public void store( EntityKey key, SetMultimap<UUID, Object> value ) {
+        throw new UnsupportedOperationException( "Data map store is read only!" );
+    }
+
+    @Override public void storeAll( Map<EntityKey, SetMultimap<UUID, Object>> map ) {
         throw new UnsupportedOperationException( "Data map store is read only!" );
     }
 
