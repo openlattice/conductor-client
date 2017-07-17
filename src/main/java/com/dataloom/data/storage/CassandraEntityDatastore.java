@@ -127,7 +127,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.dsm = dsm;
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
 
-        this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
+        this.entitySetQuery = prepareEntityQuery( session, dataTableDefinitions );
         this.entityIdsQuery = prepareEntityIdsQuery( session );
         this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
 
@@ -478,10 +478,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .distinct();
     }
 
-    private static PreparedStatement prepareEntitySetQuery(
+    private static PreparedStatement prepareEntityQuery(
             Session session,
             CassandraTableBuilder ctb ) {
-        return session.prepare( entitySetQuery( ctb ) );
+        return session.prepare( entityQuery( ctb ) );
     }
 
     private static PreparedStatement prepareWriteQuery(
@@ -494,13 +494,14 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return ctb.buildStoreQuery();
     }
 
-    private static Select.Where entitySetQuery( CassandraTableBuilder ctb ) {
+    private static Select.Where entityQuery( CassandraTableBuilder ctb ) {
         return ctb.buildLoadAllQuery()
                 .where( CommonColumns.ENTITY_SET_ID.eq() )
                 .and( CommonColumns.SYNCID.eq() )
                 .and( QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES ) )
                 .and( QueryBuilder.in( CommonColumns.PROPERTY_TYPE_ID.cql(),
-                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
+                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) )
+                .and( CommonColumns.ENTITYID.eq() );
     }
 
     private static PreparedStatement prepareEntityIdsQuery( Session session ) {
