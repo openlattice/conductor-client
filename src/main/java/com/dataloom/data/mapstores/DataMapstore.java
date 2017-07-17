@@ -147,7 +147,7 @@ public class DataMapstore
                 PropertyType pt = propertyTypes.getUnchecked( propertyTypeId );
                 m.put( propertyTypeId,
                         CassandraSerDesFactory.deserializeValue( mapper,
-                                row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                                row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
                                 pt.getDatatype(),
                                 entityId ) );
             }

@@ -105,7 +105,7 @@ public final class RowAdapters {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 m.put( propertyTypeId,
                         CassandraSerDesFactory.deserializeValue( mapper,
-                                row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                                row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
                                 pt.getDatatype(),
                                 entityId ) );
             }
@@ -126,7 +126,7 @@ public final class RowAdapters {
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 Object value = CassandraSerDesFactory.deserializeValue( mapper,
-                        row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                        row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
                         pt.getDatatype(),
                         entityId );
                 mByUUID.put( propertyTypeId,
