@@ -73,11 +73,14 @@ public final class RowAdapters {
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 //                if( pt.getDatatype().equals( EdmPrimitiveTypeKind.Binary ) ) {
-                m.put( pt.getType(),
-                        CassandraSerDesFactory.deserializeValue( mapper,
-                                row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
-                                pt.getDatatype(),
-                                entityId ) );
+                //Fail safe
+                if ( pt != null ) {
+                    m.put( pt.getType(),
+                            CassandraSerDesFactory.deserializeValue( mapper,
+                                    row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
+                                    pt.getDatatype(),
+                                    entityId ) );
+                }
                 //                } else {
                 //                    m.put( pt.getType(),
                 //                            CassandraSerDesFactory.deserializeValue( mapper,

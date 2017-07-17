@@ -144,10 +144,15 @@ public enum Table implements TableDef {
                                 CATEGORY )
                         .secondaryIndex( NAMESPACE, CommonColumns.SCHEMAS );
             case DATA:
+                /*
+                 * The main reason for entityid being before property_type_id is that we always have to
+                 * issue an individual query per entityid to load an object. Even if we could query by
+                 * property type id we'd have to group everything in memory instead of being able to stream.
+                 */
                 return new CassandraTableBuilder( DATA )
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID, SYNCID, PARTITION_INDEX )
-                        .clusteringColumns( PROPERTY_TYPE_ID, ENTITYID, PROPERTY_VALUE )
+                        .clusteringColumns( ENTITYID, PROPERTY_TYPE_ID, PROPERTY_VALUE )
                         .columns( PROPERTY_BUFFER );
             case BACK_EDGES:
                 return new CassandraTableBuilder( BACK_EDGES )
