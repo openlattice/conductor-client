@@ -54,7 +54,6 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
-import com.sun.org.apache.xml.internal.security.Init;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
