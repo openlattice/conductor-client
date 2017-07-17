@@ -28,6 +28,7 @@ import com.google.common.collect.SetMultimap;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import de.javakaffee.kryoserializers.guava.HashMultimapSerializer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
