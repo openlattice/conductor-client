@@ -21,6 +21,8 @@
 package com.dataloom.data.mapstores;
 
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.storage.CassandraEntityDatastore;
@@ -63,7 +65,7 @@ public class DataMapstore
             String mapName,
             CassandraTableBuilder tableBuilder,
             Session session,
-            SelfRegisteringMapStore<UUID,PropertyType> ptMapStore,
+            SelfRegisteringMapStore<UUID, PropertyType> ptMapStore,
             ObjectMapper mapper ) {
         super( mapName, session, tableBuilder );
         this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
@@ -87,14 +89,14 @@ public class DataMapstore
 
     @Override protected BoundStatement bind( EntityKey key, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ENTITY_SET_ID.cql(), key.getEntitySetId() )
-                .setUUID( CommonColumns.SYNCID.cql(), key.getSyncId() )
+                .setUUID( SYNCID.cql(), key.getSyncId() )
                 .setString( CommonColumns.ENTITYID.cql(), key.getEntityId() );
     }
 
     @Override
     protected PreparedStatement prepareLoadQuery() {
         return session.prepare( Table.DATA.getBuilder().buildLoadAllQuery().where( CommonColumns.ENTITY_SET_ID.eq() )
-                .and( CommonColumns.SYNCID.eq() )
+                .and( SYNCID.eq() )
                 .and( CassandraEntityDatastore.partitionIndexClause() )
                 .and( CommonColumns.ENTITYID.eq() )
                 .and( QueryBuilder.in( CommonColumns.PROPERTY_TYPE_ID.cql(),
@@ -112,7 +114,7 @@ public class DataMapstore
     @Override protected BoundStatement bind(
             EntityKey key, SetMultimap<UUID, Object> value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ENTITY_SET_ID.cql(), key.getEntitySetId() )
-                .setUUID( CommonColumns.SYNCID.cql(), key.getSyncId() )
+                .setUUID( SYNCID.cql(), key.getSyncId() )
                 .setString( CommonColumns.ENTITYID.cql(), key.getEntityId() );
     }
 
@@ -152,7 +154,7 @@ public class DataMapstore
         final UUID syncId = RowAdapters.syncId( row );
         return session.executeAsync( readEntityKeysForEntitySetQuery.bind()
                 .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
+                .setUUID( SYNCID.cql(), syncId ) );
     }
 
     public static Select currentSyncs( Session session ) {
@@ -162,10 +164,10 @@ public class DataMapstore
     }
 
     public static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
-        return session.prepare( QueryBuilder.select( ENTITYID.cql() )
+        return session.prepare( QueryBuilder.select( ENTITY_SET_ID.cql(), SYNCID.cql(), ENTITYID.cql() )
                 .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-                .where( CommonColumns.ENTITY_SET_ID.eq() )
-                .and( CommonColumns.SYNCID.eq() )
+                .where( ENTITY_SET_ID.eq() )
+                .and( SYNCID.eq() )
                 .and( CassandraEntityDatastore.partitionIndexClause() ) );
     }
 
