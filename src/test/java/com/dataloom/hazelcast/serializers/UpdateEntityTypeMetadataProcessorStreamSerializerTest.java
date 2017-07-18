@@ -27,7 +27,8 @@ public class UpdateEntityTypeMetadataProcessorStreamSerializerTest extends
                 Optional.of( et.getDescription() ),
                 Optional.absent(),
                 Optional.absent(),
-                Optional.of( et.getType() ) );
+                Optional.of( et.getType() ),
+                Optional.absent() );
         return new UpdateEntityTypeMetadataProcessor( update );
     }
 
