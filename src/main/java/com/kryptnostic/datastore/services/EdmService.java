@@ -72,6 +72,7 @@ import com.dataloom.edm.types.processors.AddSrcEntityTypesToAssociationTypeProce
 import com.dataloom.edm.types.processors.RemoveDstEntityTypesFromAssociationTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemoveSrcEntityTypesFromAssociationTypeProcessor;
+import com.dataloom.edm.types.processors.ReorderPropertyTypesInEntityTypeProcessor;
 import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
@@ -608,6 +609,12 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds ) {
+        entityTypes.executeOnKey( entityTypeId, new ReorderPropertyTypesInEntityTypeProcessor( propertyTypeIds ) );
+        eventBus.post( new EntityTypeCreatedEvent( getEntityType( entityTypeId ) ) );
+    }
+
+    @Override
     public void addSrcEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds ) {
         Preconditions.checkArgument( checkEntityTypesExist( entityTypeIds ) );
         associationTypes.executeOnKey( associationTypeId,
@@ -801,8 +808,12 @@ public class EdmService implements EdmManager {
                 "Association type of id %s does not exist.",
                 associationTypeId.toString() );
         Optional<EntityType> entityType = Optional.fromNullable(
-        		Util.getSafely( entityTypes, associationTypeId ) );
-        return new AssociationType( entityType, associationDetails.getSrc(), associationDetails.getDst(), associationDetails.isBidirectional() );
+                Util.getSafely( entityTypes, associationTypeId ) );
+        return new AssociationType(
+                entityType,
+                associationDetails.getSrc(),
+                associationDetails.getDst(),
+                associationDetails.isBidirectional() );
     }
 
     @Override
