@@ -151,7 +151,7 @@ public class DataMapstore
         final SetMultimap<UUID, Object> m = HashMultimap.create();
         EntityKey ek = null;
         for ( Row row : rs ) {
-            if ( ek != null ) {
+            if ( ek == null ) {
                 ek = RowAdapters.entityKeyFromData( row );
             }
             UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
