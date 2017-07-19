@@ -27,6 +27,7 @@ import com.dataloom.data.EntitySetData;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
 import com.dataloom.data.mapstores.DataMapstore;
+import com.dataloom.data.requests.Entity;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -123,10 +124,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final PreparedStatement      readNumTopUtilizerRowsQuery;
     private final PreparedStatement      topUtilizersQueryIdExistsQuery;
 
-    private final HazelcastInstance                          hazelcastInstance;
-    private final IMap<EntityKey, SetMultimap<UUID, Object>> data;
+    private final HazelcastInstance       hazelcastInstance;
+    private final IMap<EntityKey, Entity> data;
     @Inject
-    private       EventBus                                   eventBus;
+    private       EventBus                eventBus;
 
     public CassandraEntityDatastore(
             Session session,
@@ -188,7 +189,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) );
+        SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) ).getDetails();
         SetMultimap<FullQualifiedName, Object> m = HashMultimap
                 .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );
         authorizedPropertyTypes.values().forEach( v -> m.putAll( v.getType(), rawEntity.get( v.getId() ) ) );
@@ -207,7 +208,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) );
+        SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) ).getDetails();
         SetMultimap<FullQualifiedName, Object> m = HashMultimap
                 .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );
         authorizedPropertyTypes.values().forEach( v -> m.putAll( v.getType(), rawEntity.get( v.getId() ) ) );
