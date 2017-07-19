@@ -3,6 +3,8 @@ package com.dataloom.hazelcast.serializers;
 import java.io.IOException;
 import java.util.Set;
 
+import org.springframework.stereotype.Component;
+
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -17,6 +19,7 @@ import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
  * @author Ho Chung Siu
  *
  */
+@Component
 public class OptionalStreamSerializers {
     // Serialize single optional
     public static <T> void serialize( ObjectDataOutput out, Optional<T> element, IoPerformingConsumer<T> c )

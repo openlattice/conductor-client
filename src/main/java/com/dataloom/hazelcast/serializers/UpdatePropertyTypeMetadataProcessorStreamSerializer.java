@@ -23,6 +23,7 @@ public class UpdatePropertyTypeMetadataProcessorStreamSerializer
         OptionalStreamSerializers.serialize( out, update.getTitle(), ObjectDataOutput::writeUTF );
         OptionalStreamSerializers.serialize( out, update.getDescription(), ObjectDataOutput::writeUTF );
         OptionalStreamSerializers.serialize( out, update.getType(), FullQualifiedNameStreamSerializer::serialize );
+        OptionalStreamSerializers.serialize( out, update.getPii(), ObjectDataOutput::writeBoolean );
     }
 
     @Override
@@ -31,8 +32,15 @@ public class UpdatePropertyTypeMetadataProcessorStreamSerializer
         Optional<String> description = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
         Optional<FullQualifiedName> type = OptionalStreamSerializers.deserialize( in,
                 FullQualifiedNameStreamSerializer::deserialize );
+        Optional<Boolean> pii = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readBoolean );
 
-        MetadataUpdate update = new MetadataUpdate( title, description, Optional.absent(), Optional.absent(), type );
+        MetadataUpdate update = new MetadataUpdate(
+                title,
+                description,
+                Optional.absent(),
+                Optional.absent(),
+                type,
+                pii );
         return new UpdatePropertyTypeMetadataProcessor( update );
     }
 
