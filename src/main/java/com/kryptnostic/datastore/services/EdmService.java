@@ -611,7 +611,12 @@ public class EdmService implements EdmManager {
     @Override
     public void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds ) {
         entityTypes.executeOnKey( entityTypeId, new ReorderPropertyTypesInEntityTypeProcessor( propertyTypeIds ) );
-        eventBus.post( new EntityTypeCreatedEvent( getEntityType( entityTypeId ) ) );
+        EntityType entityType = getEntityType( entityTypeId );
+        if ( entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+        }
     }
 
     @Override
