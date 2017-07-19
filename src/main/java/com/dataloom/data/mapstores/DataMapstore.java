@@ -25,6 +25,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.requests.Entity;
 import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.streams.StreamUtil;
@@ -46,7 +47,6 @@ import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
-import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DataMapstore
-        extends AbstractStructuredCassandraMapstore<EntityKey, SetMultimap<UUID, Object>> {
+        extends AbstractStructuredCassandraMapstore<EntityKey, Entity> {
     private final PreparedStatement                readEntityKeysForEntitySetQuery;
     private final LoadingCache<UUID, PropertyType> propertyTypes;
     private final ObjectMapper                     mapper;
@@ -89,7 +89,7 @@ public class DataMapstore
 
     }
 
-    @Override public SetMultimap<UUID, Object> generateTestValue() {
+    @Override public Entity generateTestValue() {
         return null;
     }
 
@@ -108,16 +108,17 @@ public class DataMapstore
 
     }
 
-    @Override public void store( EntityKey key, SetMultimap<UUID, Object> value ) {
+    @Override public void store( EntityKey key, Entity value ) {
         throw new UnsupportedOperationException( "Data map store is read only!" );
     }
 
-    @Override public void storeAll( Map<EntityKey, SetMultimap<UUID, Object>> map ) {
+    @Override public void storeAll( Map<EntityKey, Entity> map ) {
         throw new UnsupportedOperationException( "Data map store is read only!" );
     }
 
-    @Override protected BoundStatement bind(
-            EntityKey key, SetMultimap<UUID, Object> value, BoundStatement bs ) {
+    @Override
+    protected BoundStatement bind(
+            EntityKey key, Entity value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ENTITY_SET_ID.cql(), key.getEntitySetId() )
                 .setUUID( SYNCID.cql(), key.getSyncId() )
                 .setString( CommonColumns.ENTITYID.cql(), key.getEntityId() );
@@ -139,9 +140,14 @@ public class DataMapstore
         return RowAdapters.entityKey( rs );
     }
 
-    @Override protected SetMultimap<UUID, Object> mapValue( ResultSet rs ) {
+    @Override protected Entity mapValue( ResultSet rs ) {
+
         final SetMultimap<UUID, Object> m = HashMultimap.create();
+        EntityKey ek = null;
         for ( Row row : rs ) {
+            if ( ek != null ) {
+                ek = RowAdapters.entityKeyFromData( row );
+            }
             UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
             String entityId = row.getString( CommonColumns.ENTITYID.cql() );
             if ( propertyTypeId != null ) {
@@ -151,9 +157,13 @@ public class DataMapstore
                                 row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
                                 pt.getDatatype(),
                                 entityId ) );
+
             }
         }
-        return m;
+        if ( ek == null ) {
+            return null;
+        }
+        return new Entity( ek, m );
     }
 
     public ResultSetFuture getEntityKeys( Row row ) {
@@ -170,7 +180,9 @@ public class DataMapstore
 
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
-                .setInMemoryFormat( InMemoryFormat.OBJECT );
+                .setInMemoryFormat( InMemoryFormat.OBJECT )
+                .addMapIndexConfig( new MapIndexConfig( "entitySetId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "syncId", false ) );
     }
 
     public static Select currentSyncs( Session session ) {

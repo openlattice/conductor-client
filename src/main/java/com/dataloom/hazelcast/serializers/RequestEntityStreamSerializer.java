@@ -20,10 +20,13 @@
 
 package com.dataloom.hazelcast.serializers;
 
+import com.dataloom.data.EntityKey;
+import com.dataloom.data.requests.Entity;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -34,13 +37,12 @@ import de.javakaffee.kryoserializers.guava.ImmutableMultimapSerializer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.springframework.stereotype.Component;
 
-/**
- * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
- */
-public class KryoSetMultimapStreamSerializer implements SelfRegisteringStreamSerializer<SetMultimap> {
+@Component
+public class RequestEntityStreamSerializer implements SelfRegisteringStreamSerializer<Entity> {
+
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
         @Override
@@ -53,26 +55,34 @@ public class KryoSetMultimapStreamSerializer implements SelfRegisteringStreamSer
         }
     };
 
-    @Override public Class<SetMultimap> getClazz() {
-        return SetMultimap.class;
-    }
-
-    @Override public void write( ObjectDataOutput out, SetMultimap object ) throws IOException {
+    @Override
+    public void write( ObjectDataOutput out, Entity object ) throws IOException {
+        EntityKeyStreamSerializer.serialize( out, object.getKey() );
         Output output = new Output( (OutputStream) out );
-        kryoThreadLocal.get().writeClassAndObject( output, object );
+        kryoThreadLocal.get().writeClassAndObject( output, object.getDetails() );
         output.flush();
     }
 
-    @Override public SetMultimap read( ObjectDataInput in ) throws IOException {
+    @Override
+    public Entity read( ObjectDataInput in ) throws IOException {
+        EntityKey ek = EntityKeyStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );
-        return (SetMultimap) kryoThreadLocal.get().readClassAndObject( input );
+        SetMultimap<UUID, Object> m = (SetMultimap<UUID, Object>) kryoThreadLocal.get().readClassAndObject( input );
+        return new Entity( ek, m );
     }
 
-    @Override public int getTypeId() {
-        return StreamSerializerTypeIds.SET_MULTIMAP.ordinal();
+    @Override
+    public int getTypeId() {
+        return StreamSerializerTypeIds.REQUEST_ENTITY.ordinal();
     }
 
-    @Override public void destroy() {
-
+    @Override
+    public void destroy() {
     }
+
+    @Override
+    public Class<? extends Entity> getClazz() {
+        return Entity.class;
+    }
+
 }

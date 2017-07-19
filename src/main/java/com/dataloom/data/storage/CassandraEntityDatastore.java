@@ -49,7 +49,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
 import com.google.common.hash.HashFunction;
@@ -58,6 +57,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.IQueue;
+import com.hazelcast.query.PredicateBuilder;
+import com.hazelcast.query.impl.predicates.EqualPredicate;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -121,6 +123,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final PreparedStatement      readNumTopUtilizerRowsQuery;
     private final PreparedStatement      topUtilizersQueryIdExistsQuery;
 
+    private final HazelcastInstance                          hazelcastInstance;
     private final IMap<EntityKey, SetMultimap<UUID, Object>> data;
     @Inject
     private       EventBus                                   eventBus;
@@ -151,8 +154,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
         this.readNumTopUtilizerRowsQuery = prepareReadNumTopUtilizerRowsQuery( session );
         this.topUtilizersQueryIdExistsQuery = prepareTopUtilizersQueryIdExistsQuery( session );
-
         this.data = hazelastInstance.getMap( HazelcastMap.DATA.name() );
+
+        this.hazelcastInstance = hazelastInstance;
     }
 
     @Override
@@ -286,11 +290,14 @@ public class CassandraEntityDatastore implements EntityDatastore {
         //        return StreamUtil
         //                .stream( asyncLoadEntitySet( entitySetId, finalSyncId, authorizedProperties ).getUninterruptibly() )
         //                .map( row -> RowAdapters.entity(  ) );
+        UUID requestId = UUID.randomUUID();
 
+        IQueue<EntityKey> entityKey = hazelcastInstance.getQueue( requestId.toString() );
+        entityKey.iterator();
         SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
         return getEntityIds( entitySetId, finalSyncId )
                 .map( entityId -> data.get( new EntityKey( entitySetId, entityId, syncId ) ) );
-                //.map( entity -> Multimaps.filterKeys( entity, authorizedProperties::contains ) );
+        //.map( entity -> Multimaps.filterKeys( entity, authorizedProperties::contains ) );
         //        data.getAll( data.keySet( Predicates
         //                .and( Predicates.equal( "entitySetId", entitySetId ), Predicates.equal( "syncId", syncId ) ) )
         //                .stream();
@@ -578,14 +585,18 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
     @Override
     public Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId ) {
-        return StreamUtil.stream( Iterables.transform( session.execute(
-                readEntityKeysForEntitySetQuery.bind()
-                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                        .setUUID( CommonColumns.SYNCID.cql(), syncId ) ),
-                RowAdapters::entityKeyFromData ) )
-                .parallel()
-                .unordered()
-                .distinct();
+        return data.keySet( new PredicateBuilder()
+                .and( new EqualPredicate( "entitySetId", entitySetId ) )
+                .and( new EqualPredicate() ) ).stream();
+
+        //        return StreamUtil.stream( Iterables.transform( session.execute(.
+        //                readEntityKeysForEntitySetQuery.bind()
+        //                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+        //                        .setUUID( CommonColumns.SYNCID.cql(), syncId ) ),
+        //                RowAdapters::entityKeyFromData ) )
+        //                .parallel()
+        //                .unordered()
+        //                .distinct();
     }
 
     private static PreparedStatement prepareEntityQuery(

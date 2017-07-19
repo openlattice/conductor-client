@@ -281,6 +281,7 @@ public class DataGraphService implements DataGraphManager {
         // if ( !eds.queryAlreadyExecuted( queryId ) ) {
         if ( maybeUtilizers == null ) {
             utilizers = new TopUtilizers( numResults );
+
             eds.getEntityKeysForEntitySet( entitySetId, syncId )
                     .parallel()
                     .map( idService::getEntityKeyId )
