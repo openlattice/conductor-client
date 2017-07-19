@@ -49,6 +49,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.eventbus.EventBus;
@@ -187,7 +188,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) ).getDetails();
+        Entity e = data.get( new EntityKey( entitySetId, entityId, syncId ) );
+        if ( e == null ) {
+            return ImmutableSetMultimap.of();
+        }
+        SetMultimap<UUID, Object> rawEntity = e.getDetails();
         SetMultimap<FullQualifiedName, Object> m = HashMultimap
                 .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );
         authorizedPropertyTypes.values().forEach( v -> m.putAll( v.getType(), rawEntity.get( v.getId() ) ) );
@@ -206,7 +211,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        SetMultimap<UUID, Object> rawEntity = data.get( new EntityKey( entitySetId, entityId, syncId ) ).getDetails();
+        Entity e = data.get( new EntityKey( entitySetId, entityId, syncId ) );
+        if ( e == null ) {
+            return ImmutableSetMultimap.of();
+        }
+        SetMultimap<UUID, Object> rawEntity = e.getDetails();
         SetMultimap<FullQualifiedName, Object> m = HashMultimap
                 .create( rawEntity.size(), rawEntity.size() / rawEntity.keySet().size() );
         authorizedPropertyTypes.values().forEach( v -> m.putAll( v.getType(), rawEntity.get( v.getId() ) ) );
