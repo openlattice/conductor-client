@@ -33,7 +33,13 @@ public class UpdateEntitySetMetadataProcessorStreamSerializer
         Optional<String> name = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
         Optional<Set<String>> contacts = OptionalStreamSerializers.deserializeSet( in, ObjectDataInput::readUTF );
 
-        MetadataUpdate update = new MetadataUpdate( title, description, name, contacts, Optional.absent() );
+        MetadataUpdate update = new MetadataUpdate(
+                title,
+                description,
+                name,
+                contacts,
+                Optional.absent(),
+                Optional.absent() );
         return new UpdateEntitySetMetadataProcessor( update );
     }
 

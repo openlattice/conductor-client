@@ -32,7 +32,13 @@ public class UpdateEntityTypeMetadataProcessorStreamSerializer
         Optional<FullQualifiedName> type = OptionalStreamSerializers.deserialize( in,
                 FullQualifiedNameStreamSerializer::deserialize );
 
-        MetadataUpdate update = new MetadataUpdate( title, description, Optional.absent(), Optional.absent(), type );
+        MetadataUpdate update = new MetadataUpdate(
+                title,
+                description,
+                Optional.absent(),
+                Optional.absent(),
+                type,
+                Optional.absent() );
         return new UpdateEntityTypeMetadataProcessor( update );
     }
 

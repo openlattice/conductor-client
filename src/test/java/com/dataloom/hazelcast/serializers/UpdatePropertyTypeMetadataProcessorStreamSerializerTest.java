@@ -20,9 +20,15 @@ public class UpdatePropertyTypeMetadataProcessorStreamSerializerTest extends
     }
 
     @Override
-    protected UpdatePropertyTypeMetadataProcessor createInput(){
+    protected UpdatePropertyTypeMetadataProcessor createInput() {
         PropertyType pt = TestDataFactory.propertyType();
-        MetadataUpdate update = new MetadataUpdate( Optional.of( pt.getTitle() ), Optional.of( pt.getDescription() ), Optional.absent(), Optional.absent(), Optional.of( pt.getType() ) );
+        MetadataUpdate update = new MetadataUpdate(
+                Optional.of( pt.getTitle() ),
+                Optional.of( pt.getDescription() ),
+                Optional.absent(),
+                Optional.absent(),
+                Optional.of( pt.getType() ),
+                Optional.absent() );
         return new UpdatePropertyTypeMetadataProcessor( update );
     }
 

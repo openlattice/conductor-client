@@ -10,8 +10,10 @@ import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcesso
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class UpdatePropertyTypeMetadataProcessor extends AbstractRhizomeEntryProcessor<UUID, PropertyType, Object> {
-    private static final long serialVersionUID = -1970049507051915211L;
-    @SuppressFBWarnings(value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented")
+    private static final long    serialVersionUID = -1970049507051915211L;
+    @SuppressFBWarnings(
+        value = "SE_BAD_FIELD",
+        justification = "Custom Stream Serializer is implemented" )
     private final MetadataUpdate update;
 
     public UpdatePropertyTypeMetadataProcessor( MetadataUpdate update ) {
@@ -22,14 +24,17 @@ public class UpdatePropertyTypeMetadataProcessor extends AbstractRhizomeEntryPro
     public Object process( Entry<UUID, PropertyType> entry ) {
         PropertyType pt = entry.getValue();
         if ( pt != null ) {
-            if( update.getTitle().isPresent() ){
+            if ( update.getTitle().isPresent() ) {
                 pt.setTitle( update.getTitle().get() );
             }
-            if( update.getDescription().isPresent() ){
+            if ( update.getDescription().isPresent() ) {
                 pt.setDescription( update.getDescription().get() );
             }
-            if( update.getType().isPresent() ){
+            if ( update.getType().isPresent() ) {
                 pt.setType( update.getType().get() );
+            }
+            if ( update.getPii().isPresent() ) {
+                pt.setPii( update.getPii().get() );
             }
             entry.setValue( pt );
         }
