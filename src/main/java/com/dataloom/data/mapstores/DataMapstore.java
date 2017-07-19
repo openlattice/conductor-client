@@ -24,6 +24,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 
+import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.requests.Entity;
 import com.dataloom.data.storage.CassandraEntityDatastore;
@@ -57,6 +58,7 @@ import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMa
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.springframework.scheduling.annotation.Async;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -124,8 +126,10 @@ public class DataMapstore
                 .setString( CommonColumns.ENTITYID.cql(), key.getEntityId() );
     }
 
-    @Override public Iterable<EntityKey> loadAllKeys() {
-        return StreamUtil.stream( session
+    @Override
+    public Iterable<EntityKey> loadAllKeys() {
+        return null;
+        /*return StreamUtil.stream( session
                 .execute( currentSyncs( session ) ) )
                 .parallel()
                 .map( this::getEntityKeys )
@@ -133,8 +137,10 @@ public class DataMapstore
                 .flatMap( StreamUtil::stream )
                 .map( RowAdapters::entityKeyFromData )
                 .unordered()
-                .distinct()::iterator;
+                .distinct()::iterator;*/
     }
+
+
 
     @Override protected EntityKey mapKey( Row rs ) {
         return RowAdapters.entityKey( rs );
@@ -178,7 +184,8 @@ public class DataMapstore
         return super.getMapStoreConfig();//.setInitialLoadMode( InitialLoadMode.EAGER );
     }
 
-    @Override public MapConfig getMapConfig() {
+    @Override
+    public MapConfig getMapConfig() {
         return super.getMapConfig()
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
                 .addMapIndexConfig( new MapIndexConfig( "entitySetId", false ) )
