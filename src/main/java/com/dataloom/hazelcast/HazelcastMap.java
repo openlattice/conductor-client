@@ -27,6 +27,7 @@ public enum HazelcastMap {
     AUDIT_EVENTS( Table.AUDIT_EVENTS ),
     AUDIT_METRICS( Table.AUDIT_METRICS ),
     COMPLEX_TYPES( Table.COMPLEX_TYPES ),
+    DATA( Table.DATA ),
     ENUM_TYPES( Table.ENUM_TYPES ),
     IDS( Table.IDS ),
     KEYS( Table.KEYS ),

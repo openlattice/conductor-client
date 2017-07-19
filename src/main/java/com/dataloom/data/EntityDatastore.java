@@ -19,6 +19,7 @@
 
 package com.dataloom.data;
 
+import com.codahale.metrics.annotation.Timed;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -100,6 +101,18 @@ public interface EntityDatastore {
     void deleteEntitySetData( UUID entitySetId );
 
     void deleteEntity( EntityKey entityKey );
+
+    @Timed SetMultimap<FullQualifiedName, Object> getEntityPostFiltered(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            Map<UUID, PropertyType> authorizedPropertyTypes );
+
+    @Timed ResultSetFuture getEntityAsync(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            Map<UUID, PropertyType> authorizedPropertyTypes );
 
     /**
      * @param entityKey

@@ -73,11 +73,14 @@ public final class RowAdapters {
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 //                if( pt.getDatatype().equals( EdmPrimitiveTypeKind.Binary ) ) {
-                m.put( pt.getType(),
-                        CassandraSerDesFactory.deserializeValue( mapper,
-                                row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
-                                pt.getDatatype(),
-                                entityId ) );
+                //Fail safe
+                if ( pt != null ) {
+                    m.put( pt.getType(),
+                            CassandraSerDesFactory.deserializeValue( mapper,
+                                    row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
+                                    pt.getDatatype(),
+                                    entityId ) );
+                }
                 //                } else {
                 //                    m.put( pt.getType(),
                 //                            CassandraSerDesFactory.deserializeValue( mapper,
@@ -102,7 +105,7 @@ public final class RowAdapters {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 m.put( propertyTypeId,
                         CassandraSerDesFactory.deserializeValue( mapper,
-                                row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                                row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
                                 pt.getDatatype(),
                                 entityId ) );
             }
@@ -123,7 +126,7 @@ public final class RowAdapters {
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 Object value = CassandraSerDesFactory.deserializeValue( mapper,
-                        row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                        row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
                         pt.getDatatype(),
                         entityId );
                 mByUUID.put( propertyTypeId,
@@ -410,6 +413,10 @@ public final class RowAdapters {
 
     public static UUID propertyTypeId( Row row ) {
         return row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+    }
+
+    public static UUID currentSyncId( Row row ) {
+        return row.getUUID( CommonColumns.CURRENT_SYNC_ID.cql() );
     }
 
 }
