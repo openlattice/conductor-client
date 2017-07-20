@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.Principal;
+import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.type.AssociationDetails;
@@ -166,5 +167,9 @@ public interface EdmManager {
     AssociationDetails getAssociationDetails( UUID associationTypeId );
     
     Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId );
+    
+    void importEntityDataModel( EntityDataModel edm );
+    
+    EntityDataModel getEntityDataModelDiff( EntityDataModel edm );
 
 }
