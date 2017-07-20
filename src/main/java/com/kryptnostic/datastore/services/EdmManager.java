@@ -168,7 +168,7 @@ public interface EdmManager {
     
     Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId );
     
-    void importEntityDataModel( EntityDataModel edm );
+    void setEntityDataModel( EntityDataModel edm );
     
     EntityDataModel getEntityDataModelDiff( EntityDataModel edm );
 

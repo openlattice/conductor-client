@@ -873,7 +873,7 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public void importEntityDataModel( EntityDataModel edm ) {
+    public void setEntityDataModel( EntityDataModel edm ) {
         edm.getPropertyTypes().forEach( pt -> {
             PropertyType existing = null;
             if ( pt.wasIdPresent() )
