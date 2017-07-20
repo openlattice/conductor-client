@@ -974,7 +974,6 @@ public class EdmService implements EdmManager {
                     || !pt.getType().equals( existing.getType() )
                     || !pt.getTitle().equals( existing.getTitle() )
                     || !pt.getDescription().equals( existing.getDescription() )
-                    || !pt.getSchemas().equals( existing.getSchemas() )
                     || !pt.isPIIfield() == existing.isPIIfield() )
                 updatedPropertyTypes.add( pt );
         } );
@@ -991,7 +990,6 @@ public class EdmService implements EdmManager {
                     || !et.getType().equals( existing.getType() )
                     || !et.getTitle().equals( existing.getTitle() )
                     || !et.getDescription().equals( existing.getDescription() )
-                    || !et.getSchemas().equals( existing.getSchemas() )
                     || !et.getProperties().equals( existing.getProperties() ) )
                 updatedEntityTypes.add( et );
         } );
@@ -1010,7 +1008,6 @@ public class EdmService implements EdmManager {
                     || !atEntityType.getType().equals( existing.getAssociationEntityType().getType() )
                     || !atEntityType.getTitle().equals( existing.getAssociationEntityType().getTitle() )
                     || !atEntityType.getDescription().equals( existing.getAssociationEntityType().getDescription() )
-                    || !atEntityType.getSchemas().equals( existing.getAssociationEntityType().getSchemas() )
                     || !atEntityType.getProperties().equals( existing.getAssociationEntityType().getProperties() )
                     || !at.getSrc().equals( existing.getSrc() )
                     || !at.getDst().equals( existing.getDst() ) )
