@@ -1,20 +1,19 @@
 package com.dataloom.hazelcast.serializers;
 
-import java.io.IOException;
-import java.util.Map;
-
-import org.springframework.stereotype.Component;
-
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.linking.Entity;
+import com.esotericsoftware.kryo.Kryo;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import de.javakaffee.kryoserializers.guava.HashMultimapSerializer;
+import java.io.IOException;
+import java.util.Map;
+import org.springframework.stereotype.Component;
 
 @Component
 public class EntityStreamSerializer implements SelfRegisteringStreamSerializer<Entity> {
-
     @Override
     public void write( ObjectDataOutput out, Entity object ) throws IOException {
         EntityKeyStreamSerializer.serialize( out, object.getKey() );
@@ -36,7 +35,8 @@ public class EntityStreamSerializer implements SelfRegisteringStreamSerializer<E
     }
 
     @Override
-    public void destroy() {}
+    public void destroy() {
+    }
 
     @Override
     public Class<? extends Entity> getClazz() {

@@ -20,8 +20,10 @@
 
 package com.dataloom.hazelcast.serializers;
 
+import com.dataloom.data.requests.Entity;
+import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -29,17 +31,16 @@ import org.apache.commons.lang3.RandomStringUtils;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class KryoSetMultmapStreamSerializerTest
-        extends AbstractStreamSerializerTest<KryoSetMultimapStreamSerializer, SetMultimap> {
-
-    @Override protected KryoSetMultimapStreamSerializer createSerializer() {
-        return new KryoSetMultimapStreamSerializer();
+public class RequestEntityStreamSerializerTest
+        extends AbstractStreamSerializerTest<RequestEntityStreamSerializer, Entity> {
+    @Override protected RequestEntityStreamSerializer createSerializer() {
+        return new RequestEntityStreamSerializer();
     }
 
-    @Override protected SetMultimap createInput() {
-        SetMultimap m = HashMultimap.create();
-        m.put( UUID.randomUUID(), RandomStringUtils.random( 10 ) );
-        m.put( UUID.randomUUID(), RandomStringUtils.random( 10 ) );
-        return m;
+    @Override protected Entity createInput() {
+        return new Entity( TestDataFactory.entityKey(),
+                HashMultimap.create( ImmutableSetMultimap.of(
+                        UUID.randomUUID(), RandomStringUtils.random( 10 ),
+                        UUID.randomUUID(), RandomStringUtils.random( 10 ) ) ) );
     }
 }

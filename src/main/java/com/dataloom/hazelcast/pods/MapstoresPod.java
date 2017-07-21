@@ -32,6 +32,7 @@ import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
 import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
+import com.dataloom.data.requests.Entity;
 import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
 import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
 import com.dataloom.edm.EntitySet;
@@ -90,6 +91,7 @@ import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
+import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import java.util.List;
 import java.util.UUID;
 import javax.inject.Inject;
@@ -288,7 +290,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<EntityKey, SetMultimap<UUID, Object>> dataMapstore() {
+    public SelfRegisteringMapStore<EntityKey, Entity> dataMapstore() {
         ObjectMapper mapper = ObjectMappers.getJsonMapper();
         FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
         FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
@@ -299,4 +301,8 @@ public class MapstoresPod {
                 mapper );
     }
 
+    @Bean
+    public QueueConfigurer defaultQueueConfigurer() {
+        return config -> config.setMaxSize( 10000 ).setEmptyQueueTtl( 60 );
+    }
 }

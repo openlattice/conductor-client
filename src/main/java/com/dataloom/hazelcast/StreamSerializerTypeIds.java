@@ -24,7 +24,6 @@ package com.dataloom.hazelcast;
  * upgrade. <b>NOTE: Leave first entry in place</b>
  *
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
- *
  */
 public enum StreamSerializerTypeIds {
     /**
@@ -102,7 +101,8 @@ public enum StreamSerializerTypeIds {
     ADD_SRC_ENTITY_TYPES_TO_ASSOCIATION_TYPE_PROCESSOR,
     REMOVE_DST_ENTITY_TYPES_FROM_ASSOCIATION_TYPE_PROCESSOR,
     REMOVE_SRC_ENTITY_TYPES_FROM_ASSOCIATION_TYPE_PROCESSOR,
-    SET_MULTIMAP
+    SET_MULTIMAP,
+    REQUEST_ENTITY
     ;
 
 }
