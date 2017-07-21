@@ -477,10 +477,20 @@ public class EdmService implements EdmManager {
     public Iterable<EntityType> getEntityTypes() {
         return entityTypeManager.getEntityTypes();
     }
+    
+    public Iterable<EntityType> getEntityTypesStrict() {
+        return entityTypeManager.getEntityTypesStrict();
+    }
 
     @Override
     public Iterable<EntityType> getAssociationEntityTypes() {
         return entityTypeManager.getAssociationEntityTypes();
+    }
+
+    @Override
+    public Iterable<AssociationType> getAssociationTypes() {
+        return Iterables.transform( entityTypeManager.getAssociationTypeIds(),
+                associationTypeId -> getAssociationType( associationTypeId ) );
     }
 
     @Override
@@ -801,8 +811,12 @@ public class EdmService implements EdmManager {
                 "Association type of id %s does not exist.",
                 associationTypeId.toString() );
         Optional<EntityType> entityType = Optional.fromNullable(
-        		Util.getSafely( entityTypes, associationTypeId ) );
-        return new AssociationType( entityType, associationDetails.getSrc(), associationDetails.getDst(), associationDetails.isBidirectional() );
+                Util.getSafely( entityTypes, associationTypeId ) );
+        return new AssociationType(
+                entityType,
+                associationDetails.getSrc(),
+                associationDetails.getDst(),
+                associationDetails.isBidirectional() );
     }
 
     @Override

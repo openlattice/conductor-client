@@ -68,7 +68,11 @@ public interface EdmManager {
 
     Iterable<EntityType> getEntityTypes();
     
+    Iterable<EntityType> getEntityTypesStrict();
+    
     Iterable<EntityType> getAssociationEntityTypes();
+    
+    Iterable<AssociationType> getAssociationTypes();
     
     void deleteEntityType( UUID entityTypeId );
 
