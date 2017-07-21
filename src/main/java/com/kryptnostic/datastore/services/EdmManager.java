@@ -20,6 +20,7 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -82,6 +83,8 @@ public interface EdmManager {
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+    
+    void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds );
     
     void addSrcEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
     

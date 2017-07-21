@@ -74,6 +74,7 @@ import com.dataloom.edm.types.processors.AddSrcEntityTypesToAssociationTypeProce
 import com.dataloom.edm.types.processors.RemoveDstEntityTypesFromAssociationTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemoveSrcEntityTypesFromAssociationTypeProcessor;
+import com.dataloom.edm.types.processors.ReorderPropertyTypesInEntityTypeProcessor;
 import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
@@ -617,6 +618,17 @@ public class EdmService implements EdmManager {
         } );
         childrenIds.forEach( propertyTypes::unlock );
 
+    }
+
+    @Override
+    public void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds ) {
+        entityTypes.executeOnKey( entityTypeId, new ReorderPropertyTypesInEntityTypeProcessor( propertyTypeIds ) );
+        EntityType entityType = getEntityType( entityTypeId );
+        if ( entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+        }
     }
 
     @Override
