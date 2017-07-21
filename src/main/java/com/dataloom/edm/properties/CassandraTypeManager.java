@@ -55,6 +55,8 @@ public class CassandraTypeManager {
     private final PreparedStatement getEnumTypeIds;
     private final PreparedStatement getEntityTypeChildIds;
     private final Select.Where      getAssociationEntityTypes;
+    private final Select.Where      getAssociationTypeIds;
+    private final Select.Where      getEntityTypesStrict;
     private final PreparedStatement getAssociationTypeIdsForSrc;
     private final PreparedStatement getAssociationTypeIdsForDst;
 
@@ -67,6 +69,9 @@ public class CassandraTypeManager {
                                 .contains( CommonColumns.PROPERTIES.cql(), CommonColumns.PROPERTIES.bindMarker() ) ) );
         this.getEntityTypeIds = QueryBuilder.select( CommonColumns.ID.cql() ).distinct().from( keyspace,
                 Table.ENTITY_TYPES.getName() );
+        this.getAssociationTypeIds = QueryBuilder.select( CommonColumns.ID.cql() ).from( keyspace,
+                Table.ENTITY_TYPES.getName() ).allowFiltering()
+                .where( QueryBuilder.eq( CommonColumns.CATEGORY.cql(), SecurableObjectType.AssociationType ) );
         this.getEntityTypes = QueryBuilder.select().all().from( keyspace,
                 Table.ENTITY_TYPES.getName() );
         this.getPropertyTypeIds = QueryBuilder.select( CommonColumns.ID.cql() ).distinct().from( keyspace,
@@ -93,6 +98,9 @@ public class CassandraTypeManager {
         this.getAssociationEntityTypes = QueryBuilder.select().all().from( keyspace,
                 Table.ENTITY_TYPES.getName() ).allowFiltering()
                 .where( QueryBuilder.eq( CommonColumns.CATEGORY.cql(), SecurableObjectType.AssociationType ) );
+        this.getEntityTypesStrict = QueryBuilder.select().all().from( keyspace,
+                Table.ENTITY_TYPES.getName() ).allowFiltering()
+                .where( QueryBuilder.eq( CommonColumns.CATEGORY.cql(), SecurableObjectType.EntityType ) );
         this.getAssociationTypeIdsForSrc = session.prepare( QueryBuilder.select().all().from( keyspace,
                 Table.ASSOCIATION_TYPES.getName() ).allowFiltering()
                 .where( QueryBuilder.contains( CommonColumns.SRC.cql(), CommonColumns.SRC.bindMarker() ) ) );
@@ -122,8 +130,17 @@ public class CassandraTypeManager {
                 row -> row.getUUID( CommonColumns.ID.cql() ) );
     }
 
+    public Iterable<UUID> getAssociationTypeIds() {
+        return Iterables.transform( session.execute( getAssociationTypeIds ),
+                row -> row.getUUID( CommonColumns.ID.cql() ) );
+    }
+
     public Iterable<EntityType> getEntityTypes() {
         return Iterables.transform( session.execute( getEntityTypes ), RowAdapters::entityType );
+    }
+    
+    public Iterable<EntityType> getEntityTypesStrict() {
+        return Iterables.transform( session.execute( getEntityTypesStrict ), RowAdapters::entityType );
     }
 
     public Iterable<EntityType> getAssociationEntityTypes() {
@@ -139,8 +156,9 @@ public class CassandraTypeManager {
                 session.execute(
                         getAssociationTypeIdsForDst.bind().setUUID( CommonColumns.DST.cql(), entityTypeId ) ),
                 row -> row.getUUID( CommonColumns.ID.cql() ) );
-        
-        return Stream.concat( StreamUtil.stream( srcAssociationIds ), StreamUtil.stream( dstAssociationIds ) ).distinct();
+
+        return Stream.concat( StreamUtil.stream( srcAssociationIds ), StreamUtil.stream( dstAssociationIds ) )
+                .distinct();
     }
 
     public Stream<UUID> getComplexTypeIds() {

@@ -20,6 +20,7 @@
 package com.kryptnostic.datastore.services;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -28,6 +29,7 @@ import java.util.stream.Stream;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.Principal;
+import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.type.AssociationDetails;
@@ -68,7 +70,11 @@ public interface EdmManager {
 
     Iterable<EntityType> getEntityTypes();
     
+    Iterable<EntityType> getEntityTypesStrict();
+    
     Iterable<EntityType> getAssociationEntityTypes();
+    
+    Iterable<AssociationType> getAssociationTypes();
     
     void deleteEntityType( UUID entityTypeId );
 
@@ -77,6 +83,8 @@ public interface EdmManager {
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+    
+    void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds );
     
     void addSrcEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
     
@@ -162,5 +170,9 @@ public interface EdmManager {
     AssociationDetails getAssociationDetails( UUID associationTypeId );
     
     Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId );
+    
+    void setEntityDataModel( EntityDataModel edm );
+    
+    EntityDataModel getEntityDataModelDiff( EntityDataModel edm );
 
 }

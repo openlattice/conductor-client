@@ -45,7 +45,9 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.Schema;
 import com.dataloom.edm.events.AssociationTypeCreatedEvent;
 import com.dataloom.edm.events.AssociationTypeDeletedEvent;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
@@ -72,6 +74,7 @@ import com.dataloom.edm.types.processors.AddSrcEntityTypesToAssociationTypeProce
 import com.dataloom.edm.types.processors.RemoveDstEntityTypesFromAssociationTypeProcessor;
 import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
 import com.dataloom.edm.types.processors.RemoveSrcEntityTypesFromAssociationTypeProcessor;
+import com.dataloom.edm.types.processors.ReorderPropertyTypesInEntityTypeProcessor;
 import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
@@ -478,9 +481,19 @@ public class EdmService implements EdmManager {
         return entityTypeManager.getEntityTypes();
     }
 
+    public Iterable<EntityType> getEntityTypesStrict() {
+        return entityTypeManager.getEntityTypesStrict();
+    }
+
     @Override
     public Iterable<EntityType> getAssociationEntityTypes() {
         return entityTypeManager.getAssociationEntityTypes();
+    }
+
+    @Override
+    public Iterable<AssociationType> getAssociationTypes() {
+        return Iterables.transform( entityTypeManager.getAssociationTypeIds(),
+                associationTypeId -> getAssociationType( associationTypeId ) );
     }
 
     @Override
@@ -605,6 +618,17 @@ public class EdmService implements EdmManager {
         } );
         childrenIds.forEach( propertyTypes::unlock );
 
+    }
+
+    @Override
+    public void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds ) {
+        entityTypes.executeOnKey( entityTypeId, new ReorderPropertyTypesInEntityTypeProcessor( propertyTypeIds ) );
+        EntityType entityType = getEntityType( entityTypeId );
+        if ( entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+        }
     }
 
     @Override
@@ -801,8 +825,12 @@ public class EdmService implements EdmManager {
                 "Association type of id %s does not exist.",
                 associationTypeId.toString() );
         Optional<EntityType> entityType = Optional.fromNullable(
-        		Util.getSafely( entityTypes, associationTypeId ) );
-        return new AssociationType( entityType, associationDetails.getSrc(), associationDetails.getDst(), associationDetails.isBidirectional() );
+                Util.getSafely( entityTypes, associationTypeId ) );
+        return new AssociationType(
+                entityType,
+                associationDetails.getSrc(),
+                associationDetails.getDst(),
+                associationDetails.isBidirectional() );
     }
 
     @Override
@@ -836,6 +864,181 @@ public class EdmService implements EdmManager {
     public Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId ) {
         return entityTypeManager.getAssociationIdsForEntityType( entityTypeId ).map( id -> entityTypes.get( id ) )
                 .collect( Collectors.toList() );
+    }
+
+    private void updateEntityType( EntityType et, EntityType existing ) {
+        Optional<String> optionalTitleUpdate = ( et.getTitle().equals( existing.getTitle() ) )
+                ? Optional.absent() : Optional.of( et.getTitle() );
+        Optional<String> optionalDescriptionUpdate = ( et.getDescription().equals( existing.getDescription() ) )
+                ? Optional.absent() : Optional.of( et.getDescription() );
+        Optional<FullQualifiedName> optionalFqnUpdate = ( et.getType().equals( existing.getType() ) )
+                ? Optional.absent() : Optional.of( et.getType() );
+        updateEntityTypeMetadata( existing.getId(), new MetadataUpdate(
+                optionalTitleUpdate,
+                optionalDescriptionUpdate,
+                Optional.absent(),
+                Optional.absent(),
+                optionalFqnUpdate,
+                Optional.absent() ) );
+        if ( !et.getProperties().equals( existing.getProperties() ) )
+            addPropertyTypesToEntityType( existing.getId(), et.getProperties() );
+    }
+
+    @Override
+    public void setEntityDataModel( EntityDataModel edm ) {
+        edm.getPropertyTypes().forEach( pt -> {
+            PropertyType existing = null;
+            if ( pt.wasIdPresent() )
+                existing = getPropertyType( pt.getId() );
+            else {
+                UUID id = getTypeAclKey( pt.getType() );
+                if ( id != null ) existing = getPropertyType( id );
+            }
+
+            if ( existing == null )
+                createPropertyTypeIfNotExists( pt );
+            else {
+                Optional<String> optionalTitleUpdate = ( pt.getTitle().equals( existing.getTitle() ) )
+                        ? Optional.absent() : Optional.of( pt.getTitle() );
+                Optional<String> optionalDescriptionUpdate = ( pt.getDescription().equals( existing.getDescription() ) )
+                        ? Optional.absent() : Optional.of( pt.getDescription() );
+                Optional<FullQualifiedName> optionalFqnUpdate = ( pt.getType().equals( existing.getType() ) )
+                        ? Optional.absent() : Optional.of( pt.getType() );
+                Optional<Boolean> optionalPiiUpdate = ( pt.isPIIfield() == existing.isPIIfield() )
+                        ? Optional.absent() : Optional.of( pt.isPIIfield() );
+                updatePropertyTypeMetadata( existing.getId(), new MetadataUpdate(
+                        optionalTitleUpdate,
+                        optionalDescriptionUpdate,
+                        Optional.absent(),
+                        Optional.absent(),
+                        optionalFqnUpdate,
+                        optionalPiiUpdate ) );
+            }
+        } );
+        edm.getEntityTypes().forEach( et -> {
+            EntityType existing = null;
+            if ( et.wasIdPresent() )
+                existing = getEntityType( et.getId() );
+            else {
+                UUID id = getTypeAclKey( et.getType() );
+                if ( id != null ) existing = getEntityType( id );
+            }
+            if ( existing == null )
+                createEntityType( et );
+            else {
+                updateEntityType( et, existing );
+            }
+        } );
+        edm.getAssociationTypes().forEach( at -> {
+            AssociationType existing = null;
+            EntityType et = at.getAssociationEntityType();
+            if ( et.wasIdPresent() )
+                existing = getAssociationType( et.getId() );
+            else {
+                UUID id = getTypeAclKey( et.getType() );
+                if ( id != null ) existing = getAssociationType( id );
+            }
+            if ( existing == null ) {
+                createEntityType( et );
+                createAssociationType( at, getTypeAclKey( et.getType() ) );
+            } else {
+                updateEntityType( et, existing.getAssociationEntityType() );
+                if ( !existing.getSrc().equals( at.getSrc() ) )
+                    addSrcEntityTypesToAssociationType( existing.getAssociationEntityType().getId(), at.getSrc() );
+                if ( !existing.getDst().equals( at.getDst() ) )
+                    addDstEntityTypesToAssociationType( existing.getAssociationEntityType().getId(), at.getDst() );
+            }
+        } );
+        edm.getSchemas().forEach( schema -> {
+            if ( schemaManager.checkSchemaExists( schema.getFqn() ) ) {
+                Schema existing = schemaManager.getSchema( schema.getFqn().getNamespace(), schema.getFqn().getName() );
+                if ( !existing.getEntityTypes().equals( schema.getEntityTypes() ) ) {
+                    schemaManager.addEntityTypesToSchema( schema.getEntityTypes().stream().map( et -> {
+                        return et.getId();
+                    } ).collect( Collectors.toSet() ), schema.getFqn() );
+                }
+                if ( !existing.getPropertyTypes().equals( schema.getPropertyTypes() ) ) {
+                    schemaManager.addPropertyTypesToSchema( schema.getPropertyTypes().stream().map( pt -> {
+                        return pt.getId();
+                    } ).collect( Collectors.toSet() ), schema.getFqn() );
+                }
+            } else {
+            schemaManager.createOrUpdateSchemas( schema );
+             }
+        } );
+    }
+
+    @Override
+    public EntityDataModel getEntityDataModelDiff( EntityDataModel edm ) {
+        Set<PropertyType> updatedPropertyTypes = Sets.newHashSet();
+        Set<EntityType> updatedEntityTypes = Sets.newHashSet();
+        Set<AssociationType> updatedAssociationTypes = Sets.newHashSet();
+        Set<Schema> updatedSchemas = Sets.newHashSet();
+        edm.getPropertyTypes().forEach( pt -> {
+            PropertyType existing = null;
+            if ( pt.wasIdPresent() ) {
+                if ( checkPropertyTypeExists( pt.getId() ) ) existing = getPropertyType( pt.getId() );
+            } else {
+                UUID id = getTypeAclKey( pt.getType() );
+                if ( id != null ) existing = getPropertyType( id );
+            }
+            if ( existing == null
+                    || !pt.getType().equals( existing.getType() )
+                    || !pt.getTitle().equals( existing.getTitle() )
+                    || !pt.getDescription().equals( existing.getDescription() )
+                    || !pt.isPIIfield() == existing.isPIIfield() )
+                updatedPropertyTypes.add( pt );
+        } );
+
+        edm.getEntityTypes().forEach( et -> {
+            EntityType existing = null;
+            if ( et.wasIdPresent() ) {
+                if ( checkEntityTypeExists( et.getId() ) ) existing = getEntityType( et.getId() );
+            } else {
+                UUID id = getTypeAclKey( et.getType() );
+                if ( id != null ) existing = getEntityType( id );
+            }
+            if ( existing == null
+                    || !et.getType().equals( existing.getType() )
+                    || !et.getTitle().equals( existing.getTitle() )
+                    || !et.getDescription().equals( existing.getDescription() )
+                    || !et.getProperties().equals( existing.getProperties() ) )
+                updatedEntityTypes.add( et );
+        } );
+
+        edm.getAssociationTypes().forEach( at -> {
+            AssociationType existing = null;
+            if ( at.getAssociationEntityType().wasIdPresent() ) {
+                if ( checkEntityTypeExists( at.getAssociationEntityType().getId() ) )
+                    existing = getAssociationType( at.getAssociationEntityType().getId() );
+            } else {
+                UUID id = getTypeAclKey( at.getAssociationEntityType().getType() );
+                if ( id != null ) existing = getAssociationType( id );
+            }
+            EntityType atEntityType = at.getAssociationEntityType();
+            if ( existing == null
+                    || !atEntityType.getType().equals( existing.getAssociationEntityType().getType() )
+                    || !atEntityType.getTitle().equals( existing.getAssociationEntityType().getTitle() )
+                    || !atEntityType.getDescription().equals( existing.getAssociationEntityType().getDescription() )
+                    || !atEntityType.getProperties().equals( existing.getAssociationEntityType().getProperties() )
+                    || !at.getSrc().equals( existing.getSrc() )
+                    || !at.getDst().equals( existing.getDst() ) )
+                updatedAssociationTypes.add( at );
+        } );
+        edm.getSchemas().forEach( schema -> {
+            Schema existing = null;
+            if ( schemaManager.checkSchemaExists( schema.getFqn() ) ) {
+                existing = schemaManager.getSchema( schema.getFqn().getNamespace(), schema.getFqn().getName() );
+            }
+            if ( existing == null || !schema.equals( existing ) ) updatedSchemas.add( schema );
+        } );
+
+        return new EntityDataModel(
+                Sets.newHashSet(),
+                updatedSchemas,
+                updatedEntityTypes,
+                updatedAssociationTypes,
+                updatedPropertyTypes );
     }
 
 }
