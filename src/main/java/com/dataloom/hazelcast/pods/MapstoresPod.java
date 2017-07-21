@@ -32,9 +32,9 @@ import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
 import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
-import com.dataloom.data.requests.Entity;
 import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
 import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
+import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
@@ -83,7 +83,6 @@ import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
 import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.SetMultimap;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
@@ -290,7 +289,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<EntityKey, Entity> dataMapstore() {
+    public SelfRegisteringMapStore<UUID, EntityBytes> dataMapstore() {
         ObjectMapper mapper = ObjectMappers.getJsonMapper();
         FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
         FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
