@@ -478,10 +478,20 @@ public class EdmService implements EdmManager {
     public Iterable<EntityType> getEntityTypes() {
         return entityTypeManager.getEntityTypes();
     }
+    
+    public Iterable<EntityType> getEntityTypesStrict() {
+        return entityTypeManager.getEntityTypesStrict();
+    }
 
     @Override
     public Iterable<EntityType> getAssociationEntityTypes() {
         return entityTypeManager.getAssociationEntityTypes();
+    }
+
+    @Override
+    public Iterable<AssociationType> getAssociationTypes() {
+        return Iterables.transform( entityTypeManager.getAssociationTypeIds(),
+                associationTypeId -> getAssociationType( associationTypeId ) );
     }
 
     @Override
