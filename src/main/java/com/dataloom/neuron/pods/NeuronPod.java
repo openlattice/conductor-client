@@ -115,7 +115,9 @@ public class NeuronPod {
         return new CassandraEntityDatastore(
                 session,
                 hazelcastInstance,
+                executor,
                 defaultObjectMapper(),
+                idService(),
                 linkingGraph(),
                 loomGraph(),
                 dataSourceManager()

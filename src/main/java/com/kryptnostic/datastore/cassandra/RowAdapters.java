@@ -22,6 +22,7 @@ package com.kryptnostic.datastore.cassandra;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.Analyzer;
 import com.dataloom.edm.type.AssociationType;
@@ -43,6 +44,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -110,6 +112,28 @@ public final class RowAdapters {
                                 entityId ) );
             }
         }
+        return m;
+    }
+
+    public static SetMultimap<UUID, Object> entityIndexedById(
+            EntityBytes eb,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> m = HashMultimap.create();
+        eb.getRaw().entries().stream().forEach( e -> {
+            UUID propertyTypeId = e.getKey();
+            byte[] property = e.getValue();
+            PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+            if ( propertyTypeId != null ) {
+                m.put( propertyTypeId,
+                        CassandraSerDesFactory.deserializeValue( mapper,
+                                ByteBuffer.wrap( property ),
+                                pt.getDatatype(),
+                                eb.getEntityId() ) );
+            }
+
+        } );
+
         return m;
     }
 

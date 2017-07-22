@@ -288,17 +288,17 @@ public class MapstoresPod {
         return new VertexIdsAfterLinkingMapstore( session );
     }
 
-//    @Bean
-//    public SelfRegisteringMapStore<UUID, EntityBytes> dataMapstore() {
-//        ObjectMapper mapper = ObjectMappers.getJsonMapper();
-//        FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
-//        FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
-//        return new DataMapstore( HazelcastMap.DATA.name(),
-//                Table.DATA.getBuilder(),
-//                session,
-//                propertyTypeMapstore(),
-//                mapper );
-//    }
+    @Bean
+    public SelfRegisteringMapStore<UUID, EntityBytes> dataMapstore() {
+        ObjectMapper mapper = ObjectMappers.getJsonMapper();
+        FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
+        FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
+        return new DataMapstore( HazelcastMap.DATA.name(),
+                Table.DATA.getBuilder(),
+                session,
+                propertyTypeMapstore(),
+                mapper );
+    }
 
     @Bean
     public QueueConfigurer defaultQueueConfigurer() {

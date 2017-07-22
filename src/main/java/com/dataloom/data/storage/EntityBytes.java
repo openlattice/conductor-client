@@ -20,17 +20,19 @@
 
 package com.dataloom.data.storage;
 
-import com.dataloom.client.serialization.SerializationConstants;
 import com.dataloom.data.EntityKey;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.SetMultimap;
+import java.nio.ByteBuffer;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EntityBytes {
-    private EntityKey                 key;
-    private SetMultimap<UUID, byte[]> details;
+    private static final Logger logger = LoggerFactory.getLogger( EntityBytes.class );
+    private final EntityKey                 key;
+    private final SetMultimap<UUID, byte[]> details;
 
     public EntityBytes(
             EntityKey key,
@@ -43,7 +45,7 @@ public class EntityBytes {
         return key;
     }
 
-    public SetMultimap<UUID, byte[]> getDetails() {
+    public SetMultimap<UUID, byte[]> getRaw() {
         return details;
     }
 
@@ -69,12 +71,31 @@ public class EntityBytes {
         EntityBytes that = (EntityBytes) o;
 
         if ( key != null ? !key.equals( that.key ) : that.key != null ) { return false; }
-        return details != null ? details.equals( that.details ) : that.details == null;
+        return details != null ? isEqual( details, that.details ) : that.details == null;
+    }
+
+    //Super expensive equals, avoid using
+    private boolean isEqual( SetMultimap<UUID, byte[]> a, SetMultimap<UUID, byte[]> b ) {
+        logger.warn( "Something is invoking EntityBytes.equals(...). This is very expensive and should be avoided." );
+        if ( a.keySet().equals( b.keySet() ) ) {
+            return a.keySet().stream()
+                    .allMatch( id -> a.get( id ).stream().map( ByteBuffer::wrap ).collect( Collectors.toSet() )
+                            .equals( b.get( id ).stream().map( ByteBuffer::wrap ).collect( Collectors.toSet() ) ) );
+        }
+        return false;
     }
 
     @Override public int hashCode() {
         int result = key != null ? key.hashCode() : 0;
         result = 31 * result + ( details != null ? details.hashCode() : 0 );
         return result;
+    }
+
+    @Override public String toString() {
+
+        return "EntityBytes{" +
+                "key=" + key +
+                ", details=" + details +
+                '}';
     }
 }

@@ -20,6 +20,7 @@
 package com.dataloom.data;
 
 import com.codahale.metrics.annotation.Timed;
+import com.dataloom.data.storage.EntityBytes;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -34,7 +35,6 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.type.PropertyType;
-import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.SetMultimap;
 
 /**
@@ -79,7 +79,7 @@ public interface EntityDatastore {
      * @param properties
      * @return
      */
-    ResultSetFuture asyncLoadEntity(
+    ListenableFuture<EntityBytes> asyncLoadEntity(
             UUID entitySetId,
             String entityId,
             UUID syncId,
@@ -92,7 +92,7 @@ public interface EntityDatastore {
      * @param syncId
      * @return
      */
-    ResultSetFuture asyncLoadEntity(
+    ListenableFuture<EntityBytes> asyncLoadEntity(
             UUID entitySetId,
             String entityId,
             UUID syncId );
@@ -108,7 +108,7 @@ public interface EntityDatastore {
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
-    @Timed ResultSetFuture getEntityAsync(
+    @Timed ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
             UUID entitySetId,
             UUID syncId,
             String entityId,

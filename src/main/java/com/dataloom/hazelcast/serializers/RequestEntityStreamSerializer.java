@@ -21,12 +21,11 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.data.requests.Entity;
+import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -41,7 +40,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RequestEntityStreamSerializer implements SelfRegisteringStreamSerializer<Entity> {
+public class RequestEntityStreamSerializer implements SelfRegisteringStreamSerializer<EntityBytes> {
 
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
@@ -56,19 +55,13 @@ public class RequestEntityStreamSerializer implements SelfRegisteringStreamSeria
     };
 
     @Override
-    public void write( ObjectDataOutput out, Entity object ) throws IOException {
-        EntityKeyStreamSerializer.serialize( out, object.getKey() );
-        Output output = new Output( (OutputStream) out );
-        kryoThreadLocal.get().writeClassAndObject( output, object.getDetails() );
-        output.flush();
+    public void write( ObjectDataOutput out, EntityBytes object ) throws IOException {
+        serialize( out, object );
     }
 
     @Override
-    public Entity read( ObjectDataInput in ) throws IOException {
-        EntityKey ek = EntityKeyStreamSerializer.deserialize( in );
-        Input input = new Input( (InputStream) in );
-        SetMultimap<UUID, Object> m = (SetMultimap<UUID, Object>) kryoThreadLocal.get().readClassAndObject( input );
-        return new Entity( ek, m );
+    public EntityBytes read( ObjectDataInput in ) throws IOException {
+        return deserialize( in );
     }
 
     @Override
@@ -81,8 +74,22 @@ public class RequestEntityStreamSerializer implements SelfRegisteringStreamSeria
     }
 
     @Override
-    public Class<? extends Entity> getClazz() {
-        return Entity.class;
+    public Class<? extends EntityBytes> getClazz() {
+        return EntityBytes.class;
+    }
+
+    public static void serialize( ObjectDataOutput out, EntityBytes object ) throws IOException {
+        EntityKeyStreamSerializer.serialize( out, object.getKey() );
+        Output output = new Output( (OutputStream) out );
+        kryoThreadLocal.get().writeClassAndObject( output, object.getRaw() );
+        output.flush();
+    }
+
+    public static EntityBytes deserialize( ObjectDataInput in ) throws IOException {
+        EntityKey ek = EntityKeyStreamSerializer.deserialize( in );
+        Input input = new Input( (InputStream) in );
+        SetMultimap<UUID, byte[]> m = (SetMultimap<UUID, byte[]>) kryoThreadLocal.get().readClassAndObject( input );
+        return new EntityBytes( ek, m );
     }
 
 }
