@@ -34,7 +34,7 @@ public final class EntitySets {
 
     public static Predicate filterByEntitySetIdAndSyncId( Row row  ){
         UUID entitySetId = RowAdapters.entitySetId(  row  );
-        UUID syncId = RowAdapters.currentSyncId( row );
+        UUID syncId = RowAdapters.syncId( row );
         return filterByEntitySetIdAndSyncId( entitySetId,syncId );
     }
     public static Predicate filterByEntitySetIdAndSyncId( UUID entitySetId, UUID syncId) {
