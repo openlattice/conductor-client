@@ -28,11 +28,14 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class EntitySetHazelcastStream extends HazelcastStream<EntityBytes> {
+    private static final Logger logger = LoggerFactory.getLogger( EntitySetHazelcastStream.class );
     private final IMap<UUID, EntityBytes> data;
     private final UUID                    entitySetId;
     private final UUID                    syncId;
@@ -51,6 +54,11 @@ public class EntitySetHazelcastStream extends HazelcastStream<EntityBytes> {
         Predicate p = Predicates.and(
                 Predicates.equal( "entitySetId", entitySetId ),
                 Predicates.equal( "syncId", syncId ) );
-        return data.aggregate( new EntitySetAggregator( streamId ), p );
+        Long count = data.aggregate( new EntitySetAggregator( streamId ), p );
+        if ( count == null ) {
+            logger.info( "Count for stream id {} was 0", streamId );
+            return 0;
+        }
+        return count;
     }
 }

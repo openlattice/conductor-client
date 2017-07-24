@@ -20,13 +20,13 @@
 
 package com.dataloom.data;
 
+import static com.dataloom.data.EntitySets.filterByEntitySetIdAndSyncId;
+
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.query.Predicate;
-import com.hazelcast.query.Predicates;
 import java.util.UUID;
 
 /**
@@ -48,9 +48,8 @@ public class EntityKeyHazelcastStream extends HazelcastStream<EntityKey> {
 
     @Override
     protected long buffer( UUID streamId ) {
-        Predicate p = Predicates.and(
-                Predicates.equal( "entitySetId", entitySetId ),
-                Predicates.equal( "syncId", syncId ) );
-        return data.aggregate( new EntityKeyAggregator( streamId ), p );
+        return data.aggregate(
+                new EntityKeyAggregator( streamId ),
+                filterByEntitySetIdAndSyncId( entitySetId, syncId ) );
     }
 }

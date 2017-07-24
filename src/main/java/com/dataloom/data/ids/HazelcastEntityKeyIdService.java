@@ -19,6 +19,7 @@
 
 package com.dataloom.data.ids;
 
+import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
@@ -63,15 +64,19 @@ public class HazelcastEntityKeyIdService implements EntityKeyIdService {
     }
 
     @Override
+    @Timed
     public EntityKey getEntityKey( UUID entityKeyId ) {
         return Util.getSafely( keys, entityKeyId );
     }
 
-    @Override public UUID getEntityKeyId( EntityKey entityKey ) {
+    @Override
+    @Timed
+    public UUID getEntityKeyId( EntityKey entityKey ) {
         return Util.getSafely( ids, entityKey );
     }
 
-    @Override 
+    @Override
+    @Timed
     public Map<EntityKey, UUID> getEntityKeyIds( Set<EntityKey> entityKeys ) {
         return Util.getSafely( ids, entityKeys );
     }

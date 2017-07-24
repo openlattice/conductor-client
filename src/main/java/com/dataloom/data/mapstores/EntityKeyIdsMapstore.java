@@ -1,5 +1,6 @@
 package com.dataloom.data.mapstores;
 
+import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.EntityKey;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.streams.StreamUtil;
@@ -15,23 +16,27 @@ import com.hazelcast.config.MaxSizeConfig;
 import com.hazelcast.map.eviction.LRUEvictionPolicy;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
+import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<EntityKey, UUID> {
     private static final Logger logger = LoggerFactory.getLogger( EntityKeyIdsMapstore.class );
+    private final SelfRegisteringMapStore<UUID,EntityKey> ekm;
 
-    public EntityKeyIdsMapstore( String mapName, Session session, CassandraTableBuilder tableBuilder ) {
+    public EntityKeyIdsMapstore(
+            SelfRegisteringMapStore<UUID,EntityKey> ekm,
+            String mapName,
+            Session session,
+            CassandraTableBuilder tableBuilder ) {
         super( mapName, session, tableBuilder );
+        this.ekm = ekm;
     }
 
     @Override public Iterable<EntityKey> loadAllKeys() {
@@ -68,28 +73,32 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
         return rs.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
     }
 
-    private Stream<UUID> mapValues( ResultSet rs ) {
-        return StreamUtil.stream( rs ).map( RowAdapters::id );
-    }
+    //    private Stream<UUID> mapValues( ResultSet rs ) {
+    //        return StreamUtil.stream( rs ).map( RowAdapters::id );
+    //    }
 
     @Override
     protected UUID mapValue( ResultSet rs ) {
-        return mapValues( rs ).iterator().next();
+        Row r = rs.one();
+        return r == null ? null : RowAdapters.id( r );
     }
 
     @Override
+    @Timed
     public UUID load( EntityKey key ) {
-        Set<UUID> ids;
+        UUID id = super.load( key );
+
+        if ( id != null ) {
+            return id;
+        }
+
         do {
-            UUID id = UUID.randomUUID();
-            asyncStore( key, id )
-                    .map( ResultSetFuture::getUninterruptibly )
-                    .allMatch( Util::wasLightweightTransactionApplied );
+            id = UUID.randomUUID();
+        } while ( ekm.load( id ) != null );
 
-            ids = mapValues( asyncLoad( key ).getUninterruptibly() ).collect( Collectors.toSet() );
-        } while ( ids.size() > 1 );
+        store( key, id );
 
-        return ids.iterator().next();
+        return id;
     }
 
     @Override

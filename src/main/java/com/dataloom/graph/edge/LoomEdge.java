@@ -41,6 +41,7 @@ public class LoomEdge {
         return key;
     }
 
+
     public UUID getSrcType() {
         return srcType;
     }

@@ -38,11 +38,12 @@ public class EntitySetAggregatorStreamSerializer implements SelfRegisteringStrea
     }
 
     @Override public void write( ObjectDataOutput out, EntitySetAggregator object ) throws IOException {
-        UUIDStreamSerializer.serialize( out, object.getStreamId() );;
+        UUIDStreamSerializer.serialize( out, object.getStreamId() );
+        out.writeLong( object.aggregate() );
     }
 
     @Override public EntitySetAggregator read( ObjectDataInput in ) throws IOException {
-        return new EntitySetAggregator( UUIDStreamSerializer.deserialize( in ) );
+        return new EntitySetAggregator( UUIDStreamSerializer.deserialize( in ), in.readLong() );
     }
 
     @Override public int getTypeId() {

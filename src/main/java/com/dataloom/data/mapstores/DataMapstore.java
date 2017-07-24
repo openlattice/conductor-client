@@ -56,6 +56,7 @@ import java.nio.ByteBuffer;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Stream;
+import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -208,6 +209,7 @@ public class DataMapstore
                 .distinct().from( Table.SYNC_IDS.getKeyspace(), Table.SYNC_IDS.getName() );
 
     }
+
 
 //    public static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
 //        return session.prepare( QueryBuilder.select( ENTITY_SET_ID.cql(), SYNCID.cql(), ENTITYID.cql() )

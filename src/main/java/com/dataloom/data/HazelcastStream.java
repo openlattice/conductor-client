@@ -20,13 +20,19 @@
 
 package com.dataloom.data;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ILock;
 import com.hazelcast.core.IQueue;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,64 +42,127 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class HazelcastStream<T> implements Iterable<T> {
     private static final Logger logger = LoggerFactory.getLogger( HazelcastStream.class );
-    private final           UUID      streamId;
-    private transient final IQueue<T> stream;
-    private final           ILock     streamLock;
-    private boolean bufferingIncomplete = true;
-    private long    expectedLength      = 0;
-    private long    readLength          = 0;
+    private final HazelcastInstance        hazelcastInstance;
+    private final ListeningExecutorService executor;
 
     public HazelcastStream( ListeningExecutorService executor, HazelcastInstance hazelcastInstance ) {
-        Pair<UUID, ILock> idAndLock = acquireSafeId( hazelcastInstance );
-        this.streamId = idAndLock.getLeft();
-        this.streamLock = idAndLock.getRight();
-        this.stream = hazelcastInstance.getQueue( streamId.toString() );
-        executor.execute( this::startBuffering );
-    }
-
-    private Pair<UUID, ILock> acquireSafeId( HazelcastInstance hazelcastInstance ) {
-        UUID id;
-        ILock maybeStreamLock;
-        do {
-            id = UUID.randomUUID();
-            maybeStreamLock = hazelcastInstance.getLock( id.toString() );
-        } while ( !maybeStreamLock.tryLock() );
-
-        return Pair.of( id, maybeStreamLock );
+        this.hazelcastInstance = hazelcastInstance;
+        this.executor = executor;
     }
 
     protected abstract long buffer( UUID streamId );
 
-    private void startBuffering() {
-        expectedLength = buffer( streamId );
-        bufferingIncomplete = false;
+    @Override public Iterator<T> iterator() {
+        HazelcastIterator hzIterator = new HazelcastIterator<T>( executor, hazelcastInstance );
+        executor.execute( () -> {
+            Stopwatch w = Stopwatch.createStarted();
+            hzIterator.setLength( buffer( hzIterator.getStreamId() ) );
+            logger.info( "Buffering time for {}: {} ms",
+                    getClass().getCanonicalName(),
+                    w.elapsed( TimeUnit.MILLISECONDS ) );
+        } );
+        return hzIterator;
     }
 
-    @Override public Iterator<T> iterator() {
-        return new Iterator<T>() {
-            private final Iterator<T> i = stream.iterator();
+    public static class HazelcastIterator<T> implements Iterator<T> {
+        private final ILock     streamLock;
+        private final UUID      streamId;
+        private final IQueue<T> stream;
+        private final Lock lock = new ReentrantLock();
+        private final ListeningExecutorService executor;
+        private long length   = -1;
+        private long position = 0;
+        private ListenableFuture<T> fNext;
 
-            @Override
-            public boolean hasNext() {
-                if ( bufferingIncomplete || ( readLength < expectedLength ) ) {
-                    return true;
-                } else {
-                    stream.destroy();
-                    streamLock.unlock();
-                    streamLock.destroy();
-                    return false;
-                }
+        public HazelcastIterator( ListeningExecutorService executor, HazelcastInstance hazelcastInstance ) {
+            Pair<UUID, ILock> idAndLock = acquireSafeId( hazelcastInstance );
+            this.streamId = idAndLock.getLeft();
+            this.streamLock = idAndLock.getRight();
+            this.stream = hazelcastInstance.getQueue( streamId.toString() );
+            this.executor = executor;
+            fNext = load();
+        }
+
+        private Pair<UUID, ILock> acquireSafeId( HazelcastInstance hazelcastInstance ) {
+            UUID id;
+            ILock maybeStreamLock;
+            do {
+                id = UUID.randomUUID();
+                maybeStreamLock = hazelcastInstance.getLock( id.toString() );
+            } while ( !maybeStreamLock.tryLock() );
+
+            return Pair.of( id, maybeStreamLock );
+        }
+
+        void setLength( long length ) {
+            this.length = length;
+            if ( position >= length ) {
+                fNext.cancel( true );
             }
+        }
 
-            @Override public T next() {
+        public UUID getStreamId() {
+            return streamId;
+        }
+
+        @Override
+        public boolean hasNext() {
+            /*
+             * Until we have the full length we have to try and read the nextAvailable element to determine and keep track
+             * of the current position.
+             *
+             * Once we have the full length we can determine if there is more available.
+             */
+
+            if ( length < 0 ) {
                 try {
-                    T next = stream.poll( 10, TimeUnit.MINUTES );
-                    return next;
-                } catch ( InterruptedException e ) {
-                    logger.error( "Unable to retrieve items from hazelcast stream.", e );
-                    return null;
+                    lock.lock();
+                    return fNext.get() != null;
+                } catch ( InterruptedException | ExecutionException e ) {
+                    logger.error( "Unable to check if stream queue {} has next element", streamId, e );
+                    return false;
+                } finally {
+                    lock.unlock();
                 }
+            } else {
+                return position < length;
             }
-        };
+        }
+
+        private ListenableFuture<T> load() {
+            return executor.submit( () -> stream.poll( 10, TimeUnit.MINUTES ) );
+            //            return executor.submit( (Runnable) () -> {
+            //                try {
+            //                    nextAvailable = stream.poll( 10, TimeUnit.MINUTES );
+            //                } catch ( InterruptedException e ) {
+            //                    logger.error( "Unable to retrieve items from hazelcast stream.", e );
+            //                }
+            //            } );
+        }
+
+        @Override
+        public T next() {
+            T next = null;
+            try {
+                next = fNext.get();
+            } catch ( InterruptedException | ExecutionException e ) {
+                logger.error( "Unable to retrieve next element from stream queue {}", streamId, e );
+            }
+
+            if ( next == null ) {
+                streamLock.unlock();
+                streamLock.destroy();
+                throw new NoSuchElementException( "The iterator backed by queue " + streamId + " is out of elements" );
+            } else {
+                try {
+                    lock.lock();
+                    fNext = load();
+                    ++position;
+                } finally {
+                    lock.unlock();
+                }
+                return next;
+            }
+        }
     }
 }

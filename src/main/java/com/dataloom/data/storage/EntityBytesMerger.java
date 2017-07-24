@@ -42,7 +42,6 @@ public class EntityBytesMerger extends AbstractRhizomeEntryProcessor<UUID, Entit
 
     @Override public Void process( Entry<UUID, EntityBytes> entry ) {
         EntityBytes eb = entry.getValue();
-        SetMultimap<UUID, byte[]> currentProperties = entry.getValue().getRaw();
         if ( eb != null ) {
             eb.getRaw().putAll( entity.getRaw() );
         } else {

@@ -309,7 +309,7 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( IDS )
                         .ifNotExists()
                         .partitionKey( ENTITY_KEY )
-                        .clusteringColumns( ID );
+                        .columns( ID );
             case KEYS:
                 return new CassandraMaterializedViewBuilder( IDS.getBuilder(), KEYS.getName() )
                         .ifNotExists()

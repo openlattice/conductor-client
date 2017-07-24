@@ -275,7 +275,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<EntityKey, UUID> idsMapstore() {
-        return new EntityKeyIdsMapstore( HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
+        return new EntityKeyIdsMapstore( keysMapstore(), HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
     }
 
     @Bean

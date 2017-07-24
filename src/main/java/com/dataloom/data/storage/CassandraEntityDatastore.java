@@ -56,6 +56,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
@@ -74,7 +75,6 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -122,7 +122,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final PreparedStatement      writeDataQuery;
     //    private final PreparedStatement      entityQueryWithoutPropertyTypes;
     //    private final PreparedStatement      entitySetQuery;
-//    private final PreparedStatement      entityIdsQuery;
+    //    private final PreparedStatement      entityIdsQuery;
     private final PreparedStatement      deleteEntityQuery;
     private final PreparedStatement      deleteEntitySetQuery;
     private final PreparedStatement      readNumRPCRowsQuery;
@@ -155,7 +155,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
         //        this.entityQueryWithoutPropertyTypes = prepareEntityQueryWithoutPropertyTypes( session, dataTableDefinitions );
         //        this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
-//        this.entityIdsQuery = prepareEntityIdsQuery( session );
+        //        this.entityIdsQuery = prepareEntityIdsQuery( session );
         this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
 
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
@@ -328,7 +328,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .map( rsf -> {
                     Stopwatch w = Stopwatch.createStarted();
                     //ResultSet rs = rsf.getUninterruptibly();
-                    EntityBytes eb = StreamUtil.safeGet( rsf  );
+                    EntityBytes eb = StreamUtil.safeGet( rsf );
                     logger.info( "Load entity took: {}", w.elapsed( TimeUnit.MILLISECONDS ) );
                     return eb;
                 } );
@@ -384,12 +384,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId ) {
 
         UUID id = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
-        return new ListenableHazelcastFuture<EntityBytes>(  data.getAsync( id ) );
+        return new ListenableHazelcastFuture<EntityBytes>( data.getAsync( id ) );
 
-//        return session.executeAsync( entityQueryWithoutPropertyTypes.bind()
-//                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-//                .setUUID( CommonColumns.SYNCID.cql(), syncId )
-//                .setString( CommonColumns.ENTITYID.cql(), entityId ) );
+        //        return session.executeAsync( entityQueryWithoutPropertyTypes.bind()
+        //                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+        //                .setUUID( CommonColumns.SYNCID.cql(), syncId )
+        //                .setString( CommonColumns.ENTITYID.cql(), entityId ) );
     }
 
     @Deprecated
@@ -441,7 +441,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
         // does not write the row if some property values that user is trying to write to are not authorized.
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
-            logger.error( "Entity {} not written because not all property values are authorized.", entityId );
+            logger.error( "Entity {} not written because the following properties are not authorized: {}", entityId,
+                    Sets.difference( entityDetails.keySet() , authorizedProperties ) );
             return results;
         }
 
@@ -458,14 +459,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
         // Stream<Entry<UUID, Object>> authorizedPropertyValues = propertyValues.entries().stream().filter( entry ->
         // authorizedProperties.contains( entry.getKey() ) );
         EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
-        Set<ICompletableFuture<Void>> pendingWrites = new HashSet<>( normalizedPropertyValues.size() );
-        SetMultimap<UUID, byte[]> normalizedPropertyValuesAsMap = HashMultimap.create();
-        //TODO: We recompute this on every write-- we should just a keep a list of all binary types for lookup.
-        Set<UUID> binaryTypes = authorizedPropertiesWithDataType.entrySet()
-                .stream()
-                .filter( e -> !e.getValue().equals( EdmPrimitiveTypeKind.Binary ) )
-                .map( Entry::getKey )
-                .collect( Collectors.toSet() );
+        SetMultimap<UUID, byte[]> rawProperties = HashMultimap.create();
+
         normalizedPropertyValues.entries().stream()
                 .map( entry -> {
 
@@ -477,21 +472,24 @@ public class CassandraEntityDatastore implements EntityDatastore {
                             datatype,
                             entityId ).array() );
                 } )
-                .forEach( entry -> normalizedPropertyValuesAsMap.put( entry.getKey(), entry.getValue() ) );
-        EntityBytes eb = new EntityBytes( ek, normalizedPropertyValuesAsMap );
+                .forEach( entry -> rawProperties.put( entry.getKey(), entry.getValue() ) );
+        EntityBytes eb = new EntityBytes( ek, rawProperties );
+
         try {
             data.submitToKey( idService.getEntityKeyId( ek ), new EntityBytesMerger( eb ) ).get();
         } catch ( InterruptedException | ExecutionException e ) {
-            logger.error( "Unable to write entityy {} = {}", ek, normalizedPropertyValuesAsMap, e );
+            logger.error( "Unable to write entityy {} = {}", ek, rawProperties, e );
         }
 
-        binaryTypes.forEach( normalizedPropertyValuesAsMap::removeAll );
+        Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream().filter(
+                entry -> !authorizedPropertiesWithDataType.get( entry.getKey() ).equals( EdmPrimitiveTypeKind.Binary ) )
+                .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
 
         eventBus.post( new EntityDataCreatedEvent(
                 entitySetId,
                 Optional.of( syncId ),
                 entityId,
-                new HashMap<>( normalizedPropertyValuesAsMap.asMap() ) ) );
+                normalizedPropertyValuesAsMap ) );
 
         return results;
     }
@@ -664,17 +662,17 @@ public class CassandraEntityDatastore implements EntityDatastore {
     //                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
     //    }
 
-//    private static PreparedStatement prepareEntityIdsQuery( Session session ) {
-//        return session.prepare( QueryBuilder
-//                .select()
-//                //.column( CommonColumns.ENTITY_SET_ID.cql() )
-//                //.column( CommonColumns.SYNCID.cql() )
-//                .column( CommonColumns.ENTITYID.cql() )
-//                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-//                .where( CommonColumns.ENTITY_SET_ID.eq() )
-//                .and( CommonColumns.SYNCID.eq() )
-//                .and( partitionIndexClause() ) );
-//    }
+    //    private static PreparedStatement prepareEntityIdsQuery( Session session ) {
+    //        return session.prepare( QueryBuilder
+    //                .select()
+    //                //.column( CommonColumns.ENTITY_SET_ID.cql() )
+    //                //.column( CommonColumns.SYNCID.cql() )
+    //                .column( CommonColumns.ENTITYID.cql() )
+    //                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
+    //                .where( CommonColumns.ENTITY_SET_ID.eq() )
+    //                .and( CommonColumns.SYNCID.eq() )
+    //                .and( partitionIndexClause() ) );
+    //    }
 
     public static Clause partitionIndexClause() {
         return QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES );
