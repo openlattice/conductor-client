@@ -23,13 +23,11 @@ import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.storage.EntityBytes;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.datastax.driver.core.ResultSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -132,7 +130,7 @@ public interface EntityDatastore {
      * @param authorizedPropertiesWithDataType
      * @return
      */
-    ListenableFuture<List<ResultSet>> updateEntityAsync(
+    Stream<ListenableFuture> updateEntityAsync(
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );

@@ -193,7 +193,7 @@ public class DataMapstore
 //    }
 
     @Override public MapStoreConfig getMapStoreConfig() {
-        return super.getMapStoreConfig();//.setInitialLoadMode( InitialLoadMode.EAGER );
+        return super.getMapStoreConfig().setWriteDelaySeconds( 2 );//.setInitialLoadMode( InitialLoadMode.EAGER );
     }
 
     @Override

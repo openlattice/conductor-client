@@ -1,5 +1,7 @@
 package com.dataloom.data;
 
+import static com.google.common.util.concurrent.Futures.transformAsync;
+
 import com.dataloom.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.analytics.TopUtilizers;
 import com.dataloom.data.requests.Association;
@@ -23,18 +25,19 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.commons.collections.keyvalue.MultiKey;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import static com.google.common.util.concurrent.Futures.transformAsync;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -167,8 +170,8 @@ public class DataGraphService implements DataGraphManager {
         final ListenableFuture reservationAndVertex = transformAsync( idService.getEntityKeyIdAsync( key ),
                 lm::createVertexAsync,
                 executor );
-        final ListenableFuture writes = eds.updateEntityAsync( key, details, authorizedPropertiesWithDataType );
-        return Stream.of( reservationAndVertex, writes );
+        final Stream<ListenableFuture> writes = eds.updateEntityAsync( key, details, authorizedPropertiesWithDataType );
+        return Stream.concat( Stream.of( reservationAndVertex ), writes );
     }
 
     @Override
@@ -185,9 +188,9 @@ public class DataGraphService implements DataGraphManager {
                 .flatMap( association -> {
                     UUID edgeId = idService.getEntityKeyId( association.getKey() );
 
-                    ListenableFuture writes = Futures.allAsList( eds.updateEntityAsync( association.getKey(),
+                    Stream<ListenableFuture> writes = eds.updateEntityAsync( association.getKey(),
                             association.getDetails(),
-                            authorizedPropertiesWithDataType ) );
+                            authorizedPropertiesWithDataType );
 
                     UUID srcId = idService.getEntityKeyId( association.getSrc() );
                     UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
@@ -208,7 +211,7 @@ public class DataGraphService implements DataGraphManager {
                                     edgeId,
                                     edgeTypeId,
                                     edgeSetId ) );
-                    return Stream.of( writes, addEdge );
+                    return Stream.concat( writes, Stream.of( addEdge ) );
                 } ).forEach( DataGraphService::tryGetAndLogErrors );
     }
 
@@ -236,9 +239,9 @@ public class DataGraphService implements DataGraphManager {
                 logger.debug( err );
                 return Stream.of( Futures.immediateFailedFuture( new ResourceNotFoundException( err ) ) );
             } else {
-                ListenableFuture writes = Futures.allAsList( eds.updateEntityAsync( association.getKey(),
+                Stream<ListenableFuture> writes = eds.updateEntityAsync( association.getKey(),
                         association.getDetails(),
-                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ) ) );
+                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ) );
 
                 UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
                 UUID srcSetId = association.getSrc().getEntitySetId();
@@ -258,7 +261,7 @@ public class DataGraphService implements DataGraphManager {
                                 edgeId,
                                 edgeTypeId,
                                 edgeSetId ) );
-                return Stream.of( writes, addEdge );
+                return Stream.concat( writes, Stream.of( addEdge ) );
             }
         } ).forEach( DataGraphService::tryGetAndLogErrors );
     }

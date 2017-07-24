@@ -60,9 +60,9 @@ import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
@@ -79,7 +79,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -270,16 +269,16 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
-    public ListenableFuture<List<ResultSet>> updateEntityAsync(
+    public Stream<ListenableFuture> updateEntityAsync(
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        return Futures.allAsList( createDataAsync( entityKey.getEntitySetId(),
+        return createDataAsync( entityKey.getEntitySetId(),
                 entityKey.getSyncId(),
                 authorizedPropertiesWithDataType,
                 authorizedPropertiesWithDataType.keySet(),
                 entityKey.getEntityId(),
-                entityDetails ) );
+                entityDetails );
     }
 
     public Stream<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
@@ -400,20 +399,19 @@ public class CassandraEntityDatastore implements EntityDatastore {
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
         Set<UUID> authorizedProperties = authorizedPropertiesWithDataType.keySet();
 
-        List<ResultSetFuture> results = new ArrayList<ResultSetFuture>();
+        List<ResultSetFuture> results = new ArrayList<>();
 
-        entities.entrySet().stream().forEach( entity -> {
-            results.addAll( createDataAsync( entitySetId,
-                    syncId,
-                    authorizedPropertiesWithDataType,
-                    authorizedProperties,
-                    entity.getKey(),
-                    entity.getValue() ) );
-        } );
-
-        results.forEach( ResultSetFuture::getUninterruptibly );
+        entities.entrySet().stream().flatMap( entity ->
+                createDataAsync( entitySetId,
+                        syncId,
+                        authorizedPropertiesWithDataType,
+                        authorizedProperties,
+                        entity.getKey(),
+                        entity.getValue() ) )
+                .forEach( CassandraEntityDatastore::getUninterruptibly );
     }
 
+    @Timed
     public void createData(
             UUID entitySetId,
             UUID syncId,
@@ -427,23 +425,24 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 authorizedPropertiesWithDataType,
                 authorizedProperties,
                 entityId,
-                entityDetails ).forEach( ResultSetFuture::getUninterruptibly );
+                entityDetails ).forEach( CassandraEntityDatastore::getUninterruptibly );
     }
 
-    public List<ResultSetFuture> createDataAsync(
+    @Timed
+    public Stream<ListenableFuture> createDataAsync(
             UUID entitySetId,
             UUID syncId,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
             Set<UUID> authorizedProperties,
             String entityId,
             SetMultimap<UUID, Object> entityDetails ) {
-        List<ResultSetFuture> results = new ArrayList<>();
+        List<ListenableFuture> results = new ArrayList<>();
 
         // does not write the row if some property values that user is trying to write to are not authorized.
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
             logger.error( "Entity {} not written because the following properties are not authorized: {}", entityId,
-                    Sets.difference( entityDetails.keySet() , authorizedProperties ) );
-            return results;
+                    Sets.difference( entityDetails.keySet(), authorizedProperties ) );
+            return results.stream();
         }
 
         SetMultimap<UUID, Object> normalizedPropertyValues = null;
@@ -453,7 +452,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
         } catch ( Exception e ) {
             logger.error( "Entity {} not written because some property values are of invalid format.",
                     entityId, e );
-            return results;
+            return results.stream();
         }
 
         // Stream<Entry<UUID, Object>> authorizedPropertyValues = propertyValues.entries().stream().filter( entry ->
@@ -475,11 +474,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .forEach( entry -> rawProperties.put( entry.getKey(), entry.getValue() ) );
         EntityBytes eb = new EntityBytes( ek, rawProperties );
 
-        try {
-            data.submitToKey( idService.getEntityKeyId( ek ), new EntityBytesMerger( eb ) ).get();
-        } catch ( InterruptedException | ExecutionException e ) {
-            logger.error( "Unable to write entityy {} = {}", ek, rawProperties, e );
-        }
+        results.add( new ListenableHazelcastFuture( data
+                .submitToKey( idService.getEntityKeyId( ek ), new EntityBytesMerger( eb ) ) ) );
 
         Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream().filter(
                 entry -> !authorizedPropertiesWithDataType.get( entry.getKey() ).equals( EdmPrimitiveTypeKind.Binary ) )
@@ -491,7 +487,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 entityId,
                 normalizedPropertyValuesAsMap ) );
 
-        return results;
+        return results.stream();
     }
 
     public void createOrderedRPCData( UUID requestId, double weight, byte[] value ) {
@@ -609,6 +605,24 @@ public class CassandraEntityDatastore implements EntityDatastore {
         //                .parallel()
         //                .unordered()
         //                .distinct();
+    }
+
+    public static <T> T getUninterruptibly( ICompletableFuture<T> f ) {
+        try {
+            return Uninterruptibles.getUninterruptibly( f );
+        } catch ( ExecutionException e ) {
+            logger.error( "Unable to get future!", e );
+            return null;
+        }
+    }
+
+    public static <T> T getUninterruptibly( ListenableFuture<T> f ) {
+        try {
+            return Uninterruptibles.getUninterruptibly( f );
+        } catch ( ExecutionException e ) {
+            logger.error( "Unable to get future!", e );
+            return null;
+        }
     }
 
     //    private static PreparedStatement prepareEntityQueryWithoutPropertyTypes(

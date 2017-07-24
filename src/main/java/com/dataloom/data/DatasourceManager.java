@@ -39,7 +39,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.query.Predicates;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
@@ -48,7 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.inject.Inject;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -60,6 +58,7 @@ public class DatasourceManager {
     private final PreparedStatement       mostRecentSyncIdQuery;
     private final PreparedStatement       writeSyncIdsQuery;
     private final PreparedStatement       allPreviousSyncIdsQuery;
+    private final PreparedStatement       allPreviousEntitySetsAndSyncIdsQuery;
     private final IMap<UUID, EntityBytes> data;
 
     @Inject
@@ -75,6 +74,7 @@ public class DatasourceManager {
         this.mostRecentSyncIdQuery = prepareMostRecentSyncIdQuery( session );
         this.writeSyncIdsQuery = prepareWriteQuery( session, syncTableDefinitions );
         this.allPreviousSyncIdsQuery = prepareAllPreviousSyncIdsQuery( session );
+        this.allPreviousEntitySetsAndSyncIdsQuery = prepareAllPreviousEntitySetsSyncIdsQuery( session );
     }
 
     public UUID getCurrentSyncId( UUID entitySetId ) {
@@ -137,15 +137,25 @@ public class DatasourceManager {
     public void cleanup() {
         StreamUtil.stream( session.execute( DataMapstore.currentSyncs() ) )
                 .map( row -> {
-                    UUID entitySetId = RowAdapters.entitySetId(  row  );
+                    UUID entitySetId = RowAdapters.entitySetId( row );
                     UUID syncId = RowAdapters.currentSyncId( row );
-                    return session.executeAsync( allPreviousSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                    return session.executeAsync( allPreviousEntitySetsAndSyncIdsQuery.bind()
+                            .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
                             .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
-                })
+                } )
                 .map( ResultSetFuture::getUninterruptibly )
                 .flatMap( StreamUtil::stream )
                 .map( EntitySets::filterByEntitySetIdAndSyncId )
                 .forEach( data::removeAll );
+    }
+
+    private static PreparedStatement prepareAllPreviousEntitySetsSyncIdsQuery( Session session ) {
+        return session.prepare( QueryBuilder.select()
+                .column( CommonColumns.ENTITY_SET_ID.cql() )
+                .column( CommonColumns.SYNCID.cql() )
+                .from( Table.SYNC_IDS.getKeyspace(), Table.SYNC_IDS.getName() )
+                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.ENTITY_SET_ID.bindMarker() ) )
+                .and( QueryBuilder.lt( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
     }
 
     private static PreparedStatement prepareWriteQuery(
