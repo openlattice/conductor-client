@@ -19,18 +19,18 @@
 
 package com.dataloom.data;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import javax.inject.Inject;
-
+import com.codahale.metrics.annotation.Timed;
+import com.dataloom.data.mapstores.DataMapstore;
+import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.neuron.audit.AuditEntitySetUtils;
+import com.dataloom.streams.StreamUtil;
 import com.dataloom.sync.events.CurrentSyncUpdatedEvent;
 import com.dataloom.sync.events.SyncIdCreatedEvent;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
@@ -43,30 +43,38 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 
 public class DatasourceManager {
+    private static final Logger logger = LoggerFactory.getLogger( DatasourceManager.class );
+    private final Session                 session;
+    private final IMap<UUID, UUID>        currentSyncIds;
+    private final PreparedStatement       mostRecentSyncIdQuery;
+    private final PreparedStatement       writeSyncIdsQuery;
+    private final PreparedStatement       allPreviousSyncIdsQuery;
+    private final PreparedStatement       allPreviousEntitySetsAndSyncIdsQuery;
+    private final IMap<UUID, EntityBytes> data;
 
     @Inject
     private EventBus eventBus;
-
-    private final Session session;
-
-    private final IMap<UUID, UUID> currentSyncIds;
-
-    private final PreparedStatement mostRecentSyncIdQuery;
-    private final PreparedStatement writeSyncIdsQuery;
-    private final PreparedStatement allPreviousSyncIdsQuery;
 
     public DatasourceManager( Session session, HazelcastInstance hazelcastInstance ) {
         this.session = session;
 
         this.currentSyncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
-
+        this.data = hazelcastInstance.getMap( HazelcastMap.DATA.name() );
         CassandraTableBuilder syncTableDefinitions = Table.SYNC_IDS.getBuilder();
 
         this.mostRecentSyncIdQuery = prepareMostRecentSyncIdQuery( session );
         this.writeSyncIdsQuery = prepareWriteQuery( session, syncTableDefinitions );
         this.allPreviousSyncIdsQuery = prepareAllPreviousSyncIdsQuery( session );
+        this.allPreviousEntitySetsAndSyncIdsQuery = prepareAllPreviousEntitySetsSyncIdsQuery( session );
     }
 
     public UUID getCurrentSyncId( UUID entitySetId ) {
@@ -114,6 +122,42 @@ public class DatasourceManager {
         return Iterables.transform( rs, RowAdapters::syncId );
     }
 
+    private void addSyncIdToEntitySet( UUID entitySetId, UUID syncId ) {
+        session.execute( writeSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
+    }
+
+    @Scheduled( fixedRate = 60000 )
+    public void reap() {
+        logger.info( "Reaping old syncs from memory" );
+        cleanup();
+    }
+
+    @Timed
+    public void cleanup() {
+        StreamUtil.stream( session.execute( DataMapstore.currentSyncs() ) )
+                .map( row -> {
+                    UUID entitySetId = RowAdapters.entitySetId( row );
+                    UUID syncId = RowAdapters.currentSyncId( row );
+                    return session.executeAsync( allPreviousEntitySetsAndSyncIdsQuery.bind()
+                            .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
+                            .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
+                } )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( StreamUtil::stream )
+                .map( EntitySets::filterByEntitySetIdAndSyncId )
+                .forEach( data::removeAll );
+    }
+
+    private static PreparedStatement prepareAllPreviousEntitySetsSyncIdsQuery( Session session ) {
+        return session.prepare( QueryBuilder.select()
+                .column( CommonColumns.ENTITY_SET_ID.cql() )
+                .column( CommonColumns.SYNCID.cql() )
+                .from( Table.SYNC_IDS.getKeyspace(), Table.SYNC_IDS.getName() )
+                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.ENTITY_SET_ID.bindMarker() ) )
+                .and( QueryBuilder.lt( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
+    }
+
     private static PreparedStatement prepareWriteQuery(
             Session session,
             CassandraTableBuilder ctb ) {
@@ -133,10 +177,5 @@ public class DatasourceManager {
                 .from( Table.SYNC_IDS.getKeyspace(), Table.SYNC_IDS.getName() )
                 .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.ENTITY_SET_ID.bindMarker() ) )
                 .and( QueryBuilder.lt( CommonColumns.SYNCID.cql(), CommonColumns.SYNCID.bindMarker() ) ) );
-    }
-
-    private void addSyncIdToEntitySet( UUID entitySetId, UUID syncId ) {
-        session.execute( writeSyncIdsQuery.bind().setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-                .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 }

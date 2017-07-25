@@ -21,12 +21,12 @@ import com.google.common.collect.Iterables;
 
 public class LoomGraphTest extends HzAuthzTest {
 
-    protected static final LoomGraph         lg;
+//    protected static final LoomGraph         lg;
     protected static final GraphQueryService gqs;
 
     static {
         gqs = new GraphQueryService( session );
-        lg = new LoomGraph( gqs, hazelcastInstance );
+//        lg = new LoomGraph( gqs, hazelcastInstance );
     }
 
 //    private LoomVertexKey createVertex() {
@@ -78,7 +78,7 @@ public class LoomGraphTest extends HzAuthzTest {
 //        // verification
 //        Assert.assertNotNull( edge );
 //        Assert.assertEquals( v1.getKey(), edge.getKey().getSrcId() );
-//        Assert.assertEquals( v1.getReference().getEntitySetId(), edge.getSrcType() );
+//        Assert.assertEquals( v1.getReference().getEntitySetId(), edge.getSrcTypeId() );
 //        Assert.assertEquals( v2.getKey(), edge.getKey().getDstId() );
 //        Assert.assertEquals( v2.getReference().getEntitySetId(), edge.getDstType() );
 //        Assert.assertEquals( label, edge.getReference() );

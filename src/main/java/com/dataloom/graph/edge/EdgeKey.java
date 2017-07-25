@@ -19,16 +19,16 @@
 
 package com.dataloom.graph.edge;
 
+import com.hazelcast.core.PartitionAware;
 import java.util.UUID;
 
 /**
  * An EdgeKey is the pojo for the primary key of edges table. In the current setting, this is source vertexId,
  * destination vertexId, and the entity key referencing the edge in the edge entity set.
- * 
- * @author Ho Chung Siu
  *
+ * @author Ho Chung Siu
  */
-public class EdgeKey {
+public class EdgeKey implements PartitionAware<UUID> {
     private final UUID srcEntityKeyId;
     private final UUID dstTypeId;
     private final UUID edgeTypeId;
@@ -63,4 +63,40 @@ public class EdgeKey {
         return edgeEntityKeyId;
     }
 
+    @Override
+    public UUID getPartitionKey() {
+        return srcEntityKeyId;
+    }
+
+    @Override public String toString() {
+        return "EdgeKey{" +
+                "srcEntityKeyId=" + srcEntityKeyId +
+                ", dstTypeId=" + dstTypeId +
+                ", edgeTypeId=" + edgeTypeId +
+                ", dstEntityKeyId=" + dstEntityKeyId +
+                ", edgeEntityKeyId=" + edgeEntityKeyId +
+                '}';
+    }
+
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof EdgeKey ) ) { return false; }
+
+        EdgeKey edgeKey = (EdgeKey) o;
+
+        if ( !srcEntityKeyId.equals( edgeKey.srcEntityKeyId ) ) { return false; }
+        if ( !dstTypeId.equals( edgeKey.dstTypeId ) ) { return false; }
+        if ( !edgeTypeId.equals( edgeKey.edgeTypeId ) ) { return false; }
+        if ( !dstEntityKeyId.equals( edgeKey.dstEntityKeyId ) ) { return false; }
+        return edgeEntityKeyId.equals( edgeKey.edgeEntityKeyId );
+    }
+
+    @Override public int hashCode() {
+        int result = srcEntityKeyId.hashCode();
+        result = 31 * result + dstTypeId.hashCode();
+        result = 31 * result + edgeTypeId.hashCode();
+        result = 31 * result + dstEntityKeyId.hashCode();
+        result = 31 * result + edgeEntityKeyId.hashCode();
+        return result;
+    }
 }

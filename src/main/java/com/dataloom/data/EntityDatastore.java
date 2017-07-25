@@ -20,21 +20,20 @@
 package com.dataloom.data;
 
 import com.codahale.metrics.annotation.Timed;
+import com.dataloom.data.analytics.IncrementableWeightId;
+import com.dataloom.data.storage.EntityBytes;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.datastax.driver.core.ResultSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.edm.type.PropertyType;
-import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.SetMultimap;
 
 /**
@@ -79,7 +78,7 @@ public interface EntityDatastore {
      * @param properties
      * @return
      */
-    ResultSetFuture asyncLoadEntity(
+    ListenableFuture<EntityBytes> asyncLoadEntity(
             UUID entitySetId,
             String entityId,
             UUID syncId,
@@ -92,7 +91,7 @@ public interface EntityDatastore {
      * @param syncId
      * @return
      */
-    ResultSetFuture asyncLoadEntity(
+    ListenableFuture<EntityBytes> asyncLoadEntity(
             UUID entitySetId,
             String entityId,
             UUID syncId );
@@ -108,7 +107,7 @@ public interface EntityDatastore {
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
-    @Timed ResultSetFuture getEntityAsync(
+    @Timed ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
             UUID entitySetId,
             UUID syncId,
             String entityId,
@@ -132,7 +131,7 @@ public interface EntityDatastore {
      * @param authorizedPropertiesWithDataType
      * @return
      */
-    ListenableFuture<List<ResultSet>> updateEntityAsync(
+    Stream<ListenableFuture> updateEntityAsync(
             EntityKey entityKey,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
@@ -145,4 +144,5 @@ public interface EntityDatastore {
     
     Iterable<UUID> readTopUtilizers( ByteBuffer queryId, int numResults );
 
+    Stream<SetMultimap<Object, Object>> getEntities( IncrementableWeightId[] utilizers, Map<UUID, PropertyType> authorizedPropertyTypes );
 }

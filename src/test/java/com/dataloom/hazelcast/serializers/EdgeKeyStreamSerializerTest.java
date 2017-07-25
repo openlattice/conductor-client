@@ -20,27 +20,19 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.storage.EntityBytes;
-import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSetMultimap;
+import com.dataloom.graph.edge.EdgeKey;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import java.util.UUID;
-import org.apache.commons.lang3.RandomUtils;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class RequestEntityStreamSerializerTest
-        extends AbstractStreamSerializerTest<RequestEntityStreamSerializer, EntityBytes> {
-    @Override protected RequestEntityStreamSerializer createSerializer() {
-        return new RequestEntityStreamSerializer();
+public class EdgeKeyStreamSerializerTest extends AbstractStreamSerializerTest<EdgeKeyStreamSerializer, EdgeKey> {
+    @Override protected EdgeKeyStreamSerializer createSerializer() {
+        return new EdgeKeyStreamSerializer();
     }
 
-    @Override protected EntityBytes createInput() {
-        return new EntityBytes( TestDataFactory.entityKey(),
-                HashMultimap.create( ImmutableSetMultimap.of(
-                        UUID.randomUUID(), RandomUtils.nextBytes( 10 ),
-                        UUID.randomUUID(), RandomUtils.nextBytes( 10 ) ) ) );
+    @Override protected EdgeKey createInput() {
+        return new EdgeKey( UUID.randomUUID(), UUID.randomUUID(),UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID() );
     }
 }

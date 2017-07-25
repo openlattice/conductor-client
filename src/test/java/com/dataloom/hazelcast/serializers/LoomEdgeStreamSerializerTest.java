@@ -20,27 +20,32 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.storage.EntityBytes;
-import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSetMultimap;
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.edge.LoomEdge;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import java.util.UUID;
-import org.apache.commons.lang3.RandomUtils;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class RequestEntityStreamSerializerTest
-        extends AbstractStreamSerializerTest<RequestEntityStreamSerializer, EntityBytes> {
-    @Override protected RequestEntityStreamSerializer createSerializer() {
-        return new RequestEntityStreamSerializer();
+public class LoomEdgeStreamSerializerTest extends AbstractStreamSerializerTest<LoomEdgeStreamSerializer, LoomEdge> {
+
+    @Override protected LoomEdgeStreamSerializer createSerializer() {
+        return new LoomEdgeStreamSerializer();
     }
 
-    @Override protected EntityBytes createInput() {
-        return new EntityBytes( TestDataFactory.entityKey(),
-                HashMultimap.create( ImmutableSetMultimap.of(
-                        UUID.randomUUID(), RandomUtils.nextBytes( 10 ),
-                        UUID.randomUUID(), RandomUtils.nextBytes( 10 ) ) ) );
+    @Override protected LoomEdge createInput() {
+        EdgeKey key = new EdgeKey( new UUID( 0, 0 ),
+                new UUID( 0, 1 ),
+                new UUID( 0, 2 ),
+                new UUID( 0, 3 ),
+                new UUID( 0, 4 ) );
+        return new LoomEdge( key,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID() );
     }
 }

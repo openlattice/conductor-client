@@ -115,7 +115,9 @@ public class NeuronPod {
         return new CassandraEntityDatastore(
                 session,
                 hazelcastInstance,
+                executor,
                 defaultObjectMapper(),
+                idService(),
                 linkingGraph(),
                 loomGraph(),
                 dataSourceManager()
@@ -196,7 +198,7 @@ public class NeuronPod {
 
     @Bean
     public LoomGraph loomGraph() {
-        return new LoomGraph( graphQueryService(), hazelcastInstance );
+        return new LoomGraph(executor, graphQueryService(), hazelcastInstance );
     }
 
     @Bean

@@ -1,7 +1,9 @@
 package com.dataloom.data;
 
+import static com.google.common.util.concurrent.Futures.transformAsync;
+
 import com.dataloom.analysis.requests.TopUtilizerDetails;
-import com.dataloom.data.analytics.TopUtilizers;
+import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.Entity;
 import com.dataloom.data.storage.CassandraEntityDatastore;
@@ -23,18 +25,19 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.apache.commons.collections.keyvalue.MultiKey;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-
-import static com.google.common.util.concurrent.Futures.transformAsync;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -43,7 +46,7 @@ public class DataGraphService implements DataGraphManager {
     private static final Logger logger = LoggerFactory
             .getLogger( DataGraphService.class );
     private final ListeningExecutorService executor;
-    private final Cache<MultiKey, TopUtilizers> queryCache = CacheBuilder.newBuilder()
+    private final Cache<MultiKey, IncrementableWeightId[]> queryCache = CacheBuilder.newBuilder()
             .maximumSize( 1000 )
             .expireAfterWrite( 2, TimeUnit.HOURS )
             .build();
@@ -167,8 +170,8 @@ public class DataGraphService implements DataGraphManager {
         final ListenableFuture reservationAndVertex = transformAsync( idService.getEntityKeyIdAsync( key ),
                 lm::createVertexAsync,
                 executor );
-        final ListenableFuture writes = eds.updateEntityAsync( key, details, authorizedPropertiesWithDataType );
-        return Stream.of( reservationAndVertex, writes );
+        final Stream<ListenableFuture> writes = eds.updateEntityAsync( key, details, authorizedPropertiesWithDataType );
+        return Stream.concat( Stream.of( reservationAndVertex ), writes );
     }
 
     @Override
@@ -185,30 +188,34 @@ public class DataGraphService implements DataGraphManager {
                 .flatMap( association -> {
                     UUID edgeId = idService.getEntityKeyId( association.getKey() );
 
-                    ListenableFuture writes = Futures.allAsList( eds.updateEntityAsync( association.getKey(),
+                    Stream<ListenableFuture> writes = eds.updateEntityAsync( association.getKey(),
                             association.getDetails(),
-                            authorizedPropertiesWithDataType ) );
+                            authorizedPropertiesWithDataType );
 
                     UUID srcId = idService.getEntityKeyId( association.getSrc() );
                     UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
                     UUID srcSetId = association.getSrc().getEntitySetId();
+                    UUID srcSyncId = association.getSrc().getSyncId();
                     UUID dstId = idService.getEntityKeyId( association.getDst() );
                     UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
                     UUID dstSetId = association.getDst().getEntitySetId();
+                    UUID dstSyncId = association.getDst().getSyncId();
                     UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
                     UUID edgeSetId = association.getKey().getEntitySetId();
 
-                    ListenableFuture addEdge = Futures.allAsList( lm
+                    ListenableFuture addEdge = lm
                             .addEdgeAsync( srcId,
                                     srcTypeId,
                                     srcSetId,
+                                    srcSyncId,
                                     dstId,
                                     dstTypeId,
                                     dstSetId,
+                                    dstSyncId,
                                     edgeId,
                                     edgeTypeId,
-                                    edgeSetId ) );
-                    return Stream.of( writes, addEdge );
+                                    edgeSetId );
+                    return Stream.concat( writes, Stream.of( addEdge ) );
                 } ).forEach( DataGraphService::tryGetAndLogErrors );
     }
 
@@ -236,29 +243,32 @@ public class DataGraphService implements DataGraphManager {
                 logger.debug( err );
                 return Stream.of( Futures.immediateFailedFuture( new ResourceNotFoundException( err ) ) );
             } else {
-                ListenableFuture writes = Futures.allAsList( eds.updateEntityAsync( association.getKey(),
+                Stream<ListenableFuture> writes = eds.updateEntityAsync( association.getKey(),
                         association.getDetails(),
-                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ) ) );
+                        authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ) );
 
                 UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
                 UUID srcSetId = association.getSrc().getEntitySetId();
+                UUID srcSyncId = association.getSrc().getSyncId();
                 UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
                 UUID dstSetId = association.getDst().getEntitySetId();
+                UUID dstSyncId = association.getDst().getSyncId();
                 UUID edgeId = idService.getEntityKeyId( association.getKey() );
                 UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
                 UUID edgeSetId = association.getKey().getEntitySetId();
 
-                ListenableFuture addEdge = Futures
-                        .allAsList( lm.addEdgeAsync( srcId,
-                                srcTypeId,
-                                srcSetId,
-                                dstId,
-                                dstTypeId,
-                                dstSetId,
-                                edgeId,
-                                edgeTypeId,
-                                edgeSetId ) );
-                return Stream.of( writes, addEdge );
+                ListenableFuture addEdge = lm.addEdgeAsync( srcId,
+                        srcTypeId,
+                        srcSetId,
+                        srcSyncId,
+                        dstId,
+                        dstTypeId,
+                        dstSetId,
+                        dstSyncId,
+                        edgeId,
+                        edgeTypeId,
+                        edgeSetId );
+                return Stream.concat( writes, Stream.of( addEdge ) );
             }
         } ).forEach( DataGraphService::tryGetAndLogErrors );
     }
@@ -276,51 +286,63 @@ public class DataGraphService implements DataGraphManager {
          * topUtilizerDetailsList ) ); } catch ( JsonProcessingException e1 ) { logger.debug(
          * "Unable to generate query id." ); return null; }
          */
-        TopUtilizers maybeUtilizers = queryCache.getIfPresent( new MultiKey( entitySetId, topUtilizerDetailsList ) );
-        final TopUtilizers utilizers;
+        IncrementableWeightId[] maybeUtilizers = queryCache
+                .getIfPresent( new MultiKey( entitySetId, topUtilizerDetailsList ) );
+        final IncrementableWeightId[] utilizers;
         // if ( !eds.queryAlreadyExecuted( queryId ) ) {
         if ( maybeUtilizers == null ) {
-            utilizers = new TopUtilizers( numResults );
+            //            utilizers = new TopUtilizers( numResults );
+            SetMultimap<UUID, UUID> srcFilters = HashMultimap.create();
+            SetMultimap<UUID, UUID> dstFilters = HashMultimap.create();
 
-            eds.getEntityKeysForEntitySet( entitySetId, syncId )
-                    .parallel()
-                    .map( idService::getEntityKeyId )
-                    .forEach( vertexId -> {
-                        long score = topUtilizerDetailsList.parallelStream()
-                                /*.map( details -> lm.getEdgeCount( vertexId,
-                                        details.getAssociationTypeId(),
-                                        details.getNeighborTypeIds(),
-                                        details.getUtilizerIsSrc() ) )
-                                .map( ResultSetFuture::getUninterruptibly )*/
-                                .mapToLong( details -> lm.getHazelcastEdgeCount( vertexId,
-                                        details.getAssociationTypeId(),
-                                        details.getNeighborTypeIds(),
-                                        details.getUtilizerIsSrc() ) )
-                                //.mapToLong( Util::getCount )
-                                .sum();
-                        utilizers.accumulate( vertexId, score );
-                        // eds.writeVertexCount( queryId, vertexId, 1.0D * score );
-                    } );
+            topUtilizerDetailsList.forEach( details -> {
+                ( details.getUtilizerIsSrc() ? srcFilters : dstFilters ).
+                        putAll( details.getAssociationTypeId(), details.getNeighborTypeIds() );
+
+            } );
+            utilizers = lm.computeGraphAggregation( numResults, entitySetId, syncId, srcFilters, dstFilters );
+            //            eds.getEntityKeysForEntitySet( entitySetId, syncId )
+            //                    .parallel()
+            //                    .map( idService::getEntityKeyId )
+            //                    .forEach( vertexId -> {
+            //                        long score = topUtilizerDetailsList.parallelStream()
+            //                                /*.map( details -> lm.getEdgeCount( vertexId,
+            //                                        details.getAssociationTypeId(),
+            //                                        details.getNeighborTypeIds(),
+            //                                        details.getUtilizerIsSrc() ) )
+            //                                .map( ResultSetFuture::getUninterruptibly )*/
+            //                                .mapToLong( details -> lm.getHazelcastEdgeCount( vertexId,
+            //                                        details.getAssociationTypeId(),
+            //                                        details.getNeighborTypeIds(),
+            //                                        details.getUtilizerIsSrc() ) )
+            //                                //.mapToLong( Util::getCount )
+            //                                .sum();
+            //                        utilizers.accumulate( vertexId, score );
+            //                        // eds.writeVertexCount( queryId, vertexId, 1.0D * score );
+            //                    } );
+
             queryCache.put( new MultiKey( entitySetId, topUtilizerDetailsList ), utilizers );
         } else {
             utilizers = maybeUtilizers;
         }
 
-        return utilizers
-                .stream()
-                .map( longWeightedId -> {
-                    UUID vertexId = longWeightedId.getId();
-                    EntityKey key = idService.getEntityKey( vertexId );
-                    SetMultimap<Object, Object> entity = HashMultimap.create();
-                    entity.put( "count", longWeightedId.getWeight() );
-                    entity.putAll(
-                            eds.getEntity( key.getEntitySetId(),
-                                    key.getSyncId(),
-                                    key.getEntityId(),
-                                    authorizedPropertyTypes ) );
-                    entity.put( "id", vertexId.toString() );
-                    return entity;
-                } )::iterator;
+        return eds.getEntities( utilizers, authorizedPropertyTypes )::iterator;
+        //
+        //        return utilizers
+        //                .stream()
+        //                .map( longWeightedId -> {
+        //                    UUID vertexId = longWeightedId.getId();
+        //                    EntityKey key = idService.getEntityKey( vertexId );
+        //                    SetMultimap<Object, Object> entity = HashMultimap.create();
+        //                    entity.put( "count", longWeightedId.getWeight() );
+        //                    entity.putAll(
+        //                            eds.getEntity( key.getEntitySetId(),
+        //                                    key.getSyncId(),
+        //                                    key.getEntityId(),
+        //                                    authorizedPropertyTypes ) );
+        //                    entity.put( "id", vertexId.toString() );
+        //                    return entity;
+        //                } )::iterator;
 
         /*
          * Iterable<SetMultimap<Object, Object>> entities = Iterables .transform( eds.readTopUtilizers( queryId,

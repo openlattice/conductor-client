@@ -19,6 +19,7 @@
 
 package com.dataloom.data.mapstores;
 
+import java.util.Map;
 import java.util.UUID;
 
 import com.hazelcast.config.MapConfig;
@@ -71,6 +72,14 @@ public class EntityKeysMapstore extends AbstractStructuredCassandraPartitionKeyV
     @Override
     protected BoundStatement bind( UUID key, EntityKey value, BoundStatement bs ) {
         return bindStoreQuery( key, value, bs );
+    }
+
+    @Override public void store( UUID key, EntityKey value ) {
+        throw new UnsupportedOperationException( "Entity keys mapstore is over a materialized view." );
+    }
+
+    @Override public void storeAll( Map<UUID, EntityKey> map ) {
+        throw new UnsupportedOperationException( "Entity keys mapstore is over a materialized view." );
     }
 
     @Override

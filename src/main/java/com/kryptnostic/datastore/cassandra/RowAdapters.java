@@ -22,6 +22,7 @@ package com.kryptnostic.datastore.cassandra;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.Analyzer;
 import com.dataloom.edm.type.AssociationType;
@@ -43,6 +44,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -110,6 +112,28 @@ public final class RowAdapters {
                                 entityId ) );
             }
         }
+        return m;
+    }
+
+    public static SetMultimap<UUID, Object> entityIndexedById(
+            EntityBytes eb,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> m = HashMultimap.create();
+        eb.getRaw().entries().stream().forEach( e -> {
+            UUID propertyTypeId = e.getKey();
+            byte[] property = e.getValue();
+            PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+            if ( propertyTypeId != null ) {
+                m.put( propertyTypeId,
+                        CassandraSerDesFactory.deserializeValue( mapper,
+                                ByteBuffer.wrap( property ),
+                                pt.getDatatype(),
+                                eb.getEntityId() ) );
+            }
+
+        } );
+
         return m;
     }
 
@@ -380,20 +404,25 @@ public final class RowAdapters {
 
     public static LoomEdge loomEdge( Row row ) {
         EdgeKey key = edgeKey( row );
+
         UUID srcType = row.getUUID( CommonColumns.SRC_TYPE_ID.cql() );
         UUID srcSetId = row.getUUID( CommonColumns.SRC_ENTITY_SET_ID.cql() );
-        UUID srcDstId = row.getUUID( CommonColumns.DST_ENTITY_SET_ID.cql() );
+        UUID srcSyncId = row.getUUID( CommonColumns.SRC_SYNC_ID.cql() );
+        UUID dstSetId = row.getUUID( CommonColumns.DST_ENTITY_SET_ID.cql() );
+        UUID dstSyncId = row.getUUID( CommonColumns.DST_SYNC_ID.cql() );
         UUID srcEdgeId = row.getUUID( CommonColumns.EDGE_ENTITY_SET_ID.cql() );
-        return new LoomEdge( key, srcType, srcSetId, srcDstId, srcEdgeId );
+        return new LoomEdge( key, srcType, srcSetId, srcSyncId, dstSetId, dstSyncId, srcEdgeId );
     }
 
     public static LoomEdge loomBackEdge( Row row ) {
         EdgeKey key = backEdgeKey( row );
         UUID srcType = row.getUUID( CommonColumns.DST_TYPE_ID.cql() );
-        UUID srcSetId = row.getUUID( CommonColumns.SRC_ENTITY_SET_ID.cql() );
-        UUID srcDstId = row.getUUID( CommonColumns.DST_ENTITY_SET_ID.cql() );
+        UUID srcSetId = row.getUUID( CommonColumns.DST_ENTITY_SET_ID.cql() );
+        UUID srcSyncId = row.getUUID( CommonColumns.DST_SYNC_ID.cql() );
+        UUID dstSetId = row.getUUID( CommonColumns.SRC_ENTITY_SET_ID.cql() );
+        UUID dstSyncId = row.getUUID( CommonColumns.SRC_SYNC_ID.cql() );
         UUID srcEdgeId = row.getUUID( CommonColumns.EDGE_ENTITY_SET_ID.cql() );
-        return new LoomEdge( key, srcType, srcSetId, srcDstId, srcEdgeId );
+        return new LoomEdge( key, srcType, srcSetId, srcSyncId, dstSetId, dstSyncId, srcEdgeId );
     }
 
     public static UUID vertexId( Row row ) {

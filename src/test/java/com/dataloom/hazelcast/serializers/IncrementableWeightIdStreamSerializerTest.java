@@ -20,10 +20,7 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.storage.EntityBytes;
-import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSetMultimap;
+import com.dataloom.data.analytics.IncrementableWeightId;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomUtils;
@@ -31,16 +28,16 @@ import org.apache.commons.lang3.RandomUtils;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class RequestEntityStreamSerializerTest
-        extends AbstractStreamSerializerTest<RequestEntityStreamSerializer, EntityBytes> {
-    @Override protected RequestEntityStreamSerializer createSerializer() {
-        return new RequestEntityStreamSerializer();
+public class IncrementableWeightIdStreamSerializerTest
+        extends AbstractStreamSerializerTest<IncrementableWeightIdStreamSerializer, IncrementableWeightId[]> {
+    @Override protected IncrementableWeightIdStreamSerializer createSerializer() {
+        return new IncrementableWeightIdStreamSerializer();
     }
 
-    @Override protected EntityBytes createInput() {
-        return new EntityBytes( TestDataFactory.entityKey(),
-                HashMultimap.create( ImmutableSetMultimap.of(
-                        UUID.randomUUID(), RandomUtils.nextBytes( 10 ),
-                        UUID.randomUUID(), RandomUtils.nextBytes( 10 ) ) ) );
+    @Override protected IncrementableWeightId[] createInput() {
+        return new IncrementableWeightId[] {
+                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong() ),
+                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong() ),
+                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong() ) };
     }
 }

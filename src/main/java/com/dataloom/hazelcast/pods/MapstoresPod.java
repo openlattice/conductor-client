@@ -32,9 +32,9 @@ import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
 import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
-import com.dataloom.data.requests.Entity;
 import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
 import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
+import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
@@ -51,7 +51,10 @@ import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.Neighborhood;
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.BackedgesMapstore;
+import com.dataloom.graph.mapstores.EdgeMapstore;
 import com.dataloom.graph.mapstores.EdgesMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
@@ -83,7 +86,6 @@ import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
 import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.SetMultimap;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
@@ -110,14 +112,18 @@ public class MapstoresPod {
     CassandraConfiguration cc;
 
     @Bean
-    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
-        return new EdgesMapstore( session );
+    public SelfRegisteringMapStore<EdgeKey,LoomEdge> edgesMapstore() {
+        return new EdgeMapstore( session );
     }
+//    @Bean
+//    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
+//        return new EdgesMapstore( session );
+//    }
 
-    @Bean
-    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
-        return new BackedgesMapstore( session );
-    }
+//    @Bean
+//    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
+//        return new BackedgesMapstore( session );
+//    }
 
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
@@ -276,7 +282,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<EntityKey, UUID> idsMapstore() {
-        return new EntityKeyIdsMapstore( HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
+        return new EntityKeyIdsMapstore( keysMapstore(), HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
     }
 
     @Bean
@@ -290,7 +296,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<EntityKey, Entity> dataMapstore() {
+    public SelfRegisteringMapStore<UUID, EntityBytes> dataMapstore() {
         ObjectMapper mapper = ObjectMappers.getJsonMapper();
         FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
         FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
