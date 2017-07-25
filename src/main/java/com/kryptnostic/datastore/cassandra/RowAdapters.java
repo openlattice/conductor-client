@@ -404,20 +404,25 @@ public final class RowAdapters {
 
     public static LoomEdge loomEdge( Row row ) {
         EdgeKey key = edgeKey( row );
+
         UUID srcType = row.getUUID( CommonColumns.SRC_TYPE_ID.cql() );
         UUID srcSetId = row.getUUID( CommonColumns.SRC_ENTITY_SET_ID.cql() );
-        UUID srcDstId = row.getUUID( CommonColumns.DST_ENTITY_SET_ID.cql() );
+        UUID srcSyncId = row.getUUID( CommonColumns.SRC_SYNC_ID.cql() );
+        UUID dstSetId = row.getUUID( CommonColumns.DST_ENTITY_SET_ID.cql() );
+        UUID dstSyncId = row.getUUID( CommonColumns.DST_SYNC_ID.cql() );
         UUID srcEdgeId = row.getUUID( CommonColumns.EDGE_ENTITY_SET_ID.cql() );
-        return new LoomEdge( key, srcType, srcSetId, srcDstId, srcEdgeId );
+        return new LoomEdge( key, srcType, srcSetId, srcSyncId, dstSetId, dstSyncId, srcEdgeId );
     }
 
     public static LoomEdge loomBackEdge( Row row ) {
         EdgeKey key = backEdgeKey( row );
         UUID srcType = row.getUUID( CommonColumns.DST_TYPE_ID.cql() );
-        UUID srcSetId = row.getUUID( CommonColumns.SRC_ENTITY_SET_ID.cql() );
-        UUID srcDstId = row.getUUID( CommonColumns.DST_ENTITY_SET_ID.cql() );
+        UUID srcSetId = row.getUUID( CommonColumns.DST_ENTITY_SET_ID.cql() );
+        UUID srcSyncId = row.getUUID( CommonColumns.DST_SYNC_ID.cql() );
+        UUID dstSetId = row.getUUID( CommonColumns.SRC_ENTITY_SET_ID.cql() );
+        UUID dstSyncId = row.getUUID( CommonColumns.SRC_SYNC_ID.cql() );
         UUID srcEdgeId = row.getUUID( CommonColumns.EDGE_ENTITY_SET_ID.cql() );
-        return new LoomEdge( key, srcType, srcSetId, srcDstId, srcEdgeId );
+        return new LoomEdge( key, srcType, srcSetId, srcSyncId, dstSetId, dstSyncId, srcEdgeId );
     }
 
     public static UUID vertexId( Row row ) {

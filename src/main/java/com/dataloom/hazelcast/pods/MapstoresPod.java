@@ -51,7 +51,10 @@ import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.Neighborhood;
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.BackedgesMapstore;
+import com.dataloom.graph.mapstores.EdgeMapstore;
 import com.dataloom.graph.mapstores.EdgesMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
@@ -109,14 +112,18 @@ public class MapstoresPod {
     CassandraConfiguration cc;
 
     @Bean
-    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
-        return new EdgesMapstore( session );
+    public SelfRegisteringMapStore<EdgeKey,LoomEdge> edgesMapstore() {
+        return new EdgeMapstore( session );
     }
+//    @Bean
+//    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
+//        return new EdgesMapstore( session );
+//    }
 
-    @Bean
-    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
-        return new BackedgesMapstore( session );
-    }
+//    @Bean
+//    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
+//        return new BackedgesMapstore( session );
+//    }
 
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {

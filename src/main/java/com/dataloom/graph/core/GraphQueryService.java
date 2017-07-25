@@ -278,7 +278,7 @@ public class GraphQueryService {
         BoundStatement backedgeBs = bindDeleteEdge( deleteBackEdgeQuery.bind(),
                 key.getDstEntityKeyId(),
                 key.getSrcEntityKeyId(),
-                edge.getSrcType(),
+                edge.getSrcTypeId(),
                 key.getEdgeEntityKeyId(),
                 key.getEdgeTypeId() );
 

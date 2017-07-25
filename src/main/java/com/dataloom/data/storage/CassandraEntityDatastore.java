@@ -29,6 +29,7 @@ import com.dataloom.data.EntityKeyHazelcastStream;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.EntitySetData;
 import com.dataloom.data.EntitySetHazelcastStream;
+import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
 import com.dataloom.edm.type.PropertyType;
@@ -42,29 +43,20 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.Uninterruptibles;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ICompletableFuture;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
@@ -83,7 +75,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -94,25 +85,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CassandraEntityDatastore implements EntityDatastore {
-    private static final int          NUM_PARTITIONS = 256;
-    private static final Logger       logger         = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( CassandraEntityDatastore.class );
-    private static final HashFunction hf             = Hashing.murmur3_128();
-
-    private static final LoadingCache<UUID, AtomicInteger> PARTTIONS = CacheBuilder.newBuilder()
-            .expireAfterAccess( 1, TimeUnit.MINUTES ).build( new CacheLoader<UUID, AtomicInteger>() {
-                @Override public AtomicInteger load( UUID key ) throws Exception {
-                    return new AtomicInteger();
-                }
-            } );
-
-    public static List<Byte> PARTITION_INDEXES = new ArrayList( NUM_PARTITIONS );
-
-    static {
-        for ( int i = 0; i < NUM_PARTITIONS; ++i ) {
-            PARTITION_INDEXES.add( (byte) i );
-        }
-    }
 
     private final Session                session;
     private final ObjectMapper           mapper;
@@ -210,6 +184,21 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
+    public Stream<SetMultimap<Object, Object>> getEntities(
+            IncrementableWeightId[] utilizers, Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        Map<UUID, EntityBytes> rawEntities = data
+                .getAll( Stream.of( utilizers ).map( IncrementableWeightId::getId ).collect( Collectors.toSet() ) );
+        return Stream.of( utilizers )
+                .map( weightedId -> {
+                    EntityBytes eb = Util.getSafely( rawEntities, weightedId.getId() );
+                    SetMultimap<Object, Object> entity = untypedFromEntityBytes( eb, authorizedPropertyTypes );
+                    entity.put( "count", weightedId.getWeight() );
+                    entity.put( "id", weightedId.getId().toString() );
+                    return entity;
+                } );
+    }
+
+    @Override
     @Timed
     public SetMultimap<FullQualifiedName, Object> getEntityPostFiltered(
             UUID entitySetId,
@@ -229,6 +218,25 @@ public class CassandraEntityDatastore implements EntityDatastore {
             Map<UUID, PropertyType> propertyType ) {
         SetMultimap<UUID, byte[]> rawData = eb.getRaw();
         SetMultimap<FullQualifiedName, Object> entityData = HashMultimap
+                .create( rawData.keySet().size(), rawData.size() / rawData.keySet().size() );
+
+        rawData.entries().forEach( prop -> {
+            PropertyType pt = propertyType.get( prop.getKey() );
+            if ( pt != null ) {
+                entityData.put( pt.getType(), CassandraSerDesFactory.deserializeValue( mapper,
+                        ByteBuffer.wrap( prop.getValue() ),
+                        pt.getDatatype(),
+                        eb.getEntityId() ) );
+            }
+        } );
+        return entityData;
+    }
+
+    public SetMultimap<Object, Object> untypedFromEntityBytes(
+            EntityBytes eb,
+            Map<UUID, PropertyType> propertyType ) {
+        SetMultimap<UUID, byte[]> rawData = eb.getRaw();
+        SetMultimap<Object, Object> entityData = HashMultimap
                 .create( rawData.keySet().size(), rawData.size() / rawData.keySet().size() );
 
         rawData.entries().forEach( prop -> {
@@ -408,7 +416,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         authorizedProperties,
                         entity.getKey(),
                         entity.getValue() ) )
-                .forEach( CassandraEntityDatastore::getUninterruptibly );
+                .forEach( StreamUtil::getUninterruptibly );
     }
 
     @Timed
@@ -425,7 +433,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 authorizedPropertiesWithDataType,
                 authorizedProperties,
                 entityId,
-                entityDetails ).forEach( CassandraEntityDatastore::getUninterruptibly );
+                entityDetails ).forEach( StreamUtil::getUninterruptibly );
     }
 
     @Timed
@@ -607,45 +615,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
         //                .distinct();
     }
 
-    public static <T> T getUninterruptibly( ICompletableFuture<T> f ) {
-        try {
-            return Uninterruptibles.getUninterruptibly( f );
-        } catch ( ExecutionException e ) {
-            logger.error( "Unable to get future!", e );
-            return null;
-        }
-    }
-
-    public static <T> T getUninterruptibly( ListenableFuture<T> f ) {
-        try {
-            return Uninterruptibles.getUninterruptibly( f );
-        } catch ( ExecutionException e ) {
-            logger.error( "Unable to get future!", e );
-            return null;
-        }
-    }
-
-    //    private static PreparedStatement prepareEntityQueryWithoutPropertyTypes(
-    //            Session session,
-    //            CassandraTableBuilder ctb ) {
-    //        return session.prepare( entityQueryWithoutPropertyTypes( ctb ) );
-    //    }
-
-    public static Select.Where entityQueryWithoutPropertyTypes( CassandraTableBuilder ctb ) {
-        return ctb.buildLoadAllQuery()
-                .where( CommonColumns.ENTITY_SET_ID.eq() )
-                .and( CommonColumns.SYNCID.eq() )
-                .and( QueryBuilder
-                        .in( CommonColumns.PARTITION_INDEX.cql(), CassandraEntityDatastore.PARTITION_INDEXES ) )
-                .and( CommonColumns.ENTITYID.eq() );
-    }
-
-    //    private static PreparedStatement prepareEntitySetQuery(
-    //            Session session,
-    //            CassandraTableBuilder ctb ) {
-    //        return session.prepare( entitySetQuery( ctb ) );
-    //    }
-
     private static PreparedStatement prepareWriteQuery(
             Session session,
             CassandraTableBuilder ctb ) {
@@ -654,42 +623,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
     private static Insert writeQuery( CassandraTableBuilder ctb ) {
         return ctb.buildStoreQuery();
-    }
-
-    private static Select.Where entityQuery( CassandraTableBuilder ctb ) {
-        return ctb.buildLoadAllQuery()
-                .where( CommonColumns.ENTITY_SET_ID.eq() )
-                .and( CommonColumns.SYNCID.eq() )
-                .and( QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES ) )
-                .and( CommonColumns.ENTITYID.eq() )
-                .and( QueryBuilder.in( CommonColumns.PROPERTY_TYPE_ID.cql(),
-                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
-    }
-
-    //    @Deprecated
-    //    private static Select.Where entitySetQuery( CassandraTableBuilder ctb ) {
-    //        return ctb.buildLoadAllQuery()
-    //                .where( CommonColumns.ENTITY_SET_ID.eq() )
-    //                .and( CommonColumns.SYNCID.eq() )
-    //                .and( partitionIndexClause() )
-    //                .and( QueryBuilder.in( CommonColumns.PROPERTY_TYPE_ID.cql(),
-    //                        CommonColumns.PROPERTY_TYPE_ID.bindMarker() ) );
-    //    }
-
-    //    private static PreparedStatement prepareEntityIdsQuery( Session session ) {
-    //        return session.prepare( QueryBuilder
-    //                .select()
-    //                //.column( CommonColumns.ENTITY_SET_ID.cql() )
-    //                //.column( CommonColumns.SYNCID.cql() )
-    //                .column( CommonColumns.ENTITYID.cql() )
-    //                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-    //                .where( CommonColumns.ENTITY_SET_ID.eq() )
-    //                .and( CommonColumns.SYNCID.eq() )
-    //                .and( partitionIndexClause() ) );
-    //    }
-
-    public static Clause partitionIndexClause() {
-        return QueryBuilder.in( CommonColumns.PARTITION_INDEX.cql(), PARTITION_INDEXES );
     }
 
     private static PreparedStatement prepareReadNumRPCRowsQuery( Session session ) {

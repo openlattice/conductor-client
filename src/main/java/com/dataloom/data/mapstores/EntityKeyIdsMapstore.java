@@ -39,10 +39,6 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
         this.ekm = ekm;
     }
 
-    @Override public Iterable<EntityKey> loadAllKeys() {
-        return null;
-    }
-
     @Override
     public EntityKey generateTestKey() {
         return TestDataFactory.entityKey();

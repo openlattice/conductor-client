@@ -24,16 +24,28 @@ import java.util.UUID;
 public class LoomEdge {
     private EdgeKey key;
 
-    private UUID    srcType;
+    private UUID srcType;
     private UUID srcSetId;
     private UUID dstSetId;
     private UUID edgeSetId;
 
-    public LoomEdge( EdgeKey key, UUID srcType, UUID srcSetId, UUID dstSetId, UUID edgeSetId ) {
+    private UUID srcSyncId;
+    private UUID dstSyncId;
+
+    public LoomEdge(
+            EdgeKey key,
+            UUID srcType,
+            UUID srcSetId,
+            UUID srcSyncId,
+            UUID dstSetId,
+            UUID dstSyncId,
+            UUID edgeSetId ) {
         this.key = key;
+        this.srcSyncId = srcSyncId;
         this.srcType = srcType;
         this.srcSetId = srcSetId;
         this.dstSetId = dstSetId;
+        this.dstSyncId = dstSyncId;
         this.edgeSetId = edgeSetId;
     }
 
@@ -41,8 +53,7 @@ public class LoomEdge {
         return key;
     }
 
-
-    public UUID getSrcType() {
+    public UUID getSrcTypeId() {
         return srcType;
     }
 
@@ -50,47 +61,77 @@ public class LoomEdge {
         return srcSetId;
     }
 
+    public UUID getSrcSyncId() {
+        return srcSyncId;
+    }
+
     public UUID getDstSetId() {
         return dstSetId;
+    }
+
+    public UUID getDstSyncId() {
+        return dstSyncId;
     }
 
     public UUID getEdgeSetId() {
         return edgeSetId;
     }
 
-    @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ( ( dstSetId == null ) ? 0 : dstSetId.hashCode() );
-        result = prime * result + ( ( edgeSetId == null ) ? 0 : edgeSetId.hashCode() );
-        result = prime * result + ( ( key == null ) ? 0 : key.hashCode() );
-        result = prime * result + ( ( srcSetId == null ) ? 0 : srcSetId.hashCode() );
-        result = prime * result + ( ( srcType == null ) ? 0 : srcType.hashCode() );
-        return result;
+    public UUID getSrcEntityKeyId() {
+        return key.getSrcEntityKeyId();
     }
 
-    @Override
-    public boolean equals( Object obj ) {
-        if ( this == obj ) return true;
-        if ( obj == null ) return false;
-        if ( getClass() != obj.getClass() ) return false;
-        LoomEdge other = (LoomEdge) obj;
-        if ( dstSetId == null ) {
-            if ( other.dstSetId != null ) return false;
-        } else if ( !dstSetId.equals( other.dstSetId ) ) return false;
-        if ( edgeSetId == null ) {
-            if ( other.edgeSetId != null ) return false;
-        } else if ( !edgeSetId.equals( other.edgeSetId ) ) return false;
-        if ( key == null ) {
-            if ( other.key != null ) return false;
-        } else if ( !key.equals( other.key ) ) return false;
-        if ( srcSetId == null ) {
-            if ( other.srcSetId != null ) return false;
-        } else if ( !srcSetId.equals( other.srcSetId ) ) return false;
-        if ( srcType == null ) {
-            if ( other.srcType != null ) return false;
-        } else if ( !srcType.equals( other.srcType ) ) return false;
-        return true;
+    public UUID getDstEntityKeyId() {
+        return key.getDstEntityKeyId();
+    }
+
+    public UUID getEdgeEntityKeyId() {
+        return key.getEdgeEntityKeyId();
+    }
+
+    public UUID getDstTypeId() {
+        return key.getDstTypeId();
+    }
+
+    public UUID getEdgeTypeId() {
+        return key.getEdgeTypeId();
+    }
+
+    @Override public String toString() {
+        return "LoomEdge{" +
+                "key=" + key +
+                ", srcType=" + srcType +
+                ", srcSetId=" + srcSetId +
+                ", dstSetId=" + dstSetId +
+                ", edgeSetId=" + edgeSetId +
+                ", srcSyncId=" + srcSyncId +
+                ", dstSyncId=" + dstSyncId +
+                '}';
+    }
+
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof LoomEdge ) ) { return false; }
+
+        LoomEdge loomEdge = (LoomEdge) o;
+
+        if ( !key.equals( loomEdge.key ) ) { return false; }
+        if ( !srcType.equals( loomEdge.srcType ) ) { return false; }
+        if ( !srcSetId.equals( loomEdge.srcSetId ) ) { return false; }
+        if ( !dstSetId.equals( loomEdge.dstSetId ) ) { return false; }
+        if ( !edgeSetId.equals( loomEdge.edgeSetId ) ) { return false; }
+        if ( !srcSyncId.equals( loomEdge.srcSyncId ) ) { return false; }
+        return dstSyncId.equals( loomEdge.dstSyncId );
+    }
+
+    @Override public int hashCode() {
+        int result = key.hashCode();
+        result = 31 * result + srcType.hashCode();
+        result = 31 * result + srcSetId.hashCode();
+        result = 31 * result + dstSetId.hashCode();
+        result = 31 * result + edgeSetId.hashCode();
+        result = 31 * result + srcSyncId.hashCode();
+        result = 31 * result + dstSyncId.hashCode();
+        return result;
     }
 }

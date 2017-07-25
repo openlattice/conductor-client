@@ -24,9 +24,8 @@ import com.datastax.driver.core.querybuilder.BindMarker;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Preconditions;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
-import org.apache.commons.lang3.RandomStringUtils;
-
 import java.util.function.Function;
+import org.apache.commons.lang3.RandomStringUtils;
 
 public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
@@ -50,7 +49,7 @@ public enum CommonColumns implements ColumnDef {
     DST( DataType.frozenSet( DataType.uuid() ) ),
     DST_ENTITY_KEY_ID( DataType.uuid() ),
     DST_TYPE_ID( DataType.uuid() ),
-    EDGE_ENTITY_KEY_ID(DataType.uuid()),
+    EDGE_ENTITY_KEY_ID( DataType.uuid() ),
     EDGE_TYPE_ID( DataType.uuid() ),
     EDGE_ENTITYID( DataType.varchar() ),
     ENTITYID( DataType.text() ),
@@ -127,7 +126,9 @@ public enum CommonColumns implements ColumnDef {
     NEW_VERTEX_ID( DataType.uuid() ),
     SRC_ENTITY_SET_ID( DataType.uuid() ),
     DST_ENTITY_SET_ID( DataType.uuid() ),
-    EDGE_ENTITY_SET_ID( DataType.uuid() ), PROPERTY_BUFFER( DataType.blob() );
+    EDGE_ENTITY_SET_ID( DataType.uuid() ), PROPERTY_BUFFER( DataType.blob() ), SRC_SYNC_ID( DataType
+            .uuid() ), DST_SYNC_ID(
+            DataType.uuid() );
 
     private transient final DataType type;
 

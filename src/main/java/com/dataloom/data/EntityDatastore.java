@@ -20,6 +20,7 @@
 package com.dataloom.data;
 
 import com.codahale.metrics.annotation.Timed;
+import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.storage.EntityBytes;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashSet;
@@ -143,4 +144,5 @@ public interface EntityDatastore {
     
     Iterable<UUID> readTopUtilizers( ByteBuffer queryId, int numResults );
 
+    Stream<SetMultimap<Object, Object>> getEntities( IncrementableWeightId[] utilizers, Map<UUID, PropertyType> authorizedPropertyTypes );
 }

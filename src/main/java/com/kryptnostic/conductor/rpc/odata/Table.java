@@ -19,6 +19,7 @@
 
 package com.kryptnostic.conductor.rpc.odata;
 
+import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_CHILDREN_PERMISSIONS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_KEY_VALUE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_ROOT;
@@ -79,6 +80,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_LINKING_V
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_ENTITY_KEY_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_ENTITY_SET_ID;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_SYNC_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_TYPE_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
@@ -176,25 +178,25 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey(
                                 CommonColumns.ACL_KEYS,
-                                CommonColumns.EVENT_TYPE
+                                EVENT_TYPE
                         )
                         .clusteringColumns(
-                                CommonColumns.PRINCIPAL_TYPE,
-                                CommonColumns.PRINCIPAL_ID,
-                                CommonColumns.TIME_UUID
+                                PRINCIPAL_TYPE,
+                                PRINCIPAL_ID,
+                                TIME_UUID
                         )
                         .columns(
-                                CommonColumns.AUDIT_ID,
-                                CommonColumns.DATA_ID,
-                                CommonColumns.BLOCK_ID
+                                AUDIT_ID,
+                                DATA_ID,
+                                BLOCK_ID
                         )
                         .secondaryIndex(
-                                CommonColumns.PRINCIPAL_TYPE,
-                                CommonColumns.PRINCIPAL_ID,
-                                CommonColumns.TIME_UUID
+                                PRINCIPAL_TYPE,
+                                PRINCIPAL_ID,
+                                TIME_UUID
                         )
                         .withDescendingOrder(
-                                CommonColumns.TIME_UUID
+                                TIME_UUID
                         );
 
             // TODO: remove AUDIT_EVENTS, AUDIT_LOG replaces AUDIT_EVENTS
@@ -258,7 +260,7 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
-                        .columns( SRC_TYPE_ID, SRC_ENTITY_SET_ID, DST_ENTITY_SET_ID, EDGE_ENTITY_SET_ID )
+                        .columns( SRC_TYPE_ID, SRC_ENTITY_SET_ID, SRC_SYNC_ID, DST_ENTITY_SET_ID, DST_SYNC_ID, EDGE_ENTITY_SET_ID )
                         .secondaryIndex(
                                 DST_TYPE_ID,
                                 EDGE_TYPE_ID,
@@ -266,7 +268,9 @@ public enum Table implements TableDef {
                                 EDGE_ENTITY_KEY_ID,
                                 SRC_TYPE_ID,
                                 SRC_ENTITY_SET_ID,
+                                SRC_SYNC_ID,
                                 DST_ENTITY_SET_ID,
+                                DST_SYNC_ID,
                                 EDGE_ENTITY_SET_ID );
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
@@ -330,12 +334,12 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( LINKED_ENTITY_SETS )
                         .ifNotExists()
                         .partitionKey( ID )
-                        .columns( CommonColumns.ENTITY_SET_IDS );
+                        .columns( ENTITY_SET_IDS );
             case LINKED_ENTITY_TYPES:
                 return new CassandraTableBuilder( LINKED_ENTITY_TYPES )
                         .ifNotExists()
                         .partitionKey( ID )
-                        .columns( CommonColumns.ENTITY_TYPE_IDS );
+                        .columns( ENTITY_TYPE_IDS );
             case LINKING_VERTICES:
                 return new CassandraTableBuilder( LINKING_VERTICES )
                         .ifNotExists()
