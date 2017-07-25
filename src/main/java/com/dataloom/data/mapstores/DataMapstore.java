@@ -20,17 +20,13 @@
 
 package com.dataloom.data.mapstores;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
@@ -56,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.springframework.scheduling.annotation.Scheduled;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -64,9 +59,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 public class DataMapstore
         extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, EntityBytes> {
     private static final HashFunction hf = Hashing.murmur3_128();
-//    private final PreparedStatement readEntityKeysForEntitySetQuery;
-    //    private final LoadingCache<UUID, PropertyType> propertyTypes;
-    private final ObjectMapper      mapper;
+    private final ObjectMapper mapper;
 
     public DataMapstore(
             String mapName,
@@ -75,13 +68,6 @@ public class DataMapstore
             SelfRegisteringMapStore<UUID, PropertyType> ptMapStore,
             ObjectMapper mapper ) {
         super( mapName, session, tableBuilder );
-//        this.readEntityKeysForEntitySetQuery = prepareReadEntityKeysForEntitySetQuery( session );
-        //        this.propertyTypes = CacheBuilder.newBuilder().expireAfterAccess( 1, TimeUnit.MINUTES )
-        //                .build( new CacheLoader<UUID, PropertyType>() {
-        //                    @Override public PropertyType load( UUID key ) throws Exception {
-        //                        return ptMapStore.load( key );
-        //                    }
-        //                } );
         this.mapper = mapper;
     }
 
@@ -96,15 +82,6 @@ public class DataMapstore
     @Override protected BoundStatement bind( UUID key, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.ID.cql(), key );
     }
-
-    //    @Override
-    //    protected PreparedStatement prepareLoadQuery() {
-    //        return session.prepare( Table.DATA.getBuilder().buildLoadAllQuery().where( CommonColumns.ENTITY_SET_ID.eq() )
-    //                .and( SYNCID.eq() )
-    //                .and( CassandraEntityDatastore.partitionIndexClause() )
-    //                .and( CommonColumns.ENTITYID.eq() ) );
-    //
-    //    }
 
     @Override protected Stream<ResultSetFuture> asyncStore( UUID key, EntityBytes value ) {
         SetMultimap<UUID, byte[]> properties = value.getRaw();
@@ -140,16 +117,6 @@ public class DataMapstore
         return StreamUtil
                 .stream( session.execute( tableBuilder.buildLoadAllPartitionKeysQuery() ) )
                 .map( RowAdapters::id )::iterator;
-        //return null;
-        //        return StreamUtil.stream( session
-        //                .execute( currentSyncs(  ) ) )
-        //                .parallel()
-        //                .map( this::getEntityKeys )
-        //                .map( ResultSetFuture::getUninterruptibly )
-        //                .flatMap( StreamUtil::stream )
-        //                .map( RowAdapters::entityKeyFromData )
-        //                .unordered()
-        //                .distinct()::iterator;
     }
 
     @Override protected UUID mapKey( Row row ) {
@@ -168,32 +135,15 @@ public class DataMapstore
             String entityId = row.getString( CommonColumns.ENTITYID.cql() );
             ByteBuffer property = row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() );
             m.put( propertyTypeId, property.array() );
-            //            if ( propertyTypeId != null ) {
-            //                PropertyType pt = propertyTypes.getUnchecked( propertyTypeId );
-            //                m.put( propertyTypeId,
-            //                        CassandraSerDesFactory.deserializeValue( mapper,
-            //                                row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() ),
-            //                                pt.getDatatype(),
-            //                                entityId ) );
-            //
-            //            }
         }
         if ( ek == null ) {
             return null;
         }
         return new EntityBytes( ek, m );
     }
-//
-//    public ResultSetFuture getEntityKeys( Row row ) {
-//        final UUID entitySetId = RowAdapters.entitySetId( row );
-//        final UUID syncId = RowAdapters.currentSyncId( row );
-//        return session.executeAsync( readEntityKeysForEntitySetQuery.bind()
-//                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-//                .setUUID( SYNCID.cql(), syncId ) );
-//    }
 
     @Override public MapStoreConfig getMapStoreConfig() {
-        return super.getMapStoreConfig().setWriteDelaySeconds( 2 );//.setInitialLoadMode( InitialLoadMode.EAGER );
+        return super.getMapStoreConfig().setWriteDelaySeconds( 5 );//.setInitialLoadMode( InitialLoadMode.EAGER );
     }
 
     @Override
@@ -209,14 +159,5 @@ public class DataMapstore
                 .distinct().from( Table.SYNC_IDS.getKeyspace(), Table.SYNC_IDS.getName() );
 
     }
-
-
-//    public static PreparedStatement prepareReadEntityKeysForEntitySetQuery( Session session ) {
-//        return session.prepare( QueryBuilder.select( ENTITY_SET_ID.cql(), SYNCID.cql(), ENTITYID.cql() )
-//                .from( Table.DATA.getKeyspace(), Table.DATA.getName() )
-//                .where( ENTITY_SET_ID.eq() )
-//                .and( SYNCID.eq() )
-//                .and( CassandraEntityDatastore.partitionIndexClause() ) );
-//    }
 
 }

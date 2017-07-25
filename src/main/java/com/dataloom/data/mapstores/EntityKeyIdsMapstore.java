@@ -3,17 +3,15 @@ package com.dataloom.data.mapstores;
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.EntityKey;
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MaxSizeConfig;
-import com.hazelcast.map.eviction.LRUEvictionPolicy;
+import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
@@ -22,16 +20,17 @@ import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPa
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKeyValueStore<EntityKey, UUID> {
     private static final Logger logger = LoggerFactory.getLogger( EntityKeyIdsMapstore.class );
-    private final SelfRegisteringMapStore<UUID,EntityKey> ekm;
+    private final SelfRegisteringMapStore<UUID, EntityKey> ekm;
 
     public EntityKeyIdsMapstore(
-            SelfRegisteringMapStore<UUID,EntityKey> ekm,
+            SelfRegisteringMapStore<UUID, EntityKey> ekm,
             String mapName,
             Session session,
             CassandraTableBuilder tableBuilder ) {
@@ -69,10 +68,6 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
         return rs.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
     }
 
-    //    private Stream<UUID> mapValues( ResultSet rs ) {
-    //        return StreamUtil.stream( rs ).map( RowAdapters::id );
-    //    }
-
     @Override
     protected UUID mapValue( ResultSet rs ) {
         Row r = rs.one();
@@ -103,25 +98,20 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
                 .parallel()
                 .unordered()
                 .distinct()
-                .map( this::asyncLoad )
-                .map( ResultSetFuture::getUninterruptibly )
-                .flatMap( StreamUtil::stream )
-                .collect( Collectors.toMap( RowAdapters::entityKey, RowAdapters::id ) );
+                .collect( Collectors.toMap( Function.identity(), this::load ) );
     }
 
+    //Only safe to not do LWT as long as everything is going through idService
     @Override
     protected Insert storeQuery() {
-        return tableBuilder.buildStoreQuery().ifNotExists();
+        return tableBuilder.buildStoreQuery();//.ifNotExists();
     }
 
-    @Override
-    public MapConfig getMapConfig() {
-        // Don't let this map use more than 10% of heap
-        return super.getMapConfig()
-                .setMaxSizeConfig(
-                        new MaxSizeConfig()
-                                .setMaxSizePolicy( MaxSizeConfig.MaxSizePolicy.USED_HEAP_SIZE )
-                                .setSize( 10 ) )
-                .setMapEvictionPolicy( LRUEvictionPolicy.INSTANCE );
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig().setWriteDelaySeconds( 5 );
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig();
     }
 }
