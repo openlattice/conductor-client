@@ -41,7 +41,6 @@ public class LoomGraph implements LoomGraphApi {
 
     public LoomGraph( ListeningExecutorService executor, GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
         this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
-        //        this.backedges = hazelcastInstance.getMap( HazelcastMap.BACKEDGES.name() );
         this.executor = executor;
         this.gqs = gqs;
     }
@@ -95,8 +94,6 @@ public class LoomGraph implements LoomGraphApi {
             UUID edgeEntityId,
             UUID edgeEntityTypeId,
             UUID edgeEntitySetId ) {
-        //        edges.evict( srcVertexId );
-        //        backedges.evict( dstVertexId );
 
         EdgeKey key = new EdgeKey( srcVertexId, dstVertexEntityTypeId, edgeEntityTypeId, dstVertexId, edgeEntityId );
         LoomEdge edge = new LoomEdge( key,
@@ -108,15 +105,6 @@ public class LoomGraph implements LoomGraphApi {
                 edgeEntitySetId );
 
         return new ListenableHazelcastFuture<>( edges.setAsync( key, edge ) );
-        //        return gqs.putEdgeAsync( srcVertexId,
-        //                srcVertexEntityTypeId,
-        //                srcVertexEntitySetId,
-        //                dstVertexId,
-        //                dstVertexEntityTypeId,
-        //                dstVertexEntitySetId,
-        //                edgeEntityId,
-        //                edgeEntityTypeId,
-        //                edgeEntitySetId );
     }
 
     @Override
@@ -128,11 +116,6 @@ public class LoomGraph implements LoomGraphApi {
     public ListenableFuture deleteVertexAsync( UUID vertex ) {
         // TODO: Implement delete for neighborhoods
         return executor.submit( () -> edges.removeAll( Predicates.equal( "srcEntityKeyId", vertex ) ) );
-        //        return gqs
-        //                .getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, ImmutableSet.of( vertex ) ) )
-        //                .map( LoomEdge::getKey )
-        //                .map( this::deleteEdgeAsync )
-        //                .forEach( StreamUtil::getUninterruptibly );
     }
 
     @Override
@@ -141,7 +124,12 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
+    @Timed
     public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> edgeSelection ) {
+        //TODO: This is for linking will fix later
+        //        return edges.values( Predicates.or(
+        //                Predicates.equal( "dstEntityKeyId", vertexId ),
+        //                Predicates.equal( "srcEntityKeyId", vertexId ) ) ).stream();
         return gqs.getFromEdgesTable( edgeSelection );
     }
 
@@ -153,11 +141,6 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     public ListenableFuture deleteEdgeAsync( EdgeKey edgeKey ) {
         return executor.submit( () -> edges.delete( edgeKey ) );
-
-        //        edges.removeAll( edge( edgeKey ) );
-        //        edges.evict( edgeKey.getSrcEntityKeyId() );
-        //        backedges.evict( edgeKey.getDstEntityKeyId() );
-        //        return gqs.deleteEdgeAsync( getEdge( edgeKey ) );
     }
 
     @Override
@@ -168,22 +151,9 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     @Timed
     public Stream<LoomEdge> getEdgesAndNeighborsForVertex( UUID vertexId ) {
-        //TODO: This should be fine as long as neighborhood don't get too large.
-        //return edges.values( Predicates.equal( "srcEntityKeyId", vertexId ) ).stream();
-        return edges.values( Predicates.equal( "srcEntityKeyId", vertexId ) ).stream();
-        //        return gqs
-        //                .getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, ImmutableSet.of( vertexId ) ) );
-    }
-
-    @Override
-    @Deprecated
-    public ResultSetFuture getEdgeCount(
-            UUID vertexId,
-            UUID associationTypeId,
-            Set<UUID> neighborTypeIds,
-            boolean vertexIsSrc ) {
-
-        return gqs.getNeighborEdgeCountAsync( vertexId, associationTypeId, neighborTypeIds, vertexIsSrc );
+        return edges.values( Predicates.or(
+                Predicates.equal( "dstEntityKeyId", vertexId ),
+                Predicates.equal( "srcEntityKeyId", vertexId ) ) ).stream();
     }
 
     @Override
@@ -198,23 +168,6 @@ public class LoomGraph implements LoomGraphApi {
         return this.edges.aggregate( new GraphCount( limit, entitySetId ), p );
     }
 
-    @Override
-    public int getHazelcastEdgeCount(
-            UUID vertexId,
-            UUID associationTypeId,
-            Set<UUID> neighborTypeIds,
-            boolean vertexIsSrc ) {
-        //        if ( vertexIsSrc ) {
-        //            return (Integer) edges.executeOnKey( vertexId,
-        //                    new EdgeCountEntryProcessor( associationTypeId, neighborTypeIds ) );
-        //        }
-        //
-        //        return (Integer) backedges
-        //                .executeOnKey( vertexId, new EdgeCountEntryProcessor( associationTypeId, neighborTypeIds ) );
-        return 0;
-    }
-
-
     public static Predicate edgesMatching(
             UUID entitySetId,
             UUID syncId,
@@ -226,12 +179,12 @@ public class LoomGraph implements LoomGraphApi {
          * We are looking for anything of that type id to the src entity set -> dst where
          */
         return Predicates.or(
-                Stream.concat(dstFilters.entries().stream()
+                Stream.concat( dstFilters.entries().stream()
                                 .map( dstFilter -> Predicates.and(
                                         Predicates.equal( "dstSetId", entitySetId ),
                                         Predicates.equal( "dstSyncId", syncId ),
                                         Predicates.equal( "edgeTypeId", dstFilter.getKey() ),
-                                        Predicates.equal( "srcTypeId", dstFilter.getValue() ) ) ) ,
+                                        Predicates.equal( "srcTypeId", dstFilter.getValue() ) ) ),
                         srcFilters.entries().stream()
                                 .map( srcFilter -> Predicates.and(
                                         Predicates.equal( "srcSetId", entitySetId ),
@@ -239,16 +192,7 @@ public class LoomGraph implements LoomGraphApi {
                                         Predicates.equal( "edgeTypeId", srcFilter.getKey() ),
                                         Predicates.equal( "dstTypeId", srcFilter.getValue() ) ) ) )
                         .toArray( Predicate[]::new ) );
-        //Predicate p = Predicates.or( Predicates.equal("srcSetId", entitySetId), Predicates.equal(  ) )
 
-    }
-
-    public static Predicate anyOf( Set<UUID> dstTypeIds ) {
-        return Predicates.in( "dstTypeId", dstTypeIds.toArray( new UUID[ 0 ] ) );
-        //        return Predicates.or( dstTypeIds
-        //                .stream()
-        //                .map( dstTypeId -> Predicates.equal( "dstTypeId", dstTypeId ) )
-        //                .toArray( Predicate[]::new ) );
     }
 
 }

@@ -78,12 +78,6 @@ public interface LoomGraphApi {
 
     Stream<LoomEdge> getEdgesAndNeighborsForVertex( UUID vertexId );
 
-    ResultSetFuture getEdgeCount(
-            UUID vertexId,
-            UUID associationTypeId,
-            Set<UUID> neighborTypeIds,
-            boolean vertexIsSrc );
-
     IncrementableWeightId[] computeGraphAggregation(
             int limit,
             UUID entitySetId,
@@ -91,9 +85,4 @@ public interface LoomGraphApi {
             SetMultimap<UUID, UUID> srcFilters,
             SetMultimap<UUID, UUID> dstFilters );
 
-    int getHazelcastEdgeCount(
-            UUID vertexId,
-            UUID associationTypeId,
-            Set<UUID> neighborTypeIds,
-            boolean vertexIsSrc );
 }
