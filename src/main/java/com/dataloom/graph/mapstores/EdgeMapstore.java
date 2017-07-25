@@ -27,8 +27,10 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
@@ -85,8 +87,13 @@ public class EdgeMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, L
                 .setUUID( CommonColumns.EDGE_ENTITY_SET_ID.cql(), value.getEdgeSetId() );
     }
 
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig().setWriteDelaySeconds( 5 );
+    }
+
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
+                .setInMemoryFormat( InMemoryFormat.OBJECT )
                 .addMapIndexConfig( new MapIndexConfig( "srcEntityKeyId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstTypeId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstSetId", false ) )
