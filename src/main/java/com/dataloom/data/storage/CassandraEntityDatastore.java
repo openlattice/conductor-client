@@ -126,15 +126,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.dsm = dsm;
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
 
-        //        this.entityQueryWithoutPropertyTypes = prepareEntityQueryWithoutPropertyTypes( session, dataTableDefinitions );
-        //        this.entitySetQuery = prepareEntitySetQuery( session, dataTableDefinitions );
-        //        this.entityIdsQuery = prepareEntityIdsQuery( session );
         this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
-
         this.deleteEntityQuery = prepareDeleteEntityQuery( session );
         this.deleteEntitySetQuery = prepareDeleteEntitySetPartitionQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
-        //        this.readEntityKeysForEntitySetQuery = DataMapstore.prepareReadEntityKeysForEntitySetQuery( session );
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
         this.readNumTopUtilizerRowsQuery = prepareReadNumTopUtilizerRowsQuery( session );
         this.topUtilizersQueryIdExistsQuery = prepareTopUtilizersQueryIdExistsQuery( session );
@@ -154,18 +149,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
         EntitySetHazelcastStream es = new EntitySetHazelcastStream( executor, hazelcastInstance, entitySetId, syncId );
         return new EntitySetData<>( orderedPropertyNames,
                 StreamUtil.stream( es ).map( e -> fromEntityBytes( e, authorizedPropertyTypes ) )::iterator );
-        //        return new EntitySetData<>( orderedPropertyNames,
-        //                getRowsFromMap( entitySetId, syncId, authorizedPropertyTypes.keySet() )
-        //                        .map( idm -> {
-        //                            //logger.info("Entity row: {}", idm.asMap() );
-        //                            SetMultimap<FullQualifiedName, Object> m = HashMultimap.create();
-        //                            authorizedPropertyTypes.forEach( ( id, pt ) -> m.putAll( pt.getType(), idm.get( id ) ) );
-        //                            return m;
-        //                        } )::iterator
-        //        );
-        //        return new EntitySetData<>( orderedPropertyNames,
-        //                getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() )
-        //                        .map( rs -> rowToEntity( rs, authorizedPropertyTypes ) )::iterator );
     }
 
     @Override
@@ -184,6 +167,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
+    @Timed
     public Stream<SetMultimap<Object, Object>> getEntities(
             IncrementableWeightId[] utilizers, Map<UUID, PropertyType> authorizedPropertyTypes ) {
         Map<UUID, EntityBytes> rawEntities = data
@@ -463,8 +447,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
             return results.stream();
         }
 
-        // Stream<Entry<UUID, Object>> authorizedPropertyValues = propertyValues.entries().stream().filter( entry ->
-        // authorizedProperties.contains( entry.getKey() ) );
         EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
         SetMultimap<UUID, byte[]> rawProperties = HashMultimap.create();
 

@@ -38,11 +38,11 @@ public class EntityBytesMergerStreamSerializer implements SelfRegisteringStreamS
     }
 
     @Override public void write( ObjectDataOutput out, EntityBytesMerger object ) throws IOException {
-        RequestEntityStreamSerializer.serialize( out, object.getEntity() );
+        EntityBytesStreamSerializer.serialize( out, object.getEntity() );
     }
 
     @Override public EntityBytesMerger read( ObjectDataInput in ) throws IOException {
-        return new EntityBytesMerger( RequestEntityStreamSerializer.deserialize( in ) );
+        return new EntityBytesMerger( EntityBytesStreamSerializer.deserialize( in ) );
     }
 
     @Override public int getTypeId() {

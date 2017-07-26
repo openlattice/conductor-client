@@ -31,10 +31,10 @@ import org.apache.commons.lang3.RandomUtils;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class RequestEntityStreamSerializerTest
-        extends AbstractStreamSerializerTest<RequestEntityStreamSerializer, EntityBytes> {
-    @Override protected RequestEntityStreamSerializer createSerializer() {
-        return new RequestEntityStreamSerializer();
+public class EntityBytesStreamSerializerTest
+        extends AbstractStreamSerializerTest<EntityBytesStreamSerializer, EntityBytes> {
+    @Override protected EntityBytesStreamSerializer createSerializer() {
+        return new EntityBytesStreamSerializer();
     }
 
     @Override protected EntityBytes createInput() {

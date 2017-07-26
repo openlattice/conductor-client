@@ -135,6 +135,7 @@ public class DatasourceManager {
 
     @Timed
     public void cleanup() {
+        //This will evict as opposed to remove all items.
         StreamUtil.stream( session.execute( DataMapstore.currentSyncs() ) )
                 .map( row -> {
                     UUID entitySetId = RowAdapters.entitySetId( row );
@@ -146,7 +147,9 @@ public class DatasourceManager {
                 .map( ResultSetFuture::getUninterruptibly )
                 .flatMap( StreamUtil::stream )
                 .map( EntitySets::filterByEntitySetIdAndSyncId )
-                .forEach( data::removeAll );
+                .map( data::keySet )
+                .flatMap( Set::stream )
+                .forEach( data::evict );
     }
 
     private static PreparedStatement prepareAllPreviousEntitySetsSyncIdsQuery( Session session ) {

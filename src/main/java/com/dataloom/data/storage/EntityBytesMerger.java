@@ -29,7 +29,7 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class EntityBytesMerger extends AbstractRhizomeEntryProcessor<UUID, EntityBytes, Void> implements Offloadable {
+public class EntityBytesMerger extends AbstractRhizomeEntryProcessor<UUID, EntityBytes, Object> implements Offloadable {
     private final EntityBytes entity;
 
     public EntityBytesMerger( EntityBytes entity ) {
@@ -40,8 +40,8 @@ public class EntityBytesMerger extends AbstractRhizomeEntryProcessor<UUID, Entit
         return entity;
     }
 
-    @Override public Void process( Entry<UUID, EntityBytes> entry ) {
-        EntityBytes eb = entry.getValue();
+    @Override public Object process( Entry<UUID, EntityBytes> entry ) {
+            EntityBytes eb = entry.getValue();
         if ( eb != null ) {
             eb.getRaw().putAll( entity.getRaw() );
         } else {

@@ -26,6 +26,7 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.DefaultArraySerializers.ByteArraySerializer;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -40,7 +41,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RequestEntityStreamSerializer implements SelfRegisteringStreamSerializer<EntityBytes> {
+public class EntityBytesStreamSerializer implements SelfRegisteringStreamSerializer<EntityBytes> {
 
     private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 
@@ -48,6 +49,7 @@ public class RequestEntityStreamSerializer implements SelfRegisteringStreamSeria
         protected Kryo initialValue() {
             Kryo kryo = new Kryo();
             kryo.register( UUID.class, new UUIDSerializer() );
+            kryo.register( byte[].class, new ByteArraySerializer() );
             HashMultimapSerializer.registerSerializers( kryo );
             ImmutableMultimapSerializer.registerSerializers( kryo );
             return kryo;
@@ -66,7 +68,7 @@ public class RequestEntityStreamSerializer implements SelfRegisteringStreamSeria
 
     @Override
     public int getTypeId() {
-        return StreamSerializerTypeIds.REQUEST_ENTITY.ordinal();
+        return StreamSerializerTypeIds.ENTITY_BYTES.ordinal();
     }
 
     @Override
@@ -74,7 +76,7 @@ public class RequestEntityStreamSerializer implements SelfRegisteringStreamSeria
     }
 
     @Override
-    public Class<? extends EntityBytes> getClazz() {
+    public Class<EntityBytes> getClazz() {
         return EntityBytes.class;
     }
 
