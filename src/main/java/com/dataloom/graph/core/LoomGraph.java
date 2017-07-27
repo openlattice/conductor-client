@@ -1,5 +1,10 @@
 package com.dataloom.graph.core;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
+
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.graph.aggregators.GraphCount;
@@ -9,6 +14,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.ResultSetFuture;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -17,27 +23,19 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LoomGraph implements LoomGraphApi {
-
-    private static final Logger logger = LoggerFactory.getLogger( LoomGraph.class );
 
     private final GraphQueryService        gqs;
     private final ListeningExecutorService executor;
     private final IMap<EdgeKey, LoomEdge>  edges;
 
     // vertex id -> dst type id -> edge type id -> dst entity key id
-    //    private final IMap<UUID, Neighborhood> backedges;
+    // private final IMap<UUID, Neighborhood> backedges;
 
-    //    private final IMap<UUID, Neighborhood> edges;
-    //    // vertex id -> dst type id -> edge type id -> dst entity key id
-    //    private final IMap<UUID, Neighborhood> backedges;
+    // private final IMap<UUID, Neighborhood> edges;
+    // // vertex id -> dst type id -> edge type id -> dst entity key id
+    // private final IMap<UUID, Neighborhood> backedges;
 
     public LoomGraph( ListeningExecutorService executor, GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
         this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
@@ -96,7 +94,8 @@ public class LoomGraph implements LoomGraphApi {
             UUID edgeEntitySetId ) {
 
         EdgeKey key = new EdgeKey( srcVertexId, dstVertexEntityTypeId, edgeEntityTypeId, dstVertexId, edgeEntityId );
-        LoomEdge edge = new LoomEdge( key,
+        LoomEdge edge = new LoomEdge(
+                key,
                 srcVertexEntityTypeId,
                 srcVertexEntitySetId,
                 srcVertexEntitySyncId,
@@ -126,10 +125,10 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     @Timed
     public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> edgeSelection ) {
-        //TODO: This is for linking will fix later
-        //        return edges.values( Predicates.or(
-        //                Predicates.equal( "dstEntityKeyId", vertexId ),
-        //                Predicates.equal( "srcEntityKeyId", vertexId ) ) ).stream();
+        // TODO: This is for linking will fix later
+        // return edges.values( Predicates.or(
+        // Predicates.equal( "dstEntityKeyId", vertexId ),
+        // Predicates.equal( "srcEntityKeyId", vertexId ) ) ).stream();
         return gqs.getFromEdgesTable( edgeSelection );
     }
 
@@ -157,6 +156,11 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
+    public Stream<LoomEdge> getEdgesAndNeighborsForVertices( Set<UUID> vertexIds ) {
+        return gqs.getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, vertexIds ) );
+    }
+
+    @Override
     @Timed
     public IncrementableWeightId[] computeGraphAggregation(
             int limit,
@@ -174,17 +178,17 @@ public class LoomGraph implements LoomGraphApi {
             SetMultimap<UUID, UUID> srcFilters,
             SetMultimap<UUID, UUID> dstFilters ) {
         /*
-         * No need to execute on back edge map  we are looking for items in specified entity set that have incoming edges
-         * of a given type from a given destination type. That means srcType =
-         * We are looking for anything of that type id to the src entity set -> dst where
+         * No need to execute on back edge map we are looking for items in specified entity set that have incoming edges
+         * of a given type from a given destination type. That means srcType = We are looking for anything of that type
+         * id to the src entity set -> dst where
          */
         return Predicates.or(
                 Stream.concat( dstFilters.entries().stream()
-                                .map( dstFilter -> Predicates.and(
-                                        Predicates.equal( "dstSetId", entitySetId ),
-                                        Predicates.equal( "dstSyncId", syncId ),
-                                        Predicates.equal( "edgeTypeId", dstFilter.getKey() ),
-                                        Predicates.equal( "srcTypeId", dstFilter.getValue() ) ) ),
+                        .map( dstFilter -> Predicates.and(
+                                Predicates.equal( "dstSetId", entitySetId ),
+                                Predicates.equal( "dstSyncId", syncId ),
+                                Predicates.equal( "edgeTypeId", dstFilter.getKey() ),
+                                Predicates.equal( "srcTypeId", dstFilter.getValue() ) ) ),
                         srcFilters.entries().stream()
                                 .map( srcFilter -> Predicates.and(
                                         Predicates.equal( "srcSetId", entitySetId ),
