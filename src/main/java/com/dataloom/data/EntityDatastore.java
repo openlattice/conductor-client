@@ -19,9 +19,6 @@
 
 package com.dataloom.data;
 
-import com.codahale.metrics.annotation.Timed;
-import com.dataloom.data.analytics.IncrementableWeightId;
-import com.dataloom.data.storage.EntityBytes;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -29,12 +26,15 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.codahale.metrics.annotation.Timed;
+import com.dataloom.data.analytics.IncrementableWeightId;
+import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.type.PropertyType;
 import com.google.common.collect.SetMultimap;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -72,6 +72,7 @@ public interface EntityDatastore {
 
     /**
      * Asynchronously load an entity with specified properties
+     * 
      * @param entitySetId
      * @param entityId
      * @param syncId
@@ -83,9 +84,10 @@ public interface EntityDatastore {
             String entityId,
             UUID syncId,
             Set<UUID> properties );
-    
+
     /**
      * Asynchronously load an entity with all properties
+     * 
      * @param entitySetId
      * @param entityId
      * @param syncId
@@ -101,13 +103,13 @@ public interface EntityDatastore {
 
     void deleteEntity( EntityKey entityKey );
 
-    @Timed SetMultimap<FullQualifiedName, Object> getEntityPostFiltered(
-            UUID entitySetId,
-            UUID syncId,
-            String entityId,
+    @Timed
+    SetMultimap<FullQualifiedName, Object> getEntityById(
+            UUID entityKeyId,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
-    @Timed ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
+    @Timed
+    ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
             UUID entitySetId,
             UUID syncId,
             String entityId,
@@ -137,12 +139,15 @@ public interface EntityDatastore {
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType );
 
     Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId );
-    
+
     boolean queryAlreadyExecuted( ByteBuffer queryId );
-    
+
     void writeVertexCount( ByteBuffer queryId, UUID vertexId, double score );
-    
+
     Iterable<UUID> readTopUtilizers( ByteBuffer queryId, int numResults );
 
-    Stream<SetMultimap<Object, Object>> getEntities( IncrementableWeightId[] utilizers, Map<UUID, PropertyType> authorizedPropertyTypes );
+    Stream<SetMultimap<Object, Object>> getEntities(
+            IncrementableWeightId[] utilizers,
+            Map<UUID, PropertyType> authorizedPropertyTypes );
+
 }
