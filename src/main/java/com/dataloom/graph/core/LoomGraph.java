@@ -157,7 +157,8 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public Stream<LoomEdge> getEdgesAndNeighborsForVertices( Set<UUID> vertexIds ) {
-        return gqs.getEdges( ImmutableMap.of( CommonColumns.SRC_ENTITY_KEY_ID, vertexIds ) );
+        return edges.values( Predicates.or( Predicates.in( "srcEntityKeyId", vertexIds.toArray( new UUID[] {} ) ),
+                Predicates.in( "dstEntityKeyId", vertexIds.toArray( new UUID[] {} ) ) ) ).stream();
     }
 
     @Override
