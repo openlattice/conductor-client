@@ -28,6 +28,7 @@ import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
 import com.dataloom.data.mapstores.EntityKeysMapstore;
@@ -94,6 +95,7 @@ import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.UUID;
 import javax.inject.Inject;
@@ -296,7 +298,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, EntityBytes> dataMapstore() {
+    public SelfRegisteringMapStore<DataKey, ByteBuffer> dataMapstore() {
         ObjectMapper mapper = ObjectMappers.getJsonMapper();
         FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
         FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );

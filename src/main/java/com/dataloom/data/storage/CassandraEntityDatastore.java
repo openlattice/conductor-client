@@ -25,25 +25,29 @@ import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityDatastore;
 import com.dataloom.data.EntityKey;
-import com.dataloom.data.EntityKeyHazelcastStream;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.EntitySetData;
-import com.dataloom.data.EntitySetHazelcastStream;
+import com.dataloom.data.aggregators.EntitiesAggregator;
+import com.dataloom.data.aggregators.EntityAggregator;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
+import com.dataloom.data.hazelcast.DataKey;
+import com.dataloom.data.hazelcast.Entities;
+import com.dataloom.data.hazelcast.EntityKeyHazelcastStream;
+import com.dataloom.data.hazelcast.EntitySetHazelcastStream;
+import com.dataloom.data.hazelcast.EntitySets;
+import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
@@ -58,11 +62,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.query.Predicate;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
@@ -78,7 +82,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -92,24 +95,17 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final ObjectMapper           mapper;
     private final HazelcastLinkingGraphs linkingGraph;
     private final DatasourceManager      dsm;
-    private final PreparedStatement      writeDataQuery;
-    //    private final PreparedStatement      entityQueryWithoutPropertyTypes;
-    //    private final PreparedStatement      entitySetQuery;
-    //    private final PreparedStatement      entityIdsQuery;
-    private final PreparedStatement      deleteEntityQuery;
-    private final PreparedStatement      deleteEntitySetQuery;
     private final PreparedStatement      readNumRPCRowsQuery;
-    //    private final PreparedStatement      readEntityKeysForEntitySetQuery;
     private final PreparedStatement      writeUtilizerScoreQuery;
     private final PreparedStatement      readNumTopUtilizerRowsQuery;
     private final PreparedStatement      topUtilizersQueryIdExistsQuery;
 
-    private final HazelcastInstance        hazelcastInstance;
-    private final IMap<UUID, EntityBytes>  data;
-    private final EntityKeyIdService       idService;
-    private final ListeningExecutorService executor;
+    private final HazelcastInstance         hazelcastInstance;
+    private final IMap<DataKey, ByteBuffer> data;
+    private final EntityKeyIdService        idService;
+    private final ListeningExecutorService  executor;
     @Inject
-    private       EventBus                 eventBus;
+    private       EventBus                  eventBus;
 
     public CassandraEntityDatastore(
             Session session,
@@ -126,9 +122,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
         this.dsm = dsm;
         CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
 
-        this.writeDataQuery = prepareWriteQuery( session, dataTableDefinitions );
-        this.deleteEntityQuery = prepareDeleteEntityQuery( session );
-        this.deleteEntitySetQuery = prepareDeleteEntitySetPartitionQuery( session );
         this.readNumRPCRowsQuery = prepareReadNumRPCRowsQuery( session );
         this.writeUtilizerScoreQuery = prepareWriteUtilizerScoreQuery( session );
         this.readNumTopUtilizerRowsQuery = prepareReadNumTopUtilizerRowsQuery( session );
@@ -158,43 +151,55 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        EntityBytes e = Util
-                .getSafely( data, idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) ) );
+        SetMultimap<FullQualifiedName, Object> e = fromEntityBytes( entityId,
+                data.aggregate( new EntityAggregator(), EntitySets.getEntity( entitySetId, syncId, entityId ) ),
+                authorizedPropertyTypes );
+        //        EntityBytes e = Util
+        //                .getSafely( data, idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) ) );
         if ( e == null ) {
             return ImmutableSetMultimap.of();
         }
-        return fromEntityBytes( e, authorizedPropertyTypes );
+        return e;
     }
 
     @Override
     @Timed
     public Stream<SetMultimap<Object, Object>> getEntities(
             IncrementableWeightId[] utilizers, Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        Map<UUID, EntityBytes> rawEntities = data
-                .getAll( Stream.of( utilizers ).map( IncrementableWeightId::getId ).collect( Collectors.toSet() ) );
+        Predicate entitiesFilter = EntitySets.getEntities( Stream.of( utilizers )
+                .map( IncrementableWeightId::getId )
+                .toArray( UUID[]::new ) );
+        Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
         return Stream.of( utilizers )
                 .map( weightedId -> {
-                    EntityBytes eb = Util.getSafely( rawEntities, weightedId.getId() );
-                    SetMultimap<Object, Object> entity = untypedFromEntityBytes( eb, authorizedPropertyTypes );
+                    UUID id = weightedId.getId();
+                    SetMultimap<Object, Object> entity =
+                            untypedFromEntityBytes( id,
+                                    entities.get( id ),
+                                    authorizedPropertyTypes );
                     entity.put( "count", weightedId.getWeight() );
-                    entity.put( "id", weightedId.getId().toString() );
+                    entity.put( "id", id.toString() );
                     return entity;
                 } );
     }
 
-    @Override
-    @Timed
-    public SetMultimap<FullQualifiedName, Object> getEntityPostFiltered(
-            UUID entitySetId,
-            UUID syncId,
+    public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
             String entityId,
-            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        EntityBytes e = Util
-                .getSafely( data, idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) ) );
-        if ( e == null ) {
-            return ImmutableSetMultimap.of();
-        }
-        return fromEntityBytes( e, authorizedPropertyTypes );
+            SetMultimap<UUID, ByteBuffer> eb,
+            Map<UUID, PropertyType> propertyType ) {
+        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap
+                .create( eb.keySet().size(), eb.size() / eb.keySet().size() );
+
+        eb.entries().forEach( prop -> {
+            PropertyType pt = propertyType.get( prop.getKey() );
+            if ( pt != null ) {
+                entityData.put( pt.getType(), CassandraSerDesFactory.deserializeValue( mapper,
+                        prop.getValue(),
+                        pt.getDatatype(),
+                        entityId ) );
+            }
+        } );
+        return entityData;
     }
 
     public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
@@ -232,6 +237,26 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         eb.getEntityId() ) );
             }
         } );
+
+        return entityData;
+    }
+
+    public SetMultimap<Object, Object> untypedFromEntityBytes(
+            UUID id,
+            SetMultimap<UUID, ByteBuffer> properties,
+            Map<UUID, PropertyType> propertyType ) {
+        SetMultimap<Object, Object> entityData = HashMultimap
+                .create( properties.keySet().size(), properties.size() / properties.keySet().size() );
+
+        properties.entries().forEach( prop -> {
+            PropertyType pt = propertyType.get( prop.getKey() );
+            if ( pt != null ) {
+                entityData.put( pt.getType(), CassandraSerDesFactory.deserializeValue( mapper,
+                        prop.getValue(),
+                        pt.getDatatype(),
+                        id::toString ) );
+            }
+        } );
         return entityData;
     }
 
@@ -243,7 +268,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
         return transformAsync( asyncLoadEntity( entitySetId, entityId, syncId, authorizedPropertyTypes.keySet() ),
-                eb -> executor.submit( () -> fromEntityBytes( eb, authorizedPropertyTypes ) ),
+                eb -> executor.submit( () -> fromEntityBytes( entityId, eb, authorizedPropertyTypes ) ),
                 executor );
     }
 
@@ -299,6 +324,13 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return RowAdapters.entityIndexedById( eb, authorizedPropertyTypes, mapper );
     }
 
+    public SetMultimap<UUID, Object> rowToEntityIndexedById(
+            String entityId,
+            SetMultimap<UUID, ByteBuffer> eb,
+            Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        return RowAdapters.entityIndexedById( entityId, eb, authorizedPropertyTypes, mapper );
+    }
+
     private Stream<EntityBytes> getRows(
             UUID entitySetId,
             UUID syncId,
@@ -349,14 +381,25 @@ public class CassandraEntityDatastore implements EntityDatastore {
     //    }
 
     @Override
-    public ListenableFuture<EntityBytes> asyncLoadEntity(
+    public ListenableFuture<SetMultimap<UUID, ByteBuffer>> asyncLoadEntity(
             UUID entitySetId,
             String entityId,
             UUID syncId,
             Set<UUID> authorizedProperties ) {
-        UUID id = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
 
-        return new ListenableHazelcastFuture( data.getAsync( id ) );
+        ListenableFuture<SetMultimap<UUID, ByteBuffer>> f =
+                executor.submit( () ->
+                {
+                    SetMultimap<UUID, ByteBuffer> byteBuffers = data.aggregate( new EntityAggregator(),
+                            EntitySets.getEntity(
+                                    entitySetId,
+                                    syncId,
+                                    entityId,
+                                    authorizedProperties ) );
+                    return byteBuffers;
+                } );
+        return f;
+        //        return new ListenableHazelcastFuture( data.getAsync( id ) );
 
         //        return session.executeAsync( entityQuery.bind()
         //                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
@@ -374,13 +417,16 @@ public class CassandraEntityDatastore implements EntityDatastore {
             String entityId,
             UUID syncId ) {
 
-        UUID id = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
-        return new ListenableHazelcastFuture<EntityBytes>( data.getAsync( id ) );
+        //        UUID id = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
 
-        //        return session.executeAsync( entityQueryWithoutPropertyTypes.bind()
-        //                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-        //                .setUUID( CommonColumns.SYNCID.cql(), syncId )
-        //                .setString( CommonColumns.ENTITYID.cql(), entityId ) );
+        return executor.submit( () -> {
+            EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
+            SetMultimap<UUID, byte[]> mm = HashMultimap.create();
+            EntityBytes eb = new EntityBytes( ek, mm );
+            data.entrySet( EntitySets.getEntity( entitySetId, syncId, entityId ) )
+                    .forEach( e -> mm.put( e.getKey().getPropertyTypeId(), e.getValue().array() ) );
+            return eb;
+        } );
     }
 
     @Deprecated
@@ -428,13 +474,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
             Set<UUID> authorizedProperties,
             String entityId,
             SetMultimap<UUID, Object> entityDetails ) {
-        List<ListenableFuture> results = new ArrayList<>();
 
         // does not write the row if some property values that user is trying to write to are not authorized.
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
             logger.error( "Entity {} not written because the following properties are not authorized: {}", entityId,
                     Sets.difference( entityDetails.keySet(), authorizedProperties ) );
-            return results.stream();
+            return Stream.empty();
         }
 
         SetMultimap<UUID, Object> normalizedPropertyValues = null;
@@ -444,31 +489,34 @@ public class CassandraEntityDatastore implements EntityDatastore {
         } catch ( Exception e ) {
             logger.error( "Entity {} not written because some property values are of invalid format.",
                     entityId, e );
-            return results.stream();
+            return Stream.empty();
         }
 
         EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
-        SetMultimap<UUID, byte[]> rawProperties = HashMultimap.create();
-
-        normalizedPropertyValues.entries().stream()
+        UUID id = idService.getEntityKeyId( ek );
+        Stream<ListenableFuture> futures = normalizedPropertyValues
+                .entries().stream()
                 .map( entry -> {
-
-                    EdmPrimitiveTypeKind datatype = authorizedPropertiesWithDataType
-                            .get( entry.getKey() );
-                    return Pair.of( entry.getKey(), CassandraSerDesFactory.serializeValue(
+                    UUID propertyTypeId = entry.getKey();
+                    EdmPrimitiveTypeKind datatype = authorizedPropertiesWithDataType.get( propertyTypeId );
+                    ByteBuffer buffer = CassandraSerDesFactory.serializeValue(
                             mapper,
                             entry.getValue(),
                             datatype,
-                            entityId ).array() );
+                            entityId );
+                    return data.setAsync( new DataKey( id,
+                            entitySetId,
+                            syncId,
+                            entityId,
+                            propertyTypeId,
+                            DataMapstore.hf.hashBytes( buffer.array() ).asBytes() ), buffer );
                 } )
-                .forEach( entry -> rawProperties.put( entry.getKey(), entry.getValue() ) );
-        EntityBytes eb = new EntityBytes( ek, rawProperties );
+                .map( ListenableHazelcastFuture::new );
 
-        results.add( new ListenableHazelcastFuture( data
-                .submitToKey( idService.getEntityKeyId( ek ), new EntityBytesMerger( eb ) ) ) );
-
-        Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues.asMap().entrySet().stream().filter(
-                entry -> !authorizedPropertiesWithDataType.get( entry.getKey() ).equals( EdmPrimitiveTypeKind.Binary ) )
+        Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues
+                .asMap().entrySet().stream()
+                .filter( entry -> !authorizedPropertiesWithDataType.get( entry.getKey() )
+                        .equals( EdmPrimitiveTypeKind.Binary ) )
                 .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
 
         eventBus.post( new EntityDataCreatedEvent(
@@ -477,22 +525,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 entityId,
                 normalizedPropertyValuesAsMap ) );
 
-        return results.stream();
-    }
-
-    public void createOrderedRPCData( UUID requestId, double weight, byte[] value ) {
-        session.executeAsync( writeDataQuery.bind().setUUID( CommonColumns.RPC_REQUEST_ID.cql(), requestId )
-                .setDouble( CommonColumns.RPC_WEIGHT.cql(), weight )
-                .setBytes( CommonColumns.RPC_VALUE.cql(), ByteBuffer.wrap( value ) ) );
-    }
-
-    public Stream<byte[]> readNumRPCRows( UUID requestId, int numResults ) {
-        logger.info( "Reading {} rows of RPC data for request id {}", numResults, requestId );
-        BoundStatement bs = readNumRPCRowsQuery.bind().setUUID( CommonColumns.RPC_REQUEST_ID.cql(), requestId )
-                .setInt( "numResults", numResults );
-        ResultSet rs = session.execute( bs );
-        return StreamUtil.stream( rs )
-                .map( r -> r.getBytes( CommonColumns.RPC_VALUE.cql() ).array() );
+        return futures;
     }
 
     @Override
@@ -557,8 +590,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     public ListenableFuture<?> asyncDeleteEntity( UUID entitySetId, String entityId, UUID syncId ) {
-        UUID id = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
-        return executor.submit( () -> Util.deleteSafely( data, id ) );
+        //UUID id = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
+        return executor.submit( () -> data.removeAll( EntitySets.getEntity( entitySetId, syncId, entityId ) ) );
         //        return session.executeAsync( deleteEntityQuery.bind()
         //                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
         //                .setString( CommonColumns.ENTITYID.cql(), entityId )
@@ -597,16 +630,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
         //                .distinct();
     }
 
-    private static PreparedStatement prepareWriteQuery(
-            Session session,
-            CassandraTableBuilder ctb ) {
-        return session.prepare( writeQuery( ctb ) );
-    }
-
-    private static Insert writeQuery( CassandraTableBuilder ctb ) {
-        return ctb.buildStoreQuery();
-    }
-
     private static PreparedStatement prepareReadNumRPCRowsQuery( Session session ) {
         return session.prepare(
                 QueryBuilder.select().from( Table.RPC_DATA_ORDERED.getKeyspace(), Table.RPC_DATA_ORDERED.getName() )
@@ -631,13 +654,5 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 QueryBuilder.select().from( Table.TOP_UTILIZER_DATA.getKeyspace(), Table.TOP_UTILIZER_DATA.getName() )
                         .where( QueryBuilder.eq( CommonColumns.QUERY_ID.cql(), CommonColumns.QUERY_ID.bindMarker() ) )
                         .limit( 1 ) );
-    }
-
-    private static PreparedStatement prepareDeleteEntitySetPartitionQuery( Session session ) {
-        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
-    }
-
-    private static PreparedStatement prepareDeleteEntityQuery( Session session ) {
-        return session.prepare( Table.DATA.getBuilder().buildDeleteByPartitionKeyQuery() );
     }
 }

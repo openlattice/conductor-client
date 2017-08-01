@@ -43,18 +43,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class EntityBytesStreamSerializer implements SelfRegisteringStreamSerializer<EntityBytes> {
 
-    private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
-
-        @Override
-        protected Kryo initialValue() {
-            Kryo kryo = new Kryo();
-            kryo.register( UUID.class, new UUIDSerializer() );
-            kryo.register( byte[].class, new ByteArraySerializer() );
-            HashMultimapSerializer.registerSerializers( kryo );
-            ImmutableMultimapSerializer.registerSerializers( kryo );
-            return kryo;
-        }
-    };
+    private static final ThreadLocal<Kryo> kryoThreadLocal = ThreadLocal.withInitial( () -> {
+        Kryo kryo = new Kryo();
+        kryo.register( UUID.class, new UUIDSerializer() );
+        kryo.register( byte[].class, new ByteArraySerializer() );
+        HashMultimapSerializer.registerSerializers( kryo );
+        ImmutableMultimapSerializer.registerSerializers( kryo );
+        return kryo;
+    } );
 
     @Override
     public void write( ObjectDataOutput out, EntityBytes object ) throws IOException {

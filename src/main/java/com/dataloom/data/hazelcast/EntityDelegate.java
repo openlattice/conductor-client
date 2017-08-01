@@ -18,7 +18,7 @@
  *
  */
 
-package com.dataloom.data;
+package com.dataloom.data.hazelcast;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;

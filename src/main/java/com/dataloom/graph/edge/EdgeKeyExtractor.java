@@ -30,6 +30,7 @@ import com.hazelcast.query.extractor.ValueExtractor;
 public class EdgeKeyExtractor extends ValueExtractor<Neighborhood, String> {
     @Override public void extract(
             Neighborhood target, String argument, ValueCollector collector ) {
+
 //        switch ( argument ) {
 //            case "srcEntityKeyId":
 //                collector.addObject( target.getSrcEntityKeyId() );
