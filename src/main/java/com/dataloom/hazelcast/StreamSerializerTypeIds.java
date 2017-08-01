@@ -111,8 +111,6 @@ public enum StreamSerializerTypeIds {
     GRAPH_COUNT,
     INCREMENTABLE_WEIGHT_ID,
     ENTITIES,
-    ENTITIES_AGGREGATOR
-    ;
-
-
+    ENTITIES_AGGREGATOR,
+    ENTITY_AGGREGATOR;
 }

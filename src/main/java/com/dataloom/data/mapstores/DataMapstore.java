@@ -135,7 +135,7 @@ public class DataMapstore
     @Override
     protected ByteBuffer mapValue( ResultSet rs ) {
         Row row = rs.one();
-        return row == null ? null : row.getBytes( CommonColumns.PROPERTY_VALUE.cql() );
+        return row == null ? null : row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() );
 
         //        final SetMultimap<UUID, byte[]> m = HashMultimap.create();
         //        EntityKey ek = null;

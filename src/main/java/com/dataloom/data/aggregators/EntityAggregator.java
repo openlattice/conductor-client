@@ -31,8 +31,16 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class EntityAggregator extends Aggregator<Entry<DataKey, ByteBuffer>, SetMultimap<UUID, ByteBuffer>> {
-    private final SetMultimap<UUID, ByteBuffer> byteBuffers = HashMultimap.create();
+public class EntityAggregator extends Aggregator<Entry<DataKey, ByteBuffer>, EntityAggregator> {
+    private final SetMultimap<UUID, ByteBuffer> byteBuffers;
+
+    public EntityAggregator() {
+        this.byteBuffers = HashMultimap.create();
+    }
+
+    public EntityAggregator( SetMultimap<UUID, ByteBuffer> byteBuffers ) {
+        this.byteBuffers = byteBuffers;
+    }
 
     @Override public void accumulate( Entry<DataKey, ByteBuffer> input ) {
         byteBuffers.put( input.getKey().getPropertyTypeId(), input.getValue() );
@@ -43,7 +51,11 @@ public class EntityAggregator extends Aggregator<Entry<DataKey, ByteBuffer>, Set
         this.byteBuffers.putAll( other.byteBuffers );
     }
 
-    @Override public SetMultimap<UUID, ByteBuffer> aggregate() {
+    public SetMultimap<UUID, ByteBuffer> getByteBuffers() {
         return byteBuffers;
+    }
+
+    @Override public EntityAggregator aggregate() {
+        return this;
     }
 }

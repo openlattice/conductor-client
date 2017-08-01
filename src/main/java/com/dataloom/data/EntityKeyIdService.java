@@ -52,6 +52,8 @@ public interface EntityKeyIdService {
     Optional<EntityKey> tryGetEntityKey( UUID entityKeyId );
 
     EntityKey getEntityKey( UUID entityKeyId );
+    
+    Map<UUID, EntityKey> getEntityKeys( Set<UUID> entityKeyIds );
 
     ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId );
 }
