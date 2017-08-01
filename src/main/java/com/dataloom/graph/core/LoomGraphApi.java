@@ -77,6 +77,8 @@ public interface LoomGraphApi {
     void deleteEdges( UUID srcId );
 
     Stream<LoomEdge> getEdgesAndNeighborsForVertex( UUID vertexId );
+    
+    Stream<LoomEdge> getEdgesAndNeighborsForVertices( Set<UUID> vertexIds );
 
     IncrementableWeightId[] computeGraphAggregation(
             int limit,
