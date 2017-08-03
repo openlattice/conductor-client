@@ -20,10 +20,12 @@
 package com.dataloom.data;
 
 import com.codahale.metrics.annotation.Timed;
+import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.hazelcast.serializers.ByteBufferStreamSerializer;
 import com.dataloom.neuron.audit.AuditEntitySetUtils;
 import com.dataloom.streams.StreamUtil;
 import com.dataloom.sync.events.CurrentSyncUpdatedEvent;
@@ -44,6 +46,7 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -54,13 +57,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 
 public class DatasourceManager {
     private static final Logger logger = LoggerFactory.getLogger( DatasourceManager.class );
-    private final Session                 session;
-    private final IMap<UUID, UUID>        currentSyncIds;
-    private final PreparedStatement       mostRecentSyncIdQuery;
-    private final PreparedStatement       writeSyncIdsQuery;
-    private final PreparedStatement       allPreviousSyncIdsQuery;
-    private final PreparedStatement       allPreviousEntitySetsAndSyncIdsQuery;
-    private final IMap<UUID, EntityBytes> data;
+    private final Session                   session;
+    private final IMap<UUID, UUID>          currentSyncIds;
+    private final PreparedStatement         mostRecentSyncIdQuery;
+    private final PreparedStatement         writeSyncIdsQuery;
+    private final PreparedStatement         allPreviousSyncIdsQuery;
+    private final PreparedStatement         allPreviousEntitySetsAndSyncIdsQuery;
+    private final IMap<DataKey, ByteBuffer> data;
 
     @Inject
     private EventBus eventBus;
