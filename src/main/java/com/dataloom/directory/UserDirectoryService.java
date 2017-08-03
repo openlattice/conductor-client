@@ -91,44 +91,86 @@ public class UserDirectoryService {
     }
 
     public void addRoleToUser( String userId, String role ) {
-        Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
-        roles.add( role );
-        setRolesOfUser( userId, roles );
+
+        Auth0UserBasic user = getUser( userId );
+
+        if ( user != null ) {
+            Set<String> roles = new HashSet<>( user.getRoles() );
+            roles.add( role );
+            setRolesOfUser( userId, roles );
+        } else {
+            logger.warn( "Received null user from Auth0" );
+        }
     }
 
     public void removeRoleFromUser( String userId, String role ) {
-        Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
-        roles.remove( role );
-        setRolesOfUser( userId, roles );
+
+        Auth0UserBasic user = getUser( userId );
+
+        if ( user != null ) {
+            Set<String> roles = new HashSet<>( user.getRoles() );
+            roles.remove( role );
+            setRolesOfUser( userId, roles );
+        } else {
+            logger.warn( "Received null user from Auth0" );
+        }
     }
 
     public void updateRoleOfUser( String userId, String roleToRemove, String roleToAdd ) {
-        Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
-        roles.remove( roleToRemove );
-        roles.add( roleToAdd );
-        setRolesOfUser( userId, roles );
+
+        Auth0UserBasic user = getUser( userId );
+
+        if ( user != null ) {
+            Set<String> roles = new HashSet<>( user.getRoles() );
+            roles.remove( roleToRemove );
+            roles.add( roleToAdd );
+            setRolesOfUser( userId, roles );
+        } else {
+            logger.warn( "Received null user from Auth0" );
+        }
     }
 
     public void removeAllRolesInOrganizationFromUser( String userId, UUID organizationId ) {
-        Set<String> roles = new HashSet<>( getUser( userId ).getRoles() );
-        for( String role : roles ){
-            if( RolesUtil.belongsToOrganization( organizationId, role ) ){
-                roles.remove( role );
+
+        Auth0UserBasic user = getUser( userId );
+
+        if ( user != null ) {
+            Set<String> roles = new HashSet<>( user.getRoles() );
+            for ( String role : roles ) {
+                if ( RolesUtil.belongsToOrganization( organizationId, role ) ) {
+                    roles.remove( role );
+                }
             }
+            setRolesOfUser( userId, roles );
+        } else {
+            logger.warn( "Received null user from Auth0" );
         }
-        setRolesOfUser( userId, roles );
     }
 
     public void addOrganizationToUser( String userId, UUID organization ) {
-        Set<String> organizations = new HashSet<>( getUser( userId ).getOrganizations() );
-        organizations.add( organization.toString() );
-        setOrganizationsOfUser( userId, organizations );
+
+        Auth0UserBasic user = getUser( userId );
+
+        if ( user != null ) {
+            Set<String> organizations = new HashSet<>( user.getOrganizations() );
+            organizations.add( organization.toString() );
+            setOrganizationsOfUser( userId, organizations );
+        } else {
+            logger.warn( "Received null user from Auth0" );
+        }
     }
 
     public void removeOrganizationFromUser( String userId, UUID organization ) {
-        Set<String> organizations = new HashSet<>( getUser( userId ).getOrganizations() );
-        organizations.remove( organization.toString() );
-        setOrganizationsOfUser( userId, organizations );
+
+        Auth0UserBasic user = getUser( userId );
+
+        if ( user != null ) {
+            Set<String> organizations = new HashSet<>( user.getOrganizations() );
+            organizations.remove( organization.toString() );
+            setOrganizationsOfUser( userId, organizations );
+        } else {
+            logger.warn( "Received null user from Auth0" );
+        }
     }
 
     public void setOrganizationsOfUser( String userId, Set<String> organizations ) {
@@ -145,8 +187,10 @@ public class UserDirectoryService {
 
         do {
             pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, page++, DEFAULT_PAGE_SIZE );
-            users.addAll( pageOfUsers );
-        } while ( pageOfUsers.size() == DEFAULT_PAGE_SIZE );
+            if ( pageOfUsers != null ) {
+                users.addAll( pageOfUsers );
+            }
+        } while ( pageOfUsers != null && pageOfUsers.size() == DEFAULT_PAGE_SIZE );
 
         if ( users.isEmpty() ) {
             logger.warn( "Auth0 did not return any users for this search." );
