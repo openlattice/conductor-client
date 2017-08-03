@@ -10,6 +10,8 @@ import java.util.UUID;
 
 public class OrganizationMemberRoleRemover extends AbstractRemover<UUID, PrincipalSet, Principal> {
 
+    private static final long serialVersionUID = 6100482436786837269L;
+
     public OrganizationMemberRoleRemover( Iterable<Principal> objects ) {
         super( objects );
     }

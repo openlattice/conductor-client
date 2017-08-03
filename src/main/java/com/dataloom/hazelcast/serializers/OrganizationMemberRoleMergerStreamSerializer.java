@@ -37,7 +37,7 @@ public class OrganizationMemberRoleMergerStreamSerializer
 
     @Override
     public int getTypeId() {
-        return StreamSerializerTypeIds.ORGANIZATION_MEMBER_MERGER.ordinal();
+        return StreamSerializerTypeIds.ORGANIZATION_MEMBER_ROLE_MERGER.ordinal();
     }
 
     @Override

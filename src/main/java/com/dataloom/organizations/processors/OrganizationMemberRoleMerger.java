@@ -9,6 +9,8 @@ import java.util.UUID;
 
 public class OrganizationMemberRoleMerger extends AbstractMerger<UUID, PrincipalSet, Principal> {
 
+    private static final long serialVersionUID = 4127837036304775975L;
+
     public OrganizationMemberRoleMerger( Iterable<Principal> objects ) {
         super( objects );
     }

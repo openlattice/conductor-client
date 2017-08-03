@@ -37,7 +37,7 @@ public class OrganizationMemberRoleRemoverStreamSerializer
 
     @Override
     public int getTypeId() {
-        return StreamSerializerTypeIds.ORGANIZATION_MEMBER_REMOVER.ordinal();
+        return StreamSerializerTypeIds.ORGANIZATION_MEMBER_ROLE_REMOVER.ordinal();
     }
 
     @Override
