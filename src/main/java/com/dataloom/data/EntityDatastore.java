@@ -19,22 +19,21 @@
 
 package com.dataloom.data;
 
-import java.nio.ByteBuffer;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
-
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.type.PropertyType;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -43,11 +42,6 @@ public interface EntityDatastore {
 
     /**
      * Reads data from an entity set.
-     *
-     * @param entitySetId
-     * @param syncId
-     * @param authorizedPropertyTypes
-     * @return
      */
     EntitySetData<FullQualifiedName> getEntitySetData(
             UUID entitySetId,
@@ -57,12 +51,6 @@ public interface EntityDatastore {
 
     /**
      * Reads a single row from an entity set.
-     * 
-     * @param entitySetId
-     * @param syncId
-     * @param entityId
-     * @param authorizedPropertyTypes
-     * @return
      */
     SetMultimap<FullQualifiedName, Object> getEntity(
             UUID entitySetId,
@@ -72,14 +60,8 @@ public interface EntityDatastore {
 
     /**
      * Asynchronously load an entity with specified properties
-     * 
-     * @param entitySetId
-     * @param entityId
-     * @param syncId
-     * @param properties
-     * @return
      */
-    ListenableFuture<EntityBytes> asyncLoadEntity(
+    ListenableFuture<SetMultimap<UUID, ByteBuffer>> asyncLoadEntity(
             UUID entitySetId,
             String entityId,
             UUID syncId,
@@ -87,11 +69,6 @@ public interface EntityDatastore {
 
     /**
      * Asynchronously load an entity with all properties
-     * 
-     * @param entitySetId
-     * @param entityId
-     * @param syncId
-     * @return
      */
     ListenableFuture<EntityBytes> asyncLoadEntity(
             UUID entitySetId,
@@ -103,12 +80,12 @@ public interface EntityDatastore {
 
     void deleteEntity( EntityKey entityKey );
 
-    @Timed
-    SetMultimap<FullQualifiedName, Object> getEntityById(
-            UUID entityKeyId,
-            Map<UUID, PropertyType> authorizedPropertyTypes );
+    Stream<SetMultimap<Object, Object>> getEntities(
+            Collection<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes );
 
-    @Timed
+    SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID id, Map<UUID, PropertyType> authorizedPropertyTypes );
+
     ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
             UUID entitySetId,
             UUID syncId,
@@ -127,11 +104,6 @@ public interface EntityDatastore {
 
     /**
      * Performs async storage of an entity.
-     * 
-     * @param entityKey
-     * @param entityDetails
-     * @param authorizedPropertiesWithDataType
-     * @return
      */
     Stream<ListenableFuture> updateEntityAsync(
             EntityKey entityKey,

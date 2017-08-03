@@ -20,7 +20,7 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.EntityKeyAggregator;
+import com.dataloom.data.aggregators.EntityKeyAggregator;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

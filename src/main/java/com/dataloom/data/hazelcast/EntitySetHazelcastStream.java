@@ -18,8 +18,10 @@
  *
  */
 
-package com.dataloom.data;
+package com.dataloom.data.hazelcast;
 
+import com.dataloom.data.aggregators.EntitySetAggregator;
+import com.dataloom.data.HazelcastStream;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.util.concurrent.ListeningExecutorService;

@@ -18,28 +18,29 @@
  *
  */
 
-package com.dataloom.data;
+package com.dataloom.data.hazelcast;
 
-import com.datastax.driver.core.Row;
-import com.hazelcast.query.Predicate;
-import com.hazelcast.query.Predicates;
-import com.kryptnostic.datastore.cassandra.RowAdapters;
+import com.google.common.collect.SetMultimap;
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public final class EntitySets {
-    private EntitySets() {}
+public class Entities extends HashMap<UUID, SetMultimap<UUID, ByteBuffer>> {
 
-    public static Predicate filterByEntitySetIdAndSyncId( Row row  ){
-        UUID entitySetId = RowAdapters.entitySetId(  row  );
-        UUID syncId = RowAdapters.syncId( row );
-        return filterByEntitySetIdAndSyncId( entitySetId,syncId );
+    public Entities( int initialCapacity ) {
+        super( initialCapacity );
     }
-    public static Predicate filterByEntitySetIdAndSyncId( UUID entitySetId, UUID syncId) {
-        return Predicates.and(
-                Predicates.equal( "entitySetId", entitySetId ),
-                Predicates.equal( "syncId", syncId ) );
+
+    public Entities() {
+        super();
     }
+
+    public Entities( Map<? extends UUID, ? extends SetMultimap<UUID, ByteBuffer>> m ) {
+        super( m );
+    }
+
 }

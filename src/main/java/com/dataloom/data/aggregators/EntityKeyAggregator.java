@@ -18,8 +18,9 @@
  *
  */
 
-package com.dataloom.data;
+package com.dataloom.data.aggregators;
 
+import com.dataloom.data.EntityKey;
 import com.dataloom.data.storage.EntityBytes;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;

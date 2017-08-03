@@ -1,23 +1,5 @@
 package com.kryptnostic.datastore.cassandra;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.regex.Pattern;
-
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.geo.Geospatial.Dimension;
-import org.apache.olingo.commons.api.edm.geo.Geospatial.Type;
-import org.apache.olingo.commons.api.edm.geo.Point;
-import org.joda.time.DateTime;
-import org.joda.time.LocalDateTime;
-import org.joda.time.LocalTime;
-import org.joda.time.format.ISOPeriodFormat;
-
 import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.utils.Bytes;
@@ -25,6 +7,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Supplier;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.geo.Geospatial.Dimension;
+import org.apache.olingo.commons.api.edm.geo.Geospatial.Type;
+import org.apache.olingo.commons.api.edm.geo.Point;
+import org.joda.time.DateTime;
+import org.joda.time.LocalTime;
+import org.joda.time.format.ISOPeriodFormat;
 
 public class CassandraSerDesFactory {
     private static final ProtocolVersion protocolVersion = ProtocolVersion.NEWEST_SUPPORTED;
@@ -37,12 +34,6 @@ public class CassandraSerDesFactory {
 
     /**
      * This directly depends on output format of {@link #validateFormatAndNormalize(EdmPrimitiveTypeKind, Object)}
-     *
-     * @param mapper
-     * @param value
-     * @param type
-     * @param entityId
-     * @return
      */
     public static ByteBuffer serializeValue(
             ObjectMapper mapper,
@@ -101,20 +92,22 @@ public class CassandraSerDesFactory {
         }
     }
 
-    /**
-     * This directly depends on output of {@link #validateFormatAndNormalize(EdmPrimitiveTypeKind, Object)}
-     *
-     * @param mapper
-     * @param bytes
-     * @param type
-     * @param entityId
-     * @return
-     */
     public static Object deserializeValue(
             ObjectMapper mapper,
             ByteBuffer bytes,
             EdmPrimitiveTypeKind type,
             String entityId ) {
+        return deserializeValue( mapper, bytes, type, () -> entityId );
+    }
+
+    /**
+     * This directly depends on output of {@link #validateFormatAndNormalize(EdmPrimitiveTypeKind, Object)}
+     */
+    public static Object deserializeValue(
+            ObjectMapper mapper,
+            ByteBuffer bytes,
+            EdmPrimitiveTypeKind type,
+            Supplier<String> entityId ) {
         switch ( type ) {
             /**
              * validateFormatAndNormalize binds to Boolean
@@ -184,10 +177,6 @@ public class CassandraSerDesFactory {
 
     /**
      * This directly depends on Jackson's raw data binding. See http://wiki.fasterxml.com/JacksonInFiveMinutes
-     *
-     * @param dataType
-     * @param value
-     * @return
      */
     public static Object validateFormatAndNormalize( EdmPrimitiveTypeKind dataType, Object value ) {
         if ( value == null ) {

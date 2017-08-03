@@ -20,10 +20,7 @@
 
 package com.dataloom.data.mapstores;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
-
-import com.dataloom.data.EntityKey;
-import com.dataloom.data.storage.EntityBytes;
+import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.BoundStatement;
@@ -34,8 +31,6 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.hazelcast.config.InMemoryFormat;
@@ -44,21 +39,21 @@ import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
-import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
+import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DataMapstore
-        extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, EntityBytes> {
-    private static final HashFunction hf = Hashing.murmur3_128();
+        extends AbstractStructuredCassandraMapstore<DataKey, ByteBuffer> {
+    public static final HashFunction hf = Hashing.murmur3_128();
     private final ObjectMapper mapper;
 
     public DataMapstore(
@@ -71,36 +66,40 @@ public class DataMapstore
         this.mapper = mapper;
     }
 
-    @Override public UUID generateTestKey() {
+    @Override
+    public DataKey generateTestKey() {
         return null;
     }
 
-    @Override public EntityBytes generateTestValue() {
+    @Override
+    public ByteBuffer generateTestValue() {
         return null;
     }
 
-    @Override protected BoundStatement bind( UUID key, BoundStatement bs ) {
-        return bs.setUUID( CommonColumns.ID.cql(), key );
-    }
-
-    @Override protected Stream<ResultSetFuture> asyncStore( UUID key, EntityBytes value ) {
-        SetMultimap<UUID, byte[]> properties = value.getRaw();
-        return properties
-                .entries()
-                .parallelStream()
-                .map( this::bindProperty )
-                .map( bs -> bind( key, value, bs ) )
-                .map( session::executeAsync );
+    @Override
+    protected BoundStatement bind( DataKey key, BoundStatement bs ) {
+        return bs
+                .setUUID( CommonColumns.ID.cql(), key.getId() )
+                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), key.getEntitySetId() )
+                .setUUID( CommonColumns.SYNCID.cql(), key.getSyncId() )
+                .setString( CommonColumns.ENTITYID.cql(), key.getEntityId() )
+                .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), key.getPropertyTypeId() )
+                .setBytes( CommonColumns.PROPERTY_VALUE.cql(), ByteBuffer.wrap( key.getHash() ) );
     }
 
     @Override
     protected BoundStatement bind(
-            UUID key, EntityBytes value, BoundStatement bs ) {
-        final EntityKey entityKey = value.getKey();
+            DataKey key, ByteBuffer value, BoundStatement bs ) {
         return bind( key, bs )
-                .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entityKey.getEntitySetId() )
-                .setUUID( SYNCID.cql(), entityKey.getSyncId() )
-                .setString( CommonColumns.ENTITYID.cql(), entityKey.getEntityId() );
+                .setBytes( CommonColumns.PROPERTY_VALUE.cql(), value );
+    }
+
+    @Override public ByteBuffer load( DataKey key ) {
+        return super.load( key );
+    }
+
+    @Override public Map<DataKey, ByteBuffer> loadAll( Collection<DataKey> keys ) {
+        return super.loadAll( keys );
     }
 
     private BoundStatement bindProperty( Entry<UUID, byte[]> property ) {
@@ -113,33 +112,46 @@ public class DataMapstore
     }
 
     @Override
-    public Iterable<UUID> loadAllKeys() {
-        return StreamUtil
-                .stream( session.execute( tableBuilder.buildLoadAllPartitionKeysQuery() ) )
-                .map( RowAdapters::id )::iterator;
+    public Iterable<DataKey> loadAllKeys() {
+        return StreamUtil.stream( session
+                .execute( currentSyncs() ) )
+                .parallel()
+                .map( cs ->
+                        session.executeAsync( tableBuilder.buildLoadAllPrimaryKeysQuery().allowFiltering()
+                                .where( QueryBuilder.eq( CommonColumns.ENTITY_SET_ID.cql(),
+                                        cs.getUUID( CommonColumns.ENTITY_SET_ID.cql() ) ) )
+                                .and( QueryBuilder.eq( CommonColumns.SYNCID.cql(),
+                                        cs.getUUID( CommonColumns.CURRENT_SYNC_ID.cql() ) ) ) ) )
+                .map( ResultSetFuture::getUninterruptibly )
+                .flatMap( StreamUtil::stream )
+                .map( DataKey::fromRow )::iterator;
     }
 
-    @Override protected UUID mapKey( Row row ) {
-        return RowAdapters.id( row );
+    @Override
+    protected DataKey mapKey( Row row ) {
+        return DataKey.fromRow( row );
     }
 
-    @Override protected EntityBytes mapValue( ResultSet rs ) {
+    @Override
+    protected ByteBuffer mapValue( ResultSet rs ) {
+        Row row = rs.one();
+        return row == null ? null : row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() );
 
-        final SetMultimap<UUID, byte[]> m = HashMultimap.create();
-        EntityKey ek = null;
-        for ( Row row : rs ) {
-            if ( ek == null ) {
-                ek = RowAdapters.entityKeyFromData( row );
-            }
-            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
-            String entityId = row.getString( CommonColumns.ENTITYID.cql() );
-            ByteBuffer property = row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() );
-            m.put( propertyTypeId, property.array() );
-        }
-        if ( ek == null ) {
-            return null;
-        }
-        return new EntityBytes( ek, m );
+        //        final SetMultimap<UUID, byte[]> m = HashMultimap.create();
+        //        EntityKey ek = null;
+        //        for ( Row row : rs ) {
+        //            if ( ek == null ) {
+        //                ek = RowAdapters.entityKeyFromData( row );
+        //            }
+        //            UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+        //            String entityId = row.getString( CommonColumns.ENTITYID.cql() );
+        //            ByteBuffer property = row.getBytes( CommonColumns.PROPERTY_BUFFER.cql() );
+        //            m.put( propertyTypeId, property.array() );
+        //        }
+        //        if ( ek == null ) {
+        //            return null;
+        //        }
+        //        return new EntityBytes( ek, m );
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {
@@ -150,8 +162,10 @@ public class DataMapstore
     public MapConfig getMapConfig() {
         return super.getMapConfig()
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
-                .addMapIndexConfig( new MapIndexConfig( "entitySetId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "syncId", false ) );
+                .addMapIndexConfig( new MapIndexConfig( "__key#id", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "__key#entitySetId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "__key#syncId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "__key#propertyTypeId", false ) );
     }
 
     public static Select currentSyncs() {

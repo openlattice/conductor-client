@@ -20,34 +20,46 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.aggregators.EntitySetAggregator;
+import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import java.io.IOException;
+import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Component
-public class EntitySetAggregatorStreamSerializer implements SelfRegisteringStreamSerializer<EntitySetAggregator> {
-    @Override public Class<EntitySetAggregator> getClazz() {
-        return EntitySetAggregator.class;
+public class DataKeyStreamSerializer implements SelfRegisteringStreamSerializer<DataKey> {
+
+    @Override public Class<DataKey> getClazz() {
+        return DataKey.class;
     }
 
-    @Override public void write( ObjectDataOutput out, EntitySetAggregator object ) throws IOException {
-        UUIDStreamSerializer.serialize( out, object.getStreamId() );
-        out.writeLong( object.aggregate() );
+    @Override public void write( ObjectDataOutput out, DataKey object ) throws IOException {
+        UUIDStreamSerializer.serialize( out, object.getId() );
+        UUIDStreamSerializer.serialize( out, object.getEntitySetId() );
+        UUIDStreamSerializer.serialize( out, object.getSyncId() );
+        out.writeUTF( object.getEntityId() );
+        UUIDStreamSerializer.serialize( out, object.getPropertyTypeId() );
+        out.writeByteArray( object.getHash() );
     }
 
-    @Override public EntitySetAggregator read( ObjectDataInput in ) throws IOException {
-        return new EntitySetAggregator( UUIDStreamSerializer.deserialize( in ), in.readLong() );
+    @Override public DataKey read( ObjectDataInput in ) throws IOException {
+        UUID id = UUIDStreamSerializer.deserialize( in );
+        UUID entitySetId = UUIDStreamSerializer.deserialize( in );
+        UUID syncId = UUIDStreamSerializer.deserialize( in );
+        String entityId = in.readUTF();
+        UUID propertyTypeId = UUIDStreamSerializer.deserialize( in );
+        byte[] hash = in.readByteArray();
+        return new DataKey( id, entitySetId, syncId, entityId, propertyTypeId, hash );
     }
 
     @Override public int getTypeId() {
-        return StreamSerializerTypeIds.ENTITY_SET_AGGREGATOR.ordinal();
+        return StreamSerializerTypeIds.DATA_KEY.ordinal();
     }
 
     @Override public void destroy() {

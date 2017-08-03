@@ -20,34 +20,35 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.aggregators.EntitySetAggregator;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.springframework.stereotype.Component;
+import scala.util.control.Exception.By;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Component
-public class EntitySetAggregatorStreamSerializer implements SelfRegisteringStreamSerializer<EntitySetAggregator> {
-    @Override public Class<EntitySetAggregator> getClazz() {
-        return EntitySetAggregator.class;
+public class ByteBufferStreamSerializer  implements SelfRegisteringStreamSerializer<ByteBuffer> {
+
+    @Override public Class<ByteBuffer> getClazz() {
+        return ByteBuffer.class;
     }
 
-    @Override public void write( ObjectDataOutput out, EntitySetAggregator object ) throws IOException {
-        UUIDStreamSerializer.serialize( out, object.getStreamId() );
-        out.writeLong( object.aggregate() );
+    @Override public void write( ObjectDataOutput out, ByteBuffer object ) throws IOException {
+        out.writeByteArray( object.array() );
     }
 
-    @Override public EntitySetAggregator read( ObjectDataInput in ) throws IOException {
-        return new EntitySetAggregator( UUIDStreamSerializer.deserialize( in ), in.readLong() );
+    @Override public ByteBuffer read( ObjectDataInput in ) throws IOException {
+        return ByteBuffer.wrap( in.readByteArray() );
     }
 
     @Override public int getTypeId() {
-        return StreamSerializerTypeIds.ENTITY_SET_AGGREGATOR.ordinal();
+        return StreamSerializerTypeIds.BYTE_BUFFER.ordinal();
     }
 
     @Override public void destroy() {

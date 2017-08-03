@@ -20,6 +20,7 @@
 package com.dataloom.data;
 
 import com.codahale.metrics.annotation.Timed;
+import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.HazelcastMap;
