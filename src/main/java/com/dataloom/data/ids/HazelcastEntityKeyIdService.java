@@ -69,6 +69,11 @@ public class HazelcastEntityKeyIdService implements EntityKeyIdService {
     public EntityKey getEntityKey( UUID entityKeyId ) {
         return Util.getSafely( keys, entityKeyId );
     }
+    
+    @Override
+    public Map<UUID, EntityKey> getEntityKeys( Set<UUID> entityKeyIds ) {
+        return Util.getSafely( keys, entityKeyIds );
+    }
 
     @Override
     @Timed
