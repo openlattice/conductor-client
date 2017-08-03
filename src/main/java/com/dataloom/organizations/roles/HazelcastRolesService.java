@@ -20,9 +20,9 @@ import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.OrganizationRole;
 import com.dataloom.organization.roles.RoleKey;
+import com.dataloom.organizations.processors.OrganizationMemberRoleMerger;
+import com.dataloom.organizations.processors.OrganizationMemberRoleRemover;
 import com.dataloom.organizations.PrincipalSet;
-import com.dataloom.organizations.processors.PrincipalMerger;
-import com.dataloom.organizations.processors.PrincipalRemover;
 import com.dataloom.organizations.roles.processors.RoleDescriptionUpdater;
 import com.dataloom.organizations.roles.processors.RoleTitleUpdater;
 import com.google.common.base.Preconditions;
@@ -109,8 +109,11 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
 
     @Override
     public void updateTitle( RoleKey roleKey, String title ) {
-        String oldName = getRole( roleKey ).toString();
-        String newName = RolesUtil.getStringRepresentation( roleKey.getOrganizationId(), title );
+
+        OrganizationRole role = getRole( roleKey );
+
+        String oldName = RolesUtil.getStringRepresentation( role.getOrganizationId(), role.getTitle() );
+        String newName = RolesUtil.getStringRepresentation( role.getOrganizationId(), title );
         reservations.renameReservation( roleKey.getRoleId(), newName );
 
         roles.executeOnKey( roleKey, new RoleTitleUpdater( title ) );
@@ -164,19 +167,28 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     public void addRoleToUser( RoleKey roleKey, Principal user ) {
         Preconditions.checkArgument( user.getType() == PrincipalType.USER, "Cannot add roles to another ROLE object." );
 
-        usersWithRole.executeOnKey( roleKey, new PrincipalMerger( ImmutableSet.of( user ) ) );
-        uds.addRoleToUser( user.getId(), getRole( roleKey ).toString() );
+        // TODO: do we really need to use "orgId|role"? why can't we just use the role UUID?
+        String roleStringForAuth0 = RolesUtil.getStringRepresentation( getRole( roleKey ) );
+
+        usersWithRole.executeOnKey( roleKey, new OrganizationMemberRoleMerger( ImmutableSet.of( user ) ) );
+        uds.addRoleToUser( user.getId(), roleStringForAuth0 );
 
         tokenTracker.trackUser( user.getId() );
     }
 
     @Override
     public void removeRoleFromUser( RoleKey roleKey, Principal user ) {
-        Preconditions.checkArgument( user.getType() == PrincipalType.USER,
-                "Cannot remove roles from another ROLE object." );
 
-        usersWithRole.executeOnKey( roleKey, new PrincipalRemover( ImmutableSet.of( user ) ) );
-        uds.removeRoleFromUser( user.getId(), getRole( roleKey ).toString() );
+        Preconditions.checkArgument(
+            user.getType() == PrincipalType.USER,
+            "Cannot remove roles from another ROLE object."
+        );
+
+        // TODO: do we really need to use "orgId|role"? why can't we just use the role UUID?
+        String roleStringForAuth0 = RolesUtil.getStringRepresentation( getRole( roleKey ) );
+
+        usersWithRole.executeOnKey( roleKey, new OrganizationMemberRoleRemover( ImmutableSet.of( user ) ) );
+        uds.removeRoleFromUser( user.getId(), roleStringForAuth0 );
 
         tokenTracker.trackUser( user.getId() );
     }
