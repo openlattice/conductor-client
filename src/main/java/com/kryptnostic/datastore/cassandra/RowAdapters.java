@@ -124,7 +124,7 @@ public final class RowAdapters {
             UUID propertyTypeId = e.getKey();
             byte[] property = e.getValue();
             PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
-            if ( propertyTypeId != null ) {
+            if ( pt != null ) {
                 m.put( propertyTypeId,
                         CassandraSerDesFactory.deserializeValue( mapper,
                                 ByteBuffer.wrap( property ),
