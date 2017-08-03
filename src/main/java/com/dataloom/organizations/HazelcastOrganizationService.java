@@ -53,8 +53,8 @@ import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
 import com.dataloom.organizations.processors.EmailDomainsMerger;
 import com.dataloom.organizations.processors.EmailDomainsRemover;
-import com.dataloom.organizations.processors.PrincipalMerger;
-import com.dataloom.organizations.processors.PrincipalRemover;
+import com.dataloom.organizations.processors.OrganizationMemberMerger;
+import com.dataloom.organizations.processors.OrganizationMemberRemover;
 import com.dataloom.organizations.roles.RolesManager;
 import com.dataloom.organizations.roles.RolesUtil;
 import com.dataloom.streams.StreamUtil;
@@ -117,7 +117,7 @@ public class HazelcastOrganizationService {
         authorizations.createEmptyAcl( ImmutableList.of( organization.getId() ), SecurableObjectType.Organization );
         eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
     }
-    
+
     public void createOrganization( Organization organization ){
         reservations.reserveId( organization );
         UUID organizationId = organization.getId();
@@ -134,7 +134,7 @@ public class HazelcastOrganizationService {
         Future<PrincipalSet> members = membersOf.getAsync( organizationId );
         Future<DelegatedStringSet> autoApprovedEmailDomains = autoApprovedEmailDomainsOf.getAsync( organizationId );
 
-        Set<Principal> roles = getRoles( organizationId );
+        Set<OrganizationRole> roles = getRoles( organizationId );
         try {
             return new Organization(
                     Optional.of( organizationId ),
@@ -189,7 +189,7 @@ public class HazelcastOrganizationService {
     }
 
     public void addMembers( UUID organizationId, Set<Principal> members ) {
-        membersOf.submitToKey( organizationId, new PrincipalMerger( members ) );
+        membersOf.submitToKey( organizationId, new OrganizationMemberMerger( members ) );
         addOrganizationToMembers( organizationId, members );
     }
 
@@ -210,7 +210,7 @@ public class HazelcastOrganizationService {
     }
 
     public void removeMembers( UUID organizationId, Set<Principal> members ) {
-        membersOf.submitToKey( organizationId, new PrincipalRemover( members ) );
+        membersOf.submitToKey( organizationId, new OrganizationMemberRemover( members ) );
         removeRolesFromMembers( Iterables.transform( getRolesInFull( organizationId ), OrganizationRole::getRoleKey ),
                 members );
         removeOrganizationFromMembers( organizationId, members );
@@ -292,9 +292,13 @@ public class HazelcastOrganizationService {
         return rolesManager.getAllRolesInOrganization( organizationId );
     }
 
-    public Set<Principal> getRoles( UUID organizationId ) {
+    public Set<Principal> getRolesPrincipals( UUID organizationId ) {
         return StreamUtil.stream( getRolesInFull( organizationId ) ).map( role -> RolesUtil.getPrincipal( role ) )
                 .collect( Collectors.toSet() );
+    }
+
+    public Set<OrganizationRole> getRoles( UUID organizationId ) {
+        return StreamUtil.stream( getRolesInFull( organizationId ) ).collect( Collectors.toSet() );
     }
 
     public RoleKey getRoleKey( UUID organizationId, Principal principal ) {

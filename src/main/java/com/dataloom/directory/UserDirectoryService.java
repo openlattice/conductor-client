@@ -145,8 +145,10 @@ public class UserDirectoryService {
 
         do {
             pageOfUsers = auth0ManagementApi.searchAllUsers( searchQuery, page++, DEFAULT_PAGE_SIZE );
-            users.addAll( pageOfUsers );
-        } while ( pageOfUsers.size() == DEFAULT_PAGE_SIZE );
+            if ( pageOfUsers != null ) {
+                users.addAll( pageOfUsers );
+            }
+        } while ( pageOfUsers != null && pageOfUsers.size() == DEFAULT_PAGE_SIZE );
 
         if ( users.isEmpty() ) {
             logger.warn( "Auth0 did not return any users for this search." );
