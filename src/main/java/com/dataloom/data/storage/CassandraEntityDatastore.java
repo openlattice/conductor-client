@@ -186,6 +186,32 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 } );
     }
 
+    @Override
+    @Timed
+    public Stream<SetMultimap<Object, Object>> getEntities(
+            Set<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        Predicate entitiesFilter = EntitySets.getEntities( ids );
+        Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
+
+        return ids.stream()
+                .map( id -> {
+                    SetMultimap<Object, Object> entity =
+                            untypedFromEntityBytes( id, entities.get( id ), authorizedPropertyTypes );
+                    entity.put( "id", id.toString() );
+                    return entity;
+                } );
+    }
+
+    @Override
+    @Timed
+    public SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID id, Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        Predicate entitiesFilter = EntitySets.getEntities( new UUID[] { id } );
+        Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
+
+        return fromEntityBytes( id, entities.get( id ), authorizedPropertyTypes );
+    }
+
     public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
             String entityId,
             SetMultimap<UUID, ByteBuffer> eb,
@@ -254,6 +280,25 @@ public class CassandraEntityDatastore implements EntityDatastore {
             }
         } );
 
+        return entityData;
+    }
+
+    public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
+            UUID id,
+            SetMultimap<UUID, ByteBuffer> properties,
+            Map<UUID, PropertyType> propertyType ) {
+        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap
+                .create( properties.keySet().size(), properties.size() / properties.keySet().size() );
+
+        properties.entries().forEach( prop -> {
+            PropertyType pt = propertyType.get( prop.getKey() );
+            if ( pt != null ) {
+                entityData.put( pt.getType(), CassandraSerDesFactory.deserializeValue( mapper,
+                        prop.getValue(),
+                        pt.getDatatype(),
+                        id::toString ) );
+            }
+        } );
         return entityData;
     }
 

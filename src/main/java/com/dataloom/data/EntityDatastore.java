@@ -19,6 +19,7 @@
 
 package com.dataloom.data;
 
+import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.type.PropertyType;
@@ -78,6 +79,12 @@ public interface EntityDatastore {
 
     void deleteEntity( EntityKey entityKey );
 
+    @Timed Stream<SetMultimap<Object, Object>> getEntities(
+            Set<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes );
+
+    @Timed SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID id, Map<UUID, PropertyType> authorizedPropertyTypes );
+
     ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
             UUID entitySetId,
             UUID syncId,
@@ -113,4 +120,5 @@ public interface EntityDatastore {
     Stream<SetMultimap<Object, Object>> getEntities(
             IncrementableWeightId[] utilizers,
             Map<UUID, PropertyType> authorizedPropertyTypes );
+
 }
