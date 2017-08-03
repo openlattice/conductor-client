@@ -71,6 +71,7 @@ import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -189,7 +190,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     @Override
     @Timed
     public Stream<SetMultimap<Object, Object>> getEntities(
-            Set<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes ) {
+            Collection<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes ) {
         Predicate entitiesFilter = EntitySets.getEntities( ids );
         Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
 

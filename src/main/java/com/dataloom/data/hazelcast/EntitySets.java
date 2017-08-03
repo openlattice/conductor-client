@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
@@ -48,7 +49,7 @@ public final class EntitySets {
 
     }
 
-    public static Predicate getEntities( Set<UUID> ids ) {
+    public static Predicate getEntities( Collection<UUID> ids ) {
         return getEntities( ids.toArray( new UUID[] {} ) );
     }
 

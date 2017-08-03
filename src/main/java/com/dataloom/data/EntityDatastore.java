@@ -26,6 +26,7 @@ import com.dataloom.edm.type.PropertyType;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -79,10 +80,10 @@ public interface EntityDatastore {
 
     void deleteEntity( EntityKey entityKey );
 
-    @Timed Stream<SetMultimap<Object, Object>> getEntities(
-            Set<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes );
+    Stream<SetMultimap<Object, Object>> getEntities(
+            Collection<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes );
 
-    @Timed SetMultimap<FullQualifiedName, Object> getEntity(
+    SetMultimap<FullQualifiedName, Object> getEntity(
             UUID id, Map<UUID, PropertyType> authorizedPropertyTypes );
 
     ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
