@@ -19,15 +19,35 @@
 
 package com.dataloom.organizations.processors;
 
+import java.util.Map;
 import java.util.UUID;
 
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.kryptnostic.rhizome.hazelcast.objects.SetProxy;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRemover;
 
 public class EmailDomainsRemover extends AbstractRemover<UUID, DelegatedStringSet, String> {
+
     private static final long serialVersionUID = -4808156947180508536L;
 
     public EmailDomainsRemover( Iterable<String> objects ) {
         super( objects );
+    }
+
+    @Override
+    public Void process( Map.Entry<UUID, DelegatedStringSet> entry ) {
+
+        DelegatedStringSet currentObjects = entry.getValue();
+        if ( currentObjects != null ) {
+            for ( String objectToRemove : objectsToRemove ) {
+                currentObjects.remove( objectToRemove );
+            }
+        }
+
+        if ( !( currentObjects instanceof SetProxy<?, ?> ) ) {
+            entry.setValue( currentObjects );
+        }
+
+        return null;
     }
 }
