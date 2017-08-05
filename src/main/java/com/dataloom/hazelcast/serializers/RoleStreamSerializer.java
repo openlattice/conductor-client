@@ -6,17 +6,17 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.Role;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @Component
-public class OrganizationRoleStreamSerializer implements SelfRegisteringStreamSerializer<OrganizationRole> {
+public class RoleStreamSerializer implements SelfRegisteringStreamSerializer<Role> {
 
     @Override
-    public void write( ObjectDataOutput out, OrganizationRole object ) throws IOException {
+    public void write( ObjectDataOutput out, Role object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getId() );
         UUIDStreamSerializer.serialize( out, object.getOrganizationId() );
         out.writeUTF( object.getTitle() );
@@ -24,25 +24,25 @@ public class OrganizationRoleStreamSerializer implements SelfRegisteringStreamSe
     }
 
     @Override
-    public OrganizationRole read( ObjectDataInput in ) throws IOException {
+    public Role read( ObjectDataInput in ) throws IOException {
         Optional<UUID> roleId = Optional.of( UUIDStreamSerializer.deserialize( in ) );
         UUID organizationId = UUIDStreamSerializer.deserialize( in );
         String title = in.readUTF();
         Optional<String> description = Optional.of( in.readUTF() );
-        return new OrganizationRole( roleId, organizationId, title, description );
+        return new Role( roleId, organizationId, title, description );
     }
 
     @Override
     public int getTypeId() {
-        return StreamSerializerTypeIds.ORGANIZATION_ROLE.ordinal();
+        return StreamSerializerTypeIds.ROLE.ordinal();
     }
 
     @Override
     public void destroy() {}
 
     @Override
-    public Class<? extends OrganizationRole> getClazz() {
-        return OrganizationRole.class;
+    public Class<? extends Role> getClazz() {
+        return Role.class;
     }
 
 }

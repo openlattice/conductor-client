@@ -37,8 +37,7 @@ import com.dataloom.authorization.securable.AbstractSchemaAssociatedSecurableTyp
 import com.dataloom.authorization.securable.AbstractSecurableObject;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organization.roles.OrganizationRole;
-import com.dataloom.organizations.roles.RolesUtil;
+import com.dataloom.organization.roles.Role;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
@@ -66,7 +65,7 @@ public class HazelcastAclKeyReservationService {
             .of( SecurableObjectType.EntityType,
                     SecurableObjectType.PropertyTypeInEntitySet,
                     SecurableObjectType.EntitySet,
-                    SecurableObjectType.OrganizationRole );
+                    SecurableObjectType.Role );
 
     static {
         for ( SecurableObjectType objectType : SecurableObjectType.values() ) {
@@ -133,7 +132,7 @@ public class HazelcastAclKeyReservationService {
      * This function reserves a UUID for a SecurableObject based on AclKey. It throws unchecked exception
      * {@link TypeExistsException} if the type already exists or {@link AclKeyConflictException} if a different AclKey
      * is already associated with the type.
-     * 
+     *
      * @param type The type for which to reserve an FQN and UUID.
      */
     public void reserveIdAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
@@ -144,15 +143,11 @@ public class HazelcastAclKeyReservationService {
         reserveIdAndValidateType( entitySet, entitySet::getName );
     }
 
-    public void reserveIdAndValidateType( OrganizationRole role ) {
-        reserveIdAndValidateType( role, () -> RolesUtil.getStringRepresentation( role ) );
-    }
-
     /**
      * This function reserves an {@code AclKey} for a SecurableObject that has a name. It throws unchecked exceptions
      * {@link TypeExistsException} if the type already exists with the same name or {@link AclKeyConflictException} if a
      * different AclKey is already associated with the type.
-     * 
+     *
      * @param type
      * @param namer
      */
@@ -196,7 +191,7 @@ public class HazelcastAclKeyReservationService {
      * This function reserves an id for a SecurableObject. It throws unchecked exceptions
      * {@link TypeExistsException} if the type already exists or {@link AclKeyConflictException} if a different AclKey
      * is already associated with the type.
-     * 
+     *
      * @param type
      */
     public void reserveId( AbstractSecurableObject type ) {
@@ -219,7 +214,7 @@ public class HazelcastAclKeyReservationService {
 
     /**
      * Releases a reserved id.
-     * 
+     *
      * @param id The id to release.
      */
     public void release( UUID id ) {

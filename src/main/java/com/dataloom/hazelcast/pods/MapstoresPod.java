@@ -35,7 +35,6 @@ import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
 import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
-import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
@@ -51,12 +50,9 @@ import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.graph.core.Neighborhood;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.graph.mapstores.BackedgesMapstore;
 import com.dataloom.graph.mapstores.EdgeMapstore;
-import com.dataloom.graph.mapstores.EdgesMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
@@ -69,7 +65,7 @@ import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
 import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.linking.mapstores.VertexIdsAfterLinkingMapstore;
 import com.dataloom.mappers.ObjectMappers;
-import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.mapstores.StringMapstore;
@@ -268,7 +264,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<RoleKey, OrganizationRole> rolesMapstore() {
+    public SelfRegisteringMapStore<RoleKey, Role> rolesMapstore() {
         return new RolesMapstore( session );
     }
 

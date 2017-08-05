@@ -22,7 +22,7 @@ import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMa
 public class UsersWithRoleMapstore extends AbstractStructuredCassandraMapstore<RoleKey, PrincipalSet> {
 
     public UsersWithRoleMapstore( Session session ) {
-        super( HazelcastMap.USERS_WITH_ROLE.name(), session, Table.ORGANIZATIONS_ROLES.getBuilder() );
+        super( HazelcastMap.USERS_WITH_ROLE.name(), session, Table.ROLES.getBuilder() );
     }
 
     @Override
@@ -37,15 +37,18 @@ public class UsersWithRoleMapstore extends AbstractStructuredCassandraMapstore<R
 
     @Override
     protected BoundStatement bind( RoleKey key, BoundStatement bs ) {
-        return bs.setUUID( CommonColumns.ORGANIZATION_ID.cql(), key.getOrganizationId() )
-                .setUUID( CommonColumns.ID.cql(), key.getRoleId() );
+        return bs
+                .setUUID( CommonColumns.ID.cql(), key.getRoleId() )
+                .setUUID( CommonColumns.ORGANIZATION_ID.cql(), key.getOrganizationId() );
     }
 
     @Override
     protected BoundStatement bind( RoleKey key, PrincipalSet value, BoundStatement bs ) {
-        return bind( key, bs ).setSet( CommonColumns.PRINCIPAL_IDS.cql(),
+        return bind( key, bs ).setSet(
+                CommonColumns.PRINCIPAL_IDS.cql(),
                 value.stream().map( Principal::getId ).collect( Collectors.toSet() ),
-                String.class );
+                String.class
+        );
     }
 
     @Override
