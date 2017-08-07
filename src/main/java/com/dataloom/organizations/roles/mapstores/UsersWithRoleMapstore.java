@@ -14,7 +14,6 @@ import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
@@ -22,7 +21,11 @@ import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMa
 public class UsersWithRoleMapstore extends AbstractStructuredCassandraMapstore<RoleKey, PrincipalSet> {
 
     public UsersWithRoleMapstore( Session session ) {
-        super( HazelcastMap.USERS_WITH_ROLE.name(), session, Table.ROLES.getBuilder() );
+        super(
+                HazelcastMap.USERS_WITH_ROLE.name(),
+                session,
+                HazelcastMap.USERS_WITH_ROLE.getTable().getBuilder()
+        );
     }
 
     @Override
