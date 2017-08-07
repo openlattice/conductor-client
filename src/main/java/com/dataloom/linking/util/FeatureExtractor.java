@@ -1,6 +1,7 @@
 package com.dataloom.linking.util;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -9,6 +10,7 @@ import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import com.dataloom.linking.Entity;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 
@@ -147,9 +149,12 @@ public class FeatureExtractor {
     }
 
     public static double getEntityDiffForWeights(
-            Map<String, Object> e1,
-            Map<String, Object> e2,
+            UnorderedPair<Entity> entityPair,
             double[] weights ) {
+        List<Entity> pairAsList = entityPair.getAsList();
+        Map<String, Object> e1 = pairAsList.get( 0 ).getProperties();
+        Map<String, Object> e2 = pairAsList.get( 1 ).getProperties();
+        
         Set<Object> firstName1 = getValueAsSet( e1, FIRSTNAME_FQN );
         Set<Object> firstName2 = getValueAsSet( e2, FIRSTNAME_FQN );
 
