@@ -82,6 +82,10 @@ public interface EntityDatastore {
 
     Stream<SetMultimap<Object, Object>> getEntities(
             Collection<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes );
+    
+    Map<UUID, SetMultimap<FullQualifiedName, Object>> getEntitiesAcrossEntitySets(
+            Map<UUID, UUID> entityKeyIdToEntitySetId,
+            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesByEntitySet );
 
     SetMultimap<FullQualifiedName, Object> getEntity(
             UUID id, Map<UUID, PropertyType> authorizedPropertyTypes );
