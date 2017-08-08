@@ -20,15 +20,15 @@
 
 package com.dataloom.data.hazelcast;
 
-import com.dataloom.data.aggregators.EntitySetAggregator;
+import com.dataloom.data.EntityKey;
 import com.dataloom.data.HazelcastStream;
-import com.dataloom.data.storage.EntityBytes;
+import com.dataloom.data.aggregators.EntityAggregator;
+import com.dataloom.data.aggregators.EntitySetAggregator;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
-import com.hazelcast.query.Predicates;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,27 +36,25 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class EntitySetHazelcastStream extends HazelcastStream<EntityBytes> {
+public class EntitySetHazelcastStream extends HazelcastStream<EntityAggregator> {
     private static final Logger logger = LoggerFactory.getLogger( EntitySetHazelcastStream.class );
-    private final IMap<UUID, EntityBytes> data;
-    private final UUID                    entitySetId;
-    private final UUID                    syncId;
+    private final IMap<EntityKey, UUID> ids;
+    private final UUID                  entitySetId;
+    private final UUID                  syncId;
 
     public EntitySetHazelcastStream(
             ListeningExecutorService executor,
             HazelcastInstance hazelcastInstance, UUID entitySetId, UUID syncId ) {
         super( executor, hazelcastInstance );
-        this.data = hazelcastInstance.getMap( HazelcastMap.DATA.name() );
+        this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
         this.entitySetId = entitySetId;
         this.syncId = syncId;
     }
 
     @Override
     protected long buffer( UUID streamId ) {
-        Predicate p = Predicates.and(
-                Predicates.equal( "entitySetId", entitySetId ),
-                Predicates.equal( "syncId", syncId ) );
-        Long count = data.aggregate( new EntitySetAggregator( streamId ), p );
+        Predicate p = EntitySets.filterByEntitySetIdAndSyncId( entitySetId, syncId );
+        Long count = ids.aggregate( new EntitySetAggregator( streamId ), p );
         if ( count == null ) {
             logger.info( "Count for stream id {} was 0", streamId );
             return 0;

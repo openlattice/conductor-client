@@ -23,9 +23,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.data.mapstores.DataMapstore;
-import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.hazelcast.serializers.ByteBufferStreamSerializer;
 import com.dataloom.neuron.audit.AuditEntitySetUtils;
 import com.dataloom.streams.StreamUtil;
 import com.dataloom.sync.events.CurrentSyncUpdatedEvent;
@@ -42,14 +40,17 @@ import com.google.common.collect.Iterables;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.query.Predicate;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,7 @@ public class DatasourceManager {
     private final PreparedStatement         allPreviousSyncIdsQuery;
     private final PreparedStatement         allPreviousEntitySetsAndSyncIdsQuery;
     private final IMap<DataKey, ByteBuffer> data;
+    private final IMap<EntityKey, UUID>     ids;
 
     @Inject
     private EventBus eventBus;
@@ -73,6 +75,7 @@ public class DatasourceManager {
 
         this.currentSyncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
         this.data = hazelcastInstance.getMap( HazelcastMap.DATA.name() );
+        this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
         CassandraTableBuilder syncTableDefinitions = Table.SYNC_IDS.getBuilder();
 
         this.mostRecentSyncIdQuery = prepareMostRecentSyncIdQuery( session );
@@ -140,7 +143,7 @@ public class DatasourceManager {
     @Timed
     public void cleanup() {
         //This will evict as opposed to remove all items.
-        StreamUtil.stream( session.execute( DataMapstore.currentSyncs() ) )
+        List<Predicate> predicates = StreamUtil.stream( session.execute( DataMapstore.currentSyncs() ) )
                 .map( row -> {
                     UUID entitySetId = RowAdapters.entitySetId( row );
                     UUID syncId = RowAdapters.currentSyncId( row );
@@ -151,9 +154,15 @@ public class DatasourceManager {
                 .map( ResultSetFuture::getUninterruptibly )
                 .flatMap( StreamUtil::stream )
                 .map( EntitySets::filterByEntitySetIdAndSyncId )
+                .collect( Collectors.toList() );
+        predicates.stream()
                 .map( data::keySet )
                 .flatMap( Set::stream )
                 .forEach( data::evict );
+        predicates.stream()
+                .map( ids::keySet )
+                .flatMap( Set::stream )
+                .forEach( ids::evict );
     }
 
     private static PreparedStatement prepareAllPreviousEntitySetsSyncIdsQuery( Session session ) {
