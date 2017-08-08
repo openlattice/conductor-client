@@ -1,4 +1,4 @@
-Kryptnostic-Conductor-Client
+Conductor-Client
 =======================
 
 
