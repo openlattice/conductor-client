@@ -21,7 +21,6 @@
 package com.dataloom.data.aggregators;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.data.storage.EntityBytes;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class EntityKeyAggregator extends Aggregator<Entry<UUID, EntityBytes>, Long> implements HazelcastInstanceAware {
+public class EntityKeyAggregator extends Aggregator<Entry<EntityKey, UUID>, Long> implements HazelcastInstanceAware {
     private static final Logger logger = LoggerFactory.getLogger( EntityKeyAggregator.class );
     private final     UUID              streamId;
     private           long              count;
@@ -49,9 +48,9 @@ public class EntityKeyAggregator extends Aggregator<Entry<UUID, EntityBytes>, Lo
         this.count = count;
     }
 
-    @Override public void accumulate( Entry<UUID, EntityBytes> input ) {
+    @Override public void accumulate( Entry<EntityKey, UUID> input ) {
         try {
-            stream.put( input.getValue().getKey() );
+            stream.put( input.getKey() );
             ++count;
         } catch ( InterruptedException e ) {
             logger.error( "Unable to stream entity: {}", input, e );

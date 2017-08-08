@@ -36,7 +36,7 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class EntityKeyHazelcastStream extends HazelcastStream<EntityKey> {
-    private final IMap<UUID, EntityBytes> data;
+    private final IMap<EntityKey, UUID> ids;
     private final UUID                    entitySetId;
     private final UUID                    syncId;
 
@@ -44,14 +44,14 @@ public class EntityKeyHazelcastStream extends HazelcastStream<EntityKey> {
             ListeningExecutorService executor,
             HazelcastInstance hazelcastInstance, UUID entitySetId, UUID syncId ) {
         super( executor, hazelcastInstance );
-        this.data = hazelcastInstance.getMap( HazelcastMap.DATA.name() );
+        this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
         this.entitySetId = entitySetId;
         this.syncId = syncId;
     }
 
     @Override
     protected long buffer( UUID streamId ) {
-        return data.aggregate(
+        return ids.aggregate(
                 new EntityKeyAggregator( streamId ),
                 filterByEntitySetIdAndSyncId( entitySetId, syncId ) );
     }
