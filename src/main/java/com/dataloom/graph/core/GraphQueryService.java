@@ -111,7 +111,7 @@ public class GraphQueryService {
 
     private static PreparedStatement prepareDeleteEdgeQuery( Session session ) {
         return session
-                .prepare( Table.EDGES.getBuilder().buildDeleteQuery() );
+                .prepare( Table.EDGES.getBuilder().buildDeleteByPrimaryKeyQuery() );
     }
 
     private static PreparedStatement prepareGetEdgeCountForSrcQuery( Session session ) {
@@ -138,7 +138,7 @@ public class GraphQueryService {
 
     private static PreparedStatement prepareDeleteBackEdgeQuery( Session session ) {
         return session
-                .prepare( Table.BACK_EDGES.getBuilder().buildDeleteQuery() );
+                .prepare( Table.BACK_EDGES.getBuilder().buildDeleteByPrimaryKeyQuery() );
     }
 
     private static PreparedStatement prepareDeleteEdgesBySrcIdQuery( Session session ) {

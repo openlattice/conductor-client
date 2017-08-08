@@ -32,6 +32,10 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public final class EntitySets {
+
+    public static final String KEY_ENTITY_SET_ID = "__key.entitySetId";
+    public static final String KEY_SYNC_ID       = "__key.syncId";
+
     private EntitySets() {
     }
 
@@ -43,8 +47,8 @@ public final class EntitySets {
 
     public static Predicate getEntity( UUID entitySetId, UUID syncId, String entityId ) {
         return Predicates.and(
-                Predicates.equal( "__key.entitySetId", entitySetId ),
-                Predicates.equal( "__key.syncId", syncId ),
+                Predicates.equal( KEY_ENTITY_SET_ID, entitySetId ),
+                Predicates.equal( KEY_SYNC_ID, syncId ),
                 Predicates.equal( "__key.entityId", entityId ) );
 
     }

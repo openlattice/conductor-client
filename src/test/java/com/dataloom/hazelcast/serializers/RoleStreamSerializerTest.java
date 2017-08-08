@@ -5,19 +5,19 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.Role;
 import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
-public class OrganizationRoleStreamSerializerTest
-        extends AbstractStreamSerializerTest<OrganizationRoleStreamSerializer, OrganizationRole>
+public class RoleStreamSerializerTest
+        extends AbstractStreamSerializerTest<RoleStreamSerializer, Role>
         implements Serializable {
 
     private static final long serialVersionUID = 8223378929816938716L;
 
     @Override
-    protected OrganizationRole createInput() {
-        return new OrganizationRole(
+    protected Role createInput() {
+        return new Role(
                 Optional.of( UUID.randomUUID() ),
                 UUID.randomUUID(),
                 RandomStringUtils.randomAlphanumeric( 5 ),
@@ -25,8 +25,8 @@ public class OrganizationRoleStreamSerializerTest
     }
 
     @Override
-    protected OrganizationRoleStreamSerializer createSerializer() {
-        return new OrganizationRoleStreamSerializer();
+    protected RoleStreamSerializer createSerializer() {
+        return new RoleStreamSerializer();
     }
 
 }

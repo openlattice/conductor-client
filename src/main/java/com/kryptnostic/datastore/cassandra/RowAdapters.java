@@ -33,7 +33,7 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ResultSet;
@@ -355,12 +355,12 @@ public final class RowAdapters {
         return new RoleKey( organizationId( row ), id( row ) );
     }
 
-    public static OrganizationRole organizationRole( Row row ) {
+    public static Role role( Row row ) {
         Optional<UUID> id = Optional.of( id( row ) );
         UUID organizationId = organizationId( row );
         String title = title( row );
         Optional<String> description = description( row );
-        return new OrganizationRole( id, organizationId, title, description );
+        return new Role( id, organizationId, title, description );
     }
 
     public static LinkedHashSet<String> members( Row row ) {

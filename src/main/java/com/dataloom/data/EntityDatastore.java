@@ -116,12 +116,6 @@ public interface EntityDatastore {
 
     Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId );
 
-    boolean queryAlreadyExecuted( ByteBuffer queryId );
-
-    void writeVertexCount( ByteBuffer queryId, UUID vertexId, double score );
-
-    Iterable<UUID> readTopUtilizers( ByteBuffer queryId, int numResults );
-
     Stream<SetMultimap<Object, Object>> getEntities(
             IncrementableWeightId[] utilizers,
             Map<UUID, PropertyType> authorizedPropertyTypes );

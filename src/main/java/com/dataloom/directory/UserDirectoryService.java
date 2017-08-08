@@ -22,10 +22,8 @@ package com.dataloom.directory;
 import com.dataloom.client.RetrofitFactory;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organizations.roles.RolesUtil;
+import com.dataloom.organization.roles.Role;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -130,16 +128,14 @@ public class UserDirectoryService {
         }
     }
 
-    public void removeAllRolesInOrganizationFromUser( String userId, UUID organizationId ) {
+    public void removeAllRolesInOrganizationFromUser( String userId, List<Role> allRolesInOrg ) {
 
         Auth0UserBasic user = getUser( userId );
 
         if ( user != null ) {
             Set<String> roles = new HashSet<>( user.getRoles() );
-            for ( String role : roles ) {
-                if ( RolesUtil.belongsToOrganization( organizationId, role ) ) {
-                    roles.remove( role );
-                }
+            for ( Role role : allRolesInOrg ) {
+                roles.remove( role.getId().toString() );
             }
             setRolesOfUser( userId, roles );
         } else {

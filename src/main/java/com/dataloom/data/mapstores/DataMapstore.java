@@ -54,6 +54,10 @@ import java.util.UUID;
 public class DataMapstore
         extends AbstractStructuredCassandraMapstore<DataKey, ByteBuffer> {
     public static final HashFunction hf = Hashing.murmur3_128();
+    public static final String KEY_ID = "__key#id";
+    public static final String KEY_ENTITY_SET_ID = "__key#entitySetId";
+    public static final String KEY_SYNC_ID = "__key#syncId";
+    public static final String KEY_PROPERTY_TYPE_ID = "__key#propertyTypeId";
     private final ObjectMapper mapper;
 
     public DataMapstore(
@@ -162,10 +166,10 @@ public class DataMapstore
     public MapConfig getMapConfig() {
         return super.getMapConfig()
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
-                .addMapIndexConfig( new MapIndexConfig( "__key#id", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "__key#entitySetId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "__key#syncId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "__key#propertyTypeId", false ) );
+                .addMapIndexConfig( new MapIndexConfig( KEY_ID, false ) )
+                .addMapIndexConfig( new MapIndexConfig( KEY_ENTITY_SET_ID, false ) )
+                .addMapIndexConfig( new MapIndexConfig( KEY_SYNC_ID, false ) )
+                .addMapIndexConfig( new MapIndexConfig( KEY_PROPERTY_TYPE_ID, false ) );
     }
 
     public static Select currentSyncs() {
