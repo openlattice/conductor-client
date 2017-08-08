@@ -80,8 +80,8 @@ public class SortedCassandraLinkingEdgeBuffer {
         this.addEdge = session.prepare( Table.WEIGHTED_LINKING_EDGES.getBuilder().buildStoreQuery() );
         this.unsafeAddEdge = session.prepare( Table.LINKING_EDGES.getBuilder().buildStoreQuery() );
         this.addEdgeIfNotExists = session.prepare( Table.LINKING_EDGES.getBuilder().buildStoreQuery().ifNotExists() );
-        this.removeEdge = session.prepare( Table.LINKING_EDGES.getBuilder().buildDeleteQuery() );
-        this.removeEdgeWeight = session.prepare( Table.WEIGHTED_LINKING_EDGES.getBuilder().buildDeleteQuery() );
+        this.removeEdge = session.prepare( Table.LINKING_EDGES.getBuilder().buildDeleteByPrimaryKeyQuery() );
+        this.removeEdgeWeight = session.prepare( Table.WEIGHTED_LINKING_EDGES.getBuilder().buildDeleteByPrimaryKeyQuery() );
         this.pendingOperations = new HashSet<>( Math.max( bufferReadSize, 1 ) );
         this.buffer = new PriorityBlockingQueue<>( Math.max( bufferReadSize, 1 ) );
         replenishBuffer();

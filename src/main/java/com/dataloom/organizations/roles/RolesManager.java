@@ -4,28 +4,22 @@ import java.util.UUID;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.directory.pojo.Auth0UserBasic;
-import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 
 public interface RolesManager {
-    /*
-     * Internal use only
-     */
-    void createRoleIfNotExists( OrganizationRole role );
 
-    void createRoleIfNotExists( Principal principal, OrganizationRole role );
+    void createRoleIfNotExists( Principal principal, Role role );
 
     void updateTitle( RoleKey roleKey, String title );
 
     void updateDescription( RoleKey roleKey, String description );
 
-    OrganizationRole getRole( RoleKey roleKey );
-    
-    RoleKey getRoleKey( UUID organizationId, Principal principal );
+    Role getRole( RoleKey roleKey );
 
     RoleKey getRoleKey( Principal principal );
 
-    Iterable<OrganizationRole> getAllRolesInOrganization( UUID organizationId );
+    Iterable<Role> getAllRolesInOrganization( UUID organizationId );
 
     void deleteRole( RoleKey roleKey );
 
@@ -40,8 +34,4 @@ public interface RolesManager {
     Iterable<Principal> getAllUsersOfRole( RoleKey roleKey );
 
     Iterable<Auth0UserBasic> getAllUserProfilesOfRole( RoleKey roleKey );
-    
-    // Validation helper methods; throw exception should validation fail.
-    
-    void ensureValidOrganizationRole( OrganizationRole role );
 }

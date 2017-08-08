@@ -40,13 +40,12 @@ import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.Organization;
-import com.dataloom.organization.roles.OrganizationRole;
+import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
@@ -56,12 +55,10 @@ import com.dataloom.organizations.processors.EmailDomainsRemover;
 import com.dataloom.organizations.processors.OrganizationMemberMerger;
 import com.dataloom.organizations.processors.OrganizationMemberRemover;
 import com.dataloom.organizations.roles.RolesManager;
-import com.dataloom.organizations.roles.RolesUtil;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -134,7 +131,7 @@ public class HazelcastOrganizationService {
         Future<PrincipalSet> members = membersOf.getAsync( organizationId );
         Future<DelegatedStringSet> autoApprovedEmailDomains = autoApprovedEmailDomainsOf.getAsync( organizationId );
 
-        Set<OrganizationRole> roles = getRoles( organizationId );
+        Set<Role> roles = getRoles( organizationId );
         try {
             return new Organization(
                     Optional.of( organizationId ),
@@ -211,7 +208,7 @@ public class HazelcastOrganizationService {
 
     public void removeMembers( UUID organizationId, Set<Principal> members ) {
         membersOf.submitToKey( organizationId, new OrganizationMemberRemover( members ) );
-        removeRolesFromMembers( Iterables.transform( getRolesInFull( organizationId ), OrganizationRole::getRoleKey ),
+        removeRolesFromMembers( Iterables.transform( getRolesInFull( organizationId ), Role::getRoleKey ),
                 members );
         removeOrganizationFromMembers( organizationId, members );
     }
@@ -232,37 +229,6 @@ public class HazelcastOrganizationService {
         }
     }
 
-    public void addPrincipal( Principal callingUser, UUID organizationId, Principal principal ) {
-        switch ( principal.getType() ) {
-            case ROLE:
-                OrganizationRole role = new OrganizationRole(
-                        Optional.absent(),
-                        organizationId,
-                        principal.getId(),
-                        Optional.absent() );
-                Principals.ensureUser( callingUser );
-                createRoleIfNotExists( callingUser, role );
-                break;
-            case USER:
-                addMembers( organizationId, ImmutableSet.of( principal ) );
-                break;
-            default:
-        }
-    }
-
-    public void removePrincipal( UUID organizationId, Principal principal ) {
-        switch ( principal.getType() ) {
-            case ROLE:
-                RoleKey roleKey = getRoleKey( organizationId, principal );
-                deleteRole( roleKey );
-                break;
-            case USER:
-                removeMembers( organizationId, ImmutableSet.of( principal ) );
-                break;
-            default:
-        }
-    }
-
     private void removeRolesFromMembers( Iterable<RoleKey> roleKeys, Set<Principal> members ) {
         if ( members.stream().map( Principal::getType ).allMatch( PrincipalType.USER::equals ) ) {
             members.forEach( member -> roleKeys
@@ -272,7 +238,7 @@ public class HazelcastOrganizationService {
         }
     }
 
-    public void createRoleIfNotExists( Principal callingUser, OrganizationRole role ) {
+    public void createRoleIfNotExists( Principal callingUser, Role role ) {
         rolesManager.createRoleIfNotExists( callingUser, role );
     }
 
@@ -284,25 +250,16 @@ public class HazelcastOrganizationService {
         rolesManager.updateDescription( roleKey, description );
     }
 
-    public OrganizationRole getRoleInFull( RoleKey roleKey ) {
+    public Role getRoleInFull( RoleKey roleKey ) {
         return rolesManager.getRole( roleKey );
     }
 
-    public Iterable<OrganizationRole> getRolesInFull( UUID organizationId ) {
+    public Iterable<Role> getRolesInFull( UUID organizationId ) {
         return rolesManager.getAllRolesInOrganization( organizationId );
     }
 
-    public Set<Principal> getRolesPrincipals( UUID organizationId ) {
-        return StreamUtil.stream( getRolesInFull( organizationId ) ).map( role -> RolesUtil.getPrincipal( role ) )
-                .collect( Collectors.toSet() );
-    }
-
-    public Set<OrganizationRole> getRoles( UUID organizationId ) {
+    public Set<Role> getRoles( UUID organizationId ) {
         return StreamUtil.stream( getRolesInFull( organizationId ) ).collect( Collectors.toSet() );
-    }
-
-    public RoleKey getRoleKey( UUID organizationId, Principal principal ) {
-        return rolesManager.getRoleKey( organizationId, principal );
     }
 
     public void deleteRole( RoleKey roleKey ) {
@@ -321,12 +278,5 @@ public class HazelcastOrganizationService {
         return rolesManager.getAllUserProfilesOfRole( roleKey );
     }
 
-    /**
-     * Validation methods
-     */
-
-    public void ensureValidOrganizationRole( OrganizationRole role ) {
-        rolesManager.ensureValidOrganizationRole( role );
-    }
 
 }

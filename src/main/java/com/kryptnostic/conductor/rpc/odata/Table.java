@@ -124,6 +124,7 @@ public enum Table implements TableDef {
     LINKING_ENTITY_VERTICES,
     NAMES,
     ORGANIZATIONS,
+    ROLES,
     ORGANIZATIONS_ROLES,
     PERMISSIONS,
     PERMISSIONS_REQUESTS_UNRESOLVED,
@@ -374,18 +375,32 @@ public enum Table implements TableDef {
                 return new CassandraTableBuilder( ORGANIZATIONS )
                         .ifNotExists()
                         .partitionKey( ID )
-                        .columns( TITLE,
+                        .columns(
+                                TITLE,
                                 DESCRIPTION,
                                 ALLOWED_EMAIL_DOMAINS,
-                                MEMBERS );
+                                MEMBERS
+                        );
+            case ROLES:
+                return new CassandraTableBuilder( ROLES )
+                        .ifNotExists()
+                        .partitionKey( ID )
+                        .clusteringColumns( ORGANIZATION_ID )
+                        .columns(
+                                TITLE,
+                                DESCRIPTION,
+                                PRINCIPAL_IDS
+                        );
             case ORGANIZATIONS_ROLES:
-                return new CassandraTableBuilder( ORGANIZATIONS_ROLES )
+                return new CassandraMaterializedViewBuilder( ROLES.getBuilder(), ORGANIZATIONS_ROLES.getName() )
                         .ifNotExists()
                         .partitionKey( ORGANIZATION_ID )
                         .clusteringColumns( ID )
-                        .columns( TITLE,
+                        .columns(
+                                TITLE,
                                 DESCRIPTION,
-                                PRINCIPAL_IDS );
+                                PRINCIPAL_IDS
+                        );
             case PROPERTY_TYPES:
                 return new CassandraTableBuilder( PROPERTY_TYPES )
                         .ifNotExists()
