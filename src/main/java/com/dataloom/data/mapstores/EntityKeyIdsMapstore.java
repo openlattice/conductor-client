@@ -2,6 +2,7 @@ package com.dataloom.data.mapstores;
 
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.RegularStatement;
@@ -112,6 +113,8 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
     }
 
     @Override public MapConfig getMapConfig() {
-        return super.getMapConfig();
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( EntitySets.KEY_ENTITY_SET_ID, false ) )
+                .addMapIndexConfig( new MapIndexConfig( EntitySets.KEY_SYNC_ID, false ) );
     }
 }

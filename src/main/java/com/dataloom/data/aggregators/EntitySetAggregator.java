@@ -20,11 +20,16 @@
 
 package com.dataloom.data.aggregators;
 
-import com.dataloom.data.storage.EntityBytes;
+import com.dataloom.data.EntityKey;
+import com.dataloom.data.hazelcast.DataKey;
+import com.dataloom.data.hazelcast.EntitySets;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.core.IMap;
 import com.hazelcast.core.IQueue;
+import java.nio.ByteBuffer;
 import java.util.Map.Entry;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -33,11 +38,13 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class EntitySetAggregator extends Aggregator<Entry<UUID, EntityBytes>, Long> implements HazelcastInstanceAware {
+public class EntitySetAggregator extends Aggregator<Entry<EntityKey, UUID>, Long> implements HazelcastInstanceAware {
     private static final Logger logger = LoggerFactory.getLogger( EntitySetAggregator.class );
-    private final     UUID                streamId;
-    private transient long                count;
-    private transient IQueue<EntityBytes> stream;
+    private final UUID streamId;
+
+    private transient long                      count;
+    private transient IQueue<EntityAggregator>  stream;
+    private transient IMap<DataKey, ByteBuffer> data;
 
     public EntitySetAggregator( UUID streamId ) {
         this( streamId, 0 );
@@ -48,9 +55,9 @@ public class EntitySetAggregator extends Aggregator<Entry<UUID, EntityBytes>, Lo
         this.streamId = streamId;
     }
 
-    @Override public void accumulate( Entry<UUID, EntityBytes> input ) {
+    @Override public void accumulate( Entry<EntityKey, UUID> input ) {
         try {
-            stream.put( input.getValue() );
+            stream.put( data.aggregate( new EntityAggregator(), EntitySets.getEntity( input.getValue() ) ) );
             ++count;
         } catch ( InterruptedException e ) {
             logger.error( "Unable to stream entity: {}", input, e );
@@ -72,5 +79,6 @@ public class EntitySetAggregator extends Aggregator<Entry<UUID, EntityBytes>, Lo
     @Override
     public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {
         this.stream = hazelcastInstance.getQueue( streamId.toString() );
+        this.data = hazelcastInstance.getMap( HazelcastMap.DATA.name() );
     }
 }
