@@ -20,11 +20,13 @@
 
 package com.dataloom.data.aggregators;
 
+import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.storage.EntityBytes;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IQueue;
+import java.nio.ByteBuffer;
 import java.util.Map.Entry;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -33,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class EntitySetAggregator extends Aggregator<Entry<UUID, EntityBytes>, Long> implements HazelcastInstanceAware {
+public class EntitySetAggregator extends Aggregator<Entry<DataKey, ByteBuffer>, Long> implements HazelcastInstanceAware {
     private static final Logger logger = LoggerFactory.getLogger( EntitySetAggregator.class );
     private final     UUID                streamId;
     private transient long                count;
@@ -48,7 +50,7 @@ public class EntitySetAggregator extends Aggregator<Entry<UUID, EntityBytes>, Lo
         this.streamId = streamId;
     }
 
-    @Override public void accumulate( Entry<UUID, EntityBytes> input ) {
+    @Override public void accumulate( Entry<DataKey, ByteBuffer> input ) {
         try {
             stream.put( input.getValue() );
             ++count;

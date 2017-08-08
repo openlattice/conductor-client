@@ -46,7 +46,6 @@ import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,11 +69,9 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -207,7 +204,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     @Timed
     public SetMultimap<FullQualifiedName, Object> getEntity(
             UUID id, Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        Predicate entitiesFilter = EntitySets.getEntities( new UUID[] { id } );
+        Predicate entitiesFilter = EntitySets.getEntity( id );
         Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
 
         return fromEntityBytes( id, entities.get( id ), authorizedPropertyTypes );
@@ -498,8 +495,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
             Map<String, SetMultimap<UUID, Object>> entities,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
         Set<UUID> authorizedProperties = authorizedPropertiesWithDataType.keySet();
-
-        List<ResultSetFuture> results = new ArrayList<>();
 
         entities.entrySet().stream().flatMap( entity -> createDataAsync( entitySetId,
                 syncId,
