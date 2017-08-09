@@ -137,56 +137,62 @@ public class FeatureExtractor {
         return result;
     }
 
-    private static Set<Object> getValueAsSet( Map<String, Object> e, FullQualifiedName fqn ) {
-        Set<Object> result;
-        Object val = e.get( fqn.toString() );
+    private static Set<Object> getValueAsSet(
+            Map<String, Object> e,
+            FullQualifiedName fqn,
+            Map<FullQualifiedName, String> propertyTypeIdIndexedByFqn ) {
+        if ( !propertyTypeIdIndexedByFqn.containsKey( fqn ) ) return Sets.newHashSet();
+
+        String propertyTypeId = propertyTypeIdIndexedByFqn.get( fqn );
+        if ( !e.containsKey( propertyTypeId ) ) return Sets.newHashSet();
+
+        Object val = e.get( propertyTypeId );
         if ( val instanceof Collection<?> ) {
-            result = ( (Collection<?>) val ).stream().map( obj -> obj.toString() ).collect( Collectors.toSet() );
-        } else {
-            result = ImmutableSet.of( val.toString() );
+            return ( (Collection<?>) val ).stream().map( obj -> obj.toString() ).collect( Collectors.toSet() );
         }
-        return result;
+        return ImmutableSet.of( val.toString() );
     }
 
     public static double getEntityDiffForWeights(
             UnorderedPair<Entity> entityPair,
-            double[] weights ) {
+            double[] weights,
+            Map<FullQualifiedName, String> propertyTypeIdIndexedByFqn ) {
         List<Entity> pairAsList = entityPair.getAsList();
         Map<String, Object> e1 = pairAsList.get( 0 ).getProperties();
         Map<String, Object> e2 = pairAsList.get( 1 ).getProperties();
-        
-        Set<Object> firstName1 = getValueAsSet( e1, FIRSTNAME_FQN );
-        Set<Object> firstName2 = getValueAsSet( e2, FIRSTNAME_FQN );
 
-        Set<Object> middleName1 = getValueAsSet( e1, MIDDLENAME_FQN );
-        Set<Object> middleName2 = getValueAsSet( e2, MIDDLENAME_FQN );
+        Set<Object> firstName1 = getValueAsSet( e1, FIRSTNAME_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> firstName2 = getValueAsSet( e2, FIRSTNAME_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> lastName1 = getValueAsSet( e1, LASTNAME_FQN );
-        Set<Object> lastName2 = getValueAsSet( e2, LASTNAME_FQN );
+        Set<Object> middleName1 = getValueAsSet( e1, MIDDLENAME_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> middleName2 = getValueAsSet( e2, MIDDLENAME_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> sex1 = getValueAsSet( e1, SEX_FQN );
-        Set<Object> sex2 = getValueAsSet( e2, SEX_FQN );
+        Set<Object> lastName1 = getValueAsSet( e1, LASTNAME_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> lastName2 = getValueAsSet( e2, LASTNAME_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> race1 = getValueAsSet( e1, RACE_FQN );
-        Set<Object> race2 = getValueAsSet( e2, RACE_FQN );
+        Set<Object> sex1 = getValueAsSet( e1, SEX_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> sex2 = getValueAsSet( e2, SEX_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> ethnicity1 = getValueAsSet( e1, ETHNICITY_FQN );
-        Set<Object> ethnicity2 = getValueAsSet( e2, ETHNICITY_FQN );
+        Set<Object> race1 = getValueAsSet( e1, RACE_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> race2 = getValueAsSet( e2, RACE_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> dob1 = getValueAsSet( e1, DOB_FQN );
-        Set<Object> dob2 = getValueAsSet( e2, DOB_FQN );
+        Set<Object> ethnicity1 = getValueAsSet( e1, ETHNICITY_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> ethnicity2 = getValueAsSet( e2, ETHNICITY_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> id1 = getValueAsSet( e1, IDENTIFICATION_FQN );
-        Set<Object> id2 = getValueAsSet( e2, IDENTIFICATION_FQN );
+        Set<Object> dob1 = getValueAsSet( e1, DOB_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> dob2 = getValueAsSet( e2, DOB_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> ssn1 = getValueAsSet( e1, SSN_FQN );
-        Set<Object> ssn2 = getValueAsSet( e2, SSN_FQN );
+        Set<Object> id1 = getValueAsSet( e1, IDENTIFICATION_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> id2 = getValueAsSet( e2, IDENTIFICATION_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> age1 = getValueAsSet( e1, AGE_FQN );
-        Set<Object> age2 = getValueAsSet( e2, AGE_FQN );
+        Set<Object> ssn1 = getValueAsSet( e1, SSN_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> ssn2 = getValueAsSet( e2, SSN_FQN, propertyTypeIdIndexedByFqn );
 
-        Set<Object> xref1 = getValueAsSet( e1, XREF_FQN );
-        Set<Object> xref2 = getValueAsSet( e2, XREF_FQN );
+        Set<Object> age1 = getValueAsSet( e1, AGE_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> age2 = getValueAsSet( e2, AGE_FQN, propertyTypeIdIndexedByFqn );
+
+        Set<Object> xref1 = getValueAsSet( e1, XREF_FQN, propertyTypeIdIndexedByFqn );
+        Set<Object> xref2 = getValueAsSet( e2, XREF_FQN, propertyTypeIdIndexedByFqn );
 
         double result = 0.0;
 
@@ -228,8 +234,9 @@ public class FeatureExtractor {
         result += weights[ PersonFeatureTypes.DOB_STRING.ordinal() ] * getStringDistance( dob1, dob2, false );
         result += weights[ PersonFeatureTypes.DOB_PRESENCE.ordinal() ] * getPresenceValue( dob1, dob2 );
 
-        result += weights[ PersonFeatureTypes.IDENTIFICATION_STRING.ordinal() ] * getStringDistance( id1, id2, false );
-        result += weights[ PersonFeatureTypes.IDENTIFICATION_PRESENCE.ordinal() ] * getPresenceValue( id1, id2 );
+        // result += weights[ PersonFeatureTypes.IDENTIFICATION_STRING.ordinal() ] * getStringDistance( id1, id2, false
+        // );
+        // result += weights[ PersonFeatureTypes.IDENTIFICATION_PRESENCE.ordinal() ] * getPresenceValue( id1, id2 );
 
         result += weights[ PersonFeatureTypes.SSN_STRING.ordinal() ] * getStringDistance( ssn1, ssn2, false );
         result += weights[ PersonFeatureTypes.SSN_PRESENCE.ordinal() ] * getPresenceValue( ssn1, ssn2 );
@@ -240,7 +247,7 @@ public class FeatureExtractor {
         result += weights[ PersonFeatureTypes.XREF_STRING.ordinal() ] * getStringDistance( xref1, xref2, false );
         result += weights[ PersonFeatureTypes.XREF_PRESENCE.ordinal() ] * getPresenceValue( xref1, xref2 );
 
-        return result;
+        return Math.pow( 2.0, result ) / 10.0;
     }
 
 }
