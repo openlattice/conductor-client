@@ -301,6 +301,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID id,
             SetMultimap<UUID, ByteBuffer> properties,
             Map<UUID, PropertyType> propertyType ) {
+        if ( properties == null ) {
+            logger.error( "Data for id {} was null", id );
+            return HashMultimap.create();
+        }
         SetMultimap<Object, Object> entityData = HashMultimap
                 .create( properties.keySet().size(), properties.size() / properties.keySet().size() );
 
