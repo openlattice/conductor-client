@@ -20,6 +20,9 @@
 
 package com.dataloom.data.hazelcast;
 
+import static com.dataloom.data.mapstores.DataMapstore.KEY_ENTITY_SET_ID;
+import static com.dataloom.data.mapstores.DataMapstore.KEY_SYNC_ID;
+
 import com.datastax.driver.core.Row;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
@@ -33,8 +36,6 @@ import java.util.UUID;
  */
 public final class EntitySets {
 
-    public static final String KEY_ENTITY_SET_ID = "__key.entitySetId";
-    public static final String KEY_SYNC_ID       = "__key.syncId";
 
     private EntitySets() {
     }
@@ -49,7 +50,7 @@ public final class EntitySets {
         return Predicates.and(
                 Predicates.equal( KEY_ENTITY_SET_ID, entitySetId ),
                 Predicates.equal( KEY_SYNC_ID, syncId ),
-                Predicates.equal( "__key.entityId", entityId ) );
+                Predicates.equal( "__key#entityId", entityId ) );
 
     }
 
@@ -58,24 +59,24 @@ public final class EntitySets {
     }
 
     public static Predicate getEntities( UUID[] ids ) {
-        return Predicates.in( "__key.id", ids );
+        return Predicates.in( "__key#id", ids );
     }
 
     public static Predicate getEntity( UUID id ) {
-        return Predicates.equal( "__key.id", id );
+        return Predicates.equal( "__key#id", id );
     }
 
     public static Predicate getEntity( UUID entitySetId, UUID syncId, String entityId, Set<UUID> propertyTypeIds ) {
         return Predicates.and(
-                Predicates.equal( "__key.entitySetId", entitySetId ),
-                Predicates.equal( "__key.syncId", syncId ),
-                Predicates.equal( "__key.entityId", entityId ),
-                Predicates.in( "__key.propertyTypeId", propertyTypeIds.toArray( new UUID[] {} ) ) );
+                Predicates.equal( "__key#entitySetId", entitySetId ),
+                Predicates.equal( "__key#syncId", syncId ),
+                Predicates.equal( "__key#entityId", entityId ),
+                Predicates.in( "__key#propertyTypeId", propertyTypeIds.toArray( new UUID[] {} ) ) );
     }
 
     public static Predicate filterByEntitySetIdAndSyncId( UUID entitySetId, UUID syncId ) {
         return Predicates.and(
-                Predicates.equal( "__key.entitySetId", entitySetId ),
-                Predicates.equal( "__key.syncId", syncId ) );
+                Predicates.equal( "__key#entitySetId", entitySetId ),
+                Predicates.equal( "__key#syncId", syncId ) );
     }
 }

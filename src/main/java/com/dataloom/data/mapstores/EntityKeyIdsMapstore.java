@@ -114,7 +114,7 @@ public class EntityKeyIdsMapstore extends AbstractStructuredCassandraPartitionKe
 
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
-                .addMapIndexConfig( new MapIndexConfig( EntitySets.KEY_ENTITY_SET_ID, false ) )
-                .addMapIndexConfig( new MapIndexConfig( EntitySets.KEY_SYNC_ID, false ) );
+                .addMapIndexConfig( new MapIndexConfig( DataMapstore.KEY_ENTITY_SET_ID, false ) )
+                .addMapIndexConfig( new MapIndexConfig( DataMapstore.KEY_SYNC_ID, false ) );
     }
 }
