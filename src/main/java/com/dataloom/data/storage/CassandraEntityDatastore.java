@@ -143,8 +143,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 data.aggregate( new EntityAggregator(), EntitySets.getEntity( entitySetId, syncId, entityId ) )
                         .getByteBuffers(),
                 authorizedPropertyTypes );
-        // EntityBytes e = Util
-        // .getSafely( data, idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) ) );
         if ( e == null ) {
             return ImmutableSetMultimap.of();
         }
@@ -225,8 +223,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             String entityId,
             SetMultimap<UUID, ByteBuffer> eb,
             Map<UUID, PropertyType> propertyType ) {
-        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap
-                .create( eb.keySet().size(), eb.size() / eb.keySet().size() );
+        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
 
         eb.entries().forEach( prop -> {
             PropertyType pt = propertyType.get( prop.getKey() );
@@ -243,8 +240,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
     public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
             SetMultimap<UUID, ByteBuffer> rawData,
             Map<UUID, PropertyType> propertyType ) {
-        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap
-                .create( rawData.keySet().size(), rawData.size() / rawData.keySet().size() );
+        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
 
         rawData.entries().forEach( prop -> {
             PropertyType pt = propertyType.get( prop.getKey() );
@@ -282,8 +278,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID id,
             SetMultimap<UUID, ByteBuffer> properties,
             Map<UUID, PropertyType> propertyType ) {
-        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap
-                .create( properties.keySet().size(), properties.size() / properties.keySet().size() );
+        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
 
         properties.entries().forEach( prop -> {
             PropertyType pt = propertyType.get( prop.getKey() );
@@ -305,8 +300,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             logger.error( "Data for id {} was null", id );
             return HashMultimap.create();
         }
-        SetMultimap<Object, Object> entityData = HashMultimap
-                .create( properties.keySet().size(), properties.size() / properties.keySet().size() );
+        SetMultimap<Object, Object> entityData = HashMultimap.create();
 
         properties.entries().forEach( prop -> {
             PropertyType pt = propertyType.get( prop.getKey() );
@@ -552,25 +546,26 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
         EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
         UUID id = idService.getEntityKeyId( ek );
-        Stream<ListenableFuture> futures = normalizedPropertyValues
-                .entries().stream()
-                .map( entry -> {
-                    UUID propertyTypeId = entry.getKey();
-                    EdmPrimitiveTypeKind datatype = authorizedPropertiesWithDataType.get( propertyTypeId );
-                    ByteBuffer buffer = CassandraSerDesFactory.serializeValue(
-                            mapper,
-                            entry.getValue(),
-                            datatype,
-                            entityId );
-                    return data.setAsync( new DataKey(
-                            id,
-                            entitySetId,
-                            syncId,
-                            entityId,
-                            propertyTypeId,
-                            DataMapstore.hf.hashBytes( buffer.array() ).asBytes() ), buffer );
-                } )
-                .map( ListenableHazelcastFuture::new );
+        Stream<ListenableFuture> futures =
+                normalizedPropertyValues
+                        .entries().stream()
+                        .map( entry -> {
+                            UUID propertyTypeId = entry.getKey();
+                            EdmPrimitiveTypeKind datatype = authorizedPropertiesWithDataType.get( propertyTypeId );
+                            ByteBuffer buffer = CassandraSerDesFactory.serializeValue(
+                                    mapper,
+                                    entry.getValue(),
+                                    datatype,
+                                    entityId );
+                            return data.setAsync( new DataKey(
+                                    id,
+                                    entitySetId,
+                                    syncId,
+                                    entityId,
+                                    propertyTypeId,
+                                    DataMapstore.hf.hashBytes( buffer.array() ).asBytes() ), buffer );
+                        } )
+                        .map( ListenableHazelcastFuture::new );
 
         Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues
                 .asMap().entrySet().stream()

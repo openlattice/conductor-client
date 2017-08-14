@@ -95,7 +95,7 @@ public class DataMapstore
     protected BoundStatement bind(
             DataKey key, ByteBuffer value, BoundStatement bs ) {
         return bind( key, bs )
-                .setBytes( CommonColumns.PROPERTY_VALUE.cql(), value );
+                .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), value );
     }
 
     @Override public ByteBuffer load( DataKey key ) {
@@ -106,14 +106,14 @@ public class DataMapstore
         return super.loadAll( keys );
     }
 
-    private BoundStatement bindProperty( Entry<UUID, byte[]> property ) {
-        return getStoreQuery().bind()
-                .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), property.getKey() )
-                .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
-                        ByteBuffer.wrap( hf.hashBytes( property.getValue() ).asBytes() ) )
-                .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), ByteBuffer.wrap( property.getValue() ) );
-
-    }
+//    private BoundStatement bindProperty( Entry<UUID, byte[]> property ) {
+//        return getStoreQuery().bind()
+//                .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), property.getKey() )
+//                .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
+//                        ByteBuffer.wrap( hf.hashBytes( property.getValue() ).asBytes() ) )
+//                .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), ByteBuffer.wrap( property.getValue() ) );
+//
+//    }
 
     @Override
     public Iterable<DataKey> loadAllKeys() {
