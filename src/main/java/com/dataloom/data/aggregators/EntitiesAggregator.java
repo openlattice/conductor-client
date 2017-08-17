@@ -24,9 +24,9 @@ import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.hazelcast.Entities;
 import com.dataloom.data.hazelcast.PropertyKey;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.SetMultimap;
 import com.hazelcast.aggregation.Aggregator;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -35,7 +35,7 @@ import java.util.Map.Entry;
  */
 public class EntitiesAggregator
         extends Aggregator<Entry<DataKey, ByteBuffer>, Entities> {
-    private final Map<PropertyKey, ByteBuffer> byteBuffers = new HashMap<>();
+    private final SetMultimap<PropertyKey, ByteBuffer> byteBuffers = HashMultimap.create();
 
     @Override
     public void accumulate( Entry<DataKey, ByteBuffer> input ) {
@@ -49,7 +49,7 @@ public class EntitiesAggregator
 
     }
 
-    public Map<PropertyKey, ByteBuffer> getByteBuffers() {
+    public SetMultimap<PropertyKey, ByteBuffer> getByteBuffers() {
         return byteBuffers;
     }
 
@@ -57,7 +57,10 @@ public class EntitiesAggregator
     public Entities aggregate() {
         Entities entities = new Entities();
         byteBuffers
-                .forEach( ( key, val ) -> {
+                .entries()
+                .forEach( e -> {
+                    PropertyKey key = e.getKey();
+                    ByteBuffer val = e.getValue();
                     entities
                             .compute( key.getId(), ( k, v ) -> v == null ? HashMultimap.create() : v )
                             .put( key.getPropertyTypeId(), val );

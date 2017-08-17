@@ -23,6 +23,7 @@ package com.dataloom.hazelcast.serializers;
 import com.dataloom.data.aggregators.EntitiesAggregator;
 import com.dataloom.data.hazelcast.PropertyKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.google.common.collect.SetMultimap;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
@@ -43,11 +44,11 @@ public class EntitiesAggregatorStreamSerializer implements SelfRegisteringStream
     }
 
     @Override public void write( ObjectDataOutput out, EntitiesAggregator object ) throws IOException {
-        Map<PropertyKey, ByteBuffer> m = object.getByteBuffers();
+        SetMultimap<PropertyKey, ByteBuffer> m = object.getByteBuffers();
 
         out.writeInt( m.size() );
 
-        for ( Entry<PropertyKey, ByteBuffer> entry : m.entrySet() ) {
+        for ( Entry<PropertyKey, ByteBuffer> entry : m.entries() ) {
             PropertyKey pk = entry.getKey();
 
             UUIDStreamSerializer.serialize( out, pk.getId() );
@@ -59,7 +60,7 @@ public class EntitiesAggregatorStreamSerializer implements SelfRegisteringStream
 
     @Override public EntitiesAggregator read( ObjectDataInput in ) throws IOException {
         EntitiesAggregator agg = new EntitiesAggregator();
-        Map<PropertyKey, ByteBuffer> m = agg.getByteBuffers();
+        SetMultimap<PropertyKey, ByteBuffer> m = agg.getByteBuffers();
         int propertyCount = in.readInt();
         for ( int i = 0; i < propertyCount; ++i ) {
             UUID id = UUIDStreamSerializer.deserialize( in );

@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.UUID;
 
 /**
+ * This class is used for collecting the values for a single entity based on an id or entity key filter.
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class EntityAggregator extends Aggregator<Entry<DataKey, ByteBuffer>, EntityAggregator> {
