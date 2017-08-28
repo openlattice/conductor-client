@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ * Copyright (C) 2017. OpenLattice, Inc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * You can contact the owner of the copyright at support@thedataloom.com
+ * You can contact the owner of the copyright at support@openlattice.com
  */
 
 package com.dataloom.neuron.audit;
@@ -49,15 +49,15 @@ public class AuditEntitySetUtils {
 
     private static final Logger logger = LoggerFactory.getLogger( AuditEntitySetUtils.class );
 
-    private static final String AUDIT_ENTITY_SET_NAME = "Loom Audit Entity Set";
-    private static final String LOOM_AUDIT_NAMESPACE  = "LOOM_AUDIT";
+    private static final String AUDIT_ENTITY_SET_NAME       = "OpenLattice Audit Entity Set";
+    private static final String OPENLATTICE_AUDIT_NAMESPACE = "OPENLATTICE_AUDIT";
 
-    private static final FullQualifiedName DETAILS_PT_FQN = new FullQualifiedName( LOOM_AUDIT_NAMESPACE, "DETAILS" );
-    private static final FullQualifiedName TYPE_PT_FQN    = new FullQualifiedName( LOOM_AUDIT_NAMESPACE, "TYPE" );
-    private static final FullQualifiedName AUDIT_ET_FQN   = new FullQualifiedName( LOOM_AUDIT_NAMESPACE, "AUDIT" );
+    private static final FullQualifiedName DETAILS_PT_FQN = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE, "DETAILS" );
+    private static final FullQualifiedName TYPE_PT_FQN    = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE, "TYPE" );
+    private static final FullQualifiedName AUDIT_ET_FQN   = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE, "AUDIT" );
 
     // TODO: where does this belong?
-    public static final Principal LOOM_PRINCIPAL = new Principal( PrincipalType.USER, "Loom" );
+    public static final Principal OPEN_LATTICE_PRINCIPAL = new Principal( PrincipalType.USER, "OpenLattice" );
 
     private static Collection<PropertyType> PROPERTIES;
     private static PropertyType             TYPE_PROPERTY_TYPE;
@@ -133,8 +133,8 @@ public class AuditEntitySetUtils {
         if ( AUDIT_ENTITY_TYPE == null ) {
             AUDIT_ENTITY_TYPE = new EntityType(
                     AUDIT_ET_FQN,
-                    "Loom Audit",
-                    "The Loom Audit Entity Type.",
+                    "OpenLattice Audit",
+                    "The OpenLattice Audit Entity Type.",
                     ImmutableSet.of(),
                     Sets.newLinkedHashSet(
                             Sets.newHashSet( TYPE_PROPERTY_TYPE.getId() )
@@ -163,9 +163,9 @@ public class AuditEntitySetUtils {
                     AUDIT_ENTITY_SET_NAME,
                     AUDIT_ENTITY_SET_NAME,
                     Optional.of( AUDIT_ENTITY_SET_NAME ),
-                    ImmutableSet.of( "info@thedataloom.com" )
+                    ImmutableSet.of( "support@openlattice.com" )
             );
-            entityDataModelManager.createEntitySet( LOOM_PRINCIPAL, AUDIT_ENTITY_SET );
+            entityDataModelManager.createEntitySet( OPEN_LATTICE_PRINCIPAL, AUDIT_ENTITY_SET );
         }
 
         AUDIT_ENTITY_SET_SYNC_ID = dataSourceManager.createNewSyncIdForEntitySet( AUDIT_ENTITY_SET.getId() );
