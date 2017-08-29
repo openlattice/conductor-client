@@ -159,6 +159,32 @@ public final class RowAdapters {
 
         return m;
     }
+    
+    public static SetMultimap<UUID, Object> entityIndexedById(
+            String entityId,
+            SetMultimap<UUID,ByteBuffer> eb,
+            Map<UUID, PropertyType> authorizedPropertyTypes,
+            Set<UUID> propertyTypesToPopulate,
+            ObjectMapper mapper ) {
+        final SetMultimap<UUID, Object> m = HashMultimap.create();
+        eb.entries().stream().forEach( e -> {
+            UUID propertyTypeId = e.getKey();
+            if (propertyTypesToPopulate.contains( propertyTypeId )) {
+                byte[] property = e.getValue().array();
+                PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
+                if ( pt != null ) {
+                    m.put( propertyTypeId,
+                            CassandraSerDesFactory.deserializeValue( mapper,
+                                    ByteBuffer.wrap( property ),
+                                    pt.getDatatype(),
+                                    entityId ) );
+                }
+            }
+
+        } );
+
+        return m;
+    }
 
     public static Pair<SetMultimap<UUID, Object>, SetMultimap<FullQualifiedName, Object>> entityIdFQNPair(
             ResultSet rs,
