@@ -472,9 +472,14 @@ public class EdmService implements EdmManager {
     @Override
     public EntityType getEntityType( UUID entityTypeId ) {
         return Preconditions.checkNotNull(
-                Util.getSafely( entityTypes, entityTypeId ),
+                getEntityTypeSafe( entityTypeId ),
                 "Entity type of id %s does not exist.",
                 entityTypeId.toString() );
+    }
+
+    @Override
+    public EntityType getEntityTypeSafe( UUID entityTypeId ) {
+        return Util.getSafely( entityTypes, entityTypeId );
     }
 
     public Iterable<EntityType> getEntityTypes() {
@@ -834,6 +839,20 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public AssociationType getAssociationTypeSafe( UUID associationTypeId ) {
+        Optional<AssociationType> associationDetails = Optional
+                .fromNullable( Util.getSafely( associationTypes, associationTypeId ) );
+        Optional<EntityType> entityType = Optional.fromNullable(
+                Util.getSafely( entityTypes, associationTypeId ) );
+        if ( !associationDetails.isPresent() || !entityType.isPresent() ) return null;
+        return new AssociationType(
+                entityType,
+                associationDetails.get().getSrc(),
+                associationDetails.get().getDst(),
+                associationDetails.get().isBidirectional() );
+    }
+
+    @Override
     public void deleteAssociationType( UUID associationTypeId ) {
         AssociationType associationType = getAssociationType( associationTypeId );
         if ( associationType.getAssociationEntityType() == null ) {
@@ -887,14 +906,7 @@ public class EdmService implements EdmManager {
     @Override
     public void setEntityDataModel( EntityDataModel edm ) {
         edm.getPropertyTypes().forEach( pt -> {
-            PropertyType existing = null;
-            if ( pt.wasIdPresent() )
-                existing = getPropertyType( pt.getId() );
-            else {
-                UUID id = getTypeAclKey( pt.getType() );
-                if ( id != null ) existing = getPropertyType( id );
-            }
-
+            PropertyType existing = getPropertyType( pt.getId() );
             if ( existing == null )
                 createPropertyTypeIfNotExists( pt );
             else {
@@ -916,13 +928,7 @@ public class EdmService implements EdmManager {
             }
         } );
         edm.getEntityTypes().forEach( et -> {
-            EntityType existing = null;
-            if ( et.wasIdPresent() )
-                existing = getEntityType( et.getId() );
-            else {
-                UUID id = getTypeAclKey( et.getType() );
-                if ( id != null ) existing = getEntityType( id );
-            }
+            EntityType existing = getEntityTypeSafe( et.getId() );
             if ( existing == null )
                 createEntityType( et );
             else {
@@ -930,14 +936,8 @@ public class EdmService implements EdmManager {
             }
         } );
         edm.getAssociationTypes().forEach( at -> {
-            AssociationType existing = null;
             EntityType et = at.getAssociationEntityType();
-            if ( et.wasIdPresent() )
-                existing = getAssociationType( et.getId() );
-            else {
-                UUID id = getTypeAclKey( et.getType() );
-                if ( id != null ) existing = getAssociationType( id );
-            }
+            AssociationType existing = getAssociationTypeSafe( et.getId() );
             if ( existing == null ) {
                 createEntityType( et );
                 createAssociationType( at, getTypeAclKey( et.getType() ) );
@@ -963,8 +963,8 @@ public class EdmService implements EdmManager {
                     } ).collect( Collectors.toSet() ), schema.getFqn() );
                 }
             } else {
-            schemaManager.createOrUpdateSchemas( schema );
-             }
+                schemaManager.createOrUpdateSchemas( schema );
+            }
         } );
     }
 

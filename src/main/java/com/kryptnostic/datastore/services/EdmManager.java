@@ -80,6 +80,8 @@ public interface EdmManager {
 
     EntityType getEntityType( UUID entityTypeId );
     
+    EntityType getEntityTypeSafe( UUID entityTypeId );
+    
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
@@ -164,6 +166,8 @@ public interface EdmManager {
     UUID createAssociationType( AssociationType associationType, UUID entityTypeId );
     
     AssociationType getAssociationType( UUID associationTypeId );
+    
+    AssociationType getAssociationTypeSafe( UUID associationTypeId );
             
     void deleteAssociationType( UUID associationTypeId );
 
