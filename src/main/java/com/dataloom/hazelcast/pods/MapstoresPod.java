@@ -39,6 +39,7 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
 import com.dataloom.edm.mapstores.ComplexTypeMapstore;
+import com.dataloom.edm.mapstores.EdmVersionMapstore;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.EnumTypesMapstore;
@@ -166,6 +167,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<String, UUID> aclKeysMapstore() {
         return new AclKeysMapstore( session );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<String, UUID> edmVersionMapstore() {
+        return new EdmVersionMapstore( session );
     }
 
     @Bean

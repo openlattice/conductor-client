@@ -47,6 +47,8 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_ENTITY_KEY_
 import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_ENTITY_SET_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_TYPE_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_VALUE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.EDM_VERSION;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.EDM_VERSION_NAME;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEY;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEYS;
@@ -96,14 +98,16 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.WEIGHT;
 
+import java.util.EnumMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraMaterializedViewBuilder;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
-import java.util.EnumMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public enum Table implements TableDef {
     ACL_KEYS,
@@ -114,6 +118,7 @@ public enum Table implements TableDef {
     COMPLEX_TYPES,
     DATA,
     EDGES,
+    EDM_VERSIONS,
     ENTITY_SETS,
     ENTITY_TYPES,
     ENUM_TYPES,
@@ -280,6 +285,14 @@ public enum Table implements TableDef {
                                 DST_ENTITY_SET_ID,
                                 DST_SYNC_ID,
                                 EDGE_ENTITY_SET_ID );
+                
+            case EDM_VERSIONS:
+                return new CassandraTableBuilder( EDM_VERSIONS )
+                        .ifNotExists()
+                        .partitionKey( EDM_VERSION_NAME )
+                        .clusteringColumns( EDM_VERSION )
+                        .withDescendingOrder( EDM_VERSION );
+            
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()

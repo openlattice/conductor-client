@@ -46,6 +46,7 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.EntityDataModel;
+import com.dataloom.edm.EntityDataModelDiff;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.Schema;
 import com.dataloom.edm.events.AssociationTypeCreatedEvent;
@@ -81,6 +82,7 @@ import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -98,6 +100,7 @@ import com.kryptnostic.datastore.util.Util;
 public class EdmService implements EdmManager {
 
     private static final Logger                     logger = LoggerFactory.getLogger( EdmService.class );
+    private final IMap<String, UUID>                edmVersions;
     private final IMap<UUID, PropertyType>          propertyTypes;
     private final IMap<UUID, ComplexType>           complexTypes;
     private final IMap<UUID, EnumType>              enumTypes;
@@ -130,10 +133,10 @@ public class EdmService implements EdmManager {
         this.entitySetManager = entitySetManager;
         this.entityTypeManager = entityTypeManager;
         this.schemaManager = schemaManager;
+        this.edmVersions = hazelcastInstance.getMap( HazelcastMap.EDM_VERSIONS.name() );
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.complexTypes = hazelcastInstance.getMap( HazelcastMap.COMPLEX_TYPES.name() );
         this.enumTypes = hazelcastInstance.getMap( HazelcastMap.ENUM_TYPES.name() );
-        ;
         this.entityTypes = hazelcastInstance.getMap( HazelcastMap.ENTITY_TYPES.name() );
         this.entitySets = hazelcastInstance.getMap( HazelcastMap.ENTITY_SETS.name() );
         this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
@@ -143,6 +146,20 @@ public class EdmService implements EdmManager {
         this.aclKeyReservations = aclKeyReservations;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
+    }
+
+    @Override
+    public UUID getCurrentEntityDataModelVersion() {
+        if ( !edmVersions.containsKey( EntityDataModel.getEdmVersionKey() ) )
+            return generateNewEntityDataModelVersion();
+        return edmVersions.get( EntityDataModel.getEdmVersionKey() );
+    }
+
+    @Override
+    public UUID generateNewEntityDataModelVersion() {
+        UUID newVersion = UUIDs.timeBased();
+        edmVersions.put( EntityDataModel.getEdmVersionKey(), newVersion );
+        return newVersion;
     }
 
     /*
@@ -905,6 +922,8 @@ public class EdmService implements EdmManager {
 
     @Override
     public void setEntityDataModel( EntityDataModel edm ) {
+        if ( getEntityDataModelDiff( edm ).getConflicts().isPresent() ) throw new IllegalArgumentException(
+                "Unable to update entity data model: please resolve conflicts before importing." );
         edm.getPropertyTypes().forEach( pt -> {
             PropertyType existing = getPropertyType( pt.getId() );
             if ( existing == null )
@@ -969,61 +988,74 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public EntityDataModel getEntityDataModelDiff( EntityDataModel edm ) {
+    public EntityDataModelDiff getEntityDataModelDiff( EntityDataModel edm ) {
+        UUID currentVersion = getCurrentEntityDataModelVersion();
+        if ( !edm.getVersion().equals( currentVersion ) ) throw new IllegalArgumentException(
+                "Unable to generate diff: version " + edm.getVersion().toString()
+                        + " does not match current version "
+                        + currentVersion.toString() );
+
+        Set<PropertyType> conflictingPropertyTypes = Sets.newHashSet();
+        Set<EntityType> conflictingEntityTypes = Sets.newHashSet();
+        Set<AssociationType> conflictingAssociationTypes = Sets.newHashSet();
+
         Set<PropertyType> updatedPropertyTypes = Sets.newHashSet();
         Set<EntityType> updatedEntityTypes = Sets.newHashSet();
         Set<AssociationType> updatedAssociationTypes = Sets.newHashSet();
         Set<Schema> updatedSchemas = Sets.newHashSet();
+
         edm.getPropertyTypes().forEach( pt -> {
-            PropertyType existing = null;
-            if ( pt.wasIdPresent() ) {
-                if ( checkPropertyTypeExists( pt.getId() ) ) existing = getPropertyType( pt.getId() );
-            } else {
-                UUID id = getTypeAclKey( pt.getType() );
-                if ( id != null ) existing = getPropertyType( id );
-            }
-            if ( existing == null
-                    || !pt.getType().equals( existing.getType() )
-                    || !pt.getTitle().equals( existing.getTitle() )
-                    || !pt.getDescription().equals( existing.getDescription() )
-                    || !pt.isPIIfield() == existing.isPIIfield() )
+            PropertyType existing = getPropertyType( pt.getId() );
+            if ( existing == null )
                 updatedPropertyTypes.add( pt );
+            else if ( !existing.equals( pt ) ) {
+                if ( !pt.getDatatype().equals( existing.getDatatype() )
+                        || !pt.getAnalyzer().equals( existing.getAnalyzer() ) )
+                    conflictingPropertyTypes.add( pt );
+                else if ( !pt.getType().equals( existing.getType() )
+                        || !pt.getTitle().equals( existing.getTitle() )
+                        || !pt.getDescription().equals( existing.getDescription() )
+                        || !pt.isPIIfield() == existing.isPIIfield() )
+                    updatedPropertyTypes.add( pt );
+            }
         } );
 
         edm.getEntityTypes().forEach( et -> {
-            EntityType existing = null;
-            if ( et.wasIdPresent() ) {
-                if ( checkEntityTypeExists( et.getId() ) ) existing = getEntityType( et.getId() );
-            } else {
-                UUID id = getTypeAclKey( et.getType() );
-                if ( id != null ) existing = getEntityType( id );
-            }
-            if ( existing == null
-                    || !et.getType().equals( existing.getType() )
-                    || !et.getTitle().equals( existing.getTitle() )
-                    || !et.getDescription().equals( existing.getDescription() )
-                    || !et.getProperties().equals( existing.getProperties() ) )
+            EntityType existing = getEntityTypeSafe( et.getId() );
+            if ( existing == null )
                 updatedEntityTypes.add( et );
+            else if ( !existing.equals( et ) ) {
+                if ( !et.getBaseType().equals( existing )
+                        || !et.getCategory().equals( existing )
+                        || !et.getKey().equals( existing ) )
+                    conflictingEntityTypes.add( et );
+                else if ( !et.getType().equals( existing.getType() )
+                        || !et.getTitle().equals( existing.getTitle() )
+                        || !et.getDescription().equals( existing.getDescription() )
+                        || !et.getProperties().equals( existing.getProperties() ) )
+                    updatedEntityTypes.add( et );
+            }
         } );
 
         edm.getAssociationTypes().forEach( at -> {
-            AssociationType existing = null;
-            if ( at.getAssociationEntityType().wasIdPresent() ) {
-                if ( checkEntityTypeExists( at.getAssociationEntityType().getId() ) )
-                    existing = getAssociationType( at.getAssociationEntityType().getId() );
-            } else {
-                UUID id = getTypeAclKey( at.getAssociationEntityType().getType() );
-                if ( id != null ) existing = getAssociationType( id );
-            }
             EntityType atEntityType = at.getAssociationEntityType();
-            if ( existing == null
-                    || !atEntityType.getType().equals( existing.getAssociationEntityType().getType() )
-                    || !atEntityType.getTitle().equals( existing.getAssociationEntityType().getTitle() )
-                    || !atEntityType.getDescription().equals( existing.getAssociationEntityType().getDescription() )
-                    || !atEntityType.getProperties().equals( existing.getAssociationEntityType().getProperties() )
-                    || !at.getSrc().equals( existing.getSrc() )
-                    || !at.getDst().equals( existing.getDst() ) )
+            AssociationType existing = getAssociationTypeSafe( atEntityType.getId() );
+            if ( existing == null )
                 updatedAssociationTypes.add( at );
+            else if ( !existing.equals( at ) ) {
+                if ( !at.isBidirectional() == existing.isBidirectional()
+                        || !atEntityType.getBaseType().equals( existing.getAssociationEntityType().getBaseType() )
+                        || !atEntityType.getCategory().equals( existing.getAssociationEntityType().getCategory() )
+                        || !atEntityType.getKey().equals( existing.getAssociationEntityType().getKey() ) )
+                    conflictingAssociationTypes.add( at );
+                else if ( !atEntityType.getType().equals( existing.getAssociationEntityType().getType() )
+                        || !atEntityType.getTitle().equals( existing.getAssociationEntityType().getTitle() )
+                        || !atEntityType.getDescription().equals( existing.getAssociationEntityType().getDescription() )
+                        || !atEntityType.getProperties().equals( existing.getAssociationEntityType().getProperties() )
+                        || !at.getSrc().equals( existing.getSrc() )
+                        || !at.getDst().equals( existing.getDst() ) )
+                    updatedAssociationTypes.add( at );
+            }
         } );
         edm.getSchemas().forEach( schema -> {
             Schema existing = null;
@@ -1033,12 +1065,28 @@ public class EdmService implements EdmManager {
             if ( existing == null || !schema.equals( existing ) ) updatedSchemas.add( schema );
         } );
 
-        return new EntityDataModel(
+        EntityDataModel diff = new EntityDataModel(
+                getCurrentEntityDataModelVersion(),
                 Sets.newHashSet(),
                 updatedSchemas,
                 updatedEntityTypes,
                 updatedAssociationTypes,
                 updatedPropertyTypes );
+
+        EntityDataModel conflicts = null;
+
+        if ( !conflictingPropertyTypes.isEmpty() || !conflictingEntityTypes.isEmpty()
+                || !conflictingAssociationTypes.isEmpty() ) {
+            conflicts = new EntityDataModel(
+                    getCurrentEntityDataModelVersion(),
+                    Sets.newHashSet(),
+                    Sets.newHashSet(),
+                    conflictingEntityTypes,
+                    conflictingAssociationTypes,
+                    conflictingPropertyTypes );
+        }
+
+        return new EntityDataModelDiff( diff, Optional.fromNullable( conflicts ) );
     }
 
 }

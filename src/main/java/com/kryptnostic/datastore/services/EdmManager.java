@@ -30,6 +30,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntityDataModel;
+import com.dataloom.edm.EntityDataModelDiff;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.type.AssociationDetails;
@@ -41,6 +42,10 @@ import com.dataloom.edm.type.PropertyType;
 import com.hazelcast.map.EntryProcessor;
 
 public interface EdmManager {
+    UUID getCurrentEntityDataModelVersion();
+    
+    UUID generateNewEntityDataModelVersion();
+    
     PropertyType getPropertyType( FullQualifiedName propertyTypeFqn );
 
     PropertyType getPropertyType( UUID propertyTypeId );
@@ -177,6 +182,6 @@ public interface EdmManager {
     
     void setEntityDataModel( EntityDataModel edm );
     
-    EntityDataModel getEntityDataModelDiff( EntityDataModel edm );
+    EntityDataModelDiff getEntityDataModelDiff( EntityDataModel edm );
 
 }
