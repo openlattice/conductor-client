@@ -52,6 +52,7 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.Schema;
 import com.dataloom.edm.events.AssociationTypeCreatedEvent;
 import com.dataloom.edm.events.AssociationTypeDeletedEvent;
+import com.dataloom.edm.events.ClearAllDataEvent;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
 import com.dataloom.edm.events.EntitySetDeletedEvent;
 import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
@@ -83,6 +84,7 @@ import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.datastax.driver.core.Session;
+import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
@@ -99,6 +101,7 @@ import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
@@ -121,6 +124,10 @@ public class EdmService implements EdmManager {
     private final CassandraTypeManager              entityTypeManager;
     private final HazelcastSchemaManager            schemaManager;
 
+    private final String                            keyspace;
+    private final Session                           session;
+    private final HazelcastInstance                 hazelcastInstance;
+
     @Inject
     private EventBus                                eventBus;
 
@@ -137,6 +144,9 @@ public class EdmService implements EdmManager {
         this.entitySetManager = entitySetManager;
         this.entityTypeManager = entityTypeManager;
         this.schemaManager = schemaManager;
+        this.hazelcastInstance = hazelcastInstance;
+        this.session = session;
+        this.keyspace = keyspace;
         this.edmVersions = hazelcastInstance.getMap( HazelcastMap.EDM_VERSIONS.name() );
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.complexTypes = hazelcastInstance.getMap( HazelcastMap.COMPLEX_TYPES.name() );
@@ -150,6 +160,20 @@ public class EdmService implements EdmManager {
         this.aclKeyReservations = aclKeyReservations;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
+    }
+
+    @Override
+    public void clearTables() {
+        eventBus.post( new ClearAllDataEvent() );
+        for ( int i = 0; i < HazelcastMap.values().length; i++ ) {
+            hazelcastInstance.getMap( HazelcastMap.values()[ i ].name() ).clear();
+        }
+
+        for ( int i = 0; i < Table.values().length; i++ ) {
+            String tableName = Table.values()[ i ].name();
+            if ( !tableName.equals( Table.KEYS.name() ) && !tableName.equals( Table.ORGANIZATIONS_ROLES.name() ) )
+                session.execute( QueryBuilder.truncate( keyspace, Table.values()[ i ].name() ) );
+        }
     }
 
     @Override

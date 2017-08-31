@@ -42,6 +42,8 @@ import com.dataloom.edm.type.PropertyType;
 import com.hazelcast.map.EntryProcessor;
 
 public interface EdmManager {
+    void clearTables();
+    
     UUID getCurrentEntityDataModelVersion();
     
     UUID generateNewEntityDataModelVersion();
