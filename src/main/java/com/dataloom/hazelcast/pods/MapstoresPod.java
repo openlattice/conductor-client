@@ -40,11 +40,14 @@ import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
 import com.dataloom.edm.mapstores.ComplexTypeMapstore;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
+import com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.EnumTypesMapstore;
 import com.dataloom.edm.mapstores.NamesMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
+import com.dataloom.edm.set.EntitySetPropertyKey;
+import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
@@ -303,6 +306,11 @@ public class MapstoresPod {
                 session,
                 propertyTypeMapstore(),
                 mapper );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadataMapstore() {
+        return new EntitySetPropertyMetadataMapstore( session );
     }
 
     @Bean

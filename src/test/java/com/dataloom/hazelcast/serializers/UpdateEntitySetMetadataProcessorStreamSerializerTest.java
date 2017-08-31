@@ -29,6 +29,7 @@ public class UpdateEntitySetMetadataProcessorStreamSerializerTest extends
                 Optional.of( es.getName() ),
                 Optional.of( es.getContacts() ),
                 Optional.absent(),
+                Optional.absent(),
                 Optional.absent() );
         return new UpdateEntitySetMetadataProcessor( update );
     }

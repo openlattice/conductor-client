@@ -32,6 +32,7 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.requests.MetadataUpdate;
+import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.edm.type.AssociationDetails;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
@@ -55,7 +56,8 @@ public interface EdmManager {
 
     void createEntitySet( Principal principal, EntitySet entitySet );
 
-    //Warning: This method is used only in creating linked entity set, where entity set owner may not own all the property types.
+    // Warning: This method is used only in creating linked entity set, where entity set owner may not own all the
+    // property types.
     void createEntitySet( Principal principal, EntitySet entitySet, Set<UUID> ownablePropertyTypes );
 
     EntitySet getEntitySet( UUID entitySetId );
@@ -69,31 +71,31 @@ public interface EdmManager {
     EntityType getEntityType( String namespace, String name );
 
     Iterable<EntityType> getEntityTypes();
-    
+
     Iterable<EntityType> getEntityTypesStrict();
-    
+
     Iterable<EntityType> getAssociationEntityTypes();
-    
+
     Iterable<AssociationType> getAssociationTypes();
-    
+
     void deleteEntityType( UUID entityTypeId );
 
     EntityType getEntityType( UUID entityTypeId );
-    
+
     EntityType getEntityTypeSafe( UUID entityTypeId );
-    
+
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
-    
+
     void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds );
-    
+
     void addSrcEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
-    
+
     void addDstEntityTypesToAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
-    
+
     void removeSrcEntityTypesFromAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
-    
+
     void removeDstEntityTypesFromAssociationType( UUID associationTypeId, Set<UUID> entityTypeIds );
 
     void updatePropertyTypeMetadata( UUID typeId, MetadataUpdate update );
@@ -106,7 +108,7 @@ public interface EdmManager {
     boolean checkPropertyTypesExist( Set<UUID> properties );
 
     boolean checkPropertyTypeExists( UUID propertyTypeId );
-    
+
     boolean checkEntityTypesExist( Set<UUID> entityTypeIds );
 
     boolean checkEntityTypeExists( UUID entityTypeId );
@@ -130,7 +132,7 @@ public interface EdmManager {
     FullQualifiedName getPropertyTypeFqn( UUID propertyTypeId );
 
     FullQualifiedName getEntityTypeFqn( UUID entityTypeId );
-    
+
     Map<UUID, PropertyType> getPropertyTypesAsMap( Set<UUID> propertyTypeIds );
 
     Map<UUID, EntityType> getEntityTypesAsMap( Set<UUID> entityTypeIds );
@@ -140,7 +142,7 @@ public interface EdmManager {
     <V> Map<UUID, V> fromPropertyTypes( Set<UUID> propertyTypeIds, EntryProcessor<UUID, PropertyType> ep );
 
     Set<UUID> getPropertyTypeUuidsOfEntityTypeWithPIIField( UUID entityTypeId );
-    
+
     EntityType getEntityTypeByEntitySetId( UUID entitySetId );
 
     void createEnumTypeIfNotExists( EnumType enumType );
@@ -162,21 +164,27 @@ public interface EdmManager {
     Set<EntityType> getEntityTypeHierarchy( UUID entityTypeId );
 
     Set<ComplexType> getComplexTypeHierarchy( UUID complexTypeId );
-    
+
     UUID createAssociationType( AssociationType associationType, UUID entityTypeId );
-    
+
     AssociationType getAssociationType( UUID associationTypeId );
-    
+
     AssociationType getAssociationTypeSafe( UUID associationTypeId );
-            
+
     void deleteAssociationType( UUID associationTypeId );
 
     AssociationDetails getAssociationDetails( UUID associationTypeId );
-    
+
     Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId );
-    
+
     void setEntityDataModel( EntityDataModel edm );
-    
+
     EntityDataModel getEntityDataModelDiff( EntityDataModel edm );
+
+    Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata( UUID entitySetId );
+
+    EntitySetPropertyMetadata getEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId );
+
+    void updateEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId, MetadataUpdate update );
 
 }

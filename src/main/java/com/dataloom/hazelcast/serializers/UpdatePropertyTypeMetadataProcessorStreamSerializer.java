@@ -40,7 +40,8 @@ public class UpdatePropertyTypeMetadataProcessorStreamSerializer
                 Optional.absent(),
                 Optional.absent(),
                 type,
-                pii );
+                pii,
+                Optional.absent() );
         return new UpdatePropertyTypeMetadataProcessor( update );
     }
 
