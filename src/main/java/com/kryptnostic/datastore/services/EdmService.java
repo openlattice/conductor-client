@@ -580,6 +580,8 @@ public class EdmService implements EdmManager {
 
             for ( EntitySet entitySet : entitySetManager.getAllEntitySetsForType( id ) ) {
                 UUID esId = entitySet.getId();
+                Map<UUID, PropertyType> propertyTypes = propertyTypeIds.stream().collect( Collectors.toMap(
+                        propertyTypeId -> propertyTypeId, propertyTypeId -> getPropertyType( propertyTypeId ) ) );
                 Iterable<Principal> owners = authorizations.getSecurableObjectOwners( Arrays.asList( esId ) );
                 for ( Principal owner : owners ) {
                     propertyTypeIds.stream()
@@ -591,6 +593,14 @@ public class EdmService implements EdmManager {
                                         EnumSet.allOf( Permission.class ) );
                                 authorizations.createEmptyAcl( aclKey,
                                         SecurableObjectType.PropertyTypeInEntitySet );
+
+                                PropertyType pt = propertyTypes.get( aclKey.get( 1 ) );
+                                EntitySetPropertyMetadata defaultMetadata = new EntitySetPropertyMetadata(
+                                        pt.getTitle(),
+                                        pt.getDescription(),
+                                        true );
+                                entitySetPropertyMetadata.put(
+                                        new EntitySetPropertyKey( aclKey.get( 0 ), aclKey.get( 1 ) ), defaultMetadata );
                             } );
                 }
             }
