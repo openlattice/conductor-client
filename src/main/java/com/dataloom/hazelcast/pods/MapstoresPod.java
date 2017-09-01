@@ -19,10 +19,7 @@
 
 package com.dataloom.hazelcast.pods;
 
-import com.dataloom.auditing.AuditMetric;
-import com.dataloom.auditing.mapstores.LeaderboardMapstore;
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
@@ -113,18 +110,18 @@ public class MapstoresPod {
     CassandraConfiguration cc;
 
     @Bean
-    public SelfRegisteringMapStore<EdgeKey,LoomEdge> edgesMapstore() {
+    public SelfRegisteringMapStore<EdgeKey, LoomEdge> edgesMapstore() {
         return new EdgeMapstore( session );
     }
-//    @Bean
-//    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
-//        return new EdgesMapstore( session );
-//    }
+    //    @Bean
+    //    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
+    //        return new EdgesMapstore( session );
+    //    }
 
-//    @Bean
-//    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
-//        return new BackedgesMapstore( session );
-//    }
+    //    @Bean
+    //    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
+    //        return new BackedgesMapstore( session );
+    //    }
 
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
@@ -189,11 +186,6 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<AceKey, Status> requestMapstore() {
         return new RequestMapstore( session );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<AclKey, AuditMetric> auditMetricsMapstore() {
-        return new LeaderboardMapstore( cc.getKeyspace(), session );
     }
 
     @Bean
