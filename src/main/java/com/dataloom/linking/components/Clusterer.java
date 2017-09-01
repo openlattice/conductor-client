@@ -1,5 +1,6 @@
 package com.dataloom.linking.components;
 
+import com.dataloom.linking.WeightedLinkingEdge;
 import java.util.UUID;
 
 /**
@@ -10,5 +11,5 @@ import java.util.UUID;
  */
 public interface Clusterer {
 
-    public void cluster( UUID graphId );
+    public void cluster( UUID graphId, WeightedLinkingEdge bottom, WeightedLinkingEdge top );
 }

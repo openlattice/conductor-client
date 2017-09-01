@@ -29,6 +29,9 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
@@ -92,6 +95,19 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
         if( val != null ) {
             session.execute( bind( key, val, getDeleteQuery().bind() ) );
         }
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( "__key#graphId" , false) )
+                .addMapIndexConfig( new MapIndexConfig( "__key#srcId" , false) )
+                .addMapIndexConfig( new MapIndexConfig( "__key#dstId" , false) )
+                .addMapIndexConfig( new MapIndexConfig( "this" , true) );
+    }
+
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig()
+                .setEnabled( false );
     }
 
     @Override
