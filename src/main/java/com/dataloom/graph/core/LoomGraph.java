@@ -1,10 +1,5 @@
 package com.dataloom.graph.core;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
-
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.graph.aggregators.GraphCount;
@@ -14,7 +9,6 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.ResultSetFuture;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -23,6 +17,10 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
 
 public class LoomGraph implements LoomGraphApi {
 
@@ -156,6 +154,7 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
+    @Timed
     public Stream<LoomEdge> getEdgesAndNeighborsForVertices( Set<UUID> vertexIds ) {
         return edges.values( Predicates.or( Predicates.in( "srcEntityKeyId", vertexIds.toArray( new UUID[] {} ) ),
                 Predicates.in( "dstEntityKeyId", vertexIds.toArray( new UUID[] {} ) ) ) ).stream();
@@ -185,11 +184,11 @@ public class LoomGraph implements LoomGraphApi {
          */
         return Predicates.or(
                 Stream.concat( dstFilters.entries().stream()
-                        .map( dstFilter -> Predicates.and(
-                                Predicates.equal( "dstSetId", entitySetId ),
-                                Predicates.equal( "dstSyncId", syncId ),
-                                Predicates.equal( "edgeTypeId", dstFilter.getKey() ),
-                                Predicates.equal( "srcTypeId", dstFilter.getValue() ) ) ),
+                                .map( dstFilter -> Predicates.and(
+                                        Predicates.equal( "dstSetId", entitySetId ),
+                                        Predicates.equal( "dstSyncId", syncId ),
+                                        Predicates.equal( "edgeTypeId", dstFilter.getKey() ),
+                                        Predicates.equal( "srcTypeId", dstFilter.getValue() ) ) ),
                         srcFilters.entries().stream()
                                 .map( srcFilter -> Predicates.and(
                                         Predicates.equal( "srcSetId", entitySetId ),

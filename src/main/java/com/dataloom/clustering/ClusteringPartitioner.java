@@ -19,39 +19,36 @@
 
 package com.dataloom.clustering;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.linking.CassandraLinkingGraphsQueryService;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.SortedCassandraLinkingEdgeBuffer;
 import com.dataloom.linking.WeightedLinkingEdge;
-import com.dataloom.linking.components.Clusterer;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class ClusteringPartitioner implements Clusterer {
-    private static final Logger                      logger           = LoggerFactory
+public class ClusteringPartitioner {
+    private static final Logger logger = LoggerFactory
             .getLogger( ClusteringPartitioner.class );
     private final CassandraLinkingGraphsQueryService cgqs;
     private final HazelcastLinkingGraphs             graphs;
     private final Session                            session;
     private final String                             keyspace;
-    private final double                             defaultThreshold = 0.1D;
+    private final double defaultThreshold = 0.1D;
 
     public ClusteringPartitioner(
             String keyspace,

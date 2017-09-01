@@ -19,7 +19,9 @@
 
 package com.dataloom.authorization;
 
-import com.dataloom.auditing.AuditableEvent;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.dataloom.authorization.paging.AuthorizedObjectsPagingInfo;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.processors.PermissionMerger;
@@ -30,10 +32,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.EnumSet;
 import java.util.List;
 import java.util.NavigableSet;
@@ -41,9 +39,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
     private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
@@ -71,7 +68,8 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             List<UUID> key,
             Principal principal,
             Set<Permission> permissions ) {
-        aces.executeOnKey( new AceKey( key, principal ), new PermissionMerger( DelegatedPermissionEnumSet.wrap( permissions ) ) );
+        aces.executeOnKey( new AceKey( key, principal ),
+                new PermissionMerger( DelegatedPermissionEnumSet.wrap( permissions ) ) );
     }
 
     @Override
@@ -100,8 +98,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             List<UUID> key,
             Set<Principal> principals,
             EnumSet<Permission> requiredPermissions ) {
-        principals.forEach( p -> eventBus.post( new AuditableEvent( key, p, SecurableObjectType.Datasource,
-                requiredPermissions, "This is a test" ) ) );
         Set<Permission> permissions = getSecurableObjectPermissions( key, principals );
         return permissions.containsAll( requiredPermissions );
     }
