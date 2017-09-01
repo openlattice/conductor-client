@@ -38,6 +38,7 @@ public class UpdateEntityTypeMetadataProcessorStreamSerializer
                 Optional.absent(),
                 Optional.absent(),
                 type,
+                Optional.absent(),
                 Optional.absent() );
         return new UpdateEntityTypeMetadataProcessor( update );
     }

@@ -82,6 +82,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.RPC_VALUE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.RPC_WEIGHT;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECTID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECT_TYPE;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.SHOW;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_LINKING_VERTEX_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_ENTITY_KEY_ID;
@@ -114,6 +115,7 @@ public enum Table implements TableDef {
     COMPLEX_TYPES,
     DATA,
     EDGES,
+    ENTITY_SET_PROPERTY_METADATA,
     ENTITY_SETS,
     ENTITY_TYPES,
     ENUM_TYPES,
@@ -280,6 +282,13 @@ public enum Table implements TableDef {
                                 DST_ENTITY_SET_ID,
                                 DST_SYNC_ID,
                                 EDGE_ENTITY_SET_ID );
+                
+            case ENTITY_SET_PROPERTY_METADATA:
+                return new CassandraTableBuilder( ENTITY_SET_PROPERTY_METADATA )
+                        .ifNotExists()
+                        .partitionKey( ENTITY_SET_ID, PROPERTY_TYPE_ID )
+                        .columns( TITLE, DESCRIPTION, SHOW );
+                
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()

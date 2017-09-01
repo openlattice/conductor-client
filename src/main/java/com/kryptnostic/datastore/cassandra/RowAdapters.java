@@ -24,6 +24,8 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.set.EntitySetPropertyKey;
+import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.edm.type.Analyzer;
 import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.ComplexType;
@@ -495,6 +497,19 @@ public final class RowAdapters {
 
     public static UUID currentSyncId( Row row ) {
         return row.getUUID( CommonColumns.CURRENT_SYNC_ID.cql() );
+    }
+    
+    public static EntitySetPropertyKey entitySetPropertyKey( Row row ) {
+        UUID entitySetId = row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
+        UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
+        return new EntitySetPropertyKey( entitySetId, propertyTypeId );
+    }
+    
+    public static EntitySetPropertyMetadata entitySetPropertyMetadata( Row row ) {
+        String title = row.getString( CommonColumns.TITLE.cql() );
+        String description = row.getString( CommonColumns.DESCRIPTION.cql() );
+        boolean defaultShow = row.getBool( CommonColumns.SHOW.cql() );
+        return new EntitySetPropertyMetadata( title, description, defaultShow );
     }
 
 }
