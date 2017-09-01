@@ -185,7 +185,7 @@ public class NeuronPod {
 
     @Bean
     public HazelcastLinkingGraphs linkingGraph() {
-        return new HazelcastLinkingGraphs( hazelcastInstance, linkingGraphQueryService() );
+        return new HazelcastLinkingGraphs( hazelcastInstance );
     }
 
     @Bean

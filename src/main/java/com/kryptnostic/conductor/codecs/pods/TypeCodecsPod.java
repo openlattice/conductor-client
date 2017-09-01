@@ -19,16 +19,6 @@
 
 package com.kryptnostic.conductor.codecs.pods;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.securable.SecurableObjectType;
@@ -45,8 +35,14 @@ import com.kryptnostic.conductor.codecs.EntityKeyTypeCodec;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
 import com.kryptnostic.conductor.codecs.FullQualifiedNameTypeCodec;
 import com.kryptnostic.conductor.codecs.TimestampDateTimeTypeCodec;
-
-import static com.dataloom.auditing.AuditableEventKey.AuditableEventType;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class TypeCodecsPod {
@@ -100,11 +96,6 @@ public class TypeCodecsPod {
     }
 
     @Bean
-    public EnumNameCodec<AuditableEventType> auditableEventTypeCodec() {
-        return new EnumNameCodec<>( AuditableEventType.class );
-    }
-
-    @Bean
     public EnumNameCodec<SecurableObjectType> securableObjectTypeCodec() {
         return new EnumNameCodec<>( SecurableObjectType.class );
     }
@@ -128,7 +119,7 @@ public class TypeCodecsPod {
     public TypeCodec<EntityKey> entitykeyCodec() {
         return new EntityKeyTypeCodec();
     }
-    
+
     @Bean
     public TypeCodec<Long> simpleTimestampCodec() {
         return SimpleTimestampCodec.instance;
