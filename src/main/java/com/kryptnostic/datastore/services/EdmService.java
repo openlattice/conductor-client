@@ -205,6 +205,19 @@ public class EdmService implements EdmManager {
         }
     }
 
+    @Override
+    public void forceDeletePropertyType( UUID propertyTypeId ) {
+        Stream<EntityType> entityTypes = entityTypeManager
+                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) );
+        entityTypes.forEach( et -> {
+            forceRemovePropertyTypesFromEntityType( et.getId(), ImmutableSet.of( propertyTypeId ) );
+        } );
+
+        propertyTypes.delete( propertyTypeId );
+        aclKeyReservations.release( propertyTypeId );
+        eventBus.post( new PropertyTypeDeletedEvent( propertyTypeId ) );
+    }
+
     private EntityType getEntityTypeWithBaseType( EntityType entityType ) {
         EntityType baseType = getEntityType( entityType.getBaseType().get() );
         LinkedHashSet<UUID> properties = new LinkedHashSet<UUID>();
@@ -619,12 +632,6 @@ public class EdmService implements EdmManager {
     @Override
     public void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
-        EntityType entityType = getEntityType( entityTypeId );
-        if ( entityType.getBaseType().isPresent() ) {
-            EntityType baseType = getEntityType( entityType.getBaseType().get() );
-            Preconditions.checkArgument( Sets.intersection( propertyTypeIds, baseType.getProperties() ).isEmpty(),
-                    "Inherited property types cannot be removed." );
-        }
 
         List<UUID> childrenIds = entityTypeManager.getEntityTypeChildrenIdsDeep( entityTypeId )
                 .collect( Collectors.<UUID> toList() );
@@ -634,6 +641,24 @@ public class EdmService implements EdmManager {
             Preconditions.checkArgument( !entitySetManager.getAllEntitySetsForType( id ).iterator().hasNext(),
                     "Property types cannot be removed from entity types that have already been associated with an entity set." );
         } );
+
+        forceRemovePropertyTypesFromEntityType( entityTypeId, propertyTypeIds );
+
+    }
+
+    @Override
+    public void forceRemovePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
+        EntityType entityType = getEntityType( entityTypeId );
+        if ( entityType.getBaseType().isPresent() ) {
+            EntityType baseType = getEntityType( entityType.getBaseType().get() );
+            Preconditions.checkArgument( Sets.intersection( propertyTypeIds, baseType.getProperties() ).isEmpty(),
+                    "Inherited property types cannot be removed." );
+        }
+
+        List<UUID> childrenIds = entityTypeManager.getEntityTypeChildrenIdsDeep( entityTypeId )
+                .collect( Collectors.<UUID> toList() );
+        
         Map<UUID, Boolean> childrenIdsToLocks = childrenIds.stream()
                 .collect( Collectors.toMap( Functions.<UUID> identity()::apply, propertyTypes::tryLock ) );
         childrenIdsToLocks.values().forEach( locked -> {
