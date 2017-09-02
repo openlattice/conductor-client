@@ -25,6 +25,7 @@ import com.dataloom.hazelcast.HazelcastUtils;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
 
 import java.util.Set;
@@ -41,12 +42,12 @@ public class HazelcastLinkingGraphs {
     private static final UUID DEFAULT_ID = new UUID( 0, 0 );
     private final IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
     private final IMap<LinkingEntityKey, UUID>          vertices;
-    private final CassandraLinkingGraphsQueryService clgqs;
 
-    public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance, CassandraLinkingGraphsQueryService clgqs ) {
+
+    public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
         this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
         this.vertices = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_VERTICES.name() );
-        this.clgqs = clgqs;
+
     }
 
     public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ) {
@@ -104,8 +105,4 @@ public class HazelcastLinkingGraphs {
         return linkingVertices.containsKey( edge.getSrc() ) && linkingVertices.containsKey( edge.getDst() );
     }
     
-    public Iterable<Pair<UUID, Set<EntityKey>>> getLinkedEntityKeys( UUID linkedEntitySetId ){
-        UUID graphId = getGraphIdFromEntitySetId( linkedEntitySetId );
-        return clgqs.getLinkedEntityKeys( graphId );
-    }
 }

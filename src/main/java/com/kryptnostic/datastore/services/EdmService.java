@@ -65,6 +65,8 @@ import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.CassandraTypeManager;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
+import com.dataloom.edm.set.EntitySetPropertyKey;
+import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.edm.type.AssociationDetails;
 import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.ComplexType;
@@ -79,6 +81,7 @@ import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProces
 import com.dataloom.edm.types.processors.RemoveSrcEntityTypesFromAssociationTypeProcessor;
 import com.dataloom.edm.types.processors.ReorderPropertyTypesInEntityTypeProcessor;
 import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
+import com.dataloom.edm.types.processors.UpdateEntitySetPropertyMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
 import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -106,30 +109,33 @@ import com.kryptnostic.datastore.util.Util;
 
 public class EdmService implements EdmManager {
 
-    private static final Logger                     logger = LoggerFactory.getLogger( EdmService.class );
-    private final IMap<String, UUID>                edmVersions;
-    private final IMap<UUID, PropertyType>          propertyTypes;
-    private final IMap<UUID, ComplexType>           complexTypes;
-    private final IMap<UUID, EnumType>              enumTypes;
-    private final IMap<UUID, EntityType>            entityTypes;
-    private final IMap<UUID, EntitySet>             entitySets;
-    private final IMap<String, UUID>                aclKeys;
-    private final IMap<UUID, String>                names;
-    private final IMap<UUID, AssociationType>       associationTypes;
-    private final IMap<UUID, UUID>                  syncIds;
+    private static final Logger                                         logger = LoggerFactory
+            .getLogger( EdmService.class );
+    private final IMap<String, UUID>                                    edmVersions;
 
-    private final HazelcastAclKeyReservationService aclKeyReservations;
-    private final AuthorizationManager              authorizations;
-    private final CassandraEntitySetManager         entitySetManager;
-    private final CassandraTypeManager              entityTypeManager;
-    private final HazelcastSchemaManager            schemaManager;
+    private final IMap<UUID, PropertyType>                              propertyTypes;
+    private final IMap<UUID, ComplexType>                               complexTypes;
+    private final IMap<UUID, EnumType>                                  enumTypes;
+    private final IMap<UUID, EntityType>                                entityTypes;
+    private final IMap<UUID, EntitySet>                                 entitySets;
+    private final IMap<String, UUID>                                    aclKeys;
+    private final IMap<UUID, String>                                    names;
+    private final IMap<UUID, AssociationType>                           associationTypes;
+    private final IMap<UUID, UUID>                                      syncIds;
+    private final IMap<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadata;
 
-    private final String                            keyspace;
-    private final Session                           session;
-    private final HazelcastInstance                 hazelcastInstance;
+    private final HazelcastAclKeyReservationService                     aclKeyReservations;
+    private final AuthorizationManager                                  authorizations;
+    private final CassandraEntitySetManager                             entitySetManager;
+    private final CassandraTypeManager                                  entityTypeManager;
+    private final HazelcastSchemaManager                                schemaManager;
+
+    private final String                                                keyspace;
+    private final Session                                               session;
+    private final HazelcastInstance                                     hazelcastInstance;
 
     @Inject
-    private EventBus                                eventBus;
+    private EventBus                                                    eventBus;
 
     public EdmService(
             String keyspace,
@@ -157,6 +163,7 @@ public class EdmService implements EdmManager {
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
         this.associationTypes = hazelcastInstance.getMap( HazelcastMap.ASSOCIATION_TYPES.name() );
         this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
+        this.entitySetPropertyMetadata = hazelcastInstance.getMap( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name() );
         this.aclKeyReservations = aclKeyReservations;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
@@ -334,7 +341,10 @@ public class EdmService implements EdmManager {
         authorizations.deletePermissions( ImmutableList.of( entitySetId ) );
         entityType.getProperties().stream()
                 .map( propertyTypeId -> ImmutableList.of( entitySetId, propertyTypeId ) )
-                .forEach( authorizations::deletePermissions );
+                .forEach( list -> {
+                    authorizations.deletePermissions( list );
+                    entitySetPropertyMetadata.delete( new EntitySetPropertyKey( list.get( 0 ), list.get( 1 ) ) );
+                } );
 
         Util.deleteSafely( entitySets, entitySetId );
         aclKeyReservations.release( entitySetId );
@@ -360,6 +370,8 @@ public class EdmService implements EdmManager {
         createEntitySet( entitySet );
 
         try {
+            setupDefaultEntitySetPropertyMetadata( entitySet.getId(), entitySet.getEntityTypeId() );
+
             authorizations.addPermission( ImmutableList.of( entitySet.getId() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
@@ -389,6 +401,18 @@ public class EdmService implements EdmManager {
             aclKeyReservations.release( entitySet.getId() );
             throw new IllegalStateException( "Unable to create entity set: " + entitySet.getId() );
         }
+    }
+
+    private void setupDefaultEntitySetPropertyMetadata( UUID entitySetId, UUID entityTypeId ) {
+        getEntityType( entityTypeId ).getProperties().forEach( propertyTypeId -> {
+            EntitySetPropertyKey key = new EntitySetPropertyKey( entitySetId, propertyTypeId );
+            PropertyType property = getPropertyType( propertyTypeId );
+            EntitySetPropertyMetadata metadata = new EntitySetPropertyMetadata(
+                    property.getTitle(),
+                    property.getDescription(),
+                    true );
+            entitySetPropertyMetadata.put( key, metadata );
+        } );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -602,6 +626,8 @@ public class EdmService implements EdmManager {
 
             for ( EntitySet entitySet : entitySetManager.getAllEntitySetsForType( id ) ) {
                 UUID esId = entitySet.getId();
+                Map<UUID, PropertyType> propertyTypes = propertyTypeIds.stream().collect( Collectors.toMap(
+                        propertyTypeId -> propertyTypeId, propertyTypeId -> getPropertyType( propertyTypeId ) ) );
                 Iterable<Principal> owners = authorizations.getSecurableObjectOwners( Arrays.asList( esId ) );
                 for ( Principal owner : owners ) {
                     propertyTypeIds.stream()
@@ -613,6 +639,14 @@ public class EdmService implements EdmManager {
                                         EnumSet.allOf( Permission.class ) );
                                 authorizations.createEmptyAcl( aclKey,
                                         SecurableObjectType.PropertyTypeInEntitySet );
+
+                                PropertyType pt = propertyTypes.get( aclKey.get( 1 ) );
+                                EntitySetPropertyMetadata defaultMetadata = new EntitySetPropertyMetadata(
+                                        pt.getTitle(),
+                                        pt.getDescription(),
+                                        true );
+                                entitySetPropertyMetadata.put(
+                                        new EntitySetPropertyKey( aclKey.get( 0 ), aclKey.get( 1 ) ), defaultMetadata );
                             } );
                 }
             }
@@ -949,7 +983,8 @@ public class EdmService implements EdmManager {
                     Optional.absent(),
                     Optional.absent(),
                     optionalFqnUpdate,
-                    optionalPiiUpdate ) );
+                    optionalPiiUpdate,
+                    Optional.absent() ) );
         }
     }
 
@@ -974,6 +1009,7 @@ public class EdmService implements EdmManager {
                     Optional.absent(),
                     Optional.absent(),
                     optionalFqnUpdate,
+                    Optional.absent(),
                     Optional.absent() ) );
             if ( !et.getProperties().equals( existing.getProperties() ) )
                 addPropertyTypesToEntityType( existing.getId(), et.getProperties() );
@@ -1330,6 +1366,25 @@ public class EdmService implements EdmManager {
             conflictingIdsToFqns.removeAll( conflictingIdsViewed );
         }
         return Lists.newArrayList( result, conflicts );
+    }
+
+    @Override
+    public Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata( UUID entitySetId ) {
+        EntitySet entitySet = getEntitySet( entitySetId );
+        return getEntityType( entitySet.getEntityTypeId() ).getProperties().stream()
+                .collect( Collectors.toMap( propertyTypeId -> propertyTypeId,
+                        propertyTypeId -> getEntitySetPropertyMetadata( entitySetId, propertyTypeId ) ) );
+    }
+
+    @Override
+    public EntitySetPropertyMetadata getEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId ) {
+        return entitySetPropertyMetadata.get( new EntitySetPropertyKey( entitySetId, propertyTypeId ) );
+    }
+
+    @Override
+    public void updateEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId, MetadataUpdate update ) {
+        EntitySetPropertyKey key = new EntitySetPropertyKey( entitySetId, propertyTypeId );
+        entitySetPropertyMetadata.executeOnKey( key, new UpdateEntitySetPropertyMetadataProcessor( update ) );
     }
 
 }

@@ -19,10 +19,7 @@
 
 package com.dataloom.hazelcast.pods;
 
-import com.dataloom.auditing.AuditMetric;
-import com.dataloom.auditing.mapstores.LeaderboardMapstore;
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.AclKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
@@ -41,11 +38,14 @@ import com.dataloom.edm.mapstores.AssociationTypeMapstore;
 import com.dataloom.edm.mapstores.ComplexTypeMapstore;
 import com.dataloom.edm.mapstores.EdmVersionMapstore;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
+import com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.EnumTypesMapstore;
 import com.dataloom.edm.mapstores.NamesMapstore;
 import com.dataloom.edm.mapstores.PropertyTypeMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
+import com.dataloom.edm.set.EntitySetPropertyKey;
+import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
@@ -111,18 +111,18 @@ public class MapstoresPod {
     CassandraConfiguration cc;
 
     @Bean
-    public SelfRegisteringMapStore<EdgeKey,LoomEdge> edgesMapstore() {
+    public SelfRegisteringMapStore<EdgeKey, LoomEdge> edgesMapstore() {
         return new EdgeMapstore( session );
     }
-//    @Bean
-//    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
-//        return new EdgesMapstore( session );
-//    }
+    //    @Bean
+    //    public SelfRegisteringMapStore<UUID, Neighborhood> edgesMapstore() {
+    //        return new EdgesMapstore( session );
+    //    }
 
-//    @Bean
-//    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
-//        return new BackedgesMapstore( session );
-//    }
+    //    @Bean
+    //    public SelfRegisteringMapStore<UUID, Neighborhood> backedgesMapstore() {
+    //        return new BackedgesMapstore( session );
+    //    }
 
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
@@ -192,11 +192,6 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<AceKey, Status> requestMapstore() {
         return new RequestMapstore( session );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<AclKey, AuditMetric> auditMetricsMapstore() {
-        return new LeaderboardMapstore( cc.getKeyspace(), session );
     }
 
     @Bean
@@ -309,6 +304,11 @@ public class MapstoresPod {
                 session,
                 propertyTypeMapstore(),
                 mapper );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadataMapstore() {
+        return new EntitySetPropertyMetadataMapstore( session );
     }
 
     @Bean

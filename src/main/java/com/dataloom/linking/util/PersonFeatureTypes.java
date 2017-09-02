@@ -1,0 +1,43 @@
+package com.dataloom.linking.util;
+
+public enum PersonFeatureTypes {
+    
+    BIAS,
+    
+    FIRST_NAME_STRING,
+    FIRST_NAME_METAPHONE,
+    FIRST_NAME_PRESENCE,
+    
+    MIDDLE_NAME_STRING,
+    MIDDLE_NAME_METAPHONE,
+    MIDDLE_NAME_PRESENCE,
+    
+    LAST_NAME_STRING,
+    LAST_NAME_METAPHONE,
+    LAST_NAME_PRESENCE,
+    
+    SEX_STRING,
+    SEX_PRESENCE,
+    
+    RACE_STRING,
+    RACE_PRESENCE,
+    
+    ETHNICITY_STRING,
+    ETHNICITY_PRESENCE,
+    
+    DOB_STRING,
+    DOB_PRESENCE,
+    
+    IDENTIFICATION_STRING,
+    IDENTIFICATION_PRESENCE,
+    
+    SSN_STRING,
+    SSN_PRESENCE,
+    
+    AGE_STRING,
+    AGE_PRESENCE,
+    
+    XREF_STRING,
+    XREF_PRESENCE
+
+}

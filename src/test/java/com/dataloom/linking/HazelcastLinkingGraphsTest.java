@@ -19,50 +19,45 @@
 
 package com.dataloom.linking;
 
+import com.dataloom.authorization.HzAuthzTest;
+import com.dataloom.clustering.DistributedClusterer;
+import com.dataloom.data.EntityKey;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.streams.StreamUtil;
+import com.hazelcast.core.IMap;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.clustering.ClusteringPartitioner;
-import com.dataloom.data.EntityKey;
-import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.streams.StreamUtil;
-
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastLinkingGraphsTest extends HzAuthzTest {
-    private static final Random                               r       = new Random();
-    protected static final HazelcastLinkingGraphs             graphs;
-    protected static final CassandraLinkingGraphsQueryService cgqs;
-    protected static final ClusteringPartitioner              partitioner;
-    protected static final LinkingVerticesMapstore            lvm;
-    protected static final SortedCassandraLinkingEdgeBuffer   buffer;
-    protected static final UUID                               graphId = UUID.randomUUID();
-    private static final Logger                               logger  = LoggerFactory
+    protected static final HazelcastLinkingGraphs    graphs;
+    protected static final DistributedClusterer      partitioner;
+    protected static final LinkingVerticesMapstore   lvm;
+    protected static final IMap<LinkingEdge, Double> edges;
+    protected static final UUID   graphId = UUID.randomUUID();
+    private static final   Random r       = new Random();
+    private static final   Logger logger  = LoggerFactory
             .getLogger( HazelcastLinkingGraphsTest.class );
 
     static {
-        cgqs = new CassandraLinkingGraphsQueryService( cc.getKeyspace(), session );
-        graphs = new HazelcastLinkingGraphs( hazelcastInstance, cgqs );
-        partitioner = new ClusteringPartitioner( cc.getKeyspace(), session, cgqs, graphs );
+        graphs = new HazelcastLinkingGraphs( hazelcastInstance );
+        edges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
+        partitioner = new DistributedClusterer( hazelcastInstance );
         lvm = new LinkingVerticesMapstore( session );
-        buffer = new SortedCassandraLinkingEdgeBuffer(
-                cc.getKeyspace(),
-                session,
-                graphId,
-                0.0,
-                0,
-                0 );
     }
 
     @Test
@@ -84,11 +79,16 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
                         .filter( v -> !u.equals( v ) && r.nextBoolean() && r.nextBoolean() && r.nextBoolean()
                                 && r.nextBoolean() )
                         .map( v -> new LinkingEdge( u, v ) ) )
-                .map( edge -> new WeightedLinkingEdge( r.nextDouble(), edge ) )
-                .forEach( buffer::addEdgeIfNotExists );
-        
-        buffer.waitForPendingOperations();
-        partitioner.cluster( graphId, 2 );
+                .forEach( edge -> edges.set( edge, r.nextDouble() ) );
+        List<Entry<LinkingEdge, Double>> sortedEdges = edges.entrySet()
+                .stream()
+                .sorted( Comparator.comparing( Entry::getValue ) )
+                .collect( Collectors.toList() );
+
+        partitioner.cluster( graphId,
+                new WeightedLinkingEdge( sortedEdges.get( 0 ).getValue(), sortedEdges.get( 0 ).getKey() ),
+                new WeightedLinkingEdge( sortedEdges.get( 1 ).getValue(), sortedEdges.get( 1 ).getKey() )
+        );
 
         StreamUtil.stream( lvm.loadAllKeys() ).map( graphs::getVertex )
                 .peek( v -> Assert.assertTrue( v.getEntityKeys().size() > 0 ) )

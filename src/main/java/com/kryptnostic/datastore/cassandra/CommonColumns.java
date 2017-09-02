@@ -85,6 +85,7 @@ public enum CommonColumns implements ColumnDef {
     PROPERTY_VALUE( DataType.blob() ),
     PROPERTIES( DataType.set( DataType.uuid() ) ),
     SCHEMAS( DataType.set( DataType.text() ) ),
+    SHOW( DataType.cboolean() ),
     SYNCID( DataType.uuid() ),
     SYNCIDS( DataType.list( DataType.uuid() ) ),
     TITLE( DataType.text() ),
@@ -128,8 +129,11 @@ public enum CommonColumns implements ColumnDef {
     NEW_VERTEX_ID( DataType.uuid() ),
     SRC_ENTITY_SET_ID( DataType.uuid() ),
     DST_ENTITY_SET_ID( DataType.uuid() ),
-    EDGE_ENTITY_SET_ID( DataType.uuid() ), PROPERTY_BUFFER( DataType.blob() ), SRC_SYNC_ID( DataType
-            .uuid() ), DST_SYNC_ID(
+    EDGE_ENTITY_SET_ID( DataType.uuid() ),
+    PROPERTY_BUFFER( DataType.blob() ),
+    SRC_SYNC_ID( DataType
+            .uuid() ),
+    DST_SYNC_ID(
             DataType.uuid() );
 
     private transient final DataType type;

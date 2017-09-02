@@ -48,7 +48,7 @@ public class DataGraphService implements DataGraphManager {
     private final ListeningExecutorService executor;
     private final Cache<MultiKey, IncrementableWeightId[]> queryCache = CacheBuilder.newBuilder()
             .maximumSize( 1000 )
-            .expireAfterWrite( 2, TimeUnit.HOURS )
+            .expireAfterWrite( 30, TimeUnit.SECONDS )
             .build();
     private EventBus                 eventBus;
     private LoomGraph                lm;

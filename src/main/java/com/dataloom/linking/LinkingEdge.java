@@ -42,6 +42,14 @@ public class LinkingEdge {
         return src.getGraphId();
     }
 
+    public UUID getSrcId() {
+        return src.getVertexId();
+    }
+
+    public UUID getDstId() {
+        return dst.getVertexId();
+    }
+
     public LinkingVertexKey getSrc() {
         return src;
     }

@@ -19,39 +19,36 @@
 
 package com.dataloom.clustering;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.linking.CassandraLinkingGraphsQueryService;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.SortedCassandraLinkingEdgeBuffer;
 import com.dataloom.linking.WeightedLinkingEdge;
-import com.dataloom.linking.components.Clusterer;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class ClusteringPartitioner implements Clusterer {
-    private static final Logger                      logger           = LoggerFactory
+public class ClusteringPartitioner {
+    private static final Logger logger = LoggerFactory
             .getLogger( ClusteringPartitioner.class );
     private final CassandraLinkingGraphsQueryService cgqs;
     private final HazelcastLinkingGraphs             graphs;
     private final Session                            session;
     private final String                             keyspace;
-    private final double                             defaultThreshold = 0.1D;
+    private final double defaultThreshold = 0.1D;
 
     public ClusteringPartitioner(
             String keyspace,
@@ -90,9 +87,9 @@ public class ClusteringPartitioner implements Clusterer {
         }
 
         LinkingEdge lightestEdge = lightestEdgeAndWeight.getEdge();
-        double lighestWeight = lightestEdgeAndWeight.getWeight();
+        double lightestWeight = lightestEdgeAndWeight.getWeight();
         Stopwatch w = Stopwatch.createUnstarted();
-        while ( lighestWeight < threshold ) {
+        while ( lightestWeight < threshold ) {
             if ( graphs.verticesExists( lightestEdge ) ) {
                 w.start();
                 Map<UUID, Double> srcNeighborWeights = cgqs.getSrcNeighbors( lightestEdge );
@@ -112,23 +109,23 @@ public class ClusteringPartitioner implements Clusterer {
                     Double dstNeighborWeight = dstNeighborWeights.get( neighbor );
                     double minSrc;
                     if ( srcNeighborWeight == null ) {
-                        minSrc = dstNeighborWeight.doubleValue() + lighestWeight;
+                        minSrc = dstNeighborWeight.doubleValue() + lightestWeight;
                     } else if ( dstNeighborWeight == null ) {
                         minSrc = srcNeighborWeight.doubleValue();
                     } else {
                         minSrc = Math
                                 .min( srcNeighborWeight.doubleValue(),
-                                        dstNeighborWeight.doubleValue() + lighestWeight );
+                                        dstNeighborWeight.doubleValue() + lightestWeight );
                     }
 
                     double minDst;
                     if ( srcNeighborWeight == null ) {
                         minDst = dstNeighborWeight.doubleValue();
                     } else if ( dstNeighborWeight == null ) {
-                        minDst = srcNeighborWeight.doubleValue() + lighestWeight;
+                        minDst = srcNeighborWeight.doubleValue() + lightestWeight;
                     } else {
                         minDst = Math
-                                .min( srcNeighborWeight.doubleValue() + lighestWeight,
+                                .min( srcNeighborWeight.doubleValue() + lightestWeight,
                                         dstNeighborWeight.doubleValue() );
                     }
 
@@ -181,7 +178,7 @@ public class ClusteringPartitioner implements Clusterer {
             }
 
             lightestEdge = lightestEdgeAndWeight.getEdge();
-            lighestWeight = lightestEdgeAndWeight.getWeight();
+            lightestWeight = lightestEdgeAndWeight.getWeight();
         }
         logger.info( "Total clustering time was {} ms", cw.elapsed( TimeUnit.MILLISECONDS ) );
     }
