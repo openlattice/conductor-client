@@ -57,6 +57,8 @@ public interface EdmManager {
 
     void deletePropertyType( UUID propertyTypeId );
 
+    void forceDeletePropertyType( UUID propertyTypeId );
+
     Iterable<PropertyType> getPropertyTypesInNamespace( String namespace );
 
     Iterable<PropertyType> getPropertyTypes();
@@ -94,6 +96,8 @@ public interface EdmManager {
     void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+
+    void forceRemovePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds );
 
