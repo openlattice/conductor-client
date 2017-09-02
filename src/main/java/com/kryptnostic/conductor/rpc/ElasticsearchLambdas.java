@@ -178,5 +178,10 @@ public class ElasticsearchLambdas implements Serializable {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .deleteEntityData( entitySetId, syncId, entityId );
     }
+    
+    public static Function<ConductorElasticsearchApi, Boolean> clearAllData() {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .clearAllData();
+    }
 
 }

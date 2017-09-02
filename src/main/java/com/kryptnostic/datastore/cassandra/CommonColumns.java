@@ -52,6 +52,8 @@ public enum CommonColumns implements ColumnDef {
     EDGE_ENTITY_KEY_ID( DataType.uuid() ),
     EDGE_TYPE_ID( DataType.uuid() ),
     EDGE_ENTITYID( DataType.varchar() ),
+    EDM_VERSION( DataType.timeuuid() ),
+    EDM_VERSION_NAME( DataType.text() ),
     ENTITYID( DataType.text() ),
     ENTITY_SET( DataType.text() ),
     ENTITY_SET_ID( DataType.uuid() ),
