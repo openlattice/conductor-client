@@ -49,11 +49,12 @@ public class DistributedClusterer implements Clusterer {
 
         WeightedLinkingEdge[] lightestEdges = weightedEdges.aggregate( new LightestEdgeAggregator(),
                 LinkingPredicates.between( b, t ) );
-        WeightedLinkingEdge lightest = lightestEdges[0];
+        WeightedLinkingEdge lightest = lightestEdges[ 0 ];
+        WeightedLinkingEdge secondLightest = lightestEdges[ 1 ];
 
         while ( lightest.getWeight() < .05 && weightedEdges.size() > 0 ) {
-            double next = weightedEdges.aggregate( new MergingAggregator( lightest ),
-                    LinkingPredicates.getAllEdges( lightest.getEdge() ) );
+            double next = Math.min( weightedEdges.aggregate( new MergingAggregator( lightest ),
+                    LinkingPredicates.getAllEdges( lightest.getEdge() ) ), secondLightest.getWeight() );
 
             if ( next > b && next < t ) {
                 b = next;
@@ -61,8 +62,10 @@ public class DistributedClusterer implements Clusterer {
                 b = t;
                 t = next;
             }
-            lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
+            lightestEdges = weightedEdges.aggregate( new LightestEdgeAggregator(),
                     LinkingPredicates.between( b, t ) );
+            lightest = lightestEdges[ 0 ];
+            secondLightest = lightestEdges[ 1 ];
         }
 
     }

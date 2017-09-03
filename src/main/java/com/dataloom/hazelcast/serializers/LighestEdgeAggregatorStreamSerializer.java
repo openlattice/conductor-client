@@ -21,8 +21,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.linking.LinkingEdge;
-import com.dataloom.linking.WeightedLinkingEdge;
+import com.dataloom.linking.aggregators.LightestEdgeAggregator;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
@@ -33,34 +32,25 @@ import org.springframework.stereotype.Component;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Component
-public class WeightedLinkingEdgeStreamSerializer implements SelfRegisteringStreamSerializer<WeightedLinkingEdge> {
-    @Override public Class<WeightedLinkingEdge> getClazz() {
-        return WeightedLinkingEdge.class;
+public class LightestEdgeAggregatorStreamSerializer implements SelfRegisteringStreamSerializer<LightestEdgeAggregator> {
+    @Override public Class<LightestEdgeAggregator> getClazz() {
+        return LightestEdgeAggregator.class;
     }
 
-    @Override public void write( ObjectDataOutput out, WeightedLinkingEdge object ) throws IOException {
-        serialize( out, object );
+    @Override public void write( ObjectDataOutput out, LightestEdgeAggregator object ) throws IOException {
+        WeightedLinkingEdgesStreamSerializer.serialize( out, object.aggregate() );
+
     }
 
-    @Override public WeightedLinkingEdge read( ObjectDataInput in ) throws IOException {
-        return deserialize( in );
+    @Override public LightestEdgeAggregator read( ObjectDataInput in ) throws IOException {
+        return new LightestEdgeAggregator( WeightedLinkingEdgesStreamSerializer.deserialize( in ) );
     }
 
     @Override public int getTypeId() {
-        return StreamSerializerTypeIds.WEIGHTED_LINKING_EDGE.ordinal();
+        return StreamSerializerTypeIds.LIGHEST_EDGE_AGGREGATOR.ordinal();
     }
 
     @Override public void destroy() {
 
-    }
-
-    public static void serialize( ObjectDataOutput out, WeightedLinkingEdge object ) throws IOException {
-        LinkingEdgeStreamSerializer.serialize( out, object.getEdge() );
-        out.writeDouble( object.getWeight() );
-    }
-
-    public static WeightedLinkingEdge deserialize( ObjectDataInput in ) throws IOException {
-        LinkingEdge edge = LinkingEdgeStreamSerializer.deserialize( in );
-        return new WeightedLinkingEdge( in.readDouble(), edge );
     }
 }

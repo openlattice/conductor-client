@@ -20,24 +20,27 @@
 
 package com.dataloom.linking.aggregators;
 
-import java.util.Map.Entry;
-
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.WeightedLinkingEdge;
-import com.google.common.base.Optional;
 import com.hazelcast.aggregation.Aggregator;
+import java.util.Map.Entry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class LightestEdgeAggregator extends Aggregator<Entry<LinkingEdge, Double>, WeightedLinkingEdge[]> {
-    private static final Logger   logger   = LoggerFactory.getLogger( LightestEdgeAggregator.class );
+    private static final Logger logger = LoggerFactory.getLogger( LightestEdgeAggregator.class );
 
     private WeightedLinkingEdge[] lightest = new WeightedLinkingEdge[] { null, null };
+
+    public LightestEdgeAggregator( WeightedLinkingEdge[] lightest ) {
+        this.lightest = lightest;
+    }
+
+    public LightestEdgeAggregator() {
+    }
 
     @Override
     public void accumulate( Entry<LinkingEdge, Double> input ) {
@@ -60,7 +63,7 @@ public class LightestEdgeAggregator extends Aggregator<Entry<LinkingEdge, Double
             logger.error( "Incompatible aggregator for lightest edge" );
         }
     }
-    
+
     public WeightedLinkingEdge[] getLightestEdges() {
         return lightest;
     }
@@ -71,7 +74,7 @@ public class LightestEdgeAggregator extends Aggregator<Entry<LinkingEdge, Double
     }
 
     private void merge( WeightedLinkingEdge edge ) {
-        if ( edge == null ) return;
+        if ( edge == null ) { return; }
         double weight = edge.getWeight();
         if ( lightest[ 0 ] == null || weight < lightest[ 0 ].getWeight() ) {
             lightest[ 1 ] = lightest[ 0 ];
