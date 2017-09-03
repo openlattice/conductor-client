@@ -42,11 +42,11 @@ import org.slf4j.LoggerFactory;
  */
 public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Double>
         implements HazelcastInstanceAware {
-    private static final Logger logger = LoggerFactory.getLogger( MergingAggregator.class );
+    private static final Logger                 logger        = LoggerFactory.getLogger( MergingAggregator.class );
 
-    private final Map<UUID, Double>   srcNeighborWeights;
-    private final Map<UUID, Double>   dstNeighborWeights;
-    private final WeightedLinkingEdge lightest;
+    private final Map<UUID, Double>             srcNeighborWeights;
+    private final Map<UUID, Double>             dstNeighborWeights;
+    private final WeightedLinkingEdge           lightest;
 
     private transient IMap<LinkingEdge, Double> weightedEdges = null;
     private transient HazelcastLinkingGraphs    graphs        = null;
@@ -70,7 +70,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         LinkingEdge lightestEdge = lightest.getEdge();
 
         if ( !edge.equals( lightestEdge ) ) {
-            double weight = lightest.getWeight();
+            double weight = lightest.getWeight() + 0;
             UUID srcId = lightestEdge.getSrcId();
             UUID dstId = lightestEdge.getDstId();
 
@@ -94,7 +94,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         if ( aggregator instanceof MergingAggregator ) {
             MergingAggregator other = (MergingAggregator) aggregator;
 
-            //TODO: At some point we might want to check and make sure there aren't duplicates.
+            // TODO: At some point we might want to check and make sure there aren't duplicates.
             srcNeighborWeights.putAll( other.srcNeighborWeights );
             dstNeighborWeights.putAll( other.dstNeighborWeights );
 
@@ -103,11 +103,13 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         }
     }
 
-    @Override public Double aggregate() {
+    @Override
+    public Double aggregate() {
+        final LinkingVertexKey vertexKey = graphs.merge( lightest );
         Stream<UUID> neighbors = Stream
                 .concat( srcNeighborWeights.keySet().stream(), dstNeighborWeights.keySet().stream() );
         return neighbors
-                .mapToDouble( this::agg )
+                .mapToDouble( neighbor -> agg( neighbor, vertexKey ) )
                 .min()
                 .getAsDouble();
     }
@@ -130,8 +132,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         return lightest;
     }
 
-    private double agg( UUID neighbor ) {
-        final LinkingVertexKey vertexKey = graphs.merge( lightest );
+    private double agg( UUID neighbor, LinkingVertexKey vertexKey ) {
         final double lightestWeight = lightest.getWeight();
         final UUID graphId = lightest.getEdge().getGraphId();
         Double srcNeighborWeight = srcNeighborWeights.get( neighbor );
@@ -167,18 +168,28 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         return weight;
     }
 
-    @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof MergingAggregator ) ) { return false; }
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( !( o instanceof MergingAggregator ) ) {
+            return false;
+        }
 
         MergingAggregator that = (MergingAggregator) o;
 
-        if ( !srcNeighborWeights.equals( that.srcNeighborWeights ) ) { return false; }
-        if ( !dstNeighborWeights.equals( that.dstNeighborWeights ) ) { return false; }
+        if ( !srcNeighborWeights.equals( that.srcNeighborWeights ) ) {
+            return false;
+        }
+        if ( !dstNeighborWeights.equals( that.dstNeighborWeights ) ) {
+            return false;
+        }
         return lightest.equals( that.lightest );
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int result = srcNeighborWeights.hashCode();
         result = 31 * result + dstNeighborWeights.hashCode();
         result = 31 * result + lightest.hashCode();
