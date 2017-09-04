@@ -55,7 +55,7 @@ public class LightestEdgeAggregator
     public void combine( Aggregator aggregator ) {
         if ( aggregator instanceof LightestEdgeAggregator ) {
             LightestEdgeAggregator other = (LightestEdgeAggregator) aggregator;
-            if ( lightest == null && other.lightest != null && other.lightest.getWeight() < lightest.getWeight() ) {
+            if ( lightest == null || other.lightest.getWeight() < lightest.getWeight() ) {
                 lightest = other.lightest;
             }
         } else {
