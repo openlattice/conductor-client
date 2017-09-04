@@ -61,7 +61,7 @@ public class DistributedClusterer implements Clusterer {
 
             while ( ( lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
                     LinkingPredicates.minimax( graphId, minimax ) ) ) == null && !minimaxs.isEmpty() ) {
-                minimax = minimaxs.poll()
+                minimax = minimaxs.poll();
             }
         }
 
