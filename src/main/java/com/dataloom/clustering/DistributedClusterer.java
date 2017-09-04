@@ -36,7 +36,7 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DistributedClusterer implements Clusterer {
-
+    private static final double threshold = .05;
     private final IMap<LinkingEdge, Double> weightedEdges;
 
     public DistributedClusterer( HazelcastInstance hazelcastInstance ) {
@@ -47,20 +47,21 @@ public class DistributedClusterer implements Clusterer {
     @Override
     public void cluster( UUID graphId, double minimax ) {
         PriorityQueue<Double> minimaxs = new PriorityQueue<>();
+        minimaxs.add( threshold );
+
         WeightedLinkingEdge lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
                 LinkingPredicates.minimax( graphId, minimax ) );
 
-        while ( lightest.getWeight() < .05 && weightedEdges.size() > 0 ) {
+        while ( lightest!=null && lightest.getWeight() < threshold && weightedEdges.size() > 0 ) {
             Double candidate = weightedEdges.aggregate( new MergingAggregator( lightest ),
                     LinkingPredicates.getAllEdges( lightest.getEdge() ) );
-
             if ( candidate != null ) {
                 minimaxs.add( candidate );
             }
 
             while ( ( lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
-                    LinkingPredicates.minimax( graphId, minimax ) ) ) == null ) {
-                minimax = minimaxs.poll();
+                    LinkingPredicates.minimax( graphId, minimax ) ) ) == null && !minimaxs.isEmpty() ) {
+                minimax = minimaxs.poll()
             }
         }
 
