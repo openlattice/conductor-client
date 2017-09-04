@@ -42,11 +42,11 @@ import org.slf4j.LoggerFactory;
  */
 public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Double>
         implements HazelcastInstanceAware {
-    private static final Logger                 logger        = LoggerFactory.getLogger( MergingAggregator.class );
+    private static final Logger logger = LoggerFactory.getLogger( MergingAggregator.class );
 
-    private final Map<UUID, Double>             srcNeighborWeights;
-    private final Map<UUID, Double>             dstNeighborWeights;
-    private final WeightedLinkingEdge           lightest;
+    private final Map<UUID, Double>   srcNeighborWeights;
+    private final Map<UUID, Double>   dstNeighborWeights;
+    private final WeightedLinkingEdge lightest;
 
     private transient IMap<LinkingEdge, Double> weightedEdges = null;
     private transient HazelcastLinkingGraphs    graphs        = null;
@@ -106,8 +106,13 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
     @Override
     public Double aggregate() {
         final LinkingVertexKey vertexKey = graphs.merge( lightest );
+        weightedEdges.delete( lightest );
+        if ( srcNeighborWeights.isEmpty() && dstNeighborWeights.isEmpty() ) {
+            return null;
+        }
         Stream<UUID> neighbors = Stream
                 .concat( srcNeighborWeights.keySet().stream(), dstNeighborWeights.keySet().stream() );
+
         return neighbors
                 .mapToDouble( neighbor -> agg( neighbor, vertexKey ) )
                 .min()

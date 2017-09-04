@@ -51,8 +51,12 @@ public class DistributedClusterer implements Clusterer {
                 LinkingPredicates.minimax( graphId, minimax ) );
 
         while ( lightest.getWeight() < .05 && weightedEdges.size() > 0 ) {
-            minimaxs.add( weightedEdges.aggregate( new MergingAggregator( lightest ),
-                    LinkingPredicates.getAllEdges( lightest.getEdge() ) ) );
+            Double candidate = weightedEdges.aggregate( new MergingAggregator( lightest ),
+                    LinkingPredicates.getAllEdges( lightest.getEdge() ) );
+
+            if ( candidate != null ) {
+                minimaxs.add( candidate );
+            }
 
             while ( ( lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
                     LinkingPredicates.minimax( graphId, minimax ) ) ) == null ) {
