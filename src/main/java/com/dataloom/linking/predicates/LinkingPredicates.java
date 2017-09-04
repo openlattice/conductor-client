@@ -33,7 +33,7 @@ public final class LinkingPredicates {
     }
 
     public static Predicate minimax( UUID graphId , double minimax ) {
-        Predicates.and( graphId( graphId ), Predicates.lessEqual( "this", minimax ) );
+        return Predicates.and( graphId( graphId ), Predicates.lessEqual( "this", minimax ) );
     }
 
     public static Predicate getAllEdges( LinkingEdge edge ) {
