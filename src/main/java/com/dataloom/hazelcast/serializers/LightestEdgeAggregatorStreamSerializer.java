@@ -38,12 +38,12 @@ public class LightestEdgeAggregatorStreamSerializer implements SelfRegisteringSt
     }
 
     @Override public void write( ObjectDataOutput out, LightestEdgeAggregator object ) throws IOException {
-        WeightedLinkingEdgesStreamSerializer.serialize( out, object.aggregate() );
+        WeightedLinkingEdgeStreamSerializer.serialize( out, object.aggregate() );
 
     }
 
     @Override public LightestEdgeAggregator read( ObjectDataInput in ) throws IOException {
-        return new LightestEdgeAggregator( WeightedLinkingEdgesStreamSerializer.deserialize( in ) );
+        return new LightestEdgeAggregator( WeightedLinkingEdgeStreamSerializer.deserialize( in ) );
     }
 
     @Override public int getTypeId() {

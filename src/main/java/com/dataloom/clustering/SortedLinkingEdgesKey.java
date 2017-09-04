@@ -20,22 +20,17 @@
 
 package com.dataloom.clustering;
 
-import com.dataloom.linking.WeightedLinkingEdge;
-import com.hazelcast.core.IMap;
 import java.util.UUID;
-import java.util.concurrent.PriorityBlockingQueue;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class HazelcastSortedLinkingEdgeBuffer {
-    private final PriorityBlockingQueue<WeightedLinkingEdge> pq;
+public class SortedLinkingEdgesKey {
+    private final UUID graphId;
+    private final int partitionId;
 
-    public HazelcastSortedLinkingEdgeBuffer() {
-        this.pq = new PriorityBlockingQueue<>(  );
-    }
-
-    public void addEdge( WeightedLinkingEdge edge ) {
-        pq.add( edge );
+    public SortedLinkingEdgesKey( UUID graphId, int partitionId ) {
+        this.graphId = graphId;
+        this.partitionId = partitionId;
     }
 }

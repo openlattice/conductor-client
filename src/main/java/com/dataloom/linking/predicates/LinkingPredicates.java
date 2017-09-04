@@ -23,12 +23,17 @@ package com.dataloom.linking.predicates;
 import com.dataloom.linking.LinkingEdge;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
+import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public final class LinkingPredicates {
     private LinkingPredicates() {
+    }
+
+    public static Predicate minimax( UUID graphId , double minimax ) {
+        Predicates.and( graphId( graphId ), Predicates.lessEqual( "this", minimax ) );
     }
 
     public static Predicate getAllEdges( LinkingEdge edge ) {
@@ -38,6 +43,10 @@ public final class LinkingPredicates {
                         Predicates.in( "__key#srcId", edge.getSrcId(), edge.getDstId() ),
                         Predicates.in( "__key#dstId", edge.getSrcId(), edge.getDstId() ) )
         );
+    }
+
+    public static Predicate graphId( UUID graphId ) {
+        return Predicates.equal( "__key#graphId", graphId );
     }
 
     public static Predicate between( double bottom, double top ) {
