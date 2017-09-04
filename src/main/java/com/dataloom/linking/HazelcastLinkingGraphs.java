@@ -22,7 +22,9 @@ package com.dataloom.linking;
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
+import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicates;
@@ -42,12 +44,16 @@ public class HazelcastLinkingGraphs {
     private static final UUID DEFAULT_ID = new UUID( 0, 0 );
     private final IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
     private final IMap<LinkingEntityKey, UUID>          vertices;
-
+    private final IMap<LinkingEdge, Double> weightedEdges;
 
     public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
         this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
         this.vertices = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_VERTICES.name() );
+        this.weightedEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
+    }
 
+    public ListenableFuture setEdgeWeightAsync( LinkingEdge edge, double weight  ){
+        return new ListenableHazelcastFuture(  weightedEdges.setAsync( edge, weight ) );
     }
 
     public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ) {
@@ -104,5 +110,5 @@ public class HazelcastLinkingGraphs {
     public boolean verticesExists( LinkingEdge edge ) {
         return linkingVertices.containsKey( edge.getSrc() ) && linkingVertices.containsKey( edge.getDst() );
     }
-    
+
 }
