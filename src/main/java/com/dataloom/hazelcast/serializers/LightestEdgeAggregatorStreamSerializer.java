@@ -21,6 +21,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.dataloom.linking.WeightedLinkingEdge;
 import com.dataloom.linking.aggregators.LightestEdgeAggregator;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -38,10 +39,11 @@ public class LightestEdgeAggregatorStreamSerializer implements SelfRegisteringSt
     }
 
     @Override public void write( ObjectDataOutput out, LightestEdgeAggregator object ) throws IOException {
-        if ( object == null ) {
+        WeightedLinkingEdge edge = object.aggregate();
+        if ( edge == null ) {
             out.writeBoolean( false );
         } else {
-            WeightedLinkingEdgeStreamSerializer.serialize( out, object.aggregate() );
+            WeightedLinkingEdgeStreamSerializer.serialize( out, edge );
         }
     }
 
