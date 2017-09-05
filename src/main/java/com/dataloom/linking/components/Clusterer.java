@@ -11,5 +11,5 @@ import java.util.UUID;
  */
 public interface Clusterer {
 
-    public void cluster( UUID graphId, WeightedLinkingEdge bottom, WeightedLinkingEdge top );
+    public void cluster( UUID graphId, double minimax );
 }

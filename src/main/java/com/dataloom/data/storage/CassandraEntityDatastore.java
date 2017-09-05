@@ -461,6 +461,20 @@ public class CassandraEntityDatastore implements EntityDatastore {
         // .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
+    @Override
+    public SetMultimap<UUID, ByteBuffer> loadEntities(
+            UUID entitySetId,
+            Set<UUID> ids,
+            Set<UUID> authorizedProperties ) {
+
+        return
+                data.aggregate( new EntityAggregator(),
+                        EntitySets.getEntity(
+                                ids.toArray( new UUID[ 0 ] ),
+                                authorizedProperties ) )
+                        .getByteBuffers();
+    }
+
     /*
      * Warning: this loads ALL the properties of the entity, authorized or not.
      */

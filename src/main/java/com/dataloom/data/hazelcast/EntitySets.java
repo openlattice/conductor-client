@@ -36,7 +36,6 @@ import java.util.UUID;
  */
 public final class EntitySets {
 
-
     private EntitySets() {
     }
 
@@ -64,6 +63,12 @@ public final class EntitySets {
 
     public static Predicate getEntity( UUID id ) {
         return Predicates.equal( "__key#id", id );
+    }
+
+    public static Predicate getEntity( UUID[] ids, Set<UUID> propertyTypeIds ) {
+        return Predicates.and(
+                getEntities( ids ),
+                Predicates.in( "__key#propertyTypeId", propertyTypeIds.toArray( new UUID[] {} ) ) );
     }
 
     public static Predicate getEntity( UUID entitySetId, UUID syncId, String entityId, Set<UUID> propertyTypeIds ) {

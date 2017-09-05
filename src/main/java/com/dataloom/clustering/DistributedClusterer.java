@@ -29,39 +29,41 @@ import com.dataloom.linking.components.Clusterer;
 import com.dataloom.linking.predicates.LinkingPredicates;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import java.util.PriorityQueue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DistributedClusterer implements Clusterer {
-
+    private static final double threshold = .5;
     private final IMap<LinkingEdge, Double> weightedEdges;
 
     public DistributedClusterer( HazelcastInstance hazelcastInstance ) {
         this.weightedEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
+
     }
 
     @Override
-    public void cluster( UUID graphId, WeightedLinkingEdge bottom, WeightedLinkingEdge top ) {
-        double b = bottom == null ? 0.0 : bottom.getWeight();
-        double t = top.getWeight();
+    public void cluster( UUID graphId, double minimax ) {
+        ConcurrentSkipListSet<Double> minimaxs = new ConcurrentSkipListSet<>();
+        minimaxs.add( threshold );
 
         WeightedLinkingEdge lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
-                LinkingPredicates.between( b, t ) );
+                LinkingPredicates.minimax( graphId, minimax ) );
 
-        while ( lightest.getWeight() < .05 && weightedEdges.size() > 0 ) {
-            double next = weightedEdges.aggregate( new MergingAggregator( lightest ),
+        while ( lightest!=null && lightest.getWeight() < threshold && weightedEdges.size() > 0 ) {
+            Double candidate = weightedEdges.aggregate( new MergingAggregator( lightest ),
                     LinkingPredicates.getAllEdges( lightest.getEdge() ) );
-
-            if ( next > b && next < t ) {
-                b = next;
-            } else if ( next > t ) {
-                b = t;
-                t = next;
+            if ( candidate != null ) {
+                minimaxs.add( candidate );
             }
-            lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
-                    LinkingPredicates.between( b, t ) );
+
+            while ( ( lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
+                    LinkingPredicates.minimax( graphId, minimax ) ) ) == null && !minimaxs.isEmpty() ) {
+                minimax = minimaxs.pollFirst();
+            }
         }
 
     }

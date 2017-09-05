@@ -30,15 +30,23 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class LightestEdgeAggregator extends Aggregator<Entry<LinkingEdge, Double>, WeightedLinkingEdge> {
+public class LightestEdgeAggregator
+        extends Aggregator<Entry<LinkingEdge, Double>, WeightedLinkingEdge> {
     private static final Logger logger = LoggerFactory.getLogger( LightestEdgeAggregator.class );
 
     private WeightedLinkingEdge lightest = null;
 
+    public LightestEdgeAggregator( WeightedLinkingEdge lightest ) {
+        this.lightest = lightest;
+    }
+
+    public LightestEdgeAggregator() {
+    }
+
     @Override
     public void accumulate( Entry<LinkingEdge, Double> input ) {
-        double weight = input.getValue().doubleValue();
-        if ( lightest == null || weight > lightest.getWeight() ) {
+        double weight = input.getValue();
+        if ( lightest == null || weight < lightest.getWeight() ) {
             lightest = new WeightedLinkingEdge( weight, input.getKey() );
         }
     }
@@ -47,10 +55,7 @@ public class LightestEdgeAggregator extends Aggregator<Entry<LinkingEdge, Double
     public void combine( Aggregator aggregator ) {
         if ( aggregator instanceof LightestEdgeAggregator ) {
             LightestEdgeAggregator other = (LightestEdgeAggregator) aggregator;
-            if ( lightest == null && other.lightest != null ) {
-                lightest = other.lightest;
-            } else if ( lightest != null && other.lightest != null && lightest.getWeight() > other.lightest
-                    .getWeight() ) {
+            if ( lightest == null || ( other.lightest != null && other.lightest.getWeight() < lightest.getWeight() ) ) {
                 lightest = other.lightest;
             }
         } else {
@@ -58,7 +63,8 @@ public class LightestEdgeAggregator extends Aggregator<Entry<LinkingEdge, Double
         }
     }
 
-    @Override public WeightedLinkingEdge aggregate() {
+    @Override
+    public WeightedLinkingEdge aggregate() {
         return lightest;
     }
 
