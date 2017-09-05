@@ -90,6 +90,10 @@ public class HazelcastLinkingGraphs {
         /*
          * As long as min edge is chosen for merging it is appropriate to use the edge weight as new diameter.
          */
+        
+        deleteVertex( edge.getSrc() );
+        deleteVertex( edge.getDst() );
+        
         return HazelcastUtils.insertIntoUnusedKey( linkingVertices,
                 new LinkingVertex( weightedEdge.getWeight(), entityKeys ),
                 () -> new LinkingVertexKey( edge.getGraphId(), UUID.randomUUID() ) );
