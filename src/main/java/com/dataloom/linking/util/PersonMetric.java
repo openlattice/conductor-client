@@ -63,33 +63,11 @@ public enum PersonMetric {
     ETHNICITY_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasEthnicity( e, map ) ) ),
     ETHNICITY_RHS_PRESENCE( rhs( ( e, map ) -> PersonProperties.getHasEthnicity( e, map ) ) );
 
-    private static final PersonMetric[]  metrics            = PersonMetric.values();
-    private static final StructType      schema;
-    private static final DoubleMetaphone doubleMetaphone    = new DoubleMetaphone();
+    private static final PersonMetric[]    metrics            = PersonMetric.values();
+    private static final Set<PersonMetric> metricsList        = Sets.newHashSet( PersonMetric.values() );
+    private static final StructType        schema;
+    private static final DoubleMetaphone   doubleMetaphone    = new DoubleMetaphone();
 
-    private static FullQualifiedName     FIRST_NAME_FQN     = new FullQualifiedName( "nc.PersonGivenName" );
-    private static FullQualifiedName     MIDDLE_NAME_FQN    = new FullQualifiedName( "nc.PersonMiddleName" );
-    private static FullQualifiedName     LAST_NAME_FQN      = new FullQualifiedName( "nc.PersonSurName" );
-    private static FullQualifiedName     SEX_FQN            = new FullQualifiedName( "nc.PersonSex" );
-    private static FullQualifiedName     RACE_FQN           = new FullQualifiedName( "nc.PersonRace" );
-    private static FullQualifiedName     ETHNICITY_FQN      = new FullQualifiedName( "nc.PersonEthnicity" );
-    private static FullQualifiedName     DOB_FQN            = new FullQualifiedName( "nc.PersonBirthDate" );
-    private static FullQualifiedName     IDENTIFICATION_FQN = new FullQualifiedName( "nc.SubjectIdentification" );
-    private static FullQualifiedName     SSN_FQN            = new FullQualifiedName( "nc.ssn" );
-    private static FullQualifiedName     AGE_FQN            = new FullQualifiedName( "person.age" );
-    private static FullQualifiedName     XREF_FQN           = new FullQualifiedName( "justice.xref" );
-
-    private static String                FIRST_NAME_ID;
-    private static String                MIDDLE_NAME_ID;
-    private static String                LAST_NAME_ID;
-    private static String                SEX_ID;
-    private static String                RACE_ID;
-    private static String                ETHNICITY_ID;
-    private static String                DOB_ID;
-    private static String                IDENTIFICATION_ID;
-    private static String                SSN_ID;
-    private static String                AGE_ID;
-    private static String                XREF_ID;
 
     static {
         List<StructField> fields = new ArrayList<>();
@@ -106,20 +84,6 @@ public enum PersonMetric {
         this.metric = metric;
     }
 
-    private static void initializeIds( Map<FullQualifiedName, String> fqnToIdMap ) {
-        FIRST_NAME_ID = fqnToIdMap.get( FIRST_NAME_FQN );
-        MIDDLE_NAME_ID = fqnToIdMap.get( MIDDLE_NAME_FQN );
-        LAST_NAME_ID = fqnToIdMap.get( LAST_NAME_FQN );
-        SEX_ID = fqnToIdMap.get( SEX_FQN );
-        RACE_ID = fqnToIdMap.get( RACE_FQN );
-        ETHNICITY_ID = fqnToIdMap.get( ETHNICITY_FQN );
-        DOB_ID = fqnToIdMap.get( DOB_FQN );
-        IDENTIFICATION_ID = fqnToIdMap.get( IDENTIFICATION_FQN );
-        SSN_ID = fqnToIdMap.get( SSN_FQN );
-        AGE_ID = fqnToIdMap.get( AGE_FQN );
-        XREF_ID = fqnToIdMap.get( XREF_FQN );
-    }
-
     private double extract( Entity lhs, Entity rhs, Map<FullQualifiedName, String> fqnToIdMap ) {
         return this.metric.extract( lhs, rhs, fqnToIdMap );
     }
@@ -130,17 +94,17 @@ public enum PersonMetric {
 
     public static Double[] distance( Entity lhs, Entity rhs, Map<FullQualifiedName, String> fqnToIdMap ) {
         Double[] result = new Double[ metrics.length ];
-        for ( int i = 0; i < result.length; ++i ) {
-            result[ i ] = metrics[ i ].extract( lhs, rhs, fqnToIdMap );
-        }
+        metricsList.parallelStream().forEach( m -> {
+            result[ m.ordinal() ] = m.extract( lhs, rhs, fqnToIdMap );
+        });
         return result;
     }
 
     public static double[] pDistance( Entity lhs, Entity rhs, Map<FullQualifiedName, String> fqnToIdMap ) {
         double[] result = new double[ metrics.length ];
-        for ( int i = 0; i < result.length; ++i ) {
-            result[ i ] = metrics[ i ].extract( lhs, rhs, fqnToIdMap );
-        }
+        metricsList.parallelStream().forEach( m -> {
+            result[ m.ordinal() ] = m.extract( lhs, rhs, fqnToIdMap );
+        });
         return result;
     }
 
@@ -221,50 +185,6 @@ public enum PersonMetric {
         }
 
         return StringUtils.getJaroWinklerDistance( lhs, rhs );
-    }
-
-    public static Set<String> getFirstName( Entity entity ) {
-        return getValuesAsSet( entity, FIRST_NAME_ID );
-    }
-
-    public static Set<String> getMiddleName( Entity entity ) {
-        return getValuesAsSet( entity, MIDDLE_NAME_ID );
-    }
-
-    public static Set<String> getLastName( Entity entity ) {
-        return getValuesAsSet( entity, LAST_NAME_ID );
-    }
-
-    public static Set<String> getSex( Entity entity ) {
-        return getValuesAsSet( entity, SEX_ID );
-    }
-
-    public static Set<String> getRace( Entity entity ) {
-        return getValuesAsSet( entity, RACE_ID );
-    }
-
-    public static Set<String> getEthnicity( Entity entity ) {
-        return getValuesAsSet( entity, ETHNICITY_ID );
-    }
-
-    public static Set<String> getDob( Entity entity ) {
-        return getValuesAsSet( entity, DOB_ID );
-    }
-
-    public static Set<String> getIdentification( Entity entity ) {
-        return getValuesAsSet( entity, IDENTIFICATION_ID );
-    }
-
-    public static Set<String> getSsn( Entity entity ) {
-        return getValuesAsSet( entity, SSN_ID );
-    }
-
-    public static Set<String> getAge( Entity entity ) {
-        return getValuesAsSet( entity, AGE_ID );
-    }
-
-    public static Set<String> getXref( Entity entity ) {
-        return getValuesAsSet( entity, XREF_ID );
     }
 
 }
