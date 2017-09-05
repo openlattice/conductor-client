@@ -21,6 +21,26 @@ package com.dataloom.data.storage;
 
 import static com.google.common.util.concurrent.Futures.transformAsync;
 
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.inject.Inject;
+
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityDatastore;
@@ -51,6 +71,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
@@ -63,24 +84,8 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.inject.Inject;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class CassandraEntityDatastore implements EntityDatastore {
     private static final Logger logger = LoggerFactory
@@ -462,17 +467,28 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
-    public SetMultimap<UUID, ByteBuffer> loadEntities(
-            UUID entitySetId,
-            Set<UUID> ids,
-            Set<UUID> authorizedProperties ) {
+    public SetMultimap<UUID, Object> loadEntities(
+            Map<UUID, Set<UUID>> authorizedPropertyTypesForEntity,
+            Map<UUID, PropertyType> propertyTypesById,
+            Set<UUID> propertyTypesToPopulate ) {
 
-        return
-                data.aggregate( new EntityAggregator(),
-                        EntitySets.getEntity(
-                                ids.toArray( new UUID[ 0 ] ),
-                                authorizedProperties ) )
-                        .getByteBuffers();
+        Predicate entitiesFilter = EntitySets
+                .getEntities( authorizedPropertyTypesForEntity.keySet().toArray( new UUID[ 0 ] ) );
+        Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
+
+        SetMultimap<UUID, ByteBuffer> mergedEntity = HashMultimap.create();
+
+        entities.entrySet().forEach( entityDetails -> {
+            Set<UUID> authorizedPropertyTypes = authorizedPropertyTypesForEntity.get( entityDetails.getKey() );
+            mergedEntity.putAll(
+                    Multimaps.filterKeys( entityDetails.getValue(), key -> authorizedPropertyTypes.contains( key ) ) );
+        } );
+
+        return RowAdapters.entityIndexedById( UUID.randomUUID().toString(),
+                mergedEntity,
+                propertyTypesById,
+                propertyTypesToPopulate,
+                mapper );
     }
 
     /*
