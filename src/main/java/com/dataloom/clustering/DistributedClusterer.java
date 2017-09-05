@@ -31,12 +31,13 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import java.util.PriorityQueue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DistributedClusterer implements Clusterer {
-    private static final double threshold = .05;
+    private static final double threshold = .5;
     private final IMap<LinkingEdge, Double> weightedEdges;
 
     public DistributedClusterer( HazelcastInstance hazelcastInstance ) {
@@ -46,7 +47,7 @@ public class DistributedClusterer implements Clusterer {
 
     @Override
     public void cluster( UUID graphId, double minimax ) {
-        PriorityQueue<Double> minimaxs = new PriorityQueue<>();
+        ConcurrentSkipListSet<Double> minimaxs = new ConcurrentSkipListSet<>();
         minimaxs.add( threshold );
 
         WeightedLinkingEdge lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
@@ -61,7 +62,7 @@ public class DistributedClusterer implements Clusterer {
 
             while ( ( lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
                     LinkingPredicates.minimax( graphId, minimax ) ) ) == null && !minimaxs.isEmpty() ) {
-                minimax = minimaxs.poll();
+                minimax = minimaxs.pollFirst();
             }
         }
 

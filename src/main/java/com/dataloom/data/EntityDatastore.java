@@ -67,6 +67,11 @@ public interface EntityDatastore {
             UUID syncId,
             Set<UUID> properties );
 
+    SetMultimap<UUID, ByteBuffer> loadEntities(
+            UUID entitySetId,
+            Set<UUID> ids,
+            Set<UUID> authorizedProperties );
+
     /**
      * Asynchronously load an entity with all properties
      */

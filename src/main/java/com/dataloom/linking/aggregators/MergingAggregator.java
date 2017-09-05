@@ -70,7 +70,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         LinkingEdge lightestEdge = lightest.getEdge();
 
         if ( !edge.equals( lightestEdge ) ) {
-            double weight = lightest.getWeight() + 0;
+            double weight = input.getValue();
             UUID srcId = lightestEdge.getSrcId();
             UUID dstId = lightestEdge.getDstId();
 
@@ -106,6 +106,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
     @Override
     public Double aggregate() {
         final LinkingVertexKey vertexKey = graphs.merge( lightest );
+        logger.info( "Merging: {}", lightest.getWeight() );
         weightedEdges.delete( lightest );
         if ( srcNeighborWeights.isEmpty() && dstNeighborWeights.isEmpty() ) {
             return null;

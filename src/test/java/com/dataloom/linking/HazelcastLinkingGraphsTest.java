@@ -62,7 +62,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
 
     @Test
     public void testClustering() {
-        final int entityCount = 100;
+        final int entityCount = 1000;
         Set<EntityKey> entityKeys = new HashSet<>( entityCount );
         for ( int i = 0; i < entityCount; i++ ) {
             entityKeys.add( TestDataFactory.entityKey() );
@@ -79,7 +79,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
                         .filter( v -> !u.equals( v ) && r.nextBoolean() && r.nextBoolean() && r.nextBoolean()
                                 && r.nextBoolean() )
                         .map( v -> new LinkingEdge( u, v ) ) )
-                .forEach( edge -> edges.set( edge, r.nextDouble() ) );
+                .forEach( edge -> edges.set( edge, 2*r.nextDouble() ) );
         List<Entry<LinkingEdge, Double>> sortedEdges = edges.entrySet()
                 .stream()
                 .sorted( Comparator.comparing( Entry::getValue ) )
@@ -89,6 +89,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
 //                new WeightedLinkingEdge( sortedEdges.get( 1 ).getValue(), sortedEdges.get( 1 ).getKey() )
 
         StreamUtil.stream( lvm.loadAllKeys() ).map( graphs::getVertex )
+                .sorted( Comparator.comparing( LinkingVertex::getDiameter ) )
                 .peek( v -> Assert.assertTrue( v.getEntityKeys().size() > 0 ) )
                 .forEach( v -> logger.info( "Cluster: {}", v ) );
     }
