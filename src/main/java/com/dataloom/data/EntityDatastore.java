@@ -66,11 +66,11 @@ public interface EntityDatastore {
             String entityId,
             UUID syncId,
             Set<UUID> properties );
-
-    SetMultimap<UUID, ByteBuffer> loadEntities(
-            UUID entitySetId,
-            Set<UUID> ids,
-            Set<UUID> authorizedProperties );
+    
+    SetMultimap<UUID, Object> loadEntities(
+            Map<UUID, Set<UUID>> authorizedPropertyTypesForEntity,
+            Map<UUID, PropertyType> propertyTypesById,
+            Set<UUID> propertyTypesToPopulate );
 
     /**
      * Asynchronously load an entity with all properties
@@ -87,7 +87,7 @@ public interface EntityDatastore {
 
     Stream<SetMultimap<Object, Object>> getEntities(
             Collection<UUID> ids, Map<UUID, PropertyType> authorizedPropertyTypes );
-    
+        
     Map<UUID, SetMultimap<FullQualifiedName, Object>> getEntitiesAcrossEntitySets(
             Map<UUID, UUID> entityKeyIdToEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesByEntitySet );

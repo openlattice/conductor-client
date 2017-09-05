@@ -23,21 +23,21 @@ package com.dataloom.data.hazelcast;
 import static com.dataloom.data.mapstores.DataMapstore.KEY_ENTITY_SET_ID;
 import static com.dataloom.data.mapstores.DataMapstore.KEY_SYNC_ID;
 
+import java.util.Collection;
+import java.util.Set;
+import java.util.UUID;
+
 import com.datastax.driver.core.Row;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import java.util.Collection;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public final class EntitySets {
 
-    private EntitySets() {
-    }
+    private EntitySets() {}
 
     public static Predicate filterByEntitySetIdAndSyncId( Row row ) {
         UUID entitySetId = RowAdapters.entitySetId( row );
