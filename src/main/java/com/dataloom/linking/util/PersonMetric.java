@@ -31,11 +31,11 @@ public enum PersonMetric {
     FIRST_NAME_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasFirstName( e, map ) ) ),
     FIRST_NAME_RHS_PRESENCE( rhs( ( e, map ) -> PersonProperties.getHasFirstName( e, map ) ) ),
 
-//    MIDDLE_NAME_STRING( jaroWinkler( ( e, map ) -> PersonProperties.getMiddleName( e, map ) ) ),
-//    MIDDLE_NAME_METAPHONE( metaphone( ( e, map ) -> PersonProperties.getMiddleName( e, map ) ) ),
-//    MIDDLE_NAME_METAPHONE_ALT( metaphoneAlternate( ( e, map ) -> PersonProperties.getMiddleName( e, map ) ) ),
-//    MIDDLE_NAME_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasMiddleName( e, map ) ) ),
-//    MIDDLE_NAME_RHS_PRESENCE( rhs( ( e, map ) -> PersonProperties.getHasMiddleName( e, map ) ) ),
+    MIDDLE_NAME_STRING( jaroWinkler( ( e, map ) -> Sets.newHashSet() ) ),
+    MIDDLE_NAME_METAPHONE( metaphone( ( e, map ) -> Sets.newHashSet() ) ),
+    MIDDLE_NAME_METAPHONE_ALT( metaphoneAlternate( ( e, map ) -> Sets.newHashSet() ) ),
+    MIDDLE_NAME_LHS_PRESENCE( lhs( ( e, map ) -> 0 ) ),
+    MIDDLE_NAME_RHS_PRESENCE( rhs( ( e, map ) -> 0 ) ),
 
     LAST_NAME_STRINGG( jaroWinkler( ( e, map ) -> PersonProperties.getLastName( e, map ) ) ),
     LAST_NAME_METAPHONE( metaphone( ( e, map ) -> PersonProperties.getLastName( e, map ) ) ),
