@@ -95,6 +95,7 @@ public class EdgeMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, L
         return super.getMapConfig()
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
                 .addMapIndexConfig( new MapIndexConfig( "srcEntityKeyId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "dstEntityKeyId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstTypeId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstSetId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstSyncId", false ) )
