@@ -704,7 +704,7 @@ public class EdmService implements EdmManager {
 
         List<UUID> childrenIds = entityTypeManager.getEntityTypeChildrenIdsDeep( entityTypeId )
                 .collect( Collectors.<UUID> toList() );
-        
+
         Map<UUID, Boolean> childrenIdsToLocks = childrenIds.stream()
                 .collect( Collectors.toMap( Functions.<UUID> identity()::apply, propertyTypes::tryLock ) );
         childrenIdsToLocks.values().forEach( locked -> {
@@ -1403,6 +1403,11 @@ public class EdmService implements EdmManager {
 
     @Override
     public EntitySetPropertyMetadata getEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId ) {
+        EntitySetPropertyKey key = new EntitySetPropertyKey( entitySetId, propertyTypeId );
+        if ( !entitySetPropertyMetadata.containsKey( key ) ) {
+            UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
+            setupDefaultEntitySetPropertyMetadata( entitySetId, entityTypeId );
+        }
         return entitySetPropertyMetadata.get( new EntitySetPropertyKey( entitySetId, propertyTypeId ) );
     }
 
