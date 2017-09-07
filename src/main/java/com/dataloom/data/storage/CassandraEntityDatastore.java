@@ -21,26 +21,6 @@ package com.dataloom.data.storage;
 
 import static com.google.common.util.concurrent.Futures.transformAsync;
 
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.inject.Inject;
-
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityDatastore;
@@ -84,8 +64,24 @@ import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.inject.Inject;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CassandraEntityDatastore implements EntityDatastore {
     private static final Logger logger = LoggerFactory
@@ -284,7 +280,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
             SetMultimap<UUID, ByteBuffer> properties,
             Map<UUID, PropertyType> propertyType ) {
         SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
-
+        if ( properties == null ) {
+            logger.error( "Properties retreived from aggregator for id {} are null.", id );
+            return HashMultimap.create();
+        }
         properties.entries().forEach( prop -> {
             PropertyType pt = propertyType.get( prop.getKey() );
             if ( pt != null ) {
