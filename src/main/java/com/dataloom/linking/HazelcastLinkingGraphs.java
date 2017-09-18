@@ -30,6 +30,8 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
 
+import play.Logger;
+
 import java.util.Set;
 import java.util.UUID;
 
@@ -41,10 +43,10 @@ import org.apache.commons.lang3.tuple.Pair;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastLinkingGraphs {
-    private static final UUID DEFAULT_ID = new UUID( 0, 0 );
+    private static final UUID                           DEFAULT_ID = new UUID( 0, 0 );
     private final IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
     private final IMap<LinkingEntityKey, UUID>          vertices;
-    private final IMap<LinkingEdge, Double> weightedEdges;
+    private final IMap<LinkingEdge, Double>             weightedEdges;
 
     public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
         this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
@@ -52,8 +54,12 @@ public class HazelcastLinkingGraphs {
         this.weightedEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
     }
 
-    public ListenableFuture setEdgeWeightAsync( LinkingEdge edge, double weight  ){
-        return new ListenableHazelcastFuture(  weightedEdges.setAsync( edge, weight ) );
+    public ListenableFuture setEdgeWeightAsync( LinkingEdge edge, double weight ) {
+        return new ListenableHazelcastFuture( weightedEdges.setAsync( edge, weight ) );
+    }
+
+    public void setEdgeWeight( LinkingEdge edge, double weight ) {
+        weightedEdges.set( edge, weight );
     }
 
     public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ) {
@@ -90,10 +96,10 @@ public class HazelcastLinkingGraphs {
         /*
          * As long as min edge is chosen for merging it is appropriate to use the edge weight as new diameter.
          */
-        
+
         deleteVertex( edge.getSrc() );
         deleteVertex( edge.getDst() );
-        
+
         return HazelcastUtils.insertIntoUnusedKey( linkingVertices,
                 new LinkingVertex( weightedEdge.getWeight(), entityKeys ),
                 () -> new LinkingVertexKey( edge.getGraphId(), UUID.randomUUID() ) );
