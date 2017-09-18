@@ -42,6 +42,7 @@ public class MatchingAggregator extends Aggregator<Entry<EntityKey, UUID>, Doubl
     private transient IMap<LinkingEdge, Double> weightedEdges = null;
     private transient IMap<DataKey, ByteBuffer> data          = null;
     private transient HazelcastLinkingGraphs    graphs        = null;
+    private double[] numSingles = { 0 };
 
     private ConductorElasticsearchApi           elasticsearchApi;
 
@@ -126,6 +127,7 @@ public class MatchingAggregator extends Aggregator<Entry<EntityKey, UUID>, Doubl
                 .stream().forEach( otherEntity -> {
                     if ( key.equals( otherEntity.getKey() ) ) {
                         graphs.getOrCreateVertex( graphId, key );
+                        numSingles[0] += 1.0;
                     } else {
                         List<Entity> entityPair = Lists.newArrayList( currentEntity, otherEntity );
                         final LinkingEdge edge = fromEntities( graphId, entityPair );
@@ -155,13 +157,15 @@ public class MatchingAggregator extends Aggregator<Entry<EntityKey, UUID>, Doubl
         if ( aggregator instanceof MatchingAggregator ) {
             MatchingAggregator other = (MatchingAggregator) aggregator;
             if ( other.lightest[ 0 ] < lightest[ 0 ] ) lightest[ 0 ] = other.lightest[ 0 ];
+            numSingles[0] += other.numSingles[0];
         }
 
     }
 
     @Override
     public Double aggregate() {
-        return lightest[ 0 ];
+        return numSingles[0];
+       // return lightest[ 0 ];
     }
 
     public UUID getGraphId() {
