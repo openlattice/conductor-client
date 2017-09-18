@@ -19,6 +19,9 @@
 
 package com.dataloom.linking;
 
+import java.util.Set;
+import java.util.UUID;
+
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
@@ -27,15 +30,7 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
-
-import play.Logger;
-
-import java.util.Set;
-import java.util.UUID;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Implements a multiple simple graphs over by imposing a canonical ordering on vertex order for linkingEdges.
