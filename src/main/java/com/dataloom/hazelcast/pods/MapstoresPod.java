@@ -24,12 +24,12 @@ import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.blocking.GraphEntityPair;
+import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
-import com.dataloom.data.mapstores.DataMapstore;
-import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
-import com.dataloom.data.mapstores.EntityKeysMapstore;
-import com.dataloom.data.mapstores.SyncIdsMapstore;
+import com.dataloom.data.hazelcast.DelegatedEntityKeySet;
+import com.dataloom.data.mapstores.*;
 import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
 import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
 import com.dataloom.edm.EntitySet;
@@ -94,6 +94,8 @@ import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.inject.Inject;
 import org.springframework.context.annotation.Bean;
@@ -309,6 +311,16 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadataMapstore() {
         return new EntitySetPropertyMetadataMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<GraphEntityPair, LinkingEntity> linkingEntityMapstore() {
+        return new LinkingEntityMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<DelegatedEntityKeySet, UUID> linkingEntityKeyIdPairMapstore() {
+        return new LinkingEntityKeyIdPairMapstore( session );
     }
 
     @Bean

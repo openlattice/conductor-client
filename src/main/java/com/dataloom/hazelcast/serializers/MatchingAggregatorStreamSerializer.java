@@ -1,13 +1,5 @@
 package com.dataloom.hazelcast.serializers;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.UUID;
-
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.springframework.stereotype.Component;
-
-import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.matching.MatchingAggregator;
 import com.hazelcast.nio.ObjectDataInput;
@@ -15,9 +7,14 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jersey.repackaged.com.google.common.collect.Maps;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.UUID;
 
 @Component
 public class MatchingAggregatorStreamSerializer implements SelfRegisteringStreamSerializer<MatchingAggregator> {
@@ -31,22 +28,10 @@ public class MatchingAggregatorStreamSerializer implements SelfRegisteringStream
 
         out.writeDoubleArray( object.getLightest() );
 
-        out.writeInt( object.getEntitySetIdsToSyncIds().size() );
-        for ( Map.Entry<UUID, UUID> entry : object.getEntitySetIdsToSyncIds().entrySet() ) {
-            UUIDStreamSerializer.serialize( out, entry.getKey() );
-            UUIDStreamSerializer.serialize( out, entry.getValue() );
-        }
-
-        out.writeInt( object.getAuthorizedPropertyTypes().size() );
-        for ( Map.Entry<UUID, PropertyType> entry : object.getAuthorizedPropertyTypes().entrySet() ) {
-            UUIDStreamSerializer.serialize( out, entry.getKey() );
-            PropertyTypeStreamSerializer.serialize( out, entry.getValue() );
-        }
-
         out.writeInt( object.getPropertyTypeIdIndexedByFqn().size() );
-        for ( Map.Entry<FullQualifiedName, String> entry : object.getPropertyTypeIdIndexedByFqn().entrySet() ) {
+        for ( Map.Entry<FullQualifiedName, UUID> entry : object.getPropertyTypeIdIndexedByFqn().entrySet() ) {
             FullQualifiedNameStreamSerializer.serialize( out, entry.getKey() );
-            out.writeUTF( entry.getValue() );
+            UUIDStreamSerializer.serialize( out, entry.getValue() );
         }
     }
 
@@ -56,33 +41,16 @@ public class MatchingAggregatorStreamSerializer implements SelfRegisteringStream
         UUID graphId = UUIDStreamSerializer.deserialize( in );
         double[] lightest = in.readDoubleArray();
 
-        Map<UUID, UUID> entitySetIdsToSyncIds = Maps.newHashMap();
-        int esMapSize = in.readInt();
-        for ( int i = 0; i < esMapSize; i++ ) {
-            UUID entitySetId = UUIDStreamSerializer.deserialize( in );
-            UUID syncId = UUIDStreamSerializer.deserialize( in );
-            entitySetIdsToSyncIds.put( entitySetId, syncId );
-        }
-
-        Map<UUID, PropertyType> authorizedPropertyTypes = Maps.newHashMap();
-        int ptMapSize = in.readInt();
-        for ( int i = 0; i < ptMapSize; i++ ) {
-            UUID id = UUIDStreamSerializer.deserialize( in );
-            PropertyType pt = PropertyTypeStreamSerializer.deserialize( in );
-            authorizedPropertyTypes.put( id, pt );
-        }
-
-        Map<FullQualifiedName, String> propertyTypeIdIndexedByFqn = Maps.newHashMap();
+        Map<FullQualifiedName, UUID> propertyTypeIdIndexedByFqn = Maps.newHashMap();
         int fqnMapSize = in.readInt();
         for ( int i = 0; i < fqnMapSize; i++ ) {
             FullQualifiedName fqn = FullQualifiedNameStreamSerializer.deserialize( in );
-            String id = in.readUTF();
+            UUID id = UUIDStreamSerializer.deserialize( in );
             propertyTypeIdIndexedByFqn.put( fqn, id );
         }
+
         return new MatchingAggregator(
                 graphId,
-                entitySetIdsToSyncIds,
-                authorizedPropertyTypes,
                 propertyTypeIdIndexedByFqn,
                 lightest,
                 api );
@@ -94,7 +62,8 @@ public class MatchingAggregatorStreamSerializer implements SelfRegisteringStream
     }
 
     @Override
-    public void destroy() {}
+    public void destroy() {
+    }
 
     @Override
     public Class<? extends MatchingAggregator> getClazz() {

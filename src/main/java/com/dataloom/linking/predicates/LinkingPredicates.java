@@ -20,9 +20,12 @@
 
 package com.dataloom.linking.predicates;
 
+import com.dataloom.data.EntityKey;
 import com.dataloom.linking.LinkingEdge;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
+
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -47,6 +50,14 @@ public final class LinkingPredicates {
 
     public static Predicate graphId( UUID graphId ) {
         return Predicates.equal( "__key#graphId", graphId );
+    }
+
+    public static Predicate linkingEntitiesFromEntityKeys( EntityKey[] entityKeys ) {
+        return Predicates.in( "__key", entityKeys );
+    }
+
+    public static Predicate linkingEntityKeyIdPairsFromGraphId( UUID graphId ) {
+        return Predicates.equal( "this", graphId );
     }
 
     public static Predicate between( double bottom, double top ) {
