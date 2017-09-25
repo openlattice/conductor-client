@@ -63,10 +63,12 @@ public class HazelcastLinkingGraphs {
 
     public LinkingVertexKey getOrCreateVertex( UUID graphId, EntityKey entityKey ) {
         LinkingEntityKey lek = new LinkingEntityKey( graphId, entityKey );
+        vertices.lock( lek );
         UUID existingVertexId = vertices
                 .putIfAbsent( lek, DEFAULT_ID );
 
         if ( existingVertexId != null ) {
+            vertices.unlock( lek );
             return new LinkingVertexKey( graphId, existingVertexId );
         }
 
@@ -77,6 +79,7 @@ public class HazelcastLinkingGraphs {
                         vertex,
                         () -> new LinkingVertexKey( graphId, UUID.randomUUID() ) );
         vertices.set( lek, vertexKey.getVertexId() );
+        vertices.unlock( lek );
         return vertexKey;
     }
 

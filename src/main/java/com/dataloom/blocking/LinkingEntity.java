@@ -10,7 +10,7 @@ public class LinkingEntity {
 
     private final Map<UUID, DelegatedStringSet> entity;
 
-    public LinkingEntity( Map<UUID, DelegatedStringSet> entity) {
+    public LinkingEntity( Map<UUID, DelegatedStringSet> entity ) {
         this.entity = entity;
     }
 
@@ -23,13 +23,17 @@ public class LinkingEntity {
     }
 
     public void addEntry( UUID id, String value ) {
-        if (entity.containsKey( id )) entity.get( id ).add( value );
-        else entity.put( id, DelegatedStringSet.wrap( Sets.newHashSet( value ) ) );
+        if ( entity.containsKey( id ) )
+            entity.get( id ).add( value );
+        else
+            entity.put( id, DelegatedStringSet.wrap( Sets.newHashSet( value ) ) );
     }
 
     public void addEntry( UUID id, DelegatedStringSet values ) {
-        if (entity.containsKey( id )) entity.get( id ).addAll( values );
-        else entity.put( id, values );
+        if ( entity.containsKey( id ) )
+            entity.get( id ).addAll( values );
+        else
+            entity.put( id, values );
     }
 
     @Override public boolean equals( Object o ) {

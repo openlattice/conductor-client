@@ -63,18 +63,10 @@ public class DistributedMatcher {
         s.reset();
         s.start();
 
-        linkingEntities.aggregate( new BlockingAggregator( graphId, linkingEntitySetsWithSyncId ),
+        linkingEntities.aggregate( new BlockingAggregator( graphId, linkingEntitySetsWithSyncId, propertyTypeIdIndexedByFqn ),
                 LinkingPredicates.graphId( graphId ) );
         System.out.println( "t2: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ));
-        s.reset();
-        s.start();
-
-        double val = linkingEntityKeyIdPairs.aggregate( new MatchingAggregator(
-                        graphId,
-                        propertyTypeIdIndexedByFqn ),
-                LinkingPredicates.linkingEntityKeyIdPairsFromGraphId( graphId ) );
-        System.out.println( "t3: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ));
-        return val;
+        return 0.5;
     }
 
     public void setLinking(

@@ -1,97 +1,77 @@
 package com.dataloom.blocking;
 
-import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DelegatedEntityKeySet;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
+import com.dataloom.linking.HazelcastBlockingService;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
+import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.core.IMap;
-import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, LinkingEntity>, Boolean>
         implements HazelcastInstanceAware {
-    private           ConductorElasticsearchApi         elasticsearchApi;
+    private           HazelcastBlockingService          blockingService;
     private           UUID                              graphId;
     private           Map<UUID, UUID>                   entitySetIdsToSyncIds;
+    private           Map<FullQualifiedName, UUID>      propertyTypesIndexedByFqn;
     private transient IMap<DelegatedEntityKeySet, UUID> linkingEntityKeyIdPairs;
-    private Map<DelegatedEntityKeySet, UUID> entityKeyIdPairs = Maps.newHashMap();
-    Long   t0 = Long.valueOf( 0 );
-    Long   t1 = Long.valueOf( 0 );
-    double c0 = 0;
-    double c1 = 0;
+    private transient IAtomicLong                       asyncCallCounter;
 
-    // Number of search results taken in each block.
-    private int     blockSize = 50;
-    // Whether explanation for search results is stored.
-    private boolean explain   = false;
-
-    public BlockingAggregator( UUID graphId, Map<UUID, UUID> entitySetIdsToSyncIds ) {
-        this( graphId, entitySetIdsToSyncIds, null );
+    public BlockingAggregator(
+            UUID graphId,
+            Map<UUID, UUID> entitySetIdsToSyncIds,
+            Map<FullQualifiedName, UUID> propertyTypesIndexedByFqn ) {
+        this( graphId, entitySetIdsToSyncIds, propertyTypesIndexedByFqn, null );
     }
 
     public BlockingAggregator(
             UUID graphId,
             Map<UUID, UUID> entitySetIdsToSyncIds,
-            ConductorElasticsearchApi elasticsearchApi ) {
+            Map<FullQualifiedName, UUID> propertyTypesIndexedByFqn,
+            HazelcastBlockingService blockingService ) {
         this.graphId = graphId;
         this.entitySetIdsToSyncIds = entitySetIdsToSyncIds;
-        this.elasticsearchApi = elasticsearchApi;
+        this.propertyTypesIndexedByFqn = propertyTypesIndexedByFqn;
+        this.blockingService = blockingService;
     }
 
     @Override public void accumulate( Map.Entry<GraphEntityPair, LinkingEntity> input ) {
-        EntityKey entityKey = input.getKey().getEntityKey();
-        Stopwatch s = Stopwatch.createStarted();
-        List<EntityKey> eks = elasticsearchApi
-                .executeEntitySetDataSearchAcrossIndices( entitySetIdsToSyncIds,
-                        input.getValue().getEntity(),
-                        blockSize,
-                        explain );
-        t0 += s.elapsed( TimeUnit.MILLISECONDS );
-        s.reset();
-        s.start();
-        eks.stream().forEach( otherEntityKey -> entityKeyIdPairs.put( DelegatedEntityKeySet.wrap( ImmutableSet.of( entityKey, otherEntityKey ) ), graphId) );
-
-        t1 += s.elapsed( TimeUnit.MILLISECONDS );
-        c0++;
-        c1++;
+        GraphEntityPair graphEntityPair = input.getKey();
+        LinkingEntity linkingEntity = input.getValue();
+        asyncCallCounter.getAndIncrement();
+        blockingService
+                .blockAndMatch( graphEntityPair, linkingEntity, entitySetIdsToSyncIds, propertyTypesIndexedByFqn );
     }
 
     @Override public void combine( Aggregator aggregator ) {
-        if ( aggregator instanceof BlockingAggregator ) {
-            BlockingAggregator other = (BlockingAggregator) aggregator;
-            entityKeyIdPairs.putAll( other.entityKeyIdPairs );
-            t0 += other.t0;
-            t1 += other.t1;
-            c0 += other.c0;
-            c1 += other.c1;
-        }
     }
 
     @Override public Boolean aggregate() {
-        System.out.println( "THE AVERAGES--------------------------------" );
-        System.out.println( "T0" );
-        System.out.println( String.valueOf( t0.doubleValue() / c0 ) );
-        System.out.println( "T1" );
-        System.out.println( String.valueOf( t1.doubleValue() / c1 ) );
-        Stopwatch s = Stopwatch.createStarted();
-        linkingEntityKeyIdPairs.putAll( entityKeyIdPairs );
-        System.out.println("FINALLY");
-        System.out.println(String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ));
+        long count = asyncCallCounter.get();
+        while ( count > 0 ) {
+            try {
+                Thread.sleep( 5000 );
+                long newCount = asyncCallCounter.get();
+                if ( newCount == count ) {
+                    System.err.println( "Nothing is happening." );
+                    return false;
+                }
+                count = newCount;
+            } catch ( InterruptedException e ) {
+                System.err.println( "Error occurred while waiting for matching to finish." );
+            }
+        }
         return true;
     }
 
     @Override public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {
         this.linkingEntityKeyIdPairs = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_KEY_ID_PAIRS.name() );
+        this.asyncCallCounter = hazelcastInstance.getAtomicLong( graphId.toString() );
     }
 
     public UUID getGraphId() {
@@ -100,6 +80,10 @@ public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, Li
 
     public Map<UUID, UUID> getEntitySetIdsToSyncIds() {
         return entitySetIdsToSyncIds;
+    }
+
+    public Map<FullQualifiedName, UUID> getPropertyTypesIndexedByFqn() {
+        return propertyTypesIndexedByFqn;
     }
 
     @Override public boolean equals( Object o ) {

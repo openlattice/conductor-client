@@ -63,4 +63,11 @@ public final class LinkingPredicates {
     public static Predicate between( double bottom, double top ) {
         return Predicates.between( "this", bottom, top );
     }
+
+    public static Predicate entitiesFromKeysAndGraphId( EntityKey[] entityKeys, UUID graphId ) {
+        return Predicates.and(
+                Predicates.equal( "__key#graphId", graphId ),
+                Predicates.in( "__key#entityKey", entityKeys )
+        );
+    }
 }

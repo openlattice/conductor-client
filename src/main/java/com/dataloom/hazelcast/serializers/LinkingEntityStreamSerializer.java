@@ -19,6 +19,14 @@ import java.util.UUID;
 public class LinkingEntityStreamSerializer implements SelfRegisteringStreamSerializer<LinkingEntity> {
 
     @Override public void write( ObjectDataOutput out, LinkingEntity object ) throws IOException {
+        serialize( out, object );
+    }
+
+    @Override public LinkingEntity read( ObjectDataInput in ) throws IOException {
+        return deserialize( in );
+    }
+
+    public static void serialize( ObjectDataOutput out, LinkingEntity object ) throws IOException {
         Map<UUID, DelegatedStringSet> entity = object.getEntity();
         out.writeInt( entity.size() );
         for ( Map.Entry<UUID, DelegatedStringSet> entry : entity.entrySet() ) {
@@ -31,7 +39,7 @@ public class LinkingEntityStreamSerializer implements SelfRegisteringStreamSeria
         }
     }
 
-    @Override public LinkingEntity read( ObjectDataInput in ) throws IOException {
+    public static LinkingEntity deserialize( ObjectDataInput in ) throws IOException {
         Map<UUID, DelegatedStringSet> result = Maps.newHashMap();
         int mapSize = in.readInt();
         for ( int i = 0; i < mapSize; i++ ) {

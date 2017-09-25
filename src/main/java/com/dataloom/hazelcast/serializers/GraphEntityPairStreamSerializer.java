@@ -18,11 +18,19 @@ public class GraphEntityPairStreamSerializer implements SelfRegisteringStreamSer
     }
 
     @Override public void write( ObjectDataOutput out, GraphEntityPair object ) throws IOException {
+        serialize( out, object );
+    }
+
+    @Override public GraphEntityPair read( ObjectDataInput in ) throws IOException {
+        return deserialize( in );
+    }
+
+    public static void serialize( ObjectDataOutput out, GraphEntityPair object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getGraphId() );
         EntityKeyStreamSerializer.serialize( out, object.getEntityKey() );
     }
 
-    @Override public GraphEntityPair read( ObjectDataInput in ) throws IOException {
+    public static GraphEntityPair deserialize( ObjectDataInput in ) throws IOException {
         UUID graphId = UUIDStreamSerializer.deserialize( in );
         EntityKey entityKey = EntityKeyStreamSerializer.deserialize( in );
         return new GraphEntityPair( graphId, entityKey );

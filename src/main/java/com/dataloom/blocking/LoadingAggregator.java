@@ -7,6 +7,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
@@ -38,15 +39,16 @@ public class LoadingAggregator
         UUID propertyTypeId = key.getPropertyTypeId();
         EntityKey entityKey = new EntityKey( key.getEntitySetId(), key.getEntityId(), key.getSyncId() );
         if ( authorizedPropertyTypes.get( entityKey.getEntitySetId() ).containsKey( propertyTypeId ) ) {
+            GraphEntityPair graphEntityPair = new GraphEntityPair( graphId, entityKey );
             String value = CassandraSerDesFactory.deserializeValue( mapper,
                     input.getValue(),
                     authorizedPropertyTypes.get( entityKey.getEntitySetId() ).get( propertyTypeId ).getDatatype(),
                     key.getEntityId() ).toString();
-            LinkingEntity entity = ( entities.containsKey( entityKey ) ) ?
-                    entities.get( entityKey ) :
+            LinkingEntity entity = ( entities.containsKey( graphEntityPair ) ) ?
+                    entities.get( graphEntityPair ) :
                     new LinkingEntity( Maps.newHashMap() );
             entity.addEntry( propertyTypeId, value );
-            entities.put( new GraphEntityPair( graphId, entityKey ), entity );
+            entities.put( graphEntityPair, entity );
         }
     }
 

@@ -48,8 +48,6 @@ public class MatchingEntryProcessorStreamSerializer implements SelfRegisteringSt
             FullQualifiedNameStreamSerializer.serialize( out, entry.getKey() );
             out.writeUTF( entry.getValue() );
         }
-
-        EntitiesStreamSerializer.serialize( out, object.getEntities() );
     }
 
     @Override
@@ -80,16 +78,13 @@ public class MatchingEntryProcessorStreamSerializer implements SelfRegisteringSt
             String id = in.readUTF();
             propertyTypeIdIndexedByFqn.put( fqn, id );
         }
-
-        Entities entities = EntitiesStreamSerializer.deserialize( in );
-
-        return new MatchingEntryProcessor(
-                graphId,
-                entitySetIdsToSyncIds,
-                authorizedPropertyTypes,
-                propertyTypeIdIndexedByFqn,
-                entities,
-                api );
+        return null;
+//        return new MatchingEntryProcessor(
+//                graphId,
+//                entitySetIdsToSyncIds,
+//                authorizedPropertyTypes,
+//                propertyTypeIdIndexedByFqn,
+//                api );
     }
 
     @Override
