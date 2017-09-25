@@ -28,29 +28,15 @@ import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
-import com.dataloom.data.hazelcast.DelegatedEntityKeySet;
 import com.dataloom.data.mapstores.*;
 import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
 import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.mapstores.AclKeysMapstore;
-import com.dataloom.edm.mapstores.AssociationTypeMapstore;
-import com.dataloom.edm.mapstores.ComplexTypeMapstore;
-import com.dataloom.edm.mapstores.EdmVersionMapstore;
-import com.dataloom.edm.mapstores.EntitySetMapstore;
-import com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore;
-import com.dataloom.edm.mapstores.EntityTypeMapstore;
-import com.dataloom.edm.mapstores.EnumTypesMapstore;
-import com.dataloom.edm.mapstores.NamesMapstore;
-import com.dataloom.edm.mapstores.PropertyTypeMapstore;
+import com.dataloom.edm.mapstores.*;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.type.*;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.EdgeMapstore;
@@ -59,12 +45,7 @@ import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
-import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
-import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
-import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
-import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
-import com.dataloom.linking.mapstores.VertexIdsAfterLinkingMapstore;
+import com.dataloom.linking.mapstores.*;
 import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
@@ -77,11 +58,7 @@ import com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore;
 import com.dataloom.requests.AclRootRequestDetailsPair;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
-import com.dataloom.requests.mapstores.AclRootPrincipalPair;
-import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
-import com.dataloom.requests.mapstores.RequestMapstore;
-import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
-import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
+import com.dataloom.requests.mapstores.*;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kryptnostic.conductor.rpc.odata.Table;
@@ -92,15 +69,14 @@ import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import javax.inject.Inject;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+
+import javax.inject.Inject;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.UUID;
 
 @Configuration
 @Import( CassandraPod.class )
@@ -170,7 +146,7 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<String, UUID> aclKeysMapstore() {
         return new AclKeysMapstore( session );
     }
-    
+
     @Bean
     public SelfRegisteringMapStore<String, UUID> edmVersionMapstore() {
         return new EdmVersionMapstore( session );
@@ -307,7 +283,7 @@ public class MapstoresPod {
                 propertyTypeMapstore(),
                 mapper );
     }
-    
+
     @Bean
     public SelfRegisteringMapStore<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadataMapstore() {
         return new EntitySetPropertyMetadataMapstore( session );
@@ -316,11 +292,6 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<GraphEntityPair, LinkingEntity> linkingEntityMapstore() {
         return new LinkingEntityMapstore( session );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<DelegatedEntityKeySet, UUID> linkingEntityKeyIdPairMapstore() {
-        return new LinkingEntityKeyIdPairMapstore( session );
     }
 
     @Bean

@@ -51,7 +51,6 @@ public enum Table implements TableDef {
     LINKING_VERTICES,
     LINKING_ENTITY_VERTICES,
     LINKING_ENTITIES,
-    LINKING_ENTITY_KEY_ID_PAIRS,
     NAMES,
     ORGANIZATIONS,
     ROLES,
@@ -309,11 +308,6 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( GRAPH_ID, ENTITY_KEY )
                         .columns( ENTITY );
-            case LINKING_ENTITY_KEY_ID_PAIRS:
-                return new CassandraTableBuilder( LINKING_ENTITY_KEY_ID_PAIRS )
-                        .ifNotExists()
-                        .partitionKey( ENTITY_KEYS )
-                        .clusteringColumns( GRAPH_ID );
             case ASSOCIATION_TYPES:
                 return new CassandraTableBuilder( ASSOCIATION_TYPES )
                         .ifNotExists()

@@ -1,13 +1,10 @@
 package com.dataloom.blocking;
 
-import com.dataloom.data.hazelcast.DelegatedEntityKeySet;
-import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.HazelcastBlockingService;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IAtomicLong;
-import com.hazelcast.core.IMap;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.util.Map;
@@ -15,12 +12,11 @@ import java.util.UUID;
 
 public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, LinkingEntity>, Boolean>
         implements HazelcastInstanceAware {
-    private           HazelcastBlockingService          blockingService;
-    private           UUID                              graphId;
-    private           Map<UUID, UUID>                   entitySetIdsToSyncIds;
-    private           Map<FullQualifiedName, UUID>      propertyTypesIndexedByFqn;
-    private transient IMap<DelegatedEntityKeySet, UUID> linkingEntityKeyIdPairs;
-    private transient IAtomicLong                       asyncCallCounter;
+    private           HazelcastBlockingService     blockingService;
+    private           UUID                         graphId;
+    private           Map<UUID, UUID>              entitySetIdsToSyncIds;
+    private           Map<FullQualifiedName, UUID> propertyTypesIndexedByFqn;
+    private transient IAtomicLong                  asyncCallCounter;
 
     public BlockingAggregator(
             UUID graphId,
@@ -70,7 +66,6 @@ public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, Li
     }
 
     @Override public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {
-        this.linkingEntityKeyIdPairs = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_KEY_ID_PAIRS.name() );
         this.asyncCallCounter = hazelcastInstance.getAtomicLong( graphId.toString() );
     }
 

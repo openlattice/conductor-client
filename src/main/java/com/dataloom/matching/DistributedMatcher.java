@@ -4,7 +4,6 @@ import com.dataloom.blocking.BlockingAggregator;
 import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.blocking.LoadingAggregator;
-import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.edm.type.PropertyType;
@@ -18,7 +17,6 @@ import com.kryptnostic.datastore.services.EdmManager;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -30,20 +28,15 @@ public class DistributedMatcher {
 
     private       SetMultimap<UUID, UUID>              linkIndexedByEntitySets;
     private       Map<UUID, UUID>                      linkingEntitySetsWithSyncId;
-    private       Set<UUID>                            linkingES;
     private       Map<FullQualifiedName, UUID>         propertyTypeIdIndexedByFqn;
-    private final IMap<EntityKey, UUID>                ids;
     private final IMap<DataKey, ByteBuffer>            data;
     private final IMap<GraphEntityPair, LinkingEntity> linkingEntities;
-    private final IMap<Set<EntityKey>, UUID>           linkingEntityKeyIdPairs;
 
     public DistributedMatcher(
             HazelcastInstance hazelcast,
             EdmManager dms ) {
-        this.ids = hazelcast.getMap( HazelcastMap.IDS.name() );
         this.data = hazelcast.getMap( HazelcastMap.DATA.name() );
         this.linkingEntities = hazelcast.getMap( HazelcastMap.LINKING_ENTITIES.name() );
-        this.linkingEntityKeyIdPairs = hazelcast.getMap( HazelcastMap.LINKING_ENTITY_KEY_ID_PAIRS.name() );
         this.dms = dms;
     }
 
@@ -74,7 +67,6 @@ public class DistributedMatcher {
             SetMultimap<UUID, UUID> linkIndexedByEntitySets ) {
         this.linkIndexedByEntitySets = linkIndexedByEntitySets;
         this.linkingEntitySetsWithSyncId = linkingEntitySetsWithSyncId;
-        this.linkingES = new HashSet<>( linkingEntitySetsWithSyncId.keySet() );
         this.propertyTypeIdIndexedByFqn = getPropertyTypeIdIndexedByFqn( linkIndexedByPropertyTypes.keySet() );
 
     }
