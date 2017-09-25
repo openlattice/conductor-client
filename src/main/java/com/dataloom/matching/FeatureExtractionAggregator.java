@@ -10,7 +10,6 @@ import com.dataloom.linking.util.PersonMetric;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
-import com.hazelcast.core.ICountDownLatch;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;

@@ -15,7 +15,6 @@ import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.EdmManager;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.nio.ByteBuffer;
@@ -49,7 +48,6 @@ public class DistributedMatcher {
     }
 
     public double match( UUID graphId ) {
-        System.out.println("........................");
         Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes = linkIndexedByEntitySets.asMap().entrySet().stream()
                 .collect( Collectors.toMap( entry -> entry.getKey(),
                         entry -> entry.getValue().stream()
@@ -59,13 +57,14 @@ public class DistributedMatcher {
 
         data.aggregate( new LoadingAggregator( graphId, authorizedPropertyTypes ),
                 EntitySets.filterByEntitySetIdAndSyncIdPairs( linkingEntitySetsWithSyncId ) );
-        System.out.println( "t1: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ));
+        System.out.println( "t1: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ) );
         s.reset();
         s.start();
 
-        linkingEntities.aggregate( new BlockingAggregator( graphId, linkingEntitySetsWithSyncId, propertyTypeIdIndexedByFqn ),
-                LinkingPredicates.graphId( graphId ) );
-        System.out.println( "t2: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ));
+        linkingEntities
+                .aggregate( new BlockingAggregator( graphId, linkingEntitySetsWithSyncId, propertyTypeIdIndexedByFqn ),
+                        LinkingPredicates.graphId( graphId ) );
+        System.out.println( "t2: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ) );
         return 0.5;
     }
 
