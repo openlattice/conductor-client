@@ -15,6 +15,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.EdmManager;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.springframework.scheduling.annotation.Async;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -58,7 +59,13 @@ public class DistributedMatcher {
                 .aggregate( new BlockingAggregator( graphId, linkingEntitySetsWithSyncId, propertyTypeIdIndexedByFqn ),
                         LinkingPredicates.graphId( graphId ) );
         System.out.println( "t2: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ) );
+        cleanLinkingEntitiesMap( graphId );
         return 0.5;
+    }
+
+    @Async
+    private void cleanLinkingEntitiesMap( UUID graphId ) {
+        linkingEntities.removeAll( LinkingPredicates.graphId( graphId ) );
     }
 
     public void setLinking(
