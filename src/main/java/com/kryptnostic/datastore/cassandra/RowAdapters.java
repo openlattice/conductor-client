@@ -19,40 +19,17 @@
 
 package com.kryptnostic.datastore.cassandra;
 
-import java.nio.ByteBuffer;
-import java.util.EnumSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
-import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
-import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.Analyzer;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.type.*;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
@@ -64,11 +41,21 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.*;
 
 public final class RowAdapters {
     static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
 
-    private RowAdapters() {}
+    private RowAdapters() {
+    }
 
     public static SetMultimap<FullQualifiedName, Object> entity(
             ResultSet rs,
@@ -164,13 +151,6 @@ public final class RowAdapters {
         } );
 
         return m;
-    }
-
-    public static SetMultimap<UUID, Object> entityIndexedById(
-            String entityId,
-            SetMultimap<UUID, ByteBuffer> eb,
-            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return entityIndexedById( entityId, eb, authorizedPropertyTypes, ObjectMappers.getJsonMapper() );
     }
 
     public static SetMultimap<UUID, Object> entityIndexedById(
