@@ -5,6 +5,7 @@ import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IAtomicLong;
+import com.hazelcast.core.ICountDownLatch;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.util.Map;
@@ -16,7 +17,9 @@ public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, Li
     private           UUID                         graphId;
     private           Map<UUID, UUID>              entitySetIdsToSyncIds;
     private           Map<FullQualifiedName, UUID> propertyTypesIndexedByFqn;
-    private transient IAtomicLong                  asyncCallCounter;
+    private transient ICountDownLatch              countDownLatch;
+
+    private final int MAX_FAILED_CONSEC_ATTEMPTS = 5;
 
     public BlockingAggregator(
             UUID graphId,
@@ -39,7 +42,6 @@ public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, Li
     @Override public void accumulate( Map.Entry<GraphEntityPair, LinkingEntity> input ) {
         GraphEntityPair graphEntityPair = input.getKey();
         LinkingEntity linkingEntity = input.getValue();
-        asyncCallCounter.getAndIncrement();
         blockingService
                 .blockAndMatch( graphEntityPair, linkingEntity, entitySetIdsToSyncIds, propertyTypesIndexedByFqn );
     }
@@ -48,25 +50,27 @@ public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, Li
     }
 
     @Override public Boolean aggregate() {
-        long count = asyncCallCounter.get();
-        while ( count > 0 ) {
+        int numConsecFailures = 0;
+        long count = countDownLatch.getCount();
+        while ( count > 0 && numConsecFailures < MAX_FAILED_CONSEC_ATTEMPTS ) {
             try {
                 Thread.sleep( 5000 );
-                long newCount = asyncCallCounter.get();
+                long newCount = countDownLatch.getCount();
                 if ( newCount == count ) {
                     System.err.println( "Nothing is happening." );
-                    return false;
-                }
+                    numConsecFailures++;
+                } else numConsecFailures = 0;
                 count = newCount;
             } catch ( InterruptedException e ) {
                 System.err.println( "Error occurred while waiting for matching to finish." );
             }
         }
+        if (numConsecFailures == MAX_FAILED_CONSEC_ATTEMPTS) return false;
         return true;
     }
 
     @Override public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {
-        this.asyncCallCounter = hazelcastInstance.getAtomicLong( graphId.toString() );
+        this.countDownLatch = hazelcastInstance.getCountDownLatch( graphId.toString() );
     }
 
     public UUID getGraphId() {

@@ -39,7 +39,6 @@ public class HazelcastBlockingService {
             LinkingEntity linkingEntity,
             Map<UUID, UUID> entitySetIdsToSyncIds,
             Map<FullQualifiedName, UUID> propertyTypeIdIndexedByFqn ) {
-        IAtomicLong counter = hazelcastInstance.getAtomicLong( graphEntityPair.getGraphId().toString() );
         EntityKey[] eks = elasticsearchApi
                 .executeEntitySetDataSearchAcrossIndices( entitySetIdsToSyncIds,
                         linkingEntity.getEntity(),
@@ -50,6 +49,6 @@ public class HazelcastBlockingService {
                         linkingEntity,
                         propertyTypeIdIndexedByFqn ),
                 LinkingPredicates.entitiesFromKeysAndGraphId( eks, graphEntityPair.getGraphId() ) );
-        counter.decrementAndGet();
+        hazelcastInstance.getCountDownLatch( graphEntityPair.getGraphId().toString() ).countDown();
     }
 }

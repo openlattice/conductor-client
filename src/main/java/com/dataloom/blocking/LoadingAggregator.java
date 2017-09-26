@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class LoadingAggregator
-        extends Aggregator<Map.Entry<DataKey, ByteBuffer>, Boolean>
+        extends Aggregator<Map.Entry<DataKey, ByteBuffer>, Integer>
         implements HazelcastInstanceAware {
     private final Map<GraphEntityPair, LinkingEntity> entities = Maps.newHashMap();
     private final ObjectMapper                        mapper   = ObjectMappers.getJsonMapper();
@@ -73,9 +73,9 @@ public class LoadingAggregator
         }
     }
 
-    @Override public Boolean aggregate() {
+    @Override public Integer aggregate() {
         linkingEntities.putAll( entities );
-        return true;
+        return entities.size();
     }
 
     @Override public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {

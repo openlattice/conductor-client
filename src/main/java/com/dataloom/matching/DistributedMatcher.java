@@ -12,6 +12,7 @@ import com.dataloom.linking.predicates.LinkingPredicates;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.ICountDownLatch;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.EdmManager;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -32,6 +33,7 @@ public class DistributedMatcher {
     private       Map<FullQualifiedName, UUID>         propertyTypeIdIndexedByFqn;
     private final IMap<DataKey, ByteBuffer>            data;
     private final IMap<GraphEntityPair, LinkingEntity> linkingEntities;
+    private final HazelcastInstance                    hazelcast;
 
     public DistributedMatcher(
             HazelcastInstance hazelcast,
@@ -39,6 +41,7 @@ public class DistributedMatcher {
         this.data = hazelcast.getMap( HazelcastMap.DATA.name() );
         this.linkingEntities = hazelcast.getMap( HazelcastMap.LINKING_ENTITIES.name() );
         this.dms = dms;
+        this.hazelcast = hazelcast;
     }
 
     public double match( UUID graphId ) {
@@ -49,17 +52,21 @@ public class DistributedMatcher {
 
         Stopwatch s = Stopwatch.createStarted();
 
-        data.aggregate( new LoadingAggregator( graphId, authorizedPropertyTypes ),
+        int numEntities = data.aggregate( new LoadingAggregator( graphId, authorizedPropertyTypes ),
                 EntitySets.filterByEntitySetIdAndSyncIdPairs( linkingEntitySetsWithSyncId ) );
         System.out.println( "t1: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ) );
         s.reset();
         s.start();
+
+        ICountDownLatch latch = hazelcast.getCountDownLatch( graphId.toString() );
+        latch.trySetCount( numEntities );
 
         linkingEntities
                 .aggregate( new BlockingAggregator( graphId, linkingEntitySetsWithSyncId, propertyTypeIdIndexedByFqn ),
                         LinkingPredicates.graphId( graphId ) );
         System.out.println( "t2: " + String.valueOf( s.elapsed( TimeUnit.MILLISECONDS ) ) );
         cleanLinkingEntitiesMap( graphId );
+        latch.destroy();
         return 0.5;
     }
 
