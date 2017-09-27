@@ -20,6 +20,9 @@
 
 package com.dataloom.clustering;
 
+import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
+
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.WeightedLinkingEdge;
@@ -29,15 +32,12 @@ import com.dataloom.linking.components.Clusterer;
 import com.dataloom.linking.predicates.LinkingPredicates;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import java.util.PriorityQueue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DistributedClusterer implements Clusterer {
-    private static final double threshold = .5;
+    private static final double             threshold = .5;
     private final IMap<LinkingEdge, Double> weightedEdges;
 
     public DistributedClusterer( HazelcastInstance hazelcastInstance ) {
@@ -53,7 +53,7 @@ public class DistributedClusterer implements Clusterer {
         WeightedLinkingEdge lightest = weightedEdges.aggregate( new LightestEdgeAggregator(),
                 LinkingPredicates.minimax( graphId, minimax ) );
 
-        while ( lightest!=null && lightest.getWeight() < threshold && weightedEdges.size() > 0 ) {
+        while ( lightest != null && lightest.getWeight() < threshold && weightedEdges.size() > 0 ) {
             Double candidate = weightedEdges.aggregate( new MergingAggregator( lightest ),
                     LinkingPredicates.getAllEdges( lightest.getEdge() ) );
             if ( candidate != null ) {

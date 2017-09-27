@@ -19,96 +19,17 @@
 
 package com.kryptnostic.conductor.rpc.odata;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_CHILDREN_PERMISSIONS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_KEY_VALUE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_ROOT;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ALLOWED_EMAIL_DOMAINS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ANALYZER;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.AUDIT_EVENT_DETAILS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.AUDIT_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.BASE_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.BIDIRECTIONAL;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.CATEGORY;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.CONTACTS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.COUNT;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.CURRENT_SYNC_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DATATYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DATA_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DESCRIPTION;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DESTINATION_LINKING_VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DST;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DST_ENTITY_KEY_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DST_ENTITY_SET_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DST_SYNC_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DST_TYPE_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_ENTITY_KEY_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_ENTITY_SET_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_TYPE_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_VALUE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EDM_VERSION;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EDM_VERSION_NAME;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEY;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEYS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_SET_IDS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_TYPE_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_TYPE_IDS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EVENT_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.FLAGS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_DIAMETER;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.GRAPH_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.KEY;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.MEMBERS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.NAMESPACE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.NAME_SET;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.NEW_VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ORGANIZATION_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PII_FIELD;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_IDS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTIES;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_BUFFER;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_TYPE_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PROPERTY_VALUE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.QUERY_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.REASON;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.REQUESTID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.RPC_REQUEST_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.RPC_VALUE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.RPC_WEIGHT;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECTID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SECURABLE_OBJECT_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SHOW;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SOURCE_LINKING_VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_ENTITY_KEY_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_ENTITY_SET_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_SYNC_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SRC_TYPE_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.SYNCID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_UUID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.WEIGHT;
-
-import java.util.EnumMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraMaterializedViewBuilder;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.EnumMap;
+
+import static com.kryptnostic.datastore.cassandra.CommonColumns.*;
 
 public enum Table implements TableDef {
     ACL_KEYS,
@@ -129,6 +50,7 @@ public enum Table implements TableDef {
     LINKED_ENTITY_TYPES,
     LINKING_VERTICES,
     LINKING_ENTITY_VERTICES,
+    LINKING_ENTITIES,
     NAMES,
     ORGANIZATIONS,
     ROLES,
@@ -381,6 +303,11 @@ public enum Table implements TableDef {
                         .partitionKey( ENTITY_SET_ID, ENTITYID, SYNCID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( VERTEX_ID );
+            case LINKING_ENTITIES:
+                return new CassandraTableBuilder( LINKING_ENTITIES )
+                        .ifNotExists()
+                        .partitionKey( GRAPH_ID, ENTITY_KEY )
+                        .columns( ENTITY );
             case ASSOCIATION_TYPES:
                 return new CassandraTableBuilder( ASSOCIATION_TYPES )
                         .ifNotExists()

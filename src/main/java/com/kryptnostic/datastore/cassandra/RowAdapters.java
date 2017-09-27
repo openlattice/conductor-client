@@ -26,12 +26,7 @@ import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.Analyzer;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.type.*;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
@@ -46,19 +41,15 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
-import java.nio.ByteBuffer;
-import java.util.EnumSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.*;
 
 public final class RowAdapters {
     static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
@@ -76,8 +67,8 @@ public final class RowAdapters {
             String entityId = row.getString( CommonColumns.ENTITYID.cql() );
             if ( propertyTypeId != null ) {
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
-                //                if( pt.getDatatype().equals( EdmPrimitiveTypeKind.Binary ) ) {
-                //Fail safe
+                // if( pt.getDatatype().equals( EdmPrimitiveTypeKind.Binary ) ) {
+                // Fail safe
                 if ( pt != null ) {
                     m.put( pt.getType(),
                             CassandraSerDesFactory.deserializeValue( mapper,
@@ -85,13 +76,13 @@ public final class RowAdapters {
                                     pt.getDatatype(),
                                     entityId ) );
                 }
-                //                } else {
-                //                    m.put( pt.getType(),
-                //                            CassandraSerDesFactory.deserializeValue( mapper,
-                //                                    row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
-                //                                    pt.getDatatype(),
-                //                                    entityId ) );
-                //                }
+                // } else {
+                // m.put( pt.getType(),
+                // CassandraSerDesFactory.deserializeValue( mapper,
+                // row.getBytes( CommonColumns.PROPERTY_VALUE.cql() ),
+                // pt.getDatatype(),
+                // entityId ) );
+                // }
             }
         }
         return m;
@@ -141,7 +132,7 @@ public final class RowAdapters {
 
     public static SetMultimap<UUID, Object> entityIndexedById(
             String entityId,
-            SetMultimap<UUID,ByteBuffer> eb,
+            SetMultimap<UUID, ByteBuffer> eb,
             Map<UUID, PropertyType> authorizedPropertyTypes,
             ObjectMapper mapper ) {
         final SetMultimap<UUID, Object> m = HashMultimap.create();
@@ -161,17 +152,17 @@ public final class RowAdapters {
 
         return m;
     }
-    
+
     public static SetMultimap<UUID, Object> entityIndexedById(
             String entityId,
-            SetMultimap<UUID,ByteBuffer> eb,
+            SetMultimap<UUID, ByteBuffer> eb,
             Map<UUID, PropertyType> authorizedPropertyTypes,
             Set<UUID> propertyTypesToPopulate,
             ObjectMapper mapper ) {
         final SetMultimap<UUID, Object> m = HashMultimap.create();
         eb.entries().stream().forEach( e -> {
             UUID propertyTypeId = e.getKey();
-            if (propertyTypesToPopulate.contains( propertyTypeId )) {
+            if ( propertyTypesToPopulate.contains( propertyTypeId ) ) {
                 byte[] property = e.getValue().array();
                 PropertyType pt = authorizedPropertyTypes.get( propertyTypeId );
                 if ( pt != null ) {
@@ -498,13 +489,13 @@ public final class RowAdapters {
     public static UUID currentSyncId( Row row ) {
         return row.getUUID( CommonColumns.CURRENT_SYNC_ID.cql() );
     }
-    
+
     public static EntitySetPropertyKey entitySetPropertyKey( Row row ) {
         UUID entitySetId = row.getUUID( CommonColumns.ENTITY_SET_ID.cql() );
         UUID propertyTypeId = row.getUUID( CommonColumns.PROPERTY_TYPE_ID.cql() );
         return new EntitySetPropertyKey( entitySetId, propertyTypeId );
     }
-    
+
     public static EntitySetPropertyMetadata entitySetPropertyMetadata( Row row ) {
         String title = row.getString( CommonColumns.TITLE.cql() );
         String description = row.getString( CommonColumns.DESCRIPTION.cql() );

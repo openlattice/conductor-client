@@ -183,5 +183,10 @@ public class ElasticsearchLambdas implements Serializable {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .clearAllData();
     }
+    
+    public static Function<ConductorElasticsearchApi, Double> getModelScore( double[][] features ) {
+        return (Function<ConductorElasticsearchApi, Double> & Serializable) ( api ) -> api
+                .getModelScore( features );
+    }
 
 }
