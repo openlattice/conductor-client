@@ -27,6 +27,8 @@ import com.dataloom.streams.StreamUtil;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
+import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
@@ -49,19 +51,23 @@ import org.slf4j.LoggerFactory;
 public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapStore<EntityKey, UUID> {
     private static final Logger logger        = LoggerFactory.getLogger( PostgresEntityKeyIdsMapstore.class );
     private static final String CREATE_TABLE  =
-            "CREATE TABLE IF NOT EXISTS ids ( entity_set_id UUID, syncid UUID, entityid TEXT, id UUID"
+            "CREATE TABLE IF NOT EXISTS ids ( entity_set_id UUID, syncid UUID, entityid TEXT, id UUID,"
                     + "PRIMARY KEY(entity_set_id , syncid , entityid ), UNIQUE(ID) )";
     private static final String INSERT_ROW    = "INSERT INTO ids VALUES(?,?,?,?) on conflict do nothing";
     private static final String SELECT_ROW    = "SELECT * from ids where entity_set_id = ? and syncid = ? and entityid = ?";
     private static final String DELETE_ROW    = "DELETE from edges where entity_set_id = ? and syncid = ? and entityid = ?";
     private static final String LOAD_ALL_KEYS = "select entity_set_id ,syncid, entityid from edges";
-
     private final String           mapName;
     private final HikariDataSource hds;
+    SelfRegisteringMapStore<UUID, EntityKey> ekm;
 
-    public PostgresEntityKeyIdsMapstore( String mapName, HikariDataSource hds ) throws SQLException {
+    public PostgresEntityKeyIdsMapstore(
+            String mapName,
+            HikariDataSource hds,
+            SelfRegisteringMapStore<UUID, EntityKey> ekm ) throws SQLException {
         this.mapName = mapName;
         this.hds = hds;
+        this.ekm = ekm;
         Connection connection = hds.getConnection();
         connection.createStatement().execute( CREATE_TABLE );
         connection.close();
@@ -91,6 +97,7 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
     @Override
     public MapStoreConfig getMapStoreConfig() {
         return new MapStoreConfig()
+                .setInitialLoadMode( InitialLoadMode.EAGER )
                 .setImplementation( this )
                 .setEnabled( true )
                 .setWriteDelaySeconds( 5 );
@@ -166,6 +173,22 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
     }
 
     @Override public UUID load( EntityKey key ) {
+        UUID id = tryLoad( key );
+
+        if ( id != null ) {
+            return id;
+        }
+
+        do {
+            id = UUID.randomUUID();
+        } while ( ekm.load( id ) != null );
+
+        store( key, id );
+
+        return id;
+    }
+
+    public UUID tryLoad( EntityKey key ) {
         UUID val = null;
         try ( Connection connection = hds.getConnection() ) {
             PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW );

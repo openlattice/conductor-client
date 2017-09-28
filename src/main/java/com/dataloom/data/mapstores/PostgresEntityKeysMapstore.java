@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
 public class PostgresEntityKeysMapstore implements TestableSelfRegisteringMapStore<UUID, EntityKey> {
     private static final Logger logger        = LoggerFactory.getLogger( PostgresEntityKeyIdsMapstore.class );
     private static final String CREATE_TABLE  =
-            "CREATE TABLE IF NOT EXISTS ids ( entity_set_id UUID, syncid UUID, entityid TEXT, id UUID"
+            "CREATE TABLE IF NOT EXISTS ids ( entity_set_id UUID, syncid UUID, entityid TEXT, id UUID,"
                     + "PRIMARY KEY(entity_set_id , syncid , entityid ), UNIQUE(ID) )";
     private static final String SELECT_ROW    = "SELECT * from ids where id = ?";
     private static final String DELETE_ROW    = "DELETE from edges where id = ?";

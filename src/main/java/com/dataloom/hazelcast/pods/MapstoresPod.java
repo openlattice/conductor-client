@@ -28,10 +28,10 @@ import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
+import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
+import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.LinkingEntityMapstore;
 import com.dataloom.data.mapstores.PostgresDataMapstore;
-import com.dataloom.data.mapstores.PostgresEntityKeyIdsMapstore;
-import com.dataloom.data.mapstores.PostgresEntityKeysMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AclKeysMapstore;
@@ -281,16 +281,17 @@ public class MapstoresPod {
         return new SyncIdsMapstore( session );
     }
 
+    //Still using Cassandra for mapstores below to avoid contention on data integrations
     @Bean
     public SelfRegisteringMapStore<EntityKey, UUID> idsMapstore() throws SQLException {
-        return new PostgresEntityKeyIdsMapstore( HazelcastMap.IDS.name(), hikariDataSource );
-        //        return new EntityKeyIdsMapstore( keysMapstore(), HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
+        //return new PostgresEntityKeyIdsMapstore( HazelcastMap.IDS.name(), hikariDataSource, keysMapstore() );
+        return new EntityKeyIdsMapstore( keysMapstore(), HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
     }
 
     @Bean
     public SelfRegisteringMapStore<UUID, EntityKey> keysMapstore() throws SQLException {
-        return new PostgresEntityKeysMapstore( HazelcastMap.KEYS.name(), hikariDataSource );
-        //        return new EntityKeysMapstore( HazelcastMap.KEYS.name(), session, Table.KEYS.getBuilder() );
+        //        return new PostgresEntityKeysMapstore( HazelcastMap.KEYS.name(), hikariDataSource );
+        return new EntityKeysMapstore( HazelcastMap.KEYS.name(), session, Table.KEYS.getBuilder() );
     }
 
     @Bean
