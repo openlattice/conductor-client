@@ -44,6 +44,20 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
 
     @Override
     public void write( ObjectDataOutput out, PropertyType object ) throws IOException {
+        serialize( out, object );
+    }
+
+    @Override
+    public PropertyType read( ObjectDataInput in ) throws IOException {
+        return deserialize( in );
+    }
+
+    @Override
+    public int getTypeId() {
+        return StreamSerializerTypeIds.PROPERTY_TYPE.ordinal();
+    }
+    
+    public static void serialize( ObjectDataOutput out, PropertyType object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getId() );
         FullQualifiedNameStreamSerializer.serialize( out, object.getType() );
         out.writeUTF( object.getTitle() );
@@ -55,9 +69,8 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
         out.writeBoolean( object.isPIIfield() );
         out.writeInt( object.getAnalyzer().ordinal() );
     }
-
-    @Override
-    public PropertyType read( ObjectDataInput in ) throws IOException {
+    
+    public static PropertyType deserialize( ObjectDataInput in ) throws IOException {
         UUID id = UUIDStreamSerializer.deserialize( in );
         FullQualifiedName type = FullQualifiedNameStreamSerializer.deserialize( in );
         String title = in.readUTF();
@@ -69,11 +82,6 @@ public class PropertyTypeStreamSerializer implements SelfRegisteringStreamSerial
         Optional<Boolean> piiField = Optional.of( in.readBoolean() );
         Optional<Analyzer> analyzer = Optional.of( analyzers[ in.readInt() ] );
         return new PropertyType( id, type, title, description, schemas, datatype, piiField, analyzer );
-    }
-
-    @Override
-    public int getTypeId() {
-        return StreamSerializerTypeIds.PROPERTY_TYPE.ordinal();
     }
 
     @Override

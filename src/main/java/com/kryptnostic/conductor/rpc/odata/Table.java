@@ -49,6 +49,7 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_TYPE_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.EDGE_VALUE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.EDM_VERSION;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.EDM_VERSION_NAME;
+import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITYID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEY;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.ENTITY_KEYS;
@@ -127,6 +128,7 @@ public enum Table implements TableDef {
     LINKED_ENTITY_TYPES,
     LINKING_VERTICES,
     LINKING_ENTITY_VERTICES,
+    LINKING_ENTITIES,
     NAMES,
     ORGANIZATIONS,
     ROLES,
@@ -290,20 +292,20 @@ public enum Table implements TableDef {
                                 DST_ENTITY_SET_ID,
                                 DST_SYNC_ID,
                                 EDGE_ENTITY_SET_ID );
-                
+
             case EDM_VERSIONS:
                 return new CassandraTableBuilder( EDM_VERSIONS )
                         .ifNotExists()
                         .partitionKey( EDM_VERSION_NAME )
                         .clusteringColumns( EDM_VERSION )
                         .withDescendingOrder( EDM_VERSION );
-            
+
             case ENTITY_SET_PROPERTY_METADATA:
                 return new CassandraTableBuilder( ENTITY_SET_PROPERTY_METADATA )
                         .ifNotExists()
                         .partitionKey( ENTITY_SET_ID, PROPERTY_TYPE_ID )
                         .columns( TITLE, DESCRIPTION, SHOW );
-                
+
             case ENTITY_SETS:
                 return new CassandraTableBuilder( ENTITY_SETS )
                         .ifNotExists()
@@ -384,6 +386,11 @@ public enum Table implements TableDef {
                         .partitionKey( ENTITY_SET_ID, ENTITYID, SYNCID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( VERTEX_ID );
+            case LINKING_ENTITIES:
+                return new CassandraTableBuilder( LINKING_ENTITIES )
+                        .ifNotExists()
+                        .partitionKey( GRAPH_ID, ENTITY_KEY )
+                        .columns( ENTITY );
             case ASSOCIATION_TYPES:
                 return new CassandraTableBuilder( ASSOCIATION_TYPES )
                         .ifNotExists()

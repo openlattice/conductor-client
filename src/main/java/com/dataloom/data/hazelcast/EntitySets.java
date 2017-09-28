@@ -24,8 +24,10 @@ import static com.dataloom.data.mapstores.DataMapstore.KEY_ENTITY_SET_ID;
 import static com.dataloom.data.mapstores.DataMapstore.KEY_SYNC_ID;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.datastax.driver.core.Row;
 import com.hazelcast.query.Predicate;
@@ -37,7 +39,8 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
  */
 public final class EntitySets {
 
-    private EntitySets() {}
+    private EntitySets() {
+    }
 
     public static Predicate filterByEntitySetIdAndSyncId( Row row ) {
         UUID entitySetId = RowAdapters.entitySetId( row );
@@ -84,4 +87,15 @@ public final class EntitySets {
                 Predicates.equal( "__key#entitySetId", entitySetId ),
                 Predicates.equal( "__key#syncId", syncId ) );
     }
+
+    public static Predicate filterByEntitySetIdAndSyncIdPairs( Map<UUID, UUID> entitySetAndSyncIdPairs ) {
+        Predicate[] pairPredicates = entitySetAndSyncIdPairs.entrySet().stream().map( entry -> {
+            return Predicates.and(
+                    Predicates.equal( "__key#entitySetId", entry.getKey() ),
+                    Predicates.equal( "__key#syncId", entry.getValue() )
+            );
+        } ).collect( Collectors.toList() ).toArray( new Predicate[] {} );
+        return Predicates.or( pairPredicates );
+    }
+
 }

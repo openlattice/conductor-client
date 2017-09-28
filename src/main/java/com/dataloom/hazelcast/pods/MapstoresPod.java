@@ -24,10 +24,11 @@ import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.blocking.GraphEntityPair;
+import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
-import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
-import com.dataloom.data.mapstores.EntityKeysMapstore;
+import com.dataloom.data.mapstores.LinkingEntityMapstore;
 import com.dataloom.data.mapstores.PostgresDataMapstore;
 import com.dataloom.data.mapstores.PostgresEntityKeyIdsMapstore;
 import com.dataloom.data.mapstores.PostgresEntityKeysMapstore;
@@ -283,13 +284,13 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<EntityKey, UUID> idsMapstore() throws SQLException {
         return new PostgresEntityKeyIdsMapstore( HazelcastMap.IDS.name(), hikariDataSource );
-//        return new EntityKeyIdsMapstore( keysMapstore(), HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
+        //        return new EntityKeyIdsMapstore( keysMapstore(), HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
     }
 
     @Bean
     public SelfRegisteringMapStore<UUID, EntityKey> keysMapstore() throws SQLException {
         return new PostgresEntityKeysMapstore( HazelcastMap.KEYS.name(), hikariDataSource );
-//        return new EntityKeysMapstore( HazelcastMap.KEYS.name(), session, Table.KEYS.getBuilder() );
+        //        return new EntityKeysMapstore( HazelcastMap.KEYS.name(), session, Table.KEYS.getBuilder() );
     }
 
     @Bean
@@ -313,6 +314,11 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadataMapstore() {
         return new EntitySetPropertyMetadataMapstore( session );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<GraphEntityPair, LinkingEntity> linkingEntityMapstore() {
+        return new LinkingEntityMapstore( session );
     }
 
     @Bean

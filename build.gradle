@@ -91,6 +91,7 @@ dependencies {
     compile "net.jpountz.lz4:lz4:${lz4_version}"
     compile 'com.google.code.findbugs:findbugs:3.0.1'
     compile 'de.javakaffee:kryo-serializers:0.42'
+    
 	/*
      * Kryptnostic dependencies
      */

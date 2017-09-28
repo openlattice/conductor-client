@@ -19,6 +19,9 @@
 
 package com.dataloom.linking;
 
+import java.util.Set;
+import java.util.UUID;
+
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
@@ -27,13 +30,7 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
-
-import java.util.Set;
-import java.util.UUID;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Implements a multiple simple graphs over by imposing a canonical ordering on vertex order for linkingEdges.
@@ -41,10 +38,10 @@ import org.apache.commons.lang3.tuple.Pair;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastLinkingGraphs {
-    private static final UUID DEFAULT_ID = new UUID( 0, 0 );
+    private static final UUID                           DEFAULT_ID = new UUID( 0, 0 );
     private final IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
     private final IMap<LinkingEntityKey, UUID>          vertices;
-    private final IMap<LinkingEdge, Double> weightedEdges;
+    private final IMap<LinkingEdge, Double>             weightedEdges;
 
     public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
         this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
@@ -52,8 +49,12 @@ public class HazelcastLinkingGraphs {
         this.weightedEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
     }
 
-    public ListenableFuture setEdgeWeightAsync( LinkingEdge edge, double weight  ){
-        return new ListenableHazelcastFuture(  weightedEdges.setAsync( edge, weight ) );
+    public ListenableFuture setEdgeWeightAsync( LinkingEdge edge, double weight ) {
+        return new ListenableHazelcastFuture( weightedEdges.setAsync( edge, weight ) );
+    }
+
+    public void setEdgeWeight( LinkingEdge edge, double weight ) {
+        weightedEdges.set( edge, weight );
     }
 
     public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ) {
@@ -62,10 +63,12 @@ public class HazelcastLinkingGraphs {
 
     public LinkingVertexKey getOrCreateVertex( UUID graphId, EntityKey entityKey ) {
         LinkingEntityKey lek = new LinkingEntityKey( graphId, entityKey );
+        vertices.lock( lek );
         UUID existingVertexId = vertices
                 .putIfAbsent( lek, DEFAULT_ID );
 
         if ( existingVertexId != null ) {
+            vertices.unlock( lek );
             return new LinkingVertexKey( graphId, existingVertexId );
         }
 
@@ -76,6 +79,7 @@ public class HazelcastLinkingGraphs {
                         vertex,
                         () -> new LinkingVertexKey( graphId, UUID.randomUUID() ) );
         vertices.set( lek, vertexKey.getVertexId() );
+        vertices.unlock( lek );
         return vertexKey;
     }
 
@@ -90,10 +94,10 @@ public class HazelcastLinkingGraphs {
         /*
          * As long as min edge is chosen for merging it is appropriate to use the edge weight as new diameter.
          */
-        
+
         deleteVertex( edge.getSrc() );
         deleteVertex( edge.getDst() );
-        
+
         return HazelcastUtils.insertIntoUnusedKey( linkingVertices,
                 new LinkingVertex( weightedEdge.getWeight(), entityKeys ),
                 () -> new LinkingVertexKey( edge.getGraphId(), UUID.randomUUID() ) );

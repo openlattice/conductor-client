@@ -26,6 +26,7 @@ import java.util.UUID;
 
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
+import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.EntityType;
@@ -35,6 +36,7 @@ import com.dataloom.organization.Organization;
 import com.dataloom.search.requests.SearchDetails;
 import com.dataloom.search.requests.SearchResult;
 import com.google.common.base.Optional;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 
 public interface ConductorElasticsearchApi {
 
@@ -165,9 +167,9 @@ public interface ConductorElasticsearchApi {
             int maxHits,
             Set<UUID> authorizedPropertyTypes );
 
-    List<Entity> executeEntitySetDataSearchAcrossIndices(
+    List<EntityKey> executeEntitySetDataSearchAcrossIndices(
             Map<UUID, UUID> entitySetAndSyncIds,
-            Map<UUID, Set<String>> fieldSearches,
+            Map<UUID, DelegatedStringSet> fieldSearches,
             int size,
             boolean explain );
 
@@ -200,7 +202,9 @@ public interface ConductorElasticsearchApi {
     SearchResult executeFQNEntityTypeSearch( String namespace, String name, int start, int maxHits );
 
     SearchResult executeFQNPropertyTypeSearch( String namespace, String name, int start, int maxHits );
-    
+
     boolean clearAllData();
+
+    double getModelScore( double[][] features );
 
 }
