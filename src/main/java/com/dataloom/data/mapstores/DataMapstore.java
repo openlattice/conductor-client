@@ -34,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.MapAttributeConfig;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
@@ -58,7 +59,6 @@ public class DataMapstore
     public static final String KEY_ENTITY_SET_ID = "__key#entitySetId";
     public static final String KEY_SYNC_ID = "__key#syncId";
     public static final String KEY_PROPERTY_TYPE_ID = "__key#propertyTypeId";
-    private final ObjectMapper mapper;
 
     public DataMapstore(
             String mapName,
@@ -67,7 +67,6 @@ public class DataMapstore
             SelfRegisteringMapStore<UUID, PropertyType> ptMapStore,
             ObjectMapper mapper ) {
         super( mapName, session, tableBuilder );
-        this.mapper = mapper;
     }
 
     @Override
@@ -165,6 +164,7 @@ public class DataMapstore
     @Override
     public MapConfig getMapConfig() {
         return super.getMapConfig()
+                .setBackupCount( 1 )
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
                 .addMapIndexConfig( new MapIndexConfig( KEY_ID, false ) )
                 .addMapIndexConfig( new MapIndexConfig( KEY_ENTITY_SET_ID, false ) )

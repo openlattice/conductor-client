@@ -32,14 +32,14 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class EdgeKeyIterator<T> implements Iterator<T> {
-    private static final Logger logger = LoggerFactory.getLogger( EdgeKeyIterator.class );
+public class KeyIterator<T> implements Iterator<T> {
+    private static final Logger logger = LoggerFactory.getLogger( KeyIterator.class );
     private final ResultSet                 rs;
     private final CountdownConnectionCloser closer;
     private final Function<ResultSet, T>    mapper;
     private       boolean                   next;
 
-    public EdgeKeyIterator( ResultSet rs, CountdownConnectionCloser closer, Function<ResultSet, T> mapper ) {
+    public KeyIterator( ResultSet rs, CountdownConnectionCloser closer, Function<ResultSet, T> mapper ) {
         this.closer = closer;
         this.rs = rs;
         this.mapper = mapper;

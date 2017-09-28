@@ -99,16 +99,14 @@ import static com.kryptnostic.datastore.cassandra.CommonColumns.TITLE;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.VERTEX_ID;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.WEIGHT;
 
-import java.util.EnumMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraMaterializedViewBuilder;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import com.kryptnostic.rhizome.cassandra.TableDef;
+import java.util.EnumMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public enum Table implements TableDef {
     ACL_KEYS,
@@ -275,7 +273,12 @@ public enum Table implements TableDef {
                         .ifNotExists()
                         .partitionKey( SRC_ENTITY_KEY_ID )
                         .clusteringColumns( DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID )
-                        .columns( SRC_TYPE_ID, SRC_ENTITY_SET_ID, SRC_SYNC_ID, DST_ENTITY_SET_ID, DST_SYNC_ID, EDGE_ENTITY_SET_ID )
+                        .columns( SRC_TYPE_ID,
+                                SRC_ENTITY_SET_ID,
+                                SRC_SYNC_ID,
+                                DST_ENTITY_SET_ID,
+                                DST_SYNC_ID,
+                                EDGE_ENTITY_SET_ID )
                         .secondaryIndex(
                                 DST_TYPE_ID,
                                 EDGE_TYPE_ID,
