@@ -19,18 +19,22 @@
 
 package com.dataloom.linking;
 
-import java.util.Set;
-import java.util.UUID;
-
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Implements a multiple simple graphs over by imposing a canonical ordering on vertex order for linkingEdges.
@@ -38,15 +42,15 @@ import com.kryptnostic.datastore.util.Util;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastLinkingGraphs {
-    private static final UUID                           DEFAULT_ID = new UUID( 0, 0 );
+    private static final UUID DEFAULT_ID = new UUID( 0, 0 );
     private final IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
-    private final IMap<LinkingEntityKey, UUID>          vertices;
     private final IMap<LinkingEdge, Double>             weightedEdges;
+    private final IMap<EntityKey, UUID>                 ids;
 
     public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
         this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
-        this.vertices = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITY_VERTICES.name() );
         this.weightedEdges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
+        this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
     }
 
     public ListenableFuture setEdgeWeightAsync( LinkingEdge edge, double weight ) {
@@ -61,33 +65,17 @@ public class HazelcastLinkingGraphs {
         return linkedEntitySetId;
     }
 
-    public LinkingVertexKey getOrCreateVertex( UUID graphId, EntityKey entityKey ) {
-        LinkingEntityKey lek = new LinkingEntityKey( graphId, entityKey );
-        vertices.lock( lek );
-        UUID existingVertexId = vertices
-                .putIfAbsent( lek, DEFAULT_ID );
-
-        if ( existingVertexId != null ) {
-            vertices.unlock( lek );
-            return new LinkingVertexKey( graphId, existingVertexId );
-        }
-
-        LinkingVertex vertex = new LinkingVertex( 0.0D, Sets.newHashSet( entityKey ) );
-
-        LinkingVertexKey vertexKey = HazelcastUtils
-                .insertIntoUnusedKey( linkingVertices,
-                        vertex,
-                        () -> new LinkingVertexKey( graphId, UUID.randomUUID() ) );
-        vertices.set( lek, vertexKey.getVertexId() );
-        vertices.unlock( lek );
-        return vertexKey;
+    public void initializeLinking( UUID graphId, Map<UUID, UUID> entitySetIdsToSyncs ) {
+        ids.aggregate( new Initializer( graphId ),
+                EntitySets.filterByEntitySetIdAndSyncIdPairs( entitySetIdsToSyncs ) );
     }
+
 
     public LinkingVertexKey merge( WeightedLinkingEdge weightedEdge ) {
         LinkingEdge edge = weightedEdge.getEdge();
         LinkingVertex u = Util.getSafely( linkingVertices, edge.getSrc() );
         LinkingVertex v = Util.getSafely( linkingVertices, edge.getDst() );
-        Set<EntityKey> entityKeys = Sets
+        Set<UUID> entityKeys = Sets
                 .newHashSetWithExpectedSize( u.getEntityKeys().size() + v.getEntityKeys().size() );
         entityKeys.addAll( u.getEntityKeys() );
         entityKeys.addAll( v.getEntityKeys() );
@@ -111,12 +99,39 @@ public class HazelcastLinkingGraphs {
         Util.deleteSafely( linkingVertices, key );
     }
 
-    public LinkingVertexKey getOrCreateVertex( LinkingEntityKey linkingEntityKey ) {
-        return getOrCreateVertex( linkingEntityKey.getGraphId(), linkingEntityKey.getEntityKey() );
-    }
-
     public boolean verticesExists( LinkingEdge edge ) {
         return linkingVertices.containsKey( edge.getSrc() ) && linkingVertices.containsKey( edge.getDst() );
+    }
+
+    public static class Initializer extends Aggregator<Entry<EntityKey, UUID>, Void> implements HazelcastInstanceAware {
+        public            UUID                                  graphId;
+        private transient IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
+
+        public Initializer( UUID graphId ) {
+            this.graphId = graphId;
+        }
+
+        @Override public void accumulate( Entry<EntityKey, UUID> input ) {
+            linkingVertices.set( new LinkingVertexKey( graphId, input.getValue() ),
+                    new LinkingVertex( 0.0D, Sets.newHashSet( input.getValue() ) ) );
+        }
+
+        @Override public void combine( Aggregator aggregator ) {
+
+        }
+
+        @Override public Void aggregate() {
+            return null;
+        }
+
+        @Override public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {
+            this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
+        }
+
+        public UUID getGraphId() {
+            return graphId;
+        }
+
     }
 
 }

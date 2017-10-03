@@ -21,14 +21,8 @@ package com.kryptnostic.datastore.services;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1197,14 +1191,21 @@ public class EdmService implements EdmManager {
                         + " does not match current version "
                         + currentVersion.toString() );
 
-        Set<PropertyType> conflictingPropertyTypes = Sets.newHashSet();
-        Set<EntityType> conflictingEntityTypes = Sets.newHashSet();
-        Set<AssociationType> conflictingAssociationTypes = Sets.newHashSet();
+        ConcurrentSkipListSet<PropertyType> conflictingPropertyTypes = new ConcurrentSkipListSet<>( Comparator
+                .comparing( propertyType -> propertyType.getType().toString() ) );
+        ConcurrentSkipListSet<EntityType> conflictingEntityTypes = new ConcurrentSkipListSet<>( Comparator
+                .comparing( entityType -> entityType.getType().toString() ) );
+        ConcurrentSkipListSet<AssociationType> conflictingAssociationTypes = new ConcurrentSkipListSet<>( Comparator
+                .comparing( associationType -> associationType.getAssociationEntityType().getType().toString() ) );
 
-        Set<PropertyType> updatedPropertyTypes = Sets.newHashSet();
-        Set<EntityType> updatedEntityTypes = Sets.newHashSet();
-        Set<AssociationType> updatedAssociationTypes = Sets.newHashSet();
-        Set<Schema> updatedSchemas = Sets.newHashSet();
+        ConcurrentSkipListSet<PropertyType> updatedPropertyTypes = new ConcurrentSkipListSet<>( Comparator
+                .comparing( propertyType -> propertyType.getType().toString() ) );
+        ConcurrentSkipListSet<EntityType> updatedEntityTypes = new ConcurrentSkipListSet<>( Comparator
+                .comparing( entityType -> entityType.getType().toString() ) );
+        ConcurrentSkipListSet<AssociationType> updatedAssociationTypes = new ConcurrentSkipListSet<>( Comparator
+                .comparing( associationType -> associationType.getAssociationEntityType().getType().toString() ) );
+        ConcurrentSkipListSet<Schema> updatedSchemas = new ConcurrentSkipListSet<>( Comparator
+                .comparing( schema -> schema.getFqn().toString() ) );
 
         Map<UUID, FullQualifiedName> idsToFqns = Maps.newHashMap();
         Map<UUID, SecurableObjectType> idsToTypes = Maps.newHashMap();
