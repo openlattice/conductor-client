@@ -64,10 +64,10 @@ public final class LinkingPredicates {
         return Predicates.between( "this", bottom, top );
     }
 
-    public static Predicate entitiesFromKeysAndGraphId( EntityKey[] entityKeys, UUID graphId ) {
+    public static Predicate entitiesFromEntityKeyIdsAndGraphId( UUID[] entityKeyIds, UUID graphId ) {
         return Predicates.and(
                 Predicates.equal( "__key#graphId", graphId ),
-                Predicates.in( "__key#entityKey", entityKeys )
+                Predicates.in( "__key#entityKeyId", entityKeyIds )
         );
     }
 }
