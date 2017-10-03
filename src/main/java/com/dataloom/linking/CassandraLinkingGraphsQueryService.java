@@ -19,18 +19,7 @@
 
 package com.dataloom.linking;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import org.apache.commons.lang3.tuple.Pair;
-
-import com.dataloom.data.EntityKey;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import com.google.common.base.Preconditions;
@@ -38,20 +27,24 @@ import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-
 import jersey.repackaged.com.google.common.collect.Maps;
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class CassandraLinkingGraphsQueryService {
-    private static final String     LOWERBOUND = "lowerbound";
-    private static final String     UPPERBOUND = "upperbound";
+    private static final String LOWERBOUND = "lowerbound";
+    private static final String UPPERBOUND = "upperbound";
     private final Session           session;
     private final PreparedStatement srcNeighbors;
     private final PreparedStatement dstNeighbors;
     private final PreparedStatement lighestEdge;
-    
+
     private final PreparedStatement linkedEntitiesQuery;
 
     public CassandraLinkingGraphsQueryService( String keyspace, Session session ) {
@@ -59,7 +52,7 @@ public class CassandraLinkingGraphsQueryService {
         this.srcNeighbors = session.prepare( srcNeighborsQuery( keyspace ) );
         this.dstNeighbors = session.prepare( dstNeighborsQuery( keyspace ) );
         this.lighestEdge = session.prepare( lighestEdgeQuery( keyspace ) );
-        
+
         this.linkedEntitiesQuery = session.prepare( linkedEntitiesQuery( keyspace ) );
     }
 
@@ -185,7 +178,7 @@ public class CassandraLinkingGraphsQueryService {
         return session.execute( dstbs );
     }
 
-    public Iterable<Pair<UUID, Set<EntityKey>>> getLinkedEntityKeys(
+    public Iterable<Pair<UUID, Set<UUID>>> getLinkedEntityKeys(
             UUID graphId ) {
         ResultSet rs = session
                 .execute( linkedEntitiesQuery.bind().setUUID( CommonColumns.GRAPH_ID.cql(), graphId ) );

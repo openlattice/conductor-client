@@ -1,25 +1,23 @@
 package com.dataloom.blocking;
 
-import com.dataloom.data.EntityKey;
-
 import java.util.UUID;
 
 public class GraphEntityPair {
 
     private final UUID graphId;
-    private final EntityKey entityKey;
+    private final UUID entityKeyId;
 
-    public GraphEntityPair( UUID graphId, EntityKey entityKey ) {
+    public GraphEntityPair( UUID graphId, UUID entityKeyId ) {
         this.graphId = graphId;
-        this.entityKey = entityKey;
+        this.entityKeyId = entityKeyId;
     }
 
     public UUID getGraphId() {
         return graphId;
     }
 
-    public EntityKey getEntityKey() {
-        return entityKey;
+    public UUID getEntityKeyId() {
+        return entityKeyId;
     }
 
     @Override public boolean equals( Object o ) {
@@ -32,12 +30,12 @@ public class GraphEntityPair {
 
         if ( graphId != null ? !graphId.equals( that.graphId ) : that.graphId != null )
             return false;
-        return entityKey != null ? entityKey.equals( that.entityKey ) : that.entityKey == null;
+        return entityKeyId != null ? entityKeyId.equals( that.entityKeyId ) : that.entityKeyId == null;
     }
 
     @Override public int hashCode() {
         int result = graphId != null ? graphId.hashCode() : 0;
-        result = 31 * result + ( entityKey != null ? entityKey.hashCode() : 0 );
+        result = 31 * result + ( entityKeyId != null ? entityKeyId.hashCode() : 0 );
         return result;
     }
 }

@@ -27,7 +27,7 @@ public class LinkingEntityMapstore
         extends AbstractStructuredCassandraMapstore<GraphEntityPair, LinkingEntity> {
     private static final CassandraTableBuilder ctb = Table.LINKING_ENTITIES.getBuilder();
     public static final String GRAPH_ID = "__key#graphId";
-    public static final String ENTITY_KEY = "__key#entityKey";
+    public static final String ENTITY_KEY_ID = "__key#entityKeyId";
     // private static final Class<Set<String>> stringSetClass = (Class<Set<String>>) Sets.newHashSet().getClass();
 
     public LinkingEntityMapstore( Session session ) {
@@ -36,19 +36,19 @@ public class LinkingEntityMapstore
 
     @Override protected BoundStatement bind( GraphEntityPair key, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() )
-                .set( CommonColumns.ENTITY_KEY.cql(), key.getEntityKey(), EntityKey.class );
+                .setUUID( CommonColumns.ENTITY_KEY_ID.cql(), key.getEntityKeyId() );
     }
 
     @Override protected BoundStatement bind( GraphEntityPair key, LinkingEntity value, BoundStatement bs ) {
         return bs.setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() )
-                .set( CommonColumns.ENTITY_KEY.cql(), key.getEntityKey(), EntityKey.class )
+                .setUUID( CommonColumns.ENTITY_KEY_ID.cql(), key.getEntityKeyId() )
                 .setMap( CommonColumns.ENTITY.cql(), value.getEntity() );
     }
 
     @Override protected GraphEntityPair mapKey( Row rs ) {
         UUID graphId = rs.getUUID( CommonColumns.GRAPH_ID.cql() );
-        EntityKey entityKey = rs.get( CommonColumns.ENTITY_KEY.cql(), EntityKey.class );
-        return new GraphEntityPair( graphId, entityKey );
+        UUID entityKeyId = rs.getUUID( CommonColumns.ENTITY_KEY_ID.cql() );
+        return new GraphEntityPair( graphId, entityKeyId );
     }
 
     @Override protected LinkingEntity mapValue( ResultSet rs ) {
@@ -65,7 +65,7 @@ public class LinkingEntityMapstore
     }
 
     @Override public GraphEntityPair generateTestKey() {
-        return new GraphEntityPair( UUID.randomUUID(), TestDataFactory.entityKey() );
+        return new GraphEntityPair( UUID.randomUUID(), UUID.randomUUID() );
     }
 
     @Override public LinkingEntity generateTestValue() {
@@ -83,6 +83,6 @@ public class LinkingEntityMapstore
         return super.getMapConfig()
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
                 .addMapIndexConfig( new MapIndexConfig( GRAPH_ID, false ) )
-                .addMapIndexConfig( new MapIndexConfig( ENTITY_KEY, false ) );
+                .addMapIndexConfig( new MapIndexConfig( ENTITY_KEY_ID, false ) );
     }
 }

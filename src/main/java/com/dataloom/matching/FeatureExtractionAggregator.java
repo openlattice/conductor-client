@@ -61,14 +61,12 @@ public class FeatureExtractionAggregator extends Aggregator<Map.Entry<GraphEntit
     @Override
     public void accumulate( Map.Entry<GraphEntityPair, LinkingEntity> input ) {
         UUID graphId = graphEntityPair.getGraphId();
-        EntityKey ek1 = graphEntityPair.getEntityKey();
-        EntityKey ek2 = input.getKey().getEntityKey();
+        UUID ek1 = graphEntityPair.getEntityKeyId();
+        UUID ek2 = input.getKey().getEntityKeyId();
 
-        if ( ek1.equals( ek2 ) ) {
-            graphs.getOrCreateVertex( graphId, ek1 );
-        } else {
-            LinkingVertexKey u = graphs.getOrCreateVertex( graphId, ek1 );
-            LinkingVertexKey v = graphs.getOrCreateVertex( graphId, ek2 );
+        if ( ek1 != ek2 ) {
+            LinkingVertexKey u = new LinkingVertexKey( graphId, ek1 );
+            LinkingVertexKey v = new LinkingVertexKey( graphId, ek2 );
             final LinkingEdge edge = new LinkingEdge( u, v );
 
             Map<UUID, DelegatedStringSet> e1 = linkingEntity.getEntity();

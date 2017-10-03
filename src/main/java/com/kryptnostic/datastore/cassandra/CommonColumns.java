@@ -133,7 +133,9 @@ public enum CommonColumns implements ColumnDef {
     PROPERTY_BUFFER( DataType.blob() ),
     SRC_SYNC_ID( DataType.uuid() ),
     DST_SYNC_ID(  DataType.uuid() ),
-    ENTITY( DataType.map( DataType.uuid(), DataType.frozenSet( DataType.text() ) ) );
+    ENTITY( DataType.map( DataType.uuid(), DataType.frozenSet( DataType.text() ) ) ),
+    ENTITY_KEY_ID( DataType.uuid() ),
+    ENTITY_KEY_IDS( DataType.set( DataType.uuid() ) );
 
     private transient final DataType type;
 
