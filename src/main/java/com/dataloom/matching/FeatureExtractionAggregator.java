@@ -64,7 +64,7 @@ public class FeatureExtractionAggregator extends Aggregator<Map.Entry<GraphEntit
         UUID ek1 = graphEntityPair.getEntityKeyId();
         UUID ek2 = input.getKey().getEntityKeyId();
 
-        if ( ek1 != ek2 ) {
+        if ( !ek1.equals( ek2 ) ) {
             LinkingVertexKey u = new LinkingVertexKey( graphId, ek1 );
             LinkingVertexKey v = new LinkingVertexKey( graphId, ek2 );
             final LinkingEdge edge = new LinkingEdge( u, v );
