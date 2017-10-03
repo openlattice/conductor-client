@@ -45,7 +45,11 @@ public class LinkingVertexKey implements Comparable<LinkingVertexKey> {
 
     @Override
     public int compareTo( LinkingVertexKey o ) {
-        checkArgument( graphId.equals( o.getGraphId() ), "Cannot compare vertices with different graph ids." );
+        if ( !graphId.equals( o.getGraphId() ) ) {
+            String err = "Cannot compare vertices with different graph ids: ".concat( graphId.toString() )
+                    .concat( " does not match " ).concat( o.getGraphId().toString() );
+            throw new IllegalArgumentException( err );
+        }
         return vertexId.compareTo( o.vertexId );
     }
 
