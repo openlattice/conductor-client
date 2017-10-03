@@ -6,8 +6,8 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.predicates.LinkingPredicates;
 import com.dataloom.matching.FeatureExtractionAggregator;
+import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -20,15 +20,17 @@ import java.util.UUID;
 public class HazelcastBlockingService {
     @Inject
     private ConductorElasticsearchApi elasticsearchApi;
-    private static final int blockSize   = 50;
-    private static final boolean explain = false;
+    private static final int     blockSize = 50;
+    private static final boolean explain   = false;
 
     private IMap<GraphEntityPair, LinkingEntity> linkingEntities;
+    private IMap<EntityKey, UUID>                ids;
     private HazelcastLinkingGraphs               linkingGraphs;
     private HazelcastInstance                    hazelcastInstance;
 
     public HazelcastBlockingService( HazelcastInstance hazelcastInstance ) {
         this.linkingEntities = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITIES.name() );
+        this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
         this.linkingGraphs = new HazelcastLinkingGraphs( hazelcastInstance );
         this.hazelcastInstance = hazelcastInstance;
     }
@@ -39,16 +41,15 @@ public class HazelcastBlockingService {
             LinkingEntity linkingEntity,
             Map<UUID, UUID> entitySetIdsToSyncIds,
             Map<FullQualifiedName, UUID> propertyTypeIdIndexedByFqn ) {
-        EntityKey[] eks = elasticsearchApi
+        UUID[] entityKeyIds = ids.getAll( Sets.newHashSet( elasticsearchApi
                 .executeEntitySetDataSearchAcrossIndices( entitySetIdsToSyncIds,
                         linkingEntity.getEntity(),
                         blockSize,
-                        explain ).toArray( new EntityKey[] {} );
-
+                        explain ) ) ).values().toArray( new UUID[] {} );
         linkingEntities.aggregate( new FeatureExtractionAggregator( graphEntityPair,
                         linkingEntity,
                         propertyTypeIdIndexedByFqn ),
-                LinkingPredicates.entitiesFromKeysAndGraphId( eks, graphEntityPair.getGraphId() ) );
+                LinkingPredicates.entitiesFromEntityKeyIdsAndGraphId( entityKeyIds, graphEntityPair.getGraphId() ) );
         hazelcastInstance.getCountDownLatch( graphEntityPair.getGraphId().toString() ).countDown();
     }
 }

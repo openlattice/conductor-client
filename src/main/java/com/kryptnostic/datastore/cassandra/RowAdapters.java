@@ -354,8 +354,12 @@ public final class RowAdapters {
         return row.getSet( CommonColumns.ENTITY_KEYS.cql(), EntityKey.class );
     }
 
-    public static Pair<UUID, Set<EntityKey>> linkedEntity( Row row ) {
-        return Pair.of( row.getUUID( CommonColumns.VERTEX_ID.cql() ), entityKeys( row ) );
+    public static Set<UUID> uuids( Row row ) {
+        return row.getSet( CommonColumns.ENTITY_KEY_IDS.cql(), UUID.class );
+    }
+
+    public static Pair<UUID, Set<UUID>> linkedEntity( Row row ) {
+        return Pair.of( row.getUUID( CommonColumns.VERTEX_ID.cql() ), uuids( row ) );
     }
 
     public static UUID syncId( Row row ) {

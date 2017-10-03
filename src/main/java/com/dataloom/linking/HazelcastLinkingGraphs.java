@@ -75,7 +75,7 @@ public class HazelcastLinkingGraphs {
         LinkingEdge edge = weightedEdge.getEdge();
         LinkingVertex u = Util.getSafely( linkingVertices, edge.getSrc() );
         LinkingVertex v = Util.getSafely( linkingVertices, edge.getDst() );
-        Set<EntityKey> entityKeys = Sets
+        Set<UUID> entityKeys = Sets
                 .newHashSetWithExpectedSize( u.getEntityKeys().size() + v.getEntityKeys().size() );
         entityKeys.addAll( u.getEntityKeys() );
         entityKeys.addAll( v.getEntityKeys() );
@@ -103,9 +103,13 @@ public class HazelcastLinkingGraphs {
         return linkingVertices.containsKey( edge.getSrc() ) && linkingVertices.containsKey( edge.getDst() );
     }
 
-    static class Initializer extends Aggregator<Entry<EntityKey, UUID>, Void> implements HazelcastInstanceAware {
+    public static class Initializer extends Aggregator<Entry<EntityKey, UUID>, Void> implements HazelcastInstanceAware {
         public            UUID                                  graphId;
         private transient IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
+
+        public Initializer( UUID graphId ) {
+            this.graphId = graphId;
+        }
 
         @Override public void accumulate( Entry<EntityKey, UUID> input ) {
             linkingVertices.set( new LinkingVertexKey( graphId, input.getValue() ),
@@ -123,6 +127,11 @@ public class HazelcastLinkingGraphs {
         @Override public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {
             this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
         }
+
+        public UUID getGraphId() {
+            return graphId;
+        }
+
     }
 
 }

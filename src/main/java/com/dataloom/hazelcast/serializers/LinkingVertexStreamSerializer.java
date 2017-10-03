@@ -1,17 +1,16 @@
 package com.dataloom.hazelcast.serializers;
 
-import java.io.IOException;
-import java.util.Set;
-
-import org.springframework.stereotype.Component;
-
-import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.linking.LinkingVertex;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.Set;
+import java.util.UUID;
 
 @Component
 public class LinkingVertexStreamSerializer implements SelfRegisteringStreamSerializer<LinkingVertex> {
@@ -19,15 +18,15 @@ public class LinkingVertexStreamSerializer implements SelfRegisteringStreamSeria
     @Override
     public void write( ObjectDataOutput out, LinkingVertex object ) throws IOException {
         out.writeDouble( object.getDiameter() );
-        SetStreamSerializers.serialize( out, object.getEntityKeys(), ( EntityKey ek ) -> {
-            EntityKeyStreamSerializer.serialize( out, ek );
+        SetStreamSerializers.serialize( out, object.getEntityKeys(), ( UUID ek ) -> {
+            UUIDStreamSerializer.serialize( out, ek );
         } );
     }
 
     @Override
     public LinkingVertex read( ObjectDataInput in ) throws IOException {
         double diameter = in.readDouble();
-        Set<EntityKey> entityKeys = SetStreamSerializers.deserialize( in,  EntityKeyStreamSerializer::deserialize );
+        Set<UUID> entityKeys = SetStreamSerializers.deserialize( in, UUIDStreamSerializer::deserialize );
         return new LinkingVertex( diameter, entityKeys );
     }
 
@@ -37,7 +36,8 @@ public class LinkingVertexStreamSerializer implements SelfRegisteringStreamSeria
     }
 
     @Override
-    public void destroy() {}
+    public void destroy() {
+    }
 
     @Override
     public Class<? extends LinkingVertex> getClazz() {

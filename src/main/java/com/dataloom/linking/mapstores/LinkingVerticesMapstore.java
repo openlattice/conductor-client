@@ -33,7 +33,7 @@ public class LinkingVerticesMapstore extends AbstractStructuredCassandraMapstore
     @Override
     protected BoundStatement bind( LinkingVertexKey key, LinkingVertex value, BoundStatement bs ) {
         return bind( key, bs ).setDouble( CommonColumns.GRAPH_DIAMETER.cql(), value.getDiameter() )
-                .setSet( CommonColumns.ENTITY_KEYS.cql(), value.getEntityKeys(), EntityKey.class );
+                .setSet( CommonColumns.ENTITY_KEY_IDS.cql(), value.getEntityKeys(), UUID.class );
 
     }
 
@@ -54,7 +54,7 @@ public class LinkingVerticesMapstore extends AbstractStructuredCassandraMapstore
             return null;
         }
         double diameter = row.getDouble( CommonColumns.GRAPH_DIAMETER.cql() );
-        Set<EntityKey> entityKeys = row.getSet( CommonColumns.ENTITY_KEYS.cql(), EntityKey.class );
+        Set<UUID> entityKeys = row.getSet( CommonColumns.ENTITY_KEY_IDS.cql(), UUID.class );
         return new LinkingVertex( diameter, entityKeys );
     }
 
@@ -71,6 +71,6 @@ public class LinkingVerticesMapstore extends AbstractStructuredCassandraMapstore
     public static LinkingVertex randomLinkingVertex(){
         return new LinkingVertex(
                 RandomUtils.nextDouble(),
-                ImmutableSet.of( TestDataFactory.entityKey(), TestDataFactory.entityKey() ) );
+                ImmutableSet.of( UUID.randomUUID(), UUID.randomUUID() ) );
     }
 }
