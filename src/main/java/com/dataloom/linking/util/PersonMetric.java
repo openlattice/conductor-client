@@ -147,7 +147,7 @@ public enum PersonMetric {
         double max = 0;
         for ( String s1 : lhs ) {
             for ( String s2 : rhs ) {
-                double difference = getStringDistance( s1, s2, useMetaphone, alternate );
+                double difference = getStringDistance( s1.toLowerCase(), s2.toLowerCase(), useMetaphone, alternate );
                 if ( difference > max )
                     max = difference;
             }
