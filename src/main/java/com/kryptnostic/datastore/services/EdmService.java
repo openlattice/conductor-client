@@ -221,6 +221,14 @@ public class EdmService implements EdmManager {
          * Entity types should only be deleted if there are no entity sets of that type in the system.
          */
         if ( Iterables.isEmpty( entitySetManager.getAllEntitySetsForType( entityTypeId ) ) ) {
+            entityTypeManager.getAssociationIdsForEntityType( entityTypeId ).forEach( associationTypeId -> {
+                AssociationType association = getAssociationType( associationTypeId );
+                if ( association.getSrc().contains( entityTypeId ) )
+                    removeSrcEntityTypesFromAssociationType( associationTypeId, ImmutableSet.of( entityTypeId ) );
+                if ( association.getDst().contains( entityTypeId ) )
+                    removeDstEntityTypesFromAssociationType( associationTypeId, ImmutableSet.of( entityTypeId ) );
+            } );
+            
             entityTypes.delete( entityTypeId );
             aclKeyReservations.release( entityTypeId );
             eventBus.post( new EntityTypeDeletedEvent( entityTypeId ) );
