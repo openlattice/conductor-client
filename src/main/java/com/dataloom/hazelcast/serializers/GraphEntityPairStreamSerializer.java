@@ -1,7 +1,6 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.blocking.GraphEntityPair;
-import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -27,13 +26,13 @@ public class GraphEntityPairStreamSerializer implements SelfRegisteringStreamSer
 
     public static void serialize( ObjectDataOutput out, GraphEntityPair object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getGraphId() );
-        EntityKeyStreamSerializer.serialize( out, object.getEntityKey() );
+        UUIDStreamSerializer.serialize( out, object.getEntityKeyId() );
     }
 
     public static GraphEntityPair deserialize( ObjectDataInput in ) throws IOException {
         UUID graphId = UUIDStreamSerializer.deserialize( in );
-        EntityKey entityKey = EntityKeyStreamSerializer.deserialize( in );
-        return new GraphEntityPair( graphId, entityKey );
+        UUID entityKeyId = UUIDStreamSerializer.deserialize( in );
+        return new GraphEntityPair( graphId, entityKeyId );
     }
 
     @Override public int getTypeId() {

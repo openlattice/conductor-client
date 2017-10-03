@@ -19,18 +19,17 @@
 
 package com.dataloom.linking;
 
-import com.dataloom.data.EntityKey;
-
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class LinkingVertex {
-    private final double         diameter;
-    private final Set<EntityKey> entityKeys;
+    private final double    diameter;
+    private final Set<UUID> entityKeys;
 
-    public LinkingVertex( double diameter, Set<EntityKey> entityKeys ) {
+    public LinkingVertex( double diameter, Set<UUID> entityKeys ) {
         this.diameter = diameter;
         this.entityKeys = entityKeys;
     }
@@ -39,7 +38,7 @@ public class LinkingVertex {
         return diameter;
     }
 
-    public Set<EntityKey> getEntityKeys() {
+    public Set<UUID> getEntityKeys() {
         return entityKeys;
     }
 

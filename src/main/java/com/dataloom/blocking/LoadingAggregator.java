@@ -36,13 +36,14 @@ public class LoadingAggregator
 
     @Override public void accumulate( Map.Entry<DataKey, ByteBuffer> input ) {
         DataKey key = input.getKey();
+        UUID entityKeyId = key.getId();
         UUID propertyTypeId = key.getPropertyTypeId();
-        EntityKey entityKey = new EntityKey( key.getEntitySetId(), key.getEntityId(), key.getSyncId() );
-        if ( authorizedPropertyTypes.get( entityKey.getEntitySetId() ).containsKey( propertyTypeId ) ) {
-            GraphEntityPair graphEntityPair = new GraphEntityPair( graphId, entityKey );
+        UUID entitySetId = key.getEntitySetId();
+        if ( authorizedPropertyTypes.get( entitySetId ).containsKey( propertyTypeId ) ) {
+            GraphEntityPair graphEntityPair = new GraphEntityPair( graphId, entityKeyId );
             String value = CassandraSerDesFactory.deserializeValue( mapper,
                     input.getValue(),
-                    authorizedPropertyTypes.get( entityKey.getEntitySetId() ).get( propertyTypeId ).getDatatype(),
+                    authorizedPropertyTypes.get( entitySetId ).get( propertyTypeId ).getDatatype(),
                     key.getEntityId() ).toString();
             LinkingEntity entity = ( entities.containsKey( graphEntityPair ) ) ?
                     entities.get( graphEntityPair ) :
