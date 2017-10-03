@@ -51,19 +51,7 @@ public final class LinkingPredicates {
     public static Predicate graphId( UUID graphId ) {
         return Predicates.equal( "__key#graphId", graphId );
     }
-
-    public static Predicate linkingEntitiesFromEntityKeys( EntityKey[] entityKeys ) {
-        return Predicates.in( "__key", entityKeys );
-    }
-
-    public static Predicate linkingEntityKeyIdPairsFromGraphId( UUID graphId ) {
-        return Predicates.equal( "this", graphId );
-    }
-
-    public static Predicate between( double bottom, double top ) {
-        return Predicates.between( "this", bottom, top );
-    }
-
+    
     public static Predicate entitiesFromEntityKeyIdsAndGraphId( UUID[] entityKeyIds, UUID graphId ) {
         return Predicates.and(
                 Predicates.equal( "__key#graphId", graphId ),
