@@ -177,7 +177,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
 
     @Override
     public Map<DataKey, ByteBuffer> loadAll( Collection<DataKey> keys ) {
-        return keys.parallelStream().collect( Collectors.toMap( Function.identity(), this::load ) );
+        return keys.parallelStream().collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
     }
 
     @Override public Iterable<DataKey> loadAllKeys() {

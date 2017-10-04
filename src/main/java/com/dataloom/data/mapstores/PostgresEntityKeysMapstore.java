@@ -129,7 +129,7 @@ public class PostgresEntityKeysMapstore implements TestableSelfRegisteringMapSto
     }
 
     @Override public Map<UUID, EntityKey> loadAll( Collection<UUID> keys ) {
-        return keys.parallelStream().collect( Collectors.toMap( Function.identity(), this::load ) );
+        return keys.parallelStream().collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
     }
 
     @Override public Iterable<UUID> loadAllKeys() {

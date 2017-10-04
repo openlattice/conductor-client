@@ -201,7 +201,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
     }
 
     @Override public Map<EdgeKey, LoomEdge> loadAll( Collection<EdgeKey> keys ) {
-        return keys.parallelStream().collect( Collectors.toMap( Function.identity(), this::load ) );
+        return keys.parallelStream().collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
     }
 
     @Override public Iterable<EdgeKey> loadAllKeys() {
