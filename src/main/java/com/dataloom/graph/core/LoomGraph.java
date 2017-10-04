@@ -108,7 +108,7 @@ public class LoomGraph implements LoomGraphApi {
     }
 
     @Override
-    public Void submitAggregator( Aggregator<Entry<EdgeKey, LoomEdge>, Void> agg, Predicate p ) {
+    public <R> R submitAggregator( Aggregator<Entry<EdgeKey, LoomEdge>, R> agg, Predicate p ) {
         return edges.aggregate( agg, p );
     }
 

@@ -169,9 +169,7 @@ public class DataGraphService implements DataGraphManager {
             EntityKey key,
             SetMultimap<UUID, Object> details,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
-        final ListenableFuture reservationAndVertex = transformAsync( idService.getEntityKeyIdAsync( key ),
-                lm::createVertexAsync,
-                executor );
+        final ListenableFuture reservationAndVertex = idService.getEntityKeyIdAsync( key );
         final Stream<ListenableFuture> writes = eds.updateEntityAsync( key, details, authorizedPropertiesWithDataType );
         return Stream.concat( Stream.of( reservationAndVertex ), writes );
     }
