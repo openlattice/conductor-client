@@ -8,23 +8,21 @@ import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 public class LoomGraph implements LoomGraphApi {
 
-    private final GraphQueryService        gqs;
     private final ListeningExecutorService executor;
     private final IMap<EdgeKey, LoomEdge>  edges;
 
@@ -35,20 +33,9 @@ public class LoomGraph implements LoomGraphApi {
     // // vertex id -> dst type id -> edge type id -> dst entity key id
     // private final IMap<UUID, Neighborhood> backedges;
 
-    public LoomGraph( ListeningExecutorService executor, GraphQueryService gqs, HazelcastInstance hazelcastInstance ) {
+    public LoomGraph( ListeningExecutorService executor, HazelcastInstance hazelcastInstance ) {
         this.edges = hazelcastInstance.getMap( HazelcastMap.EDGES.name() );
         this.executor = executor;
-        this.gqs = gqs;
-    }
-
-    @Override
-    public void createVertex( UUID vertexId ) {
-        createVertexAsync( vertexId ).getUninterruptibly();
-    }
-
-    @Override
-    public ResultSetFuture createVertexAsync( UUID vertexId ) {
-        return gqs.createVertexAsync( vertexId );
     }
 
     @Override
@@ -112,22 +99,17 @@ public class LoomGraph implements LoomGraphApi {
     @Override
     public ListenableFuture deleteVertexAsync( UUID vertex ) {
         // TODO: Implement delete for neighborhoods
-        return executor.submit( () -> edges.removeAll( Predicates.equal( "srcEntityKeyId", vertex ) ) );
+        return executor.submit( () -> edges.removeAll( neighborhood( vertex ) ) );
     }
 
     @Override
     public LoomEdge getEdge( EdgeKey key ) {
-        return gqs.getEdge( key );
+        return edges.get( key );
     }
 
     @Override
-    @Timed
-    public Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> edgeSelection ) {
-        // TODO: This is for linking will fix later
-        // return edges.values( Predicates.or(
-        // Predicates.equal( "dstEntityKeyId", vertexId ),
-        // Predicates.equal( "srcEntityKeyId", vertexId ) ) ).stream();
-        return gqs.getFromEdgesTable( edgeSelection );
+    public <R> R submitAggregator( Aggregator<Entry<EdgeKey,LoomEdge>, R> agg, Predicate p ) {
+        return edges.aggregate( agg, p );
     }
 
     @Override
@@ -142,15 +124,13 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public void deleteEdges( UUID srcId ) {
-        gqs.deleteEdgesBySrcId( srcId );
+        edges.removeAll( Predicates.equal( "srcEntityKeyId", srcId ) );
     }
 
     @Override
     @Timed
     public Stream<LoomEdge> getEdgesAndNeighborsForVertex( UUID vertexId ) {
-        return edges.values( Predicates.or(
-                Predicates.equal( "dstEntityKeyId", vertexId ),
-                Predicates.equal( "srcEntityKeyId", vertexId ) ) ).stream();
+        return edges.values( neighborhood( vertexId ) ).stream();
     }
 
     @Override
@@ -170,6 +150,12 @@ public class LoomGraph implements LoomGraphApi {
             SetMultimap<UUID, UUID> dstFilters ) {
         Predicate p = edgesMatching( entitySetId, syncId, srcFilters, dstFilters );
         return this.edges.aggregate( new GraphCount( limit, entitySetId ), p );
+    }
+
+    static Predicate neighborhood( UUID entityKeyId ) {
+        return Predicates.or(
+                Predicates.equal( "dstEntityKeyId", entityKeyId ),
+                Predicates.equal( "srcEntityKeyId", entityKeyId ) );
     }
 
     public static Predicate edgesMatching(

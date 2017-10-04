@@ -6,8 +6,11 @@ import com.dataloom.graph.edge.LoomEdge;
 import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.hazelcast.aggregation.Aggregator;
+import com.hazelcast.query.Predicate;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -19,13 +22,13 @@ import java.util.stream.Stream;
  */
 public interface LoomGraphApi {
 
-    /*
-     * CRUD operations of vertices
-     */
-    void createVertex( UUID vertexId );
-
-    ResultSetFuture createVertexAsync( UUID vertexId );
-
+//    /*
+//     * CRUD operations of vertices
+//     */
+//    void createVertex( UUID vertexId );
+//
+//    ResultSetFuture createVertexAsync( UUID vertexId );
+//
     void deleteVertex( UUID vertexId );
 
     ListenableFuture deleteVertexAsync( UUID vertexId );
@@ -65,10 +68,7 @@ public interface LoomGraphApi {
      */
     LoomEdge getEdge( EdgeKey key );
 
-    /**
-     * Select edges where the column values must lie in the Set &lt; UUID &gt; specified.
-     */
-    Stream<LoomEdge> getEdges( Map<CommonColumns, Set<UUID>> edgeSelection );
+    <R> R submitAggregator( Aggregator<Entry<EdgeKey, LoomEdge>, R> agg, Predicate p );
 
     void deleteEdge( EdgeKey edgeKey );
 

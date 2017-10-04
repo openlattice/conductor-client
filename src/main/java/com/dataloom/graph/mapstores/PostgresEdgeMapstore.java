@@ -49,16 +49,21 @@ import org.slf4j.LoggerFactory;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<EdgeKey, LoomEdge> {
-    private static final Logger logger        = LoggerFactory.getLogger( PostgresEdgeMapstore.class );
-    private static final String CREATE_TABLE  = "CREATE TABLE IF NOT EXISTS edges ("
+    public static final  String EDGE_SET_ID       = "edgeSetId";
+    public static final  String SRC_ENTITY_KEY_ID = "srcEntityKeyId";
+    public static final  String DST_ENTITY_KEY_ID = "dstEntityKeyId";
+    public static final  String SRC_SET_ID        = "srcSetId";
+    public static final  String DST_SET_ID        = "dstSetId";
+    private static final Logger logger            = LoggerFactory.getLogger( PostgresEdgeMapstore.class );
+    private static final String CREATE_TABLE      = "CREATE TABLE IF NOT EXISTS edges ("
             + "src_entity_key_id UUID, src_type_id UUID, src_entity_set_id UUID, src_sync_id UUID,"
             + "dst_entity_key_id UUID, dst_type_id UUID, dst_entity_set_id UUID, dst_sync_id UUID,"
             + "edge_entity_key_id UUID, edge_type_id UUID, edge_entity_set_id UUID,"
             + "PRIMARY KEY(src_entity_key_id,dst_type_id,edge_type_id,dst_entity_key_id,edge_entity_key_id) )";
-    private static final String INSERT_ROW    = "INSERT INTO edges VALUES(?,?,?,?,?,?,?,?,?,?,?) on conflict do nothing";
-    private static final String SELECT_ROW    = "SELECT * from edges where src_entity_key_id = ? and dst_type_id = ? and edge_type_id=? and dst_entity_key_id = ? and edge_entity_key_id = ?";
-    private static final String DELETE_ROW    = "DELETE from edges where src_entity_key_id = ? and dst_type_id = ? and edge_type_id=? and dst_entity_key_id = ? and edge_entity_key_id = ?";
-    private static final String LOAD_ALL_KEYS = "select src_entity_key_id,dst_type_id,edge_type_id,dst_entity_key_id,edge_entity_key_id from edges";
+    private static final String INSERT_ROW        = "INSERT INTO edges VALUES(?,?,?,?,?,?,?,?,?,?,?) on conflict do nothing";
+    private static final String SELECT_ROW        = "SELECT * from edges where src_entity_key_id = ? and dst_type_id = ? and edge_type_id=? and dst_entity_key_id = ? and edge_entity_key_id = ?";
+    private static final String DELETE_ROW        = "DELETE from edges where src_entity_key_id = ? and dst_type_id = ? and edge_type_id=? and dst_entity_key_id = ? and edge_entity_key_id = ?";
+    private static final String LOAD_ALL_KEYS     = "select src_entity_key_id,dst_type_id,edge_type_id,dst_entity_key_id,edge_entity_key_id from edges";
     private final String           mapName;
     private final HikariDataSource hds;
 
@@ -109,15 +114,16 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
         return new MapConfig( mapName )
                 .setMapStoreConfig( getMapStoreConfig() )
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
-                .addMapIndexConfig( new MapIndexConfig( "srcEntityKeyId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "dstEntityKeyId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( SRC_ENTITY_KEY_ID, false ) )
+                .addMapIndexConfig( new MapIndexConfig( DST_ENTITY_KEY_ID, false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstTypeId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "dstSetId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( DST_SET_ID, false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstSyncId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "srcTypeId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "srcSetId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( SRC_SET_ID, false ) )
                 .addMapIndexConfig( new MapIndexConfig( "srcSyncId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "edgeTypeId", false ) );
+                .addMapIndexConfig( new MapIndexConfig( "edgeTypeId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( EDGE_SET_ID, false ) );
     }
 
     @Override public void store( EdgeKey key, LoomEdge value ) {

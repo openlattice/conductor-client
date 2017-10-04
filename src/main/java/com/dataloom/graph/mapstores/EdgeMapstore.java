@@ -43,6 +43,8 @@ import java.util.UUID;
 
 public class EdgeMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, LoomEdge> {
 
+    public static final String SRC_ENTITY_KEY_ID = "srcEntityKeyId";
+
     public EdgeMapstore( Session session ) {
         super( HazelcastMap.EDGES.name(), session, Table.EDGES.getBuilder() );
     }
@@ -94,7 +96,7 @@ public class EdgeMapstore extends AbstractStructuredCassandraMapstore<EdgeKey, L
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
-                .addMapIndexConfig( new MapIndexConfig( "srcEntityKeyId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( SRC_ENTITY_KEY_ID, false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstEntityKeyId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstTypeId", false ) )
                 .addMapIndexConfig( new MapIndexConfig( "dstSetId", false ) )
