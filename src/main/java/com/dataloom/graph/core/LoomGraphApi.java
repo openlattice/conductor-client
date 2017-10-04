@@ -3,13 +3,10 @@ package com.dataloom.graph.core;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.datastax.driver.core.ResultSetFuture;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.query.Predicate;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
@@ -68,7 +65,7 @@ public interface LoomGraphApi {
      */
     LoomEdge getEdge( EdgeKey key );
 
-    <R> R submitAggregator( Aggregator<Entry<EdgeKey, LoomEdge>, R> agg, Predicate p );
+    Void submitAggregator( Aggregator<Entry<EdgeKey, LoomEdge>, Void> agg, Predicate p );
 
     void deleteEdge( EdgeKey edgeKey );
 
