@@ -25,15 +25,19 @@ import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingEdge;
+import com.google.common.collect.Lists;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +51,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
     private final Map<UUID, Double>   srcNeighborWeights;
     private final Map<UUID, Double>   dstNeighborWeights;
     private final WeightedLinkingEdge lightest;
+    private       List<LinkingEdge>   edgesToDelete;
 
     private transient IMap<LinkingEdge, Double> weightedEdges = null;
     private transient HazelcastLinkingGraphs    graphs        = null;
@@ -58,6 +63,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         this.srcNeighborWeights = srcNeighborWeights;
         this.dstNeighborWeights = dstNeighborWeights;
         this.lightest = lightest;
+        this.edgesToDelete = Lists.newArrayList();
     }
 
     public MergingAggregator( WeightedLinkingEdge lightest ) {
@@ -86,7 +92,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
                 dstNeighborWeights.put( edge.getSrcId(), weight );
             }
         }
-        weightedEdges.delete( edge );
+        edgesToDelete.add( edge );
     }
 
     @Override
@@ -97,6 +103,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
             // TODO: At some point we might want to check and make sure there aren't duplicates.
             srcNeighborWeights.putAll( other.srcNeighborWeights );
             dstNeighborWeights.putAll( other.dstNeighborWeights );
+            edgesToDelete.addAll( other.edgesToDelete );
 
         } else {
             logger.error( "Cannot combine incompatible aggregators." );
@@ -107,6 +114,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
     public Double aggregate() {
         final LinkingVertexKey vertexKey = graphs.merge( lightest );
         logger.info( "Merging: {}", lightest.getWeight() );
+        edgesToDelete.parallelStream().forEach( edge -> weightedEdges.delete( edge ) );
         weightedEdges.delete( lightest );
         if ( srcNeighborWeights.isEmpty() && dstNeighborWeights.isEmpty() ) {
             return null;
