@@ -198,7 +198,7 @@ public class NeuronPod {
 
     @Bean
     public LoomGraph loomGraph() {
-        return new LoomGraph(executor, graphQueryService(), hazelcastInstance );
+        return new LoomGraph(executor, hazelcastInstance );
     }
 
     @Bean
