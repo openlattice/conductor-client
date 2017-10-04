@@ -168,7 +168,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
             if ( rs.next() ) {
                 val = mapToValue( rs );
             }
-            //logger.info( "LOADED: {}", val.array() );
+            logger.debug( "LOADED: {}", val.array() );
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );
         }
@@ -202,7 +202,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
                                     entry.getValue(),
                                     closer ) )
                     .flatMap( dki -> StreamUtil.stream( () -> dki ) )
-                    //.peek( key -> logger.info( "Key to load: {}", key ) )
+                    .peek( key -> logger.debug( "Key to load: {}", key ) )
                     ::iterator;
         } catch ( SQLException e ) {
             logger.error( "Unable to acquire connection load all keys" );

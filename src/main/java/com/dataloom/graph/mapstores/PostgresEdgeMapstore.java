@@ -193,7 +193,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
             if ( rs.next() ) {
                 val = mapToValue( rs );
             }
-            logger.info( "LOADED: {}", val );
+            logger.debug( "LOADED: {}", val );
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );
         }
@@ -214,7 +214,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
                     .stream( () -> new KeyIterator<>( rs,
                             new CountdownConnectionCloser( connection, 1 ),
                             PostgresEdgeMapstore::mapToKey ) )
-                    .peek( key -> logger.info( "Key to load: {}", key ) )
+                    .peek( key -> logger.debug( "Key to load: {}", key ) )
                     ::iterator;
         } catch ( SQLException e ) {
             logger.error( "Unable to acquire connection load all keys" );
