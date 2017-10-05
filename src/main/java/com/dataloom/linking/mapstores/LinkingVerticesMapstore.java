@@ -3,6 +3,8 @@ package com.dataloom.linking.mapstores;
 import java.util.Set;
 import java.util.UUID;
 
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
 import org.apache.commons.lang.math.RandomUtils;
 
 import com.dataloom.data.EntityKey;
@@ -67,8 +69,14 @@ public class LinkingVerticesMapstore extends AbstractStructuredCassandraMapstore
     public LinkingVertex generateTestValue() {
         return randomLinkingVertex();
     }
-    
-    public static LinkingVertex randomLinkingVertex(){
+
+    @Override
+    public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( "__key#graphId", false ) );
+    }
+
+    public static LinkingVertex randomLinkingVertex() {
         return new LinkingVertex(
                 RandomUtils.nextDouble(),
                 ImmutableSet.of( UUID.randomUUID(), UUID.randomUUID() ) );

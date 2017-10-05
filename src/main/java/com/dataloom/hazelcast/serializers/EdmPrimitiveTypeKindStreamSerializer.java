@@ -35,12 +35,12 @@ public class EdmPrimitiveTypeKindStreamSerializer implements SelfRegisteringStre
 
     @Override
     public void write( ObjectDataOutput out, EdmPrimitiveTypeKind object ) throws IOException {
-        out.writeInt( object.ordinal() );
+        serialize( out, object );
     }
 
     @Override
     public EdmPrimitiveTypeKind read( ObjectDataInput in ) throws IOException {
-        return VALUES[ in.readInt() ];
+        return deserialize( in );
     }
 
     @Override
@@ -54,6 +54,14 @@ public class EdmPrimitiveTypeKindStreamSerializer implements SelfRegisteringStre
     @Override
     public Class<EdmPrimitiveTypeKind> getClazz() {
         return EdmPrimitiveTypeKind.class;
+    }
+
+    public static void serialize( ObjectDataOutput out, EdmPrimitiveTypeKind object ) throws IOException {
+        out.writeInt( object.ordinal() );
+    }
+
+    public static EdmPrimitiveTypeKind deserialize( ObjectDataInput in ) throws IOException {
+        return VALUES[ in.readInt() ];
     }
 
 }
