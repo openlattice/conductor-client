@@ -42,7 +42,10 @@ public final class LinkingPredicates {
     public static Predicate getAllEdges( LinkingEdge edge ) {
         return Predicates.and(
                 Predicates.equal( "__key#graphId", edge.getGraphId() ),
-                Predicates.in( "__key#vertexId", edge.getSrcId(), edge.getDstId() ) );
+                Predicates.or(
+                        Predicates.in("__key#vertexId", edge.getSrcId(), edge.getDstId() ),
+                        Predicates.in( "value[any].vertexKey", edge.getSrc(), edge.getDst() ) )
+        );
     }
 
     public static Predicate graphId( UUID graphId ) {

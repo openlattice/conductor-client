@@ -101,7 +101,8 @@ public class LinkingEdgesMapstore
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
                 .addMapIndexConfig( new MapIndexConfig( "__key#graphId", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "__key#vertexId", false ) );
+                .addMapIndexConfig( new MapIndexConfig( "__key#vertexId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "value[any].vertexKey", false ) );
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {
