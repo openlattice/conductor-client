@@ -19,10 +19,9 @@
 
 package com.dataloom.linking.mapstores;
 
-import com.dataloom.graph.GraphUtil;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
+import com.dataloom.linking.WeightedLinkingVertexKeySet;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -35,7 +34,7 @@ import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang.NotImplementedException;
 
 import java.util.Collection;
 import java.util.UUID;
@@ -43,29 +42,30 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<LinkingEdge, Double> {
+public class LinkingEdgesMapstore
+        extends AbstractStructuredCassandraMapstore<LinkingVertexKey, WeightedLinkingVertexKeySet> {
     public LinkingEdgesMapstore( Session session ) {
         super( HazelcastMap.LINKING_EDGES.name(), session, Table.WEIGHTED_LINKING_EDGES.getBuilder() );
     }
 
-    public static LinkingEdge testKey() {
-        UUID graphId = UUID.randomUUID();
-        return new LinkingEdge( new LinkingVertexKey( graphId, UUID.randomUUID() ),
-                new LinkingVertexKey( graphId, UUID.randomUUID() ) );
+    public static LinkingVertexKey testKey() {
+        return new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() );
     }
 
     @Override
-    protected BoundStatement bind( LinkingEdge key, BoundStatement bs ) {
-        final LinkingVertexKey src = key.getSrc();
-        final LinkingVertexKey dst = key.getDst();
-        return bs.setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() )
-                .setUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), src.getVertexId() )
-                .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), dst.getVertexId() );
+    protected BoundStatement bind( LinkingVertexKey key, BoundStatement bs ) {
+        throw new NotImplementedException( "How did I get here? This is bad. " );
+        //        final LinkingVertexKey src = key.getSrc();
+        //        final LinkingVertexKey dst = key.getDst();
+        //        return bs.setUUID( CommonColumns.GRAPH_ID.cql(), key.getGraphId() )
+        //                .setUUID( CommonColumns.SOURCE_LINKING_VERTEX_ID.cql(), src.getVertexId() )
+        //                .setUUID( CommonColumns.DESTINATION_LINKING_VERTEX_ID.cql(), dst.getVertexId() );
     }
 
     @Override
-    protected BoundStatement bind( LinkingEdge key, Double value, BoundStatement bs ) {
-        return bind( key, bs ).setDouble( CommonColumns.EDGE_VALUE.cql(), value );
+    protected BoundStatement bind( LinkingVertexKey key, WeightedLinkingVertexKeySet value, BoundStatement bs ) {
+        throw new NotImplementedException( "How did I get here? This is bad. This shouldn't happen." );
+        //        return bind( key, bs ).setDouble( CommonColumns.EDGE_VALUE.cql(), value );
 
     }
 
@@ -90,19 +90,18 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
     //                .and( CommonColumns.DESTINATION_LINKING_VERTEX_ID.eq() );
     //    }
 
-    @Override public void delete( LinkingEdge key ) {
-        Double val = load( key );
-        if( val != null ) {
-            session.execute( bind( key, val, getDeleteQuery().bind() ) );
-        }
+    @Override public void delete( LinkingVertexKey key ) {
+        throw new NotImplementedException( "How did I get here? This is bad. This shouldn't happen." );
+        //        Double val = load( key );
+        //        if( val != null ) {
+        //            session.execute( bind( key, val, getDeleteQuery().bind() ) );
+        //        }
     }
 
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
-                .addMapIndexConfig( new MapIndexConfig( "__key#graphId" , false) )
-                .addMapIndexConfig( new MapIndexConfig( "__key#srcId" , false) )
-                .addMapIndexConfig( new MapIndexConfig( "__key#dstId" , false) )
-                .addMapIndexConfig( new MapIndexConfig( "this" , true) );
+                .addMapIndexConfig( new MapIndexConfig( "__key#graphId", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "__key#vertexId", false ) );
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {
@@ -111,28 +110,31 @@ public class LinkingEdgesMapstore extends AbstractStructuredCassandraMapstore<Li
     }
 
     @Override
-    public void deleteAll( Collection<LinkingEdge> keys ) {
-        keys.forEach( this::delete );
+    public void deleteAll( Collection<LinkingVertexKey> keys ) {
+        throw new NotImplementedException( "How did I get here? This is bad. This shouldn't happen." );
+        //        keys.forEach( this::delete );
     }
 
     @Override
-    protected LinkingEdge mapKey( Row row ) {
-        return GraphUtil.linkingEdge( row );
+    protected LinkingVertexKey mapKey( Row row ) {
+        throw new NotImplementedException( "How did I get here? This is bad. This shouldn't happen." );
+        //        return GraphUtil.linkingEdge( row );
     }
 
     @Override
-    protected Double mapValue( ResultSet rs ) {
-        Row row = rs.one();
-        return row == null ? null : GraphUtil.edgeValue( row );
+    protected WeightedLinkingVertexKeySet mapValue( ResultSet rs ) {
+        throw new NotImplementedException( "How did I get here? This is bad. This shouldn't happen." );
+        //        Row row = rs.one();
+        //        return row == null ? null : GraphUtil.edgeValue( row );
     }
 
     @Override
-    public LinkingEdge generateTestKey() {
+    public LinkingVertexKey generateTestKey() {
         return testKey();
     }
 
     @Override
-    public Double generateTestValue() {
-        return RandomUtils.nextDouble();
+    public WeightedLinkingVertexKeySet generateTestValue() {
+        return new WeightedLinkingVertexKeySet();
     }
 }

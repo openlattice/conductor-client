@@ -21,26 +21,29 @@
 package com.dataloom.linking.aggregators;
 
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.linking.HazelcastLinkingGraphs;
-import com.dataloom.linking.LinkingEdge;
-import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.linking.WeightedLinkingEdge;
+import com.dataloom.hazelcast.ListenableHazelcastFuture;
+import com.dataloom.linking.*;
+import com.dataloom.streams.StreamUtil;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Double>
+public class MergingAggregator
+        extends Aggregator<Entry<LinkingVertexKey, WeightedLinkingVertexKeySet>, Void>
         implements HazelcastInstanceAware {
     private static final Logger logger = LoggerFactory.getLogger( MergingAggregator.class );
 
@@ -48,8 +51,8 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
     private final Map<UUID, Double>   dstNeighborWeights;
     private final WeightedLinkingEdge lightest;
 
-    private transient IMap<LinkingEdge, Double> weightedEdges = null;
-    private transient HazelcastLinkingGraphs    graphs        = null;
+    private transient IMap<LinkingVertexKey, WeightedLinkingVertexKeySet> weightedEdges = null;
+    private transient HazelcastLinkingGraphs                              graphs        = null;
 
     public MergingAggregator(
             WeightedLinkingEdge lightest,
@@ -65,12 +68,19 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
     }
 
     @Override
-    public void accumulate( Entry<LinkingEdge, Double> input ) {
-        LinkingEdge edge = input.getKey();
+    public void accumulate( Entry<LinkingVertexKey, WeightedLinkingVertexKeySet> input ) {
         LinkingEdge lightestEdge = lightest.getEdge();
 
+        for ( WeightedLinkingVertexKey k : input.getValue() ) {
+            LinkingEdge edge = new LinkingEdge( input.getKey(), k.getVertexKey() );
+
+            accumulateHelper( lightestEdge, edge, k.getWeight() );
+        }
+    }
+
+    void accumulateHelper( LinkingEdge lightestEdge, LinkingEdge edge, double weight ) {
+
         if ( !edge.equals( lightestEdge ) ) {
-            double weight = input.getValue();
             UUID srcId = lightestEdge.getSrcId();
             UUID dstId = lightestEdge.getDstId();
 
@@ -86,7 +96,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
                 dstNeighborWeights.put( edge.getSrcId(), weight );
             }
         }
-        weightedEdges.delete( edge );
+        weightedEdges.delete( edge.getSrc() );
     }
 
     @Override
@@ -104,7 +114,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
     }
 
     @Override
-    public Double aggregate() {
+    public Void aggregate() {
         final LinkingVertexKey vertexKey = graphs.merge( lightest );
         logger.info( "Merging: {}", lightest.getWeight() );
         weightedEdges.delete( lightest );
@@ -114,10 +124,10 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         Stream<UUID> neighbors = Stream
                 .concat( srcNeighborWeights.keySet().stream(), dstNeighborWeights.keySet().stream() );
 
-        return neighbors
-                .mapToDouble( neighbor -> agg( neighbor, vertexKey ) )
-                .min()
-                .getAsDouble();
+        neighbors
+                .map( neighbor -> agg( neighbor, vertexKey ) )
+                .forEach( StreamUtil::getUninterruptibly );
+        return null;
     }
 
     @Override
@@ -138,7 +148,7 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
         return lightest;
     }
 
-    private double agg( UUID neighbor, LinkingVertexKey vertexKey ) {
+    private ListenableFuture agg( UUID neighbor, LinkingVertexKey vertexKey ) {
         final double lightestWeight = lightest.getWeight();
         final UUID graphId = lightest.getEdge().getGraphId();
         Double srcNeighborWeight = srcNeighborWeights.get( neighbor );
@@ -167,11 +177,11 @@ public class MergingAggregator extends Aggregator<Entry<LinkingEdge, Double>, Do
 
         LinkingVertexKey neighborKey = new LinkingVertexKey( graphId, neighbor );
 
-        LinkingEdge replacementLinkingEdge = new LinkingEdge( vertexKey, neighborKey );
-
         double weight = Math.max( minSrc, minDst );
-        weightedEdges.set( replacementLinkingEdge, weight );
-        return weight;
+
+        return new ListenableHazelcastFuture( weightedEdges.submitToKey( vertexKey,
+                new WeightedLinkingVertexKeyMerger( Arrays
+                        .asList( new WeightedLinkingVertexKey( weight, neighborKey ) ) ) ) );
     }
 
     @Override

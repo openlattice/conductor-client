@@ -24,6 +24,7 @@ import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
+import com.dataloom.linking.aggregators.WeightedLinkingVertexKeyMerger;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.aggregation.Aggregator;
@@ -31,6 +32,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
+
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -43,9 +46,9 @@ import java.util.UUID;
  */
 public class HazelcastLinkingGraphs {
     private static final UUID DEFAULT_ID = new UUID( 0, 0 );
-    private final IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
-    private final IMap<LinkingEdge, Double>             weightedEdges;
-    private final IMap<EntityKey, UUID>                 ids;
+    private final IMap<LinkingVertexKey, LinkingVertex>               linkingVertices;
+    private final IMap<LinkingVertexKey, WeightedLinkingVertexKeySet> weightedEdges;
+    private final IMap<EntityKey, UUID>                               ids;
 
     public HazelcastLinkingGraphs( HazelcastInstance hazelcastInstance ) {
         this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
@@ -54,11 +57,17 @@ public class HazelcastLinkingGraphs {
     }
 
     public ListenableFuture setEdgeWeightAsync( LinkingEdge edge, double weight ) {
-        return new ListenableHazelcastFuture( weightedEdges.setAsync( edge, weight ) );
+        return new ListenableHazelcastFuture( weightedEdges.submitToKey( edge.getSrc(),
+                new WeightedLinkingVertexKeyMerger(
+                        Arrays
+                                .asList( new WeightedLinkingVertexKey( weight, edge.getDst() ) ) ) ) );
     }
 
     public void setEdgeWeight( LinkingEdge edge, double weight ) {
-        weightedEdges.set( edge, weight );
+        weightedEdges.executeOnKey( edge.getSrc(),
+                new WeightedLinkingVertexKeyMerger(
+                        Arrays
+                                .asList( new WeightedLinkingVertexKey( weight, edge.getDst() ) ) ) );
     }
 
     public UUID getGraphIdFromEntitySetId( UUID linkedEntitySetId ) {
@@ -69,7 +78,6 @@ public class HazelcastLinkingGraphs {
         ids.aggregate( new Initializer( graphId ),
                 EntitySets.filterByEntitySetIdAndSyncIdPairs( entitySetIdsToSyncs ) );
     }
-
 
     public LinkingVertexKey merge( WeightedLinkingEdge weightedEdge ) {
         LinkingEdge edge = weightedEdge.getEdge();

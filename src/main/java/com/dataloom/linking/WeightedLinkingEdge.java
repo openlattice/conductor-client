@@ -39,6 +39,10 @@ public class WeightedLinkingEdge implements Comparable<WeightedLinkingEdge> {
         return weight;
     }
 
+    public int getBucketKey() {
+        return edge.getGraphId().hashCode()+edge.getSrcId().hashCode()+edge.getDstId().hashCode();
+    }
+
     @Override public int compareTo( WeightedLinkingEdge o ) {
         int result = Double.compare( weight, o.weight );
         
