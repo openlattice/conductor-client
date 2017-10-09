@@ -43,8 +43,8 @@ public final class LinkingPredicates {
         return Predicates.and(
                 Predicates.equal( "__key#graphId", edge.getGraphId() ),
                 Predicates.or(
-                        Predicates.in( "__key#srcId", edge.getSrcId(), edge.getDstId() ),
-                        Predicates.in( "__key#dstId", edge.getSrcId(), edge.getDstId() ) )
+                        Predicates.in("__key#vertexId", edge.getSrcId(), edge.getDstId() ),
+                        Predicates.in( "value[any].vertexKey", edge.getSrc(), edge.getDst() ) )
         );
     }
 

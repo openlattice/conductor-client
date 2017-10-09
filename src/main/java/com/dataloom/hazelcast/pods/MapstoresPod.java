@@ -28,44 +28,22 @@ import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
-import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
-import com.dataloom.data.mapstores.EntityKeysMapstore;
-import com.dataloom.data.mapstores.LinkingEntityMapstore;
-import com.dataloom.data.mapstores.PostgresDataMapstore;
-import com.dataloom.data.mapstores.SyncIdsMapstore;
+import com.dataloom.data.mapstores.*;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.mapstores.AclKeysMapstore;
-import com.dataloom.edm.mapstores.AssociationTypeMapstore;
-import com.dataloom.edm.mapstores.ComplexTypeMapstore;
-import com.dataloom.edm.mapstores.EdmVersionMapstore;
-import com.dataloom.edm.mapstores.EntitySetMapstore;
-import com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore;
-import com.dataloom.edm.mapstores.EntityTypeMapstore;
-import com.dataloom.edm.mapstores.EnumTypesMapstore;
-import com.dataloom.edm.mapstores.NamesMapstore;
-import com.dataloom.edm.mapstores.PropertyTypeMapstore;
+import com.dataloom.edm.mapstores.*;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.type.*;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.PostgresEdgeMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingEntityKey;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
-import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
-import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
-import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
-import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
-import com.dataloom.linking.mapstores.VertexIdsAfterLinkingMapstore;
+import com.dataloom.linking.WeightedLinkingVertexKeySet;
+import com.dataloom.linking.mapstores.*;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
@@ -77,11 +55,7 @@ import com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore;
 import com.dataloom.requests.AclRootRequestDetailsPair;
 import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
-import com.dataloom.requests.mapstores.AclRootPrincipalPair;
-import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
-import com.dataloom.requests.mapstores.RequestMapstore;
-import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
-import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
+import com.dataloom.requests.mapstores.*;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -92,14 +66,15 @@ import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+import javax.inject.Inject;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
-import javax.inject.Inject;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 @Configuration
 @Import( CassandraPod.class )
@@ -247,7 +222,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<LinkingEdge, Double> linkingEdgesMapstore() {
+    public SelfRegisteringMapStore<LinkingVertexKey, WeightedLinkingVertexKeySet> linkingEdgesMapstore() {
         return new LinkingEdgesMapstore( session );
     }
 

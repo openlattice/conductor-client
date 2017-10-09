@@ -20,18 +20,18 @@
 
 package com.dataloom.linking.aggregators;
 
-import com.dataloom.linking.LinkingEdge;
-import com.dataloom.linking.WeightedLinkingEdge;
+import com.dataloom.linking.*;
 import com.hazelcast.aggregation.Aggregator;
-import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map.Entry;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class LightestEdgeAggregator
-        extends Aggregator<Entry<LinkingEdge, Double>, WeightedLinkingEdge> {
+        extends Aggregator<Entry<LinkingVertexKey, WeightedLinkingVertexKeySet>, WeightedLinkingEdge> {
     private static final Logger logger = LoggerFactory.getLogger( LightestEdgeAggregator.class );
 
     private WeightedLinkingEdge lightest = null;
@@ -44,10 +44,13 @@ public class LightestEdgeAggregator
     }
 
     @Override
-    public void accumulate( Entry<LinkingEdge, Double> input ) {
-        double weight = input.getValue();
+    public void accumulate( Entry<LinkingVertexKey, WeightedLinkingVertexKeySet> input ) {
+        WeightedLinkingVertexKey wlvk = input.getValue().first();
+        LinkingEdge le = new LinkingEdge( input.getKey(), wlvk.getVertexKey() );
+        WeightedLinkingEdge wle = new WeightedLinkingEdge( wlvk.getWeight(), le );
+        double weight = wle.getWeight();
         if ( lightest == null || weight < lightest.getWeight() ) {
-            lightest = new WeightedLinkingEdge( weight, input.getKey() );
+            lightest = wle;
         }
     }
 
