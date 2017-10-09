@@ -189,4 +189,19 @@ public class ElasticsearchLambdas implements Serializable {
                 .getModelScore( features );
     }
 
+    public static Function<ConductorElasticsearchApi, Boolean> triggerPropertyTypeIndex( List<PropertyType> propertyTypes ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .triggerPropertyTypeIndex( propertyTypes );
+    }
+
+    public static Function<ConductorElasticsearchApi, Boolean> triggerEntityTypeIndex( List<EntityType> entityTypes ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .triggerEntityTypeIndex( entityTypes );
+    }
+
+    public static Function<ConductorElasticsearchApi, Boolean> triggerAssociationTypeIndex( List<AssociationType> associationTypes ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .triggerAssociationTypeIndex( associationTypes );
+    }
+
 }

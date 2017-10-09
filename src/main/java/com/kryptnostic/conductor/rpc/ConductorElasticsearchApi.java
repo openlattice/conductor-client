@@ -207,4 +207,10 @@ public interface ConductorElasticsearchApi {
 
     double getModelScore( double[][] features );
 
+    boolean triggerPropertyTypeIndex( List<PropertyType> propertyTypes );
+
+    boolean triggerEntityTypeIndex( List<EntityType> entityTypes );
+
+    boolean triggerAssociationTypeIndex( List<AssociationType> associationTypes );
+
 }
