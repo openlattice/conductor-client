@@ -43,6 +43,7 @@ public class LightestEdgeAggregatorStreamSerializer implements SelfRegisteringSt
         if ( edge == null ) {
             out.writeBoolean( false );
         } else {
+            out.writeBoolean( true );
             WeightedLinkingEdgeStreamSerializer.serialize( out, edge );
         }
     }
