@@ -67,14 +67,30 @@ public class MergingAggregator
         this( lightest, new HashMap<>(), new HashMap<>() );
     }
 
+    private boolean vertexKeyMatchesLightest( LinkingVertexKey vertexKey ) {
+        return vertexKey.equals( lightest.getEdge().getSrc() ) || vertexKey.equals( lightest.getEdge().getDst() );
+    }
+
     @Override
     public void accumulate( Entry<LinkingVertexKey, WeightedLinkingVertexKeySet> input ) {
         LinkingEdge lightestEdge = lightest.getEdge();
+        boolean keyMatches = vertexKeyMatchesLightest( input.getKey() );
 
         for ( WeightedLinkingVertexKey k : input.getValue() ) {
-            LinkingEdge edge = new LinkingEdge( input.getKey(), k.getVertexKey() );
+            boolean valMatches = vertexKeyMatchesLightest( k.getVertexKey() );
 
-            accumulateHelper( lightestEdge, edge, k.getWeight() );
+            if ( keyMatches || valMatches ) {
+                LinkingEdge edge = new LinkingEdge( input.getKey(), k.getVertexKey() );
+                accumulateHelper( lightestEdge, edge, k.getWeight() );
+                if ( !keyMatches ) {
+                    weightedEdges.executeOnKey( input.getKey(),
+                            new WeightedLinkingVertexKeyValueRemover( Arrays
+                                    .asList( k ) ) );
+                }
+            }
+        }
+        if ( keyMatches ) {
+            weightedEdges.delete( input.getKey() );
         }
     }
 
@@ -96,7 +112,6 @@ public class MergingAggregator
                 dstNeighborWeights.put( edge.getSrcId(), weight );
             }
         }
-        weightedEdges.delete( edge.getSrc() );
     }
 
     @Override
