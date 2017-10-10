@@ -24,14 +24,17 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.WeightedLinkingEdge;
 import com.dataloom.linking.aggregators.MergingAggregator;
+import com.google.common.collect.Maps;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -45,19 +48,24 @@ public class MergingAggregatorStreamSerializer implements SelfRegisteringStreamS
     }
 
     @Override public void write( ObjectDataOutput out, MergingAggregator object ) throws IOException {
-        serializeMap( out, object.getSrcNeighborWeights() );
-        serializeMap( out, object.getDstNeighborWeights() );
-        WeightedLinkingEdge wEdge = object.getLightest();
-        LinkingEdge edge = wEdge.getEdge();
-        LinkingEdgeStreamSerializer.serialize( out, edge );
-        out.writeDouble( wEdge.getWeight() );
+        if ( object.getSrcNeighborWeights() == null )
+            out.writeInt( 0 );
+        else
+            serializeMap( out, object.getSrcNeighborWeights() );
+
+        if ( object.getDstNeighborWeights() == null )
+            out.writeInt( 0 );
+        else
+            serializeMap( out, object.getDstNeighborWeights() );
+
+        WeightedLinkingEdgeStreamSerializer.serialize( out, object.getLightest() );
     }
 
     @Override public MergingAggregator read( ObjectDataInput in ) throws IOException {
         Map<UUID, Double> srcNW = deserializeMap( in );
         Map<UUID, Double> dstNW = deserializeMap( in );
-        LinkingEdge edge = LinkingEdgeStreamSerializer.deserialize( in );
-        return new MergingAggregator( new WeightedLinkingEdge( in.readDouble(), edge ), srcNW, dstNW );
+        WeightedLinkingEdge lightest = WeightedLinkingEdgeStreamSerializer.deserialize( in );
+        return new MergingAggregator( lightest, srcNW, dstNW );
     }
 
     @Override public int getTypeId() {
@@ -71,20 +79,18 @@ public class MergingAggregatorStreamSerializer implements SelfRegisteringStreamS
     public static void serializeMap( ObjectDataOutput out, Map<UUID, Double> m ) throws IOException {
         out.writeInt( m.size() );
         for ( Entry<UUID, Double> entry : m.entrySet() ) {
-            UUID id = entry.getKey();
-            out.writeLong( id.getLeastSignificantBits() );
-            out.writeLong( id.getMostSignificantBits() );
-            out.writeDouble( entry.getValue().doubleValue() );
+            UUIDStreamSerializer.serialize( out, entry.getKey() );
+            out.writeDouble( entry.getValue() );
         }
     }
 
     public static Map<UUID, Double> deserializeMap( ObjectDataInput in ) throws IOException {
         int size = in.readInt();
-        Map<UUID, Double> m = new HashMap<>( size );
-        for ( Entry<UUID, Double> entry : m.entrySet() ) {
-            long lsb = in.readLong();
-            long msb = in.readLong();
-            m.put( new UUID( msb, lsb ), in.readDouble() );
+        Map<UUID, Double> m = Maps.newHashMap();
+        for ( int i = 0; i < size; i++ ) {
+            UUID key = UUIDStreamSerializer.deserialize( in );
+            double value = in.readDouble();
+            m.put( key, value );
         }
         return m;
     }
