@@ -23,15 +23,23 @@ import java.util.UUID;
 public class LoadingAggregator
         extends Aggregator<Map.Entry<DataKey, ByteBuffer>, Integer>
         implements HazelcastInstanceAware {
-    private final Map<GraphEntityPair, LinkingEntity> entities = Maps.newHashMap();
-    private final ObjectMapper                        mapper   = ObjectMappers.getJsonMapper();
+    private final Map<GraphEntityPair, LinkingEntity> entities;
+    private final ObjectMapper mapper = ObjectMappers.getJsonMapper();
     private final     Map<UUID, Map<UUID, PropertyType>>   authorizedPropertyTypes;
     private final     UUID                                 graphId;
     private transient IMap<GraphEntityPair, LinkingEntity> linkingEntities;
 
-    public LoadingAggregator( UUID graphId, Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes ) {
+    public LoadingAggregator(
+            UUID graphId,
+            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes,
+            Map<GraphEntityPair, LinkingEntity> entities ) {
         this.graphId = graphId;
         this.authorizedPropertyTypes = authorizedPropertyTypes;
+        this.entities = entities;
+    }
+
+    public LoadingAggregator( UUID graphId, Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes ) {
+        this( graphId, authorizedPropertyTypes, Maps.newHashMap() );
     }
 
     @Override public void accumulate( Map.Entry<DataKey, ByteBuffer> input ) {
@@ -85,6 +93,10 @@ public class LoadingAggregator
 
     public Map<UUID, Map<UUID, PropertyType>> getAuthorizedPropertyTypes() {
         return authorizedPropertyTypes;
+    }
+
+    public Map<GraphEntityPair, LinkingEntity> getEntities() {
+        return entities;
     }
 
     public UUID getGraphId() {
