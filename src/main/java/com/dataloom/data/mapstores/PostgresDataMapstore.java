@@ -38,6 +38,7 @@ import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.postgres.CountdownConnectionCloser;
 import com.zaxxer.hikari.HikariDataSource;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
@@ -57,7 +58,6 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
-import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

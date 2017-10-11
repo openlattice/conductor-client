@@ -28,38 +28,39 @@ import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.services.Auth0ManagementApi;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import retrofit2.Retrofit;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 public class UserDirectoryService {
     private static final Logger logger = LoggerFactory.getLogger( UserDirectoryService.class );
+    private static final int DEFAULT_PAGE_SIZE = 100;
     //TODO: Switch over to a Hazelcast map to relieve pressure from Auth0
     @SuppressWarnings( "unused" )
     private final IMap<String, Auth0UserBasic> users;
     private       Retrofit                     retrofit;
     private       Auth0ManagementApi           auth0ManagementApi;
 
-    private static final int DEFAULT_PAGE_SIZE = 100;
-
     public UserDirectoryService( String token, HazelcastInstance hazelcastInstance ) {
-        retrofit = RetrofitFactory.newClient( "https://loom.auth0.com/api/v2/", () -> token );
+        retrofit = RetrofitFactory.newClient( "https://openlattice.auth0.com/api/v2/", () -> token );
         auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
         users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
     }
 
     public UserDirectoryService( String token ) {
-        retrofit = RetrofitFactory.newClient( "https://loom.auth0.com/api/v2/", () -> token );
+        retrofit = RetrofitFactory.newClient( "https://openlattice.auth0.com/api/v2/", () -> token );
         auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
         users = null;
     }
 
     public Map<String, Auth0UserBasic> getAllUsers() {
-
         int page = 0;
         Set<Auth0UserBasic> pageOfUsers;
         Set<Auth0UserBasic> users = Sets.newHashSet();

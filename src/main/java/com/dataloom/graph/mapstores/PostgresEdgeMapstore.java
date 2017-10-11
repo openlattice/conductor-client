@@ -20,7 +20,7 @@
 
 package com.dataloom.graph.mapstores;
 
-import com.dataloom.data.mapstores.CountdownConnectionCloser;
+import com.openlattice.postgres.CountdownConnectionCloser;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.streams.StreamUtil;
@@ -30,6 +30,7 @@ import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.postgres.KeyIterator;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
