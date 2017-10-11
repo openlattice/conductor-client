@@ -45,12 +45,14 @@ public class LightestEdgeAggregator
 
     @Override
     public void accumulate( Entry<LinkingVertexKey, WeightedLinkingVertexKeySet> input ) {
-        WeightedLinkingVertexKey wlvk = input.getValue().first();
-        LinkingEdge le = new LinkingEdge( input.getKey(), wlvk.getVertexKey() );
-        WeightedLinkingEdge wle = new WeightedLinkingEdge( wlvk.getWeight(), le );
-        double weight = wle.getWeight();
-        if ( lightest == null || weight < lightest.getWeight() ) {
-            lightest = wle;
+        if (input.getValue() != null && input.getValue().size() != 0) {
+            WeightedLinkingVertexKey wlvk = input.getValue().first();
+            LinkingEdge le = new LinkingEdge( input.getKey(), wlvk.getVertexKey() );
+            WeightedLinkingEdge wle = new WeightedLinkingEdge( wlvk.getWeight(), le );
+            double weight = wle.getWeight();
+            if ( lightest == null || weight < lightest.getWeight() ) {
+                lightest = wle;
+            }
         }
     }
 
