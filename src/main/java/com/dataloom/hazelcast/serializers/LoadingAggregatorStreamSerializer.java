@@ -1,5 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
+import com.dataloom.blocking.GraphEntityPair;
+import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.blocking.LoadingAggregator;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
@@ -28,6 +30,13 @@ public class LoadingAggregatorStreamSerializer implements SelfRegisteringStreamS
                 PropertyTypeStreamSerializer.serialize( out, valueEntry.getValue() );
             }
         }
+
+        Map<GraphEntityPair, LinkingEntity> entities = object.getEntities();
+        out.writeInt( entities.size() );
+        for ( Map.Entry<GraphEntityPair, LinkingEntity> entry : entities.entrySet() ) {
+            GraphEntityPairStreamSerializer.serialize( out, entry.getKey() );
+            LinkingEntityStreamSerializer.serialize( out, entry.getValue() );
+        }
     }
 
     @Override public LoadingAggregator read( ObjectDataInput in ) throws IOException {
@@ -47,7 +56,16 @@ public class LoadingAggregatorStreamSerializer implements SelfRegisteringStreamS
             }
             authorizedPropertyTypes.put( entitySetId, pts );
         }
-        return new LoadingAggregator( graphId, authorizedPropertyTypes );
+
+        Map<GraphEntityPair, LinkingEntity> entities = Maps.newHashMap();
+        int entitiesMapSize = in.readInt();
+        for (int i = 0; i < entitiesMapSize; i++ ) {
+            GraphEntityPair key = GraphEntityPairStreamSerializer.deserialize( in );
+            LinkingEntity value = LinkingEntityStreamSerializer.deserialize( in );
+            entities.put( key, value );
+        }
+
+        return new LoadingAggregator( graphId, authorizedPropertyTypes, entities );
     }
 
     @Override public int getTypeId() {
