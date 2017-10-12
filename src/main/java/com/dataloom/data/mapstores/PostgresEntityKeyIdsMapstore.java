@@ -21,7 +21,8 @@
 package com.dataloom.data.mapstores;
 
 import com.dataloom.data.EntityKey;
-import com.dataloom.graph.mapstores.KeyIterator;
+import com.openlattice.postgres.CountdownConnectionCloser;
+import com.openlattice.postgres.KeyIterator;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.streams.StreamUtil;
 import com.hazelcast.config.MapConfig;
