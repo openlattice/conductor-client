@@ -65,7 +65,7 @@ public final class PostgresTable {
     public static PostgresTableDefinition ACL_KEYS =
             new PostgresTableDefinition( "acl_keys" )
                     .addColumns( NAME, SECURABLE_OBJECTID )
-                    .setUnique( NAME, SECURABLE_OBJECTID );
+                    .primaryKey( NAME );
 
     private PostgresTable() {
     }
