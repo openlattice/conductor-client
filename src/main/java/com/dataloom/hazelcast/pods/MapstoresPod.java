@@ -19,10 +19,6 @@
 
 package com.dataloom.hazelcast.pods;
 
-import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
-
-import com.openlattice.postgres.PostgresPod;
-import com.openlattice.postgres.PostgresTableManager;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
@@ -78,14 +74,8 @@ import com.dataloom.organizations.mapstores.StringSetMapstore;
 import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.organizations.roles.mapstores.RolesMapstore;
 import com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore;
-import com.dataloom.requests.AclRootRequestDetailsPair;
-import com.dataloom.requests.PermissionsRequestDetails;
 import com.dataloom.requests.Status;
-import com.dataloom.requests.mapstores.AclRootPrincipalPair;
-import com.dataloom.requests.mapstores.PrincipalRequestIdPair;
 import com.dataloom.requests.mapstores.RequestMapstore;
-import com.dataloom.requests.mapstores.ResolvedPermissionsRequestsMapstore;
-import com.dataloom.requests.mapstores.UnresolvedPermissionsRequestsMapstore;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -95,6 +85,8 @@ import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import com.openlattice.postgres.PostgresPod;
+import com.openlattice.postgres.PostgresTableManager;
 import com.zaxxer.hikari.HikariDataSource;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
@@ -106,7 +98,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import( {CassandraPod.class, PostgresPod.class} )
+@Import( { CassandraPod.class, PostgresPod.class } )
 public class MapstoresPod {
 
     @Inject
@@ -146,13 +138,13 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, PropertyType> propertyTypeMapstore() {
         PropertyTypeMapstore cptm = new PropertyTypeMapstore( session );
-//        com.openlattice.postgres.mapstores.PropertyTypeMapstore ptm = new com.openlattice.postgres.mapstores.PropertyTypeMapstore(
-//                HazelcastMap.PROPERTY_TYPES.name(),
-//                PROPERTY_TYPES,
-//                hikariDataSource );
-//        for ( UUID id : cptm.loadAllKeys() ) {
-//            ptm.store( id, cptm.load( id ) );
-//        }
+        //        com.openlattice.postgres.mapstores.PropertyTypeMapstore ptm = new com.openlattice.postgres.mapstores.PropertyTypeMapstore(
+        //                HazelcastMap.PROPERTY_TYPES.name(),
+        //                PROPERTY_TYPES,
+        //                hikariDataSource );
+        //        for ( UUID id : cptm.loadAllKeys() ) {
+        //            ptm.store( id, cptm.load( id ) );
+        //        }
         return cptm;
     }
 
@@ -194,16 +186,6 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, String> namesMapstore() {
         return new NamesMapstore( session );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<AclRootPrincipalPair, PermissionsRequestDetails> unresolvedRequestsMapstore() {
-        return new UnresolvedPermissionsRequestsMapstore( session );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<PrincipalRequestIdPair, AclRootRequestDetailsPair> resolvedRequestsMapstore() {
-        return new ResolvedPermissionsRequestsMapstore( session );
     }
 
     @Bean
