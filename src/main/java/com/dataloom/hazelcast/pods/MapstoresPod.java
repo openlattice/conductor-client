@@ -34,7 +34,6 @@ import com.dataloom.data.mapstores.LinkingEntityMapstore;
 import com.dataloom.data.mapstores.PostgresDataMapstore;
 import com.dataloom.data.mapstores.SyncIdsMapstore;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.mapstores.AclKeysMapstore;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
 import com.dataloom.edm.mapstores.ComplexTypeMapstore;
 import com.dataloom.edm.mapstores.EdmVersionMapstore;
@@ -56,14 +55,12 @@ import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.PostgresEdgeMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.linking.LinkingEntityKey;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
 import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
 import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
-import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
 import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.linking.mapstores.VertexIdsAfterLinkingMapstore;
 import com.dataloom.organization.roles.Role;
@@ -87,6 +84,7 @@ import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
+import com.openlattice.postgres.mapstores.AclKeysMapstore;
 import com.zaxxer.hikari.HikariDataSource;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
@@ -96,6 +94,8 @@ import javax.inject.Inject;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+
+import static com.openlattice.postgres.PostgresTable.ACL_KEYS;
 
 @Configuration
 @Import( { CassandraPod.class, PostgresPod.class } )
@@ -175,7 +175,12 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<String, UUID> aclKeysMapstore() {
-        return new AclKeysMapstore( session );
+        com.dataloom.edm.mapstores.AclKeysMapstore akm = new com.dataloom.edm.mapstores.AclKeysMapstore( session );
+        AclKeysMapstore pakm = new AclKeysMapstore( HazelcastMap.ACL_KEYS.name(), ACL_KEYS, hikariDataSource );
+        for ( String name : akm.loadAllKeys() ) {
+            pakm.store( name, akm.load( name ) );
+        }
+        return pakm;
     }
 
     @Bean

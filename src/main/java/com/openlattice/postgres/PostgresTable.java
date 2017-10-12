@@ -20,19 +20,7 @@
 
 package com.openlattice.postgres;
 
-import static com.openlattice.postgres.PostgresColumn.ACL_KEY;
-import static com.openlattice.postgres.PostgresColumn.ANALYZER;
-import static com.openlattice.postgres.PostgresColumn.DATATYPE;
-import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.NAME;
-import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
-import static com.openlattice.postgres.PostgresColumn.PII;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE;
-import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
-import static com.openlattice.postgres.PostgresColumn.TITLE;
+import static com.openlattice.postgres.PostgresColumn.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -73,6 +61,11 @@ public final class PostgresTable {
             new PostgresTableDefinition( "property_types" )
                     .addColumns( ID, NAMESPACE, NAME, DATATYPE, TITLE, DESCRIPTION, SCHEMAS, PII, ANALYZER )
                     .setUnique( NAMESPACE, NAME );
+
+    public static PostgresTableDefinition ACL_KEYS =
+            new PostgresTableDefinition( "acl_keys" )
+                    .addColumns( NAME, SECURABLE_OBJECTID )
+                    .setUnique( NAME, SECURABLE_OBJECTID );
 
     private PostgresTable() {
     }

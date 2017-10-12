@@ -41,46 +41,49 @@ public final class PostgresColumn {
     public static final String NAMESPACE_FIELD             = "namespace";
     public static final String TITLE_FIELD                 = "title";
     public static final String PII_FIELD                   = "pii";
-    public static final String PERMISSIONS_FIELD            = "permissions";
+    public static final String PERMISSIONS_FIELD           = "permissions";
     public static final String PRINCIPAL_TYPE_FIELD        = "principal_type";
     public static final String PRINCIPAL_ID_FIELD          = "principal_id";
     public static final String SCHEMAS_FIELD               = "schemas";
     public static final String SECURABLE_OBJECT_TYPE_FIELD = "securable_object_type";
+    public static final String SECURABLE_OBJECTID_FIELD    = "securable_objectid";
 
-    public static final PostgresColumnDefinition PERMISSIONS =
+    public static final PostgresColumnDefinition PERMISSIONS           =
             new PostgresColumnDefinition( PERMISSIONS_FIELD, TEXT_ARRAY );
-    public static final PostgresColumnDefinition PRINCIPAL_TYPE =
+    public static final PostgresColumnDefinition PRINCIPAL_TYPE        =
             new PostgresColumnDefinition( PRINCIPAL_TYPE_FIELD, TEXT );
-    public static final PostgresColumnDefinition PRINCIPAL_ID =
+    public static final PostgresColumnDefinition PRINCIPAL_ID          =
             new PostgresColumnDefinition( PRINCIPAL_ID_FIELD, TEXT );
-    public static PostgresColumnDefinition ACL_KEY  =
+    public static       PostgresColumnDefinition ACL_KEY               =
             new PostgresColumnDefinition( ACL_KEY_FIELD, UUID_ARRAY );
-    public static PostgresColumnDefinition ANALYZER =
+    public static       PostgresColumnDefinition ANALYZER              =
             new PostgresColumnDefinition( ANALYZER_FIELD, TEXT )
                     .withDefault( "'" + Analyzer.STANDARD.name() + "'" )
                     .notNull();
-    public static PostgresColumnDefinition DATATYPE    =
+    public static       PostgresColumnDefinition DATATYPE              =
             new PostgresColumnDefinition( DATATYPE_FIELD, TEXT ).notNull();
-    public static PostgresColumnDefinition DESCRIPTION =
+    public static       PostgresColumnDefinition DESCRIPTION           =
             new PostgresColumnDefinition( DESCRIPTION_FIELD, TEXT );
-    public static PostgresColumnDefinition ID =
+    public static       PostgresColumnDefinition ID                    =
             new PostgresColumnDefinition( ID_FIELD, UUID ).primaryKey();
-    public static PostgresColumnDefinition
-            NAME =
+    public static       PostgresColumnDefinition
+                                                 NAME                  =
             new PostgresColumnDefinition( NAME_FIELD, TEXT ).notNull();
-    public static PostgresColumnDefinition NAMESPACE =
+    public static       PostgresColumnDefinition NAMESPACE             =
             new PostgresColumnDefinition( NAMESPACE_FIELD, TEXT ).notNull();
-    public static PostgresColumnDefinition TITLE     =
+    public static       PostgresColumnDefinition TITLE                 =
             new PostgresColumnDefinition( TITLE_FIELD, TEXT ).notNull();
-    public static PostgresColumnDefinition PII =
+    public static       PostgresColumnDefinition PII                   =
             new PostgresColumnDefinition( PII_FIELD, BOOLEAN )
                     .withDefault( false )
                     .notNull();
-    public static PostgresColumnDefinition SECURABLE_OBJECT_TYPE =
+    public static       PostgresColumnDefinition SECURABLE_OBJECT_TYPE =
             new PostgresColumnDefinition( SECURABLE_OBJECT_TYPE_FIELD, TEXT ).notNull();
-    public static PostgresColumnDefinition SCHEMAS =
+    public static       PostgresColumnDefinition SCHEMAS               =
             new PostgresColumnDefinition( SCHEMAS_FIELD, TEXT_ARRAY )
                     .notNull();
+    public static       PostgresColumnDefinition SECURABLE_OBJECTID    =
+            new PostgresColumnDefinition( SECURABLE_OBJECTID_FIELD, UUID ).notNull();
 
     private PostgresColumn() {
     }
