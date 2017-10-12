@@ -37,6 +37,9 @@ public class AclKeysMapstore extends AbstractBasePostgresMapstore<String, UUID> 
     @Override protected void bind( PreparedStatement ps, String key, UUID value ) throws SQLException {
         ps.setString( 1, key );
         ps.setObject( 2, value );
+
+        // UPDATE
+        ps.setObject( 3, value );
     }
 
     @Override protected void bind( PreparedStatement ps, String key ) throws SQLException {
