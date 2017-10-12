@@ -19,13 +19,12 @@
 
 package com.dataloom.edm.properties;
 
+import com.google.common.collect.Sets;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.spark_project.guava.collect.Sets;
 
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.type.EntityType;

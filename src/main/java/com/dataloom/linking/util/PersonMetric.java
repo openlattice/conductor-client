@@ -2,15 +2,13 @@ package com.dataloom.linking.util;
 
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiFunction;
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.sql.types.DataTypes;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
-
-import java.util.*;
-import java.util.function.BiFunction;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -54,19 +52,9 @@ public enum PersonMetric {
     ETHNICITY_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasEthnicity( e, map ) ) ),
     ETHNICITY_RHS_PRESENCE( rhs( ( e, map ) -> PersonProperties.getHasEthnicity( e, map ) ) );
 
-    private static final PersonMetric[]    metrics     = PersonMetric.values();
-    private static final Set<PersonMetric> metricsList = Sets.newHashSet( PersonMetric.values() );
-    private static final StructType schema;
-    private static final DoubleMetaphone doubleMetaphone = new DoubleMetaphone();
-
-    static {
-        List<StructField> fields = new ArrayList<>();
-        for ( PersonMetric pm : metrics ) {
-            StructField field = DataTypes.createStructField( pm.name(), DataTypes.DoubleType, true );
-            fields.add( field );
-        }
-        schema = DataTypes.createStructType( fields );
-    }
+    private static final PersonMetric[]    metrics         = PersonMetric.values();
+    private static final Set<PersonMetric> metricsList     = Sets.newHashSet( PersonMetric.values() );
+    private static final DoubleMetaphone   doubleMetaphone = new DoubleMetaphone();
 
     private final MetricExtractor metric;
 
@@ -79,10 +67,6 @@ public enum PersonMetric {
             Map<UUID, DelegatedStringSet> rhs,
             Map<FullQualifiedName, UUID> fqnToIdMap ) {
         return this.metric.extract( lhs, rhs, fqnToIdMap );
-    }
-
-    public static StructType getSchema() {
-        return schema;
     }
 
     public static Double[] distance(
@@ -148,8 +132,7 @@ public enum PersonMetric {
         for ( String s1 : lhs ) {
             for ( String s2 : rhs ) {
                 double difference = getStringDistance( s1.toLowerCase(), s2.toLowerCase(), useMetaphone, alternate );
-                if ( difference > max )
-                    max = difference;
+                if ( difference > max ) { max = difference; }
             }
         }
         return max;
