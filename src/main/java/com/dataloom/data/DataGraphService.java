@@ -39,6 +39,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
+import org.apache.commons.collections4.keyvalue.MultiKey;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -47,10 +48,10 @@ public class DataGraphService implements DataGraphManager {
     private static final Logger logger = LoggerFactory
             .getLogger( DataGraphService.class );
     private final ListeningExecutorService executor;
-//    private final Cache<MultiKey, IncrementableWeightId[]> queryCache = CacheBuilder.newBuilder()
-//            .maximumSize( 1000 )
-//            .expireAfterWrite( 30, TimeUnit.SECONDS )
-//            .build();
+    private final Cache<MultiKey, IncrementableWeightId[]> queryCache = CacheBuilder.newBuilder()
+            .maximumSize( 1000 )
+            .expireAfterWrite( 30, TimeUnit.SECONDS )
+            .build();
     private EventBus                 eventBus;
     private LoomGraph                lm;
     private EntityKeyIdService       idService;
@@ -285,11 +286,11 @@ public class DataGraphService implements DataGraphManager {
          * topUtilizerDetailsList ) ); } catch ( JsonProcessingException e1 ) { logger.debug(
          * "Unable to generate query id." ); return null; }
          */
-//        IncrementableWeightId[] maybeUtilizers = queryCache
-//                .getIfPresent( new MultiKey( entitySetId, topUtilizerDetailsList ) );
+        IncrementableWeightId[] maybeUtilizers = queryCache
+                .getIfPresent( new MultiKey( entitySetId, topUtilizerDetailsList ) );
         final IncrementableWeightId[] utilizers;
         // if ( !eds.queryAlreadyExecuted( queryId ) ) {
-//        if ( maybeUtilizers == null ) {
+        if ( maybeUtilizers == null ) {
             //            utilizers = new TopUtilizers( numResults );
             SetMultimap<UUID, UUID> srcFilters = HashMultimap.create();
             SetMultimap<UUID, UUID> dstFilters = HashMultimap.create();
@@ -320,10 +321,10 @@ public class DataGraphService implements DataGraphManager {
             //                        // eds.writeVertexCount( queryId, vertexId, 1.0D * score );
             //                    } );
 
-//            queryCache.put( new MultiKey( entitySetId, topUtilizerDetailsList ), utilizers );
-//        } else {
-//            utilizers = maybeUtilizers;
-//        }
+            queryCache.put( new MultiKey( entitySetId, topUtilizerDetailsList ), utilizers );
+        } else {
+            utilizers = maybeUtilizers;
+        }
 
         return eds.getEntities( utilizers, authorizedPropertyTypes )::iterator;
         //
