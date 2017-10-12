@@ -1050,8 +1050,8 @@ public class EdmService implements EdmManager {
     private void createOrUpdateAssociationTypeWithFqn( AssociationType at, FullQualifiedName fqn ) {
         EntityType et = at.getAssociationEntityType();
         AssociationType existing = getAssociationTypeSafe( et.getId() );
-        createOrUpdateEntityTypeWithFqn( et, fqn );
         if ( existing == null ) {
+            createOrUpdateEntityTypeWithFqn( et, fqn );
             createAssociationType( at, getTypeAclKey( et.getType() ) );
         } else {
             if ( !existing.getSrc().equals( at.getSrc() ) )
