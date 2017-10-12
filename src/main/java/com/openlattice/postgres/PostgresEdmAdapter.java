@@ -20,20 +20,37 @@
 
 package com.openlattice.postgres;
 
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.kryptnostic.datastore.services.EdmService;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class PostgresDataTableFactory {
+public class PostgresEdmAdapter {
+    private final EdmService edmService;
 
-    public static PostgresTableDefinition propertyTable( UUID entitySetId,  UUID propertyTypeId, PostgresDatatype datatype ) {
-        return null;
+    public PostgresEdmAdapter( EdmService edmService ) {
+        this.edmService = edmService;
     }
 
-    public static PostgresTableDefinition entitySetTable( UUID entitySetId ) {
-        return null;
+    /**
+     * Creates a entity set table for holding entities of a specific type
+     * @param entitySetId
+     */
+    public void createEntitySetTable( UUID entitySetId ) {
+
     }
 
+    public void createPropertyTypeTableForEntitySet(
+            UUID entitySetId,
+            UUID propertyTypeId,
+            PostgresDatatype datatype ) {
+
+    }
+
+    public void createSecurableObject( List<UUID> aclKey, SecurableObjectType securableObjectType ) {
+
+    }
 }
