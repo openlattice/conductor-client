@@ -30,15 +30,15 @@ import static com.openlattice.postgres.PostgresColumn.PII;
 import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
 import static com.openlattice.postgres.PostgresColumn.TITLE;
 
-import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresDatatype;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.dataloom.edm.type.Analyzer;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumn;
+import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Array;
 import java.sql.PreparedStatement;
@@ -64,7 +64,7 @@ public class PropertyTypeMapstore extends AbstractBasePostgresMapstore<UUID, Pro
     }
 
     @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( NAME, NAMESPACE, TITLE, DESCRIPTION, SCHEMAS, PII, ANALYZER );
+        return ImmutableList.of( NAMESPACE, NAME, DATATYPE, TITLE, DESCRIPTION, SCHEMAS, PII, ANALYZER );
     }
 
     @Override protected void bind( PreparedStatement ps, UUID key, PropertyType value ) throws SQLException {
@@ -78,18 +78,29 @@ public class PropertyTypeMapstore extends AbstractBasePostgresMapstore<UUID, Pro
         ps.setString( 5, value.getTitle() );
         ps.setString( 6, value.getDescription() );
 
-        Array schemas = ps.getConnection().createArrayOf( PostgresDatatype.TEXT.sql(),
-                value.getSchemas().stream()
-                        .map( FullQualifiedName::getFullQualifiedNameAsString )
-                        .toArray( String[]::new ) );
+        Array schemas = PostgresArrays.createTextArray(
+                ps.getConnection(),
+                value.getSchemas().stream().map( FullQualifiedName::getFullQualifiedNameAsString ) );
 
-        ps.setArray( 6, schemas );
-        ps.setBoolean( 7, value.isPIIfield() );
-        ps.setString( 8, value.getAnalyzer().name() );
+        ps.setArray( 7, schemas );
+        ps.setBoolean( 8, value.isPIIfield() );
+        ps.setString( 9, value.getAnalyzer().name() );
+
+        //UPDATE
+        ps.setString( 10, fqn.getNamespace() );
+        ps.setString( 11, fqn.getName() );
+
+        ps.setString( 12, value.getDatatype().name() );
+        ps.setString( 13, value.getTitle() );
+        ps.setString( 14, value.getDescription() );
+
+        ps.setArray( 15, schemas );
+        ps.setBoolean( 16, value.isPIIfield() );
+        ps.setString( 17, value.getAnalyzer().name() );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) {
-
+    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
+        ps.setObject( 1, key );
     }
 
     @Override protected PropertyType mapToValue( java.sql.ResultSet rs ) throws SQLException {

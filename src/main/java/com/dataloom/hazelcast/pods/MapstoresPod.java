@@ -146,14 +146,14 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, PropertyType> propertyTypeMapstore() {
         PropertyTypeMapstore cptm = new PropertyTypeMapstore( session );
-        com.openlattice.postgres.mapstores.PropertyTypeMapstore ptm = new com.openlattice.postgres.mapstores.PropertyTypeMapstore(
-                HazelcastMap.PROPERTY_TYPES.name(),
-                PROPERTY_TYPES,
-                hikariDataSource );
-        for ( UUID id : cptm.loadAllKeys() ) {
-            ptm.store( id, cptm.load( id ) );
-        }
-        return ptm;
+//        com.openlattice.postgres.mapstores.PropertyTypeMapstore ptm = new com.openlattice.postgres.mapstores.PropertyTypeMapstore(
+//                HazelcastMap.PROPERTY_TYPES.name(),
+//                PROPERTY_TYPES,
+//                hikariDataSource );
+//        for ( UUID id : cptm.loadAllKeys() ) {
+//            ptm.store( id, cptm.load( id ) );
+//        }
+        return cptm;
     }
 
     @Bean

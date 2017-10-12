@@ -60,7 +60,6 @@ public enum Table implements TableDef {
     PERMISSIONS_REQUESTS_RESOLVED,
     PROPERTY_TYPES,
     REQUESTS,
-    RPC_DATA_ORDERED,
     SCHEMAS,
     WEIGHTED_LINKING_EDGES,
     ASSOCIATION_TYPES,
@@ -402,12 +401,6 @@ public enum Table implements TableDef {
                         .secondaryIndex( PRINCIPAL_TYPE,
                                 PRINCIPAL_ID,
                                 STATUS );
-            case RPC_DATA_ORDERED:
-                return new CassandraTableBuilder( RPC_DATA_ORDERED )
-                        .ifNotExists()
-                        .partitionKey( RPC_REQUEST_ID )
-                        .clusteringColumns( RPC_WEIGHT, RPC_VALUE )
-                        .withDescendingOrder( RPC_WEIGHT );
             case SCHEMAS:
                 return new CassandraTableBuilder( SCHEMAS )
                         .ifNotExists()
