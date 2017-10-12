@@ -22,7 +22,6 @@ package com.kryptnostic.datastore.services;
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PARTITION_INDEX;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
-import com.clearspring.analytics.util.Preconditions;
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.edm.EntitySet;
@@ -33,6 +32,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
