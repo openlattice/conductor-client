@@ -31,6 +31,6 @@ import org.springframework.context.annotation.Configuration;
 public class PostgresTablesPod {
     @Bean
     public PostgresTables postgresTables() {
-        return () -> Stream.of( PostgresTable.PROPERTY_TYPES, PostgresTable.ACL_KEYS );
+        return () -> Stream.of( PostgresTable.PROPERTY_TYPES, PostgresTable.ACL_KEYS, PostgresTable.NAMES );
     }
 }

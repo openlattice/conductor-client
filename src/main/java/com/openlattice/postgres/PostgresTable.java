@@ -48,15 +48,6 @@ public final class PostgresTable {
     //            CommonColumns.PERMISSIONS,
     //            SECURABLE_OBJECT_TYPE );
 
-    public static PostgresTableDefinition NAMES =
-            new PostgresTableDefinition( "names" )
-                    .addColumns( ID, NAME );
-
-    //    case NAMES:
-    //            return new CassandraTableBuilder( NAMES )
-    //                        .ifNotExists()
-    //                        .partitionKey( SECURABLE_OBJECTID )
-    //                        .columns( NAME );
     public static PostgresTableDefinition PROPERTY_TYPES =
             new PostgresTableDefinition( "property_types" )
                     .addColumns( ID, NAMESPACE, NAME, DATATYPE, TITLE, DESCRIPTION, SCHEMAS, PII, ANALYZER )
@@ -66,6 +57,11 @@ public final class PostgresTable {
             new PostgresTableDefinition( "acl_keys" )
                     .addColumns( NAME, SECURABLE_OBJECTID )
                     .primaryKey( NAME );
+
+    public static PostgresTableDefinition NAMES =
+            new PostgresTableDefinition( "names" )
+                    .addColumns( SECURABLE_OBJECTID, NAME )
+                    .primaryKey( SECURABLE_OBJECTID );
 
     private PostgresTable() {
     }

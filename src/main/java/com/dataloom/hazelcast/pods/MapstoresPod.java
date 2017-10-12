@@ -55,14 +55,11 @@ import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.PostgresEdgeMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.linking.LinkingEntityKey;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
-import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
-import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
-import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
-import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
-import com.dataloom.linking.mapstores.VertexIdsAfterLinkingMapstore;
+import com.dataloom.linking.mapstores.*;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
@@ -86,16 +83,20 @@ import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.AclKeysMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 import javax.inject.Inject;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 import static com.openlattice.postgres.PostgresTable.ACL_KEYS;
+import static com.openlattice.postgres.PostgresTable.NAMES;
+import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
 
 @Configuration
 @Import( { CassandraPod.class, PostgresPod.class } )
@@ -190,7 +191,14 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, String> namesMapstore() {
-        return new NamesMapstore( session );
+        com.openlattice.postgres.mapstores.NamesMapstore pnm = new com.openlattice.postgres.mapstores.NamesMapstore(
+                HazelcastMap.NAMES.name(), NAMES, hikariDataSource );
+
+        NamesMapstore nm = new NamesMapstore( session );
+        for ( UUID key : nm.loadAllKeys() ) {
+            pnm.store( key, nm.load( key ) );
+        }
+        return pnm;
     }
 
     @Bean
