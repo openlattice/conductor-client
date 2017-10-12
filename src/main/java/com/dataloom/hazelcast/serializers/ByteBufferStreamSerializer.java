@@ -27,7 +27,6 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.springframework.stereotype.Component;
-import scala.util.control.Exception.By;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
