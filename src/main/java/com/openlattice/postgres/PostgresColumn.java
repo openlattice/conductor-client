@@ -39,6 +39,7 @@ public final class PostgresColumn {
     public static final String DESCRIPTION_FIELD           = "description";
     public static final String DST_FIELD                   = "dst";
     public static final String ENTITY_KEY_IDS_FIELD        = "entity_key_ids";
+    public static final String ENTITY_SET_ID_FIELD         = "entity_set_id";
     public static final String ENTITY_TYPE_ID_FIELD        = "entity_type_id";
     public static final String GRAPH_DIAMETER_FIELD        = "graph_diameter";
     public static final String GRAPH_ID_FIELD              = "graph_id";
@@ -56,10 +57,12 @@ public final class PostgresColumn {
     public static final String PRINCIPAL_ID_FIELD          = "principal_id";
     public static final String PRINCIPAL_IDS_FIELD         = "principal_ids";
     public static final String PROPERTIES_FIELD            = "properties";
+    public static final String PROPERTY_TYPE_ID_FIELD      = "property_type_id";
     public static final String ROLE_ID_FIELD               = "role_id";
     public static final String SCHEMAS_FIELD               = "schemas";
     public static final String SECURABLE_OBJECT_TYPE_FIELD = "securable_object_type";
     public static final String SECURABLE_OBJECTID_FIELD    = "securable_objectid";
+    public static final String SHOW_FIELD                  = "show";
     public static final String SRC_FIELD                   = "src";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
 
@@ -136,8 +139,14 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( ORGANIZATION_ID_FIELD, UUID ).notNull();
     public static final PostgresColumnDefinition PRINCIPAL_IDS         =
             new PostgresColumnDefinition( PRINCIPAL_IDS_FIELD, TEXT_ARRAY );
-    public static       PostgresColumnDefinition ROLE_ID       =
+    public static       PostgresColumnDefinition ROLE_ID               =
             new PostgresColumnDefinition( ROLE_ID_FIELD, UUID ).notNull();
+    public static       PostgresColumnDefinition ENTITY_SET_ID               =
+            new PostgresColumnDefinition( ENTITY_SET_ID_FIELD, UUID ).notNull();
+    public static       PostgresColumnDefinition PROPERTY_TYPE_ID               =
+            new PostgresColumnDefinition( PROPERTY_TYPE_ID_FIELD, UUID ).notNull();
+    public static       PostgresColumnDefinition SHOW               =
+            new PostgresColumnDefinition( SHOW_FIELD, BOOLEAN ).notNull();
 
     private PostgresColumn() {
     }

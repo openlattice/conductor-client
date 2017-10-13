@@ -36,6 +36,7 @@ public class PostgresTablesPod {
                 PostgresTable.ACL_KEYS,
                 PostgresTable.ASSOCIATION_TYPES,
                 PostgresTable.ENTITY_TYPES,
+                PostgresTable.ENTITY_SET_PROPERTY_METADATA,
                 PostgresTable.ENTITY_SETS,
                 PostgresTable.LINKING_VERTICES,
                 PostgresTable.NAMES,

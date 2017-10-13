@@ -91,6 +91,11 @@ public final class PostgresTable {
                     .addColumns( ROLE_ID, ORGANIZATION_ID, NULLABLE_TITLE, DESCRIPTION, PRINCIPAL_IDS )
                     .primaryKey( ROLE_ID, ORGANIZATION_ID );
 
+    public static PostgresTableDefinition ENTITY_SET_PROPERTY_METADATA =
+            new PostgresTableDefinition( "entity_set_property_metadata" )
+                    .addColumns( ENTITY_SET_ID, PROPERTY_TYPE_ID, TITLE, DESCRIPTION, SHOW )
+                    .primaryKey( ENTITY_SET_ID, PROPERTY_TYPE_ID );
+
     private PostgresTable() {
     }
 

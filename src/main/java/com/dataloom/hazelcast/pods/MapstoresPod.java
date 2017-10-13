@@ -392,7 +392,16 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadataMapstore() {
-        return new EntitySetPropertyMetadataMapstore( session );
+        EntitySetPropertyMetadataMapstore espm = new EntitySetPropertyMetadataMapstore( session );
+        com.openlattice.postgres.mapstores.EntitySetPropertyMetadataMapstore pespm = new com.openlattice.postgres.mapstores.EntitySetPropertyMetadataMapstore(
+                HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name(),
+                ENTITY_SET_PROPERTY_METADATA,
+                hikariDataSource );
+
+        for ( EntitySetPropertyKey key : espm.loadAllKeys() ) {
+            pespm.store( key, espm.load( key ) );
+        }
+        return pespm;
     }
 
     @Bean
