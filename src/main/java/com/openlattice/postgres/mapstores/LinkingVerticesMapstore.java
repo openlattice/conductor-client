@@ -4,6 +4,8 @@ import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
@@ -68,6 +70,12 @@ public class LinkingVerticesMapstore extends AbstractBasePostgresMapstore<Linkin
             logger.error( "Unable to map LinkingVertexKey", ex );
             return null;
         }
+    }
+
+    @Override
+    public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( "__key#graphId", false ) );
     }
 
     @Override public LinkingVertexKey generateTestKey() {
