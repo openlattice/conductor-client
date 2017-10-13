@@ -2,6 +2,7 @@ package com.openlattice.postgres.mapstores;
 
 import com.dataloom.edm.type.Analyzer;
 import com.dataloom.edm.type.EnumType;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -20,14 +21,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresTable.ENUM_TYPES;
 
 public class EnumTypesMapstore extends AbstractBasePostgresMapstore<UUID, EnumType> {
 
-    public EnumTypesMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public EnumTypesMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ENUM_TYPES.name(), ENUM_TYPES, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

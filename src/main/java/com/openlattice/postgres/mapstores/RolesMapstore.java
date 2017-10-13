@@ -1,5 +1,6 @@
 package com.openlattice.postgres.mapstores;
 
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
@@ -16,14 +17,12 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresTable.ROLES;
 
 public class RolesMapstore extends AbstractBasePostgresMapstore<RoleKey, Role> {
 
-    public RolesMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public RolesMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ROLES.name(), ROLES, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

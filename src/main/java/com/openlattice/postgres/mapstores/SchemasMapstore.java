@@ -1,12 +1,12 @@
 package com.openlattice.postgres.mapstores;
 
+import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -18,14 +18,12 @@ import java.util.List;
 
 import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
 import static com.openlattice.postgres.PostgresColumn.NAME_SET;
+import static com.openlattice.postgres.PostgresTable.SCHEMA;
 
 public class SchemasMapstore extends AbstractBasePostgresMapstore<String, DelegatedStringSet> {
 
-    public SchemasMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public SchemasMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.SCHEMAS.name(), SCHEMA, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

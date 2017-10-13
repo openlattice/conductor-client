@@ -1,9 +1,9 @@
 package com.openlattice.postgres.mapstores;
 
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingVertexKey;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
@@ -13,14 +13,12 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresTable.VERTEX_IDS_AFTER_LINKING;
 
 public class VertexIdsAfterLinkingMapstore extends AbstractBasePostgresMapstore<LinkingVertexKey, UUID> {
 
-    public VertexIdsAfterLinkingMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public VertexIdsAfterLinkingMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.VERTEX_IDS_AFTER_LINKING.name(), VERTEX_IDS_AFTER_LINKING, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

@@ -2,6 +2,7 @@ package com.openlattice.postgres.mapstores;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.PrincipalSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -23,13 +24,11 @@ import java.util.stream.Stream;
 
 import static com.openlattice.postgres.PostgresColumn.ID;
 import static com.openlattice.postgres.PostgresColumn.MEMBERS;
+import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
 
 public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UUID, PrincipalSet> {
-    public OrganizationMembersMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public OrganizationMembersMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ORGANIZATIONS_MEMBERS.name(), ORGANIZATIONS, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

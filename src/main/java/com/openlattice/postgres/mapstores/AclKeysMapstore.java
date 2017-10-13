@@ -1,6 +1,7 @@
 package com.openlattice.postgres.mapstores;
 
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
@@ -16,14 +17,12 @@ import java.util.UUID;
 import static com.openlattice.postgres.PostgresColumn.ID;
 import static com.openlattice.postgres.PostgresColumn.NAME;
 import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
+import static com.openlattice.postgres.PostgresTable.ACL_KEYS;
 
 public class AclKeysMapstore extends AbstractBasePostgresMapstore<String, UUID> {
 
-    public AclKeysMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public AclKeysMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ACL_KEYS.name(), ACL_KEYS, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

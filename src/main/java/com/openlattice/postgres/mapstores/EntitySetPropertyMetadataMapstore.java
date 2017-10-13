@@ -3,6 +3,7 @@ package com.openlattice.postgres.mapstores;
 import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
@@ -15,15 +16,13 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresTable.ENTITY_SET_PROPERTY_METADATA;
 
 public class EntitySetPropertyMetadataMapstore
         extends AbstractBasePostgresMapstore<EntitySetPropertyKey, EntitySetPropertyMetadata> {
 
-    public EntitySetPropertyMetadataMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public EntitySetPropertyMetadataMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name(), ENTITY_SET_PROPERTY_METADATA, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

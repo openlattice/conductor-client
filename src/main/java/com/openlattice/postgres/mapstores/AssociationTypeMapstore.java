@@ -1,6 +1,7 @@
 package com.openlattice.postgres.mapstores;
 
 import com.dataloom.edm.type.AssociationType;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -20,14 +21,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresTable.ASSOCIATION_TYPES;
 
 public class AssociationTypeMapstore extends AbstractBasePostgresMapstore<UUID, AssociationType> {
 
-    public AssociationTypeMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public AssociationTypeMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ASSOCIATION_TYPES.name(), ASSOCIATION_TYPES, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

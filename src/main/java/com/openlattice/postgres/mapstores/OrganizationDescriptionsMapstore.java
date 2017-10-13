@@ -1,9 +1,9 @@
 package com.openlattice.postgres.mapstores;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
@@ -14,15 +14,12 @@ import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
 import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.TITLE;
+import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
 
 public class OrganizationDescriptionsMapstore extends AbstractBasePostgresMapstore<UUID, String> {
 
-    public OrganizationDescriptionsMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public OrganizationDescriptionsMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS.name(), ORGANIZATIONS, hds );
     }
 
     @Override public List<PostgresColumnDefinition> keyColumns() {

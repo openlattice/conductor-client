@@ -2,6 +2,7 @@ package com.openlattice.postgres.mapstores;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
@@ -9,7 +10,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
@@ -23,14 +23,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresTable.ROLES;
 
 public class UsersWithRoleMapstore extends AbstractBasePostgresMapstore<RoleKey, PrincipalSet> {
 
-    public UsersWithRoleMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public UsersWithRoleMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.USERS_WITH_ROLE.name(), ROLES, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

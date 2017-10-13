@@ -1,5 +1,6 @@
 package com.openlattice.postgres.mapstores;
 
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.google.common.collect.ImmutableList;
@@ -19,14 +20,12 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresTable.LINKING_VERTICES;
 
 public class LinkingVerticesMapstore extends AbstractBasePostgresMapstore<LinkingVertexKey, LinkingVertex> {
 
-    public LinkingVerticesMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public LinkingVerticesMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.LINKING_VERTICES.name(), LINKING_VERTICES, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

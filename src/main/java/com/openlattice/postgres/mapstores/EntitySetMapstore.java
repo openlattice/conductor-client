@@ -1,6 +1,7 @@
 package com.openlattice.postgres.mapstores;
 
 import com.dataloom.edm.EntitySet;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -18,14 +19,12 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresTable.ENTITY_SETS;
 
 public class EntitySetMapstore extends AbstractBasePostgresMapstore<UUID, EntitySet> {
 
-    public EntitySetMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public EntitySetMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ENTITY_SETS.name(), ENTITY_SETS, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

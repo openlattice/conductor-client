@@ -1,5 +1,6 @@
 package com.openlattice.postgres.mapstores;
 
+import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -19,14 +20,12 @@ import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.ALLOWED_EMAIL_DOMAINS;
 import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
 
 public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapstore<UUID, DelegatedStringSet> {
 
-    public OrganizationEmailDomainsMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public OrganizationEmailDomainsMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.ALLOWED_EMAIL_DOMAINS.name(), ORGANIZATIONS, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {

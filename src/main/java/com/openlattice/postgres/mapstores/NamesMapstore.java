@@ -1,5 +1,6 @@
 package com.openlattice.postgres.mapstores;
 
+import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
@@ -14,14 +15,12 @@ import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.NAME;
 import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
+import static com.openlattice.postgres.PostgresTable.NAMES;
 
 public class NamesMapstore extends AbstractBasePostgresMapstore<UUID, String> {
 
-    public NamesMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public NamesMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.NAMES.name(), NAMES, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {
