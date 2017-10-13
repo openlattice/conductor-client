@@ -277,7 +277,12 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, LinkingVertex> linkingVerticesMapstore() {
-        return new LinkingVerticesMapstore( session );
+        LinkingVerticesMapstore lvm = new LinkingVerticesMapstore( session );
+        com.openlattice.postgres.mapstores.LinkingVerticesMapstore plvm = new com.openlattice.postgres.mapstores.LinkingVerticesMapstore( HazelcastMap.LINKING_VERTICES.name(), LINKING_VERTICES, hikariDataSource );
+        for ( LinkingVertexKey key : lvm.loadAllKeys() ) {
+            plvm.store( key, lvm.load( key ) );
+        }
+        return plvm;
     }
 
     @Bean

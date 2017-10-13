@@ -35,7 +35,10 @@ public final class PostgresColumn {
     public static final String CONTACTS_FIELD              = "contacts";
     public static final String DATATYPE_FIELD              = "datatype";
     public static final String DESCRIPTION_FIELD           = "description";
+    public static final String ENTITY_KEY_IDS_FIELD        = "entity_key_ids";
     public static final String ENTITY_TYPE_ID_FIELD        = "entity_type_id";
+    public static final String GRAPH_DIAMETER_FIELD        = "graph_diameter";
+    public static final String GRAPH_ID_FIELD              = "graph_id";
     public static final String ID_FIELD                    = "id";
     public static final String KEY_FIELD                   = "key";
     public static final String NAME_FIELD                  = "name";
@@ -49,6 +52,7 @@ public final class PostgresColumn {
     public static final String SCHEMAS_FIELD               = "schemas";
     public static final String SECURABLE_OBJECT_TYPE_FIELD = "securable_object_type";
     public static final String SECURABLE_OBJECTID_FIELD    = "securable_objectid";
+    public static final String VERTEX_ID_FIELD             = "vertex_id";
 
     public static final PostgresColumnDefinition PERMISSIONS           =
             new PostgresColumnDefinition( PERMISSIONS_FIELD, TEXT_ARRAY );
@@ -87,18 +91,26 @@ public final class PostgresColumn {
     public static       PostgresColumnDefinition SECURABLE_OBJECTID    =
             new PostgresColumnDefinition( SECURABLE_OBJECTID_FIELD, UUID ).notNull();
 
-    public static PostgresColumnDefinition KEY        =
+    public static PostgresColumnDefinition KEY            =
             new PostgresColumnDefinition( KEY_FIELD, UUID_ARRAY ).notNull();
-    public static PostgresColumnDefinition PROPERTIES =
+    public static PostgresColumnDefinition PROPERTIES     =
             new PostgresColumnDefinition( PROPERTIES_FIELD, UUID_ARRAY ).notNull();
-    public static PostgresColumnDefinition CATEGORY   =
+    public static PostgresColumnDefinition CATEGORY       =
             new PostgresColumnDefinition( CATEGORY_FIELD, TEXT ).notNull();
-    public static PostgresColumnDefinition BASE_TYPE  =
+    public static PostgresColumnDefinition BASE_TYPE      =
             new PostgresColumnDefinition( BASE_TYPE_FIELD, UUID );
     public static PostgresColumnDefinition ENTITY_TYPE_ID =
             new PostgresColumnDefinition( ENTITY_TYPE_ID_FIELD, UUID ).notNull();
-    public static PostgresColumnDefinition CONTACTS =
+    public static PostgresColumnDefinition CONTACTS       =
             new PostgresColumnDefinition( CONTACTS_FIELD, TEXT_ARRAY );
+    public static PostgresColumnDefinition GRAPH_DIAMETER =
+            new PostgresColumnDefinition( GRAPH_DIAMETER_FIELD, DECIMAL );
+    public static PostgresColumnDefinition ENTITY_KEY_IDS =
+            new PostgresColumnDefinition( ENTITY_KEY_IDS_FIELD, UUID_ARRAY );
+    public static PostgresColumnDefinition GRAPH_ID       =
+            new PostgresColumnDefinition( GRAPH_ID_FIELD, UUID );
+    public static PostgresColumnDefinition VERTEX_ID      =
+            new PostgresColumnDefinition( VERTEX_ID_FIELD, UUID );
 
     private PostgresColumn() {
     }

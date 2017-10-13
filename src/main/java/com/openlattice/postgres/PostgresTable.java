@@ -73,6 +73,11 @@ public final class PostgresTable {
                     .addColumns( ID, NAME, ENTITY_TYPE_ID, TITLE, DESCRIPTION, CONTACTS )
                     .setUnique( NAME );
 
+    public static PostgresTableDefinition LINKING_VERTICES =
+            new PostgresTableDefinition( "linking_vertices" )
+                    .addColumns( GRAPH_ID, VERTEX_ID, GRAPH_DIAMETER, ENTITY_KEY_IDS )
+                    .primaryKey( GRAPH_ID, VERTEX_ID );
+
     private PostgresTable() {
     }
 
