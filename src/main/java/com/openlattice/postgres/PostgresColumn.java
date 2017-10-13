@@ -29,6 +29,7 @@ import static com.openlattice.postgres.PostgresDatatype.*;
  */
 public final class PostgresColumn {
     public static final String ACL_KEY_FIELD               = "acl_key";
+    public static final String ALLOWED_EMAIL_DOMAINS_FIELD = "allowed_email_domains";
     public static final String ANALYZER_FIELD              = "analyzer";
     public static final String BASE_TYPE_FIELD             = "base_type";
     public static final String BIDIRECTIONAL_FIELD         = "bidirectional";
@@ -43,8 +44,10 @@ public final class PostgresColumn {
     public static final String GRAPH_ID_FIELD              = "graph_id";
     public static final String ID_FIELD                    = "id";
     public static final String KEY_FIELD                   = "key";
+    public static final String MEMBERS_FIELD               = "members";
     public static final String NAME_FIELD                  = "name";
     public static final String NAMESPACE_FIELD             = "namespace";
+    public static final String ORGANIZATION_TITLE_FIELD    = "title";
     public static final String TITLE_FIELD                 = "title";
     public static final String PII_FIELD                   = "pii";
     public static final String PERMISSIONS_FIELD           = "permissions";
@@ -120,6 +123,12 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( DST_FIELD, UUID_ARRAY );
     public static PostgresColumnDefinition BIDIRECTIONAL =
             new PostgresColumnDefinition( BIDIRECTIONAL_FIELD, BOOLEAN );
+    public static PostgresColumnDefinition ALLOWED_EMAIL_DOMAINS =
+            new PostgresColumnDefinition( ALLOWED_EMAIL_DOMAINS_FIELD, TEXT_ARRAY );
+    public static PostgresColumnDefinition MEMBERS =
+            new PostgresColumnDefinition( MEMBERS_FIELD, TEXT_ARRAY );
+    public static PostgresColumnDefinition ORGANIZATION_TITLE =
+            new PostgresColumnDefinition( ORGANIZATION_TITLE_FIELD, TEXT );
 
     private PostgresColumn() {
     }

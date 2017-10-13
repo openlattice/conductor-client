@@ -39,6 +39,7 @@ public class PostgresTablesPod {
                 PostgresTable.ENTITY_SETS,
                 PostgresTable.LINKING_VERTICES,
                 PostgresTable.NAMES,
+                PostgresTable.ORGANIZATIONS,
                 PostgresTable.PROPERTY_TYPES );
     }
 }

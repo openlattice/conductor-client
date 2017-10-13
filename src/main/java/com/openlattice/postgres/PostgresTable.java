@@ -82,6 +82,10 @@ public final class PostgresTable {
             new PostgresTableDefinition( "association_types" )
                     .addColumns( ID, SRC, DST, BIDIRECTIONAL );
 
+    public static PostgresTableDefinition ORGANIZATIONS =
+            new PostgresTableDefinition( "organizations" )
+                    .addColumns( ID, ORGANIZATION_TITLE, DESCRIPTION, ALLOWED_EMAIL_DOMAINS, MEMBERS );
+
     private PostgresTable() {
     }
 
