@@ -65,7 +65,16 @@ public final class PostgresTable {
 
     public static PostgresTableDefinition ENTITY_TYPES =
             new PostgresTableDefinition( "entity_types" )
-                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, KEY, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY )
+                    .addColumns( ID,
+                            NAMESPACE,
+                            NAME,
+                            TITLE,
+                            DESCRIPTION,
+                            KEY,
+                            PROPERTIES,
+                            BASE_TYPE,
+                            SCHEMAS,
+                            CATEGORY )
                     .setUnique( NAMESPACE, NAME );
 
     public static PostgresTableDefinition ENTITY_SETS =
@@ -101,17 +110,25 @@ public final class PostgresTable {
                     .addColumns( GRAPH_ID, VERTEX_ID, NEW_VERTEX_ID )
                     .primaryKey( GRAPH_ID, VERTEX_ID );
 
-    /*
-                case SCHEMAS:
-                return new CassandraTableBuilder( SCHEMAS )
-                        .ifNotExists()
-                        .partitionKey( NAMESPACE )
-                        .columns( NAME_SET );
-     */
     public static PostgresTableDefinition SCHEMA =
             new PostgresTableDefinition( "schemas" )
                     .addColumns( NAMESPACE, NAME_SET )
                     .primaryKey( NAMESPACE );
+
+    public static PostgresTableDefinition ENUM_TYPES =
+            new PostgresTableDefinition( "enum_types" )
+                    .addColumns( ID,
+                            NAMESPACE,
+                            NAME,
+                            TITLE,
+                            DESCRIPTION,
+                            MEMBERS,
+                            SCHEMAS,
+                            DATATYPE,
+                            FLAGS,
+                            PII,
+                            ANALYZER )
+                    .setUnique( NAMESPACE, NAME );
 
     private PostgresTable() {
     }

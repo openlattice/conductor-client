@@ -72,6 +72,7 @@ import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.AclKeysMapstore;
 import com.openlattice.postgres.mapstores.*;
+import com.openlattice.postgres.mapstores.EnumTypesMapstore;
 import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
@@ -157,7 +158,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, EnumType> enumTypeMapstore() {
-        return new EnumTypesMapstore( session );
+        return new EnumTypesMapstore( HazelcastMap.ENUM_TYPES.name(), ENUM_TYPES, hikariDataSource );
     }
 
     @Bean

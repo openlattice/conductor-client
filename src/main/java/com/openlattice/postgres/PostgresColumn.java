@@ -41,6 +41,7 @@ public final class PostgresColumn {
     public static final String ENTITY_KEY_IDS_FIELD        = "entity_key_ids";
     public static final String ENTITY_SET_ID_FIELD         = "entity_set_id";
     public static final String ENTITY_TYPE_ID_FIELD        = "entity_type_id";
+    public static final String FLAGS_FIELD                 = "flags";
     public static final String GRAPH_DIAMETER_FIELD        = "graph_diameter";
     public static final String GRAPH_ID_FIELD              = "graph_id";
     public static final String ID_FIELD                    = "id";
@@ -151,8 +152,10 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( SHOW_FIELD, BOOLEAN ).notNull();
     public static       PostgresColumnDefinition NEW_VERTEX_ID         =
             new PostgresColumnDefinition( NEW_VERTEX_ID_FIELD, UUID ).notNull();
-    public static       PostgresColumnDefinition NAME_SET         =
+    public static       PostgresColumnDefinition NAME_SET              =
             new PostgresColumnDefinition( NAME_SET_FIELD, TEXT_ARRAY ).notNull();
+    public static       PostgresColumnDefinition FLAGS                 =
+            new PostgresColumnDefinition( FLAGS_FIELD, BOOLEAN ).notNull();
 
     private PostgresColumn() {
     }
