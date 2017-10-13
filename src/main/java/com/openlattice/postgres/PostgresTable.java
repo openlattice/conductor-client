@@ -84,7 +84,12 @@ public final class PostgresTable {
 
     public static PostgresTableDefinition ORGANIZATIONS =
             new PostgresTableDefinition( "organizations" )
-                    .addColumns( ID, ORGANIZATION_TITLE, DESCRIPTION, ALLOWED_EMAIL_DOMAINS, MEMBERS );
+                    .addColumns( ID, NULLABLE_TITLE, DESCRIPTION, ALLOWED_EMAIL_DOMAINS, MEMBERS );
+
+    public static PostgresTableDefinition ROLES =
+            new PostgresTableDefinition( "roles" )
+                    .addColumns( ROLE_ID, ORGANIZATION_ID, NULLABLE_TITLE, DESCRIPTION, PRINCIPAL_IDS )
+                    .primaryKey( ROLE_ID, ORGANIZATION_ID );
 
     private PostgresTable() {
     }

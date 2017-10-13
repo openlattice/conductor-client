@@ -20,10 +20,10 @@
 
 package com.openlattice.postgres;
 
-import java.util.stream.Stream;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.stream.Stream;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -40,6 +40,8 @@ public class PostgresTablesPod {
                 PostgresTable.LINKING_VERTICES,
                 PostgresTable.NAMES,
                 PostgresTable.ORGANIZATIONS,
-                PostgresTable.PROPERTY_TYPES );
+                PostgresTable.PROPERTY_TYPES,
+                PostgresTable.ROLES
+        );
     }
 }

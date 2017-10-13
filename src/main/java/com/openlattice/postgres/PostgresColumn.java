@@ -47,13 +47,16 @@ public final class PostgresColumn {
     public static final String MEMBERS_FIELD               = "members";
     public static final String NAME_FIELD                  = "name";
     public static final String NAMESPACE_FIELD             = "namespace";
-    public static final String ORGANIZATION_TITLE_FIELD    = "title";
+    public static final String ORGANIZATION_ID_FIELD       = "organization_id";
+    public static final String NULLABLE_TITLE_FIELD        = "title";
     public static final String TITLE_FIELD                 = "title";
     public static final String PII_FIELD                   = "pii";
     public static final String PERMISSIONS_FIELD           = "permissions";
     public static final String PRINCIPAL_TYPE_FIELD        = "principal_type";
     public static final String PRINCIPAL_ID_FIELD          = "principal_id";
+    public static final String PRINCIPAL_IDS_FIELD         = "principal_ids";
     public static final String PROPERTIES_FIELD            = "properties";
+    public static final String ROLE_ID_FIELD               = "role_id";
     public static final String SCHEMAS_FIELD               = "schemas";
     public static final String SECURABLE_OBJECT_TYPE_FIELD = "securable_object_type";
     public static final String SECURABLE_OBJECTID_FIELD    = "securable_objectid";
@@ -97,38 +100,44 @@ public final class PostgresColumn {
     public static       PostgresColumnDefinition SECURABLE_OBJECTID    =
             new PostgresColumnDefinition( SECURABLE_OBJECTID_FIELD, UUID ).notNull();
 
-    public static PostgresColumnDefinition KEY            =
+    public static       PostgresColumnDefinition KEY                   =
             new PostgresColumnDefinition( KEY_FIELD, UUID_ARRAY ).notNull();
-    public static PostgresColumnDefinition PROPERTIES     =
+    public static       PostgresColumnDefinition PROPERTIES            =
             new PostgresColumnDefinition( PROPERTIES_FIELD, UUID_ARRAY ).notNull();
-    public static PostgresColumnDefinition CATEGORY       =
+    public static       PostgresColumnDefinition CATEGORY              =
             new PostgresColumnDefinition( CATEGORY_FIELD, TEXT ).notNull();
-    public static PostgresColumnDefinition BASE_TYPE      =
+    public static       PostgresColumnDefinition BASE_TYPE             =
             new PostgresColumnDefinition( BASE_TYPE_FIELD, UUID );
-    public static PostgresColumnDefinition ENTITY_TYPE_ID =
+    public static       PostgresColumnDefinition ENTITY_TYPE_ID        =
             new PostgresColumnDefinition( ENTITY_TYPE_ID_FIELD, UUID ).notNull();
-    public static PostgresColumnDefinition CONTACTS       =
+    public static       PostgresColumnDefinition CONTACTS              =
             new PostgresColumnDefinition( CONTACTS_FIELD, TEXT_ARRAY );
-    public static PostgresColumnDefinition GRAPH_DIAMETER =
+    public static       PostgresColumnDefinition GRAPH_DIAMETER        =
             new PostgresColumnDefinition( GRAPH_DIAMETER_FIELD, DECIMAL );
-    public static PostgresColumnDefinition ENTITY_KEY_IDS =
+    public static       PostgresColumnDefinition ENTITY_KEY_IDS        =
             new PostgresColumnDefinition( ENTITY_KEY_IDS_FIELD, UUID_ARRAY );
-    public static PostgresColumnDefinition GRAPH_ID       =
+    public static       PostgresColumnDefinition GRAPH_ID              =
             new PostgresColumnDefinition( GRAPH_ID_FIELD, UUID );
-    public static PostgresColumnDefinition VERTEX_ID      =
+    public static       PostgresColumnDefinition VERTEX_ID             =
             new PostgresColumnDefinition( VERTEX_ID_FIELD, UUID );
-    public static PostgresColumnDefinition SRC =
+    public static       PostgresColumnDefinition SRC                   =
             new PostgresColumnDefinition( SRC_FIELD, UUID_ARRAY );
-    public static PostgresColumnDefinition DST =
+    public static       PostgresColumnDefinition DST                   =
             new PostgresColumnDefinition( DST_FIELD, UUID_ARRAY );
-    public static PostgresColumnDefinition BIDIRECTIONAL =
+    public static       PostgresColumnDefinition BIDIRECTIONAL         =
             new PostgresColumnDefinition( BIDIRECTIONAL_FIELD, BOOLEAN );
-    public static PostgresColumnDefinition ALLOWED_EMAIL_DOMAINS =
+    public static       PostgresColumnDefinition ALLOWED_EMAIL_DOMAINS =
             new PostgresColumnDefinition( ALLOWED_EMAIL_DOMAINS_FIELD, TEXT_ARRAY );
-    public static PostgresColumnDefinition MEMBERS =
+    public static       PostgresColumnDefinition MEMBERS               =
             new PostgresColumnDefinition( MEMBERS_FIELD, TEXT_ARRAY );
-    public static PostgresColumnDefinition ORGANIZATION_TITLE =
-            new PostgresColumnDefinition( ORGANIZATION_TITLE_FIELD, TEXT );
+    public static       PostgresColumnDefinition NULLABLE_TITLE        =
+            new PostgresColumnDefinition( NULLABLE_TITLE_FIELD, TEXT );
+    public static       PostgresColumnDefinition ORGANIZATION_ID       =
+            new PostgresColumnDefinition( ORGANIZATION_ID_FIELD, UUID ).notNull();
+    public static final PostgresColumnDefinition PRINCIPAL_IDS         =
+            new PostgresColumnDefinition( PRINCIPAL_IDS_FIELD, TEXT_ARRAY );
+    public static       PostgresColumnDefinition ROLE_ID       =
+            new PostgresColumnDefinition( ROLE_ID_FIELD, UUID ).notNull();
 
     private PostgresColumn() {
     }

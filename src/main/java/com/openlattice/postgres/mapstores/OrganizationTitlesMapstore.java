@@ -13,8 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_TITLE;
-import static com.openlattice.postgres.PostgresColumn.TITLE;
+import static com.openlattice.postgres.PostgresColumn.NULLABLE_TITLE;
 
 public class OrganizationTitlesMapstore extends AbstractBasePostgresMapstore<UUID, String> {
 
@@ -30,7 +29,7 @@ public class OrganizationTitlesMapstore extends AbstractBasePostgresMapstore<UUI
     }
 
     @Override public List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( ORGANIZATION_TITLE );
+        return ImmutableList.of( NULLABLE_TITLE );
     }
 
     @Override public void bind( PreparedStatement ps, UUID key, String value ) throws SQLException {
@@ -46,7 +45,7 @@ public class OrganizationTitlesMapstore extends AbstractBasePostgresMapstore<UUI
     }
 
     @Override public String mapToValue( ResultSet rs ) throws SQLException {
-        return rs.getString( ORGANIZATION_TITLE.getName() );
+        return rs.getString( NULLABLE_TITLE.getName() );
     }
 
     @Override public UUID mapToKey( ResultSet rs ) {
@@ -60,7 +59,7 @@ public class OrganizationTitlesMapstore extends AbstractBasePostgresMapstore<UUI
 
     @Override
     protected List<PostgresColumnDefinition> getInsertColumns() {
-        return ImmutableList.of( ID, ORGANIZATION_TITLE );
+        return ImmutableList.of( ID, NULLABLE_TITLE );
     }
 
     @Override public UUID generateTestKey() {

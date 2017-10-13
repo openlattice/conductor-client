@@ -329,13 +329,29 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<RoleKey, Role> rolesMapstore() {
-        return new RolesMapstore( session );
+    public SelfRegisteringMapStore<RoleKey, Role> roleidsMapstore() {
+        RolesMapstore rm = new RolesMapstore( session );
+        com.openlattice.postgres.mapstores.RolesMapstore prm = new com.openlattice.postgres.mapstores.RolesMapstore(
+                HazelcastMap.ROLES.name(),
+                ROLES,
+                hikariDataSource );
+        for ( RoleKey key : rm.loadAllKeys() ) {
+            prm.store( key, rm.load( key ) );
+        }
+        return prm;
     }
 
     @Bean
     public SelfRegisteringMapStore<RoleKey, PrincipalSet> usersWithRolesMapstore() {
-        return new UsersWithRoleMapstore( session );
+        UsersWithRoleMapstore uwrm = new UsersWithRoleMapstore( session );
+        com.openlattice.postgres.mapstores.UsersWithRoleMapstore puwrm = new com.openlattice.postgres.mapstores.UsersWithRoleMapstore(
+                HazelcastMap.USERS_WITH_ROLE.name(),
+                ROLES,
+                hikariDataSource );
+        for ( RoleKey key : uwrm.loadAllKeys() ) {
+            puwrm.store( key, uwrm.load( key ) );
+        }
+        return puwrm;
     }
 
     @Bean
