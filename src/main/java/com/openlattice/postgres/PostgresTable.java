@@ -101,6 +101,18 @@ public final class PostgresTable {
                     .addColumns( GRAPH_ID, VERTEX_ID, NEW_VERTEX_ID )
                     .primaryKey( GRAPH_ID, VERTEX_ID );
 
+    /*
+                case SCHEMAS:
+                return new CassandraTableBuilder( SCHEMAS )
+                        .ifNotExists()
+                        .partitionKey( NAMESPACE )
+                        .columns( NAME_SET );
+     */
+    public static PostgresTableDefinition SCHEMA =
+            new PostgresTableDefinition( "schemas" )
+                    .addColumns( NAMESPACE, NAME_SET )
+                    .primaryKey( NAMESPACE );
+
     private PostgresTable() {
     }
 

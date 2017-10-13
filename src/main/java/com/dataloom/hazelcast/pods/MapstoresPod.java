@@ -36,7 +36,6 @@ import com.dataloom.edm.mapstores.EntitySetMapstore;
 import com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.NamesMapstore;
-import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.edm.type.*;
@@ -176,7 +175,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<String, DelegatedStringSet> schemaMapstore() {
-        return new SchemaMapstore( session );
+        return new SchemasMapstore( HazelcastMap.SCHEMAS.name(), SCHEMA, hikariDataSource );
     }
 
     @Bean

@@ -47,6 +47,7 @@ public final class PostgresColumn {
     public static final String KEY_FIELD                   = "key";
     public static final String MEMBERS_FIELD               = "members";
     public static final String NAME_FIELD                  = "name";
+    public static final String NAME_SET_FIELD              = "name_set";
     public static final String NAMESPACE_FIELD             = "namespace";
     public static final String NEW_VERTEX_ID_FIELD         = "new_vertex_id";
     public static final String ORGANIZATION_ID_FIELD       = "organization_id";
@@ -150,6 +151,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( SHOW_FIELD, BOOLEAN ).notNull();
     public static       PostgresColumnDefinition NEW_VERTEX_ID         =
             new PostgresColumnDefinition( NEW_VERTEX_ID_FIELD, UUID ).notNull();
+    public static       PostgresColumnDefinition NAME_SET         =
+            new PostgresColumnDefinition( NAME_SET_FIELD, TEXT_ARRAY ).notNull();
 
     private PostgresColumn() {
     }
