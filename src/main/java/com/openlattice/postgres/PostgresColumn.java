@@ -31,10 +31,12 @@ public final class PostgresColumn {
     public static final String ACL_KEY_FIELD               = "acl_key";
     public static final String ANALYZER_FIELD              = "analyzer";
     public static final String BASE_TYPE_FIELD             = "base_type";
+    public static final String BIDIRECTIONAL_FIELD         = "bidirectional";
     public static final String CATEGORY_FIELD              = "category";
     public static final String CONTACTS_FIELD              = "contacts";
     public static final String DATATYPE_FIELD              = "datatype";
     public static final String DESCRIPTION_FIELD           = "description";
+    public static final String DST_FIELD                   = "dst";
     public static final String ENTITY_KEY_IDS_FIELD        = "entity_key_ids";
     public static final String ENTITY_TYPE_ID_FIELD        = "entity_type_id";
     public static final String GRAPH_DIAMETER_FIELD        = "graph_diameter";
@@ -52,6 +54,7 @@ public final class PostgresColumn {
     public static final String SCHEMAS_FIELD               = "schemas";
     public static final String SECURABLE_OBJECT_TYPE_FIELD = "securable_object_type";
     public static final String SECURABLE_OBJECTID_FIELD    = "securable_objectid";
+    public static final String SRC_FIELD                   = "src";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
 
     public static final PostgresColumnDefinition PERMISSIONS           =
@@ -111,6 +114,12 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( GRAPH_ID_FIELD, UUID );
     public static PostgresColumnDefinition VERTEX_ID      =
             new PostgresColumnDefinition( VERTEX_ID_FIELD, UUID );
+    public static PostgresColumnDefinition SRC =
+            new PostgresColumnDefinition( SRC_FIELD, UUID_ARRAY );
+    public static PostgresColumnDefinition DST =
+            new PostgresColumnDefinition( DST_FIELD, UUID_ARRAY );
+    public static PostgresColumnDefinition BIDIRECTIONAL =
+            new PostgresColumnDefinition( BIDIRECTIONAL_FIELD, BOOLEAN );
 
     private PostgresColumn() {
     }

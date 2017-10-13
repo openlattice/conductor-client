@@ -78,6 +78,10 @@ public final class PostgresTable {
                     .addColumns( GRAPH_ID, VERTEX_ID, GRAPH_DIAMETER, ENTITY_KEY_IDS )
                     .primaryKey( GRAPH_ID, VERTEX_ID );
 
+    public static PostgresTableDefinition ASSOCIATION_TYPES =
+            new PostgresTableDefinition( "association_types" )
+                    .addColumns( ID, SRC, DST, BIDIRECTIONAL );
+
     private PostgresTable() {
     }
 

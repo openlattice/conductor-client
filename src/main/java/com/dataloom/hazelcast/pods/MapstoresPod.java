@@ -278,7 +278,10 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, LinkingVertex> linkingVerticesMapstore() {
         LinkingVerticesMapstore lvm = new LinkingVerticesMapstore( session );
-        com.openlattice.postgres.mapstores.LinkingVerticesMapstore plvm = new com.openlattice.postgres.mapstores.LinkingVerticesMapstore( HazelcastMap.LINKING_VERTICES.name(), LINKING_VERTICES, hikariDataSource );
+        com.openlattice.postgres.mapstores.LinkingVerticesMapstore plvm = new com.openlattice.postgres.mapstores.LinkingVerticesMapstore(
+                HazelcastMap.LINKING_VERTICES.name(),
+                LINKING_VERTICES,
+                hikariDataSource );
         for ( LinkingVertexKey key : lvm.loadAllKeys() ) {
             plvm.store( key, lvm.load( key ) );
         }
@@ -292,7 +295,15 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, AssociationType> edgeTypeMapstore() {
-        return new AssociationTypeMapstore( session );
+        AssociationTypeMapstore atm = new AssociationTypeMapstore( session );
+        com.openlattice.postgres.mapstores.AssociationTypeMapstore patm = new com.openlattice.postgres.mapstores.AssociationTypeMapstore(
+                HazelcastMap.ASSOCIATION_TYPES.name(),
+                ASSOCIATION_TYPES,
+                hikariDataSource );
+        for ( UUID id : atm.loadAllKeys() ) {
+            patm.store( id, atm.load( id ) );
+        }
+        return patm;
     }
 
     @Bean

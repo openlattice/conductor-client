@@ -34,6 +34,7 @@ public class PostgresTablesPod {
     public PostgresTables postgresTables() {
         return () -> Stream.of(
                 PostgresTable.ACL_KEYS,
+                PostgresTable.ASSOCIATION_TYPES,
                 PostgresTable.ENTITY_TYPES,
                 PostgresTable.ENTITY_SETS,
                 PostgresTable.LINKING_VERTICES,
