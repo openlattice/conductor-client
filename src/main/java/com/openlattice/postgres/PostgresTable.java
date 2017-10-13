@@ -63,6 +63,11 @@ public final class PostgresTable {
                     .addColumns( SECURABLE_OBJECTID, NAME )
                     .primaryKey( SECURABLE_OBJECTID );
 
+    public static PostgresTableDefinition ENTITY_TYPES =
+            new PostgresTableDefinition( "entity_types" )
+                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, KEY, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY )
+                    .setUnique( NAMESPACE, NAME );
+
     private PostgresTable() {
     }
 

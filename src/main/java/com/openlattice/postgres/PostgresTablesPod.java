@@ -21,6 +21,7 @@
 package com.openlattice.postgres;
 
 import java.util.stream.Stream;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,6 +32,10 @@ import org.springframework.context.annotation.Configuration;
 public class PostgresTablesPod {
     @Bean
     public PostgresTables postgresTables() {
-        return () -> Stream.of( PostgresTable.PROPERTY_TYPES, PostgresTable.ACL_KEYS, PostgresTable.NAMES );
+        return () -> Stream.of(
+                PostgresTable.ACL_KEYS,
+                PostgresTable.ENTITY_TYPES,
+                PostgresTable.NAMES,
+                PostgresTable.PROPERTY_TYPES );
     }
 }
