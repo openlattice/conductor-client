@@ -130,6 +130,10 @@ public final class PostgresTable {
                             ANALYZER )
                     .setUnique( NAMESPACE, NAME );
 
+    public static PostgresTableDefinition LINKED_ENTITY_SETS =
+            new PostgresTableDefinition( "linked_entity_sets" )
+                    .addColumns( ID, ENTITY_SET_IDS );
+
     private PostgresTable() {
     }
 

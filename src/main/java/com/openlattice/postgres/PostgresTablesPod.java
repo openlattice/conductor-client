@@ -39,6 +39,7 @@ public class PostgresTablesPod {
                 PostgresTable.ENTITY_SET_PROPERTY_METADATA,
                 PostgresTable.ENTITY_SETS,
                 PostgresTable.ENUM_TYPES,
+                PostgresTable.LINKED_ENTITY_SETS,
                 PostgresTable.LINKING_VERTICES,
                 PostgresTable.NAMES,
                 PostgresTable.ORGANIZATIONS,

@@ -40,6 +40,7 @@ public final class PostgresColumn {
     public static final String DST_FIELD                   = "dst";
     public static final String ENTITY_KEY_IDS_FIELD        = "entity_key_ids";
     public static final String ENTITY_SET_ID_FIELD         = "entity_set_id";
+    public static final String ENTITY_SET_IDS_FIELD        = "entity_set_ids";
     public static final String ENTITY_TYPE_ID_FIELD        = "entity_type_id";
     public static final String FLAGS_FIELD                 = "flags";
     public static final String GRAPH_DIAMETER_FIELD        = "graph_diameter";
@@ -156,6 +157,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( NAME_SET_FIELD, TEXT_ARRAY ).notNull();
     public static       PostgresColumnDefinition FLAGS                 =
             new PostgresColumnDefinition( FLAGS_FIELD, BOOLEAN ).notNull();
+    public static       PostgresColumnDefinition ENTITY_SET_IDS        =
+            new PostgresColumnDefinition( ENTITY_SET_IDS_FIELD, UUID_ARRAY ).notNull();
 
     private PostgresColumn() {
     }

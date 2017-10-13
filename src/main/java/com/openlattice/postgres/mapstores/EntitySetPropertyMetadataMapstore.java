@@ -1,5 +1,6 @@
 package com.openlattice.postgres.mapstores;
 
+import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.google.common.collect.ImmutableList;
@@ -74,6 +75,6 @@ public class EntitySetPropertyMetadataMapstore
     }
 
     @Override public EntitySetPropertyMetadata generateTestValue() {
-        return new EntitySetPropertyMetadata( "title", "description", true );
+        return new EntitySetPropertyMetadata( RandomStringUtils.random( 10 ), RandomStringUtils.random( 10 ), true );
     }
 }

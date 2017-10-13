@@ -48,6 +48,7 @@ import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
 import com.dataloom.linking.mapstores.*;
+import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
 import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
@@ -291,7 +292,13 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntitySetsMapstore() {
-        return new LinkedEntitySetsMapstore( session );
+        LinkedEntitySetsMapstore lesm = new LinkedEntitySetsMapstore( session );
+        com.openlattice.postgres.mapstores.LinkedEntitySetsMapstore plesm = new com.openlattice.postgres.mapstores.LinkedEntitySetsMapstore(
+                hikariDataSource );
+        for ( UUID id : lesm.loadAllKeys() ) {
+            plesm.store( id, lesm.load( id ) );
+        }
+        return plesm;
     }
 
     @Bean
