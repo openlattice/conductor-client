@@ -68,6 +68,11 @@ public final class PostgresTable {
                     .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, KEY, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY )
                     .setUnique( NAMESPACE, NAME );
 
+    public static PostgresTableDefinition ENTITY_SETS =
+            new PostgresTableDefinition( "entity_sets" )
+                    .addColumns( ID, NAME, ENTITY_TYPE_ID, TITLE, DESCRIPTION, CONTACTS )
+                    .setUnique( NAME );
+
     private PostgresTable() {
     }
 

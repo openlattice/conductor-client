@@ -94,9 +94,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import static com.openlattice.postgres.PostgresTable.ACL_KEYS;
-import static com.openlattice.postgres.PostgresTable.NAMES;
-import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
+import static com.openlattice.postgres.PostgresTable.*;
 
 @Configuration
 @Import( { CassandraPod.class, PostgresPod.class } )
@@ -138,20 +136,28 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, PropertyType> propertyTypeMapstore() {
-        PropertyTypeMapstore cptm = new PropertyTypeMapstore( session );
-        //        com.openlattice.postgres.mapstores.PropertyTypeMapstore ptm = new com.openlattice.postgres.mapstores.PropertyTypeMapstore(
-        //                HazelcastMap.PROPERTY_TYPES.name(),
-        //                PROPERTY_TYPES,
-        //                hikariDataSource );
+        //        PropertyTypeMapstore cptm = new PropertyTypeMapstore( session );
+        com.openlattice.postgres.mapstores.PropertyTypeMapstore ptm = new com.openlattice.postgres.mapstores.PropertyTypeMapstore(
+                HazelcastMap.PROPERTY_TYPES.name(),
+                PROPERTY_TYPES,
+                hikariDataSource );
         //        for ( UUID id : cptm.loadAllKeys() ) {
         //            ptm.store( id, cptm.load( id ) );
         //        }
-        return cptm;
+        return ptm;
     }
 
     @Bean
     public SelfRegisteringMapStore<UUID, EntityType> entityTypeMapstore() {
-        return new EntityTypeMapstore( session );
+        EntityTypeMapstore etm = new EntityTypeMapstore( session );
+        com.openlattice.postgres.mapstores.EntityTypeMapstore petm = new com.openlattice.postgres.mapstores.EntityTypeMapstore(
+                HazelcastMap.ENTITY_TYPES.name(),
+                ENTITY_TYPES,
+                hikariDataSource );
+        for ( UUID id : etm.loadAllKeys() ) {
+            petm.store( id, etm.load( id ) );
+        }
+        return petm;
     }
 
     @Bean
@@ -166,7 +172,15 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, EntitySet> entitySetMapstore() {
-        return new EntitySetMapstore( session );
+        EntitySetMapstore esm = new EntitySetMapstore( session );
+        com.openlattice.postgres.mapstores.EntitySetMapstore pesm = new com.openlattice.postgres.mapstores.EntitySetMapstore(
+                HazelcastMap.ENTITY_SETS.name(),
+                ENTITY_SETS,
+                hikariDataSource );
+        for ( UUID id : esm.loadAllKeys() ) {
+            pesm.store( id, esm.load( id ) );
+        }
+        return pesm;
     }
 
     @Bean

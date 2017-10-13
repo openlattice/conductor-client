@@ -35,6 +35,7 @@ public class PostgresTablesPod {
         return () -> Stream.of(
                 PostgresTable.ACL_KEYS,
                 PostgresTable.ENTITY_TYPES,
+                PostgresTable.ENTITY_SETS,
                 PostgresTable.NAMES,
                 PostgresTable.PROPERTY_TYPES );
     }

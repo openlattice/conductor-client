@@ -30,9 +30,14 @@ import static com.openlattice.postgres.PostgresDatatype.*;
 public final class PostgresColumn {
     public static final String ACL_KEY_FIELD               = "acl_key";
     public static final String ANALYZER_FIELD              = "analyzer";
+    public static final String BASE_TYPE_FIELD             = "base_type";
+    public static final String CATEGORY_FIELD              = "category";
+    public static final String CONTACTS_FIELD              = "contacts";
     public static final String DATATYPE_FIELD              = "datatype";
     public static final String DESCRIPTION_FIELD           = "description";
+    public static final String ENTITY_TYPE_ID_FIELD        = "entity_type_id";
     public static final String ID_FIELD                    = "id";
+    public static final String KEY_FIELD                   = "key";
     public static final String NAME_FIELD                  = "name";
     public static final String NAMESPACE_FIELD             = "namespace";
     public static final String TITLE_FIELD                 = "title";
@@ -40,13 +45,10 @@ public final class PostgresColumn {
     public static final String PERMISSIONS_FIELD           = "permissions";
     public static final String PRINCIPAL_TYPE_FIELD        = "principal_type";
     public static final String PRINCIPAL_ID_FIELD          = "principal_id";
+    public static final String PROPERTIES_FIELD            = "properties";
     public static final String SCHEMAS_FIELD               = "schemas";
     public static final String SECURABLE_OBJECT_TYPE_FIELD = "securable_object_type";
     public static final String SECURABLE_OBJECTID_FIELD    = "securable_objectid";
-    public static final String KEY_FIELD                   = "key";
-    public static final String PROPERTIES_FIELD            = "properties";
-    public static final String BASE_TYPE_FIELD             = "base_type";
-    public static final String CATEGORY_FIELD              = "category";
 
     public static final PostgresColumnDefinition PERMISSIONS           =
             new PostgresColumnDefinition( PERMISSIONS_FIELD, TEXT_ARRAY );
@@ -93,6 +95,10 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( CATEGORY_FIELD, TEXT ).notNull();
     public static PostgresColumnDefinition BASE_TYPE  =
             new PostgresColumnDefinition( BASE_TYPE_FIELD, UUID );
+    public static PostgresColumnDefinition ENTITY_TYPE_ID =
+            new PostgresColumnDefinition( ENTITY_TYPE_ID_FIELD, UUID ).notNull();
+    public static PostgresColumnDefinition CONTACTS =
+            new PostgresColumnDefinition( CONTACTS_FIELD, TEXT_ARRAY );
 
     private PostgresColumn() {
     }
