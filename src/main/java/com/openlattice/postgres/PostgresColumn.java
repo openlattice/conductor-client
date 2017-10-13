@@ -48,6 +48,7 @@ public final class PostgresColumn {
     public static final String MEMBERS_FIELD               = "members";
     public static final String NAME_FIELD                  = "name";
     public static final String NAMESPACE_FIELD             = "namespace";
+    public static final String NEW_VERTEX_ID_FIELD         = "new_vertex_id";
     public static final String ORGANIZATION_ID_FIELD       = "organization_id";
     public static final String NULLABLE_TITLE_FIELD        = "title";
     public static final String TITLE_FIELD                 = "title";
@@ -141,12 +142,14 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( PRINCIPAL_IDS_FIELD, TEXT_ARRAY );
     public static       PostgresColumnDefinition ROLE_ID               =
             new PostgresColumnDefinition( ROLE_ID_FIELD, UUID ).notNull();
-    public static       PostgresColumnDefinition ENTITY_SET_ID               =
+    public static       PostgresColumnDefinition ENTITY_SET_ID         =
             new PostgresColumnDefinition( ENTITY_SET_ID_FIELD, UUID ).notNull();
-    public static       PostgresColumnDefinition PROPERTY_TYPE_ID               =
+    public static       PostgresColumnDefinition PROPERTY_TYPE_ID      =
             new PostgresColumnDefinition( PROPERTY_TYPE_ID_FIELD, UUID ).notNull();
-    public static       PostgresColumnDefinition SHOW               =
+    public static       PostgresColumnDefinition SHOW                  =
             new PostgresColumnDefinition( SHOW_FIELD, BOOLEAN ).notNull();
+    public static       PostgresColumnDefinition NEW_VERTEX_ID         =
+            new PostgresColumnDefinition( NEW_VERTEX_ID_FIELD, UUID ).notNull();
 
     private PostgresColumn() {
     }

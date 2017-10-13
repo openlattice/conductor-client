@@ -33,6 +33,7 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.mapstores.AssociationTypeMapstore;
 import com.dataloom.edm.mapstores.*;
 import com.dataloom.edm.mapstores.EntitySetMapstore;
+import com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore;
 import com.dataloom.edm.mapstores.EntityTypeMapstore;
 import com.dataloom.edm.mapstores.NamesMapstore;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
@@ -72,6 +73,7 @@ import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.AclKeysMapstore;
 import com.openlattice.postgres.mapstores.*;
+import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -374,7 +376,10 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, UUID> vertexIdsAfterLinkingMapstore() {
-        return new VertexIdsAfterLinkingMapstore( session );
+        return new VertexIdsAfterLinkingMapstore(
+                HazelcastMap.VERTEX_IDS_AFTER_LINKING.name(),
+                VERTEX_IDS_AFTER_LINKING,
+                hikariDataSource );
     }
 
     @Bean

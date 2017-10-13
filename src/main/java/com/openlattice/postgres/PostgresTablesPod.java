@@ -42,7 +42,8 @@ public class PostgresTablesPod {
                 PostgresTable.NAMES,
                 PostgresTable.ORGANIZATIONS,
                 PostgresTable.PROPERTY_TYPES,
-                PostgresTable.ROLES
+                PostgresTable.ROLES,
+                PostgresTable.VERTEX_IDS_AFTER_LINKING
         );
     }
 }

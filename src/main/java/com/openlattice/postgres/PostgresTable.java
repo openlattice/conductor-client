@@ -96,6 +96,11 @@ public final class PostgresTable {
                     .addColumns( ENTITY_SET_ID, PROPERTY_TYPE_ID, TITLE, DESCRIPTION, SHOW )
                     .primaryKey( ENTITY_SET_ID, PROPERTY_TYPE_ID );
 
+    public static PostgresTableDefinition VERTEX_IDS_AFTER_LINKING =
+            new PostgresTableDefinition( "vertex_ids_after_linking" )
+                    .addColumns( GRAPH_ID, VERTEX_ID, NEW_VERTEX_ID )
+                    .primaryKey( GRAPH_ID, VERTEX_ID );
+
     private PostgresTable() {
     }
 
