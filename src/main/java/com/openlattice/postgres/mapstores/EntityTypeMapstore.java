@@ -52,7 +52,7 @@ public class EntityTypeMapstore extends AbstractBasePostgresMapstore<UUID, Entit
         Array primaryKey = PostgresArrays.createUuidArray( ps.getConnection(), value.getKey().stream() );
         ps.setArray( 6, primaryKey );
 
-        Array properties = PostgresArrays.createUuidArray( ps.getConnection(), value.getKey().stream() );
+        Array properties = PostgresArrays.createUuidArray( ps.getConnection(), value.getProperties().stream() );
         ps.setArray( 7, properties );
 
         ps.setObject( 8, value.getBaseType().orNull() );

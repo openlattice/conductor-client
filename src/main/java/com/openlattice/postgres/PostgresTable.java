@@ -134,6 +134,11 @@ public final class PostgresTable {
             new PostgresTableDefinition( "linked_entity_sets" )
                     .addColumns( ID, ENTITY_SET_IDS );
 
+    public static PostgresTableDefinition COMPLEX_TYPES =
+            new PostgresTableDefinition( "complex_types" )
+                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY )
+                    .setUnique( NAMESPACE, NAME );
+
     private PostgresTable() {
     }
 

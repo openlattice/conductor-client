@@ -30,7 +30,6 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.mapstores.*;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.mapstores.ComplexTypeMapstore;
 import com.dataloom.edm.mapstores.EdmVersionMapstore;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
@@ -144,7 +143,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, ComplexType> complexTypeMapstore() {
-        return new ComplexTypeMapstore( session );
+        return new ComplexTypeMapstore( hikariDataSource );
     }
 
     @Bean
