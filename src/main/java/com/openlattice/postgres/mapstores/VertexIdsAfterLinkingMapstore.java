@@ -57,6 +57,12 @@ public class VertexIdsAfterLinkingMapstore extends AbstractBasePostgresMapstore<
         }
     }
 
+    @Override
+    public Iterable<LinkingVertexKey> loadAllKeys() {
+        //lazy loading
+        return null;
+    }
+
     @Override public LinkingVertexKey generateTestKey() {
         return new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() );
     }
