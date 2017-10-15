@@ -139,6 +139,11 @@ public final class PostgresTable {
                     .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY )
                     .setUnique( NAMESPACE, NAME );
 
+    public static PostgresTableDefinition REQUESTS =
+            new PostgresTableDefinition( "requests" )
+                    .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, PostgresColumn.PERMISSIONS, REASON, STATUS )
+                    .primaryKey( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID );
+
     private PostgresTable() {
     }
 

@@ -53,7 +53,6 @@ import com.dataloom.organizations.mapstores.StringMapstore;
 import com.dataloom.organizations.mapstores.StringSetMapstore;
 import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.requests.Status;
-import com.dataloom.requests.mapstores.RequestMapstore;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
@@ -196,7 +195,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<AceKey, Status> requestMapstore() {
-        return new RequestMapstore( session );
+        return new RequestsMapstore( hikariDataSource );
     }
 
     @Bean

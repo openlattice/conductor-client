@@ -62,12 +62,14 @@ public final class PostgresColumn {
     public static final String PRINCIPAL_IDS_FIELD         = "principal_ids";
     public static final String PROPERTIES_FIELD            = "properties";
     public static final String PROPERTY_TYPE_ID_FIELD      = "property_type_id";
+    public static final String REASON_FIELD                = "reason";
     public static final String ROLE_ID_FIELD               = "role_id";
     public static final String SCHEMAS_FIELD               = "schemas";
     public static final String SECURABLE_OBJECT_TYPE_FIELD = "securable_object_type";
     public static final String SECURABLE_OBJECTID_FIELD    = "securable_objectid";
     public static final String SHOW_FIELD                  = "show";
     public static final String SRC_FIELD                   = "src";
+    public static final String STATUS_FIELD                = "status";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
 
     public static final PostgresColumnDefinition PERMISSIONS           =
@@ -159,6 +161,10 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( FLAGS_FIELD, BOOLEAN ).notNull();
     public static       PostgresColumnDefinition ENTITY_SET_IDS        =
             new PostgresColumnDefinition( ENTITY_SET_IDS_FIELD, UUID_ARRAY ).notNull();
+    public static       PostgresColumnDefinition REASON                =
+            new PostgresColumnDefinition( REASON_FIELD, TEXT );
+    public static       PostgresColumnDefinition STATUS                =
+            new PostgresColumnDefinition( STATUS_FIELD, TEXT ).notNull();
 
     private PostgresColumn() {
     }
