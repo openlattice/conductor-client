@@ -19,12 +19,6 @@
 
 package com.dataloom.neuron.pods;
 
-import javax.inject.Inject;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.AuthorizationQueryService;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
@@ -35,7 +29,7 @@ import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.ids.HazelcastEntityKeyIdService;
 import com.dataloom.data.storage.CassandraEntityDatastore;
-import com.dataloom.edm.properties.CassandraTypeManager;
+import com.dataloom.edm.properties.PostgresTypeManager;
 import com.dataloom.edm.schemas.SchemaQueryService;
 import com.dataloom.edm.schemas.cassandra.CassandraSchemaQueryService;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
@@ -50,11 +44,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
-import com.kryptnostic.datastore.services.CassandraEntitySetManager;
 import com.kryptnostic.datastore.services.EdmManager;
 import com.kryptnostic.datastore.services.EdmService;
+import com.kryptnostic.datastore.services.PostgresEntitySetManager;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.pods.CassandraPod;
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+import javax.inject.Inject;
 
 @Configuration
 @Import( {
@@ -77,6 +77,9 @@ public class NeuronPod {
 
     @Inject
     private Session session;
+
+    @Inject
+    private HikariDataSource hikariDataSource;
 
     /*
      *
@@ -125,17 +128,18 @@ public class NeuronPod {
     }
 
     @Bean
-    public CassandraEntitySetManager entitySetManager() {
-        return new CassandraEntitySetManager( cassandraConfiguration.getKeyspace(), session, authorizationManager() );
+    public PostgresEntitySetManager entitySetManager() {
+        return new PostgresEntitySetManager( hikariDataSource );
     }
 
     @Bean
     public CassandraLinkingGraphsQueryService linkingGraphQueryService() {
         return new CassandraLinkingGraphsQueryService( cassandraConfiguration.getKeyspace(), session );
     }
+
     @Bean
-    public CassandraTypeManager entityTypeManager() {
-        return new CassandraTypeManager( cassandraConfiguration.getKeyspace(), session );
+    public PostgresTypeManager entityTypeManager() {
+        return new PostgresTypeManager( hikariDataSource );
     }
 
     @Bean
@@ -198,7 +202,7 @@ public class NeuronPod {
 
     @Bean
     public LoomGraph loomGraph() {
-        return new LoomGraph(executor, hazelcastInstance );
+        return new LoomGraph( executor, hazelcastInstance );
     }
 
     @Bean

@@ -96,6 +96,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
             PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW );
             bind( insertRow, key, value );
             insertRow.executeUpdate();
+            connection.close();
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during store for key {}.", key, e );
         }
@@ -168,6 +169,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
             if ( rs.next() ) {
                 val = mapToValue( rs );
             }
+            connection.close();
             logger.debug( "LOADED: {}", val.array() );
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );

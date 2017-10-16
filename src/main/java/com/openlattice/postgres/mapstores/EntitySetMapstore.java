@@ -9,6 +9,7 @@ import com.google.common.collect.Sets;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
@@ -58,18 +59,12 @@ public class EntitySetMapstore extends AbstractBasePostgresMapstore<UUID, Entity
     }
 
     @Override protected EntitySet mapToValue( ResultSet rs ) throws SQLException {
-        UUID id = mapToKey( rs );
-        String name = rs.getString( NAME.getName() );
-        UUID entityTypeId = rs.getObject( ENTITY_TYPE_ID.getName(), UUID.class );
-        String title = rs.getString( TITLE.getName() );
-        String description = rs.getString( DESCRIPTION.getName() );
-        String[] contacts = (String[]) rs.getArray( CONTACTS.getName() ).getArray();
-        return new EntitySet( id, entityTypeId, name, title, Optional.of( description ), Sets.newHashSet( contacts ) );
+        return ResultSetAdapters.entitySet( rs );
     }
 
     @Override protected UUID mapToKey( ResultSet rs ) {
         try {
-            return rs.getObject( ID.getName(), UUID.class );
+            return ResultSetAdapters.id( rs );
         } catch ( SQLException ex ) {
             logger.error( "Unable to map ID to UUID class", ex );
             return null;
