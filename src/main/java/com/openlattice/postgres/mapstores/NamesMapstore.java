@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
@@ -44,7 +45,7 @@ public class NamesMapstore extends AbstractBasePostgresMapstore<UUID, String> {
     }
 
     @Override protected String mapToValue( ResultSet rs ) throws SQLException {
-        return rs.getString( NAME.getName() );
+        return ResultSetAdapters.name( rs );
     }
 
     @Override protected UUID mapToKey( ResultSet rs ) {

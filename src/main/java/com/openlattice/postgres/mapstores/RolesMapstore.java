@@ -4,17 +4,15 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.ROLES;
@@ -47,18 +45,12 @@ public class RolesMapstore extends AbstractBasePostgresMapstore<RoleKey, Role> {
     }
 
     @Override protected Role mapToValue( ResultSet rs ) throws SQLException {
-        UUID roleId = rs.getObject( ROLE_ID.getName(), UUID.class );
-        UUID orgId = rs.getObject( ORGANIZATION_ID.getName(), UUID.class );
-        String title = rs.getString( NULLABLE_TITLE.getName() );
-        String description = rs.getString( DESCRIPTION.getName() );
-        return new Role( Optional.of( roleId ), orgId, title, Optional.fromNullable( description ) );
+        return ResultSetAdapters.role( rs );
     }
 
     @Override protected RoleKey mapToKey( ResultSet rs ) {
         try {
-            UUID roleId = rs.getObject( ROLE_ID.getName(), UUID.class );
-            UUID orgId = rs.getObject( ORGANIZATION_ID.getName(), UUID.class );
-            return new RoleKey( orgId, roleId );
+            return ResultSetAdapters.roleKey( rs );
         } catch ( SQLException ex ) {
             logger.error( "Unable to map row to RoleKey", ex );
             return null;

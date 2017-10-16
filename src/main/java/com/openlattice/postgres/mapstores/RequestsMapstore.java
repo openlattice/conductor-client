@@ -67,21 +67,12 @@ public class RequestsMapstore extends AbstractBasePostgresMapstore<AceKey, Statu
     }
 
     @Override protected Status mapToValue( ResultSet rs ) throws SQLException {
-        AceKey aceKey = mapToKey( rs );
-        EnumSet<Permission> permissions = ResultSetAdapters.permissions( rs );
-        Optional<String> reason = Optional.of( rs.getString( REASON.getName() ) );
-        Request request = new Request( aceKey.getKey(), permissions, reason );
-        RequestStatus status = RequestStatus.valueOf( rs.getString( STATUS.getName() ) );
-        return new Status( request, aceKey.getPrincipal(), status );
+        return ResultSetAdapters.status( rs );
     }
 
     @Override protected AceKey mapToKey( ResultSet rs ) {
         try {
-            List<UUID> aclKey = Lists.newArrayList( (UUID[]) rs.getArray( ACL_KEY.getName() ).getArray() );
-            PrincipalType pt = PrincipalType.valueOf( rs.getString( PRINCIPAL_TYPE.getName() ) );
-            String pid = rs.getString( PRINCIPAL_ID.getName() );
-            Principal principal = new Principal( pt, pid );
-            return new AceKey( aclKey, principal );
+            return ResultSetAdapters.aceKey( rs );
         } catch ( SQLException e ) {
             logger.debug( "Unable to map row to AceKey", e );
             return null;

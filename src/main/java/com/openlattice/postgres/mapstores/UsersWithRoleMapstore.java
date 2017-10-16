@@ -1,7 +1,5 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.RoleKey;
@@ -10,17 +8,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.ROLES;
@@ -54,16 +49,12 @@ public class UsersWithRoleMapstore extends AbstractBasePostgresMapstore<RoleKey,
     }
 
     @Override protected PrincipalSet mapToValue( ResultSet rs ) throws SQLException {
-        Stream<String> users = Arrays.stream( (String[]) rs.getArray( PRINCIPAL_IDS.getName() ).getArray() );
-        return PrincipalSet
-                .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
+        return ResultSetAdapters.principalSet( rs );
     }
 
     @Override protected RoleKey mapToKey( ResultSet rs ) {
         try {
-            UUID roleId = rs.getObject( ROLE_ID.getName(), UUID.class );
-            UUID orgId = rs.getObject( ORGANIZATION_ID.getName(), UUID.class );
-            return new RoleKey( orgId, roleId );
+            return ResultSetAdapters.roleKey( rs );
         } catch ( SQLException ex ) {
             logger.error( "Unable to map row to RoleKey", ex );
             return null;

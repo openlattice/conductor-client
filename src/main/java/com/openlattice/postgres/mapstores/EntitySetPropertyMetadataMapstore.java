@@ -6,7 +6,7 @@ import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
@@ -52,17 +52,12 @@ public class EntitySetPropertyMetadataMapstore
     }
 
     @Override protected EntitySetPropertyMetadata mapToValue( ResultSet rs ) throws SQLException {
-        String title = rs.getString( TITLE.getName() );
-        String description = rs.getString( DESCRIPTION.getName() );
-        boolean show = rs.getBoolean( SHOW.getName() );
-        return new EntitySetPropertyMetadata( title, description, show );
+        return ResultSetAdapters.entitySetPropertyMetadata( rs );
     }
 
     @Override protected EntitySetPropertyKey mapToKey( ResultSet rs ) {
         try {
-            UUID entitySetId = rs.getObject( ENTITY_SET_ID.getName(), UUID.class );
-            UUID propertyTypeId = rs.getObject( PROPERTY_TYPE_ID.getName(), UUID.class );
-            return new EntitySetPropertyKey( entitySetId, propertyTypeId );
+            return ResultSetAdapters.entitySetPropertyKey( rs );
         } catch ( SQLException e ) {
             logger.debug( "Unable to map EntitySetPropertyKey", e );
             return null;

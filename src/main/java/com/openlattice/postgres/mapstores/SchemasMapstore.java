@@ -7,6 +7,7 @@ import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -55,7 +56,7 @@ public class SchemasMapstore extends AbstractBasePostgresMapstore<String, Delega
 
     @Override protected String mapToKey( ResultSet rs ) {
         try {
-            return rs.getString( NAMESPACE.getName() );
+            return ResultSetAdapters.namespace( rs );
         } catch ( SQLException e ) {
             logger.debug( "Unable to map schema names.", e );
             return null;

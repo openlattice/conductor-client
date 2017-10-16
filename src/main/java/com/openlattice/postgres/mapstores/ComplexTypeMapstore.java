@@ -1,14 +1,12 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.type.ComplexType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -16,8 +14,8 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.COMPLEX_TYPES;
@@ -74,31 +72,12 @@ public class ComplexTypeMapstore extends AbstractBasePostgresMapstore<UUID, Comp
     }
 
     @Override protected ComplexType mapToValue( ResultSet rs ) throws SQLException {
-        UUID id = mapToKey( rs );
-
-        String namespace = rs.getString( NAMESPACE.getName() );
-        String name = rs.getString( NAME.getName() );
-        FullQualifiedName fqn = new FullQualifiedName( namespace, name );
-
-        String title = rs.getString( TITLE.getName() );
-        Optional<String> description = Optional.fromNullable( rs.getString( DESCRIPTION.getName() ) );
-
-        Set<FullQualifiedName> schemasFqns = Arrays.stream( (String[]) rs.getArray( SCHEMAS.getName() ).getArray() )
-                .map( FullQualifiedName::new ).collect(
-                        Collectors.toSet() );
-        LinkedHashSet<UUID> properties = Arrays.stream( (UUID[]) rs.getArray( PROPERTIES.getName() ).getArray() )
-                .collect(
-                        Collectors.toCollection( LinkedHashSet::new ) );
-
-        Optional<UUID> baseType = Optional.fromNullable( rs.getObject( BASE_TYPE.getName(), UUID.class ) );
-        SecurableObjectType category = SecurableObjectType.valueOf( rs.getString( CATEGORY.getName() ) );
-
-        return new ComplexType( id, fqn, title, description, schemasFqns, properties, baseType, category );
+        return ResultSetAdapters.complexType( rs );
     }
 
     @Override protected UUID mapToKey( ResultSet rs ) {
         try {
-            return rs.getObject( ID.getName(), UUID.class );
+            return ResultSetAdapters.id( rs );
         } catch ( SQLException e ) {
             logger.debug( "Unable to map ID to UUID", e );
             return null;

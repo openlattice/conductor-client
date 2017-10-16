@@ -1,14 +1,11 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -17,11 +14,8 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.ENTITY_TYPES;

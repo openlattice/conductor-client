@@ -1,11 +1,9 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
@@ -14,7 +12,6 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
-import static com.openlattice.postgres.PostgresColumn.ID;
 import static com.openlattice.postgres.PostgresColumn.NAME;
 import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
 import static com.openlattice.postgres.PostgresTable.ACL_KEYS;

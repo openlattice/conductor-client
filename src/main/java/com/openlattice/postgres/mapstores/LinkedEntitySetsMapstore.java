@@ -6,6 +6,7 @@ import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 import org.spark_project.guava.collect.ImmutableSet;
 
@@ -55,7 +56,7 @@ public class LinkedEntitySetsMapstore extends AbstractBasePostgresMapstore<UUID,
 
     @Override protected UUID mapToKey( ResultSet rs ) {
         try {
-            return rs.getObject( ID.getName(), UUID.class );
+            return ResultSetAdapters.id( rs );
         } catch ( SQLException e ) {
             logger.debug( "Unable to map ID to UUID", e );
             return null;

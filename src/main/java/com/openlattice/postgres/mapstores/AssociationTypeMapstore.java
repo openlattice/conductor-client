@@ -3,22 +3,18 @@ package com.openlattice.postgres.mapstores;
 import com.dataloom.edm.type.AssociationType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.ASSOCIATION_TYPES;
@@ -60,19 +56,12 @@ public class AssociationTypeMapstore extends AbstractBasePostgresMapstore<UUID, 
     }
 
     @Override protected AssociationType mapToValue( ResultSet rs ) throws SQLException {
-        LinkedHashSet<UUID> src = Arrays.stream( (UUID[]) rs.getArray( SRC.getName() ).getArray() ).collect( Collectors
-                .toCollection( LinkedHashSet::new ) );
-        LinkedHashSet<UUID> dst = Arrays.stream( (UUID[]) rs.getArray( DST.getName() ).getArray() ).collect( Collectors
-                .toCollection( LinkedHashSet::new ) );
-        boolean bidirectional = rs.getBoolean( BIDIRECTIONAL.getName() );
-
-        return new AssociationType( Optional.absent(), src, dst, bidirectional );
-
+        return ResultSetAdapters.associationType( rs );
     }
 
     @Override protected UUID mapToKey( ResultSet rs ) {
         try {
-            return rs.getObject( ID.getName(), UUID.class );
+            return ResultSetAdapters.id( rs );
         } catch ( SQLException ex ) {
             logger.error( "Unable to map ID to UUID class", ex );
             return null;

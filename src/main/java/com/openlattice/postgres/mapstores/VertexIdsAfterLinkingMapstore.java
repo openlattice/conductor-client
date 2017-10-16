@@ -4,6 +4,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingVertexKey;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
@@ -48,9 +49,7 @@ public class VertexIdsAfterLinkingMapstore extends AbstractBasePostgresMapstore<
 
     @Override protected LinkingVertexKey mapToKey( ResultSet rs ) {
         try {
-            UUID graphId = rs.getObject( GRAPH_ID.getName(), UUID.class );
-            UUID vertexId = rs.getObject( VERTEX_ID.getName(), UUID.class );
-            return new LinkingVertexKey( graphId, vertexId );
+            return ResultSetAdapters.linkingVertexKey( rs );
         } catch ( SQLException e ) {
             logger.debug( "Unable to map LinkingVertexKey", e );
             return null;

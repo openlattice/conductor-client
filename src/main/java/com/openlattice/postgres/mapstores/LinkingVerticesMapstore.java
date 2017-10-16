@@ -9,7 +9,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
@@ -55,16 +55,12 @@ public class LinkingVerticesMapstore extends AbstractBasePostgresMapstore<Linkin
     }
 
     @Override protected LinkingVertex mapToValue( ResultSet rs ) throws SQLException {
-        double diameter = rs.getDouble( GRAPH_DIAMETER.getName() );
-        UUID[] entityKeyIdArray = (UUID[]) rs.getArray( ENTITY_KEY_IDS.getName() ).getArray();
-        return new LinkingVertex( diameter, Sets.newHashSet( entityKeyIdArray ) );
+        return ResultSetAdapters.linkingVertex( rs );
     }
 
     @Override protected LinkingVertexKey mapToKey( ResultSet rs ) {
         try {
-            UUID graphId = rs.getObject( GRAPH_ID.getName(), UUID.class );
-            UUID vertexId = rs.getObject( VERTEX_ID.getName(), UUID.class );
-            return new LinkingVertexKey( graphId, vertexId );
+            return ResultSetAdapters.linkingVertexKey( rs );
         } catch ( SQLException ex ) {
             logger.error( "Unable to map LinkingVertexKey", ex );
             return null;

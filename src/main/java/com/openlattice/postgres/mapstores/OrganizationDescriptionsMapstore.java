@@ -4,6 +4,7 @@ import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
@@ -43,12 +44,12 @@ public class OrganizationDescriptionsMapstore extends AbstractBasePostgresMapsto
     }
 
     @Override public String mapToValue( ResultSet rs ) throws SQLException {
-        return rs.getString( DESCRIPTION.getName() );
+        return ResultSetAdapters.description( rs );
     }
 
     @Override public UUID mapToKey( ResultSet rs ) {
         try {
-            return rs.getObject( ID.getName(), UUID.class );
+            return ResultSetAdapters.id( rs );
         } catch ( SQLException ex ) {
             logger.error( "Unable to map ID to UUID class", ex );
             return null;
