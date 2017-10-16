@@ -30,7 +30,6 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.mapstores.*;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.mapstores.EdmVersionMapstore;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.edm.type.*;
@@ -179,7 +178,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<String, UUID> edmVersionMapstore() {
-        return new EdmVersionMapstore( session );
+        return new EdmVersionsMapstore( hikariDataSource );
     }
 
     @Bean

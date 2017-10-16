@@ -150,7 +150,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public UUID generateNewEntityDataModelVersion() {
-        UUID newVersion = UUIDs.timeBased();
+        UUID newVersion = new UUID( System.currentTimeMillis(), 0 );
         edmVersions.put( EntityDataModel.getEdmVersionKey(), newVersion );
         return newVersion;
     }

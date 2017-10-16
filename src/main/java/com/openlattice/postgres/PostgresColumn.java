@@ -38,6 +38,8 @@ public final class PostgresColumn {
     public static final String DATATYPE_FIELD              = "datatype";
     public static final String DESCRIPTION_FIELD           = "description";
     public static final String DST_FIELD                   = "dst";
+    public static final String EDM_VERSION_FIELD           = "edm_version";
+    public static final String EDM_VERSION_NAME_FIELD      = "edm_version_name";
     public static final String ENTITY_KEY_IDS_FIELD        = "entity_key_ids";
     public static final String ENTITY_SET_ID_FIELD         = "entity_set_id";
     public static final String ENTITY_SET_IDS_FIELD        = "entity_set_ids";
@@ -165,6 +167,10 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( REASON_FIELD, TEXT );
     public static       PostgresColumnDefinition STATUS                =
             new PostgresColumnDefinition( STATUS_FIELD, TEXT ).notNull();
+    public static       PostgresColumnDefinition EDM_VERSION_NAME      =
+            new PostgresColumnDefinition( EDM_VERSION_NAME_FIELD, TEXT ).notNull();
+    public static       PostgresColumnDefinition EDM_VERSION           =
+            new PostgresColumnDefinition( EDM_VERSION_FIELD, UUID ).notNull();
 
     private PostgresColumn() {
     }

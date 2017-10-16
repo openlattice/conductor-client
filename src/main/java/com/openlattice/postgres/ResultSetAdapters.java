@@ -229,6 +229,14 @@ public final class ResultSetAdapters {
         return rs.getString( NULLABLE_TITLE.getName() );
     }
 
+    public static String edmVersionName( ResultSet rs ) throws SQLException {
+        return rs.getString( EDM_VERSION_NAME.getName() );
+    }
+
+    public static UUID edmVersion( ResultSet rs ) throws SQLException {
+        return rs.getObject( EDM_VERSION.getName(), UUID.class );
+    }
+
     public static PropertyType propertyType( ResultSet rs ) throws SQLException {
         UUID id = id( rs );
         FullQualifiedName fqn = fqn( rs );

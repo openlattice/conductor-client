@@ -145,6 +145,12 @@ public final class PostgresTable {
                     .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, PostgresColumn.PERMISSIONS, REASON, STATUS )
                     .primaryKey( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID );
 
+    public static PostgresTableDefinition EDM_VERSIONS =
+            new PostgresTableDefinition( "edm_versions" )
+                    .addColumns( EDM_VERSION_NAME, EDM_VERSION )
+                    .primaryKey( EDM_VERSION_NAME, EDM_VERSION )
+                    .setUnique( EDM_VERSION_NAME, EDM_VERSION );
+
     private PostgresTable() {
     }
 
