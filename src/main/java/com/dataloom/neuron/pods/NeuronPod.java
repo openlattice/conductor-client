@@ -156,7 +156,7 @@ public class NeuronPod {
 
     @Bean
     public DatasourceManager dataSourceManager() {
-        return new DatasourceManager( session, hazelcastInstance );
+        return new DatasourceManager( hikariDataSource, hazelcastInstance );
     }
 
     @Bean

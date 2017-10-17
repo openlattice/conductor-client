@@ -64,6 +64,7 @@ import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.*;
+import com.openlattice.postgres.mapstores.SyncIdsMapstore;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -339,7 +340,13 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, UUID> syncIdsMapstore() {
-        return new SyncIdsMapstore( session );
+        SyncIdsMapstore psim = new SyncIdsMapstore( hikariDataSource );
+
+        com.dataloom.data.mapstores.SyncIdsMapstore sim = new com.dataloom.data.mapstores.SyncIdsMapstore( session );
+        for ( UUID key : sim.loadAllKeys() ) {
+            psim.store( key, sim.load( key ) );
+        }
+        return psim;
     }
 
     //Still using Cassandra for mapstores below to avoid contention on data integrations

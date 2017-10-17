@@ -151,6 +151,11 @@ public final class PostgresTable {
                     .primaryKey( EDM_VERSION_NAME, EDM_VERSION )
                     .setUnique( EDM_VERSION_NAME, EDM_VERSION );
 
+    public static PostgresTableDefinition SYNC_IDS =
+            new PostgresTableDefinition( "sync_ids" )
+            .addColumns( ENTITY_SET_ID, SYNC_ID, CURRENT_SYNC_ID )
+            .primaryKey( ENTITY_SET_ID, SYNC_ID );
+
     private PostgresTable() {
     }
 

@@ -2,7 +2,6 @@ package com.openlattice.postgres.mapstores;
 
 import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
@@ -13,6 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
@@ -20,7 +20,7 @@ import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
 import static com.openlattice.postgres.PostgresTable.EDM_VERSIONS;
 
 public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UUID> {
-    private HikariDataSource hds;
+    private final HikariDataSource hds;
 
     public EdmVersionsMapstore( HikariDataSource hds ) {
         super( HazelcastMap.EDM_VERSIONS.name(), EDM_VERSIONS, hds );
@@ -80,7 +80,7 @@ public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UU
     @Override
     public void store( String key, UUID value ) {
         try ( Connection connection = hds.getConnection() ) {
-            String sql = EDM_VERSIONS.insertQuery( java.util.Optional.empty(), ImmutableList.of() );
+            String sql = EDM_VERSIONS.insertQuery( Optional.empty(), ImmutableList.of() );
             PreparedStatement insertRow = connection.prepareStatement( sql );
             bind( insertRow, key, value );
             logger.info( insertRow.toString() );

@@ -237,6 +237,14 @@ public final class ResultSetAdapters {
         return rs.getObject( EDM_VERSION.getName(), UUID.class );
     }
 
+    public static UUID currentSyncId( ResultSet rs ) throws SQLException {
+        return rs.getObject( CURRENT_SYNC_ID.getName(), UUID.class );
+    }
+
+    public static UUID syncId( ResultSet rs ) throws SQLException {
+        return rs.getObject( SYNC_ID.getName(), UUID.class );
+    }
+
     public static PropertyType propertyType( ResultSet rs ) throws SQLException {
         UUID id = id( rs );
         FullQualifiedName fqn = fqn( rs );

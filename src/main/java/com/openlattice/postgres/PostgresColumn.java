@@ -35,6 +35,7 @@ public final class PostgresColumn {
     public static final String BIDIRECTIONAL_FIELD         = "bidirectional";
     public static final String CATEGORY_FIELD              = "category";
     public static final String CONTACTS_FIELD              = "contacts";
+    public static final String CURRENT_SYNC_ID_FIELD       = "current_sync_id";
     public static final String DATATYPE_FIELD              = "datatype";
     public static final String DESCRIPTION_FIELD           = "description";
     public static final String DST_FIELD                   = "dst";
@@ -72,6 +73,7 @@ public final class PostgresColumn {
     public static final String SHOW_FIELD                  = "show";
     public static final String SRC_FIELD                   = "src";
     public static final String STATUS_FIELD                = "status";
+    public static final String SYNC_ID_FIELD               = "sync_id";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
 
     public static final PostgresColumnDefinition PERMISSIONS           =
@@ -171,6 +173,10 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( EDM_VERSION_NAME_FIELD, TEXT ).notNull();
     public static       PostgresColumnDefinition EDM_VERSION           =
             new PostgresColumnDefinition( EDM_VERSION_FIELD, UUID ).notNull();
+    public static       PostgresColumnDefinition SYNC_ID               =
+            new PostgresColumnDefinition( SYNC_ID_FIELD, UUID ).notNull();
+    public static       PostgresColumnDefinition CURRENT_SYNC_ID       =
+            new PostgresColumnDefinition( CURRENT_SYNC_ID_FIELD, UUID );
 
     private PostgresColumn() {
     }
