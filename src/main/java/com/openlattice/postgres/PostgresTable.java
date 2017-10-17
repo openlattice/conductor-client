@@ -28,7 +28,8 @@ import static com.openlattice.postgres.PostgresColumn.*;
 public final class PostgresTable {
     public static PostgresTableDefinition SECURABLE_OBJECTS =
             new PostgresTableDefinition( "securable_objects" )
-                    .addColumns( ACL_KEY, SECURABLE_OBJECT_TYPE );
+                    .addColumns( ACL_KEY, SECURABLE_OBJECT_TYPE )
+                    .primaryKey( ACL_KEY );
 
     public static PostgresTableDefinition PERMISSIONS =
             new PostgresTableDefinition( "permissions" )

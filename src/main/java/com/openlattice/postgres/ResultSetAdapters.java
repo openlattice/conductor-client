@@ -245,6 +245,10 @@ public final class ResultSetAdapters {
         return rs.getObject( SYNC_ID.getName(), UUID.class );
     }
 
+    public static SecurableObjectType securableObjectType( ResultSet rs ) throws SQLException {
+        return SecurableObjectType.valueOf( rs.getString( SECURABLE_OBJECT_TYPE.getName() ) );
+    }
+
     public static PropertyType propertyType( ResultSet rs ) throws SQLException {
         UUID id = id( rs );
         FullQualifiedName fqn = fqn( rs );

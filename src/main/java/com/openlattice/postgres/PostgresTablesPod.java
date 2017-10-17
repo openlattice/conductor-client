@@ -50,6 +50,7 @@ public class PostgresTablesPod {
                 PostgresTable.REQUESTS,
                 PostgresTable.ROLES,
                 PostgresTable.SCHEMA,
+                PostgresTable.SECURABLE_OBJECTS,
                 PostgresTable.SYNC_IDS,
                 PostgresTable.VERTEX_IDS_AFTER_LINKING
         );

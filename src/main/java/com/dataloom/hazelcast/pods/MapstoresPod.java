@@ -21,8 +21,6 @@ package com.dataloom.hazelcast.pods;
 
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.mapstores.PermissionMapstore;
-import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
@@ -116,7 +114,13 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<List<UUID>, SecurableObjectType> securableObjectTypeMapstore() {
-        return new SecurableObjectTypeMapstore( session );
+        SecurableObjectTypeMapstore psotm = new SecurableObjectTypeMapstore( hikariDataSource );
+
+        com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore sotm = new com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore( session );
+        for ( List<UUID> key : sotm.loadAllKeys() ) {
+            psotm.store( key, sotm.load( key ) );
+        }
+        return psotm;
     }
 
     @Bean

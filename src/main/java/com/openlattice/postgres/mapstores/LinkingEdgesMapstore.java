@@ -1,7 +1,6 @@
 package com.openlattice.postgres.mapstores;
 
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
 import com.google.common.collect.ImmutableList;
