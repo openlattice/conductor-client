@@ -45,6 +45,7 @@ public class PostgresTablesPod {
                 PostgresTable.LINKING_VERTICES,
                 PostgresTable.NAMES,
                 PostgresTable.ORGANIZATIONS,
+                PostgresTable.PERMISSIONS,
                 PostgresTable.PROPERTY_TYPES,
                 PostgresTable.REQUESTS,
                 PostgresTable.ROLES,

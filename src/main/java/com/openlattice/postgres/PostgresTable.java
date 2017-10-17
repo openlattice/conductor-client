@@ -156,6 +156,9 @@ public final class PostgresTable {
             .addColumns( ENTITY_SET_ID, SYNC_ID, CURRENT_SYNC_ID )
             .primaryKey( ENTITY_SET_ID, SYNC_ID );
 
+    public static PostgresTableDefinition LINKING_ENTITIES =
+            new PostgresTableDefinition( "linking_entities" );
+
     private PostgresTable() {
     }
 

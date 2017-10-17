@@ -59,6 +59,7 @@ import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.*;
@@ -106,7 +107,13 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
-        return new PermissionMapstore( session );
+        PermissionMapstore ppm = new PermissionMapstore( hikariDataSource );
+
+        com.dataloom.authorization.mapstores.PermissionMapstore pm = new com.dataloom.authorization.mapstores.PermissionMapstore( session );
+        for ( AceKey key : pm.loadAllKeys() ) {
+            ppm.store( key, pm.load( key ) );
+        }
+        return ppm;
     }
 
     @Bean

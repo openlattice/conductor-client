@@ -20,43 +20,34 @@
 
 package com.openlattice.authorization.mapstores;
 
-import static com.openlattice.postgres.PostgresArrays.createTextArray;
-import static com.openlattice.postgres.PostgresArrays.createUuidArray;
-import static com.openlattice.postgres.PostgresColumn.ACL_KEY;
-import static com.openlattice.postgres.PostgresColumn.PERMISSIONS;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE;
-
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.*;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.lang3.RandomStringUtils;
+
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.UUID;
-import org.apache.commons.lang3.RandomStringUtils;
+import java.util.*;
+
+import static com.openlattice.postgres.PostgresArrays.createTextArray;
+import static com.openlattice.postgres.PostgresArrays.createUuidArray;
+import static com.openlattice.postgres.PostgresColumn.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, DelegatedPermissionEnumSet> {
 
-    public PermissionMapstore(
-            String mapName,
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( mapName, table, hds );
+    public PermissionMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.PERMISSIONS.name(), PostgresTable.PERMISSIONS, hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {
@@ -94,6 +85,17 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Del
             logger.error( "Unable to map ace key from result set in permissions mapstore", ex );
             return null;
         }
+    }
+
+    @Override
+    public Map<AceKey, DelegatedPermissionEnumSet> loadAll( Collection<AceKey> keys ) {
+        Map<AceKey, DelegatedPermissionEnumSet> result = Maps.newConcurrentMap();
+        keys.parallelStream().forEach( key -> {
+            DelegatedPermissionEnumSet value = load( key );
+            if ( value != null )
+                result.put( key, value );
+        } );
+        return result;
     }
 
     @Override
