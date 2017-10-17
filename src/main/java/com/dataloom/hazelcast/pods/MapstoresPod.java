@@ -24,8 +24,6 @@ import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
 import com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore;
 import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.blocking.GraphEntityPair;
-import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.mapstores.*;
@@ -390,11 +388,6 @@ public class MapstoresPod {
             pespm.store( key, espm.load( key ) );
         }
         return pespm;
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<GraphEntityPair, LinkingEntity> linkingEntityMapstore() {
-        return new LinkingEntityMapstore( session );
     }
 
     @Bean
