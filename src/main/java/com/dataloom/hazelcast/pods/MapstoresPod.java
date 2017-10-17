@@ -41,7 +41,6 @@ import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
 import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
 import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
-import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
 import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
@@ -63,7 +62,6 @@ import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.*;
-import com.openlattice.postgres.mapstores.SyncIdsMapstore;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -287,7 +285,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, WeightedLinkingVertexKeySet> linkingEdgesMapstore() {
-        return new LinkingEdgesMapstore( session );
+        return new LinkingEdgesMapstore( hikariDataSource );
     }
 
     @Bean

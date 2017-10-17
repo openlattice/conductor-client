@@ -153,11 +153,14 @@ public final class PostgresTable {
 
     public static PostgresTableDefinition SYNC_IDS =
             new PostgresTableDefinition( "sync_ids" )
-            .addColumns( ENTITY_SET_ID, SYNC_ID, CURRENT_SYNC_ID )
-            .primaryKey( ENTITY_SET_ID, SYNC_ID );
+                    .addColumns( ENTITY_SET_ID, SYNC_ID, CURRENT_SYNC_ID )
+                    .primaryKey( ENTITY_SET_ID, SYNC_ID )
+                    .setUnique( ENTITY_SET_ID, SYNC_ID );
 
-    public static PostgresTableDefinition LINKING_ENTITIES =
-            new PostgresTableDefinition( "linking_entities" );
+    public static PostgresTableDefinition LINKING_EDGES =
+            new PostgresTableDefinition( "linking_edges" )
+                    .addColumns( GRAPH_ID, SRC_LINKING_VERTEX_ID, EDGE_VALUE, DST_LINKING_VERTEX_ID )
+                    .primaryKey( GRAPH_ID, SRC_LINKING_VERTEX_ID, EDGE_VALUE, DST_LINKING_VERTEX_ID );
 
     private PostgresTable() {
     }

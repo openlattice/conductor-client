@@ -39,6 +39,8 @@ public final class PostgresColumn {
     public static final String DATATYPE_FIELD              = "datatype";
     public static final String DESCRIPTION_FIELD           = "description";
     public static final String DST_FIELD                   = "dst";
+    public static final String DST_LINKING_VERTEX_ID_FIELD = "dst_linking_vertex_id";
+    public static final String EDGE_VALUE_FIELD            = "edge_value";
     public static final String EDM_VERSION_FIELD           = "edm_version";
     public static final String EDM_VERSION_NAME_FIELD      = "edm_version_name";
     public static final String ENTITY_KEY_IDS_FIELD        = "entity_key_ids";
@@ -72,6 +74,7 @@ public final class PostgresColumn {
     public static final String SECURABLE_OBJECTID_FIELD    = "securable_objectid";
     public static final String SHOW_FIELD                  = "show";
     public static final String SRC_FIELD                   = "src";
+    public static final String SRC_LINKING_VERTEX_ID_FIELD = "src_linking_vertex_id";
     public static final String STATUS_FIELD                = "status";
     public static final String SYNC_ID_FIELD               = "sync_id";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
@@ -177,6 +180,12 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( SYNC_ID_FIELD, UUID ).notNull();
     public static       PostgresColumnDefinition CURRENT_SYNC_ID       =
             new PostgresColumnDefinition( CURRENT_SYNC_ID_FIELD, UUID );
+    public static       PostgresColumnDefinition SRC_LINKING_VERTEX_ID =
+            new PostgresColumnDefinition( SRC_LINKING_VERTEX_ID_FIELD, UUID );
+    public static       PostgresColumnDefinition DST_LINKING_VERTEX_ID =
+            new PostgresColumnDefinition( DST_LINKING_VERTEX_ID_FIELD, UUID );
+    public static       PostgresColumnDefinition EDGE_VALUE            =
+            new PostgresColumnDefinition( EDGE_VALUE_FIELD, DECIMAL );
 
     private PostgresColumn() {
     }

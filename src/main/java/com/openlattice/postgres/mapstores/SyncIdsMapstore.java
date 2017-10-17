@@ -10,9 +10,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.SYNC_IDS;
@@ -100,6 +103,11 @@ public class SyncIdsMapstore extends AbstractBasePostgresMapstore<UUID, UUID> {
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during store all", e );
         }
+    }
+
+    @Override
+    public Map<UUID, UUID> loadAll( Collection<UUID> keys ) {
+        return keys.parallelStream().distinct().collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
     }
 
     @Override public UUID generateTestKey() {
