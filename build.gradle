@@ -27,14 +27,14 @@ plugins {
 }
 
 description = "Kryptnostic Conductor Client"
-group = "com.kryptnostic"
+group = "com.openlattice"
 
-ext.projectName = "kryptnostic-conductor-client"
+ext.projectName = "conductor-client"
 ext.scmUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
 ext.connectionUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
 ext.developerConnectionUrl = 'scm:git:https://github.com/dataloom/conductor-client.git'
 
-apply from: "https://raw.githubusercontent.com/kryptnostic/gradles/master/kryptnostic.gradle"
+apply from: "https://raw.githubusercontent.com/openlattice/gradles/master/openlattice.gradle"
 
 sourceCompatibility=JavaVersion.VERSION_1_8
 
@@ -107,9 +107,9 @@ dependencies {
         compile "com.kryptnostic:loom-api:${loom_api_version}"
         compile "com.kryptnostic:rhizome:${rhizome_version}"
 
-        testCompile "com.kryptnostic:loom-api:${loom_api_version}:tests"
-        testCompile "com.kryptnostic:rhizome:${rhizome_version}:tests"
-        testCompile "com.kryptnostic:rhizome-client:${rhizome_client_version}:tests"
+        testCompile "com.openlattice:loom-api:${loom_api_version}:tests"
+        testCompile "com.openlattice:rhizome:${rhizome_version}:tests"
+        testCompile "com.openlattice:rhizome-client:${rhizome_client_version}:tests"
     }
 
     /*
