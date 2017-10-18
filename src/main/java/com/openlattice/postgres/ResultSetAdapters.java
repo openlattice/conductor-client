@@ -249,6 +249,14 @@ public final class ResultSetAdapters {
         return SecurableObjectType.valueOf( rs.getString( SECURABLE_OBJECT_TYPE.getName() ) );
     }
 
+    public static String reason( ResultSet rs ) throws SQLException {
+        return rs.getString( REASON.getName() );
+    }
+
+    public static RequestStatus requestStatus( ResultSet rs ) throws SQLException {
+        return RequestStatus.valueOf( rs.getString( STATUS.getName() ) );
+    }
+
     public static PropertyType propertyType( ResultSet rs ) throws SQLException {
         UUID id = id( rs );
         FullQualifiedName fqn = fqn( rs );
@@ -354,9 +362,9 @@ public final class ResultSetAdapters {
         List<UUID> aclKey = aclKey( rs );
         Principal principal = principal( rs );
         EnumSet<Permission> permissions = ResultSetAdapters.permissions( rs );
-        Optional<String> reason = Optional.of( rs.getString( REASON.getName() ) );
+        Optional<String> reason = Optional.of( reason( rs ) );
         Request request = new Request( aclKey, permissions, reason );
-        RequestStatus status = RequestStatus.valueOf( rs.getString( STATUS.getName() ) );
+        RequestStatus status = requestStatus( rs );
         return new Status( request, principal, status );
     }
 
