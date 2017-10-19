@@ -155,8 +155,7 @@ public class NeuronPod {
     @Bean
     public EdmManager dataModelService() {
         return new EdmService(
-                cassandraConfiguration.getKeyspace(),
-                session,
+                hikariDataSource,
                 hazelcastInstance,
                 aclKeyReservationService(),
                 authorizationManager(),

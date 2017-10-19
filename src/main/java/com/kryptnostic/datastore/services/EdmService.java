@@ -36,9 +36,6 @@ import com.dataloom.edm.type.*;
 import com.dataloom.edm.types.processors.*;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -47,14 +44,17 @@ import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
-import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.util.Util;
+import com.openlattice.postgres.PostgresQuery;
+import com.openlattice.postgres.PostgresTablesPod;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
@@ -86,16 +86,14 @@ public class EdmService implements EdmManager {
     private final PostgresTypeManager               entityTypeManager;
     private final HazelcastSchemaManager            schemaManager;
 
-    private final String            keyspace;
-    private final Session           session;
     private final HazelcastInstance hazelcastInstance;
+    private final HikariDataSource  hds;
 
     @Inject
     private EventBus eventBus;
 
     public EdmService(
-            String keyspace,
-            Session session,
+            HikariDataSource hds,
             HazelcastInstance hazelcastInstance,
             HazelcastAclKeyReservationService aclKeyReservations,
             AuthorizationManager authorizations,
@@ -107,8 +105,7 @@ public class EdmService implements EdmManager {
         this.entityTypeManager = entityTypeManager;
         this.schemaManager = schemaManager;
         this.hazelcastInstance = hazelcastInstance;
-        this.session = session;
-        this.keyspace = keyspace;
+        this.hds = hds;
         this.edmVersions = hazelcastInstance.getMap( HazelcastMap.EDM_VERSIONS.name() );
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.complexTypes = hazelcastInstance.getMap( HazelcastMap.COMPLEX_TYPES.name() );
@@ -131,12 +128,20 @@ public class EdmService implements EdmManager {
         for ( int i = 0; i < HazelcastMap.values().length; i++ ) {
             hazelcastInstance.getMap( HazelcastMap.values()[ i ].name() ).clear();
         }
+        try {
+            java.sql.Connection connection = hds.getConnection();
 
-        for ( int i = 0; i < Table.values().length; i++ ) {
-            String tableName = Table.values()[ i ].name();
-            if ( !tableName.equals( Table.KEYS.name() ) && !tableName.equals( Table.ORGANIZATIONS_ROLES.name() ) ) {
-                session.execute( QueryBuilder.truncate( keyspace, Table.values()[ i ].name() ) );
-            }
+            new PostgresTablesPod().postgresTables().tables().forEach( table -> {
+                try {
+                    connection.prepareStatement( PostgresQuery.truncate( table.getName() ) ).execute();
+                } catch ( SQLException e ) {
+                    logger.debug( "Unable to truncate table {}", table.getName(), e );
+                }
+            } );
+            connection.close();
+
+        } catch (SQLException e ) {
+            logger.debug( "Unable to clear all data.", e );
         }
     }
 

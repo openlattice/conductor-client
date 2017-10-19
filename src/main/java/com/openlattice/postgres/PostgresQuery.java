@@ -10,6 +10,7 @@ public class PostgresQuery {
     public static final String DELETE   = "DELETE ";
     public static final String UPDATE   = "UPDATE ";
     public static final String DISTINCT = "DISTINCT ";
+    public static final String TRUNCATE = "TRUCATE TABLE ";
     public static final String FROM     = " FROM ";
     public static final String WHERE    = " WHERE ";
     public static final String SET      = " SET ";
@@ -42,6 +43,10 @@ public class PostgresQuery {
 
     public static String deleteFrom( String table ) {
         return DELETE.concat( FROM ).concat( table ).concat( " " );
+    }
+
+    public static String truncate( String table ) {
+        return TRUNCATE.concat( table );
     }
 
     public static String update( String table ) {
