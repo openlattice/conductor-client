@@ -19,75 +19,53 @@
 
 package com.dataloom.data.storage;
 
-import static com.google.common.util.concurrent.Futures.transformAsync;
-
 import com.codahale.metrics.annotation.Timed;
-import com.dataloom.data.DatasourceManager;
-import com.dataloom.data.EntityDatastore;
-import com.dataloom.data.EntityKey;
-import com.dataloom.data.EntityKeyIdService;
-import com.dataloom.data.EntitySetData;
+import com.dataloom.data.*;
 import com.dataloom.data.aggregators.EntitiesAggregator;
 import com.dataloom.data.aggregators.EntityAggregator;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
-import com.dataloom.data.hazelcast.DataKey;
-import com.dataloom.data.hazelcast.Entities;
-import com.dataloom.data.hazelcast.EntityKeyHazelcastStream;
-import com.dataloom.data.hazelcast.EntitySetHazelcastStream;
-import com.dataloom.data.hazelcast.EntitySets;
+import com.dataloom.data.hazelcast.*;
 import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
-import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
-import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.inject.Inject;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.google.common.util.concurrent.Futures.transformAsync;
+
 public class CassandraEntityDatastore implements EntityDatastore {
     private static final Logger logger = LoggerFactory
             .getLogger( CassandraEntityDatastore.class );
 
-    private final Session           session;
     private final ObjectMapper      mapper;
     private final DatasourceManager dsm;
 
@@ -100,20 +78,15 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private EventBus eventBus;
 
     public CassandraEntityDatastore(
-            Session session,
             HazelcastInstance hazelastInstance,
             ListeningExecutorService executor,
             ObjectMapper mapper,
             EntityKeyIdService idService,
-            HazelcastLinkingGraphs linkingGraph,
-            LoomGraph loomGraph,
             DatasourceManager dsm ) {
-        this.session = session;
+        this.data = hazelastInstance.getMap( HazelcastMap.DATA.name() );
+
         this.mapper = mapper;
         this.dsm = dsm;
-        CassandraTableBuilder dataTableDefinitions = Table.DATA.getBuilder();
-
-        this.data = hazelastInstance.getMap( HazelcastMap.DATA.name() );
         this.idService = idService;
         this.hazelcastInstance = hazelastInstance;
         this.executor = executor;

@@ -114,13 +114,10 @@ public class NeuronPod {
     @Bean
     public CassandraEntityDatastore cassandraDataManager() {
         return new CassandraEntityDatastore(
-                session,
                 hazelcastInstance,
                 executor,
                 defaultObjectMapper(),
                 idService(),
-                linkingGraph(),
-                loomGraph(),
                 dataSourceManager()
         );
     }
