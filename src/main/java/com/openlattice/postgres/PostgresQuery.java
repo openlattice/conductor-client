@@ -54,7 +54,8 @@ public class PostgresQuery {
 
     public static String insertRow( String table, List<String> columns ) {
         return INSERT.concat( table ).concat( "(" ).concat( commaJoin( columns ) ).concat( ")" ).concat( VALUES )
-                .concat( "(" ).concat( Stream.generate( () -> "?" ).collect( Collectors.joining( ", " ) ) )
+                .concat( "(" )
+                .concat( Stream.generate( () -> "?" ).limit( columns.size() ).collect( Collectors.joining( ", " ) ) )
                 .concat( ");" );
     }
 
