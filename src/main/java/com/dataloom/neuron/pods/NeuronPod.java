@@ -196,7 +196,6 @@ public class NeuronPod {
     @Bean
     public HazelcastSchemaManager schemaManager() {
         return new HazelcastSchemaManager(
-                cassandraConfiguration.getKeyspace(),
                 hazelcastInstance,
                 schemaQueryService() );
     }

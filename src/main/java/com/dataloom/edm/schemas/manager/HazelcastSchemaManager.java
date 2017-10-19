@@ -60,7 +60,6 @@ public class HazelcastSchemaManager {
     private final SchemaQueryService        schemaQueryService;
 
     public HazelcastSchemaManager(
-            String keyspace,
             HazelcastInstance hazelcastInstance,
             SchemaQueryService schemaQueryService ) {
         this.schemas = checkNotNull( hazelcastInstance.getMap( HazelcastMap.SCHEMAS.name() ) );
