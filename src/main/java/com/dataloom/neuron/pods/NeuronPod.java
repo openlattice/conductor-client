@@ -34,7 +34,6 @@ import com.dataloom.edm.schemas.SchemaQueryService;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.schemas.postgres.PostgresSchemaQueryService;
 import com.dataloom.graph.core.LoomGraph;
-import com.dataloom.linking.CassandraLinkingGraphsQueryService;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.neuron.Neuron;
@@ -129,11 +128,6 @@ public class NeuronPod {
     @Bean
     public PostgresEntitySetManager entitySetManager() {
         return new PostgresEntitySetManager( hikariDataSource );
-    }
-
-    @Bean
-    public CassandraLinkingGraphsQueryService linkingGraphQueryService() {
-        return new CassandraLinkingGraphsQueryService( cassandraConfiguration.getKeyspace(), session );
     }
 
     @Bean
