@@ -104,8 +104,8 @@ dependencies {
         testCompile( project(path: ":rhizome-client", configuration: "tests"))
     } else {
         logger.quiet(project.name + " using jar dependencies.")
-        compile "com.kryptnostic:loom-api:${loom_api_version}"
-        compile "com.kryptnostic:rhizome:${rhizome_version}"
+        compile "com.openlattice:loom-api:${loom_api_version}"
+        compile "com.openlattice:rhizome:${rhizome_version}"
 
         testCompile "com.openlattice:loom-api:${loom_api_version}:tests"
         testCompile "com.openlattice:rhizome:${rhizome_version}:tests"
