@@ -38,12 +38,14 @@ import com.dataloom.requests.Request;
 import com.dataloom.requests.RequestStatus;
 import com.dataloom.requests.Status;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -383,7 +385,9 @@ public final class ResultSetAdapters {
     }
 
     public static PrincipalSet principalSet( ResultSet rs ) throws SQLException {
-        Stream<String> users = Arrays.stream( (String[]) rs.getArray( PRINCIPAL_IDS.getName() ).getArray() );
+        Array usersArray = rs.getArray( PRINCIPAL_IDS.getName() );
+        if ( usersArray == null ) return PrincipalSet.wrap( ImmutableSet.of() );
+        Stream<String> users = Arrays.stream( (String[]) usersArray.getArray() );
         return PrincipalSet
                 .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
     }

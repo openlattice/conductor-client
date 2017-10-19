@@ -6,6 +6,7 @@ import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
@@ -15,7 +16,11 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.ROLES;
@@ -49,7 +54,7 @@ public class UsersWithRoleMapstore extends AbstractBasePostgresMapstore<RoleKey,
     }
 
     @Override protected PrincipalSet mapToValue( ResultSet rs ) throws SQLException {
-        return ResultSetAdapters.principalSet( rs );
+        return (rs == null) ? PrincipalSet.wrap( ImmutableSet.of() ) : ResultSetAdapters.principalSet( rs );
     }
 
     @Override protected RoleKey mapToKey( ResultSet rs ) {
