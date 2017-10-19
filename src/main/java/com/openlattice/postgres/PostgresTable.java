@@ -163,6 +163,19 @@ public final class PostgresTable {
                     .addColumns( GRAPH_ID, SRC_LINKING_VERTEX_ID, EDGE_VALUE, DST_LINKING_VERTEX_ID )
                     .primaryKey( GRAPH_ID, SRC_LINKING_VERTEX_ID, EDGE_VALUE, DST_LINKING_VERTEX_ID );
 
+    public static PostgresTableDefinition AUDIT_LOG =
+            new PostgresTableDefinition( "audit_log" )
+                    .addColumns( ACL_KEY,
+                            EVENT_TYPE,
+                            PRINCIPAL_TYPE,
+                            PRINCIPAL_ID,
+                            TIME_UUID,
+                            AUDIT_ID,
+                            DATA_ID,
+                            BLOCK_ID )
+                    .primaryKey( ACL_KEY, EVENT_TYPE, PRINCIPAL_TYPE, PRINCIPAL_ID, TIME_UUID )
+                    .setUnique( ACL_KEY, EVENT_TYPE, PRINCIPAL_TYPE, PRINCIPAL_ID, TIME_UUID );
+
     private PostgresTable() {
     }
 

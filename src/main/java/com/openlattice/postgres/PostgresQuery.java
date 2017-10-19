@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class PostgresQuery {
     public static final String SELECT   = "SELECT ";
@@ -11,6 +12,8 @@ public class PostgresQuery {
     public static final String UPDATE   = "UPDATE ";
     public static final String DISTINCT = "DISTINCT ";
     public static final String TRUNCATE = "TRUCATE TABLE ";
+    public static final String INSERT   = "INSERT INTO ";
+    public static final String VALUES   = " VALUES ";
     public static final String FROM     = " FROM ";
     public static final String WHERE    = " WHERE ";
     public static final String SET      = " SET ";
@@ -47,6 +50,12 @@ public class PostgresQuery {
 
     public static String truncate( String table ) {
         return TRUNCATE.concat( table );
+    }
+
+    public static String insertRow( String table, List<String> columns ) {
+        return INSERT.concat( table ).concat( "(" ).concat( commaJoin( columns ) ).concat( ")" ).concat( VALUES )
+                .concat( "(" ).concat( Stream.generate( () -> "?" ).collect( Collectors.joining( ", " ) ) )
+                .concat( ");" );
     }
 
     public static String update( String table ) {

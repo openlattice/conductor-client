@@ -65,8 +65,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 public class EdmService implements EdmManager {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger( EdmService.class );
+    private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
     private final IMap<String, UUID> edmVersions;
 
     private final IMap<UUID, PropertyType>                              propertyTypes;

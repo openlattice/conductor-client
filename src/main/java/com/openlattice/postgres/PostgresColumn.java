@@ -30,12 +30,15 @@ import static com.openlattice.postgres.PostgresDatatype.*;
 public final class PostgresColumn {
     public static final String ACL_KEY_FIELD               = "acl_key";
     public static final String ALLOWED_EMAIL_DOMAINS_FIELD = "allowed_email_domains";
+    public static final String AUDIT_ID_FIELD              = "audit_id";
     public static final String ANALYZER_FIELD              = "analyzer";
     public static final String BASE_TYPE_FIELD             = "base_type";
     public static final String BIDIRECTIONAL_FIELD         = "bidirectional";
+    public static final String BLOCK_ID_FIELD              = "block_id";
     public static final String CATEGORY_FIELD              = "category";
     public static final String CONTACTS_FIELD              = "contacts";
     public static final String CURRENT_SYNC_ID_FIELD       = "current_sync_id";
+    public static final String DATA_ID_FIELD               = "data_id";
     public static final String DATATYPE_FIELD              = "datatype";
     public static final String DESCRIPTION_FIELD           = "description";
     public static final String DST_FIELD                   = "dst";
@@ -47,6 +50,7 @@ public final class PostgresColumn {
     public static final String ENTITY_SET_ID_FIELD         = "entity_set_id";
     public static final String ENTITY_SET_IDS_FIELD        = "entity_set_ids";
     public static final String ENTITY_TYPE_ID_FIELD        = "entity_type_id";
+    public static final String EVENT_TYPE_FIELD            = "event_type";
     public static final String FLAGS_FIELD                 = "flags";
     public static final String GRAPH_DIAMETER_FIELD        = "graph_diameter";
     public static final String GRAPH_ID_FIELD              = "graph_id";
@@ -77,6 +81,7 @@ public final class PostgresColumn {
     public static final String SRC_LINKING_VERTEX_ID_FIELD = "src_linking_vertex_id";
     public static final String STATUS_FIELD                = "status";
     public static final String SYNC_ID_FIELD               = "sync_id";
+    public static final String TIME_UUID_FIELD             = "time_uuid";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
 
     public static final PostgresColumnDefinition PERMISSIONS           =
@@ -186,6 +191,16 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( DST_LINKING_VERTEX_ID_FIELD, UUID );
     public static       PostgresColumnDefinition EDGE_VALUE            =
             new PostgresColumnDefinition( EDGE_VALUE_FIELD, DECIMAL );
+    public static       PostgresColumnDefinition EVENT_TYPE            =
+            new PostgresColumnDefinition( EVENT_TYPE_FIELD, TEXT );
+    public static       PostgresColumnDefinition TIME_UUID             =
+            new PostgresColumnDefinition( TIME_UUID_FIELD, UUID );
+    public static       PostgresColumnDefinition AUDIT_ID              =
+            new PostgresColumnDefinition( AUDIT_ID_FIELD, UUID );
+    public static       PostgresColumnDefinition DATA_ID               =
+            new PostgresColumnDefinition( DATA_ID_FIELD, UUID );
+    public static       PostgresColumnDefinition BLOCK_ID              =
+            new PostgresColumnDefinition( BLOCK_ID_FIELD, UUID );
 
     private PostgresColumn() {
     }
