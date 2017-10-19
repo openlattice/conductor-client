@@ -1,20 +1,19 @@
 package com.dataloom.hazelcast.serializers;
 
+import com.dataloom.search.requests.SearchResult;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-import org.spark_project.guava.collect.Maps;
-
-import com.dataloom.search.requests.SearchResult;
-import com.google.common.collect.Lists;
-import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
-
-public class SearchResultStreamSerializerTest extends AbstractStreamSerializerTest<SearchResultStreamSerializer, SearchResult>
-implements Serializable {
+public class SearchResultStreamSerializerTest
+        extends AbstractStreamSerializerTest<SearchResultStreamSerializer, SearchResult>
+        implements Serializable {
 
     /**
-     * 
+     *
      */
     private static final long serialVersionUID = 8177027116300219868L;
 
