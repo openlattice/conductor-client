@@ -146,9 +146,9 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             NavigableSet<Principal> principals,
             SecurableObjectType objectType,
             Permission permission,
-            AuthorizedObjectsPagingInfo pagingInfo,
+            String offset,
             int pageSize ) {
-        return aqs.getAuthorizedAclKeys( principals, objectType, permission, pagingInfo, pageSize );
+        return aqs.getAuthorizedAclKeys( principals, objectType, permission, offset, pageSize );
     }
 
     @Override
@@ -163,7 +163,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public Stream<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions ) {
-        return aqs.getAuthorizedAclKeys( principal, permissions ).stream();
+        return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
     @Override

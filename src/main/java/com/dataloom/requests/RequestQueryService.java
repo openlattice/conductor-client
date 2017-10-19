@@ -91,6 +91,7 @@ public class RequestQueryService {
             while ( rs.next() ) {
                 result.add( new AceKey( ResultSetAdapters.aclKey( rs ), principal ) );
             }
+            connection.close();
             return StreamUtil.stream( result );
         } catch ( SQLException e ) {
             logger.debug( "Unable to get request keys.", e );
@@ -111,6 +112,7 @@ public class RequestQueryService {
             while ( rs.next() ) {
                 result.add( new AceKey( ResultSetAdapters.aclKey( rs ), principal ) );
             }
+            connection.close();
             return StreamUtil.stream( result );
         } catch ( SQLException e ) {
             logger.debug( "Unable to get request keys.", e );
@@ -129,6 +131,7 @@ public class RequestQueryService {
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.aceKey( rs ) );
             }
+            connection.close();
             return StreamUtil.stream( result );
         } catch ( SQLException e ) {
             logger.debug( "Unable to get request keys.", e );
@@ -148,6 +151,7 @@ public class RequestQueryService {
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.aceKey( rs ) );
             }
+            connection.close();
             return StreamUtil.stream( result );
         } catch ( SQLException e ) {
             logger.debug( "Unable to get request keys.", e );
