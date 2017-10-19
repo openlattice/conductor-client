@@ -3,6 +3,7 @@ package com.openlattice.postgres.mapstores;
 import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
@@ -10,8 +11,12 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
 import static com.openlattice.postgres.PostgresColumn.ID;
@@ -54,6 +59,16 @@ public class OrganizationDescriptionsMapstore extends AbstractBasePostgresMapsto
             logger.error( "Unable to map ID to UUID class", ex );
             return null;
         }
+    }
+
+    @Override
+    public Map<UUID, String> loadAll( Collection<UUID> keys ) {
+        Map<UUID, String> result = Maps.newConcurrentMap();
+        keys.parallelStream().forEach( id -> {
+            String description = load(id);
+            if ( description != null ) result.put( id, description );
+        });
+        return result;
     }
 
     @Override

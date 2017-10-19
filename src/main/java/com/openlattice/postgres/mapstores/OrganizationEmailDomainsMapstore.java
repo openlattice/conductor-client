@@ -3,6 +3,7 @@ package com.openlattice.postgres.mapstores;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.openlattice.postgres.PostgresArrays;
@@ -15,7 +16,9 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.ALLOWED_EMAIL_DOMAINS;
@@ -63,6 +66,16 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
             logger.error( "Unable to map ID to UUID class", ex );
             return null;
         }
+    }
+
+    @Override
+    public Map<UUID, DelegatedStringSet> loadAll( Collection<UUID> keys ) {
+        Map<UUID, DelegatedStringSet> result = Maps.newConcurrentMap();
+        keys.parallelStream().forEach( id -> {
+            DelegatedStringSet domains = load(id);
+            if ( domains != null ) result.put( id, domains );
+        });
+        return result;
     }
 
     @Override

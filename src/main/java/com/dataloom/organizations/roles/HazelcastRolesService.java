@@ -1,30 +1,15 @@
 package com.dataloom.organizations.roles;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.dataloom.authorization.AbstractSecurableObjectResolveTypeService;
-import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.authorization.AuthorizingComponent;
-import com.dataloom.authorization.HazelcastAclKeyReservationService;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.Principals;
+import com.dataloom.authorization.*;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
+import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.processors.OrganizationMemberRoleMerger;
 import com.dataloom.organizations.processors.OrganizationMemberRoleRemover;
-import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.roles.processors.RoleDescriptionUpdater;
 import com.dataloom.organizations.roles.processors.RoleTitleUpdater;
 import com.google.common.base.Preconditions;
@@ -32,6 +17,13 @@ import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.EnumSet;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.dataloom.streams.StreamUtil.stream;
 
@@ -157,7 +149,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
             securableObjectTypes.deleteSecurableObjectType( role.getAclKey() );
         }
 
-        rqs.deleteAllRolesInOrganization( organizationId, allRolesInOrg );
+        rqs.deleteAllRolesInOrganization( organizationId );
     }
 
     @Override
@@ -178,8 +170,8 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
     public void removeRoleFromUser( RoleKey roleKey, Principal user ) {
 
         Preconditions.checkArgument(
-            user.getType() == PrincipalType.USER,
-            "Cannot remove roles from another ROLE object."
+                user.getType() == PrincipalType.USER,
+                "Cannot remove roles from another ROLE object."
         );
 
         usersWithRole.executeOnKey( roleKey, new OrganizationMemberRoleRemover( ImmutableSet.of( user ) ) );
@@ -217,7 +209,7 @@ public class HazelcastRolesService implements RolesManager, AuthorizingComponent
             );
         }
 
-        UUID organizationId = rqs.getOrganizationId( roleId );
+        UUID organizationId = roles.get( roleId ).getOrganizationId();
         return new RoleKey( organizationId, roleId );
     }
 

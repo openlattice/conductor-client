@@ -1,95 +1,75 @@
 package com.dataloom.organizations.roles;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
+import com.dataloom.organization.roles.Role;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.openlattice.postgres.*;
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.organization.roles.Role;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.kryptnostic.conductor.rpc.odata.Table;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.datastore.cassandra.RowAdapters;
-
-import static com.dataloom.streams.StreamUtil.stream;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.UUID;
 
 public class RolesQueryService {
 
     private static final Logger logger = LoggerFactory.getLogger( RolesQueryService.class );
 
-    private final Session           session;
-    private final PreparedStatement getOrganizationIdQuery;
-    private final PreparedStatement getAllRolesInOrganizationQuery;
-    private final PreparedStatement deleteAllRolesInOrganizationQuery;
+    private final HikariDataSource hds;
 
-    public RolesQueryService( Session session ) {
+    private final String getAllRolesInOrganizationSql;
+    private final String deleteAllRolesInOrganizationSql;
 
-        this.session = session;
+    public RolesQueryService( HikariDataSource hds ) {
+        this.hds = hds;
 
-        this.getAllRolesInOrganizationQuery = session.prepare(
-                Table.ORGANIZATIONS_ROLES
-                        .getBuilder()
-                        .buildLoadByPartitionKeyQuery()
-        );
+        // Table
+        String ROLES = PostgresTable.ROLES.getName();
 
-        this.getOrganizationIdQuery = session.prepare(
-                Table.ROLES
-                        .getBuilder()
-                        .buildLoadAllPrimaryKeysQuery()
-                        .where( CommonColumns.ID.eq() )
-        );
+        // Columns
+        String ROLE_ID = PostgresColumn.ROLE_ID.getName();
+        String ORG_ID = PostgresColumn.ORGANIZATION_ID.getName();
 
-        this.deleteAllRolesInOrganizationQuery = session.prepare(
-                Table.ROLES
-                        .getBuilder()
-                        .buildDeleteQuery()
-                        .where( CommonColumns.ORGANIZATION_ID.eq() )
-                        .and( QueryBuilder.in(
-                                CommonColumns.ID.cql(),
-                                CommonColumns.ID.bindMarker()
-                        ) )
-        );
+        this.getAllRolesInOrganizationSql = PostgresQuery.selectFrom( ROLES ).concat( PostgresQuery.whereEq(
+                ImmutableList.of( ORG_ID ), true ) );
+        this.deleteAllRolesInOrganizationSql = PostgresQuery.deleteFrom( ROLES )
+                .concat( PostgresQuery.whereEq( ImmutableList.of( ORG_ID ), true ) );
+
     }
 
     public List<Role> getAllRolesInOrganization( UUID organizationId ) {
+        try {
+            List<Role> result = Lists.newArrayList();
+            Connection connection = hds.getConnection();
+            PreparedStatement ps = connection.prepareStatement( getAllRolesInOrganizationSql );
+            ps.setObject( 1, organizationId );
 
-        BoundStatement bs = getAllRolesInOrganizationQuery.bind()
-                .setUUID( CommonColumns.ORGANIZATION_ID.cql(), organizationId );
-
-        return stream( session.execute( bs ) )
-                .map( RowAdapters::role )
-                .collect( Collectors.toList() );
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() ) {
+                result.add( ResultSetAdapters.role( rs ) );
+            }
+            connection.close();
+            return result;
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to get all roles for organization {}.", organizationId, e );
+            return ImmutableList.of();
+        }
     }
 
-    public UUID getOrganizationId( UUID roleId ) {
-
-        BoundStatement bs = getOrganizationIdQuery.bind()
-                .setUUID( CommonColumns.ID.cql(), roleId );
-
-        ResultSet resultSet = session.execute( bs );
-        Row row = resultSet.one();
-        return row == null ? null : RowAdapters.organizationId( row );
-    }
-
-    public void deleteAllRolesInOrganization( UUID organizationId, List<Role> allRolesInOrg ) {
-
-        List<UUID> roleIds = allRolesInOrg
-                .stream()
-                .map( Role::getId )
-                .collect( Collectors.toList() );
-
-        BoundStatement bs = deleteAllRolesInOrganizationQuery.bind()
-                .setUUID( CommonColumns.ORGANIZATION_ID.cql(), organizationId )
-                .setList( CommonColumns.ID.cql(), roleIds, UUID.class );
-
-        session.execute( bs );
-        logger.info( "deleted all roles that belong to organizationId: {}", organizationId);
+    public void deleteAllRolesInOrganization( UUID organizationId ) {
+        try {
+            Connection connection = hds.getConnection();
+            PreparedStatement ps = connection.prepareStatement( getAllRolesInOrganizationSql );
+            ps.setObject( 1, organizationId );
+            ps.execute();
+            connection.close();
+            logger.info( "deleted all roles that belong to organizationId: {}", organizationId );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to delete all roles for organization {}.", organizationId, e );
+        }
     }
 }

@@ -6,6 +6,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.PrincipalSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
@@ -16,9 +17,7 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,6 +68,16 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
             logger.error( "Unable to map ID to UUID class", ex );
             return null;
         }
+    }
+
+    @Override
+    public Map<UUID, PrincipalSet> loadAll( Collection<UUID> keys ) {
+        Map<UUID, PrincipalSet> result = Maps.newConcurrentMap();
+        keys.parallelStream().forEach( id -> {
+            PrincipalSet users = load(id);
+            if ( users != null ) result.put( id, users );
+        });
+        return result;
     }
 
     @Override

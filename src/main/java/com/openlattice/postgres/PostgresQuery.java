@@ -82,6 +82,10 @@ public class PostgresQuery {
         return end ? valuesInArray( col ).concat( END ) : valuesInArray( col );
     }
 
+    public static String colValueInArray( String col ) {
+        return col.concat( " = ANY(?) " );
+    }
+
     // helpers
 
     private static String commaJoin( List<String> values ) {
