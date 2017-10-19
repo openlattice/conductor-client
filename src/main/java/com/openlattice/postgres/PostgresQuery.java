@@ -6,20 +6,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class PostgresQuery {
-    public static final String SELECT = "SELECT ";
-    public static final String DELETE = "DELETE ";
-    public static final String UPDATE = "UPDATE ";
-    public static final String FROM   = " FROM ";
-    public static final String WHERE  = " WHERE ";
-    public static final String SET    = " SET ";
-    public static final String AND    = " AND ";
-    public static final String OR     = " OR ";
-    public static final String LIMIT  = " LIMIT ? ";
-    public static final String OFFSET = " OFFSET ? ";
-    public static final String EQ     = " = ";
-    public static final String EQ_VAR = " = ?";
-    public static final String ALL    = "*";
-    public static final String END    = ";";
+    public static final String SELECT   = "SELECT ";
+    public static final String DELETE   = "DELETE ";
+    public static final String UPDATE   = "UPDATE ";
+    public static final String DISTINCT = "DISTINCT ";
+    public static final String FROM     = " FROM ";
+    public static final String WHERE    = " WHERE ";
+    public static final String SET      = " SET ";
+    public static final String AND      = " AND ";
+    public static final String OR       = " OR ";
+    public static final String LIMIT    = " LIMIT ? ";
+    public static final String OFFSET   = " OFFSET ? ";
+    public static final String EQ       = " = ";
+    public static final String EQ_VAR   = " = ?";
+    public static final String ALL      = "*";
+    public static final String END      = ";";
 
     public static String selectColsFrom( String table, List<String> columns ) {
         return selectColsFrom( ImmutableList.of( table ), columns );
@@ -28,6 +29,11 @@ public class PostgresQuery {
     public static String selectColsFrom( List<String> tables, List<String> columns ) {
         String colsString = columns.size() == 0 ? ALL : commaJoin( columns );
         return SELECT.concat( colsString ).concat( FROM ).concat( commaJoin( tables ) ).concat( " " );
+    }
+
+    public static String selectDistinctFrom( String table, List<String> columns ) {
+        String colsString = columns.size() == 0 ? ALL : commaJoin( columns );
+        return SELECT.concat( DISTINCT ).concat( colsString ).concat( FROM ).concat( table ).concat( " " );
     }
 
     public static String selectFrom( String table ) {

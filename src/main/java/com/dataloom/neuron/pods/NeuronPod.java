@@ -33,6 +33,7 @@ import com.dataloom.edm.properties.PostgresTypeManager;
 import com.dataloom.edm.schemas.SchemaQueryService;
 import com.dataloom.edm.schemas.cassandra.CassandraSchemaQueryService;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
+import com.dataloom.edm.schemas.postgres.PostgresSchemaQueryService;
 import com.dataloom.graph.core.GraphQueryService;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.linking.CassandraLinkingGraphsQueryService;
@@ -212,6 +213,6 @@ public class NeuronPod {
 
     @Bean
     public SchemaQueryService schemaQueryService() {
-        return new CassandraSchemaQueryService( cassandraConfiguration.getKeyspace(), session );
+        return new PostgresSchemaQueryService( hikariDataSource );
     }
 }
