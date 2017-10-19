@@ -31,10 +31,8 @@ import com.dataloom.data.ids.HazelcastEntityKeyIdService;
 import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.edm.properties.PostgresTypeManager;
 import com.dataloom.edm.schemas.SchemaQueryService;
-import com.dataloom.edm.schemas.cassandra.CassandraSchemaQueryService;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.schemas.postgres.PostgresSchemaQueryService;
-import com.dataloom.graph.core.GraphQueryService;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.linking.CassandraLinkingGraphsQueryService;
 import com.dataloom.linking.HazelcastLinkingGraphs;
@@ -176,11 +174,6 @@ public class NeuronPod {
     @Bean
     public EntityKeyIdService idService() {
         return new HazelcastEntityKeyIdService( hazelcastInstance, executor );
-    }
-
-    @Bean
-    public GraphQueryService graphQueryService() {
-        return new GraphQueryService( session );
     }
 
     @Bean
