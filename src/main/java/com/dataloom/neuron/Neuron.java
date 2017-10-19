@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -58,10 +59,9 @@ public class Neuron {
     public Neuron(
             DataGraphManager dataGraphManager,
             EntityKeyIdService entityKeyIdService,
-            CassandraConfiguration cassandraConfig,
-            Session session ) {
+            HikariDataSource hds ) {
 
-        this.auditLogQueryService = new AuditLogQueryService( cassandraConfig, session );
+        this.auditLogQueryService = new AuditLogQueryService( hds );
 
         this.dataGraphManager = dataGraphManager;
         this.entityKeyIdService = entityKeyIdService;

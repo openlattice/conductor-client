@@ -37,7 +37,6 @@ import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.neuron.Neuron;
-import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -45,7 +44,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.datastore.services.EdmManager;
 import com.kryptnostic.datastore.services.EdmService;
 import com.kryptnostic.datastore.services.PostgresEntitySetManager;
-import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
@@ -62,9 +60,6 @@ import javax.inject.Inject;
 public class NeuronPod {
 
     @Inject
-    private CassandraConfiguration cassandraConfiguration;
-
-    @Inject
     private EventBus eventBus;
 
     @Inject
@@ -72,9 +67,6 @@ public class NeuronPod {
 
     @Inject
     private ListeningExecutorService executor;
-
-    @Inject
-    private Session session;
 
     @Inject
     private HikariDataSource hikariDataSource;
@@ -87,12 +79,7 @@ public class NeuronPod {
 
     @Bean
     public Neuron neuron() {
-        return new Neuron(
-                dataGraphService(),
-                idService(),
-                cassandraConfiguration,
-                session
-        );
+        return new Neuron( dataGraphService(), idService(), hikariDataSource );
     }
 
     /*

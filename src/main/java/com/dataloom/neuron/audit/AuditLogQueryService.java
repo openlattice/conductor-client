@@ -19,50 +19,72 @@
 
 package com.dataloom.neuron.audit;
 
-import java.util.UUID;
-
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.neuron.SignalType;
 import com.dataloom.neuron.signals.AuditableSignal;
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.Session;
-import com.kryptnostic.conductor.rpc.odata.Table;
+import com.google.common.collect.ImmutableList;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
+import com.openlattice.postgres.PostgresArrays;
+import com.openlattice.postgres.PostgresColumn;
+import com.openlattice.postgres.PostgresQuery;
+import com.openlattice.postgres.PostgresTable;
+import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_KEYS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.AUDIT_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.BLOCK_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.DATA_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.EVENT_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.TIME_UUID;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class AuditLogQueryService {
+    private static final Logger logger = LoggerFactory.getLogger( AuditLogQueryService.class );
+    private final HikariDataSource hds;
 
-    private final Session           session;
-    private final PreparedStatement storeQuery;
+    private final String storeSql;
 
     // TODO: what would CassandraConfiguration be needed for in the future?
-    public AuditLogQueryService( CassandraConfiguration cassandraConfig, Session session ) {
+    public AuditLogQueryService( HikariDataSource hds ) {
+        this.hds = hds;
 
-        this.session = session;
-        this.storeQuery = session.prepare( Table.AUDIT_LOG.getBuilder().buildStoreQuery() );
+        // Table
+        String AUDIT_LOG = PostgresTable.AUDIT_LOG.getName();
+
+        // Columns
+        String ACL_KEY = PostgresColumn.ACL_KEY.getName();
+        String EVENT_TYPE = PostgresColumn.EVENT_TYPE.getName();
+        String PRINCIPAL_TYPE = PostgresColumn.PRINCIPAL_TYPE.getName();
+        String PRINCIPAL_ID = PostgresColumn.PRINCIPAL_ID.getName();
+        String TIME_UUID = PostgresColumn.TIME_UUID.getName();
+        String AUDIT_ID = PostgresColumn.AUDIT_ID.getName();
+        String DATA_ID = PostgresColumn.DATA_ID.getName();
+        String BLOCK_ID = PostgresColumn.BLOCK_ID.getName();
+
+        this.storeSql = PostgresQuery.insertRow( AUDIT_LOG,
+                ImmutableList.of( ACL_KEY,
+                        EVENT_TYPE,
+                        PRINCIPAL_TYPE,
+                        PRINCIPAL_ID,
+                        TIME_UUID,
+                        AUDIT_ID,
+                        DATA_ID,
+                        BLOCK_ID ) );
     }
 
     public void store( AuditableSignal signal ) {
-
-        BoundStatement storeStatement = storeQuery.bind()
-                .setList( ACL_KEYS.cql(), signal.getAclKey(), UUID.class )
-                .set( EVENT_TYPE.cql(), signal.getType(), SignalType.class )
-                .set( PRINCIPAL_TYPE.cql(), signal.getPrincipal().getType(), PrincipalType.class )
-                .setString( PRINCIPAL_ID.cql(), signal.getPrincipal().getId() )
-                .setUUID( AUDIT_ID.cql(), signal.getAuditId() )
-                .setUUID( TIME_UUID.cql(), signal.getTimeId() )
-                .setUUID( DATA_ID.cql(), signal.getDataId() )
-                .setUUID( BLOCK_ID.cql(), signal.getBlockId() );
-
-        session.executeAsync( storeStatement );
+        try {
+            Connection connection = hds.getConnection();
+            PreparedStatement ps = connection.prepareStatement( storeSql );
+            ps.setArray( 1, PostgresArrays.createUuidArray( connection, signal.getAclKey().stream() ) );
+            ps.setString( 2, signal.getType().name() );
+            ps.setString( 3, signal.getPrincipal().getType().name() );
+            ps.setString( 4, signal.getPrincipal().getId() );
+            ps.setObject( 5, signal.getTimeId() );
+            ps.setObject( 6, signal.getAuditId() );
+            ps.setObject( 7, signal.getDataId() );
+            ps.setObject( 8, signal.getBlockId() );
+            ps.execute();
+            connection.close();
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to store signal", e );
+        }
     }
 }
