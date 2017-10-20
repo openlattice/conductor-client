@@ -36,8 +36,9 @@ public class IncrementableWeightIdStreamSerializerTest
 
     @Override protected IncrementableWeightId[] createInput() {
         return new IncrementableWeightId[] {
-                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong() ),
-                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong() ),
-                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong() ) };
+                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong( Long.MIN_VALUE, Long.MAX_VALUE ) ),
+                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong( Long.MIN_VALUE, Long.MAX_VALUE ) ),
+                new IncrementableWeightId( UUID.randomUUID(),
+                        RandomUtils.nextLong( Long.MIN_VALUE, Long.MAX_VALUE ) ) };
     }
 }
