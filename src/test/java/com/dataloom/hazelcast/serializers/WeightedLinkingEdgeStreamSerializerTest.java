@@ -39,6 +39,6 @@ public class WeightedLinkingEdgeStreamSerializerTest
     @Override protected WeightedLinkingEdge createInput() {
         LinkingVertexKey src = new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() );
         LinkingVertexKey dst = new LinkingVertexKey( src.getGraphId(), UUID.randomUUID() );
-        return new WeightedLinkingEdge( RandomUtils.nextDouble(), new LinkingEdge( src, dst ) );
+        return new WeightedLinkingEdge( RandomUtils.nextDouble( 0,1 ), new LinkingEdge( src, dst ) );
     }
 }

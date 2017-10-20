@@ -40,7 +40,7 @@ public class MergingAggregatorStreamSerializerTest
     @Override protected MergingAggregator createInput() {
         LinkingVertexKey src = new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() );
         LinkingVertexKey dst = new LinkingVertexKey( src.getGraphId(), UUID.randomUUID() );
-        return new MergingAggregator( new WeightedLinkingEdge( RandomUtils.nextDouble(),
+        return new MergingAggregator( new WeightedLinkingEdge( RandomUtils.nextDouble(0,1),
                 new LinkingEdge( src, dst ) ) );
     }
 }
