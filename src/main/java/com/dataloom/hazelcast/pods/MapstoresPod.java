@@ -19,6 +19,9 @@
 
 package com.dataloom.hazelcast.pods;
 
+import com.dataloom.apps.App;
+import com.dataloom.apps.AppConfigKey;
+import com.dataloom.apps.AppType;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
@@ -28,30 +31,13 @@ import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
-import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
-import com.dataloom.data.mapstores.EntityKeysMapstore;
-import com.dataloom.data.mapstores.LinkingEntityMapstore;
-import com.dataloom.data.mapstores.PostgresDataMapstore;
-import com.dataloom.data.mapstores.SyncIdsMapstore;
+import com.dataloom.data.mapstores.*;
 import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.mapstores.AclKeysMapstore;
-import com.dataloom.edm.mapstores.AssociationTypeMapstore;
-import com.dataloom.edm.mapstores.ComplexTypeMapstore;
-import com.dataloom.edm.mapstores.EdmVersionMapstore;
-import com.dataloom.edm.mapstores.EntitySetMapstore;
-import com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore;
-import com.dataloom.edm.mapstores.EntityTypeMapstore;
-import com.dataloom.edm.mapstores.EnumTypesMapstore;
-import com.dataloom.edm.mapstores.NamesMapstore;
-import com.dataloom.edm.mapstores.PropertyTypeMapstore;
+import com.dataloom.edm.mapstores.*;
 import com.dataloom.edm.schemas.mapstores.SchemaMapstore;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.type.*;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.PostgresEdgeMapstore;
@@ -60,12 +46,7 @@ import com.dataloom.linking.LinkingEntityKey;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
-import com.dataloom.linking.mapstores.LinkedEntitySetsMapstore;
-import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
-import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
-import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
-import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
-import com.dataloom.linking.mapstores.VertexIdsAfterLinkingMapstore;
+import com.dataloom.linking.mapstores.*;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
@@ -87,15 +68,19 @@ import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
+import com.openlattice.postgres.mapstores.AppConfigMapstore;
+import com.openlattice.postgres.mapstores.AppMapstore;
+import com.openlattice.postgres.mapstores.AppTypeMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+import javax.inject.Inject;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
-import javax.inject.Inject;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 @Configuration
 @Import( { CassandraPod.class, PostgresPod.class } )
@@ -322,5 +307,20 @@ public class MapstoresPod {
     @Bean
     public QueueConfigurer defaultQueueConfigurer() {
         return config -> config.setMaxSize( 10000 ).setEmptyQueueTtl( 60 );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, App> appMapstore() {
+        return new AppMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, AppType> appTypeMapstore() {
+        return new AppTypeMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<AppConfigKey, UUID> appConfigMapstore() {
+        return new AppConfigMapstore( hikariDataSource );
     }
 }

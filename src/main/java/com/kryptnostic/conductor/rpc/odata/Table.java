@@ -68,7 +68,11 @@ public enum Table implements TableDef {
     IDS,
     KEYS,
     TOP_UTILIZER_DATA,
-    VERTEX_IDS_AFTER_LINKING;
+    VERTEX_IDS_AFTER_LINKING,
+
+    APPS,
+    APP_TYPES,
+    APP_CONFIGS;
 
     private static final Logger                                logger   = LoggerFactory
             .getLogger( Table.class );
@@ -432,6 +436,13 @@ public enum Table implements TableDef {
                         .partitionKey( VERTEX_ID )
                         .clusteringColumns( GRAPH_ID )
                         .columns( NEW_VERTEX_ID );
+
+            case APPS:
+                return new CassandraTableBuilder( APPS ).ifNotExists().partitionKey( ID );
+            case APP_TYPES:
+                return new CassandraTableBuilder( APP_TYPES ).ifNotExists().partitionKey( ID );
+            case APP_CONFIGS:
+                return new CassandraTableBuilder( APP_CONFIGS ).ifNotExists().partitionKey( ID );
             default:
                 logger.error( "Missing table configuration {}, unable to start.", table.name() );
                 throw new IllegalStateException( "Missing table configuration " + table.name() + ", unable to start." );

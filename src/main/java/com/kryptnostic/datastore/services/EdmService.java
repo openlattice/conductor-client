@@ -27,6 +27,7 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.data.DatasourceManager;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.EntityDataModelDiff;
 import com.dataloom.edm.EntitySet;
@@ -87,6 +88,7 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.util.Util;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -101,6 +103,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -128,6 +131,7 @@ public class EdmService implements EdmManager {
     private final CassandraEntitySetManager         entitySetManager;
     private final CassandraTypeManager              entityTypeManager;
     private final HazelcastSchemaManager            schemaManager;
+    private final DatasourceManager                 datasourceManager;
 
     private final String            keyspace;
     private final Session           session;
@@ -144,7 +148,8 @@ public class EdmService implements EdmManager {
             AuthorizationManager authorizations,
             CassandraEntitySetManager entitySetManager,
             CassandraTypeManager entityTypeManager,
-            HazelcastSchemaManager schemaManager ) {
+            HazelcastSchemaManager schemaManager,
+            DatasourceManager datasourceManager ) {
         this.authorizations = authorizations;
         this.entitySetManager = entitySetManager;
         this.entityTypeManager = entityTypeManager;
@@ -164,6 +169,7 @@ public class EdmService implements EdmManager {
         this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
         this.entitySetPropertyMetadata = hazelcastInstance.getMap( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name() );
         this.aclKeyReservations = aclKeyReservations;
+        this.datasourceManager = datasourceManager;
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
     }
@@ -380,6 +386,8 @@ public class EdmService implements EdmManager {
         aclKeyReservations.reserveIdAndValidateType( entitySet );
 
         checkState( entitySets.putIfAbsent( entitySet.getId(), entitySet ) == null, "Entity set already exists." );
+        datasourceManager.setCurrentSyncId( entitySet.getId(),
+                datasourceManager.createNewSyncIdForEntitySet( entitySet.getId() ) );
     }
 
     @Override

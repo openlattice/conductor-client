@@ -31,6 +31,11 @@ import org.springframework.context.annotation.Configuration;
 public class PostgresTablesPod {
     @Bean
     public PostgresTables postgresTables() {
-        return () -> Stream.of( PostgresTable.PROPERTY_TYPES );
+        return () -> Stream.of(
+                PostgresTable.APP_CONFIGS,
+                PostgresTable.APP_TYPES,
+                PostgresTable.APPS,
+                PostgresTable.PROPERTY_TYPES
+        );
     }
 }

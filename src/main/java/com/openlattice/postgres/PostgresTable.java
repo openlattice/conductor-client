@@ -20,19 +20,7 @@
 
 package com.openlattice.postgres;
 
-import static com.openlattice.postgres.PostgresColumn.ACL_KEY;
-import static com.openlattice.postgres.PostgresColumn.ANALYZER;
-import static com.openlattice.postgres.PostgresColumn.DATATYPE;
-import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.NAME;
-import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
-import static com.openlattice.postgres.PostgresColumn.PII;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE;
-import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
-import static com.openlattice.postgres.PostgresColumn.TITLE;
+import static com.openlattice.postgres.PostgresColumn.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -64,7 +52,7 @@ public final class PostgresTable {
             new PostgresTableDefinition( "names" )
                     .addColumns( ID, NAME );
 
-    //    case NAMES:
+    //    case names:
     //            return new CassandraTableBuilder( NAMES )
     //                        .ifNotExists()
     //                        .partitionKey( SECURABLE_OBJECTID )
@@ -73,6 +61,21 @@ public final class PostgresTable {
             new PostgresTableDefinition( "property_types" )
                     .addColumns( ID, NAMESPACE, NAME, DATATYPE, TITLE, DESCRIPTION, SCHEMAS, PII, ANALYZER )
                     .setUnique( NAMESPACE, NAME );
+
+    public static PostgresTableDefinition APPS =
+            new PostgresTableDefinition( "apps" )
+                    .addColumns( ID, NAME, TITLE, DESCRIPTION, CONFIG_TYPE_IDS )
+                    .setUnique( NAME );
+
+    public static PostgresTableDefinition APP_TYPES =
+            new PostgresTableDefinition( "app_types" )
+                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, ENTITY_TYPE_ID )
+                    .setUnique( NAMESPACE, NAME );
+
+    public static PostgresTableDefinition APP_CONFIGS =
+            new PostgresTableDefinition( "app_configs" )
+                    .addColumns( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID, ENTITY_SET_ID )
+                    .primaryKey( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID );
 
     private PostgresTable() {
     }

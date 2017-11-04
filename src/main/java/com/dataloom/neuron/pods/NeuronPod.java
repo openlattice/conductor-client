@@ -165,7 +165,8 @@ public class NeuronPod {
                 authorizationManager(),
                 entitySetManager(),
                 entityTypeManager(),
-                schemaManager() );
+                schemaManager(),
+                dataSourceManager() );
     }
 
     @Bean
