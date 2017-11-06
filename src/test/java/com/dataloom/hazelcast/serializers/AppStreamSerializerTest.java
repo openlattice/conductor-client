@@ -1,6 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.apps.App;
+import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 import java.util.LinkedHashSet;
@@ -16,6 +17,6 @@ public class AppStreamSerializerTest extends AbstractStreamSerializerTest<AppStr
         configIds.add( UUID.randomUUID() );
         configIds.add( UUID.randomUUID() );
         configIds.add( UUID.randomUUID() );
-        return new App( UUID.randomUUID(), "name", "title", "description", configIds );
+        return new App( UUID.randomUUID(), "name", "title", Optional.of( "description" ), configIds );
     }
 }

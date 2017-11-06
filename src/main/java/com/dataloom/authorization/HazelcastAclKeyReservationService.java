@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.dataloom.authorization.securable.AbstractSecurableType;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -135,7 +136,7 @@ public class HazelcastAclKeyReservationService {
      *
      * @param type The type for which to reserve an FQN and UUID.
      */
-    public void reserveIdAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
+    public void reserveIdAndValidateType( AbstractSecurableType type ) {
         reserveIdAndValidateType( type, Suppliers.compose( Util::fqnToString, type::getType )::get );
     }
 

@@ -2,6 +2,7 @@ package com.openlattice.postgres.mapstores;
 
 import com.dataloom.apps.App;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
@@ -57,7 +58,7 @@ public class AppMapstore extends AbstractBasePostgresMapstore<UUID, App> {
         UUID id = rs.getObject( ID.getName(), UUID.class );
         String name = rs.getString( NAME.getName() );
         String title = rs.getString( TITLE.getName() );
-        String description = rs.getString( DESCRIPTION.getName() );
+        Optional<String> description = Optional.fromNullable( rs.getString( DESCRIPTION.getName() ) );
         LinkedHashSet<UUID> appTypeIds = Arrays.stream( (UUID[]) rs.getArray( CONFIG_TYPE_IDS.getName() ).getArray() )
                 .collect(
                         Collectors.toCollection( LinkedHashSet::new ) );
@@ -80,6 +81,6 @@ public class AppMapstore extends AbstractBasePostgresMapstore<UUID, App> {
     @Override public App generateTestValue() {
         LinkedHashSet<UUID> configIds = new LinkedHashSet<>();
         configIds.add( UUID.randomUUID() );
-        return new App( UUID.randomUUID(), "name", "title", "description", configIds );
+        return new App( UUID.randomUUID(), "name", "title", Optional.of( "description" ), configIds );
     }
 }

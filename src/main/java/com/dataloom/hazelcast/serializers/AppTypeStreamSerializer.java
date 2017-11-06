@@ -2,6 +2,7 @@ package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.apps.AppType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
@@ -29,7 +30,7 @@ public class AppTypeStreamSerializer implements SelfRegisteringStreamSerializer<
         UUID id = UUIDStreamSerializer.deserialize( in );
         FullQualifiedName type = FullQualifiedNameStreamSerializer.deserialize( in );
         String title = in.readUTF();
-        String description = in.readUTF();
+        Optional<String> description = Optional.of( in.readUTF() );
         UUID entityTypeId = UUIDStreamSerializer.deserialize( in );
         return new AppType( id, type, title, description, entityTypeId );
     }

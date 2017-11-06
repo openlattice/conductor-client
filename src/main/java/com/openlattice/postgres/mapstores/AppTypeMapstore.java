@@ -2,6 +2,7 @@ package com.openlattice.postgres.mapstores;
 
 import com.dataloom.apps.AppType;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
@@ -56,7 +57,7 @@ public class AppTypeMapstore extends AbstractBasePostgresMapstore<UUID, AppType>
         String name = rs.getString( NAME.getName() );
         FullQualifiedName type = new FullQualifiedName( namespace, name );
         String title = rs.getString( TITLE.getName() );
-        String description = rs.getString( DESCRIPTION.getName() );
+        Optional<String> description = Optional.fromNullable( rs.getString( DESCRIPTION.getName() ) );
         UUID entityTypeId = rs.getObject( ENTITY_TYPE_ID.getName(), UUID.class );
         return new AppType( id, type, title, description, entityTypeId );
     }
@@ -78,7 +79,7 @@ public class AppTypeMapstore extends AbstractBasePostgresMapstore<UUID, AppType>
         return new AppType( UUID.randomUUID(),
                 new FullQualifiedName( "namespace.name" ),
                 "title",
-                "description",
+                Optional.of( "description" ),
                 UUID.randomUUID() );
     }
 }

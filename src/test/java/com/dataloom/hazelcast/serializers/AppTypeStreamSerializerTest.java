@@ -1,6 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.apps.AppType;
+import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -15,7 +16,7 @@ public class AppTypeStreamSerializerTest extends AbstractStreamSerializerTest<Ap
         return new AppType( UUID.randomUUID(),
                 new FullQualifiedName( "namespace.name" ),
                 "title",
-                "description",
+                Optional.of( "description" ),
                 UUID.randomUUID() );
     }
 }
