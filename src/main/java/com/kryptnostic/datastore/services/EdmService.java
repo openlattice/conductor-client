@@ -26,6 +26,7 @@ import com.dataloom.edm.EntityDataModelDiff;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.Schema;
 import com.dataloom.edm.events.*;
+import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.PostgresTypeManager;
 import com.dataloom.edm.requests.MetadataUpdate;
@@ -166,7 +167,12 @@ public class EdmService implements EdmManager {
      */
     @Override
     public void createPropertyTypeIfNotExists( PropertyType propertyType ) {
-        aclKeyReservations.reserveIdAndValidateType( propertyType );
+        try {
+            aclKeyReservations.reserveIdAndValidateType( propertyType );
+        } catch ( TypeExistsException e ) {
+            logger.error( "A type with this name already exists." );
+            return;
+        }
 
         /*
          * Create property type if it doesn't exist. The reserveAclKeyAndValidateType call should ensure that

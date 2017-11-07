@@ -2,13 +2,13 @@ package com.openlattice.postgres.mapstores;
 
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
-import org.spark_project.guava.collect.ImmutableSet;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;

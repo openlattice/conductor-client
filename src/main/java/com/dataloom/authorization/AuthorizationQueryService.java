@@ -329,8 +329,8 @@ public class AuthorizationQueryService {
         try {
             Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( setObjectTypeSql );
-            ps.setString( 2, objectType.name() );
-            ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
+            ps.setString( 1, objectType.name() );
+            ps.setArray( 2, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
             ps.execute();
             connection.close();
             logger.info( "Created empty acl with key {} and type {}", aclKey, objectType );
