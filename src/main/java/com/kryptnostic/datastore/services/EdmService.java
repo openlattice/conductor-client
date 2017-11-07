@@ -118,8 +118,8 @@ public class EdmService implements EdmManager {
         this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
         this.entitySetPropertyMetadata = hazelcastInstance.getMap( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name() );
         this.aclKeyReservations = aclKeyReservations;
-        entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
+        entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
     }
 
     @Override

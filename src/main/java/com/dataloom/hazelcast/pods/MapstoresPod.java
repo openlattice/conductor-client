@@ -24,7 +24,9 @@ import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
-import com.dataloom.data.mapstores.*;
+import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
+import com.dataloom.data.mapstores.EntityKeysMapstore;
+import com.dataloom.data.mapstores.PostgresDataMapstore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
@@ -43,13 +45,9 @@ import com.dataloom.linking.mapstores.LinkingEntityVerticesMapstore;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
-import com.dataloom.organizations.mapstores.StringMapstore;
-import com.dataloom.organizations.mapstores.StringSetMapstore;
-import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.requests.Status;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Table;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
@@ -105,10 +103,10 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
         PermissionMapstore ppm = new PermissionMapstore( hikariDataSource );
 
-        com.dataloom.authorization.mapstores.PermissionMapstore pm = new com.dataloom.authorization.mapstores.PermissionMapstore( session );
-        for ( AceKey key : pm.loadAllKeys() ) {
-            ppm.store( key, pm.load( key ) );
-        }
+//        com.dataloom.authorization.mapstores.PermissionMapstore pm = new com.dataloom.authorization.mapstores.PermissionMapstore( session );
+//        for ( AceKey key : pm.loadAllKeys() ) {
+//            ppm.store( key, pm.load( key ) );
+//        }
         return ppm;
     }
 
@@ -116,10 +114,10 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<List<UUID>, SecurableObjectType> securableObjectTypeMapstore() {
         SecurableObjectTypeMapstore psotm = new SecurableObjectTypeMapstore( hikariDataSource );
 
-        com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore sotm = new com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore( session );
-        for ( List<UUID> key : sotm.loadAllKeys() ) {
-            psotm.store( key, sotm.load( key ) );
-        }
+//        com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore sotm = new com.dataloom.authorization.mapstores.SecurableObjectTypeMapstore( session );
+//        for ( List<UUID> key : sotm.loadAllKeys() ) {
+//            psotm.store( key, sotm.load( key ) );
+//        }
         return psotm;
     }
 
@@ -140,10 +138,10 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<UUID, EntityType> entityTypeMapstore() {
         EntityTypeMapstore petm = new EntityTypeMapstore( hikariDataSource );
 
-        com.dataloom.edm.mapstores.EntityTypeMapstore etm = new com.dataloom.edm.mapstores.EntityTypeMapstore( session );
-        for ( UUID id : etm.loadAllKeys() ) {
-            petm.store( id, etm.load( id ) );
-        }
+        //        com.dataloom.edm.mapstores.EntityTypeMapstore etm = new com.dataloom.edm.mapstores.EntityTypeMapstore( session );
+        //        for ( UUID id : etm.loadAllKeys() ) {
+        //            petm.store( id, etm.load( id ) );
+        //        }
         return petm;
     }
 
@@ -161,10 +159,10 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<UUID, EntitySet> entitySetMapstore() {
         EntitySetMapstore pesm = new EntitySetMapstore( hikariDataSource );
 
-        com.dataloom.edm.mapstores.EntitySetMapstore esm = new com.dataloom.edm.mapstores.EntitySetMapstore( session );
-        for ( UUID id : esm.loadAllKeys() ) {
-            pesm.store( id, esm.load( id ) );
-        }
+        //        com.dataloom.edm.mapstores.EntitySetMapstore esm = new com.dataloom.edm.mapstores.EntitySetMapstore( session );
+        //        for ( UUID id : esm.loadAllKeys() ) {
+        //            pesm.store( id, esm.load( id ) );
+        //        }
         return pesm;
     }
 
@@ -177,10 +175,10 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<String, UUID> aclKeysMapstore() {
         AclKeysMapstore pakm = new AclKeysMapstore( hikariDataSource );
 
-        com.dataloom.edm.mapstores.AclKeysMapstore akm = new com.dataloom.edm.mapstores.AclKeysMapstore( session );
-        for ( String name : akm.loadAllKeys() ) {
-            pakm.store( name, akm.load( name ) );
-        }
+        //        com.dataloom.edm.mapstores.AclKeysMapstore akm = new com.dataloom.edm.mapstores.AclKeysMapstore( session );
+        //        for ( String name : akm.loadAllKeys() ) {
+        //            pakm.store( name, akm.load( name ) );
+        //        }
         return pakm;
     }
 
@@ -193,10 +191,10 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<UUID, String> namesMapstore() {
         NamesMapstore pnm = new NamesMapstore( hikariDataSource );
 
-        com.dataloom.edm.mapstores.NamesMapstore nm = new com.dataloom.edm.mapstores.NamesMapstore( session );
-        for ( UUID key : nm.loadAllKeys() ) {
-            pnm.store( key, nm.load( key ) );
-        }
+        //        com.dataloom.edm.mapstores.NamesMapstore nm = new com.dataloom.edm.mapstores.NamesMapstore( session );
+        //        for ( UUID key : nm.loadAllKeys() ) {
+        //            pnm.store( key, nm.load( key ) );
+        //        }
         return pnm;
     }
 
@@ -209,16 +207,16 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<UUID, String> orgTitlesMapstore() {
         OrganizationTitlesMapstore potm = new OrganizationTitlesMapstore( hikariDataSource );
 
-        StringMapstore otm = new StringMapstore(
-                HazelcastMap.ORGANIZATIONS_TITLES,
-                session,
-                Table.ORGANIZATIONS,
-                CommonColumns.ID,
-                CommonColumns.TITLE );
-
-        for ( UUID id : otm.loadAllKeys() ) {
-            potm.store( id, otm.load( id ) );
-        }
+        //        StringMapstore otm = new StringMapstore(
+        //                HazelcastMap.ORGANIZATIONS_TITLES,
+        //                session,
+        //                Table.ORGANIZATIONS,
+        //                CommonColumns.ID,
+        //                CommonColumns.TITLE );
+        //
+        //        for ( UUID id : otm.loadAllKeys() ) {
+        //            potm.store( id, otm.load( id ) );
+        //        }
         return potm;
     }
 
@@ -226,15 +224,15 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<UUID, String> orgDescsMapstore() {
         OrganizationDescriptionsMapstore podm = new OrganizationDescriptionsMapstore( hikariDataSource );
 
-        StringMapstore odm = new StringMapstore(
-                HazelcastMap.ORGANIZATIONS_DESCRIPTIONS,
-                session,
-                Table.ORGANIZATIONS,
-                CommonColumns.ID,
-                CommonColumns.DESCRIPTION );
-        for ( UUID id : odm.loadAllKeys() ) {
-            podm.store( id, odm.load( id ) );
-        }
+        //        StringMapstore odm = new StringMapstore(
+        //                HazelcastMap.ORGANIZATIONS_DESCRIPTIONS,
+        //                session,
+        //                Table.ORGANIZATIONS,
+        //                CommonColumns.ID,
+        //                CommonColumns.DESCRIPTION );
+        //        for ( UUID id : odm.loadAllKeys() ) {
+        //            podm.store( id, odm.load( id ) );
+        //        }
         return podm;
     }
 
@@ -242,15 +240,15 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<UUID, DelegatedStringSet> aaEmailDomainsMapstore() {
         OrganizationEmailDomainsMapstore pedm = new OrganizationEmailDomainsMapstore( hikariDataSource );
 
-        StringSetMapstore edm = new StringSetMapstore(
-                HazelcastMap.ALLOWED_EMAIL_DOMAINS,
-                session,
-                Table.ORGANIZATIONS,
-                CommonColumns.ID,
-                CommonColumns.ALLOWED_EMAIL_DOMAINS );
-        for ( UUID id : edm.loadAllKeys() ) {
-            pedm.store( id, edm.load( id ) );
-        }
+        //        StringSetMapstore edm = new StringSetMapstore(
+        //                HazelcastMap.ALLOWED_EMAIL_DOMAINS,
+        //                session,
+        //                Table.ORGANIZATIONS,
+        //                CommonColumns.ID,
+        //                CommonColumns.ALLOWED_EMAIL_DOMAINS );
+        //        for ( UUID id : edm.loadAllKeys() ) {
+        //            pedm.store( id, edm.load( id ) );
+        //        }
         return pedm;
     }
 
@@ -258,15 +256,15 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<UUID, PrincipalSet> membersMapstore() {
         OrganizationMembersMapstore pmm = new OrganizationMembersMapstore( hikariDataSource );
 
-        UserSetMapstore mm = new UserSetMapstore(
-                HazelcastMap.ORGANIZATIONS_MEMBERS,
-                session,
-                Table.ORGANIZATIONS,
-                CommonColumns.ID,
-                CommonColumns.MEMBERS );
-        for ( UUID id : mm.loadAllKeys() ) {
-            pmm.store( id, mm.load( id ) );
-        }
+        //        UserSetMapstore mm = new UserSetMapstore(
+        //                HazelcastMap.ORGANIZATIONS_MEMBERS,
+        //                session,
+        //                Table.ORGANIZATIONS,
+        //                CommonColumns.ID,
+        //                CommonColumns.MEMBERS );
+        //        for ( UUID id : mm.loadAllKeys() ) {
+        //            pmm.store( id, mm.load( id ) );
+        //        }
         return pmm;
     }
 
@@ -277,13 +275,13 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntitySetsMapstore() {
-        LinkedEntitySetsMapstore lesm = new LinkedEntitySetsMapstore( session );
+  //      LinkedEntitySetsMapstore lesm = new LinkedEntitySetsMapstore( session );
 
         com.openlattice.postgres.mapstores.LinkedEntitySetsMapstore plesm = new com.openlattice.postgres.mapstores.LinkedEntitySetsMapstore(
                 hikariDataSource );
-        for ( UUID id : lesm.loadAllKeys() ) {
-            plesm.store( id, lesm.load( id ) );
-        }
+        //        for ( UUID id : lesm.loadAllKeys() ) {
+        //            plesm.store( id, lesm.load( id ) );
+        //        }
         return plesm;
     }
 
@@ -296,40 +294,35 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<LinkingVertexKey, LinkingVertex> linkingVerticesMapstore() {
         LinkingVerticesMapstore plvm = new LinkingVerticesMapstore( hikariDataSource );
 
-        com.dataloom.linking.mapstores.LinkingVerticesMapstore lvm = new com.dataloom.linking.mapstores.LinkingVerticesMapstore(
-                session );
-        for ( LinkingVertexKey key : lvm.loadAllKeys() ) {
-            plvm.store( key, lvm.load( key ) );
-        }
+        //        com.dataloom.linking.mapstores.LinkingVerticesMapstore lvm = new com.dataloom.linking.mapstores.LinkingVerticesMapstore(
+        //                session );
+        //        for ( LinkingVertexKey key : lvm.loadAllKeys() ) {
+        //            plvm.store( key, lvm.load( key ) );
+        //        }
         return plvm;
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<LinkingEntityKey, UUID> linkingEntityVerticesMapstore() {
-        return new LinkingEntityVerticesMapstore( session );
     }
 
     @Bean
     public SelfRegisteringMapStore<UUID, AssociationType> edgeTypeMapstore() {
         AssociationTypeMapstore patm = new AssociationTypeMapstore( hikariDataSource );
 
-        com.dataloom.edm.mapstores.AssociationTypeMapstore atm = new com.dataloom.edm.mapstores.AssociationTypeMapstore(
-                session );
-        for ( UUID id : atm.loadAllKeys() ) {
-            patm.store( id, atm.load( id ) );
-        }
+        //        com.dataloom.edm.mapstores.AssociationTypeMapstore atm = new com.dataloom.edm.mapstores.AssociationTypeMapstore(
+        //                session );
+        //        for ( UUID id : atm.loadAllKeys() ) {
+        //            patm.store( id, atm.load( id ) );
+        //        }
         return patm;
     }
 
     @Bean
     public SelfRegisteringMapStore<RoleKey, Role> roleidsMapstore() {
         RolesMapstore prm = new RolesMapstore( hikariDataSource );
-
-        com.dataloom.organizations.roles.mapstores.RolesMapstore rm = new com.dataloom.organizations.roles.mapstores.RolesMapstore(
-                session );
-        for ( RoleKey key : rm.loadAllKeys() ) {
-            prm.store( key, rm.load( key ) );
-        }
+        //
+        //        com.dataloom.organizations.roles.mapstores.RolesMapstore rm = new com.dataloom.organizations.roles.mapstores.RolesMapstore(
+        //                session );
+        //        for ( RoleKey key : rm.loadAllKeys() ) {
+        //            prm.store( key, rm.load( key ) );
+        //        }
         return prm;
     }
 
@@ -337,11 +330,11 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<RoleKey, PrincipalSet> usersWithRolesMapstore() {
         UsersWithRoleMapstore puwrm = new UsersWithRoleMapstore( hikariDataSource );
 
-        com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore uwrm = new com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore(
-                session );
-        for ( RoleKey key : uwrm.loadAllKeys() ) {
-            puwrm.store( key, uwrm.load( key ) );
-        }
+        //        com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore uwrm = new com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore(
+        //                session );
+        //        for ( RoleKey key : uwrm.loadAllKeys() ) {
+        //            puwrm.store( key, uwrm.load( key ) );
+        //        }
         return puwrm;
     }
 
@@ -376,8 +369,9 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<DataKey, ByteBuffer> dataMapstore() throws SQLException {
-        return new PostgresDataMapstore( HazelcastMap.DATA.name(), session, hikariDataSource );
-        //        ObjectMapper mapper = ObjectMappers.getJsonMapper();
+        return new PostgresDataMapstore( HazelcastMap.DATA.name(), hikariDataSource );
+
+         //        ObjectMapper mapper = ObjectMappers.getJsonMapper();
         //        FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
         //        FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
         //        return new DataMapstore( HazelcastMap.DATA.name(),
@@ -391,11 +385,11 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadataMapstore() {
         EntitySetPropertyMetadataMapstore pespm = new EntitySetPropertyMetadataMapstore( hikariDataSource );
 
-        com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore espm = new com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore(
-                session );
-        for ( EntitySetPropertyKey key : espm.loadAllKeys() ) {
-            pespm.store( key, espm.load( key ) );
-        }
+        //        com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore espm = new com.dataloom.edm.mapstores.EntitySetPropertyMetadataMapstore(
+        //                session );
+        //        for ( EntitySetPropertyKey key : espm.loadAllKeys() ) {
+        //            pespm.store( key, espm.load( key ) );
+        //        }
         return pespm;
     }
 

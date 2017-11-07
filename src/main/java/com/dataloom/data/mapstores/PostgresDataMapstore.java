@@ -20,46 +20,36 @@
 
 package com.dataloom.data.mapstores;
 
-import static com.dataloom.data.mapstores.DataMapstore.KEY_ENTITY_SET_ID;
-import static com.dataloom.data.mapstores.DataMapstore.KEY_ID;
-import static com.dataloom.data.mapstores.DataMapstore.KEY_PROPERTY_TYPE_ID;
-import static com.dataloom.data.mapstores.DataMapstore.KEY_SYNC_ID;
-
 import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
+import com.google.common.collect.Maps;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
-import com.kryptnostic.conductor.rpc.odata.Table;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 import com.openlattice.postgres.CountdownConnectionCloser;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
-import java.nio.ByteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NoSuchElementException;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dataloom.data.mapstores.DataMapstore.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -74,17 +64,15 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
     private static final String SELECT_ROW    = "SELECT * from data where id = ? and entity_set_id = ? and syncid = ? and entityid = ? and property_type_id = ? and property_value = ?";
     private static final String DELETE_ROW    = "DELETE from data where id = ? and entity_set_id = ? and syncid = ? and entityid = ? and property_type_id = ? and property_value = ?";
     private static final String LOAD_ALL_KEYS = "SELECT id, entity_set_id, syncid, entityid, property_type_id, property_value FROM data where entity_set_id = ? and syncid = ?";
+    private static final String CURRENT_SYNCS = "SELECT DISTINCT entity_set_id, current_sync_id FROM sync_ids";
     private final HikariDataSource hds;
     private final String           mapName;
-    private final Session          session;
 
     public PostgresDataMapstore(
             String mapName,
-            Session session,
             HikariDataSource hds ) throws SQLException {
         this.hds = hds;
         this.mapName = mapName;
-        this.session = session;
         Connection connection = hds.getConnection();
         connection.createStatement().execute( CREATE_TABLE );
         connection.close();
@@ -117,7 +105,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
                     connection.commit();
                     logger.error( "Unable to store row {} -> {}",
                             key,
-                            Base64.getEncoder().encodeToString( entry.getValue().array() ) , e);
+                            Base64.getEncoder().encodeToString( entry.getValue().array() ), e );
                 }
             }
             connection.commit();
@@ -184,10 +172,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
 
     @Override public Iterable<DataKey> loadAllKeys() {
         Stream<DataKey> keys;
-        Map<UUID, UUID> entitySetsToLoad = StreamUtil.stream( session
-                .execute( currentSyncs() ) )
-                .collect( Collectors.toMap( row -> row.getUUID( CommonColumns.ENTITY_SET_ID.cql() ),
-                        row -> row.getUUID( CommonColumns.CURRENT_SYNC_ID.cql() ) ) );
+        Map<UUID, UUID> entitySetsToLoad = currentSyncs();
 
         logger.info( "Loading {} entity sets:\n{}", entitySetsToLoad.size(), entitySetsToLoad );
 
@@ -292,10 +277,23 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
         ps.setBytes( 7, value.array() );
     }
 
-    public static Select currentSyncs() {
-        return QueryBuilder.select( CommonColumns.ENTITY_SET_ID.cql(), CommonColumns.CURRENT_SYNC_ID.cql() )
-                .distinct().from( Table.SYNC_IDS.getKeyspace(), Table.SYNC_IDS.getName() );
-
+    public Map<UUID, UUID> currentSyncs() {
+        try {
+            Map<UUID, UUID> entitySetAndSyncIds = Maps.newHashMap();
+            Connection connection = hds.getConnection();
+            PreparedStatement ps = connection.prepareStatement( CURRENT_SYNCS );
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() ) {
+                UUID entitySetId = ResultSetAdapters.entitySetId( rs );
+                UUID syncId = ResultSetAdapters.currentSyncId( rs );
+                entitySetAndSyncIds.put( entitySetId, syncId );
+            }
+            connection.close();
+            return entitySetAndSyncIds;
+        } catch ( SQLException e ) {
+            logger.error( "Unable to load current syncs." );
+            return Maps.newHashMap();
+        }
     }
 
     static class DataKeyIterator implements Iterator<DataKey> {
@@ -315,7 +313,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
                 ps.setObject( 2, syncId );
                 rs = ps.executeQuery();
                 next = rs.next();
-                if( !next ) {
+                if ( !next ) {
                     closer.countDown();
                 }
             } catch ( SQLException e ) {
