@@ -43,6 +43,7 @@ public enum PersonMetric {
     DOB_STRING( jaroWinkler( ( e, map ) -> PersonProperties.getDob( e, map ) ) ),
     DOB_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasDob( e, map ) ) ),
     DOB_RHS_PRESENCE( rhs( ( e, map ) -> PersonProperties.getHasDob( e, map ) ) ),
+    DOB_DIFF( dobStr() ),
 
     RACE_STRING( jaroWinkler( ( e, map ) -> PersonProperties.getRace( e, map ) ) ),
     RACE_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasRace( e, map ) ) ),
@@ -121,6 +122,21 @@ public enum PersonMetric {
                 extractor.apply( rhs, fqnToIdMap ),
                 true,
                 true );
+    }
+
+    public static MetricExtractor dobStr() {
+        return ( lhs, rhs, fqnToIdMap ) -> {
+            DelegatedStringSet lhsDob = PersonProperties.getDobStrs( lhs, fqnToIdMap );
+            DelegatedStringSet rhsDob = PersonProperties.getDobStrs( rhs, fqnToIdMap );
+            double bestValue = 0;
+            for (String dob1 : lhsDob) {
+                for (String dob2 : rhsDob) {
+                    double val = ( 8 - StringUtils.getLevenshteinDistance( dob1, dob2 ) ) / 8.0;
+                    if (val > bestValue) bestValue = val;
+                }
+            }
+            return bestValue;
+        };
     }
 
     public static double getMaxStringDistance(
