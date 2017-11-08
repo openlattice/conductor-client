@@ -80,7 +80,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
         result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
                 SecurableObjectType.EntitySet,
                 Permission.READ,
-                AuthorizedObjectsPagingFactory.decode( result.getPagingToken() ),
+                result.getPagingToken(),
                 SMALL_PAGE_SIZE );
 
         logger.debug( "Second page has result: " + result);
@@ -92,7 +92,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
         result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
                 SecurableObjectType.EntitySet,
                 Permission.READ,
-                AuthorizedObjectsPagingFactory.decode( result.getPagingToken() ),
+                result.getPagingToken(),
                 SMALL_PAGE_SIZE );
 
         logger.debug( "Third page has result: " + result);
@@ -103,7 +103,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
             result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
                     SecurableObjectType.EntitySet,
                     Permission.READ,
-                    AuthorizedObjectsPagingFactory.decode( result.getPagingToken() ),
+                    result.getPagingToken(),
                     SMALL_PAGE_SIZE );
             logger.debug( "Paging token should be null but it is not: next page using the token gives " + result );
             throw e;

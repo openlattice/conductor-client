@@ -23,7 +23,6 @@ import com.dataloom.authorization.HzAuthzTest;
 import com.dataloom.clustering.DistributedClusterer;
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.utils.UUIDs;
@@ -37,6 +36,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.openlattice.postgres.mapstores.LinkingVerticesMapstore;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -47,12 +48,12 @@ import org.slf4j.LoggerFactory;
  */
 public class HazelcastLinkingGraphsTest extends HzAuthzTest {
     protected static final int entityCount = 1000;
-    protected static final HazelcastLinkingGraphs    graphs;
-    protected static final DistributedClusterer      partitioner;
-    protected static final LinkingVerticesMapstore   lvm;
-    protected static final IMap<LinkingVertexKey, WeightedLinkingVertexKeySet>  edges;
-    protected static final IMap<LinkingVertexKey,LinkingVertex> linkingVertices;
-    protected static final IMap<EntityKey, UUID>     ids;
+    protected static final HazelcastLinkingGraphs                              graphs;
+    protected static final DistributedClusterer                                partitioner;
+    protected static final LinkingVerticesMapstore                             lvm;
+    protected static final IMap<LinkingVertexKey, WeightedLinkingVertexKeySet> edges;
+    protected static final IMap<LinkingVertexKey,LinkingVertex>                linkingVertices;
+    protected static final IMap<EntityKey, UUID>                               ids;
     protected static final Set<UUID> used    = new HashSet<>( entityCount );
     protected static final UUID      graphId = UUID.randomUUID();
     private static final   Random    r       = new Random();
@@ -65,7 +66,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
         ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
         linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
         partitioner = new DistributedClusterer( hazelcastInstance );
-        lvm = new LinkingVerticesMapstore( session );
+        lvm = new LinkingVerticesMapstore( hds );
     }
 
     @Test
