@@ -223,44 +223,41 @@ public class AuthorizationQueryService {
             EnumSet<Permission> permissions,
             Optional<SecurableObjectType> securableObjectType,
             Optional<Integer> limit,
-            Optional<Integer> offset ) {
+            Optional<Integer> offset ) throws SQLException {
         String sql = getAuthorizedAclKeyQuery( securableObjectType.isPresent(),
                 principals.size(),
                 limit.isPresent(),
                 offset.isPresent() );
-        try ( PreparedStatement ps = connection.prepareStatement( sql ) ) {
-            int count = 1;
+        PreparedStatement ps = connection.prepareStatement( sql );
+        int count = 1;
 
-            ps.setArray( count, PostgresArrays
-                    .createTextArray( connection, permissions.stream().map( permission -> permission.name() ) ) );
+        ps.setArray( count, PostgresArrays
+                .createTextArray( connection, permissions.stream().map( permission -> permission.name() ) ) );
+        count++;
+
+        if ( securableObjectType.isPresent() ) {
+            ps.setString( count, securableObjectType.get().name() );
             count++;
-
-            if ( securableObjectType.isPresent() ) {
-                ps.setString( count, securableObjectType.get().name() );
-                count++;
-            }
-
-            for ( Principal principal : principals ) {
-                ps.setString( count, principal.getType().name() );
-                count++;
-                ps.setString( count, principal.getId() );
-                count++;
-            }
-
-            if ( limit.isPresent() ) {
-                ps.setInt( count, limit.get() );
-                count++;
-            }
-
-            if ( offset.isPresent() ) {
-                ps.setInt( count, offset.get() );
-            }
-
-            return ps;
-        } catch ( SQLException e ) {
-            logger.error( "Unable to prepare authorized acl keys query." );
-            return null;
         }
+
+        for ( Principal principal : principals ) {
+            ps.setString( count, principal.getType().name() );
+            count++;
+            ps.setString( count, principal.getId() );
+            count++;
+        }
+
+        if ( limit.isPresent() ) {
+            ps.setInt( count, limit.get() );
+            count++;
+        }
+
+        if ( offset.isPresent() ) {
+            ps.setInt( count, offset.get() );
+        }
+
+        return ps;
+
     }
 
     public Stream<List<UUID>> getAuthorizedAclKeysForPrincipals(
@@ -292,6 +289,7 @@ public class AuthorizationQueryService {
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.aclKey( rs ) );
             }
+            rs.close();
             connection.close();
             return StreamUtil.stream( result );
         } catch ( SQLException e ) {

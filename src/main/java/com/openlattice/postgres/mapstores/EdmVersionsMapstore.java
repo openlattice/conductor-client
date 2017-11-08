@@ -73,6 +73,7 @@ public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UU
             if ( rs.next() ) {
                 val = mapToValue( rs );
             }
+            rs.close();
             connection.close();
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );

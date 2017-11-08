@@ -124,6 +124,8 @@ public class PostgresEntityKeysMapstore implements TestableSelfRegisteringMapSto
             if ( rs.next() ) {
                 val = mapToValue( rs );
             }
+            rs.close();
+            connection.close();
             logger.info( "LOADED: {}", val );
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );

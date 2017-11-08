@@ -195,6 +195,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
                 val = mapToValue( rs );
             }
             logger.debug( "LOADED: {}", val );
+            rs.close();
             connection.close();
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );

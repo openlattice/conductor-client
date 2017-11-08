@@ -136,9 +136,9 @@ public class DatasourceManager {
             if ( rs.next() ) {
                 result = ResultSetAdapters.syncId( rs );
             }
+            rs.close();
             connection.close();
             return result;
-
         } catch ( SQLException e ) {
             logger.debug( "Unable to load most recent sync id for entity set id: {}", entitySetId, e );
             return null;

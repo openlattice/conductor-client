@@ -155,6 +155,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
                 val = mapToValue( rs );
                 logger.debug( "LOADED: {}", val.array() );
             }
+            rs.close();
             connection.close();
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );

@@ -44,20 +44,21 @@ public class PostgresEntitySetManager {
     }
 
     public EntitySet getEntitySet( String entitySetName ) {
+        EntitySet entitySet = null;
         try ( Connection connection = hds.getConnection();
                 PreparedStatement ps = connection.prepareStatement( getEntitySet ) ) {
             ps.setString( 1, entitySetName );
             ResultSet rs = ps.executeQuery();
             if ( rs.next() ) {
                 rs.next();
-                EntitySet entitySet = ResultSetAdapters.entitySet( rs );
-                return entitySet;
+                entitySet = ResultSetAdapters.entitySet( rs );
             }
+            rs.close();
             connection.close();
         } catch ( SQLException e ) {
             logger.debug( "Unable to load entity set {}", entitySetName, e );
         }
-        return null;
+        return entitySet;
     }
 
     public Iterable<EntitySet> getAllEntitySets() {
