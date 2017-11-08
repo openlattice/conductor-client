@@ -103,7 +103,9 @@ public class DistributedMatcher {
 
     static class Initializer extends Aggregator<Map.Entry<EntityKey, UUID>, Void>
             implements HazelcastInstanceAware {
-        public            UUID                                  graphId;
+        private static final long serialVersionUID = 3173601341356567535L;
+
+        public UUID graphId;
         private transient IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
 
         @Override public void accumulate( Map.Entry<EntityKey, UUID> input ) {

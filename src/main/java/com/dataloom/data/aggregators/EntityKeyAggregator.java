@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
  */
 public class EntityKeyAggregator extends Aggregator<Entry<EntityKey, UUID>, Long> implements HazelcastInstanceAware {
     private static final Logger logger = LoggerFactory.getLogger( EntityKeyAggregator.class );
+    private static final long serialVersionUID = 9035620751643752397L;
+
     private final     UUID              streamId;
     private           long              count;
     private transient IQueue<EntityKey> stream;
