@@ -26,6 +26,8 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.mapstores.LinkingVerticesMapstore;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.streams.StreamUtil;
+import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.collect.ImmutableMap;
 import com.hazelcast.core.IMap;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -44,34 +46,46 @@ import org.slf4j.LoggerFactory;
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastLinkingGraphsTest extends HzAuthzTest {
+    protected static final int entityCount = 1000;
     protected static final HazelcastLinkingGraphs    graphs;
     protected static final DistributedClusterer      partitioner;
     protected static final LinkingVerticesMapstore   lvm;
-    protected static final IMap<LinkingEdge, Double> edges;
-    protected static final UUID   graphId = UUID.randomUUID();
-    private static final   Random r       = new Random();
-    private static final   Logger logger  = LoggerFactory
+    protected static final IMap<LinkingVertexKey, WeightedLinkingVertexKeySet>  edges;
+    protected static final IMap<LinkingVertexKey,LinkingVertex> linkingVertices;
+    protected static final IMap<EntityKey, UUID>     ids;
+    protected static final Set<UUID> used    = new HashSet<>( entityCount );
+    protected static final UUID      graphId = UUID.randomUUID();
+    private static final   Random    r       = new Random();
+    private static final   Logger    logger  = LoggerFactory
             .getLogger( HazelcastLinkingGraphsTest.class );
 
     static {
         graphs = new HazelcastLinkingGraphs( hazelcastInstance );
         edges = hazelcastInstance.getMap( HazelcastMap.LINKING_EDGES.name() );
+        ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
+        linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
         partitioner = new DistributedClusterer( hazelcastInstance );
         lvm = new LinkingVerticesMapstore( session );
     }
 
     @Test
     public void testClustering() {
-        final int entityCount = 1000;
-        Set<EntityKey> entityKeys = new HashSet<>( entityCount );
+        final UUID entitySetId = UUID.randomUUID();
+        final UUID syncId = UUIDs.timeBased();
+
         for ( int i = 0; i < entityCount; i++ ) {
-            entityKeys.add( TestDataFactory.entityKey() );
+            UUID id = UUID.randomUUID();
+            while ( used.contains( id ) ) {
+                id = UUID.randomUUID();
+            }
+            ids.put( TestDataFactory.entityKey( entitySetId, syncId ), id );
         }
 
-        Set<LinkingVertexKey> vertices = entityKeys
-                .parallelStream()
-                .map( entityKey -> graphs.getOrCreateVertex( graphId, entityKey ) )
-                .collect( Collectors.toSet() );
+        graphs.initializeLinking( graphId, ImmutableMap.of( entitySetId, syncId ) );
+
+
+
+        Set<LinkingVertexKey> vertices = linkingVertices.keySet(  );
 
         vertices.parallelStream()
                 .flatMap( u -> vertices
@@ -79,14 +93,16 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
                         .filter( v -> !u.equals( v ) && r.nextBoolean() && r.nextBoolean() && r.nextBoolean()
                                 && r.nextBoolean() )
                         .map( v -> new LinkingEdge( u, v ) ) )
-                .forEach( edge -> edges.set( edge, 2*r.nextDouble() ) );
-        List<Entry<LinkingEdge, Double>> sortedEdges = edges.entrySet()
+                .forEach( edge -> graphs.setEdgeWeight( edge, 2 * r.nextDouble() ) );
+
+        List<WeightedLinkingVertexKey> sortedEdges = edges.values(  )
                 .stream()
-                .sorted( Comparator.comparing( Entry::getValue ) )
+                .flatMap( WeightedLinkingVertexKeySet::stream )
+                .sorted()
                 .collect( Collectors.toList() );
 
-        partitioner.cluster( graphId, sortedEdges.get( 0 ).getValue() );
-//                new WeightedLinkingEdge( sortedEdges.get( 1 ).getValue(), sortedEdges.get( 1 ).getKey() )
+        partitioner.cluster( graphId, sortedEdges.get( 0 ).getWeight() );
+        //                new WeightedLinkingEdge( sortedEdges.get( 1 ).getValue(), sortedEdges.get( 1 ).getKey() )
 
         StreamUtil.stream( lvm.loadAllKeys() ).map( graphs::getVertex )
                 .sorted( Comparator.comparing( LinkingVertex::getDiameter ) )
