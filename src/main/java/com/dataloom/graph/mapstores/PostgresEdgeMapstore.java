@@ -35,10 +35,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -72,10 +69,13 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
     public PostgresEdgeMapstore( String mapName, HikariDataSource hds ) throws SQLException {
         this.mapName = mapName;
         this.hds = hds;
-        Connection connection = hds.getConnection();
-        connection.createStatement().execute( CREATE_TABLE );
-        connection.close();
-        logger.info( "Initialized Postgres Edge Mapstore" );
+        try ( Connection connection = hds.getConnection(); Statement statement = connection.createStatement() ) {
+            statement.execute( CREATE_TABLE );
+            connection.close();
+            logger.info( "Initialized Postgres Edge Mapstore" );
+        } catch ( SQLException e ) {
+            logger.error( "Unable to initialize Postgres Edge Mapstore", e );
+        }
     }
 
     @Override public String getMapName() {

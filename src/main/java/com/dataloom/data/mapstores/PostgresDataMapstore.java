@@ -39,10 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
@@ -73,10 +70,13 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
             HikariDataSource hds ) throws SQLException {
         this.hds = hds;
         this.mapName = mapName;
-        Connection connection = hds.getConnection();
-        connection.createStatement().execute( CREATE_TABLE );
-        connection.close();
-        logger.info( "Initialized Postgres Data Mapstore" );
+        try ( Connection connection = hds.getConnection(); Statement statement = connection.createStatement() ) {
+            statement.execute( CREATE_TABLE );
+            connection.close();
+            logger.info( "Initialized Postgres Data Mapstore" );
+        } catch ( SQLException e ) {
+            logger.error( "Unable to initialize Postgres Data Mapstore", e );
+        }
     }
 
     @Override public void store( DataKey key, ByteBuffer value ) {

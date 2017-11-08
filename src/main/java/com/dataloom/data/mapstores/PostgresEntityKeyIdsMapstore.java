@@ -36,10 +36,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -71,10 +68,13 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
         this.mapName = mapName;
         this.hds = hds;
         this.ekm = ekm;
-        Connection connection = hds.getConnection();
-        connection.createStatement().execute( CREATE_TABLE );
-        connection.close();
-        logger.info( "Initialized Postgres Entity Key Ids Mapstore" );
+        try ( Connection connection = hds.getConnection(); Statement statement = connection.createStatement() ) {
+            statement.execute( CREATE_TABLE );
+            connection.close();
+            logger.info( "Initialized Postgres Entity Key Ids Mapstore" );
+        } catch ( SQLException e ) {
+            logger.error( "Unable to initialize Postgres Entity Key Id Mapstore", e );
+        }
     }
 
     @Override

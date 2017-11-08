@@ -30,10 +30,7 @@ import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 import com.zaxxer.hikari.HikariDataSource;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -61,10 +58,13 @@ public class PostgresEntityKeysMapstore implements TestableSelfRegisteringMapSto
     public PostgresEntityKeysMapstore( String mapName, HikariDataSource hds ) throws SQLException {
         this.mapName = mapName;
         this.hds = hds;
-        Connection connection = hds.getConnection();
-        connection.createStatement().execute( CREATE_TABLE );
-        connection.close();
-        logger.info( "Initialized Postgres Entity Keys Mapstore" );
+        try ( Connection connection = hds.getConnection(); Statement statement = connection.createStatement() ) {
+            statement.execute( CREATE_TABLE );
+            connection.close();
+            logger.info( "Initialized Postgres Entity Keys Mapstore" );
+        } catch ( SQLException e ) {
+            logger.error( "Unable to initialize Postgres Entity Keys Mapstore", e );
+        }
     }
 
     @Override public String getMapName() {
