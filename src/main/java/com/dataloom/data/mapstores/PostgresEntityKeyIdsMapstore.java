@@ -21,17 +21,21 @@
 package com.dataloom.data.mapstores;
 
 import com.dataloom.data.EntityKey;
-import com.openlattice.postgres.CountdownConnectionCloser;
-import com.openlattice.postgres.KeyIterator;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.streams.StreamUtil;
+import com.google.common.collect.Lists;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.postgres.CountdownConnectionCloser;
+import com.openlattice.postgres.KeyIterator;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -43,8 +47,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -156,8 +158,7 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
 
     @Override public void deleteAll( Collection<EntityKey> keys ) {
         EntityKey key = null;
-        try {
-            Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
             connection.setAutoCommit( false );
             for ( EntityKey entry : keys ) {
@@ -212,8 +213,7 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
     @Override public Iterable<EntityKey> loadAllKeys() {
         logger.info( "Starting load all keys for Edge Mapstore" );
         Stream<EntityKey> keys;
-        try {
-            final Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             final ResultSet rs = connection.createStatement().executeQuery( LOAD_ALL_KEYS );
             return StreamUtil
                     .stream( () -> new KeyIterator<>( rs,

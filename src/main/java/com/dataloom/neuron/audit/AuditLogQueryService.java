@@ -20,9 +20,7 @@
 package com.dataloom.neuron.audit;
 
 import com.dataloom.neuron.signals.AuditableSignal;
-import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableList;
-import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresQuery;
@@ -70,8 +68,7 @@ public class AuditLogQueryService {
     }
 
     public void store( AuditableSignal signal ) {
-        try {
-            Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             PreparedStatement ps = connection.prepareStatement( storeSql );
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, signal.getAclKey().stream() ) );
             ps.setString( 2, signal.getType().name() );

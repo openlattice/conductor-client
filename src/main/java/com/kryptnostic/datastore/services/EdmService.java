@@ -128,9 +128,7 @@ public class EdmService implements EdmManager {
         for ( int i = 0; i < HazelcastMap.values().length; i++ ) {
             hazelcastInstance.getMap( HazelcastMap.values()[ i ].name() ).clear();
         }
-        try {
-            java.sql.Connection connection = hds.getConnection();
-
+        try ( java.sql.Connection connection = hds.getConnection() ) {
             new PostgresTablesPod().postgresTables().tables().forEach( table -> {
                 try {
                     connection.prepareStatement( PostgresQuery.truncate( table.getName() ) ).execute();
@@ -140,7 +138,7 @@ public class EdmService implements EdmManager {
             } );
             connection.close();
 
-        } catch (SQLException e ) {
+        } catch ( SQLException e ) {
             logger.debug( "Unable to clear all data.", e );
         }
     }
@@ -1377,7 +1375,7 @@ public class EdmService implements EdmManager {
             UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
             setupDefaultEntitySetPropertyMetadata( entitySetId, entityTypeId );
         }
-        return entitySetPropertyMetadata.get( new EntitySetPropertyKey( entitySetId, propertyTypeId ) );
+        return entitySetPropertyMetadata.get( key );
     }
 
     @Override

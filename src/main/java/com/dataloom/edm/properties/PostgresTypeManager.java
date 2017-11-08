@@ -87,10 +87,9 @@ public class PostgresTypeManager {
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<PropertyType> result = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getPropertyTypesInNamespace );
             ps.setString( 1, namespace );
 
@@ -108,12 +107,10 @@ public class PostgresTypeManager {
     }
 
     public Iterable<PropertyType> getPropertyTypes() {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<PropertyType> result = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getPropertyTypes );
-
             ResultSet rs = ps.executeQuery();
 
             while ( rs.next() ) {
@@ -129,10 +126,9 @@ public class PostgresTypeManager {
     }
 
     private Iterable<EntityType> getEntityTypesForQuery( String query ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<EntityType> result = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( query );
 
             ResultSet rs = ps.executeQuery();
@@ -149,10 +145,9 @@ public class PostgresTypeManager {
     }
 
     public Iterable<UUID> getIdsForQuery( String query ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<UUID> result = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( query );
 
             ResultSet rs = ps.executeQuery();
@@ -181,10 +176,9 @@ public class PostgresTypeManager {
     }
 
     public Stream<UUID> getAssociationIdsForEntityType( UUID entityTypeId ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<UUID> associationTypeIds = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getAssociationTypeIdsForEntityTypeId );
             ps.setObject( 1, entityTypeId );
             ps.setObject( 2, entityTypeId );
@@ -220,10 +214,9 @@ public class PostgresTypeManager {
     }
 
     private Iterable<EntityType> getEntityTypesContainingPropertyType( UUID propertyId ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<EntityType> result = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( entityTypesContainPropertyType );
             ps.setObject( 1, propertyId );
 
@@ -241,15 +234,14 @@ public class PostgresTypeManager {
     }
 
     private Iterable<UUID> getEntityTypeChildrenIds( UUID entityTypeId ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<UUID> result = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getEntityTypeChildIds );
             ps.setObject( 1, entityTypeId );
 
             ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
+            while ( rs.next() ) {
                 result.add( ResultSetAdapters.id( rs ) );
             }
 

@@ -53,9 +53,8 @@ public class PostgresSchemaQueryService implements SchemaQueryService {
     }
 
     private Set<UUID> getElementsInSchema( FullQualifiedName schemaName, String query ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             Set<UUID> result = Sets.newHashSet();
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( query );
             ps.setString( 1, schemaName.toString() );
             ResultSet rs = ps.executeQuery();
@@ -79,9 +78,8 @@ public class PostgresSchemaQueryService implements SchemaQueryService {
     }
 
     @Nonnull @Override public Iterable<String> getNamespaces() {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<String> result = Lists.newArrayList();
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getNamespaces );
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {

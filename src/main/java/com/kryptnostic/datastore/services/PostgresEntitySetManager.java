@@ -44,8 +44,7 @@ public class PostgresEntitySetManager {
     }
 
     public EntitySet getEntitySet( String entitySetName ) {
-        try {
-            Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             PreparedStatement ps = connection.prepareStatement( getEntitySet );
             ps.setString( 1, entitySetName );
             ResultSet rs = ps.executeQuery();
@@ -60,10 +59,9 @@ public class PostgresEntitySetManager {
     }
 
     public Iterable<EntitySet> getAllEntitySets() {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<EntitySet> result = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getAllEntitySets );
 
             ResultSet rs = ps.executeQuery();
@@ -80,10 +78,9 @@ public class PostgresEntitySetManager {
     }
 
     public Iterable<EntitySet> getAllEntitySetsForType( UUID entityTypeId ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<EntitySet> result = Lists.newArrayList();
 
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getEntitySetsByType );
             ps.setObject( 1, entityTypeId );
 

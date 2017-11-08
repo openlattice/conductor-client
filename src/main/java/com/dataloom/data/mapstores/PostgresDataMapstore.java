@@ -92,8 +92,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
 
     @Override public void storeAll( Map<DataKey, ByteBuffer> map ) {
         DataKey key = null;
-        try {
-            Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW );
             connection.setAutoCommit( false );
             for ( Entry<DataKey, ByteBuffer> entry : map.entrySet() ) {
@@ -117,8 +116,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
     }
 
     @Override public void delete( DataKey key ) {
-        try {
-            Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
             bind( deleteRow, key );
             deleteRow.executeUpdate();
@@ -130,8 +128,7 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
 
     @Override public void deleteAll( Collection<DataKey> keys ) {
         DataKey key = null;
-        try {
-            Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
             connection.setAutoCommit( false );
             for ( DataKey entry : keys ) {
@@ -278,9 +275,8 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
     }
 
     public Map<UUID, UUID> currentSyncs() {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             Map<UUID, UUID> entitySetAndSyncIds = Maps.newHashMap();
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( CURRENT_SYNCS );
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {

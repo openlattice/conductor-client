@@ -3,7 +3,10 @@ package com.dataloom.organizations.roles;
 import com.dataloom.organization.roles.Role;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.openlattice.postgres.*;
+import com.openlattice.postgres.PostgresColumn;
+import com.openlattice.postgres.PostgresQuery;
+import com.openlattice.postgres.PostgresTable;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +45,8 @@ public class RolesQueryService {
     }
 
     public List<Role> getAllRolesInOrganization( UUID organizationId ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<Role> result = Lists.newArrayList();
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getAllRolesInOrganizationSql );
             ps.setObject( 1, organizationId );
 
@@ -61,8 +63,7 @@ public class RolesQueryService {
     }
 
     public void deleteAllRolesInOrganization( UUID organizationId ) {
-        try {
-            Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             PreparedStatement ps = connection.prepareStatement( getAllRolesInOrganizationSql );
             ps.setObject( 1, organizationId );
             ps.execute();

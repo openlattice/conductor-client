@@ -20,7 +20,6 @@
 
 package com.dataloom.graph.mapstores;
 
-import com.openlattice.postgres.CountdownConnectionCloser;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.streams.StreamUtil;
@@ -30,8 +29,12 @@ import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.postgres.CountdownConnectionCloser;
 import com.openlattice.postgres.KeyIterator;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -43,8 +46,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -168,8 +169,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
 
     @Override public void deleteAll( Collection<EdgeKey> keys ) {
         EdgeKey key = null;
-        try {
-            Connection connection = hds.getConnection();
+        try ( Connection connection = hds.getConnection() ) {
             PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
             connection.setAutoCommit( false );
             for ( EdgeKey entry : keys ) {
@@ -195,6 +195,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
                 val = mapToValue( rs );
             }
             logger.debug( "LOADED: {}", val );
+            connection.close();
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );
         }

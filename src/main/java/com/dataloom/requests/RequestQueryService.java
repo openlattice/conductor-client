@@ -80,9 +80,8 @@ public class RequestQueryService {
     }
 
     public Stream<AceKey> getRequestKeys( Principal principal ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<AceKey> result = Lists.newArrayList();
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getRequestKeysForPrincipalSql );
             ps.setString( 1, principal.getType().name() );
             ps.setString( 2, principal.getId() );
@@ -100,9 +99,8 @@ public class RequestQueryService {
     }
 
     public Stream<AceKey> getRequestKeys( Principal principal, RequestStatus requestStatus ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<AceKey> result = Lists.newArrayList();
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getRequestKeysForPrincipalAndStatusSql );
             ps.setString( 1, principal.getType().name() );
             ps.setString( 2, principal.getId() );
@@ -121,9 +119,8 @@ public class RequestQueryService {
     }
 
     public Stream<AceKey> getRequestKeys( List<UUID> aclKey ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<AceKey> result = Lists.newArrayList();
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql );
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
 
@@ -140,9 +137,8 @@ public class RequestQueryService {
     }
 
     public Stream<AceKey> getRequestKeys( List<UUID> aclKey, RequestStatus requestStatus ) {
-        try {
+        try ( Connection connection = hds.getConnection() ) {
             List<AceKey> result = Lists.newArrayList();
-            Connection connection = hds.getConnection();
             PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql );
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
             ps.setString( 2, requestStatus.name() );
