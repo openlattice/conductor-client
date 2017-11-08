@@ -19,11 +19,15 @@
 
 package com.dataloom.linking;
 
+import java.io.Serializable;
+
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class WeightedLinkingEdge implements Comparable<WeightedLinkingEdge> {
-    private final double      weight;
+public class WeightedLinkingEdge implements Comparable<WeightedLinkingEdge>, Serializable {
+    private static final long serialVersionUID = 1888930928055889939L;
+
+    private final double weight;
     private final LinkingEdge edge;
 
     public WeightedLinkingEdge( double weight, LinkingEdge edge ) {

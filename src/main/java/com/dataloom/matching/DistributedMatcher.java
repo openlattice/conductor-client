@@ -100,30 +100,4 @@ public class DistributedMatcher {
         return propertyTypeIds.stream()
                 .collect( Collectors.toMap( id -> dms.getPropertyType( id ).getType(), id -> id ) );
     }
-
-    static class Initializer extends Aggregator<Map.Entry<EntityKey, UUID>, Void>
-            implements HazelcastInstanceAware {
-        private static final long serialVersionUID = 3173601341356567535L;
-
-        public UUID graphId;
-        private transient IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
-
-        @Override public void accumulate( Map.Entry<EntityKey, UUID> input ) {
-            linkingVertices.set( new LinkingVertexKey( graphId, input.getValue() ),
-                    new LinkingVertex( 0.0D, Sets.newHashSet( input.getValue() ) ) );
-        }
-
-        @Override public void combine( Aggregator aggregator ) {
-
-        }
-
-        @Override public Void aggregate() {
-            return null;
-        }
-
-        @Override public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {
-            this.linkingVertices = hazelcastInstance.getMap( HazelcastMap.LINKING_VERTICES.name() );
-        }
-    }
-
 }

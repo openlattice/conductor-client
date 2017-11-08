@@ -20,12 +20,15 @@
 
 package com.dataloom.data.analytics;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class IncrementableWeightId implements Comparable<IncrementableWeightId> {
+public class IncrementableWeightId implements Comparable<IncrementableWeightId>, Serializable {
+    private static final long serialVersionUID = 418959970258424966L;
+
     private final UUID id;
     private       long weight;
 

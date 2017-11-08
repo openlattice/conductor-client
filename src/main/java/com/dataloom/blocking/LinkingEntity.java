@@ -3,10 +3,12 @@ package com.dataloom.blocking;
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 
-public class LinkingEntity {
+public class LinkingEntity implements Serializable {
+    private static final long serialVersionUID = 3577378946466844645L;
 
     private final Map<UUID, DelegatedStringSet> entity;
 
