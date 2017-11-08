@@ -223,40 +223,44 @@ public class AuthorizationQueryService {
             EnumSet<Permission> permissions,
             Optional<SecurableObjectType> securableObjectType,
             Optional<Integer> limit,
-            Optional<Integer> offset ) throws SQLException {
+            Optional<Integer> offset ) {
         String sql = getAuthorizedAclKeyQuery( securableObjectType.isPresent(),
                 principals.size(),
                 limit.isPresent(),
                 offset.isPresent() );
-        PreparedStatement ps = connection.prepareStatement( sql );
-        int count = 1;
+        try ( PreparedStatement ps = connection.prepareStatement( sql ) ) {
+            int count = 1;
 
-        ps.setArray( count, PostgresArrays
-                .createTextArray( connection, permissions.stream().map( permission -> permission.name() ) ) );
-        count++;
-
-        if ( securableObjectType.isPresent() ) {
-            ps.setString( count, securableObjectType.get().name() );
+            ps.setArray( count, PostgresArrays
+                    .createTextArray( connection, permissions.stream().map( permission -> permission.name() ) ) );
             count++;
-        }
 
-        for ( Principal principal : principals ) {
-            ps.setString( count, principal.getType().name() );
-            count++;
-            ps.setString( count, principal.getId() );
-            count++;
-        }
+            if ( securableObjectType.isPresent() ) {
+                ps.setString( count, securableObjectType.get().name() );
+                count++;
+            }
 
-        if ( limit.isPresent() ) {
-            ps.setInt( count, limit.get() );
-            count++;
-        }
+            for ( Principal principal : principals ) {
+                ps.setString( count, principal.getType().name() );
+                count++;
+                ps.setString( count, principal.getId() );
+                count++;
+            }
 
-        if ( offset.isPresent() ) {
-            ps.setInt( count, offset.get() );
-        }
+            if ( limit.isPresent() ) {
+                ps.setInt( count, limit.get() );
+                count++;
+            }
 
-        return ps;
+            if ( offset.isPresent() ) {
+                ps.setInt( count, offset.get() );
+            }
+
+            return ps;
+        } catch ( SQLException e ) {
+            logger.error( "Unable to prepare authorized acl keys query." );
+            return null;
+        }
     }
 
     public Stream<List<UUID>> getAuthorizedAclKeysForPrincipals(
@@ -277,13 +281,13 @@ public class AuthorizationQueryService {
             Optional<Integer> limit,
             Optional<Integer> offset ) {
         try ( Connection connection = hds.getConnection() ) {
-            List<List<UUID>> result = Lists.newArrayList();
             PreparedStatement ps = prepareAuthorizedAclKeysQuery( connection,
                     principals,
                     desiredPermissions,
                     securableObjectType,
                     limit,
                     offset );
+            List<List<UUID>> result = Lists.newArrayList();
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.aclKey( rs ) );
@@ -297,8 +301,8 @@ public class AuthorizationQueryService {
     }
 
     public Stream<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement ps = connection.prepareStatement( aclsForSecurableObjectSql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( aclsForSecurableObjectSql ) ) {
             List<Principal> result = Lists.newArrayList();
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKeys.stream() ) );
 
@@ -324,8 +328,8 @@ public class AuthorizationQueryService {
     }
 
     public void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement ps = connection.prepareStatement( setObjectTypeSql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( setObjectTypeSql ) ) {
             ps.setString( 1, objectType.name() );
             ps.setArray( 2, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
             ps.execute();
@@ -337,8 +341,8 @@ public class AuthorizationQueryService {
     }
 
     public void deletePermissionsByAclKeys( List<UUID> aclKey ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement ps = connection.prepareStatement( deletePermissionsByAclKeysSql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( deletePermissionsByAclKeysSql ) ) {
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
             ps.execute();
             connection.close();
@@ -349,8 +353,8 @@ public class AuthorizationQueryService {
     }
 
     public Iterable<Principal> getOwnersForSecurableObject( List<UUID> aclKeys ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement ps = connection.prepareStatement( ownersForSecurableObjectSql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( ownersForSecurableObjectSql ) ) {
             List<Principal> result = Lists.newArrayList();
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKeys.stream() ) );
             ps.setArray( 2, PostgresArrays.createTextArray( connection, Stream.of( Permission.OWNER.name() ) ) );

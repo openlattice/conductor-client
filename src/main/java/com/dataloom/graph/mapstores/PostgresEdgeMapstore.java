@@ -140,8 +140,8 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
 
     @Override public void storeAll( Map<EdgeKey, LoomEdge> map ) {
         EdgeKey key = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW ) ) {
             connection.setAutoCommit( false );
             for ( Entry<EdgeKey, LoomEdge> entry : map.entrySet() ) {
                 key = entry.getKey();
@@ -169,8 +169,8 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
 
     @Override public void deleteAll( Collection<EdgeKey> keys ) {
         EdgeKey key = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW ) ) {
             connection.setAutoCommit( false );
             for ( EdgeKey entry : keys ) {
                 key = entry;
@@ -187,8 +187,8 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
 
     @Override public LoomEdge load( EdgeKey key ) {
         LoomEdge val = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW ) ) {
             bind( selectRow, key );
             ResultSet rs = selectRow.executeQuery();
             if ( rs.next() ) {

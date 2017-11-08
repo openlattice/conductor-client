@@ -44,26 +44,26 @@ public class PostgresEntitySetManager {
     }
 
     public EntitySet getEntitySet( String entitySetName ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement ps = connection.prepareStatement( getEntitySet );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getEntitySet ) ) {
             ps.setString( 1, entitySetName );
             ResultSet rs = ps.executeQuery();
-            rs.next();
-            EntitySet entitySet = ResultSetAdapters.entitySet( rs );
+            if ( rs.next() ) {
+                rs.next();
+                EntitySet entitySet = ResultSetAdapters.entitySet( rs );
+                return entitySet;
+            }
             connection.close();
-            return entitySet;
         } catch ( SQLException e ) {
             logger.debug( "Unable to load entity set {}", entitySetName, e );
-            return null;
         }
+        return null;
     }
 
     public Iterable<EntitySet> getAllEntitySets() {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getAllEntitySets ) ) {
             List<EntitySet> result = Lists.newArrayList();
-
-            PreparedStatement ps = connection.prepareStatement( getAllEntitySets );
-
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.entitySet( rs ) );
@@ -78,12 +78,10 @@ public class PostgresEntitySetManager {
     }
 
     public Iterable<EntitySet> getAllEntitySetsForType( UUID entityTypeId ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getEntitySetsByType ) ) {
             List<EntitySet> result = Lists.newArrayList();
-
-            PreparedStatement ps = connection.prepareStatement( getEntitySetsByType );
             ps.setObject( 1, entityTypeId );
-
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.entitySet( rs ) );

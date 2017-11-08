@@ -68,8 +68,8 @@ public class AuditLogQueryService {
     }
 
     public void store( AuditableSignal signal ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement ps = connection.prepareStatement( storeSql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( storeSql ) ) {
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, signal.getAclKey().stream() ) );
             ps.setString( 2, signal.getType().name() );
             ps.setString( 3, signal.getPrincipal().getType().name() );

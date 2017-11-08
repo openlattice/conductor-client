@@ -66,8 +66,8 @@ public class SyncIdsMapstore extends AbstractBasePostgresMapstore<UUID, UUID> {
 
     @Override
     public void store( UUID key, UUID value ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement updateRow = connection.prepareStatement( updateSql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement updateRow = connection.prepareStatement( updateSql ) ) {
             bind( updateRow, key, value );
             updateRow.execute();
 
@@ -107,7 +107,8 @@ public class SyncIdsMapstore extends AbstractBasePostgresMapstore<UUID, UUID> {
 
     @Override
     public Map<UUID, UUID> loadAll( Collection<UUID> keys ) {
-        return keys.parallelStream().distinct().collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
+        return keys.parallelStream().distinct()
+                .collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
     }
 
     @Override public UUID generateTestKey() {

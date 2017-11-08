@@ -41,9 +41,6 @@ public class CreateEntitySetTableEP extends AbstractRhizomeEntryProcessor<UUID, 
     }
 
     @Override public Void process( Entry<UUID, EntityType> entry ) {
-        UUID entityTypeId = entry.getKey();
-        EntityType entityType = entry.getValue();
-//        es.get
         return null;
     }
 

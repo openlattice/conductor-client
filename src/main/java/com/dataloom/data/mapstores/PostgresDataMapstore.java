@@ -92,8 +92,8 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
 
     @Override public void storeAll( Map<DataKey, ByteBuffer> map ) {
         DataKey key = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW ) ) {
             connection.setAutoCommit( false );
             for ( Entry<DataKey, ByteBuffer> entry : map.entrySet() ) {
                 key = entry.getKey();
@@ -128,8 +128,8 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
 
     @Override public void deleteAll( Collection<DataKey> keys ) {
         DataKey key = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW ) ) {
             connection.setAutoCommit( false );
             for ( DataKey entry : keys ) {
                 key = entry;
@@ -147,15 +147,15 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
     @Override
     public ByteBuffer load( DataKey key ) {
         ByteBuffer val = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW ) ) {
             bind( selectRow, key );
             ResultSet rs = selectRow.executeQuery();
             if ( rs.next() ) {
                 val = mapToValue( rs );
+                logger.debug( "LOADED: {}", val.array() );
             }
             connection.close();
-            logger.debug( "LOADED: {}", val.array() );
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );
         }
@@ -275,9 +275,9 @@ public class PostgresDataMapstore implements TestableSelfRegisteringMapStore<Dat
     }
 
     public Map<UUID, UUID> currentSyncs() {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( CURRENT_SYNCS ) ) {
             Map<UUID, UUID> entitySetAndSyncIds = Maps.newHashMap();
-            PreparedStatement ps = connection.prepareStatement( CURRENT_SYNCS );
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 UUID entitySetId = ResultSetAdapters.entitySetId( rs );

@@ -34,7 +34,6 @@ public class RolesQueryService {
         String ROLES = PostgresTable.ROLES.getName();
 
         // Columns
-        String ROLE_ID = PostgresColumn.ROLE_ID.getName();
         String ORG_ID = PostgresColumn.ORGANIZATION_ID.getName();
 
         this.getAllRolesInOrganizationSql = PostgresQuery.selectFrom( ROLES ).concat( PostgresQuery.whereEq(
@@ -45,9 +44,9 @@ public class RolesQueryService {
     }
 
     public List<Role> getAllRolesInOrganization( UUID organizationId ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getAllRolesInOrganizationSql ) ) {
             List<Role> result = Lists.newArrayList();
-            PreparedStatement ps = connection.prepareStatement( getAllRolesInOrganizationSql );
             ps.setObject( 1, organizationId );
 
             ResultSet rs = ps.executeQuery();
@@ -63,8 +62,8 @@ public class RolesQueryService {
     }
 
     public void deleteAllRolesInOrganization( UUID organizationId ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement ps = connection.prepareStatement( getAllRolesInOrganizationSql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getAllRolesInOrganizationSql ) ) {
             ps.setObject( 1, organizationId );
             ps.execute();
             connection.close();

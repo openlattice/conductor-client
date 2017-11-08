@@ -18,20 +18,20 @@ import java.util.Map;
 import java.util.UUID;
 
 public class HazelcastBlockingService {
+
     @Inject
     private ConductorElasticsearchApi elasticsearchApi;
+
     private static final int     blockSize = 50;
     private static final boolean explain   = false;
 
     private IMap<GraphEntityPair, LinkingEntity> linkingEntities;
     private IMap<EntityKey, UUID>                ids;
-    private HazelcastLinkingGraphs               linkingGraphs;
     private HazelcastInstance                    hazelcastInstance;
 
     public HazelcastBlockingService( HazelcastInstance hazelcastInstance ) {
         this.linkingEntities = hazelcastInstance.getMap( HazelcastMap.LINKING_ENTITIES.name() );
         this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
-        this.linkingGraphs = new HazelcastLinkingGraphs( hazelcastInstance );
         this.hazelcastInstance = hazelcastInstance;
     }
 

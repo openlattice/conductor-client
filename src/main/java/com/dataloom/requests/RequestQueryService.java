@@ -80,9 +80,9 @@ public class RequestQueryService {
     }
 
     public Stream<AceKey> getRequestKeys( Principal principal ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForPrincipalSql ) ) {
             List<AceKey> result = Lists.newArrayList();
-            PreparedStatement ps = connection.prepareStatement( getRequestKeysForPrincipalSql );
             ps.setString( 1, principal.getType().name() );
             ps.setString( 2, principal.getId() );
 
@@ -99,9 +99,9 @@ public class RequestQueryService {
     }
 
     public Stream<AceKey> getRequestKeys( Principal principal, RequestStatus requestStatus ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForPrincipalAndStatusSql ) ) {
             List<AceKey> result = Lists.newArrayList();
-            PreparedStatement ps = connection.prepareStatement( getRequestKeysForPrincipalAndStatusSql );
             ps.setString( 1, principal.getType().name() );
             ps.setString( 2, principal.getId() );
             ps.setString( 3, requestStatus.name() );
@@ -119,9 +119,9 @@ public class RequestQueryService {
     }
 
     public Stream<AceKey> getRequestKeys( List<UUID> aclKey ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql ) ) {
             List<AceKey> result = Lists.newArrayList();
-            PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql );
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
 
             ResultSet rs = ps.executeQuery();
@@ -137,9 +137,9 @@ public class RequestQueryService {
     }
 
     public Stream<AceKey> getRequestKeys( List<UUID> aclKey, RequestStatus requestStatus ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql ) ) {
             List<AceKey> result = Lists.newArrayList();
-            PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql );
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
             ps.setString( 2, requestStatus.name() );
 

@@ -87,12 +87,10 @@ public class PostgresTypeManager {
     }
 
     public Iterable<PropertyType> getPropertyTypesInNamespace( String namespace ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getPropertyTypesInNamespace ) ) {
             List<PropertyType> result = Lists.newArrayList();
-
-            PreparedStatement ps = connection.prepareStatement( getPropertyTypesInNamespace );
             ps.setString( 1, namespace );
-
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.propertyType( rs ) );
@@ -107,12 +105,10 @@ public class PostgresTypeManager {
     }
 
     public Iterable<PropertyType> getPropertyTypes() {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getPropertyTypes ) ) {
             List<PropertyType> result = Lists.newArrayList();
-
-            PreparedStatement ps = connection.prepareStatement( getPropertyTypes );
             ResultSet rs = ps.executeQuery();
-
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.propertyType( rs ) );
             }
@@ -126,11 +122,9 @@ public class PostgresTypeManager {
     }
 
     private Iterable<EntityType> getEntityTypesForQuery( String query ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( query ) ) {
             List<EntityType> result = Lists.newArrayList();
-
-            PreparedStatement ps = connection.prepareStatement( query );
-
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.entityType( rs ) );
@@ -145,11 +139,9 @@ public class PostgresTypeManager {
     }
 
     public Iterable<UUID> getIdsForQuery( String query ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( query ) ) {
             List<UUID> result = Lists.newArrayList();
-
-            PreparedStatement ps = connection.prepareStatement( query );
-
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.id( rs ) );
@@ -176,10 +168,10 @@ public class PostgresTypeManager {
     }
 
     public Stream<UUID> getAssociationIdsForEntityType( UUID entityTypeId ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getAssociationTypeIdsForEntityTypeId ) ) {
             List<UUID> associationTypeIds = Lists.newArrayList();
 
-            PreparedStatement ps = connection.prepareStatement( getAssociationTypeIdsForEntityTypeId );
             ps.setObject( 1, entityTypeId );
             ps.setObject( 2, entityTypeId );
 
@@ -214,17 +206,14 @@ public class PostgresTypeManager {
     }
 
     private Iterable<EntityType> getEntityTypesContainingPropertyType( UUID propertyId ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( entityTypesContainPropertyType ) ) {
             List<EntityType> result = Lists.newArrayList();
-
-            PreparedStatement ps = connection.prepareStatement( entityTypesContainPropertyType );
             ps.setObject( 1, propertyId );
-
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.entityType( rs ) );
             }
-
             connection.close();
             return result;
         } catch ( SQLException e ) {
@@ -234,10 +223,9 @@ public class PostgresTypeManager {
     }
 
     private Iterable<UUID> getEntityTypeChildrenIds( UUID entityTypeId ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getEntityTypeChildIds ) ) {
             List<UUID> result = Lists.newArrayList();
-
-            PreparedStatement ps = connection.prepareStatement( getEntityTypeChildIds );
             ps.setObject( 1, entityTypeId );
 
             ResultSet rs = ps.executeQuery();
@@ -249,7 +237,7 @@ public class PostgresTypeManager {
             return result;
         } catch ( SQLException e ) {
             logger.debug( "Unable to load base entity types for type: {}", entityTypeId.toString(), e );
-            return null;
+            return ImmutableList.of();
         }
     }
 

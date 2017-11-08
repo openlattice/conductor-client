@@ -128,8 +128,8 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
     @Override
     public void storeAll( Map<EntityKey, UUID> map ) {
         EntityKey key = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW ) ) {
             connection.setAutoCommit( false );
             for ( Entry<EntityKey, UUID> entry : map.entrySet() ) {
                 key = entry.getKey();
@@ -158,8 +158,8 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
 
     @Override public void deleteAll( Collection<EntityKey> keys ) {
         EntityKey key = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW ) ) {
             connection.setAutoCommit( false );
             for ( EntityKey entry : keys ) {
                 key = entry;
@@ -192,8 +192,8 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
 
     public UUID tryLoad( EntityKey key ) {
         UUID val = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW ) ) {
             bind( selectRow, key );
             ResultSet rs = selectRow.executeQuery();
             if ( rs.next() ) {
@@ -213,7 +213,8 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
     @Override public Iterable<EntityKey> loadAllKeys() {
         logger.info( "Starting load all keys for Edge Mapstore" );
         Stream<EntityKey> keys;
-        try ( Connection connection = hds.getConnection() ) {
+        try {
+            final Connection connection = hds.getConnection();
             final ResultSet rs = connection.createStatement().executeQuery( LOAD_ALL_KEYS );
             return StreamUtil
                     .stream( () -> new KeyIterator<>( rs,

@@ -55,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -130,8 +131,9 @@ public class EdmService implements EdmManager {
         }
         try ( java.sql.Connection connection = hds.getConnection() ) {
             new PostgresTablesPod().postgresTables().tables().forEach( table -> {
-                try {
-                    connection.prepareStatement( PostgresQuery.truncate( table.getName() ) ).execute();
+                try ( PreparedStatement ps = connection
+                        .prepareStatement( PostgresQuery.truncate( table.getName() ) ) ) {
+                    ps.execute();
                 } catch ( SQLException e ) {
                     logger.debug( "Unable to truncate table {}", table.getName(), e );
                 }

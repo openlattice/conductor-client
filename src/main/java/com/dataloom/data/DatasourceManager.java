@@ -127,9 +127,9 @@ public class DatasourceManager {
     }
 
     public UUID getLatestSyncId( UUID entitySetId ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( mostRecentSyncIdSql ) ) {
             UUID result = null;
-            PreparedStatement ps = connection.prepareStatement( mostRecentSyncIdSql );
             ps.setObject( 1, entitySetId );
 
             ResultSet rs = ps.executeQuery();
@@ -146,9 +146,9 @@ public class DatasourceManager {
     }
 
     public Iterable<UUID> getAllPreviousSyncIds( UUID entitySetId, UUID syncId ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( allPreviousEntitySetsAndSyncIdsSql ) ) {
             List<UUID> result = Lists.newArrayList();
-            PreparedStatement ps = connection.prepareStatement( allPreviousEntitySetsAndSyncIdsSql );
             ps.setObject( 1, entitySetId );
             ps.setObject( 2, syncId );
 
@@ -166,9 +166,9 @@ public class DatasourceManager {
     }
 
     public Iterable<UUID> getAllSyncIds( UUID entitySetId ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( allSyncIdsSql ) ) {
             List<UUID> result = Lists.newArrayList();
-            PreparedStatement ps = connection.prepareStatement( allSyncIdsSql );
             ps.setObject( 1, entitySetId );
 
             ResultSet rs = ps.executeQuery();
@@ -185,8 +185,8 @@ public class DatasourceManager {
     }
 
     private void addSyncIdToEntitySet( UUID entitySetId, UUID syncId ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement ps = connection.prepareStatement( writeSyncIdsSql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( writeSyncIdsSql ) ) {
             ps.setObject( 1, entitySetId );
             ps.setObject( 2, syncId );
             ps.setObject( 3, currentSyncIds.get( entitySetId ) );
@@ -207,12 +207,11 @@ public class DatasourceManager {
     }
 
     private List<List<UUID>> getAllPreviousEntitySetSyncIdPairs( Map.Entry<UUID, UUID> entry ) {
-        try ( Connection connection = hds.getConnection() ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( allPreviousEntitySetsAndSyncIdsSql ) ) {
             List<List<UUID>> result = Lists.newArrayList();
-            PreparedStatement ps = connection.prepareStatement( allPreviousEntitySetsAndSyncIdsSql );
             ps.setObject( 1, entry.getKey() );
             ps.setObject( 2, entry.getValue() );
-
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 UUID entitySetId = ResultSetAdapters.entitySetId( rs );

@@ -29,6 +29,7 @@ import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -39,6 +40,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,8 +117,8 @@ public class PostgresEntityKeysMapstore implements TestableSelfRegisteringMapSto
 
     @Override public EntityKey load( UUID key ) {
         EntityKey val = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW ) ) {
             bind( selectRow, key );
             ResultSet rs = selectRow.executeQuery();
             if ( rs.next() ) {

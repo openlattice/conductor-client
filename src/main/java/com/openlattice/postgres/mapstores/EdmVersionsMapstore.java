@@ -21,10 +21,16 @@ import static com.openlattice.postgres.PostgresTable.EDM_VERSIONS;
 
 public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UUID> {
     private final HikariDataSource hds;
+    private final String           loadQuerySql;
+    private final String           insertQuerySql;
 
     public EdmVersionsMapstore( HikariDataSource hds ) {
         super( HazelcastMap.EDM_VERSIONS.name(), EDM_VERSIONS, hds );
         this.hds = hds;
+        this.loadQuerySql = "SELECT * FROM ".concat( EDM_VERSIONS.getName() ).concat( " WHERE " )
+                .concat( EDM_VERSION_NAME.getName() ).concat( " = ? ORDER BY " ).concat( EDM_VERSION.getName() )
+                .concat( " DESC LIMIT 1;" );
+        this.insertQuerySql = EDM_VERSIONS.insertQuery( Optional.empty(), ImmutableList.of() );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {
@@ -60,11 +66,8 @@ public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UU
     @Override
     public UUID load( String key ) {
         UUID val = null;
-        try ( Connection connection = hds.getConnection() ) {
-            String select = "SELECT * FROM ".concat( EDM_VERSIONS.getName() ).concat( " WHERE " )
-                    .concat( EDM_VERSION_NAME.getName() ).concat( " = ? ORDER BY " ).concat( EDM_VERSION.getName() )
-                    .concat( " DESC LIMIT 1;" );
-            PreparedStatement selectRow = connection.prepareStatement( select );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement selectRow = connection.prepareStatement( loadQuerySql ); ) {
             bind( selectRow, key );
             ResultSet rs = selectRow.executeQuery();
             if ( rs.next() ) {
@@ -79,9 +82,8 @@ public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UU
 
     @Override
     public void store( String key, UUID value ) {
-        try ( Connection connection = hds.getConnection() ) {
-            String sql = EDM_VERSIONS.insertQuery( Optional.empty(), ImmutableList.of() );
-            PreparedStatement insertRow = connection.prepareStatement( sql );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement insertRow = connection.prepareStatement( insertQuerySql ) ) {
             bind( insertRow, key, value );
             logger.info( insertRow.toString() );
             insertRow.execute();
