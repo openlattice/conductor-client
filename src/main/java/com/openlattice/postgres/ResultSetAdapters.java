@@ -90,6 +90,7 @@ import com.dataloom.requests.Status;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
 import com.openlattice.authorization.SecurablePrincipal;
 import java.sql.Array;
 import java.sql.ResultSet;
@@ -194,7 +195,7 @@ public final class ResultSetAdapters {
     }
 
     public static List<UUID> aclKey( ResultSet rs ) throws SQLException {
-        return Arrays.asList( PostgresArrays.getUuidArray( rs, ACL_KEY_FIELD ) );
+        return new DelegatedUUIDList( PostgresArrays.getUuidArray( rs, ACL_KEY_FIELD ) );
     }
 
     public static AceKey aceKey( ResultSet rs ) throws SQLException {

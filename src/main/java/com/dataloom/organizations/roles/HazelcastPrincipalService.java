@@ -16,6 +16,7 @@ import com.dataloom.organizations.roles.processors.PrincipalTitleUpdater;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
@@ -23,6 +24,7 @@ import com.openlattice.authorization.SecurablePrincipal;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -168,6 +170,17 @@ public class HazelcastPrincipalService implements RolesManager, AuthorizingCompo
                 .stream()
                 .map( Principal::getId )
                 .collect( Collectors.toSet() ) ).values();
+    }
+
+    @Override
+    public Map<Principal, Object> executeOnPrincipal(
+            EntryProcessor<Principal, SecurablePrincipal> ep,
+            Predicate p ) {
+        return principals.executeOnEntries( ep, p );
+    }
+
+    @Override public Collection<SecurablePrincipal> getPrincipals( Predicate p ) {
+        return principals.values( p );
     }
 
     @Override

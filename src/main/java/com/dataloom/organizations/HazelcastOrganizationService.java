@@ -19,14 +19,17 @@
 
 package com.dataloom.organizations;
 
-import com.dataloom.authorization.*;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.dataloom.authorization.AuthorizationManager;
+import com.dataloom.authorization.HazelcastAclKeyReservationService;
+import com.dataloom.authorization.Principal;
+import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.Organization;
 import com.dataloom.organization.roles.Role;
-import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
@@ -35,6 +38,8 @@ import com.dataloom.organizations.processors.EmailDomainsRemover;
 import com.dataloom.organizations.processors.OrganizationMemberMerger;
 import com.dataloom.organizations.processors.OrganizationMemberRemover;
 import com.dataloom.organizations.roles.RolesManager;
+import com.dataloom.organizations.roles.processors.PrincipalDescriptionUpdater;
+import com.dataloom.organizations.roles.processors.PrincipalTitleUpdater;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -42,40 +47,37 @@ import com.google.common.collect.Iterables;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.query.Predicate;
+import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import java.util.EnumSet;
+import com.openlattice.authorization.SecurablePrincipal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HazelcastOrganizationService {
 
-    @Inject
-    private EventBus eventBus;
-
     private static final Logger logger = LoggerFactory
             .getLogger( HazelcastOrganizationService.class );
-
     private final AuthorizationManager              authorizations;
     private final HazelcastAclKeyReservationService reservations;
     private final UserDirectoryService              principals;
     private final RolesManager                      rolesManager;
-
-    private final IMap<UUID, String>             titles;
-    private final IMap<UUID, String>             descriptions;
-    private final IMap<UUID, DelegatedStringSet> autoApprovedEmailDomainsOf;
-    private final IMap<UUID, PrincipalSet>       membersOf;
-    private final List<IMap<UUID, ?>>            allMaps;
+    private final IMap<UUID, String>                titles;
+    private final IMap<UUID, String>                descriptions;
+    private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
+    private final IMap<UUID, PrincipalSet>          membersOf;
+    private final List<IMap<UUID, ?>>               allMaps;
+    @Inject
+    private       EventBus                          eventBus;
 
     public HazelcastOrganizationService(
             HazelcastInstance hazelcastInstance,
@@ -98,17 +100,13 @@ public class HazelcastOrganizationService {
     }
 
     public void createOrganization( Principal principal, Organization organization ) {
+        rolesManager.createSecurablePrincipalIfNotExists( principal, organization.getPrincipal() );
         createOrganization( organization );
-        authorizations.addPermission( ImmutableList.of( organization.getId() ),
-                principal,
-                EnumSet.allOf( Permission.class ) );
-        authorizations.createEmptyAcl( ImmutableList.of( organization.getId() ), SecurableObjectType.Organization );
         eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
     }
 
     public void createOrganization( Organization organization ) {
-        reservations.reserveId( organization );
-        UUID organizationId = organization.getId();
+        UUID organizationId = organization.getPrincipal().getId();
         titles.set( organizationId, organization.getTitle() );
         descriptions.set( organizationId, organization.getDescription() );
         autoApprovedEmailDomainsOf.set( organizationId,
@@ -117,17 +115,16 @@ public class HazelcastOrganizationService {
     }
 
     public Organization getOrganization( UUID organizationId ) {
-        Future<String> title = titles.getAsync( organizationId );
-        Future<String> description = descriptions.getAsync( organizationId );
         Future<PrincipalSet> members = membersOf.getAsync( organizationId );
         Future<DelegatedStringSet> autoApprovedEmailDomains = autoApprovedEmailDomainsOf.getAsync( organizationId );
 
+        Collection<SecurablePrincipal> maybeOrgs =
+                rolesManager.getPrincipals( getOrganizationPredicate( organizationId ) );
+        SecurablePrincipal principal = Iterables.getOnlyElement( maybeOrgs );
         Set<Role> roles = getRoles( organizationId );
         try {
             return new Organization(
-                    Optional.of( organizationId ),
-                    title.get(),
-                    Optional.fromNullable( description.get() ),
+                    principal,
                     autoApprovedEmailDomains.get(),
                     members.get(),
                     roles );
@@ -140,19 +137,21 @@ public class HazelcastOrganizationService {
     public void destroyOrganization( UUID organizationId ) {
         // Remove all roles
         rolesManager.deleteAllRolesInOrganization( organizationId, getMembers( organizationId ) );
-
         allMaps.stream().forEach( m -> m.delete( organizationId ) );
         reservations.release( organizationId );
         eventBus.post( new OrganizationDeletedEvent( organizationId ) );
     }
 
     public void updateTitle( UUID organizationId, String title ) {
-        titles.set( organizationId, title );
+        rolesManager
+                .executeOnPrincipal( new PrincipalTitleUpdater( title ), getOrganizationPredicate( organizationId ) );
         eventBus.post( new OrganizationUpdatedEvent( organizationId, Optional.of( title ), Optional.absent() ) );
     }
 
     public void updateDescription( UUID organizationId, String description ) {
-        descriptions.set( organizationId, description );
+        rolesManager
+                .executeOnPrincipal( new PrincipalDescriptionUpdater( description ),
+                        getOrganizationPredicate( organizationId ) );
         eventBus.post( new OrganizationUpdatedEvent( organizationId, Optional.absent(), Optional.of( description ) ) );
     }
 
@@ -199,7 +198,8 @@ public class HazelcastOrganizationService {
 
     public void removeMembers( UUID organizationId, Set<Principal> members ) {
         membersOf.submitToKey( organizationId, new OrganizationMemberRemover( members ) );
-        removeRolesFromMembers( Iterables.transform( getRolesInFull( organizationId ), Role::getRoleKey ),
+        removeRolesFromMembers(
+                getRolesInFull( organizationId ).stream().map( Role::getPrincipal )::iterator,
                 members );
         removeOrganizationFromMembers( organizationId, members );
     }
@@ -220,53 +220,60 @@ public class HazelcastOrganizationService {
         }
     }
 
-    private void removeRolesFromMembers( Iterable<RoleKey> roleKeys, Set<Principal> members ) {
+    private void removeRolesFromMembers( Iterable<Principal> roles, Set<Principal> members ) {
         if ( members.stream().map( Principal::getType ).allMatch( PrincipalType.USER::equals ) ) {
-            members.forEach( member -> roleKeys
-                    .forEach( roleKey -> removeRoleFromUser( roleKey, member ) ) );
+            members.forEach( member -> roles.forEach( role -> removeRoleFromUser( role, member ) ) );
         } else {
             throw new IllegalArgumentException( "Cannot remove a non-user role from member of an organization." );
         }
     }
 
     public void createRoleIfNotExists( Principal callingUser, Role role ) {
-        rolesManager.createRoleIfNotExists( callingUser, role );
+        rolesManager.createSecurablePrincipalIfNotExists( callingUser, role );
     }
 
-    public void updateRoleTitle( RoleKey roleKey, String title ) {
-        rolesManager.updateTitle( roleKey, title );
+    public void updateRoleTitle( Principal role, String title ) {
+        rolesManager.updateTitle( role, title );
     }
 
-    public void updateRoleDescription( RoleKey roleKey, String description ) {
-        rolesManager.updateDescription( roleKey, description );
+    public void updateRoleDescription( Principal role, String description ) {
+        rolesManager.updateDescription( role, description );
     }
 
-    public Role getRoleInFull( RoleKey roleKey ) {
-        return rolesManager.getRole( roleKey );
+    public Role getRoleInFull( Principal role ) {
+        return (Role) rolesManager.getPrincipal( role );
     }
 
-    public Iterable<Role> getRolesInFull( UUID organizationId ) {
-        return rolesManager.getAllRolesInOrganization( organizationId );
+    private Collection<Role> getRolesInFull( UUID organizationId ) {
+        return rolesManager.getAllRolesInOrganization( organizationId )
+                .stream()
+                .map( sp -> (Role) sp )
+                .collect( Collectors.toList() );
     }
 
     public Set<Role> getRoles( UUID organizationId ) {
         return StreamUtil.stream( getRolesInFull( organizationId ) ).collect( Collectors.toSet() );
     }
 
-    public void deleteRole( RoleKey roleKey ) {
-        rolesManager.deleteRole( roleKey );
+    public void deleteRole( Principal role ) {
+        rolesManager.deletePrincipal( role );
     }
 
-    public void addRoleToUser( RoleKey roleKey, Principal user ) {
-        rolesManager.addRoleToUser( roleKey, user );
+    public void addRoleToUser( Principal principal, Principal user ) {
+        rolesManager.addPrincipalToPrincipal( principal, user );
     }
 
-    public void removeRoleFromUser( RoleKey roleKey, Principal user ) {
-        rolesManager.removeRoleFromUser( roleKey, user );
+    public void removeRoleFromUser( Principal role, Principal user ) {
+        rolesManager.removePrincipalFromPrincipal( role, user );
     }
 
-    public Iterable<Auth0UserBasic> getAllUserProfilesOfRole( RoleKey roleKey ) {
-        return rolesManager.getAllUserProfilesOfRole( roleKey );
+    public Iterable<Auth0UserBasic> getAllUserProfilesOfRole( Principal role ) {
+        return rolesManager.getAllUserProfilesWithPrincipal( role );
     }
 
+    private static Predicate getOrganizationPredicate( UUID organizationId ) {
+        return Predicates.and(
+                Predicates.equal( "principalType", PrincipalType.ORGANIZATION ),
+                Predicates.equal( "aclKey[0]", organizationId ) );
+    }
 }
