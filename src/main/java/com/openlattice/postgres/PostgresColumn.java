@@ -20,9 +20,14 @@
 
 package com.openlattice.postgres;
 
-import com.dataloom.edm.type.Analyzer;
+import static com.openlattice.postgres.PostgresDatatype.BOOLEAN;
+import static com.openlattice.postgres.PostgresDatatype.DECIMAL;
+import static com.openlattice.postgres.PostgresDatatype.TEXT;
+import static com.openlattice.postgres.PostgresDatatype.TEXT_ARRAY;
+import static com.openlattice.postgres.PostgresDatatype.UUID;
+import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY;
 
-import static com.openlattice.postgres.PostgresDatatype.*;
+import com.dataloom.edm.type.Analyzer;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -140,6 +145,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( GRAPH_ID_FIELD, UUID );
     public static final PostgresColumnDefinition ID                    =
             new PostgresColumnDefinition( ID_FIELD, UUID ).primaryKey();
+    public static final PostgresColumnDefinition ID_VALUE              =
+            new PostgresColumnDefinition( ID_FIELD, UUID );
     public static final PostgresColumnDefinition KEY                   =
             new PostgresColumnDefinition( KEY_FIELD, UUID_ARRAY ).notNull();
     public static final PostgresColumnDefinition MEMBERS               =
