@@ -24,6 +24,8 @@ import static com.openlattice.postgres.PostgresTable.PRINCIPALS;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.organization.roles.Role;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.openlattice.authorization.SecurablePrincipal;
@@ -41,6 +43,8 @@ import java.util.List;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, SecurablePrincipal> {
+    private static Role TEST_ROLE = TestDataFactory.role();
+    ;
     private static List<PostgresColumnDefinition> KEY_COLUMNS =
             ImmutableList.copyOf( PRINCIPALS.getPrimaryKey() );
 
@@ -52,11 +56,11 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, S
     }
 
     @Override public Principal generateTestKey() {
-        return null;
+        return TEST_ROLE.getPrincipal();
     }
 
     @Override public SecurablePrincipal generateTestValue() {
-        return null;
+        return TEST_ROLE;
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {
