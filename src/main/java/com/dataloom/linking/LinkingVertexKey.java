@@ -19,6 +19,7 @@
 
 package com.dataloom.linking;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -26,7 +27,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class LinkingVertexKey implements Comparable<LinkingVertexKey> {
+public class LinkingVertexKey implements Comparable<LinkingVertexKey>, Serializable {
+    private static final long serialVersionUID = -4861141547646664521L;
+
     private final UUID graphId;
     private final UUID vertexId;
 

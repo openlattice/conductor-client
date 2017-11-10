@@ -19,97 +19,55 @@
 
 package com.kryptnostic.datastore.services;
 
-import static com.google.common.base.Preconditions.checkState;
-
-import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.authorization.HazelcastAclKeyReservationService;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.Principals;
+import com.dataloom.authorization.*;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.EntityDataModelDiff;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.Schema;
-import com.dataloom.edm.events.AssociationTypeCreatedEvent;
-import com.dataloom.edm.events.AssociationTypeDeletedEvent;
-import com.dataloom.edm.events.ClearAllDataEvent;
-import com.dataloom.edm.events.EntitySetCreatedEvent;
-import com.dataloom.edm.events.EntitySetDeletedEvent;
-import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
-import com.dataloom.edm.events.EntityTypeCreatedEvent;
-import com.dataloom.edm.events.EntityTypeDeletedEvent;
-import com.dataloom.edm.events.PropertyTypeCreatedEvent;
-import com.dataloom.edm.events.PropertyTypeDeletedEvent;
-import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
+import com.dataloom.edm.events.*;
+import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
-import com.dataloom.edm.properties.CassandraTypeManager;
+import com.dataloom.edm.properties.PostgresTypeManager;
 import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.AssociationDetails;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.PropertyType;
-import com.dataloom.edm.types.processors.AddDstEntityTypesToAssociationTypeProcessor;
-import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
-import com.dataloom.edm.types.processors.AddSrcEntityTypesToAssociationTypeProcessor;
-import com.dataloom.edm.types.processors.RemoveDstEntityTypesFromAssociationTypeProcessor;
-import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
-import com.dataloom.edm.types.processors.RemoveSrcEntityTypesFromAssociationTypeProcessor;
-import com.dataloom.edm.types.processors.ReorderPropertyTypesInEntityTypeProcessor;
-import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
-import com.dataloom.edm.types.processors.UpdateEntitySetPropertyMetadataProcessor;
-import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
-import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
+import com.dataloom.edm.type.*;
+import com.dataloom.edm.types.processors.*;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
-import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.util.Util;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.inject.Inject;
+import com.openlattice.postgres.PostgresQuery;
+import com.openlattice.postgres.PostgresTablesPod;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.google.common.base.Preconditions.checkState;
+
 public class EdmService implements EdmManager {
 
-    private static final Logger logger = LoggerFactory
-            .getLogger( EdmService.class );
+    private static final Logger logger = LoggerFactory.getLogger( EdmService.class );
     private final IMap<String, UUID> edmVersions;
 
     private final IMap<UUID, PropertyType>                              propertyTypes;
@@ -125,33 +83,30 @@ public class EdmService implements EdmManager {
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
-    private final CassandraEntitySetManager         entitySetManager;
-    private final CassandraTypeManager              entityTypeManager;
+    private final PostgresEntitySetManager          entitySetManager;
+    private final PostgresTypeManager               entityTypeManager;
     private final HazelcastSchemaManager            schemaManager;
 
-    private final String            keyspace;
-    private final Session           session;
     private final HazelcastInstance hazelcastInstance;
+    private final HikariDataSource  hds;
 
     @Inject
     private EventBus eventBus;
 
     public EdmService(
-            String keyspace,
-            Session session,
+            HikariDataSource hds,
             HazelcastInstance hazelcastInstance,
             HazelcastAclKeyReservationService aclKeyReservations,
             AuthorizationManager authorizations,
-            CassandraEntitySetManager entitySetManager,
-            CassandraTypeManager entityTypeManager,
+            PostgresEntitySetManager entitySetManager,
+            PostgresTypeManager entityTypeManager,
             HazelcastSchemaManager schemaManager ) {
         this.authorizations = authorizations;
         this.entitySetManager = entitySetManager;
         this.entityTypeManager = entityTypeManager;
         this.schemaManager = schemaManager;
         this.hazelcastInstance = hazelcastInstance;
-        this.session = session;
-        this.keyspace = keyspace;
+        this.hds = hds;
         this.edmVersions = hazelcastInstance.getMap( HazelcastMap.EDM_VERSIONS.name() );
         this.propertyTypes = hazelcastInstance.getMap( HazelcastMap.PROPERTY_TYPES.name() );
         this.complexTypes = hazelcastInstance.getMap( HazelcastMap.COMPLEX_TYPES.name() );
@@ -164,8 +119,8 @@ public class EdmService implements EdmManager {
         this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
         this.entitySetPropertyMetadata = hazelcastInstance.getMap( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name() );
         this.aclKeyReservations = aclKeyReservations;
-        entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
+        entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
     }
 
     @Override
@@ -174,12 +129,19 @@ public class EdmService implements EdmManager {
         for ( int i = 0; i < HazelcastMap.values().length; i++ ) {
             hazelcastInstance.getMap( HazelcastMap.values()[ i ].name() ).clear();
         }
+        try ( java.sql.Connection connection = hds.getConnection() ) {
+            new PostgresTablesPod().postgresTables().tables().forEach( table -> {
+                try ( PreparedStatement ps = connection
+                        .prepareStatement( PostgresQuery.truncate( table.getName() ) ) ) {
+                    ps.execute();
+                } catch ( SQLException e ) {
+                    logger.debug( "Unable to truncate table {}", table.getName(), e );
+                }
+            } );
+            connection.close();
 
-        for ( int i = 0; i < Table.values().length; i++ ) {
-            String tableName = Table.values()[ i ].name();
-            if ( !tableName.equals( Table.KEYS.name() ) && !tableName.equals( Table.ORGANIZATIONS_ROLES.name() ) ) {
-                session.execute( QueryBuilder.truncate( keyspace, Table.values()[ i ].name() ) );
-            }
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to clear all data.", e );
         }
     }
 
@@ -193,7 +155,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public UUID generateNewEntityDataModelVersion() {
-        UUID newVersion = UUIDs.timeBased();
+        UUID newVersion = new UUID( System.currentTimeMillis(), 0 );
         edmVersions.put( EntityDataModel.getEdmVersionKey(), newVersion );
         return newVersion;
     }
@@ -205,7 +167,12 @@ public class EdmService implements EdmManager {
      */
     @Override
     public void createPropertyTypeIfNotExists( PropertyType propertyType ) {
-        aclKeyReservations.reserveIdAndValidateType( propertyType );
+        try {
+            aclKeyReservations.reserveIdAndValidateType( propertyType );
+        } catch ( TypeExistsException e ) {
+            logger.error( "A type with this name already exists." );
+            return;
+        }
 
         /*
          * Create property type if it doesn't exist. The reserveAclKeyAndValidateType call should ensure that
@@ -1410,7 +1377,7 @@ public class EdmService implements EdmManager {
             UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
             setupDefaultEntitySetPropertyMetadata( entitySetId, entityTypeId );
         }
-        return entitySetPropertyMetadata.get( new EntitySetPropertyKey( entitySetId, propertyTypeId ) );
+        return entitySetPropertyMetadata.get( key );
     }
 
     @Override

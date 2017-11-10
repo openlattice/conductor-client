@@ -19,13 +19,7 @@
 
 package com.dataloom.organizations;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.authorization.HazelcastAclKeyReservationService;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.*;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
@@ -42,7 +36,6 @@ import com.dataloom.organizations.processors.OrganizationMemberMerger;
 import com.dataloom.organizations.processors.OrganizationMemberRemover;
 import com.dataloom.organizations.roles.RolesManager;
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -51,6 +44,10 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -58,16 +55,15 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastOrganizationService {
 
     @Inject
-    private EventBus                                eventBus;
+    private EventBus eventBus;
 
-    private static final Logger                     logger = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( HazelcastOrganizationService.class );
 
     private final AuthorizationManager              authorizations;
@@ -75,15 +71,13 @@ public class HazelcastOrganizationService {
     private final UserDirectoryService              principals;
     private final RolesManager                      rolesManager;
 
-    private final IMap<UUID, String>                titles;
-    private final IMap<UUID, String>                descriptions;
-    private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
-    private final IMap<UUID, PrincipalSet>          membersOf;
-    private final List<IMap<UUID, ?>>               allMaps;
+    private final IMap<UUID, String>             titles;
+    private final IMap<UUID, String>             descriptions;
+    private final IMap<UUID, DelegatedStringSet> autoApprovedEmailDomainsOf;
+    private final IMap<UUID, PrincipalSet>       membersOf;
+    private final List<IMap<UUID, ?>>            allMaps;
 
     public HazelcastOrganizationService(
-            String keyspace,
-            Session session,
             HazelcastInstance hazelcastInstance,
             HazelcastAclKeyReservationService reservations,
             AuthorizationManager authorizations,
@@ -112,7 +106,7 @@ public class HazelcastOrganizationService {
         eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
     }
 
-    public void createOrganization( Organization organization ){
+    public void createOrganization( Organization organization ) {
         reservations.reserveId( organization );
         UUID organizationId = organization.getId();
         titles.set( organizationId, organization.getTitle() );
@@ -274,6 +268,5 @@ public class HazelcastOrganizationService {
     public Iterable<Auth0UserBasic> getAllUserProfilesOfRole( RoleKey roleKey ) {
         return rolesManager.getAllUserProfilesOfRole( roleKey );
     }
-
 
 }

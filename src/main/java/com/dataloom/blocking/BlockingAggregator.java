@@ -13,7 +13,9 @@ import java.util.UUID;
 
 public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, LinkingEntity>, Boolean>
         implements HazelcastInstanceAware {
-    private           HazelcastBlockingService     blockingService;
+    private static final long serialVersionUID = 2884032395472384002L;
+
+    private transient HazelcastBlockingService blockingService;
     private           UUID                         graphId;
     private           Map<UUID, UUID>              entitySetIdsToSyncIds;
     private           Map<FullQualifiedName, UUID> propertyTypesIndexedByFqn;
@@ -59,13 +61,15 @@ public class BlockingAggregator extends Aggregator<Map.Entry<GraphEntityPair, Li
                 if ( newCount == count ) {
                     System.err.println( "Nothing is happening." );
                     numConsecFailures++;
-                } else numConsecFailures = 0;
+                } else
+                    numConsecFailures = 0;
                 count = newCount;
             } catch ( InterruptedException e ) {
                 System.err.println( "Error occurred while waiting for matching to finish." );
             }
         }
-        if (numConsecFailures == MAX_FAILED_CONSEC_ATTEMPTS) return false;
+        if ( numConsecFailures == MAX_FAILED_CONSEC_ATTEMPTS )
+            return false;
         return true;
     }
 

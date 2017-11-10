@@ -23,13 +23,16 @@ package com.dataloom.data.storage;
 import com.dataloom.data.EntityKey;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.SetMultimap;
+
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EntityBytes {
+public class EntityBytes implements Serializable {
+    private static final long serialVersionUID = -8099359034614074100L;
     private static final Logger logger = LoggerFactory.getLogger( EntityBytes.class );
     private final EntityKey                 key;
     private final SetMultimap<UUID, byte[]> details;

@@ -20,19 +20,16 @@
 
 package com.dataloom.data.hazelcast;
 
-import static com.dataloom.data.mapstores.DataMapstore.KEY_ENTITY_SET_ID;
-import static com.dataloom.data.mapstores.DataMapstore.KEY_SYNC_ID;
-
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 import com.datastax.driver.core.Row;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.dataloom.data.mapstores.DataMapstore.KEY_ENTITY_SET_ID;
+import static com.dataloom.data.mapstores.DataMapstore.KEY_SYNC_ID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -45,6 +42,12 @@ public final class EntitySets {
     public static Predicate filterByEntitySetIdAndSyncId( Row row ) {
         UUID entitySetId = RowAdapters.entitySetId( row );
         UUID syncId = RowAdapters.syncId( row );
+        return filterByEntitySetIdAndSyncId( entitySetId, syncId );
+    }
+
+    public static Predicate filterByEntitySetIdAndSyncId( List<UUID> pair ) {
+        UUID entitySetId = pair.get( 0 );
+        UUID syncId = pair.get( 1 );
         return filterByEntitySetIdAndSyncId( entitySetId, syncId );
     }
 

@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import com.dataloom.edm.type.EntityType;
 import com.datastax.driver.core.ResultSetFuture;
-import com.datastax.driver.core.Session;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
@@ -59,18 +58,12 @@ public class ODataStorageService {
     private static final Logger          logger           = LoggerFactory
             .getLogger( ODataStorageService.class );
     private final EdmManager             dms;
-    private final Session                session;
-    private final String                 keyspace;
     private final DurableExecutorService executor;
 
     public ODataStorageService(
-            String keyspace,
             HazelcastInstance hazelcast,
-            EdmManager dms,
-            Session session ) {
+            EdmManager dms ) {
         this.dms = dms;
-        this.session = session;
-        this.keyspace = keyspace;
         // TODO: Configure executor service.
         this.executor = hazelcast.getDurableExecutorService( "default" );
     }
@@ -174,7 +167,6 @@ public class ODataStorageService {
         writeProperties( entityType,
                 entitySetName,
                 typename,
-                keyspace,
                 entityId,
                 syncId,
                 requestEntity.getProperties() );
@@ -186,7 +178,6 @@ public class ODataStorageService {
             EntityType entityType,
             String entitySetName,
             String typename,
-            String keyspace,
             UUID objectId,
             UUID syncId,
             List<Property> properties ) {

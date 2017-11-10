@@ -45,6 +45,7 @@ import java.util.stream.Stream;
 public class MergingAggregator
         extends Aggregator<Entry<LinkingVertexKey, WeightedLinkingVertexKeySet>, Void>
         implements HazelcastInstanceAware {
+    private static final long serialVersionUID = -6877009130127065543L;
     private static final Logger logger = LoggerFactory.getLogger( MergingAggregator.class );
 
     private final Map<UUID, Double>   srcNeighborWeights;
