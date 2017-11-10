@@ -79,7 +79,6 @@ import com.openlattice.postgres.mapstores.OrganizationEmailDomainsMapstore;
 import com.openlattice.postgres.mapstores.OrganizationMembersMapstore;
 import com.openlattice.postgres.mapstores.OrganizationTitlesMapstore;
 import com.openlattice.postgres.mapstores.RequestsMapstore;
-import com.openlattice.postgres.mapstores.RolesMapstore;
 import com.openlattice.postgres.mapstores.SchemasMapstore;
 import com.openlattice.postgres.mapstores.SecurableObjectTypeMapstore;
 import com.openlattice.postgres.mapstores.SyncIdsMapstore;
@@ -328,12 +327,6 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<Principal, SecurablePrincipal> principalsMapstore() {
         return new PrincipalMapstore( hikariDataSource );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<RoleKey, Role> roleidsMapstore() {
-        RolesMapstore prm = new RolesMapstore( hikariDataSource );
-        return prm;
     }
 
     @Bean
