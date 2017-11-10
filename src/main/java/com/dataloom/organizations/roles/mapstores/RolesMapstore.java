@@ -22,7 +22,7 @@ public class RolesMapstore extends AbstractStructuredCassandraMapstore<RoleKey, 
     private Role testValue = generateRole();
 
     public RolesMapstore( Session session ) {
-        super( HazelcastMap.ROLES.name(), session, Table.ROLES.getBuilder() );
+        super( HazelcastMap.PRINCIPALS.name(), session, Table.ROLES.getBuilder() );
     }
 
     @Override

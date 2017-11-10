@@ -68,7 +68,7 @@ public interface AuthorizationManager {
             Principal principal,
             Set<Permission> permissions );
 
-    void deletePermissions( List<UUID> aceKey );
+    void deletePermissions( List<UUID> aclKey );
 
     boolean checkIfHasPermissions(
             List<UUID> aclKeys,

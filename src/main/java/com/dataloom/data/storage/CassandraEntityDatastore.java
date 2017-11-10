@@ -552,7 +552,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
             Set<UUID> authorizedProperties,
             String entityId,
             SetMultimap<UUID, Object> entityDetails ) {
-
         // does not write the row if some property values that user is trying to write to are not authorized.
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
             logger.error( "Entity {} not written because the following properties are not authorized: {}",
