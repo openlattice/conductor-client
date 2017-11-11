@@ -40,6 +40,8 @@ import java.util.concurrent.Executors;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class MergeEdgeAggregator extends Aggregator<Entry<EdgeKey, LoomEdge>, Void> implements HazelcastInstanceAware {
+    private static final long serialVersionUID = 418792126319526500L;
+
     private static ListeningExecutorService executorService = MoreExecutors
             .listeningDecorator( Executors.newCachedThreadPool() );
     private final     UUID                         linkedEntitySetId;

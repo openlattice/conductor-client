@@ -66,7 +66,7 @@ public class RequestsTests extends HzAuthzTest {
             expected4 );
 
     static {
-        aqs = new RequestQueryService( cc.getKeyspace(), session );
+        aqs = new RequestQueryService( hds );
         hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs, neuron );
         Map<AceKey, Status> statusMap = RequestUtil.statusMap( ss );
         hzRequests.submitAll( statusMap );

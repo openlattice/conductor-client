@@ -22,25 +22,113 @@ package com.openlattice.postgres;
 
 import static com.openlattice.postgres.PostgresArrays.getTextArray;
 import static com.openlattice.postgres.PostgresColumn.ACL_KEY_FIELD;
+import static com.openlattice.postgres.PostgresColumn.ANALYZER;
+import static com.openlattice.postgres.PostgresColumn.BASE_TYPE;
+import static com.openlattice.postgres.PostgresColumn.BIDIRECTIONAL;
+import static com.openlattice.postgres.PostgresColumn.CATEGORY;
+import static com.openlattice.postgres.PostgresColumn.CONTACTS;
+import static com.openlattice.postgres.PostgresColumn.CURRENT_SYNC_ID;
+import static com.openlattice.postgres.PostgresColumn.DATATYPE;
+import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
+import static com.openlattice.postgres.PostgresColumn.DST;
+import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
+import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_KEY_IDS;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.FLAGS;
+import static com.openlattice.postgres.PostgresColumn.GRAPH_DIAMETER;
+import static com.openlattice.postgres.PostgresColumn.GRAPH_ID;
+import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresColumn.KEY;
+import static com.openlattice.postgres.PostgresColumn.MEMBERS;
+import static com.openlattice.postgres.PostgresColumn.NAME;
+import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
+import static com.openlattice.postgres.PostgresColumn.NULLABLE_TITLE;
+import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_ID;
 import static com.openlattice.postgres.PostgresColumn.PERMISSIONS_FIELD;
+import static com.openlattice.postgres.PostgresColumn.PII;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_IDS;
 import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID_FIELD;
 import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE_FIELD;
+import static com.openlattice.postgres.PostgresColumn.PROPERTIES;
+import static com.openlattice.postgres.PostgresColumn.PROPERTY_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.REASON;
+import static com.openlattice.postgres.PostgresColumn.ROLE_ID;
+import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
+import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
+import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
+import static com.openlattice.postgres.PostgresColumn.SHOW;
+import static com.openlattice.postgres.PostgresColumn.SRC;
+import static com.openlattice.postgres.PostgresColumn.STATUS;
+import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
+import static com.openlattice.postgres.PostgresColumn.TITLE;
+import static com.openlattice.postgres.PostgresColumn.VERTEX_ID;
 
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.set.EntitySetPropertyKey;
+import com.dataloom.edm.set.EntitySetPropertyMetadata;
+import com.dataloom.edm.type.Analyzer;
+import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.PropertyType;
+import com.dataloom.linking.LinkingVertex;
+import com.dataloom.linking.LinkingVertexKey;
+import com.dataloom.organization.roles.Role;
+import com.dataloom.organization.roles.RoleKey;
+import com.dataloom.organizations.PrincipalSet;
+import com.dataloom.requests.Request;
+import com.dataloom.requests.RequestStatus;
+import com.dataloom.requests.Status;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
+import com.openlattice.authorization.SecurablePrincipal;
+import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public final class ResultSetAdapters {
+    private static final Logger logger = LoggerFactory.getLogger( ResultSetAdapters.class );
+
+    public static SecurablePrincipal securablePrincipal( ResultSet rs ) throws SQLException {
+        Principal principal = ResultSetAdapters.principal( rs );
+        List<UUID> aclKey = aclKey( rs );
+        UUID id = aclKey.get( aclKey.size() - 1 );
+        String title = title( rs );
+        String description = description( rs );
+        switch ( principal.getType() ) {
+            case ROLE:
+                UUID organizationId = aclKey.get( 0 );
+                return new Role( Optional.of( id ), organizationId, principal, title, Optional.of( description ) );
+            default:
+                return new SecurablePrincipal( Optional.of( id ), principal, title, Optional.of( description ) );
+        }
+    }
+
     public static EnumSet<Permission> permissions( ResultSet rs ) throws SQLException {
         String[] pStrArray = getTextArray( rs, PERMISSIONS_FIELD );
 
@@ -57,10 +145,319 @@ public final class ResultSetAdapters {
         return permissions;
     }
 
-    public static AceKey aceKey( ResultSet rs ) throws SQLException {
-        List<UUID> aclKey = Arrays.asList( PostgresArrays.getUuidArray( rs, ACL_KEY_FIELD ) );
+    public static UUID id( ResultSet rs ) throws SQLException {
+        return rs.getObject( ID.getName(), UUID.class );
+    }
+
+    public static String namespace( ResultSet rs ) throws SQLException {
+        return rs.getString( NAMESPACE.getName() );
+    }
+
+    public static String name( ResultSet rs ) throws SQLException {
+        return rs.getString( NAME.getName() );
+    }
+
+    public static FullQualifiedName fqn( ResultSet rs ) throws SQLException {
+        String namespace = namespace( rs );
+        String name = name( rs );
+        return new FullQualifiedName( namespace, name );
+    }
+
+    public static String title( ResultSet rs ) throws SQLException {
+        return rs.getString( TITLE.getName() );
+    }
+
+    public static String description( ResultSet rs ) throws SQLException {
+        return rs.getString( DESCRIPTION.getName() );
+    }
+
+    public static Set<FullQualifiedName> schemas( ResultSet rs ) throws SQLException {
+        return Arrays.stream( (String[]) rs.getArray( SCHEMAS.getName() ).getArray() ).map( FullQualifiedName::new )
+                .collect( Collectors.toSet() );
+    }
+
+    public static EdmPrimitiveTypeKind datatype( ResultSet rs ) throws SQLException {
+        return EdmPrimitiveTypeKind.valueOf( rs.getString( DATATYPE.getName() ) );
+    }
+
+    public static boolean pii( ResultSet rs ) throws SQLException {
+        return rs.getBoolean( PII.getName() );
+    }
+
+    public static Analyzer analyzer( ResultSet rs ) throws SQLException {
+        return Analyzer.valueOf( rs.getString( ANALYZER.getName() ) );
+    }
+
+    public static Principal principal( ResultSet rs ) throws SQLException {
         PrincipalType principalType = PrincipalType.valueOf( rs.getString( PRINCIPAL_TYPE_FIELD ) );
         String principalId = rs.getString( PRINCIPAL_ID_FIELD );
-        return new AceKey( aclKey, new Principal( principalType, principalId ) );
+        return new Principal( principalType, principalId );
     }
+
+    public static List<UUID> aclKey( ResultSet rs ) throws SQLException {
+        return new DelegatedUUIDList( PostgresArrays.getUuidArray( rs, ACL_KEY_FIELD ) );
+    }
+
+    public static AceKey aceKey( ResultSet rs ) throws SQLException {
+        List<UUID> aclKey = aclKey( rs );
+        Principal principal = principal( rs );
+        return new AceKey( aclKey, principal );
+    }
+
+    public static LinkedHashSet<UUID> linkedHashSetUUID( ResultSet rs, String colName ) throws SQLException {
+        return Arrays.stream( (UUID[]) rs.getArray( colName ).getArray() )
+                .collect( Collectors.toCollection( LinkedHashSet::new ) );
+    }
+
+    public static LinkedHashSet<UUID> key( ResultSet rs ) throws SQLException {
+        return linkedHashSetUUID( rs, KEY.getName() );
+    }
+
+    public static LinkedHashSet<UUID> properties( ResultSet rs ) throws SQLException {
+        return linkedHashSetUUID( rs, PROPERTIES.getName() );
+    }
+
+    public static UUID baseType( ResultSet rs ) throws SQLException {
+        return rs.getObject( BASE_TYPE.getName(), UUID.class );
+    }
+
+    public static SecurableObjectType category( ResultSet rs ) throws SQLException {
+        return SecurableObjectType.valueOf( rs.getString( CATEGORY.getName() ) );
+    }
+
+    public static UUID entityTypeId( ResultSet rs ) throws SQLException {
+        return rs.getObject( ENTITY_TYPE_ID.getName(), UUID.class );
+    }
+
+    public static Set<String> contacts( ResultSet rs ) throws SQLException {
+        return Sets.newHashSet( (String[]) rs.getArray( CONTACTS.getName() ).getArray() );
+    }
+
+    public static LinkedHashSet<UUID> src( ResultSet rs ) throws SQLException {
+        return linkedHashSetUUID( rs, SRC.getName() );
+    }
+
+    public static LinkedHashSet<UUID> dst( ResultSet rs ) throws SQLException {
+        return linkedHashSetUUID( rs, DST.getName() );
+    }
+
+    public static boolean bidirectional( ResultSet rs ) throws SQLException {
+        return rs.getBoolean( BIDIRECTIONAL.getName() );
+    }
+
+    public static boolean show( ResultSet rs ) throws SQLException {
+        return rs.getBoolean( SHOW.getName() );
+    }
+
+    public static UUID entitySetId( ResultSet rs ) throws SQLException {
+        return rs.getObject( ENTITY_SET_ID.getName(), UUID.class );
+    }
+
+    public static UUID propertyTypeId( ResultSet rs ) throws SQLException {
+        return rs.getObject( PROPERTY_TYPE_ID.getName(), UUID.class );
+    }
+
+    public static LinkedHashSet<String> members( ResultSet rs ) throws SQLException {
+        return Arrays.stream( (String[]) rs.getArray( MEMBERS.getName() ).getArray() )
+                .collect( Collectors
+                        .toCollection( LinkedHashSet::new ) );
+    }
+
+    public static boolean flags( ResultSet rs ) throws SQLException {
+        return rs.getBoolean( FLAGS.getName() );
+    }
+
+    public static double diameter( ResultSet rs ) throws SQLException {
+        return rs.getDouble( GRAPH_DIAMETER.getName() );
+    }
+
+    public static Set<UUID> entityKeyIds( ResultSet rs ) throws SQLException {
+        return Sets.newHashSet( (UUID[]) rs.getArray( ENTITY_KEY_IDS.getName() ).getArray() );
+    }
+
+    public static UUID graphId( ResultSet rs ) throws SQLException {
+        return rs.getObject( GRAPH_ID.getName(), UUID.class );
+    }
+
+    public static UUID vertexId( ResultSet rs ) throws SQLException {
+        return rs.getObject( VERTEX_ID.getName(), UUID.class );
+    }
+
+    public static UUID securableObjectId( ResultSet rs ) throws SQLException {
+        return rs.getObject( SECURABLE_OBJECTID.getName(), UUID.class );
+    }
+
+    public static UUID roleId( ResultSet rs ) throws SQLException {
+        return rs.getObject( ROLE_ID.getName(), UUID.class );
+    }
+
+    public static UUID organizationId( ResultSet rs ) throws SQLException {
+        return rs.getObject( ORGANIZATION_ID.getName(), UUID.class );
+    }
+
+    public static String nullableTitle( ResultSet rs ) throws SQLException {
+        return rs.getString( NULLABLE_TITLE.getName() );
+    }
+
+    public static String edmVersionName( ResultSet rs ) throws SQLException {
+        return rs.getString( EDM_VERSION_NAME.getName() );
+    }
+
+    public static UUID edmVersion( ResultSet rs ) throws SQLException {
+        return rs.getObject( EDM_VERSION.getName(), UUID.class );
+    }
+
+    public static UUID currentSyncId( ResultSet rs ) throws SQLException {
+        return rs.getObject( CURRENT_SYNC_ID.getName(), UUID.class );
+    }
+
+    public static UUID syncId( ResultSet rs ) throws SQLException {
+        return rs.getObject( SYNC_ID.getName(), UUID.class );
+    }
+
+    public static SecurableObjectType securableObjectType( ResultSet rs ) throws SQLException {
+        return SecurableObjectType.valueOf( rs.getString( SECURABLE_OBJECT_TYPE.getName() ) );
+    }
+
+    public static String reason( ResultSet rs ) throws SQLException {
+        return rs.getString( REASON.getName() );
+    }
+
+    public static RequestStatus requestStatus( ResultSet rs ) throws SQLException {
+        return RequestStatus.valueOf( rs.getString( STATUS.getName() ) );
+    }
+
+    public static PropertyType propertyType( ResultSet rs ) throws SQLException {
+        UUID id = id( rs );
+        FullQualifiedName fqn = fqn( rs );
+        EdmPrimitiveTypeKind datatype = datatype( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        Set<FullQualifiedName> schemas = schemas( rs );
+        Optional<Boolean> pii = Optional.fromNullable( pii( rs ) );
+        Optional<Analyzer> analyzer = Optional.fromNullable( analyzer( rs ) );
+
+        return new PropertyType( id, fqn, title, description, schemas, datatype, pii, analyzer );
+    }
+
+    public static EntityType entityType( ResultSet rs ) throws SQLException {
+        UUID id = id( rs );
+        FullQualifiedName fqn = fqn( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        Set<FullQualifiedName> schemas = schemas( rs );
+        LinkedHashSet<UUID> key = key( rs );
+        LinkedHashSet<UUID> properties = properties( rs );
+        Optional<UUID> baseType = Optional.fromNullable( baseType( rs ) );
+        Optional<SecurableObjectType> category = Optional.of( category( rs ) );
+
+        return new EntityType( id, fqn, title, description, schemas, key, properties, baseType, category );
+    }
+
+    public static EntitySet entitySet( ResultSet rs ) throws SQLException {
+        UUID id = id( rs );
+        String name = name( rs );
+        UUID entityTypeId = entityTypeId( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        Set<String> contacts = contacts( rs );
+        return new EntitySet( id, entityTypeId, name, title, description, contacts );
+    }
+
+    public static AssociationType associationType( ResultSet rs ) throws SQLException {
+        LinkedHashSet<UUID> src = src( rs );
+        LinkedHashSet<UUID> dst = dst( rs );
+        boolean bidirectional = bidirectional( rs );
+
+        return new AssociationType( Optional.absent(), src, dst, bidirectional );
+    }
+
+    public static ComplexType complexType( ResultSet rs ) throws SQLException {
+        UUID id = id( rs );
+        FullQualifiedName fqn = fqn( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        Set<FullQualifiedName> schemas = schemas( rs );
+        LinkedHashSet<UUID> properties = properties( rs );
+        Optional<UUID> baseType = Optional.fromNullable( baseType( rs ) );
+        SecurableObjectType category = category( rs );
+
+        return new ComplexType( id, fqn, title, description, schemas, properties, baseType, category );
+    }
+
+    public static EntitySetPropertyMetadata entitySetPropertyMetadata( ResultSet rs ) throws SQLException {
+        String title = title( rs );
+        String description = description( rs );
+        boolean show = show( rs );
+        return new EntitySetPropertyMetadata( title, description, show );
+    }
+
+    public static EntitySetPropertyKey entitySetPropertyKey( ResultSet rs ) throws SQLException {
+        UUID entitySetId = entitySetId( rs );
+        UUID propertyTypeId = propertyTypeId( rs );
+        return new EntitySetPropertyKey( entitySetId, propertyTypeId );
+    }
+
+    public static EnumType enumType( ResultSet rs ) throws SQLException {
+        Optional<UUID> id = Optional.of( id( rs ) );
+        FullQualifiedName fqn = fqn( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        LinkedHashSet<String> members = members( rs );
+        Set<FullQualifiedName> schemas = schemas( rs );
+        String datatypeStr = rs.getString( DATATYPE.getName() );
+        Optional<EdmPrimitiveTypeKind> datatype = ( datatypeStr == null ) ?
+                Optional.absent() :
+                Optional.fromNullable( EdmPrimitiveTypeKind.valueOf( datatypeStr ) );
+        boolean flags = flags( rs );
+        Optional<Boolean> pii = Optional.fromNullable( pii( rs ) );
+        Optional<Analyzer> analyzer = Optional.fromNullable( analyzer( rs ) );
+
+        return new EnumType( id, fqn, title, description, members, schemas, datatype, flags, pii, analyzer );
+    }
+
+    public static LinkingVertex linkingVertex( ResultSet rs ) throws SQLException {
+        double diameter = diameter( rs );
+        Set<UUID> entityKeyIds = entityKeyIds( rs );
+        return new LinkingVertex( diameter, entityKeyIds );
+    }
+
+    public static LinkingVertexKey linkingVertexKey( ResultSet rs ) throws SQLException {
+        UUID graphId = graphId( rs );
+        UUID vertexId = vertexId( rs );
+        return new LinkingVertexKey( graphId, vertexId );
+    }
+
+    public static Status status( ResultSet rs ) throws SQLException {
+        List<UUID> aclKey = aclKey( rs );
+        Principal principal = principal( rs );
+        EnumSet<Permission> permissions = ResultSetAdapters.permissions( rs );
+        Optional<String> reason = Optional.of( reason( rs ) );
+        Request request = new Request( aclKey, permissions, reason );
+        RequestStatus status = requestStatus( rs );
+        return new Status( request, principal, status );
+    }
+
+    public static RoleKey roleKey( ResultSet rs ) throws SQLException {
+        UUID roleId = roleId( rs );
+        UUID orgId = organizationId( rs );
+        return new RoleKey( orgId, roleId );
+    }
+
+//    public static Role role( ResultSet rs ) throws SQLException {
+//        UUID roleId = roleId( rs );
+//        UUID orgId = organizationId( rs );
+//        String title = nullableTitle( rs );
+//        String description = description( rs );
+//        return new Role( Optional.of( roleId ), orgId, title, Optional.fromNullable( description ) );
+//    }
+
+    public static PrincipalSet principalSet( ResultSet rs ) throws SQLException {
+        Array usersArray = rs.getArray( PRINCIPAL_IDS.getName() );
+        if ( usersArray == null ) { return PrincipalSet.wrap( ImmutableSet.of() ); }
+        Stream<String> users = Arrays.stream( (String[]) usersArray.getArray() );
+        return PrincipalSet
+                .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
+    }
+
 }

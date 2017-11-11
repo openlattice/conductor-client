@@ -19,12 +19,15 @@
 
 package com.dataloom.linking;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class LinkingEdge {
+public class LinkingEdge implements Serializable {
+    private static final long serialVersionUID = 1519083871068181366L;
+
     private final LinkingVertexKey src;
     private final LinkingVertexKey dst;
 

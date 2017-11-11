@@ -1,7 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organizations.processors.OrganizationMemberRoleMerger;
+import com.dataloom.organizations.processors.NestedPrincipalMerger;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
@@ -12,15 +12,15 @@ import java.io.IOException;
 
 @Component
 public class OrganizationMemberRoleMergerStreamSerializer
-        implements SelfRegisteringStreamSerializer<OrganizationMemberRoleMerger> {
+        implements SelfRegisteringStreamSerializer<NestedPrincipalMerger> {
 
     @Override
-    public Class<OrganizationMemberRoleMerger> getClazz() {
-        return OrganizationMemberRoleMerger.class;
+    public Class<NestedPrincipalMerger> getClazz() {
+        return NestedPrincipalMerger.class;
     }
 
     @Override
-    public void write( ObjectDataOutput out, OrganizationMemberRoleMerger object ) throws IOException {
+    public void write( ObjectDataOutput out, NestedPrincipalMerger object ) throws IOException {
         SetStreamSerializers.serialize(
                 out,
                 object.getBackingCollection(),
@@ -29,8 +29,8 @@ public class OrganizationMemberRoleMergerStreamSerializer
     }
 
     @Override
-    public OrganizationMemberRoleMerger read( ObjectDataInput in ) throws IOException {
-        return new OrganizationMemberRoleMerger(
+    public NestedPrincipalMerger read( ObjectDataInput in ) throws IOException {
+        return new NestedPrincipalMerger(
                 SetStreamSerializers.deserialize( in, PrincipalStreamSerializer::deserialize )
         );
     }

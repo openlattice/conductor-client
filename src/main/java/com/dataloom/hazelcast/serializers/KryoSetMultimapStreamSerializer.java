@@ -31,6 +31,8 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import de.javakaffee.kryoserializers.UUIDSerializer;
 import de.javakaffee.kryoserializers.guava.HashMultimapSerializer;
 import de.javakaffee.kryoserializers.guava.ImmutableMultimapSerializer;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -56,13 +58,17 @@ public class KryoSetMultimapStreamSerializer implements SelfRegisteringStreamSer
         return SetMultimap.class;
     }
 
-    @Override public void write( ObjectDataOutput out, SetMultimap object ) throws IOException {
+    @Override
+    @SuppressFBWarnings
+    public void write( ObjectDataOutput out, SetMultimap object ) throws IOException {
         Output output = new Output( (OutputStream) out );
         kryoThreadLocal.get().writeClassAndObject( output, object );
         output.flush();
     }
 
-    @Override public SetMultimap read( ObjectDataInput in ) throws IOException {
+    @Override
+    @SuppressFBWarnings
+    public SetMultimap read( ObjectDataInput in ) throws IOException {
         Input input = new Input( (InputStream) in );
         return (SetMultimap) kryoThreadLocal.get().readClassAndObject( input );
     }

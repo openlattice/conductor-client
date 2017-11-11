@@ -23,6 +23,8 @@ import java.util.UUID;
 public class LoadingAggregator
         extends Aggregator<Map.Entry<DataKey, ByteBuffer>, Integer>
         implements HazelcastInstanceAware {
+    private static final long serialVersionUID = -8998522786390338940L;
+
     private final Map<GraphEntityPair, LinkingEntity> entities;
     private final ObjectMapper mapper = ObjectMappers.getJsonMapper();
     private final     Map<UUID, Map<UUID, PropertyType>>   authorizedPropertyTypes;

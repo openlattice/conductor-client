@@ -112,7 +112,9 @@ public class HazelcastLinkingGraphs {
     }
 
     public static class Initializer extends Aggregator<Entry<EntityKey, UUID>, Void> implements HazelcastInstanceAware {
-        public            UUID                                  graphId;
+        private static final long serialVersionUID = 690840541802755664L;
+
+        public UUID graphId;
         private transient IMap<LinkingVertexKey, LinkingVertex> linkingVertices;
 
         public Initializer( UUID graphId ) {

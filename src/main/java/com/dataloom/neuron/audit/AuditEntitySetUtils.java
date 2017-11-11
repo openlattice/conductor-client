@@ -52,9 +52,12 @@ public class AuditEntitySetUtils {
     private static final String AUDIT_ENTITY_SET_NAME       = "OpenLattice Audit Entity Set";
     private static final String OPENLATTICE_AUDIT_NAMESPACE = "OPENLATTICE_AUDIT";
 
-    private static final FullQualifiedName DETAILS_PT_FQN = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE, "DETAILS" );
-    private static final FullQualifiedName TYPE_PT_FQN    = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE, "TYPE" );
-    private static final FullQualifiedName AUDIT_ET_FQN   = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE, "AUDIT" );
+    private static final FullQualifiedName DETAILS_PT_FQN = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE,
+            "DETAILS" );
+    private static final FullQualifiedName TYPE_PT_FQN    = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE,
+            "TYPE" );
+    private static final FullQualifiedName AUDIT_ET_FQN   = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE,
+            "AUDIT" );
 
     // TODO: where does this belong?
     public static final Principal OPEN_LATTICE_PRINCIPAL = new Principal( PrincipalType.USER, "OpenLattice" );
@@ -73,9 +76,20 @@ public class AuditEntitySetUtils {
     // PlasmaCoupling magic
     public static void initialize( DatasourceManager dataSourceManager, EdmManager entityDataModelManager ) {
 
-        initializePropertyTypes( entityDataModelManager );
-        initializeEntityType( entityDataModelManager );
-        initializeEntitySet( dataSourceManager, entityDataModelManager );
+        EntitySet maybeAuditEntitySet = entityDataModelManager.getEntitySet( AUDIT_ENTITY_SET_NAME );
+
+        if ( maybeAuditEntitySet == null ) {
+            initializePropertyTypes( entityDataModelManager );
+            initializeEntityType( entityDataModelManager );
+            initializeEntitySet( dataSourceManager, entityDataModelManager );
+        } else {
+            AUDIT_ENTITY_SET = maybeAuditEntitySet;
+            AUDIT_ENTITY_TYPE = entityDataModelManager.getEntityType( AUDIT_ENTITY_SET.getEntityTypeId() );
+            AUDIT_ENTITY_SET_SYNC_ID = dataSourceManager.getCurrentSyncId( AUDIT_ENTITY_SET.getId() );
+            TYPE_PROPERTY_TYPE = entityDataModelManager.getPropertyType( TYPE_PT_FQN );
+            DETAILS_PROPERTY_TYPE = entityDataModelManager.getPropertyType( DETAILS_PT_FQN );
+            PROPERTIES = entityDataModelManager.getPropertyTypes( AUDIT_ENTITY_TYPE.getProperties() );
+        }
     }
 
     private static void initializePropertyTypes( EdmManager entityDataModelManager ) {

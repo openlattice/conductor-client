@@ -68,7 +68,7 @@ public interface AuthorizationManager {
             Principal principal,
             Set<Permission> permissions );
 
-    void deletePermissions( List<UUID> aceKey );
+    void deletePermissions( List<UUID> aclKey );
 
     boolean checkIfHasPermissions(
             List<UUID> aclKeys,
@@ -99,7 +99,7 @@ public interface AuthorizationManager {
             NavigableSet<Principal> principals,
             SecurableObjectType objectType,
             Permission permission,
-            AuthorizedObjectsPagingInfo pagingInfo,
+            String offset,
             int pageSize );
 
     Stream<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );

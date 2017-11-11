@@ -22,9 +22,9 @@ public class UsersWithRoleMapstore extends AbstractStructuredCassandraMapstore<R
 
     public UsersWithRoleMapstore( Session session ) {
         super(
-                HazelcastMap.USERS_WITH_ROLE.name(),
+                HazelcastMap.NESTED_PRINCIPALS.name(),
                 session,
-                HazelcastMap.USERS_WITH_ROLE.getTable().getBuilder()
+                HazelcastMap.NESTED_PRINCIPALS.getTable().getBuilder()
         );
     }
 

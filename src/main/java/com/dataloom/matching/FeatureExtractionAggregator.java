@@ -2,7 +2,6 @@ package com.dataloom.matching;
 
 import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
-import com.dataloom.data.EntityKey;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
@@ -19,14 +18,15 @@ import java.util.UUID;
 
 public class FeatureExtractionAggregator extends Aggregator<Map.Entry<GraphEntityPair, LinkingEntity>, Double>
         implements HazelcastInstanceAware {
+    private static final long serialVersionUID = -8460238073748062034L;
+
     private GraphEntityPair graphEntityPair;
     private LinkingEntity   linkingEntity;
     private double lightest = Double.MAX_VALUE;
     private Map<FullQualifiedName, UUID> propertyTypeIdIndexedByFqn;
 
     private transient HazelcastLinkingGraphs graphs = null;
-
-    private ConductorElasticsearchApi elasticsearchApi;
+    private transient ConductorElasticsearchApi elasticsearchApi = null;
 
     public FeatureExtractionAggregator(
             GraphEntityPair graphEntityPair,

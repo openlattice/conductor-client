@@ -1,7 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organizations.processors.OrganizationMemberRoleRemover;
+import com.dataloom.organizations.processors.NestedPrincipalRemover;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
@@ -12,15 +12,15 @@ import java.io.IOException;
 
 @Component
 public class OrganizationMemberRoleRemoverStreamSerializer
-        implements SelfRegisteringStreamSerializer<OrganizationMemberRoleRemover> {
+        implements SelfRegisteringStreamSerializer<NestedPrincipalRemover> {
 
     @Override
-    public Class<OrganizationMemberRoleRemover> getClazz() {
-        return OrganizationMemberRoleRemover.class;
+    public Class<NestedPrincipalRemover> getClazz() {
+        return NestedPrincipalRemover.class;
     }
 
     @Override
-    public void write( ObjectDataOutput out, OrganizationMemberRoleRemover object ) throws IOException {
+    public void write( ObjectDataOutput out, NestedPrincipalRemover object ) throws IOException {
         SetStreamSerializers.serialize(
                 out,
                 object.getBackingCollection(),
@@ -29,8 +29,8 @@ public class OrganizationMemberRoleRemoverStreamSerializer
     }
 
     @Override
-    public OrganizationMemberRoleRemover read( ObjectDataInput in ) throws IOException {
-        return new OrganizationMemberRoleRemover(
+    public NestedPrincipalRemover read( ObjectDataInput in ) throws IOException {
+        return new NestedPrincipalRemover(
                 SetStreamSerializers.deserialize( in, PrincipalStreamSerializer::deserialize )
         );
     }
