@@ -335,7 +335,8 @@ public enum Table implements TableDef {
                                 TITLE,
                                 DESCRIPTION,
                                 ALLOWED_EMAIL_DOMAINS,
-                                MEMBERS
+                                MEMBERS,
+                                CommonColumns.APPS
                         );
             case ROLES:
                 return new CassandraTableBuilder( ROLES )

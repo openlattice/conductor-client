@@ -1,21 +1,28 @@
 package com.openlattice.postgres.mapstores;
 
 import com.dataloom.apps.AppConfigKey;
+import com.dataloom.apps.AppTypeSetting;
+import com.dataloom.authorization.Permission;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
+import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
 import com.zaxxer.hikari.HikariDataSource;
 
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.openlattice.postgres.PostgresColumn.*;
 
-public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey, UUID> {
+public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey, AppTypeSetting> {
     public AppConfigMapstore( HikariDataSource hds ) {
         super( HazelcastMap.APP_CONFIGS.name(), PostgresTable.APP_CONFIGS, hds );
     }
@@ -25,16 +32,21 @@ public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey
     }
 
     @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( ENTITY_SET_ID );
+        return ImmutableList.of( ENTITY_SET_ID, PERMISSIONS );
     }
 
-    @Override protected void bind( PreparedStatement ps, AppConfigKey key, UUID value ) throws SQLException {
+    @Override protected void bind( PreparedStatement ps, AppConfigKey key, AppTypeSetting value ) throws SQLException {
         bind( ps, key );
 
-        ps.setObject( 4, value );
+        Array permissions = PostgresArrays.createTextArray( ps.getConnection(),
+                value.getPermissions().stream().map( permission -> permission.toString() ) );
+
+        ps.setObject( 4, value.getEntitySetId() );
+        ps.setArray( 5, permissions );
 
         // UPDATE
-        ps.setObject( 5, value );
+        ps.setObject( 6, value.getEntitySetId() );
+        ps.setArray( 7, permissions );
     }
 
     @Override protected void bind( PreparedStatement ps, AppConfigKey key ) throws SQLException {
@@ -43,8 +55,13 @@ public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey
         ps.setObject( 3, key.getAppTypeId() );
     }
 
-    @Override protected UUID mapToValue( ResultSet rs ) throws SQLException {
-        return rs.getObject( ENTITY_SET_ID.getName(), UUID.class );
+    @Override protected AppTypeSetting mapToValue( ResultSet rs ) throws SQLException {
+        UUID entitySetId = rs.getObject( ENTITY_SET_ID.getName(), UUID.class );
+        EnumSet<Permission> permissions = EnumSet
+                .copyOf( Arrays.stream( (String[]) rs.getArray( PERMISSIONS.getName() ).getArray() )
+                        .map( permission -> Permission.valueOf( permission ) ).collect(
+                                Collectors.toSet() ) );
+        return new AppTypeSetting( entitySetId, permissions );
     }
 
     @Override protected AppConfigKey mapToKey( ResultSet rs ) {
@@ -63,7 +80,7 @@ public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey
         return new AppConfigKey( UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID() );
     }
 
-    @Override public UUID generateTestValue() {
-        return UUID.randomUUID();
+    @Override public AppTypeSetting generateTestValue() {
+        return new AppTypeSetting( UUID.randomUUID(), EnumSet.of( Permission.READ, Permission.WRITE ) );
     }
 }

@@ -74,7 +74,7 @@ public final class PostgresTable {
 
     public static PostgresTableDefinition APP_CONFIGS =
             new PostgresTableDefinition( "app_configs" )
-                    .addColumns( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID, ENTITY_SET_ID )
+                    .addColumns( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID, PostgresColumn.PERMISSIONS, ENTITY_SET_ID )
                     .primaryKey( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID );
 
     private PostgresTable() {

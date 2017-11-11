@@ -36,15 +36,13 @@ import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
-import com.dataloom.organizations.processors.EmailDomainsMerger;
-import com.dataloom.organizations.processors.EmailDomainsRemover;
-import com.dataloom.organizations.processors.OrganizationMemberMerger;
-import com.dataloom.organizations.processors.OrganizationMemberRemover;
+import com.dataloom.organizations.processors.*;
 import com.dataloom.organizations.roles.RolesManager;
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.Session;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
@@ -59,6 +57,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,11 +75,12 @@ public class HazelcastOrganizationService {
     private final UserDirectoryService              principals;
     private final RolesManager                      rolesManager;
 
-    private final IMap<UUID, String>                titles;
-    private final IMap<UUID, String>                descriptions;
-    private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
-    private final IMap<UUID, PrincipalSet>          membersOf;
-    private final List<IMap<UUID, ?>>               allMaps;
+    private final IMap<UUID, String>             titles;
+    private final IMap<UUID, String>             descriptions;
+    private final IMap<UUID, DelegatedStringSet> autoApprovedEmailDomainsOf;
+    private final IMap<UUID, PrincipalSet>       membersOf;
+    private final IMap<UUID, DelegatedUUIDSet>   apps;
+    private final List<IMap<UUID, ?>>            allMaps;
 
     public HazelcastOrganizationService(
             String keyspace,
@@ -93,6 +94,7 @@ public class HazelcastOrganizationService {
         this.descriptions = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS.name() );
         this.autoApprovedEmailDomainsOf = hazelcastInstance.getMap( HazelcastMap.ALLOWED_EMAIL_DOMAINS.name() );
         this.membersOf = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_MEMBERS.name() );
+        this.apps = hazelcastInstance.getMap( HazelcastMap.ORGANIZATION_APPS.name() );
         this.authorizations = authorizations;
         this.reservations = reservations;
         this.allMaps = ImmutableList.of( titles,
@@ -273,6 +275,19 @@ public class HazelcastOrganizationService {
 
     public Iterable<Auth0UserBasic> getAllUserProfilesOfRole( RoleKey roleKey ) {
         return rolesManager.getAllUserProfilesOfRole( roleKey );
+    }
+
+    public void addAppToOrg( UUID organizationId, UUID appId ) {
+        // TODO
+        apps.executeOnKey( organizationId, new OrganizationAppMerger( ImmutableSet.of( appId ) ) );
+    }
+
+    public void removeAppFromOrg( UUID organizationId, UUID appId ) {
+        apps.executeOnKey( organizationId, new OrganizationAppRemover( ImmutableSet.of( appId ) ) );
+    }
+
+    public Set<UUID> getOrganizationApps( UUID organizationId ) {
+        return apps.get( organizationId );
     }
 
 

@@ -22,6 +22,7 @@ package com.dataloom.hazelcast.pods;
 import com.dataloom.apps.App;
 import com.dataloom.apps.AppConfigKey;
 import com.dataloom.apps.AppType;
+import com.dataloom.apps.AppTypeSetting;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.mapstores.PermissionMapstore;
@@ -52,6 +53,7 @@ import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.organizations.mapstores.StringMapstore;
 import com.dataloom.organizations.mapstores.StringSetMapstore;
+import com.dataloom.organizations.mapstores.UUIDSetMapstore;
 import com.dataloom.organizations.mapstores.UserSetMapstore;
 import com.dataloom.organizations.roles.mapstores.RolesMapstore;
 import com.dataloom.organizations.roles.mapstores.UsersWithRoleMapstore;
@@ -219,6 +221,16 @@ public class MapstoresPod {
     }
 
     @Bean
+    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> orgAppsMapstore() {
+        return new UUIDSetMapstore(
+                HazelcastMap.ORGANIZATION_APPS,
+                session,
+                Table.ORGANIZATIONS,
+                CommonColumns.ID,
+                CommonColumns.APPS );
+    }
+
+    @Bean
     public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntityTypesMapstore() {
         return new LinkedEntityTypesMapstore( session );
     }
@@ -320,7 +332,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<AppConfigKey, UUID> appConfigMapstore() {
+    public SelfRegisteringMapStore<AppConfigKey, AppTypeSetting> appConfigMapstore() {
         return new AppConfigMapstore( hikariDataSource );
     }
 }
