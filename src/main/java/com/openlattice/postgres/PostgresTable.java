@@ -33,17 +33,17 @@ public final class PostgresTable {
                     .primaryKey( NAME )
                     .setUnique( NAME );
 
-    public static PostgresTableDefinition APP_CONFIGS =
+    public static final PostgresTableDefinition APP_CONFIGS =
             new PostgresTableDefinition( "app_configs" )
                     .addColumns( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID, PostgresColumn.PERMISSIONS, ENTITY_SET_ID )
                     .primaryKey( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID );
 
-    public static PostgresTableDefinition APP_TYPES =
+    public static final PostgresTableDefinition APP_TYPES =
             new PostgresTableDefinition( "app_types" )
                     .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, ENTITY_TYPE_ID )
                     .setUnique( NAMESPACE, NAME );
 
-    public static PostgresTableDefinition APPS =
+    public static final PostgresTableDefinition APPS =
             new PostgresTableDefinition( "apps" )
                     .addColumns( ID, NAME, TITLE, DESCRIPTION, CONFIG_TYPE_IDS )
                     .setUnique( NAME );
@@ -197,7 +197,6 @@ public final class PostgresTable {
     //            PRINCIPAL_ID,
     //            CommonColumns.PERMISSIONS,
     //            SECURABLE_OBJECT_TYPE );
-
 
     private PostgresTable() {
     }

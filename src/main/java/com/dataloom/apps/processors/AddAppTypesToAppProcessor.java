@@ -2,6 +2,7 @@ package com.dataloom.apps.processors;
 
 import com.dataloom.apps.App;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Map;
 import java.util.Set;
@@ -9,6 +10,7 @@ import java.util.UUID;
 
 public class AddAppTypesToAppProcessor extends AbstractRhizomeEntryProcessor<UUID, App, Object> {
     private static final long serialVersionUID = -2802122848796833294L;
+    @SuppressFBWarnings(value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented")
 
     private final Set<UUID> appTypeIds;
 

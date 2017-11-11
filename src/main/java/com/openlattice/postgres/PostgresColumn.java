@@ -87,7 +87,7 @@ public final class PostgresColumn {
     public static final String TITLE_FIELD                 = "title";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
 
-    public static       PostgresColumnDefinition APP_ID                =
+    public static final PostgresColumnDefinition APP_ID                =
             new PostgresColumnDefinition( APP_ID_FIELD, UUID );
     public static final PostgresColumnDefinition ACL_KEY               =
             new PostgresColumnDefinition( ACL_KEY_FIELD, UUID_ARRAY );
@@ -107,9 +107,9 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( BLOCK_ID_FIELD, UUID );
     public static final PostgresColumnDefinition CATEGORY              =
             new PostgresColumnDefinition( CATEGORY_FIELD, TEXT ).notNull();
-    public static       PostgresColumnDefinition CONFIG_TYPE_ID        =
+    public static final PostgresColumnDefinition CONFIG_TYPE_ID        =
             new PostgresColumnDefinition( CONFIG_TYPE_ID_FIELD, UUID );
-    public static       PostgresColumnDefinition CONFIG_TYPE_IDS       =
+    public static final PostgresColumnDefinition CONFIG_TYPE_IDS       =
             new PostgresColumnDefinition( CONFIG_TYPE_IDS_FIELD, UUID_ARRAY );
     public static final PostgresColumnDefinition CONTACTS              =
             new PostgresColumnDefinition( CONTACTS_FIELD, TEXT_ARRAY );

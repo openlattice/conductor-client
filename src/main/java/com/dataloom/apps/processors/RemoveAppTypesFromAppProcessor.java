@@ -18,7 +18,7 @@ public class RemoveAppTypesFromAppProcessor extends AbstractRhizomeEntryProcesso
 
     @Override public Object process( Map.Entry<UUID, App> entry ) {
         App app = entry.getValue();
-        if ( entry != null ) {
+        if ( app != null ) {
             app.removeAppTypeIds( appTypeIds );
             entry.setValue( app );
         }

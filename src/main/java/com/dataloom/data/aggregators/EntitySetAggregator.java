@@ -29,18 +29,23 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.hazelcast.core.IQueue;
+
 import java.nio.ByteBuffer;
 import java.util.Map.Entry;
 import java.util.UUID;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
+@SuppressFBWarnings( value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Custom Stream Serializer is implemented and restores count" )
 public class EntitySetAggregator extends Aggregator<Entry<EntityKey, UUID>, Long> implements HazelcastInstanceAware {
-    private static final long serialVersionUID = 5086851282617774097L;
-    private static final Logger logger = LoggerFactory.getLogger( EntitySetAggregator.class );
+    private static final long   serialVersionUID = 5086851282617774097L;
+
+    private static final Logger logger           = LoggerFactory.getLogger( EntitySetAggregator.class );
 
     private final UUID streamId;
 
