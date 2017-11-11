@@ -21,21 +21,22 @@
 package com.dataloom.data.mapstores;
 
 import com.dataloom.data.EntityKey;
-import com.openlattice.postgres.CountdownConnectionCloser;
-import com.openlattice.postgres.KeyIterator;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.streams.StreamUtil;
+import com.google.common.collect.Lists;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.postgres.CountdownConnectionCloser;
+import com.openlattice.postgres.KeyIterator;
 import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.*;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,8 +44,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -69,10 +68,13 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
         this.mapName = mapName;
         this.hds = hds;
         this.ekm = ekm;
-        Connection connection = hds.getConnection();
-        connection.createStatement().execute( CREATE_TABLE );
-        connection.close();
-        logger.info( "Initialized Postgres Entity Key Ids Mapstore" );
+        try ( Connection connection = hds.getConnection(); Statement statement = connection.createStatement() ) {
+            statement.execute( CREATE_TABLE );
+            connection.close();
+            logger.info( "Initialized Postgres Entity Key Ids Mapstore" );
+        } catch ( SQLException e ) {
+            logger.error( "Unable to initialize Postgres Entity Key Id Mapstore", e );
+        }
     }
 
     @Override
@@ -126,8 +128,8 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
     @Override
     public void storeAll( Map<EntityKey, UUID> map ) {
         EntityKey key = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW ) ) {
             connection.setAutoCommit( false );
             for ( Entry<EntityKey, UUID> entry : map.entrySet() ) {
                 key = entry.getKey();
@@ -156,9 +158,8 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
 
     @Override public void deleteAll( Collection<EntityKey> keys ) {
         EntityKey key = null;
-        try {
-            Connection connection = hds.getConnection();
-            PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW ) ) {
             connection.setAutoCommit( false );
             for ( EntityKey entry : keys ) {
                 key = entry;
@@ -191,13 +192,15 @@ public class PostgresEntityKeyIdsMapstore implements TestableSelfRegisteringMapS
 
     public UUID tryLoad( EntityKey key ) {
         UUID val = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW ) ) {
             bind( selectRow, key );
             ResultSet rs = selectRow.executeQuery();
             if ( rs.next() ) {
                 val = mapToValue( rs );
             }
+            rs.close();
+            connection.close();
             logger.info( "LOADED: {}", val );
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );

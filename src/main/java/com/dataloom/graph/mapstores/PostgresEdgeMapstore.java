@@ -20,7 +20,6 @@
 
 package com.dataloom.graph.mapstores;
 
-import com.openlattice.postgres.CountdownConnectionCloser;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.streams.StreamUtil;
@@ -30,12 +29,13 @@ import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.postgres.CountdownConnectionCloser;
 import com.openlattice.postgres.KeyIterator;
 import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.*;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,8 +43,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -71,10 +69,13 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
     public PostgresEdgeMapstore( String mapName, HikariDataSource hds ) throws SQLException {
         this.mapName = mapName;
         this.hds = hds;
-        Connection connection = hds.getConnection();
-        connection.createStatement().execute( CREATE_TABLE );
-        connection.close();
-        logger.info( "Initialized Postgres Edge Mapstore" );
+        try ( Connection connection = hds.getConnection(); Statement statement = connection.createStatement() ) {
+            statement.execute( CREATE_TABLE );
+            connection.close();
+            logger.info( "Initialized Postgres Edge Mapstore" );
+        } catch ( SQLException e ) {
+            logger.error( "Unable to initialize Postgres Edge Mapstore", e );
+        }
     }
 
     @Override public String getMapName() {
@@ -139,8 +140,8 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
 
     @Override public void storeAll( Map<EdgeKey, LoomEdge> map ) {
         EdgeKey key = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW ) ) {
             connection.setAutoCommit( false );
             for ( Entry<EdgeKey, LoomEdge> entry : map.entrySet() ) {
                 key = entry.getKey();
@@ -168,9 +169,8 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
 
     @Override public void deleteAll( Collection<EdgeKey> keys ) {
         EdgeKey key = null;
-        try {
-            Connection connection = hds.getConnection();
-            PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW ) ) {
             connection.setAutoCommit( false );
             for ( EdgeKey entry : keys ) {
                 key = entry;
@@ -187,14 +187,16 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
 
     @Override public LoomEdge load( EdgeKey key ) {
         LoomEdge val = null;
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW ) ) {
             bind( selectRow, key );
             ResultSet rs = selectRow.executeQuery();
             if ( rs.next() ) {
                 val = mapToValue( rs );
             }
             logger.debug( "LOADED: {}", val );
+            rs.close();
+            connection.close();
         } catch ( SQLException e ) {
             logger.error( "Error executing SQL during select for key {}.", key, e );
         }

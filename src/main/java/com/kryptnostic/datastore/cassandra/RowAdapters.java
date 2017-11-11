@@ -378,13 +378,13 @@ public final class RowAdapters {
         return new RoleKey( organizationId( row ), id( row ) );
     }
 
-    public static Role role( Row row ) {
-        Optional<UUID> id = Optional.of( id( row ) );
-        UUID organizationId = organizationId( row );
-        String title = title( row );
-        Optional<String> description = description( row );
-        return new Role( id, organizationId, title, description );
-    }
+//    public static Role role( Row row ) {
+//        Optional<UUID> id = Optional.of( id( row ) );
+//        UUID organizationId = organizationId( row );
+//        String title = title( row );
+//        Optional<String> description = description( row );
+//        return new Role( id, organizationId, title, description );
+//    }
 
     public static LinkedHashSet<String> members( Row row ) {
         return (LinkedHashSet<String>) row.getSet( CommonColumns.MEMBERS.cql(), String.class );

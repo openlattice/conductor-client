@@ -47,8 +47,6 @@ public class DistributedClusterer implements Clusterer {
 
     @Override
     public void cluster( UUID graphId, double minimax ) {
-        Stopwatch s = Stopwatch.createStarted();
-
         WeightedLinkingEdge lightest = weightedEdges
                 .aggregate( new LightestEdgeAggregator(), LinkingPredicates.graphId( graphId ) );
         while ( lightest != null && lightest.getWeight() < threshold && weightedEdges.size() > 0 ) {

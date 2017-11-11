@@ -37,6 +37,7 @@ import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.openlattice.postgres.PostgresPod;
+import com.zaxxer.hikari.HikariDataSource;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.Assert;
 import org.junit.Test;
@@ -58,6 +59,7 @@ public class HzAuthzTest extends CassandraBootstrap {
     protected static final AuthorizationQueryService     aqs;
     protected static final HazelcastAuthorizationService hzAuthz;
     protected static final Neuron                        neuron;
+    protected static final HikariDataSource              hds;
     private static final Logger logger = LoggerFactory.getLogger( HzAuthzTest.class );
 
     static {
@@ -78,7 +80,9 @@ public class HzAuthzTest extends CassandraBootstrap {
         cc = testServer.getContext().getBean( CassandraConfiguration.class );
 
         neuron = testServer.getContext().getBean( Neuron.class );
-        aqs = new AuthorizationQueryService( cc.getKeyspace(), session, hazelcastInstance );
+        hds = testServer.getContext().getBean( HikariDataSource.class );
+
+        aqs = new AuthorizationQueryService( hds, hazelcastInstance );
         hzAuthz = new HazelcastAuthorizationService(
                 hazelcastInstance,
                 aqs,

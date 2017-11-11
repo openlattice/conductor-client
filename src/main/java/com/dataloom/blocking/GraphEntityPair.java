@@ -1,8 +1,10 @@
 package com.dataloom.blocking;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class GraphEntityPair {
+public class GraphEntityPair implements Serializable {
+    private static final long serialVersionUID = -6371783971935966458L;
 
     private final UUID graphId;
     private final UUID entityKeyId;

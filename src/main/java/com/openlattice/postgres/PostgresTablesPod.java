@@ -20,9 +20,10 @@
 
 package com.openlattice.postgres;
 
-import java.util.stream.Stream;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.stream.Stream;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -32,10 +33,30 @@ public class PostgresTablesPod {
     @Bean
     public PostgresTables postgresTables() {
         return () -> Stream.of(
+                PostgresTable.ACL_KEYS,
                 PostgresTable.APP_CONFIGS,
                 PostgresTable.APP_TYPES,
                 PostgresTable.APPS,
-                PostgresTable.PROPERTY_TYPES
+                PostgresTable.ASSOCIATION_TYPES,
+                PostgresTable.AUDIT_LOG,
+                PostgresTable.COMPLEX_TYPES,
+                PostgresTable.EDM_VERSIONS,
+                PostgresTable.ENTITY_SET_PROPERTY_METADATA,
+                PostgresTable.ENTITY_SETS,
+                PostgresTable.ENTITY_TYPES,
+                PostgresTable.ENUM_TYPES,
+                PostgresTable.LINKED_ENTITY_SETS,
+                PostgresTable.LINKING_VERTICES,
+                PostgresTable.NAMES,
+                PostgresTable.ORGANIZATIONS,
+                PostgresTable.PERMISSIONS,
+                PostgresTable.PROPERTY_TYPES,
+                PostgresTable.REQUESTS,
+                PostgresTable.ROLES,
+                PostgresTable.SCHEMA,
+                PostgresTable.SECURABLE_OBJECTS,
+                PostgresTable.SYNC_IDS,
+                PostgresTable.VERTEX_IDS_AFTER_LINKING
         );
     }
 }

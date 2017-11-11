@@ -32,13 +32,11 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.NavigableSet;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +127,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
-        return aqs.getAuthorizedAclKeys( principal, objectType, aces );
+        return aqs.getAuthorizedAclKeysForPrincipals( ImmutableSet.of( principal ),
+                aces,
+                Optional.of( objectType ),
+                Optional.empty(),
+                Optional.empty() );
     }
 
     @Override
@@ -137,8 +139,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Set<Principal> principals,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
-        return aqs.getAuthorizedAclKeys( principals, objectType, aces )
-                .stream();
+        return aqs.getAuthorizedAclKeysForPrincipals( principals,
+                aces,
+                Optional.of( objectType ),
+                Optional.empty(),
+                Optional.empty() );
     }
 
     @Override
@@ -146,9 +151,9 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             NavigableSet<Principal> principals,
             SecurableObjectType objectType,
             Permission permission,
-            AuthorizedObjectsPagingInfo pagingInfo,
+            String offset,
             int pageSize ) {
-        return aqs.getAuthorizedAclKeys( principals, objectType, permission, pagingInfo, pageSize );
+        return aqs.getAuthorizedAclKeys( principals, objectType, permission, offset, pageSize );
     }
 
     @Override
@@ -163,7 +168,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public Stream<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions ) {
-        return aqs.getAuthorizedAclKeys( principal, permissions ).stream();
+        return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
     @Override

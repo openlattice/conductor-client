@@ -1,31 +1,14 @@
 package com.dataloom.graph;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import com.dataloom.graph.edge.EdgeKey;
-import com.dataloom.graph.edge.LoomEdge;
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.data.EntityKey;
-import com.dataloom.graph.core.GraphQueryService;
-import com.dataloom.graph.core.LoomGraph;
-import com.dataloom.graph.core.objects.LoomVertexKey;
-import com.dataloom.mapstores.TestDataFactory;
-import com.datastax.driver.core.ResultSetFuture;
-import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 
 public class LoomGraphTest extends HzAuthzTest {
 
 //    protected static final LoomGraph         lg;
-    protected static final GraphQueryService gqs;
+  //  protected static final GraphQueryService gqs;
 
     static {
-        gqs = new GraphQueryService( session );
+      //  gqs = new GraphQueryService( session );
 //        lg = new LoomGraph( gqs, hazelcastInstance );
     }
 

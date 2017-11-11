@@ -8,7 +8,6 @@ import com.google.common.collect.Maps;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
-import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;

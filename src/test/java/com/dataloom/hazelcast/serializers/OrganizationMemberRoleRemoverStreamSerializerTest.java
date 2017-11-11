@@ -1,12 +1,12 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.organizations.processors.OrganizationMemberRoleRemover;
+import com.dataloom.organizations.processors.NestedPrincipalRemover;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class OrganizationMemberRoleRemoverStreamSerializerTest extends
-        AbstractStreamSerializerTest<OrganizationMemberRoleRemoverStreamSerializer, OrganizationMemberRoleRemover> {
+        AbstractStreamSerializerTest<OrganizationMemberRoleRemoverStreamSerializer, NestedPrincipalRemover> {
 
     @Override
     protected OrganizationMemberRoleRemoverStreamSerializer createSerializer() {
@@ -14,8 +14,8 @@ public class OrganizationMemberRoleRemoverStreamSerializerTest extends
     }
 
     @Override
-    protected OrganizationMemberRoleRemover createInput() {
-        return new OrganizationMemberRoleRemover( ImmutableSet.of(
+    protected NestedPrincipalRemover createInput() {
+        return new NestedPrincipalRemover( ImmutableSet.of(
                 TestDataFactory.userPrincipal(),
                 TestDataFactory.userPrincipal()
         ) );

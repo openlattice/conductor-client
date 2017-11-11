@@ -1,37 +1,47 @@
 package com.dataloom.organizations.roles;
 
-import java.util.UUID;
-
 import com.dataloom.authorization.Principal;
+import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.pojo.Auth0UserBasic;
-import com.dataloom.organization.roles.Role;
-import com.dataloom.organization.roles.RoleKey;
+import com.hazelcast.map.EntryProcessor;
+import com.hazelcast.query.Predicate;
+import com.openlattice.authorization.SecurablePrincipal;
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 
 public interface RolesManager {
 
-    void createRoleIfNotExists( Principal principal, Role role );
+    /**
+     * @param owner The owner of a role. Usually the organization.
+     * @param principal The principal which to create.
+     */
+    void createSecurablePrincipalIfNotExists( Principal owner, SecurablePrincipal principal );
 
-    void updateTitle( RoleKey roleKey, String title );
+    SecurablePrincipal getPrincipal( Principal principal );
 
-    void updateDescription( RoleKey roleKey, String description );
+    Collection<SecurablePrincipal> getPrincipals( PrincipalType principalType );
 
-    Role getRole( RoleKey roleKey );
+    Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId );
 
-    RoleKey getRoleKey( Principal principal );
+    Collection<SecurablePrincipal> getPrincipals( Predicate p );
 
-    Iterable<Role> getAllRolesInOrganization( UUID organizationId );
+    void updateTitle( Principal principal, String title );
 
-    void deleteRole( RoleKey roleKey );
+    void updateDescription( Principal principal, String description );
+
+    void deletePrincipal( Principal principal );
 
     void deleteAllRolesInOrganization( UUID organizationId, Iterable<Principal> users );
 
+    void addPrincipalToPrincipal( Principal source, Principal target );
+
+    void removePrincipalFromPrincipal( Principal source, Principal target );
+
+    Map<Principal, Object> executeOnPrincipal( EntryProcessor<Principal, SecurablePrincipal> ep,Predicate p);
+
     // Methods about users
+    Collection<Principal> getAllUsersWithPrincipal( Principal principal );
 
-    void addRoleToUser( RoleKey roleKey, Principal user );
-
-    void removeRoleFromUser( RoleKey roleKey, Principal user );
-
-    Iterable<Principal> getAllUsersOfRole( RoleKey roleKey );
-
-    Iterable<Auth0UserBasic> getAllUserProfilesOfRole( RoleKey roleKey );
+    Collection<Auth0UserBasic> getAllUserProfilesWithPrincipal( Principal principal );
 }

@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.UUID;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -76,6 +78,7 @@ public class EntityBytesStreamSerializer implements SelfRegisteringStreamSeriali
         return EntityBytes.class;
     }
 
+    @SuppressFBWarnings
     public static void serialize( ObjectDataOutput out, EntityBytes object ) throws IOException {
         EntityKeyStreamSerializer.serialize( out, object.getKey() );
         Output output = new Output( (OutputStream) out );
@@ -83,6 +86,7 @@ public class EntityBytesStreamSerializer implements SelfRegisteringStreamSeriali
         output.flush();
     }
 
+    @SuppressFBWarnings
     public static EntityBytes deserialize( ObjectDataInput in ) throws IOException {
         EntityKey ek = EntityKeyStreamSerializer.deserialize( in );
         Input input = new Input( (InputStream) in );

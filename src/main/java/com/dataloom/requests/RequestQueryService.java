@@ -19,108 +19,139 @@
 
 package com.dataloom.requests;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.ACL_KEYS;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_ID;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PRINCIPAL_TYPE;
-import static com.kryptnostic.datastore.cassandra.CommonColumns.STATUS;
+import com.dataloom.authorization.AceKey;
+import com.dataloom.authorization.Principal;
+import com.dataloom.streams.StreamUtil;
+import com.google.common.collect.Lists;
+import com.openlattice.postgres.PostgresArrays;
+import com.openlattice.postgres.PostgresColumn;
+import com.openlattice.postgres.PostgresTable;
+import com.openlattice.postgres.ResultSetAdapters;
+import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
-
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.util.AuthorizationUtils;
-import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-import com.kryptnostic.conductor.rpc.odata.Table;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class RequestQueryService {
+    protected final Logger logger = LoggerFactory.getLogger( RequestQueryService.class );
 
-    private final Session           session;
-    private final PreparedStatement getRequestKeysForPrincipal;
-    private final PreparedStatement getRequestKeysForPrincipalAndStatus;
-    private final PreparedStatement getRequestKeysForAclKey;
-    private final PreparedStatement getRequestKeysForAclKeyAndStatus;
+    private final HikariDataSource hds;
 
-    public RequestQueryService( String keyspace, Session session ) {
-        this.session = session;
-        getRequestKeysForPrincipal = session.prepare( keysForPrincipal( keyspace ) );
-        getRequestKeysForPrincipalAndStatus = session.prepare( keysForPrincipalAndStatus( keyspace ) );
-        getRequestKeysForAclKey = session.prepare( keysForAclKey( keyspace ) );
-        getRequestKeysForAclKeyAndStatus = session.prepare( keysForAclKeyAndStatus( keyspace ) );
-    }
+    private final String getRequestKeysForPrincipalSql;
+    private final String getRequestKeysForPrincipalAndStatusSql;
+    private final String getRequestKeysForAclKeySql;
+    private final String getRequestKeysForAclKeyAndStatusSql;
 
-    private static Select.Where keysForPrincipal( String keyspace ) {
-        return QueryBuilder
-                .select( ACL_KEYS.cql() )
-                .from( keyspace, Table.REQUESTS.getName() )
-                .allowFiltering()
-                .where( PRINCIPAL_TYPE.eq() )
-                .and( PRINCIPAL_ID.eq() );
-    }
+    public RequestQueryService( HikariDataSource hds ) {
+        this.hds = hds;
 
-    private static Select.Where keysForPrincipalAndStatus( String keyspace ) {
-        return keysForPrincipal( keyspace ).and( STATUS.eq() );
-    }
+        // Tables
+        String REQUESTS = PostgresTable.REQUESTS.getName();
 
-    private static Select.Where keysForAclKey( String keyspace ) {
-        return QueryBuilder
-                .select( ACL_KEYS.cql(), PRINCIPAL_TYPE.cql(), PRINCIPAL_ID.cql() )
-                .from( keyspace, Table.REQUESTS.getName() )
-                .allowFiltering()
-                .where( ACL_KEYS.eq() );
-    }
+        // Columns
+        String ACL_KEY = PostgresColumn.ACL_KEY.getName();
+        String PRINCIPAL_TYPE = PostgresColumn.PRINCIPAL_TYPE.getName();
+        String PRINCIPAL_ID = PostgresColumn.PRINCIPAL_ID.getName();
+        String STATUS = PostgresColumn.STATUS.getName();
 
-    private static Select.Where keysForAclKeyAndStatus( String keyspace ) {
-        return keysForAclKey( keyspace ).and( STATUS.eq() );
+        getRequestKeysForPrincipalSql = "SELECT ".concat( ACL_KEY ).concat( " FROM " ).concat( REQUESTS )
+                .concat( " WHERE " ).concat( PRINCIPAL_TYPE ).concat( " = ? AND " ).concat( PRINCIPAL_ID )
+                .concat( " = ?;" );
+        getRequestKeysForPrincipalAndStatusSql = "SELECT ".concat( ACL_KEY ).concat( " FROM " ).concat( REQUESTS )
+                .concat( " WHERE " ).concat( PRINCIPAL_TYPE ).concat( " = ? AND " ).concat( PRINCIPAL_ID )
+                .concat( " = ? AND " ).concat( STATUS ).concat( " = ?;" );
+        getRequestKeysForAclKeySql = "SELECT ".concat( ACL_KEY ).concat( ", " ).concat( PRINCIPAL_TYPE ).concat( ", " )
+                .concat( PRINCIPAL_ID ).concat( " FROM " ).concat( REQUESTS ).concat( " WHERE " ).concat( ACL_KEY )
+                .concat( " = ?;" );
+        getRequestKeysForAclKeyAndStatusSql = "SELECT ".concat( ACL_KEY ).concat( ", " ).concat( PRINCIPAL_TYPE )
+                .concat( ", " )
+                .concat( PRINCIPAL_ID ).concat( " FROM " ).concat( REQUESTS ).concat( " WHERE " ).concat( ACL_KEY )
+                .concat( " = ? AND " ).concat( STATUS ).concat( " = ?;" );
     }
 
     public Stream<AceKey> getRequestKeys( Principal principal ) {
-        ResultSet rs = session
-                .execute( getRequestKeysForPrincipal
-                        .bind()
-                        .set( PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                        .setString( PRINCIPAL_ID.cql(), principal.getId() ) );
-        return StreamUtil.stream( rs )
-                .map( AuthorizationUtils::aclKey )
-                .map( aclKey -> new AceKey( aclKey, principal ) );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForPrincipalSql ) ) {
+            List<AceKey> result = Lists.newArrayList();
+            ps.setString( 1, principal.getType().name() );
+            ps.setString( 2, principal.getId() );
+
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() ) {
+                result.add( new AceKey( ResultSetAdapters.aclKey( rs ), principal ) );
+            }
+            connection.close();
+            return StreamUtil.stream( result );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to get request keys.", e );
+            return Stream.empty();
+        }
     }
 
     public Stream<AceKey> getRequestKeys( Principal principal, RequestStatus requestStatus ) {
-        ResultSet rs = session
-                .execute( getRequestKeysForPrincipalAndStatus
-                        .bind()
-                        .set( PRINCIPAL_TYPE.cql(), principal.getType(), PrincipalType.class )
-                        .setString( PRINCIPAL_ID.cql(), principal.getId() )
-                        .set( STATUS.cql(), requestStatus, RequestStatus.class ) );
-        return StreamUtil.stream( rs )
-                .map( AuthorizationUtils::aclKey )
-                .map( aclKey -> new AceKey( aclKey, principal ) );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForPrincipalAndStatusSql ) ) {
+            List<AceKey> result = Lists.newArrayList();
+            ps.setString( 1, principal.getType().name() );
+            ps.setString( 2, principal.getId() );
+            ps.setString( 3, requestStatus.name() );
+
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() ) {
+                result.add( new AceKey( ResultSetAdapters.aclKey( rs ), principal ) );
+            }
+            connection.close();
+            return StreamUtil.stream( result );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to get request keys.", e );
+            return Stream.empty();
+        }
     }
 
     public Stream<AceKey> getRequestKeys( List<UUID> aclKey ) {
-        ResultSet rs = session.execute( getRequestKeysForAclKey
-                .bind()
-                .setList( ACL_KEYS.cql(), aclKey, UUID.class ) );
-        return StreamUtil.stream( rs )
-                .map( AuthorizationUtils::aceKey );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql ) ) {
+            List<AceKey> result = Lists.newArrayList();
+            ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
+
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() ) {
+                result.add( ResultSetAdapters.aceKey( rs ) );
+            }
+            connection.close();
+            return StreamUtil.stream( result );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to get request keys.", e );
+            return Stream.empty();
+        }
     }
 
     public Stream<AceKey> getRequestKeys( List<UUID> aclKey, RequestStatus requestStatus ) {
-        ResultSet rs = session.execute( getRequestKeysForAclKeyAndStatus
-                .bind()
-                .setList( ACL_KEYS.cql(), aclKey, UUID.class )
-                .set( STATUS.cql(), requestStatus, RequestStatus.class ) );
-        return StreamUtil.stream( rs )
-                .map( AuthorizationUtils::aceKey );
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql ) ) {
+            List<AceKey> result = Lists.newArrayList();
+            ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
+            ps.setString( 2, requestStatus.name() );
+
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() ) {
+                result.add( ResultSetAdapters.aceKey( rs ) );
+            }
+            connection.close();
+            return StreamUtil.stream( result );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to get request keys.", e );
+            return Stream.empty();
+        }
     }
 }
