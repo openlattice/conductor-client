@@ -20,6 +20,10 @@
 
 package com.openlattice.postgres;
 
+import com.dataloom.apps.App;
+import com.dataloom.apps.AppConfigKey;
+import com.dataloom.apps.AppType;
+import com.dataloom.apps.AppTypeSetting;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
@@ -66,7 +70,7 @@ public final class ResultSetAdapters {
     public static SecurablePrincipal securablePrincipal( ResultSet rs ) throws SQLException {
         Principal principal = ResultSetAdapters.principal( rs );
         List<UUID> aclKey = aclKey( rs );
-        UUID id = aclKey.get( aclKey.size() - 1 );
+        UUID id = idValue( rs );
         String title = title( rs );
         String description = description( rs );
         switch ( principal.getType() ) {
@@ -92,6 +96,10 @@ public final class ResultSetAdapters {
         }
 
         return permissions;
+    }
+
+    public static UUID idValue( ResultSet rs ) throws SQLException {
+        return rs.getObject( ID_VALUE.getName(), UUID.class );
     }
 
     public static UUID id( ResultSet rs ) throws SQLException {
@@ -276,6 +284,18 @@ public final class ResultSetAdapters {
         return RequestStatus.valueOf( rs.getString( STATUS.getName() ) );
     }
 
+    public static UUID appId( ResultSet rs ) throws SQLException {
+        return rs.getObject( APP_ID.getName(), UUID.class );
+    }
+
+    public static UUID appTypeId( ResultSet rs ) throws SQLException {
+        return rs.getObject( CONFIG_TYPE_ID.getName(), UUID.class );
+    }
+
+    public static LinkedHashSet<UUID> appTypeIds( ResultSet rs ) throws SQLException {
+        return linkedHashSetUUID( rs, CONFIG_TYPE_IDS.getName() );
+    }
+
     public static PropertyType propertyType( ResultSet rs ) throws SQLException {
         UUID id = id( rs );
         FullQualifiedName fqn = fqn( rs );
@@ -407,6 +427,37 @@ public final class ResultSetAdapters {
         Stream<String> users = Arrays.stream( (String[]) usersArray.getArray() );
         return PrincipalSet
                 .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
+    }
+
+    public static AppConfigKey appConfigKey( ResultSet rs ) throws SQLException {
+        UUID appId = appId( rs );
+        UUID organizationId = organizationId( rs );
+        UUID appTypeId = appTypeId( rs );
+        return new AppConfigKey( appId, organizationId, appTypeId );
+    }
+
+    public static AppTypeSetting appTypeSetting( ResultSet rs ) throws SQLException {
+        UUID entitySetId = entitySetId( rs );
+        EnumSet<Permission> permissions = permissions( rs );
+        return new AppTypeSetting( entitySetId, permissions );
+    }
+
+    public static App app( ResultSet rs ) throws SQLException {
+        UUID id = id( rs );
+        String name = name( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        LinkedHashSet<UUID> appTypeIds = appTypeIds( rs );
+        return new App( id, name, title, description, appTypeIds );
+    }
+
+    public static AppType appType( ResultSet rs ) throws SQLException {
+        UUID id = id( rs );
+        FullQualifiedName type = fqn( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        UUID entityTypeId = entityTypeId( rs );
+        return new AppType( id, type, title, description, entityTypeId );
     }
 
 }

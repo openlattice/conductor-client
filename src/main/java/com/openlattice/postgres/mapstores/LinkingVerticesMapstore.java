@@ -58,13 +58,8 @@ public class LinkingVerticesMapstore extends AbstractBasePostgresMapstore<Linkin
         return ResultSetAdapters.linkingVertex( rs );
     }
 
-    @Override protected LinkingVertexKey mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.linkingVertexKey( rs );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map LinkingVertexKey", ex );
-            return null;
-        }
+    @Override protected LinkingVertexKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.linkingVertexKey( rs );
     }
 
     @Override

@@ -54,13 +54,8 @@ public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UU
         return ResultSetAdapters.edmVersion( rs );
     }
 
-    @Override protected String mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.edmVersionName( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map EDM version name from result set", e );
-            return null;
-        }
+    @Override protected String mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.edmVersionName( rs );
     }
 
     @Override

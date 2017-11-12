@@ -88,13 +88,8 @@ public class EnumTypesMapstore extends AbstractBasePostgresMapstore<UUID, EnumTy
         return ResultSetAdapters.enumType( rs );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.id( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map ID to UUID", e );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override public UUID generateTestKey() {

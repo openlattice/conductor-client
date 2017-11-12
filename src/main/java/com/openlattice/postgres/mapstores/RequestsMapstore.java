@@ -70,13 +70,8 @@ public class RequestsMapstore extends AbstractBasePostgresMapstore<AceKey, Statu
         return ResultSetAdapters.status( rs );
     }
 
-    @Override protected AceKey mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.aceKey( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map row to AceKey", e );
-            return null;
-        }
+    @Override protected AceKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.aceKey( rs );
     }
 
     @Override public AceKey generateTestKey() {

@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
@@ -56,24 +57,11 @@ public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey
     }
 
     @Override protected AppTypeSetting mapToValue( ResultSet rs ) throws SQLException {
-        UUID entitySetId = rs.getObject( ENTITY_SET_ID.getName(), UUID.class );
-        EnumSet<Permission> permissions = EnumSet
-                .copyOf( Arrays.stream( (String[]) rs.getArray( PERMISSIONS.getName() ).getArray() )
-                        .map( permission -> Permission.valueOf( permission ) ).collect(
-                                Collectors.toSet() ) );
-        return new AppTypeSetting( entitySetId, permissions );
+        return ResultSetAdapters.appTypeSetting( rs );
     }
 
-    @Override protected AppConfigKey mapToKey( ResultSet rs ) {
-        try {
-            UUID appId = rs.getObject( APP_ID.getName(), UUID.class );
-            UUID organizationId = rs.getObject( ORGANIZATION_ID.getName(), UUID.class );
-            UUID appTypeId = rs.getObject( CONFIG_TYPE_ID.getName(), UUID.class );
-            return new AppConfigKey( appId, organizationId, appTypeId );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map row to AppConfigKey class", ex );
-            return null;
-        }
+    @Override protected AppConfigKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.appConfigKey( rs );
     }
 
     @Override public AppConfigKey generateTestKey() {

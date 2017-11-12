@@ -10,6 +10,7 @@ import com.google.common.collect.Maps;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang.RandomStringUtils;
 
@@ -61,13 +62,8 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
                 .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return rs.getObject( ID.getName(), UUID.class );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ID to UUID class", ex );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override

@@ -47,13 +47,8 @@ public class SecurableObjectTypeMapstore extends AbstractBasePostgresMapstore<Li
         return ResultSetAdapters.securableObjectType( rs );
     }
 
-    @Override protected List<UUID> mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.aclKey( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map result set to aclKey", e );
-            return null;
-        }
+    @Override protected List<UUID> mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.aclKey( rs );
     }
 
     @Override public List<UUID> generateTestKey() {

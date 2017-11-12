@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
@@ -55,23 +56,11 @@ public class AppMapstore extends AbstractBasePostgresMapstore<UUID, App> {
     }
 
     @Override protected App mapToValue( ResultSet rs ) throws SQLException {
-        UUID id = rs.getObject( ID.getName(), UUID.class );
-        String name = rs.getString( NAME.getName() );
-        String title = rs.getString( TITLE.getName() );
-        Optional<String> description = Optional.fromNullable( rs.getString( DESCRIPTION.getName() ) );
-        LinkedHashSet<UUID> appTypeIds = Arrays.stream( (UUID[]) rs.getArray( CONFIG_TYPE_IDS.getName() ).getArray() )
-                .collect(
-                        Collectors.toCollection( LinkedHashSet::new ) );
-        return new App( id, name, title, description, appTypeIds );
+        return ResultSetAdapters.app( rs );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return rs.getObject( ID.getName(), UUID.class );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ID to UUID class", ex );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override public UUID generateTestKey() {
