@@ -78,13 +78,8 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Del
         return DelegatedPermissionEnumSet.wrap( pset );
     }
 
-    @Override protected AceKey mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.aceKey( rs );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ace key from result set in permissions mapstore", ex );
-            return null;
-        }
+    @Override protected AceKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.aceKey( rs );
     }
 
     @Override

@@ -90,12 +90,7 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, S
         return ResultSetAdapters.securablePrincipal( rs );
     }
 
-    @Override protected Principal mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.principal( rs );
-        } catch ( SQLException e ) {
-            logger.error( "Unable to map row to principal", e );
-            return null;
-        }
+    @Override protected Principal mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.principal( rs );
     }
 }
