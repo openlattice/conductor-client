@@ -9,11 +9,13 @@ import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.organization.roles.Role;
 import com.dataloom.organizations.processors.NestedPrincipalMerger;
 import com.dataloom.organizations.processors.NestedPrincipalRemover;
 import com.dataloom.organizations.roles.processors.PrincipalDescriptionUpdater;
 import com.dataloom.organizations.roles.processors.PrincipalTitleUpdater;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
@@ -94,7 +96,7 @@ public class HazelcastPrincipalService implements RolesManager, AuthorizingCompo
         return principals.get( principal );
     }
 
-    @Override public Collection<SecurablePrincipal> getPrincipals( PrincipalType principalType ) {
+    @Override public Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType ) {
         return principals.values( Predicates.equal( "principalType", principalType ) );
     }
 
@@ -179,8 +181,28 @@ public class HazelcastPrincipalService implements RolesManager, AuthorizingCompo
         return principals.executeOnEntries( ep, p );
     }
 
-    @Override public Collection<SecurablePrincipal> getPrincipals( Predicate p ) {
+    @Override public Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p ) {
         return principals.values( p );
+    }
+
+    @Override
+    public Collection<Principal> getPrincipals( Predicate p ) {
+        return principals.keySet( p );
+    }
+
+    @Override public Role getRole( UUID organizationId, UUID roleId ) {
+        Predicate findRole = Predicates.and(
+                Predicates.equal( "principalType", PrincipalType.ROLE ),
+                Predicates.equal( "aclKey[0]", organizationId ),
+                Predicates.equal( "aclKey[1]", roleId )
+        );
+
+        //There should only be one element returned from the query above.
+        return Iterables.getOnlyElement(
+                principals
+                        .values( findRole )
+                        .stream()
+                        .map( principal -> (Role) principal )::iterator );
     }
 
     @Override

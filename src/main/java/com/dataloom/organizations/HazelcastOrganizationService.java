@@ -119,7 +119,7 @@ public class HazelcastOrganizationService {
         Future<DelegatedStringSet> autoApprovedEmailDomains = autoApprovedEmailDomainsOf.getAsync( organizationId );
 
         Collection<SecurablePrincipal> maybeOrgs =
-                rolesManager.getPrincipals( getOrganizationPredicate( organizationId ) );
+                rolesManager.getSecurablePrincipals( getOrganizationPredicate( organizationId ) );
         SecurablePrincipal principal = Iterables.getOnlyElement( maybeOrgs );
         Set<Role> roles = getRoles( organizationId );
         try {

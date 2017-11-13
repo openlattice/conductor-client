@@ -3,6 +3,7 @@ package com.dataloom.organizations.roles;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.dataloom.organization.roles.Role;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.query.Predicate;
 import com.openlattice.authorization.SecurablePrincipal;
@@ -20,11 +21,11 @@ public interface RolesManager {
 
     SecurablePrincipal getPrincipal( Principal principal );
 
-    Collection<SecurablePrincipal> getPrincipals( PrincipalType principalType );
+    Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType );
 
     Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId );
 
-    Collection<SecurablePrincipal> getPrincipals( Predicate p );
+    Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p );
 
     void updateTitle( Principal principal, String title );
 
@@ -44,4 +45,8 @@ public interface RolesManager {
     Collection<Principal> getAllUsersWithPrincipal( Principal principal );
 
     Collection<Auth0UserBasic> getAllUserProfilesWithPrincipal( Principal principal );
+
+    Role getRole( UUID organizationId, UUID roleId );
+
+    Collection<Principal> getPrincipals( Predicate p );
 }
