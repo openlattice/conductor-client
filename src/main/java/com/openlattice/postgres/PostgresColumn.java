@@ -20,6 +20,13 @@
 
 package com.openlattice.postgres;
 
+import static com.openlattice.postgres.PostgresDatatype.BOOLEAN;
+import static com.openlattice.postgres.PostgresDatatype.DECIMAL;
+import static com.openlattice.postgres.PostgresDatatype.TEXT;
+import static com.openlattice.postgres.PostgresDatatype.TEXT_ARRAY;
+import static com.openlattice.postgres.PostgresDatatype.UUID;
+import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY;
+
 import com.dataloom.edm.type.Analyzer;
 
 import static com.openlattice.postgres.PostgresDatatype.*;

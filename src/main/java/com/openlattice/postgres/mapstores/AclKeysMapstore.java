@@ -4,6 +4,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
@@ -43,11 +44,11 @@ public class AclKeysMapstore extends AbstractBasePostgresMapstore<String, UUID> 
     }
 
     @Override protected UUID mapToValue( ResultSet rs ) throws SQLException {
-        return rs.getObject( SECURABLE_OBJECTID.getName(), UUID.class );
+        return ResultSetAdapters.securableObjectId( rs );
     }
 
     @Override protected String mapToKey( ResultSet rs ) throws SQLException {
-        return rs.getString( NAME.getName() );
+        return ResultSetAdapters.name( rs );
     }
 
     @Override public String generateTestKey() {

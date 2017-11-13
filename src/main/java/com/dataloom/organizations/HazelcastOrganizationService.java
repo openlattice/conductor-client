@@ -53,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import com.openlattice.authorization.SecurablePrincipal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -71,7 +72,6 @@ public class HazelcastOrganizationService {
     private final HazelcastAclKeyReservationService reservations;
     private final UserDirectoryService              principals;
     private final RolesManager                      rolesManager;
-
     private final IMap<UUID, String>                titles;
     private final IMap<UUID, String>                descriptions;
     private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
@@ -122,7 +122,7 @@ public class HazelcastOrganizationService {
         Future<DelegatedStringSet> autoApprovedEmailDomains = autoApprovedEmailDomainsOf.getAsync( organizationId );
 
         Collection<SecurablePrincipal> maybeOrgs =
-                rolesManager.getPrincipals( getOrganizationPredicate( organizationId ) );
+                rolesManager.getSecurablePrincipals( getOrganizationPredicate( organizationId ) );
         SecurablePrincipal principal = Iterables.getOnlyElement( maybeOrgs );
         Set<Role> roles = getRoles( organizationId );
         try {
@@ -275,7 +275,6 @@ public class HazelcastOrganizationService {
     }
 
     public void addAppToOrg( UUID organizationId, UUID appId ) {
-        // TODO
         apps.executeOnKey( organizationId, new OrganizationAppMerger( ImmutableSet.of( appId ) ) );
     }
 
@@ -286,7 +285,6 @@ public class HazelcastOrganizationService {
     public Set<UUID> getOrganizationApps( UUID organizationId ) {
         return apps.get( organizationId );
     }
-
 
     private static Predicate getOrganizationPredicate( UUID organizationId ) {
         return Predicates.and(

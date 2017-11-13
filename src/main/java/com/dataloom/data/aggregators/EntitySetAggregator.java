@@ -43,9 +43,8 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressFBWarnings( value = "SE_TRANSIENT_FIELD_NOT_RESTORED", justification = "Custom Stream Serializer is implemented and restores count" )
 public class EntitySetAggregator extends Aggregator<Entry<EntityKey, UUID>, Long> implements HazelcastInstanceAware {
-    private static final long   serialVersionUID = 5086851282617774097L;
-
-    private static final Logger logger           = LoggerFactory.getLogger( EntitySetAggregator.class );
+    private static final long serialVersionUID = 5086851282617774097L;
+    private static final Logger logger = LoggerFactory.getLogger( EntitySetAggregator.class );
 
     private final UUID streamId;
 

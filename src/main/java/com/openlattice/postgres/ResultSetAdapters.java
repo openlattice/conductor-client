@@ -24,6 +24,51 @@ import com.dataloom.apps.App;
 import com.dataloom.apps.AppConfigKey;
 import com.dataloom.apps.AppType;
 import com.dataloom.apps.AppTypeSetting;
+import static com.openlattice.postgres.PostgresArrays.getTextArray;
+import static com.openlattice.postgres.PostgresColumn.ACL_KEY_FIELD;
+import static com.openlattice.postgres.PostgresColumn.ANALYZER;
+import static com.openlattice.postgres.PostgresColumn.BASE_TYPE;
+import static com.openlattice.postgres.PostgresColumn.BIDIRECTIONAL;
+import static com.openlattice.postgres.PostgresColumn.CATEGORY;
+import static com.openlattice.postgres.PostgresColumn.CONTACTS;
+import static com.openlattice.postgres.PostgresColumn.CURRENT_SYNC_ID;
+import static com.openlattice.postgres.PostgresColumn.DATATYPE;
+import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
+import static com.openlattice.postgres.PostgresColumn.DST;
+import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
+import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_KEY_IDS;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.FLAGS;
+import static com.openlattice.postgres.PostgresColumn.GRAPH_DIAMETER;
+import static com.openlattice.postgres.PostgresColumn.GRAPH_ID;
+import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresColumn.KEY;
+import static com.openlattice.postgres.PostgresColumn.MEMBERS;
+import static com.openlattice.postgres.PostgresColumn.NAME;
+import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
+import static com.openlattice.postgres.PostgresColumn.NULLABLE_TITLE;
+import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_ID;
+import static com.openlattice.postgres.PostgresColumn.PERMISSIONS_FIELD;
+import static com.openlattice.postgres.PostgresColumn.PII;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_IDS;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID_FIELD;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE_FIELD;
+import static com.openlattice.postgres.PostgresColumn.PROPERTIES;
+import static com.openlattice.postgres.PostgresColumn.PROPERTY_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.REASON;
+import static com.openlattice.postgres.PostgresColumn.ROLE_ID;
+import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
+import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
+import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
+import static com.openlattice.postgres.PostgresColumn.SHOW;
+import static com.openlattice.postgres.PostgresColumn.SRC;
+import static com.openlattice.postgres.PostgresColumn.STATUS;
+import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
+import static com.openlattice.postgres.PostgresColumn.TITLE;
+import static com.openlattice.postgres.PostgresColumn.VERTEX_ID;
+
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
@@ -33,6 +78,12 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.edm.type.*;
+import com.dataloom.edm.type.Analyzer;
+import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.organization.roles.Role;
@@ -60,6 +111,21 @@ import java.util.stream.Stream;
 
 import static com.openlattice.postgres.PostgresArrays.getTextArray;
 import static com.openlattice.postgres.PostgresColumn.*;
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -70,7 +136,8 @@ public final class ResultSetAdapters {
     public static SecurablePrincipal securablePrincipal( ResultSet rs ) throws SQLException {
         Principal principal = ResultSetAdapters.principal( rs );
         List<UUID> aclKey = aclKey( rs );
-        UUID id = idValue( rs );
+//        UUID id = idValue( rs );
+        UUID id = aclKey.get( aclKey.size() - 1 );
         String title = title( rs );
         String description = description( rs );
         switch ( principal.getType() ) {
@@ -224,6 +291,18 @@ public final class ResultSetAdapters {
         return rs.getBoolean( FLAGS.getName() );
     }
 
+    public static UUID appId( ResultSet rs ) throws SQLException {
+        return rs.getObject( APP_ID.getName(), UUID.class );
+    }
+
+    public static UUID appTypeId( ResultSet rs ) throws SQLException {
+        return rs.getObject( CONFIG_TYPE_ID.getName(), UUID.class );
+    }
+
+    public static LinkedHashSet<UUID> appTypeIds( ResultSet rs ) throws SQLException {
+        return linkedHashSetUUID( rs, CONFIG_TYPE_IDS.getName() );
+    }
+
     public static double diameter( ResultSet rs ) throws SQLException {
         return rs.getDouble( GRAPH_DIAMETER.getName() );
     }
@@ -282,18 +361,6 @@ public final class ResultSetAdapters {
 
     public static RequestStatus requestStatus( ResultSet rs ) throws SQLException {
         return RequestStatus.valueOf( rs.getString( STATUS.getName() ) );
-    }
-
-    public static UUID appId( ResultSet rs ) throws SQLException {
-        return rs.getObject( APP_ID.getName(), UUID.class );
-    }
-
-    public static UUID appTypeId( ResultSet rs ) throws SQLException {
-        return rs.getObject( CONFIG_TYPE_ID.getName(), UUID.class );
-    }
-
-    public static LinkedHashSet<UUID> appTypeIds( ResultSet rs ) throws SQLException {
-        return linkedHashSetUUID( rs, CONFIG_TYPE_IDS.getName() );
     }
 
     public static PropertyType propertyType( ResultSet rs ) throws SQLException {
@@ -413,13 +480,14 @@ public final class ResultSetAdapters {
         return new RoleKey( orgId, roleId );
     }
 
-    //    public static Role role( ResultSet rs ) throws SQLException {
-    //        UUID roleId = roleId( rs );
-    //        UUID orgId = organizationId( rs );
-    //        String title = nullableTitle( rs );
-    //        String description = description( rs );
-    //        return new Role( Optional.of( roleId ), orgId, title, Optional.fromNullable( description ) );
-    //    }
+
+//    public static Role role( ResultSet rs ) throws SQLException {
+//        UUID roleId = roleId( rs );
+//        UUID orgId = organizationId( rs );
+//        String title = nullableTitle( rs );
+//        String description = description( rs );
+//        return new Role( Optional.of( roleId ), orgId, title, Optional.fromNullable( description ) );
+//    }
 
     public static PrincipalSet principalSet( ResultSet rs ) throws SQLException {
         Array usersArray = rs.getArray( PRINCIPAL_IDS.getName() );
