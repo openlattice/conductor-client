@@ -22,6 +22,7 @@ package com.dataloom.authorization;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.dataloom.authorization.events.AclUpdateEvent;
 import com.dataloom.authorization.paging.AuthorizedObjectsPagingInfo;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.processors.PermissionMerger;
@@ -40,10 +41,13 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+
 public class HazelcastAuthorizationService implements AuthorizationManager {
     private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
 
     private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
+    private final IMap<List<UUID>, SecurableObjectType>    securableObjectTypes;
     private final AuthorizationQueryService                aqs;
     private final EventBus                                 eventBus;
 
@@ -52,8 +56,15 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             AuthorizationQueryService aqs,
             EventBus eventBus ) {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
+        securableObjectTypes = hazelcastInstance.getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
         this.aqs = checkNotNull( aqs );
         this.eventBus = checkNotNull( eventBus );
+    }
+
+    private void updateAcl( List<UUID> aclKey, Principal principal ) {
+        if ( aclKey.size() == 1 ) {
+            eventBus.post( new AclUpdateEvent( aclKey, ImmutableSet.of( principal ) ) );
+        }
     }
 
     @Override
@@ -68,6 +79,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ),
                 new PermissionMerger( DelegatedPermissionEnumSet.wrap( permissions ) ) );
+        updateAcl( key, principal );
     }
 
     @Override
@@ -76,6 +88,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionRemover( permissions ) );
+        updateAcl( key, principal );
     }
 
     @Override
@@ -84,6 +97,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             Set<Permission> permissions ) {
         aces.set( new AceKey( key, principal ), DelegatedPermissionEnumSet.wrap( permissions ) );
+        updateAcl( key, principal );
     }
 
     @Override

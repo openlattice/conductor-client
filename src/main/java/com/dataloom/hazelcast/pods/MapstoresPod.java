@@ -299,12 +299,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> orgAppsMapstore() {
-        return new UUIDSetMapstore(
-                HazelcastMap.ORGANIZATION_APPS,
-                session,
-                Table.ORGANIZATIONS,
-                CommonColumns.ID,
-                CommonColumns.APPS );
+        return new OrganizationAppsMapstore( hikariDataSource );
     }
 
     @Bean

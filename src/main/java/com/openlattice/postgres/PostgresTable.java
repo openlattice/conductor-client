@@ -191,7 +191,7 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition ORGANIZATIONS =
             new PostgresTableDefinition( "organizations" )
-                    .addColumns( ID, NULLABLE_TITLE, DESCRIPTION, ALLOWED_EMAIL_DOMAINS, MEMBERS );
+                    .addColumns( ID, NULLABLE_TITLE, DESCRIPTION, ALLOWED_EMAIL_DOMAINS, MEMBERS, APP_IDS );
 
     public static final PostgresTableDefinition PERMISSIONS =
             new PostgresTableDefinition( "permissions" )
@@ -236,7 +236,7 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition PRINCIPALS =
             new PostgresTableDefinition( "principals" )
-                    .addColumns( PRINCIPAL_TYPE, PRINCIPAL_ID, ACL_KEY, NULLABLE_TITLE, DESCRIPTION )
+                    .addColumns( PRINCIPAL_TYPE, PRINCIPAL_ID, ID_VALUE, ACL_KEY, NULLABLE_TITLE, DESCRIPTION )
                     .primaryKey( PRINCIPAL_TYPE, PRINCIPAL_ID )
                     .setUnique( ID_VALUE );
     // Consider enforcing ACL_KEY a unique field

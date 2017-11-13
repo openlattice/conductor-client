@@ -7,6 +7,7 @@ import com.dataloom.organizations.PrincipalSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
@@ -19,7 +20,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.openlattice.postgres.PostgresColumn.ID;
 import static com.openlattice.postgres.PostgresColumn.MEMBERS;
@@ -56,9 +56,15 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
     }
 
     @Override protected PrincipalSet mapToValue( ResultSet rs ) throws SQLException {
-        Stream<String> users = Arrays.stream( (String[]) rs.getArray( MEMBERS.getName() ).getArray() );
-        return PrincipalSet
-                .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
+        Array arr = rs.getArray( MEMBERS.getName() );
+        if ( arr != null ) {
+            String[] value = (String[]) arr.getArray();
+            if ( value != null )
+                return PrincipalSet
+                        .wrap( Arrays.stream( value ).map( user -> new Principal( PrincipalType.USER, user ) )
+                                .collect( Collectors.toSet() ) );
+        }
+        return PrincipalSet.wrap( Sets.newHashSet() );
     }
 
     @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
@@ -69,9 +75,10 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
     public Map<UUID, PrincipalSet> loadAll( Collection<UUID> keys ) {
         Map<UUID, PrincipalSet> result = Maps.newConcurrentMap();
         keys.parallelStream().forEach( id -> {
-            PrincipalSet users = load(id);
-            if ( users != null ) result.put( id, users );
-        });
+            PrincipalSet users = load( id );
+            if ( users != null )
+                result.put( id, users );
+        } );
         return result;
     }
 

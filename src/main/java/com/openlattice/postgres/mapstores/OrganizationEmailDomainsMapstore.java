@@ -55,8 +55,13 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
     }
 
     @Override protected DelegatedStringSet mapToValue( ResultSet rs ) throws SQLException {
-        String[] value = (String[]) rs.getArray( ALLOWED_EMAIL_DOMAINS.getName() ).getArray();
-        return DelegatedStringSet.wrap( Sets.newHashSet( value ) );
+        Array arr = rs.getArray( ALLOWED_EMAIL_DOMAINS.getName() );
+        if ( arr != null ) {
+            String[] value = (String[]) arr.getArray();
+            if ( value != null )
+                return DelegatedStringSet.wrap( Sets.newHashSet( value ) );
+        }
+        return DelegatedStringSet.wrap( Sets.newHashSet() );
     }
 
     @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
@@ -67,9 +72,10 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
     public Map<UUID, DelegatedStringSet> loadAll( Collection<UUID> keys ) {
         Map<UUID, DelegatedStringSet> result = Maps.newConcurrentMap();
         keys.parallelStream().forEach( id -> {
-            DelegatedStringSet domains = load(id);
-            if ( domains != null ) result.put( id, domains );
-        });
+            DelegatedStringSet domains = load( id );
+            if ( domains != null )
+                result.put( id, domains );
+        } );
         return result;
     }
 

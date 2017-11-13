@@ -47,6 +47,7 @@ import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
 import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.hazelcast.objects.UUIDSet;
 import com.openlattice.authorization.SecurablePrincipal;
 import org.slf4j.Logger;
@@ -76,7 +77,7 @@ public class HazelcastOrganizationService {
     private final IMap<UUID, String>                descriptions;
     private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
     private final IMap<UUID, PrincipalSet>          membersOf;
-    private final IMap<UUID, UUIDSet>               apps;
+    private final IMap<UUID, DelegatedUUIDSet>      apps;
     private final List<IMap<UUID, ?>>               allMaps;
     @Inject
     private       EventBus                          eventBus;
@@ -97,7 +98,8 @@ public class HazelcastOrganizationService {
         this.allMaps = ImmutableList.of( titles,
                 descriptions,
                 autoApprovedEmailDomainsOf,
-                membersOf );
+                membersOf,
+                apps );
         this.principals = checkNotNull( principals );
         this.rolesManager = rolesManager;
     }
@@ -115,6 +117,7 @@ public class HazelcastOrganizationService {
         autoApprovedEmailDomainsOf.set( organizationId,
                 DelegatedStringSet.wrap( organization.getAutoApprovedEmails() ) );
         membersOf.set( organizationId, PrincipalSet.wrap( organization.getMembers() ) );
+        apps.set( organizationId, DelegatedUUIDSet.wrap( organization.getApps() ) );
     }
 
     public Organization getOrganization( UUID organizationId ) {
@@ -264,10 +267,12 @@ public class HazelcastOrganizationService {
 
     public void addRoleToUser( Principal principal, Principal user ) {
         rolesManager.addPrincipalToPrincipal( principal, user );
+        principals.addRoleToUser( user.getId(), principal.getId() );
     }
 
     public void removeRoleFromUser( Principal role, Principal user ) {
         rolesManager.removePrincipalFromPrincipal( role, user );
+        principals.removeRoleFromUser( user.getId(), role.getId() );
     }
 
     public Iterable<Auth0UserBasic> getAllUserProfilesOfRole( Principal role ) {
@@ -275,11 +280,11 @@ public class HazelcastOrganizationService {
     }
 
     public void addAppToOrg( UUID organizationId, UUID appId ) {
-        apps.executeOnKey( organizationId, new OrganizationAppMerger( ImmutableSet.of( appId ) ) );
+        apps.executeOnKey( organizationId, new OrganizationAppMerger( DelegatedUUIDSet.wrap( ImmutableSet.of( appId ) ) ) );
     }
 
     public void removeAppFromOrg( UUID organizationId, UUID appId ) {
-        apps.executeOnKey( organizationId, new OrganizationAppRemover( ImmutableSet.of( appId ) ) );
+        apps.executeOnKey( organizationId, new OrganizationAppRemover( DelegatedUUIDSet.wrap( ImmutableSet.of( appId ) ) ) );
     }
 
     public Set<UUID> getOrganizationApps( UUID organizationId ) {

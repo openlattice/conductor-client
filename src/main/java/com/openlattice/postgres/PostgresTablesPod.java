@@ -50,6 +50,7 @@ public class PostgresTablesPod {
                 PostgresTable.NAMES,
                 PostgresTable.ORGANIZATIONS,
                 PostgresTable.PERMISSIONS,
+                PostgresTable.PRINCIPALS,
                 PostgresTable.PROPERTY_TYPES,
                 PostgresTable.REQUESTS,
                 PostgresTable.ROLES,

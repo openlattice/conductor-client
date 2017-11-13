@@ -94,17 +94,6 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Del
     }
 
     @Override
-    public Map<AceKey, DelegatedPermissionEnumSet> loadAll( Collection<AceKey> keys ) {
-        Map<AceKey, DelegatedPermissionEnumSet> result = Maps.newConcurrentMap();
-        keys.parallelStream().forEach( key -> {
-            DelegatedPermissionEnumSet value = load( key );
-            if ( value != null )
-                result.put( key, value );
-        } );
-        return result;
-    }
-
-    @Override
     public AceKey generateTestKey() {
         return new AceKey(
                 ImmutableList.of( UUID.randomUUID() ),

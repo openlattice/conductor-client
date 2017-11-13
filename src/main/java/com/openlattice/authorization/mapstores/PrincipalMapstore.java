@@ -20,6 +20,8 @@
 
 package com.openlattice.authorization.mapstores;
 
+import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
 import static com.openlattice.postgres.PostgresTable.PRINCIPALS;
 
 import com.dataloom.authorization.Principal;
@@ -34,6 +36,8 @@ import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -74,9 +78,17 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, S
     @Override protected void bind(
             PreparedStatement ps, Principal key, SecurablePrincipal value ) throws SQLException {
         bind( ps, key );
-        ps.setArray( 3, PostgresArrays.createUuidArray( ps.getConnection(), value.getAclKey().stream() ) );
-        ps.setString( 4, value.getTitle() );
-        ps.setString( 5, value.getDescription() );
+        Array aclKey = PostgresArrays.createUuidArray( ps.getConnection(), value.getAclKey().stream() );
+        ps.setObject( 3, value.getId() );
+        ps.setArray( 4, aclKey );
+        ps.setString( 5, value.getTitle() );
+        ps.setString( 6, value.getDescription() );
+
+        // UPDATE
+        ps.setObject( 7, value.getId() );
+        ps.setArray( 8, aclKey );
+        ps.setString( 9, value.getTitle() );
+        ps.setString( 10, value.getDescription() );
     }
 
     @Override protected void bind( PreparedStatement ps, Principal key ) throws SQLException {

@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class HazelcastPrincipalService implements RolesManager, AuthorizingComponent {
 
     private static final Logger                 logger              = LoggerFactory
@@ -111,12 +113,12 @@ public class HazelcastPrincipalService implements RolesManager, AuthorizingCompo
     public void deletePrincipal( Principal principal ) {
         //TODO: Implement delete
 
-        //        Role role = checkNotNull( Util.getSafely( roles, roleName ), "Role not found." );
+         //       checkNotNull( Util.getSafely( roles, roleName ), "Role not found." );
         //
-        //        //Remove the role from all users before deleting.
-        //        for ( Principal user : getAllUsersWithPrincipal( roleName ) ) {
-        //            removePrincipalFromPrincipal( roleName, user );
-        //        }
+                //Remove the role from all users before deleting.
+                for ( Principal user : getAllUsersWithPrincipal( principal ) ) {
+                    removePrincipalFromPrincipal( principal, user );
+                }
         //
         //        reservations.release( role.getId() );
         //        roles.delete( roleName );

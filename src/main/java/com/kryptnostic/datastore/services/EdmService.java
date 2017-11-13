@@ -81,6 +81,7 @@ public class EdmService implements EdmManager {
     private final IMap<UUID, AssociationType>                           associationTypes;
     private final IMap<UUID, UUID>                                      syncIds;
     private final IMap<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadata;
+    private final IMap<List<UUID>, SecurableObjectType>                 securableObjectTypes;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -122,6 +123,7 @@ public class EdmService implements EdmManager {
         this.associationTypes = hazelcastInstance.getMap( HazelcastMap.ASSOCIATION_TYPES.name() );
         this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
         this.entitySetPropertyMetadata = hazelcastInstance.getMap( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name() );
+        this.securableObjectTypes = hazelcastInstance.getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
         this.aclKeyReservations = aclKeyReservations;
         this.datasourceManager = datasourceManager;
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
@@ -382,8 +384,15 @@ public class EdmService implements EdmManager {
                             aclKey,
                             principal,
                             EnumSet.allOf( Permission.class ) ) )
-                    .forEach( aclKey -> authorizations.createEmptyAcl( aclKey,
-                            SecurableObjectType.PropertyTypeInEntitySet ) );
+                    .forEach( aclKey -> {
+                        authorizations.createEmptyAcl( aclKey,
+                                SecurableObjectType.PropertyTypeInEntitySet );
+                        securableObjectTypes.set( aclKey,
+                                SecurableObjectType.PropertyTypeInEntitySet );
+                    } );
+
+            securableObjectTypes.set( ImmutableList.of( entitySet.getId() ),
+                    SecurableObjectType.EntitySet );
 
             eventBus.post( new EntitySetCreatedEvent(
                     entitySet,

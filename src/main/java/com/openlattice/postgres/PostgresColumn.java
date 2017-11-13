@@ -39,6 +39,7 @@ public final class PostgresColumn {
     public static final String ALLOWED_EMAIL_DOMAINS_FIELD = "allowed_email_domains";
     public static final String ANALYZER_FIELD              = "analyzer";
     public static final String APP_ID_FIELD                = "app_id";
+    public static final String APP_IDS_FIELD               = "app_ids";
     public static final String AUDIT_ID_FIELD              = "audit_id";
     public static final String BASE_TYPE_FIELD             = "base_type";
     public static final String BIDIRECTIONAL_FIELD         = "bidirectional";
@@ -94,8 +95,6 @@ public final class PostgresColumn {
     public static final String TITLE_FIELD                 = "title";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
 
-    public static final PostgresColumnDefinition APP_ID                =
-            new PostgresColumnDefinition( APP_ID_FIELD, UUID );
     public static final PostgresColumnDefinition ACL_KEY               =
             new PostgresColumnDefinition( ACL_KEY_FIELD, UUID_ARRAY );
     public static final PostgresColumnDefinition ALLOWED_EMAIL_DOMAINS =
@@ -104,6 +103,10 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( ANALYZER_FIELD, TEXT )
                     .withDefault( "'" + Analyzer.STANDARD.name() + "'" )
                     .notNull();
+    public static final PostgresColumnDefinition APP_ID                =
+            new PostgresColumnDefinition( APP_ID_FIELD, UUID );
+    public static final PostgresColumnDefinition APP_IDS                =
+            new PostgresColumnDefinition( APP_IDS_FIELD, UUID_ARRAY );
     public static final PostgresColumnDefinition AUDIT_ID              =
             new PostgresColumnDefinition( AUDIT_ID_FIELD, UUID );
     public static final PostgresColumnDefinition BASE_TYPE             =

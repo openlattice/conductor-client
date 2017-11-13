@@ -219,7 +219,7 @@ public final class ResultSetAdapters {
     }
 
     public static List<UUID> aclKey( ResultSet rs ) throws SQLException {
-        return new DelegatedUUIDList( Arrays.asList( (UUID[]) rs.getArray( ACL_KEY_FIELD ).getArray() ) );
+        return Arrays.asList( (UUID[]) rs.getArray( ACL_KEY_FIELD ).getArray() );
     }
 
     public static AceKey aceKey( ResultSet rs ) throws SQLException {
