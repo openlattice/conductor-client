@@ -31,12 +31,11 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.AssociationType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.linking.Entity;
 import com.dataloom.organization.Organization;
 import com.dataloom.search.requests.SearchDetails;
 import com.dataloom.search.requests.SearchResult;
 import com.google.common.base.Optional;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 
 public interface ConductorElasticsearchApi {
 

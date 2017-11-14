@@ -10,7 +10,7 @@ import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.util.Map;

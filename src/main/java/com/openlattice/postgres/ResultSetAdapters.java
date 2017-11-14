@@ -82,7 +82,6 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.organization.roles.Role;
-import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.requests.Request;
 import com.dataloom.requests.RequestStatus;
@@ -90,7 +89,7 @@ import com.dataloom.requests.Status;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import com.openlattice.authorization.SecurablePrincipal;
 import java.sql.Array;
 import java.sql.ResultSet;
@@ -436,12 +435,6 @@ public final class ResultSetAdapters {
         Request request = new Request( aclKey, permissions, reason );
         RequestStatus status = requestStatus( rs );
         return new Status( request, principal, status );
-    }
-
-    public static RoleKey roleKey( ResultSet rs ) throws SQLException {
-        UUID roleId = roleId( rs );
-        UUID orgId = organizationId( rs );
-        return new RoleKey( orgId, roleId );
     }
 
 //    public static Role role( ResultSet rs ) throws SQLException {

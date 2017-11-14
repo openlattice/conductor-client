@@ -21,8 +21,7 @@ package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.authorization.AclKey;
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.AclKeyStreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**

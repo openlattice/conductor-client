@@ -31,7 +31,7 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 
 public class StringSetMapstore extends UUIDKeyMapstore<DelegatedStringSet> {
     private final ColumnDef valueCol;

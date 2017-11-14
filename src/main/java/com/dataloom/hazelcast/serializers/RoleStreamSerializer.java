@@ -8,4 +8,5 @@ public class RoleStreamSerializer extends SecurablePrincipalStreamSerializer {
     public RoleStreamSerializer() {
         super( Role.class );
     }
+
 }

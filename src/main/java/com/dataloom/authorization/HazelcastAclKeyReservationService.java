@@ -65,7 +65,7 @@ public class HazelcastAclKeyReservationService {
             .of( SecurableObjectType.EntityType,
                     SecurableObjectType.PropertyTypeInEntitySet,
                     SecurableObjectType.EntitySet,
-                    SecurableObjectType.Role );
+                    SecurableObjectType.PRINCIPAL );
 
     static {
         for ( SecurableObjectType objectType : SecurableObjectType.values() ) {

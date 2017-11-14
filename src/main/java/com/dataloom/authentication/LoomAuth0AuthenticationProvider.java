@@ -48,7 +48,7 @@ public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0Authentica
         final Auth0JWTToken jwtToken = ((Auth0JWTToken) super.authenticate( authentication) );
         // TODO: Temporarily turn off manual token expiration
         /**
-        Auth0UserDetails details = (Auth0UserDetails) jwtToken.getPrincipal();
+        Auth0UserDetails details = (Auth0UserDetails) jwtToken.getSecurablePrincipal();
         Object userIdAsObj = details.getAuth0Attribute( LoomAuth0AuthenticationProvider.SUBJECT_ATTRIBUTE );
         if ( userIdAsObj == null ) {
             userIdAsObj = details.getAuth0Attribute( LoomAuth0AuthenticationProvider.USER_ID_ATTRIBUTE );

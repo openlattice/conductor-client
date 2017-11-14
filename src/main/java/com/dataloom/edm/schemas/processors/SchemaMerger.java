@@ -20,7 +20,7 @@
 package com.dataloom.edm.schemas.processors;
 
 import com.google.common.collect.Sets;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractMerger;
 
 public class SchemaMerger extends AbstractMerger<String, DelegatedStringSet, String> {

@@ -10,7 +10,7 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
 
 public class LinkedEntityTypesMapstore

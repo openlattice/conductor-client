@@ -26,12 +26,15 @@ import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.*;
+import com.dataloom.edm.type.Analyzer;
+import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.organization.roles.Role;
-import com.dataloom.organization.roles.RoleKey;
 import com.dataloom.requests.RequestStatus;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -41,15 +44,19 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.reflect.TypeToken;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import java.nio.ByteBuffer;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
-import java.util.*;
 
 public final class RowAdapters {
     static final Logger logger = LoggerFactory.getLogger( RowAdapters.class );
@@ -374,17 +381,13 @@ public final class RowAdapters {
         return row.getUUID( CommonColumns.ORGANIZATION_ID.cql() );
     }
 
-    public static RoleKey roleKey( Row row ) {
-        return new RoleKey( organizationId( row ), id( row ) );
-    }
-
-//    public static Role role( Row row ) {
-//        Optional<UUID> id = Optional.of( id( row ) );
-//        UUID organizationId = organizationId( row );
-//        String title = title( row );
-//        Optional<String> description = description( row );
-//        return new Role( id, organizationId, title, description );
-//    }
+    //    public static Role role( Row row ) {
+    //        Optional<UUID> id = Optional.of( id( row ) );
+    //        UUID organizationId = organizationId( row );
+    //        String title = title( row );
+    //        Optional<String> description = description( row );
+    //        return new Role( id, organizationId, title, description );
+    //    }
 
     public static LinkedHashSet<String> members( Row row ) {
         return (LinkedHashSet<String>) row.getSet( CommonColumns.MEMBERS.cql(), String.class );

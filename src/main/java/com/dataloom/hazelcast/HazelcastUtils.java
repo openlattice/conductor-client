@@ -21,7 +21,9 @@ package com.dataloom.hazelcast;
 
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
-
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
+import java.util.List;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -30,15 +32,19 @@ public class HazelcastUtils {
         return m.get( key );
     }
 
-    public static <K,V> K insertIntoUnusedKey( IMap<K,V> m, V value, Supplier<K> keyFactory ) {
+    public static <K, V> K insertIntoUnusedKey( IMap<K, V> m, V value, Supplier<K> keyFactory ) {
         K key = keyFactory.get();
-        while( m.putIfAbsent( key, value ) !=null ){
+        while ( m.putIfAbsent( key, value ) != null ) {
             key = keyFactory.get();
         }
         return key;
     }
 
-    public static <K,V> Function<K,V> getter( IMap<K,V> m ) {
-        return (K k) -> Util.getSafely( m, k );
+    public static <K, V> Function<K, V> getter( IMap<K, V> m ) {
+        return ( K k ) -> Util.getSafely( m, k );
+    }
+
+    public static DelegatedUUIDList hzList( List<UUID> ids ) {
+        return DelegatedUUIDList.wrap( ids );
     }
 }
