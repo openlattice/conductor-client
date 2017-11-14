@@ -6,9 +6,8 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
+import org.springframework.stereotype.Component;
 
 @Component
 public class OrganizationMemberRoleRemoverStreamSerializer
@@ -24,14 +23,14 @@ public class OrganizationMemberRoleRemoverStreamSerializer
         SetStreamSerializers.serialize(
                 out,
                 object.getBackingCollection(),
-                elem -> PrincipalStreamSerializer.serialize( out, elem )
+                elem -> SetStreamSerializers.fastUUIDSetSerialize( out, elem )
         );
     }
 
     @Override
     public NestedPrincipalRemover read( ObjectDataInput in ) throws IOException {
         return new NestedPrincipalRemover(
-                SetStreamSerializers.deserialize( in, PrincipalStreamSerializer::deserialize )
+                SetStreamSerializers.deserialize( in, AclKeyStreamSerializer::deserialize )
         );
     }
 
