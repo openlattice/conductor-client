@@ -89,6 +89,7 @@ import com.dataloom.requests.Status;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import com.openlattice.authorization.SecurablePrincipal;
 import java.sql.Array;
@@ -115,16 +116,16 @@ public final class ResultSetAdapters {
 
     public static SecurablePrincipal securablePrincipal( ResultSet rs ) throws SQLException {
         Principal principal = ResultSetAdapters.principal( rs );
-        List<UUID> aclKey = aclKey( rs );
-        UUID id = aclKey.get( aclKey.size() - 1 );
+        AclKey aclKey = aclKey( rs );
         String title = title( rs );
         String description = description( rs );
         switch ( principal.getType() ) {
             case ROLE:
+                UUID id = aclKey.get( 1 );
                 UUID organizationId = aclKey.get( 0 );
                 return new Role( Optional.of( id ), organizationId, principal, title, Optional.of( description ) );
             default:
-                return new SecurablePrincipal( Optional.of( id ), principal, title, Optional.of( description ) );
+                return new SecurablePrincipal( aclKey, principal, title, Optional.of( description ) );
         }
     }
 
@@ -193,8 +194,8 @@ public final class ResultSetAdapters {
         return new Principal( principalType, principalId );
     }
 
-    public static List<UUID> aclKey( ResultSet rs ) throws SQLException {
-        return new DelegatedUUIDList( PostgresArrays.getUuidArray( rs, ACL_KEY_FIELD ) );
+    public static AclKey aclKey( ResultSet rs ) throws SQLException {
+        return new AclKey( PostgresArrays.getUuidArray( rs, ACL_KEY_FIELD ) );
     }
 
     public static AceKey aceKey( ResultSet rs ) throws SQLException {

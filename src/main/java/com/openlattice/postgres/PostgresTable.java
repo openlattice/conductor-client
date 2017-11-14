@@ -47,7 +47,6 @@ import static com.openlattice.postgres.PostgresColumn.FLAGS;
 import static com.openlattice.postgres.PostgresColumn.GRAPH_DIAMETER;
 import static com.openlattice.postgres.PostgresColumn.GRAPH_ID;
 import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.ID_VALUE;
 import static com.openlattice.postgres.PostgresColumn.KEY;
 import static com.openlattice.postgres.PostgresColumn.MEMBERS;
 import static com.openlattice.postgres.PostgresColumn.NAME;
@@ -220,9 +219,9 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition PRINCIPALS =
             new PostgresTableDefinition( "principals" )
-                    .addColumns( PRINCIPAL_TYPE, PRINCIPAL_ID, ACL_KEY, NULLABLE_TITLE, DESCRIPTION )
-                    .primaryKey( PRINCIPAL_TYPE, PRINCIPAL_ID )
-                    .setUnique( ACL_KEY );
+                    .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, NULLABLE_TITLE, DESCRIPTION )
+                    .primaryKey( ACL_KEY )
+                    .setUnique( PRINCIPAL_TYPE, PRINCIPAL_ID );
     // Consider enforcing ACL_KEY a unique field
 
     // TODO: Once Cassandra fixes SASI + Collection column inde
