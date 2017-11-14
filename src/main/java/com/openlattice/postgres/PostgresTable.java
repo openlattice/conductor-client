@@ -236,9 +236,9 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition PRINCIPALS =
             new PostgresTableDefinition( "principals" )
-                    .addColumns( PRINCIPAL_TYPE, PRINCIPAL_ID, ID_VALUE, ACL_KEY, NULLABLE_TITLE, DESCRIPTION )
+                    .addColumns( PRINCIPAL_TYPE, PRINCIPAL_ID, ACL_KEY, NULLABLE_TITLE, DESCRIPTION )
                     .primaryKey( PRINCIPAL_TYPE, PRINCIPAL_ID )
-                    .setUnique( ID_VALUE );
+                    .setUnique( ACL_KEY );
     // Consider enforcing ACL_KEY a unique field
 
     // TODO: Once Cassandra fixes SASI + Collection column inde

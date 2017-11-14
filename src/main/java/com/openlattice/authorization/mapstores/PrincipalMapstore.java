@@ -79,16 +79,14 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, S
             PreparedStatement ps, Principal key, SecurablePrincipal value ) throws SQLException {
         bind( ps, key );
         Array aclKey = PostgresArrays.createUuidArray( ps.getConnection(), value.getAclKey().stream() );
-        ps.setObject( 3, value.getId() );
-        ps.setArray( 4, aclKey );
-        ps.setString( 5, value.getTitle() );
-        ps.setString( 6, value.getDescription() );
+        ps.setArray( 3, aclKey );
+        ps.setString( 4, value.getTitle() );
+        ps.setString( 5, value.getDescription() );
 
         // UPDATE
-        ps.setObject( 7, value.getId() );
-        ps.setArray( 8, aclKey );
-        ps.setString( 9, value.getTitle() );
-        ps.setString( 10, value.getDescription() );
+        ps.setArray( 6, aclKey );
+        ps.setString( 7, value.getTitle() );
+        ps.setString( 8, value.getDescription() );
     }
 
     @Override protected void bind( PreparedStatement ps, Principal key ) throws SQLException {

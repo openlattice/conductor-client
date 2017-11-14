@@ -106,6 +106,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
+    public void deletePrincipalPermissions( Principal principal ) {
+        aqs.deletePermissionsByPrincipal( principal );
+    }
+
+    @Override
     public boolean checkIfHasPermissions(
             List<UUID> key,
             Set<Principal> principals,

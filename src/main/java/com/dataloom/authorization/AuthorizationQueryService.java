@@ -50,6 +50,7 @@ public class AuthorizationQueryService {
     private final String aclsForSecurableObjectSql;
     private final String ownersForSecurableObjectSql;
     private final String deletePermissionsByAclKeysSql;
+    private final String deletePermissionsByPrincipalSql;
     private final String setObjectTypeSql;
 
     public AuthorizationQueryService( HikariDataSource hds, HazelcastInstance hazelcastInstance ) {
@@ -76,6 +77,8 @@ public class AuthorizationQueryService {
                 .concat( PostgresQuery.AND ).concat( PostgresQuery.valueInArray( PERMISSIONS, true ) );
         this.deletePermissionsByAclKeysSql = PostgresQuery.deleteFrom( PERMISSIONS_TABLE )
                 .concat( PostgresQuery.whereEq( ImmutableList.of( ACL_KEY ), true ) );
+        this.deletePermissionsByPrincipalSql = PostgresQuery.deleteFrom( PERMISSIONS_TABLE )
+                .concat( PostgresQuery.whereEq( ImmutableList.of( PRINCIPAL_TYPE, PRINCIPAL_ID ), true ) );
         this.setObjectTypeSql = PostgresQuery.update( SECURABLE_OBJECTS )
                 .concat( PostgresQuery.setEq( ImmutableList.of( SECURABLE_OBJECT_TYPE ) ) )
                 .concat( PostgresQuery.whereEq( ImmutableList.of( ACL_KEY ), true ) );
@@ -347,6 +350,19 @@ public class AuthorizationQueryService {
             logger.info( "Deleted all permissions for aclKey {}", aclKey );
         } catch ( SQLException e ) {
             logger.debug( "Unable delete all permissions for aclKey {}.", aclKey, e );
+        }
+    }
+
+    public void deletePermissionsByPrincipal( Principal principal ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( deletePermissionsByPrincipalSql ) ) {
+            ps.setString( 1, principal.getType().name() );
+            ps.setString( 2, principal.getId() );
+            ps.execute();
+            connection.close();
+            logger.info( "Deleted all permissions for principal {}", principal );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable delete all permissions for principal {}.", principal, e );
         }
     }
 

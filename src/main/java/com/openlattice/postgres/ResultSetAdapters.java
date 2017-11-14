@@ -136,7 +136,6 @@ public final class ResultSetAdapters {
     public static SecurablePrincipal securablePrincipal( ResultSet rs ) throws SQLException {
         Principal principal = ResultSetAdapters.principal( rs );
         List<UUID> aclKey = aclKey( rs );
-//        UUID id = idValue( rs );
         UUID id = aclKey.get( aclKey.size() - 1 );
         String title = title( rs );
         String description = description( rs );
