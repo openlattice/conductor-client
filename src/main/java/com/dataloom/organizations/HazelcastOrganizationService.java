@@ -244,10 +244,6 @@ public class HazelcastOrganizationService {
         securePrincipalsManager.removePrincipalFromPrincipal( roleKey, securePrincipalsManager.lookup( user ) );
     }
 
-    public Iterable<Auth0UserBasic> getAllUserProfilesOfRole( Principal role ) {
-        return securePrincipalsManager.getAllUserProfilesWithPrincipal( role );
-    }
-
     private static Predicate getOrganizationPredicate( UUID organizationId ) {
         return Predicates.and(
                 Predicates.equal( "principalType", PrincipalType.ORGANIZATION ),
