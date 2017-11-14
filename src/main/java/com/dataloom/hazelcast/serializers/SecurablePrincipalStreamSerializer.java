@@ -38,18 +38,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class SecurablePrincipalStreamSerializer implements SelfRegisteringStreamSerializer<SecurablePrincipal> {
 
-    private Class<? extends SecurablePrincipal> clazz;
 
-    protected SecurablePrincipalStreamSerializer( Class<? extends SecurablePrincipal> clazz ) {
-        this.clazz = clazz;
-    }
-
-    public SecurablePrincipalStreamSerializer() {
-        this( SecurablePrincipal.class );
-    }
-
-    @Override public Class<? extends SecurablePrincipal> getClazz() {
-        return clazz;
+    @Override public Class<SecurablePrincipal> getClazz() {
+        return SecurablePrincipal.class;
     }
 
     @Override public void write( ObjectDataOutput out, SecurablePrincipal object ) throws IOException {

@@ -1,5 +1,6 @@
 package com.dataloom.hazelcast.serializers;
 
+import com.dataloom.mapstores.TestDataFactory;
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ public class RoleStreamSerializerTest
         return new Role(
                 Optional.of( UUID.randomUUID() ),
                 UUID.randomUUID(),
+                TestDataFactory.rolePrincipal(),
                 RandomStringUtils.randomAlphanumeric( 5 ),
                 Optional.of( RandomStringUtils.randomAlphanumeric( 5 ) ) );
     }
