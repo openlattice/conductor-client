@@ -19,6 +19,7 @@ public class RoleStreamSerializer implements SelfRegisteringStreamSerializer<Rol
     }
 
     @Override public Role read( ObjectDataInput in ) throws IOException {
+        //TODO: Split up securable principal stream serializer
         return (Role) SecurablePrincipalStreamSerializer.deserialize( in );
     }
 

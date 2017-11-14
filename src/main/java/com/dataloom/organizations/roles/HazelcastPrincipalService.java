@@ -28,7 +28,6 @@ import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.projections.PrincipalProjection;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -39,13 +38,10 @@ import org.slf4j.LoggerFactory;
 
 public class HazelcastPrincipalService implements SecurePrincipalsManager, AuthorizingComponent {
 
-    private static final Logger                 logger              = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( HazelcastPrincipalService.class );
-    private static       EnumSet<PrincipalType> NESTABLE_PRINCIPALS = EnumSet
-            .of( PrincipalType.ROLE, PrincipalType.USER );
     private final AuthorizationManager              authorizations;
     private final HazelcastAclKeyReservationService reservations;
-    private final UserDirectoryService              uds;
     private final IMap<AclKey, SecurablePrincipal>  principals;
     private final IMap<AclKey, Set<AclKey>>         nestedPrincipals; // RoleName -> Member RoleNames
     private final IMap<String, Auth0UserBasic>      users;
@@ -53,12 +49,10 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     public HazelcastPrincipalService(
             HazelcastInstance hazelcastInstance,
             HazelcastAclKeyReservationService reservations,
-            UserDirectoryService uds,
             AuthorizationManager authorizations ) {
 
         this.authorizations = authorizations;
         this.reservations = reservations;
-        this.uds = uds;
         this.principals = hazelcastInstance.getMap( HazelcastMap.PRINCIPALS.name() );
         this.nestedPrincipals = hazelcastInstance.getMap( HazelcastMap.NESTED_PRINCIPALS.name() );
         this.users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
@@ -207,13 +201,23 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         return principals.executeOnEntries( ep, p );
     }
 
-    @Override public Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p ) {
+    @Override
+    public Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p ) {
         return principals.values( p );
     }
 
     @Override
     public Collection<Principal> getPrincipals( Predicate<AclKey, SecurablePrincipal> p ) {
         return principals.project( new PrincipalProjection(), p );
+    }
+
+    @Override
+    public boolean principalExists( Principal p ) {
+        return reservations.isReserved( p.getId() );
+    }
+
+    @Override public Auth0UserBasic getUser( String userId ) {
+        return Util.getSafely( users, userId );
     }
 
     @Override public Role getRole( UUID organizationId, UUID roleId ) {
