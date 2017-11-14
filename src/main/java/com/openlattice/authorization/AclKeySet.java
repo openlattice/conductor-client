@@ -28,11 +28,11 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class AclKeySet extends HashSet<List<UUID>> {
+public class AclKeySet extends HashSet<AclKey> {
     public AclKeySet() {
     }
 
-    public AclKeySet( Collection<? extends List<UUID>> c ) {
+    public AclKeySet( Collection<? extends AclKey> c ) {
         super( c );
     }
 }

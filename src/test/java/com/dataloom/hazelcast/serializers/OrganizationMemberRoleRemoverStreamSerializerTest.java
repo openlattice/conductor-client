@@ -16,8 +16,8 @@ public class OrganizationMemberRoleRemoverStreamSerializerTest extends
     @Override
     protected NestedPrincipalRemover createInput() {
         return new NestedPrincipalRemover( ImmutableSet.of(
-                TestDataFactory.userPrincipal(),
-                TestDataFactory.userPrincipal()
+               TestDataFactory.aclKey(),
+                TestDataFactory.aclKey()
         ) );
     }
 }
