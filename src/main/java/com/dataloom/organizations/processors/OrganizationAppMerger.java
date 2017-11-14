@@ -1,9 +1,8 @@
 package com.dataloom.organizations.processors;
 
 import com.google.common.collect.ImmutableSet;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
-import com.kryptnostic.rhizome.hazelcast.objects.UUIDSet;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractMerger;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 
 import java.util.UUID;
 

@@ -1,9 +1,8 @@
 package com.dataloom.organizations.processors;
 
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
-import com.kryptnostic.rhizome.hazelcast.objects.SetProxy;
-import com.kryptnostic.rhizome.hazelcast.objects.UUIDSet;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRemover;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
+import com.openlattice.rhizome.hazelcast.SetProxy;
 
 import java.util.Map;
 import java.util.UUID;

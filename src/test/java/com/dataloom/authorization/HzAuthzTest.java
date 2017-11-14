@@ -27,7 +27,6 @@ import com.dataloom.neuron.Neuron;
 import com.dataloom.neuron.pods.NeuronPod;
 import com.datastax.driver.core.Session;
 import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
@@ -36,6 +35,7 @@ import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.kryptnostic.rhizome.pods.CassandraPod;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresPod;
 import com.zaxxer.hikari.HikariDataSource;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
@@ -96,10 +96,10 @@ public class HzAuthzTest extends CassandraBootstrap {
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.addPermission( ImmutableList.of( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
+        hzAuthz.addPermission( new AclKey( key ), p, permissions );
         Assert.assertTrue(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
     }
 
     @Test
@@ -108,11 +108,11 @@ public class HzAuthzTest extends CassandraBootstrap {
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.addPermission( ImmutableList.of( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
+        hzAuthz.addPermission( new AclKey( key ), p, permissions );
         UUID badkey = UUID.randomUUID();
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( badkey ), ImmutableSet.of( p ), permissions ) );
+                hzAuthz.checkIfHasPermissions( new AclKey( badkey ), ImmutableSet.of( p ), permissions ) );
     }
 
     @Test
@@ -121,13 +121,13 @@ public class HzAuthzTest extends CassandraBootstrap {
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.addPermission( ImmutableList.of( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
+        hzAuthz.addPermission( new AclKey( key ), p, permissions );
         Assert.assertTrue(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.removePermission( ImmutableList.of( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
+        hzAuthz.removePermission( new AclKey( key ), p, permissions );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
     }
 
     @Test
@@ -137,17 +137,17 @@ public class HzAuthzTest extends CassandraBootstrap {
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         EnumSet<Permission> badPermissions = EnumSet.of( Permission.DISCOVER, Permission.READ, Permission.LINK );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.setPermission( ImmutableList.of( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
+        hzAuthz.setPermission( new AclKey( key ), p, permissions );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), badPermissions ) );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), badPermissions ) );
         Assert.assertTrue(
-                hzAuthz.checkIfHasPermissions( ImmutableList.of( key ), ImmutableSet.of( p ), permissions ) );
+                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
     }
 
     @Test
     public void testListSecurableObjects() {
-        ImmutableList key = ImmutableList.of( UUID.randomUUID() );
+        AclKey key = new AclKey( UUID.randomUUID() );
         Principal p1 = TestDataFactory.userPrincipal();
         Principal p2 = TestDataFactory.userPrincipal();
 
@@ -174,7 +174,7 @@ public class HzAuthzTest extends CassandraBootstrap {
         Assert.assertTrue(
                 hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
 
-        Stream<List<UUID>> p1Owned = hzAuthz.getAuthorizedObjectsOfType( ImmutableSet.of( p1 ),
+        Stream<AclKey> p1Owned = hzAuthz.getAuthorizedObjectsOfType( ImmutableSet.of( p1 ),
                 SecurableObjectType.EntitySet,
                 EnumSet.of( Permission.OWNER ) );
 
@@ -187,7 +187,7 @@ public class HzAuthzTest extends CassandraBootstrap {
                     hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), EnumSet.of( Permission.OWNER ) ) );
         }
 
-        Stream<List<UUID>> p2Owned = hzAuthz.getAuthorizedObjectsOfType( ImmutableSet.of( p2 ),
+        Stream<AclKey> p2Owned = hzAuthz.getAuthorizedObjectsOfType( ImmutableSet.of( p2 ),
                 SecurableObjectType.EntitySet,
                 EnumSet.of( Permission.OWNER ) );
 

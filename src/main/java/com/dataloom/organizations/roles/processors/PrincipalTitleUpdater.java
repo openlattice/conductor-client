@@ -1,11 +1,12 @@
 package com.dataloom.organizations.roles.processors;
 
-import com.dataloom.authorization.Principal;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 import com.openlattice.authorization.SecurablePrincipal;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.UUID;
 
-public class PrincipalTitleUpdater extends AbstractRhizomeEntryProcessor<Principal, SecurablePrincipal, Object> {
+public class PrincipalTitleUpdater extends AbstractRhizomeEntryProcessor<List<UUID>, SecurablePrincipal, Object> {
     private static final long serialVersionUID = -717197511031518227L;
     private final String newTitle;
 
@@ -14,7 +15,7 @@ public class PrincipalTitleUpdater extends AbstractRhizomeEntryProcessor<Princip
     }
 
     @Override
-    public Object process( Entry<Principal, SecurablePrincipal> entry ) {
+    public Object process( Entry<List<UUID>, SecurablePrincipal> entry ) {
         SecurablePrincipal principal = entry.getValue();
         if ( principal != null ) {
             principal.setTitle( newTitle );

@@ -28,9 +28,10 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.openlattice.authorization.SecurablePrincipal;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.util.UUID;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -38,18 +39,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class SecurablePrincipalStreamSerializer implements SelfRegisteringStreamSerializer<SecurablePrincipal> {
 
-    private Class<? extends SecurablePrincipal> clazz;
-
-    public SecurablePrincipalStreamSerializer( Class<? extends SecurablePrincipal> clazz ) {
-        this.clazz = clazz;
-    }
-
-    public SecurablePrincipalStreamSerializer() {
-        this( SecurablePrincipal.class );
-    }
-
-    @Override public Class<? extends SecurablePrincipal> getClazz() {
-        return clazz;
+    @Override public Class<SecurablePrincipal> getClazz() {
+        return SecurablePrincipal.class;
     }
 
     @Override public void write( ObjectDataOutput out, SecurablePrincipal object ) throws IOException {

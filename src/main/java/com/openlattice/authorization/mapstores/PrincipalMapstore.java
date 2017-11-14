@@ -30,6 +30,7 @@ import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.Role;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
@@ -46,7 +47,7 @@ import java.util.List;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, SecurablePrincipal> {
+public class PrincipalMapstore extends AbstractBasePostgresMapstore<AclKey, SecurablePrincipal> {
     private static Role TEST_ROLE = TestDataFactory.role();
     ;
     private static List<PostgresColumnDefinition> KEY_COLUMNS =
@@ -59,8 +60,8 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, S
         super( HazelcastMap.PRINCIPALS.name(), PRINCIPALS, hds );
     }
 
-    @Override public Principal generateTestKey() {
-        return TEST_ROLE.getPrincipal();
+    @Override public AclKey generateTestKey() {
+        return TEST_ROLE.getAclKey();
     }
 
     @Override public SecurablePrincipal generateTestValue() {
@@ -76,22 +77,23 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, S
     }
 
     @Override protected void bind(
-            PreparedStatement ps, Principal key, SecurablePrincipal value ) throws SQLException {
+            PreparedStatement ps, AclKey key, SecurablePrincipal value ) throws SQLException {
         bind( ps, key );
-        Array aclKey = PostgresArrays.createUuidArray( ps.getConnection(), value.getAclKey().stream() );
-        ps.setArray( 3, aclKey );
+
+        ps.setString( 2, value.getPrincipalType().name() );
+        ps.setString( 3, value.getName() );
         ps.setString( 4, value.getTitle() );
         ps.setString( 5, value.getDescription() );
 
         // UPDATE
-        ps.setArray( 6, aclKey );
-        ps.setString( 7, value.getTitle() );
-        ps.setString( 8, value.getDescription() );
+        ps.setString( 6, value.getPrincipalType().name() );
+        ps.setString( 7, value.getName() );
+        ps.setString( 8, value.getTitle() );
+        ps.setString( 9, value.getDescription() );
     }
 
-    @Override protected void bind( PreparedStatement ps, Principal key ) throws SQLException {
-        ps.setString( 1, key.getType().name() );
-        ps.setString( 2, key.getId() );
+    @Override protected void bind( PreparedStatement ps, AclKey key ) throws SQLException {
+        ps.setArray( 1, PostgresArrays.createUuidArray( ps.getConnection(), key.stream() ) );
     }
 
     @Override
@@ -99,7 +101,7 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<Principal, S
         return ResultSetAdapters.securablePrincipal( rs );
     }
 
-    @Override protected Principal mapToKey( ResultSet rs ) throws SQLException {
-        return ResultSetAdapters.principal( rs );
+    @Override protected AclKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.aclKey( rs );
     }
 }

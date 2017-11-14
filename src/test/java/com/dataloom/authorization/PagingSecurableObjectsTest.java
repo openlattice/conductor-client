@@ -6,6 +6,7 @@ import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import com.openlattice.authorization.AclKey;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -19,18 +20,18 @@ import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.collect.ImmutableList;
 
 public class PagingSecurableObjectsTest extends HzAuthzTest {
-    private static final Logger                     logger = LoggerFactory.getLogger( PagingSecurableObjectsTest.class );
+    private static final Logger logger = LoggerFactory.getLogger( PagingSecurableObjectsTest.class );
 
     // Entity Set acl Keys
-    protected static final List<UUID>              key1 = ImmutableList.of( UUID.randomUUID() );
-    protected static final List<UUID>              key2 = ImmutableList.of( UUID.randomUUID() );
-    protected static final List<UUID>              key3 = ImmutableList.of( UUID.randomUUID() );
+    protected static final AclKey key1 = new AclKey( UUID.randomUUID() );
+    protected static final AclKey key2 = new AclKey( UUID.randomUUID() );
+    protected static final AclKey key3 = new AclKey( UUID.randomUUID() );
 
     // User and roles
-    protected static final Principal               u1 = TestDataFactory.userPrincipal();
-    protected static final Principal               r1 = TestDataFactory.rolePrincipal();
-    protected static final Principal               r2 = TestDataFactory.rolePrincipal();
-    protected static final Principal               r3 = TestDataFactory.rolePrincipal();
+    protected static final Principal               u1                = TestDataFactory.userPrincipal();
+    protected static final Principal               r1                = TestDataFactory.rolePrincipal();
+    protected static final Principal               r2                = TestDataFactory.rolePrincipal();
+    protected static final Principal               r3                = TestDataFactory.rolePrincipal();
     protected static final NavigableSet<Principal> currentPrincipals = new TreeSet<Principal>();
 
     @BeforeClass
@@ -72,7 +73,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
                 null,
                 SMALL_PAGE_SIZE );
 
-        logger.debug( "First page has result: " + result);
+        logger.debug( "First page has result: " + result );
         //First page should have 1 result.
         Assert.assertNotNull( result.getPagingToken() );
         Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
@@ -83,11 +84,10 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
                 result.getPagingToken(),
                 SMALL_PAGE_SIZE );
 
-        logger.debug( "Second page has result: " + result);
+        logger.debug( "Second page has result: " + result );
         //Second page should have 1 result.
         Assert.assertNotNull( result.getPagingToken() );
         Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
-
 
         result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
                 SecurableObjectType.EntitySet,
@@ -95,11 +95,11 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
                 result.getPagingToken(),
                 SMALL_PAGE_SIZE );
 
-        logger.debug( "Third page has result: " + result);
+        logger.debug( "Third page has result: " + result );
         //Third page should have 1 result.
-        try { 
+        try {
             Assert.assertNull( result.getPagingToken() );
-        } catch ( AssertionError e ){
+        } catch ( AssertionError e ) {
             result = hzAuthz.getAuthorizedObjectsOfType( currentPrincipals,
                     SecurableObjectType.EntitySet,
                     Permission.READ,
@@ -109,7 +109,7 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
             throw e;
         }
         Assert.assertEquals( 1, result.getAuthorizedObjects().size() );
-}
+    }
 
     @Test
     public void testNoResults() {

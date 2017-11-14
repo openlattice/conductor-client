@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ * Copyright (C) 2017. OpenLattice, Inc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,34 +14,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * You can contact the owner of the copyright at support@thedataloom.com
+ * You can contact the owner of the copyright at support@openlattice.com
+ *
  */
 
-package com.dataloom.authorization.events;
-
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+package com.openlattice.authorization.projections;
 
 import com.dataloom.authorization.Principal;
+import com.hazelcast.projection.Projection;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.SecurablePrincipal;
+import java.util.Map.Entry;
 
-public class AclUpdateEvent {
-    
-    private AclKey         aclKeys;
-    private Set<Principal> principals;
-    
-    public AclUpdateEvent( AclKey aclKeys, Set<Principal> principals ) {
-        this.aclKeys = aclKeys;
-        this.principals = principals;
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+public class PrincipalProjection extends Projection<Entry<AclKey, SecurablePrincipal>, Principal> {
+    @Override public Principal transform( Entry<AclKey, SecurablePrincipal> input ) {
+        return input.getValue().getPrincipal();
     }
-    
-    public AclKey getAclKeys() {
-        return aclKeys;
-    }
-    
-    public Set<Principal> getPrincipals() {
-        return principals;
-    }
-
 }

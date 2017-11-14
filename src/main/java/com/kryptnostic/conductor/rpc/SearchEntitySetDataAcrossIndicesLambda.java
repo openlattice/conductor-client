@@ -1,7 +1,7 @@
 package com.kryptnostic.conductor.rpc;
 
 import com.dataloom.data.EntityKey;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 
 import java.io.Serializable;
 import java.util.List;

@@ -23,11 +23,8 @@ import com.dataloom.apps.App;
 import com.dataloom.apps.AppConfigKey;
 import com.dataloom.apps.AppType;
 import com.dataloom.apps.AppTypeSetting;
-import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
-
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
@@ -47,46 +44,22 @@ import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
 import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.organizations.PrincipalSet;
-import com.dataloom.organizations.mapstores.UUIDSetMapstore;
-import com.dataloom.organization.roles.Role;
-import com.dataloom.organization.roles.RoleKey;
-import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.requests.Status;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Table;
-import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.authorization.mapstores.PrincipalMapstore;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.*;
-import com.openlattice.postgres.mapstores.AclKeysMapstore;
-import com.openlattice.postgres.mapstores.AssociationTypeMapstore;
-import com.openlattice.postgres.mapstores.ComplexTypeMapstore;
-import com.openlattice.postgres.mapstores.EdmVersionsMapstore;
-import com.openlattice.postgres.mapstores.EntitySetMapstore;
-import com.openlattice.postgres.mapstores.EntitySetPropertyMetadataMapstore;
-import com.openlattice.postgres.mapstores.EntityTypeMapstore;
-import com.openlattice.postgres.mapstores.EnumTypesMapstore;
-import com.openlattice.postgres.mapstores.LinkingEdgesMapstore;
-import com.openlattice.postgres.mapstores.LinkingVerticesMapstore;
-import com.openlattice.postgres.mapstores.NamesMapstore;
-import com.openlattice.postgres.mapstores.OrganizationDescriptionsMapstore;
-import com.openlattice.postgres.mapstores.OrganizationEmailDomainsMapstore;
-import com.openlattice.postgres.mapstores.OrganizationMembersMapstore;
-import com.openlattice.postgres.mapstores.OrganizationTitlesMapstore;
-import com.openlattice.postgres.mapstores.RequestsMapstore;
-import com.openlattice.postgres.mapstores.SchemasMapstore;
-import com.openlattice.postgres.mapstores.SecurableObjectTypeMapstore;
-import com.openlattice.postgres.mapstores.SyncIdsMapstore;
-import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -337,7 +310,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<Principal, SecurablePrincipal> principalsMapstore() {
+    public SelfRegisteringMapStore<AclKey, SecurablePrincipal> principalsMapstore() {
         return new PrincipalMapstore( hikariDataSource );
     }
 

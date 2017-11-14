@@ -47,6 +47,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
 import com.kryptnostic.datastore.util.Util;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresQuery;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
@@ -336,12 +337,12 @@ public class EdmService implements EdmManager {
         /*
          * We cleanup permissions first as this will make entity set unavailable, even if delete fails.
          */
-        authorizations.deletePermissions( ImmutableList.of( entitySetId ) );
+        authorizations.deletePermissions( new AclKey( entitySetId ) );
         entityType.getProperties().stream()
-                .map( propertyTypeId -> ImmutableList.of( entitySetId, propertyTypeId ) )
-                .forEach( list -> {
-                    authorizations.deletePermissions( list );
-                    entitySetPropertyMetadata.delete( new EntitySetPropertyKey( list.get( 0 ), list.get( 1 ) ) );
+                .map( propertyTypeId -> new AclKey( entitySetId, propertyTypeId ) )
+                .forEach( aclKey -> {
+                    authorizations.deletePermissions( aclKey );
+                    entitySetPropertyMetadata.delete( new EntitySetPropertyKey( aclKey.get( 0 ), aclKey.get( 1 ) ) );
                 } );
 
         Util.deleteSafely( entitySets, entitySetId );
@@ -372,14 +373,14 @@ public class EdmService implements EdmManager {
         try {
             setupDefaultEntitySetPropertyMetadata( entitySet.getId(), entitySet.getEntityTypeId() );
 
-            authorizations.addPermission( ImmutableList.of( entitySet.getId() ),
+            authorizations.addPermission( new AclKey( entitySet.getId() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
 
-            authorizations.createEmptyAcl( ImmutableList.of( entitySet.getId() ), SecurableObjectType.EntitySet );
+            authorizations.createEmptyAcl( new AclKey( entitySet.getId() ), SecurableObjectType.EntitySet );
 
             ownablePropertyTypes.stream()
-                    .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
+                    .map( propertyTypeId -> new AclKey( entitySet.getId(), propertyTypeId ) )
                     .peek( aclKey -> authorizations.addPermission(
                             aclKey,
                             principal,
@@ -632,10 +633,10 @@ public class EdmService implements EdmManager {
                 UUID esId = entitySet.getId();
                 Map<UUID, PropertyType> propertyTypes = propertyTypeIds.stream().collect( Collectors.toMap(
                         propertyTypeId -> propertyTypeId, propertyTypeId -> getPropertyType( propertyTypeId ) ) );
-                Iterable<Principal> owners = authorizations.getSecurableObjectOwners( Arrays.asList( esId ) );
+                Iterable<Principal> owners = authorizations.getSecurableObjectOwners( new AclKey( esId ) );
                 for ( Principal owner : owners ) {
                     propertyTypeIds.stream()
-                            .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
+                            .map( propertyTypeId -> new AclKey( entitySet.getId(), propertyTypeId ) )
                             .forEach( aclKey -> {
                                 authorizations.addPermission(
                                         aclKey,

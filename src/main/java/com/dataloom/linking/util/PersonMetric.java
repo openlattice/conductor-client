@@ -1,7 +1,7 @@
 package com.dataloom.linking.util;
 
 import com.google.common.collect.Sets;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;

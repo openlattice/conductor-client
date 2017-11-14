@@ -19,18 +19,19 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.AclKey;
+import static com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers.DelegatedUUIDListStreamSerializer;
+
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.serialization.StreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
+import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import org.springframework.stereotype.Component;
-
+import com.openlattice.authorization.AclKey;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import java.io.IOException;
-
-import static com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers.DelegatedUUIDListStreamSerializer;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -44,10 +45,18 @@ public class AclKeyStreamSerializer extends DelegatedUUIDListStreamSerializer
     }
 
     @Override public AclKey read( ObjectDataInput in ) throws IOException {
-        return AclKey.wrap( ListStreamSerializers.fastUUIDListDeserialize( in ) );
+        return deserialize( in );
     }
 
     @Override public int getTypeId() {
         return StreamSerializerTypeIds.ACL_KEY.ordinal();
+    }
+
+    public static void serialize( ObjectDataOutput out, AclKey object ) {
+
+    }
+
+    public static AclKey deserialize( ObjectDataInput in ) throws IOException {
+        return new AclKey( ListStreamSerializers.fastUUIDArrayDeserialize( in ) );
     }
 }

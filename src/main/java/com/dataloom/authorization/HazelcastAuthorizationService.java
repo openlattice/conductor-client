@@ -19,11 +19,7 @@
 
 package com.dataloom.authorization;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.dataloom.authorization.events.AclUpdateEvent;
-import com.dataloom.authorization.paging.AuthorizedObjectsPagingInfo;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
@@ -33,15 +29,16 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.openlattice.authorization.AclKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
     private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
@@ -61,20 +58,20 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         this.eventBus = checkNotNull( eventBus );
     }
 
-    private void updateAcl( List<UUID> aclKey, Principal principal ) {
+    private void updateAcl( AclKey aclKey, Principal principal ) {
         if ( aclKey.size() == 1 ) {
             eventBus.post( new AclUpdateEvent( aclKey, ImmutableSet.of( principal ) ) );
         }
     }
 
     @Override
-    public void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType ) {
+    public void createEmptyAcl( AclKey aclKey, SecurableObjectType objectType ) {
         aqs.createEmptyAcl( aclKey, objectType );
     }
 
     @Override
     public void addPermission(
-            List<UUID> key,
+            AclKey key,
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ),
@@ -84,7 +81,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public void removePermission(
-            List<UUID> key,
+            AclKey key,
             Principal principal,
             Set<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionRemover( permissions ) );
@@ -93,7 +90,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public void setPermission(
-            List<UUID> key,
+            AclKey key,
             Principal principal,
             Set<Permission> permissions ) {
         aces.set( new AceKey( key, principal ), DelegatedPermissionEnumSet.wrap( permissions ) );
@@ -101,7 +98,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public void deletePermissions( List<UUID> aclKeys ) {
+    public void deletePermissions( AclKey aclKeys ) {
         aqs.deletePermissionsByAclKeys( aclKeys );
     }
 
@@ -112,7 +109,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Override
     public boolean checkIfHasPermissions(
-            List<UUID> key,
+            AclKey key,
             Set<Principal> principals,
             EnumSet<Permission> requiredPermissions ) {
         Set<Permission> permissions = getSecurableObjectPermissions( key, principals );
@@ -120,14 +117,14 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public boolean checkIfUserIsOwner( List<UUID> aclKey, Principal principal ) {
+    public boolean checkIfUserIsOwner( AclKey aclKey, Principal principal ) {
         checkArgument( principal.getType().equals( PrincipalType.USER ), "A role cannot be the owner of an object" );
         return checkIfHasPermissions( aclKey, ImmutableSet.of( principal ), EnumSet.of( Permission.OWNER ) );
     }
 
     @Override
     public Set<Permission> getSecurableObjectPermissions(
-            List<UUID> key,
+            AclKey key,
             Set<Principal> principals ) {
         return aces
                 .getAll( principals
@@ -142,7 +139,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public Stream<List<UUID>> getAuthorizedObjectsOfType(
+    public Stream<AclKey> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
@@ -154,7 +151,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public Stream<List<UUID>> getAuthorizedObjectsOfType(
+    public Stream<AclKey> getAuthorizedObjectsOfType(
             Set<Principal> principals,
             SecurableObjectType objectType,
             EnumSet<Permission> aces ) {
@@ -176,22 +173,22 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public Acl getAllSecurableObjectPermissions( List<UUID> key ) {
+    public Acl getAllSecurableObjectPermissions( AclKey key ) {
         return aqs.getAclsForSecurableObject( key );
     }
 
     @Override
-    public Stream<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions ) {
+    public Stream<AclKey> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions ) {
         return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
     @Override
-    public Stream<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions ) {
+    public Stream<AclKey> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions ) {
         return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
     @Override
-    public Iterable<Principal> getSecurableObjectOwners( List<UUID> key ) {
+    public Iterable<Principal> getSecurableObjectOwners( AclKey key ) {
         return aqs.getOwnersForSecurableObject( key );
     }
 

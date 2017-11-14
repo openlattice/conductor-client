@@ -19,7 +19,7 @@
 
 package com.dataloom.edm.schemas.processors;
 
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRemover;
 
 public class SchemaRemover extends AbstractRemover<String, DelegatedStringSet, String> {

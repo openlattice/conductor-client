@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ * Copyright (C) 2017. OpenLattice, Inc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,25 +14,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * You can contact the owner of the copyright at support@thedataloom.com
+ * You can contact the owner of the copyright at support@openlattice.com
+ *
  */
 
-package com.dataloom.authorization;
+package com.openlattice.authorization;
 
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
-
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class AclKey extends DelegatedUUIDList {
-    public AclKey( List<UUID> uuids ) {
-        super( uuids );
+public class AclKeySet extends HashSet<AclKey> {
+    public AclKeySet() {
     }
 
-    public static AclKey wrap( List<UUID> uuids ) {
-        return new AclKey( uuids );
+    public AclKeySet( Collection<? extends AclKey> c ) {
+        super( c );
     }
 }

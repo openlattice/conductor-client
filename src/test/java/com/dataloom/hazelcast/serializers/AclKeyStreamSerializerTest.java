@@ -19,11 +19,10 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.AclKey;
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.AclKeyStreamSerializer;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDList;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
+import com.openlattice.authorization.AclKey;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -38,6 +37,6 @@ public class AclKeyStreamSerializerTest extends
 
     @Override
     protected AclKey createInput() {
-        return AclKey.wrap( TestDataFactory.aclKey() );
+        return TestDataFactory.aclKey();
     }
 }

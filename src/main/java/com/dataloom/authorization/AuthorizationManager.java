@@ -22,6 +22,7 @@ package com.dataloom.authorization;
 import com.dataloom.authorization.paging.AuthorizedObjectsPagingInfo;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.AclKey;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -51,48 +52,47 @@ public interface AuthorizationManager {
      * @param aclKey The key for the object whose acl is being created.
      * @param objectType The type of the object for lookup purposes.
      */
-    void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType );
+    void createEmptyAcl( AclKey aclKey, SecurableObjectType objectType );
 
     void addPermission(
-            List<UUID> aclKeys,
+            AclKey aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
     void removePermission(
-            List<UUID> aclKeys,
+            AclKey aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
     void setPermission(
-            List<UUID> aclKeys,
+            AclKey aclKeys,
             Principal principal,
             Set<Permission> permissions );
 
-    void deletePermissions( List<UUID> aclKey );
+    void deletePermissions( AclKey aclKey );
 
     void deletePrincipalPermissions( Principal principal );
 
     boolean checkIfHasPermissions(
-            List<UUID> aclKeys,
+            AclKey aclKeys,
             Set<Principal> principals,
             EnumSet<Permission> requiredPermissions );
 
-    boolean checkIfUserIsOwner( List<UUID> aclkeys, Principal principal );
+    boolean checkIfUserIsOwner( AclKey aclkeys, Principal principal );
     // Utility functions for retrieving permissions
 
     Set<Permission> getSecurableObjectPermissions(
-            List<UUID> aclKeys,
+            AclKey aclKeys,
             Set<Principal> principals );
 
-    Acl getAllSecurableObjectPermissions(
-            List<UUID> key );
+    Acl getAllSecurableObjectPermissions( AclKey key );
 
-    Stream<List<UUID>> getAuthorizedObjectsOfType(
+    Stream<AclKey> getAuthorizedObjectsOfType(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
 
-    Stream<List<UUID>> getAuthorizedObjectsOfType(
+    Stream<AclKey> getAuthorizedObjectsOfType(
             Set<Principal> principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions );
@@ -104,9 +104,9 @@ public interface AuthorizationManager {
             String offset,
             int pageSize );
 
-    Stream<List<UUID>> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
+    Stream<AclKey> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
 
-    Stream<List<UUID>> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
+    Stream<AclKey> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
     
-    Iterable<Principal> getSecurableObjectOwners( List<UUID> key );
+    Iterable<Principal> getSecurableObjectOwners( AclKey key );
 }

@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.authorization.securable.AbstractSecurableObject;
 import com.google.common.collect.ImmutableList;
+import com.openlattice.authorization.AclKey;
 
 public interface AuthorizingComponent {
     AuthorizationManager getAuthorizationManager();
@@ -36,38 +37,38 @@ public interface AuthorizingComponent {
             Permission requiredPermission,
             Permission... requiredPermissions ) {
         return abs -> isAuthorized( requiredPermission, requiredPermissions )
-                .test( ImmutableList.of( abs.getId() ) );
+                .test( new AclKey( abs.getId() ) );
     }
 
-    default Predicate<List<UUID>> isAuthorized(
+    default Predicate<AclKey> isAuthorized(
             Permission requiredPermission,
             Permission... requiredPermissions ) {
         return isAuthorized( EnumSet.of( requiredPermission, requiredPermissions ) );
     }
 
-    default Predicate<List<UUID>> isAuthorized( EnumSet<Permission> requiredPermissions ) {
+    default Predicate<AclKey> isAuthorized( EnumSet<Permission> requiredPermissions ) {
         return aclKey -> getAuthorizationManager().checkIfHasPermissions( aclKey,
                 Principals.getCurrentPrincipals(),
                 requiredPermissions );
     }
 
     default boolean owns( List<UUID> aclKey ) {
-        return isAuthorized( Permission.OWNER ).test( aclKey );
+        return isAuthorized( Permission.OWNER ).test( new AclKey( aclKey ) );
     }
 
-    default void ensureReadAccess( List<UUID> aclKey ) {
+    default void ensureReadAccess( AclKey aclKey ) {
         accessCheck( aclKey, EnumSet.of( Permission.READ ) );
     }
 
-    default void ensureWriteAccess( List<UUID> aclKey ) {
+    default void ensureWriteAccess( AclKey aclKey ) {
         accessCheck( aclKey, EnumSet.of( Permission.WRITE ) );
     }
 
-    default void ensureOwnerAccess( List<UUID> aclKey ) {
+    default void ensureOwnerAccess( AclKey aclKey ) {
         accessCheck( aclKey, EnumSet.of( Permission.OWNER ) );
     }
 
-    default void ensureLinkAccess( List<UUID> aclKey ) {
+    default void ensureLinkAccess( AclKey aclKey ) {
         accessCheck( aclKey, EnumSet.of( Permission.LINK ) );
     }
 
@@ -77,7 +78,7 @@ public interface AuthorizingComponent {
         }
     }
 
-    default void accessCheck( List<UUID> aclKey, EnumSet<Permission> requiredPermissions ) {
+    default void accessCheck( AclKey aclKey, EnumSet<Permission> requiredPermissions ) {
         if ( !getAuthorizationManager().checkIfHasPermissions(
                 aclKey,
                 Principals.getCurrentPrincipals(),
@@ -86,7 +87,7 @@ public interface AuthorizingComponent {
         }
     }
 
-    default Stream<List<UUID>> getAccessibleObjects(
+    default Stream<AclKey> getAccessibleObjects(
             SecurableObjectType securableObjectType,
             EnumSet<Permission> requiredPermissions ) {
         return getAuthorizationManager().getAuthorizedObjectsOfType(

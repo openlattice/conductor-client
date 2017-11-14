@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.*;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
@@ -144,7 +145,7 @@ public class AuthorizationQueryService {
      * @param desiredPermissions
      * @return
      */
-    public Stream<List<UUID>> getAuthorizedAclKeys(
+    public Stream<AclKey> getAuthorizedAclKeys(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
@@ -161,7 +162,7 @@ public class AuthorizationQueryService {
      * @param desiredPermissions
      * @return
      */
-    public Set<List<UUID>> getAuthorizedAclKeys(
+    public Set<AclKey> getAuthorizedAclKeys(
             Set<Principal> principals,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
@@ -182,7 +183,7 @@ public class AuthorizationQueryService {
         int limit = pageSize;
         int offset = ( offsetStr == null ) ? 0 : Integer.parseInt( offsetStr );
 
-        Set<List<UUID>> results = getAuthorizedAclKeysForPrincipals( principals,
+        Set<AclKey> results = getAuthorizedAclKeysForPrincipals( principals,
                 EnumSet.of( permission ),
                 Optional.of( objectType ),
                 Optional.of( limit ),
@@ -201,7 +202,7 @@ public class AuthorizationQueryService {
      * @param desiredPermissions
      * @return
      */
-    public Stream<List<UUID>> getAuthorizedAclKeys(
+    public Stream<AclKey> getAuthorizedAclKeys(
             Principal principal,
             EnumSet<Permission> desiredPermissions ) {
         return getAuthorizedAclKeysForPrincipals( ImmutableSet.of( principal ), desiredPermissions, Optional.empty() );
@@ -214,7 +215,7 @@ public class AuthorizationQueryService {
      * @param desiredPermissions
      * @return
      */
-    public Stream<List<UUID>> getAuthorizedAclKeys(
+    public Stream<AclKey> getAuthorizedAclKeys(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions ) {
         return getAuthorizedAclKeysForPrincipals( principals, desiredPermissions, Optional.empty() );
@@ -263,7 +264,7 @@ public class AuthorizationQueryService {
 
     }
 
-    public Stream<List<UUID>> getAuthorizedAclKeysForPrincipals(
+    public Stream<AclKey> getAuthorizedAclKeysForPrincipals(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions,
             Optional<SecurableObjectType> securableObjectType ) {
@@ -274,7 +275,7 @@ public class AuthorizationQueryService {
                 Optional.empty() );
     }
 
-    public Stream<List<UUID>> getAuthorizedAclKeysForPrincipals(
+    public Stream<AclKey> getAuthorizedAclKeysForPrincipals(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions,
             Optional<SecurableObjectType> securableObjectType,
@@ -287,7 +288,7 @@ public class AuthorizationQueryService {
                     securableObjectType,
                     limit,
                     offset );
-            List<List<UUID>> result = Lists.newArrayList();
+            List<AclKey> result = Lists.newArrayList();
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.aclKey( rs ) );
@@ -301,7 +302,7 @@ public class AuthorizationQueryService {
         }
     }
 
-    public Stream<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {
+    public Stream<Principal> getPrincipalsForSecurableObject( AclKey aclKeys ) {
         try ( Connection connection = hds.getConnection();
                 PreparedStatement ps = connection.prepareStatement( aclsForSecurableObjectSql ) ) {
             List<Principal> result = Lists.newArrayList();
@@ -319,7 +320,7 @@ public class AuthorizationQueryService {
         }
     }
 
-    public Acl getAclsForSecurableObject( List<UUID> aclKeys ) {
+    public Acl getAclsForSecurableObject( AclKey aclKeys ) {
         Stream<Ace> accessControlEntries = getPrincipalsForSecurableObject( aclKeys )
                 .map( principal -> new AceKey( aclKeys, principal ) )
                 .map( aceKey -> new AceFuture( aceKey.getPrincipal(), aces.getAsync( aceKey ) ) )
@@ -328,7 +329,7 @@ public class AuthorizationQueryService {
 
     }
 
-    public void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType ) {
+    public void createEmptyAcl( AclKey aclKey, SecurableObjectType objectType ) {
         try ( Connection connection = hds.getConnection();
                 PreparedStatement ps = connection.prepareStatement( setObjectTypeSql ) ) {
             ps.setString( 1, objectType.name() );
@@ -341,7 +342,7 @@ public class AuthorizationQueryService {
         }
     }
 
-    public void deletePermissionsByAclKeys( List<UUID> aclKey ) {
+    public void deletePermissionsByAclKeys( AclKey aclKey ) {
         try ( Connection connection = hds.getConnection();
                 PreparedStatement ps = connection.prepareStatement( deletePermissionsByAclKeysSql ) ) {
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
@@ -366,7 +367,7 @@ public class AuthorizationQueryService {
         }
     }
 
-    public Iterable<Principal> getOwnersForSecurableObject( List<UUID> aclKeys ) {
+    public Iterable<Principal> getOwnersForSecurableObject( AclKey aclKeys ) {
         try ( Connection connection = hds.getConnection();
                 PreparedStatement ps = connection.prepareStatement( ownersForSecurableObjectSql ) ) {
             List<Principal> result = Lists.newArrayList();

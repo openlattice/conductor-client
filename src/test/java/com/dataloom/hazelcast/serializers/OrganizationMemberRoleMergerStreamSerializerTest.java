@@ -16,8 +16,8 @@ public class OrganizationMemberRoleMergerStreamSerializerTest extends
     @Override
     protected NestedPrincipalMerger createInput() {
         return new NestedPrincipalMerger( ImmutableSet.of(
-                TestDataFactory.userPrincipal(),
-                TestDataFactory.userPrincipal()
+                TestDataFactory.aclKey(),
+                TestDataFactory.aclKey()
         ) );
     }
 }
