@@ -54,6 +54,7 @@ import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.authorization.mapstores.PrincipalMapstore;
@@ -323,7 +324,7 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<Principal, SecurablePrincipal> principalsMapstore() {
+    public SelfRegisteringMapStore<AclKey, SecurablePrincipal> principalsMapstore() {
         return new PrincipalMapstore( hikariDataSource );
     }
 

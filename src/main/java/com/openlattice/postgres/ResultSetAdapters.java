@@ -90,7 +90,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.openlattice.authorization.AclKey;
-import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import com.openlattice.authorization.SecurablePrincipal;
 import java.sql.Array;
 import java.sql.ResultSet;
@@ -438,13 +437,13 @@ public final class ResultSetAdapters {
         return new Status( request, principal, status );
     }
 
-//    public static Role role( ResultSet rs ) throws SQLException {
-//        UUID roleId = roleId( rs );
-//        UUID orgId = organizationId( rs );
-//        String title = nullableTitle( rs );
-//        String description = description( rs );
-//        return new Role( Optional.of( roleId ), orgId, title, Optional.fromNullable( description ) );
-//    }
+    //    public static Role role( ResultSet rs ) throws SQLException {
+    //        UUID roleId = roleId( rs );
+    //        UUID orgId = organizationId( rs );
+    //        String title = nullableTitle( rs );
+    //        String description = description( rs );
+    //        return new Role( Optional.of( roleId ), orgId, title, Optional.fromNullable( description ) );
+    //    }
 
     public static PrincipalSet principalSet( ResultSet rs ) throws SQLException {
         Array usersArray = rs.getArray( PRINCIPAL_IDS.getName() );
