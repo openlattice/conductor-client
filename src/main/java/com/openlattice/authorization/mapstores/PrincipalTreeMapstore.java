@@ -32,6 +32,7 @@ import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -64,8 +65,11 @@ public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, 
 
     @Override protected void bind( PreparedStatement ps, AclKey key, AclKeySet value ) throws SQLException {
         bind( ps, key );
-        ps.setArray( 2, PostgresArrays.createUuidArrayOfArrays( ps.getConnection(),
-                value.stream().map( aclKey -> aclKey.toArray( new UUID[ 0 ] ) ) ) );
+        Array arr = PostgresArrays.createUuidArrayOfArrays( ps.getConnection(),
+                value.stream().map( aclKey -> aclKey.toArray( new UUID[ 0 ] ) ) );
+        ps.setArray( 2, arr );
+        ps.setArray( 3, arr ); //For update on conflict statement.
+
     }
 
     @Override protected void bind( PreparedStatement ps, AclKey key ) throws SQLException {

@@ -228,7 +228,6 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override public Role getRole( UUID organizationId, UUID roleId ) {
         AclKey aclKey = new AclKey( organizationId, roleId );
-
         return (Role) Util.getSafely( principals, aclKey );
     }
 
