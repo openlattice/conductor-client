@@ -56,6 +56,10 @@ public interface SecurePrincipalsManager {
 
     //More logical to use Principal
 
+    void removePrincipalFromPrincipals( AclKey source, Predicate targetFilter );
+
+    Collection<SecurablePrincipal> getAllPrincipalsWithPrincipal( AclKey aclKey );
+
     // Methods about users
     Collection<Principal> getAllUsersWithPrincipal( AclKey principal );
 
