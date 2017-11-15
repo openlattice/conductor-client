@@ -7,6 +7,8 @@ import java.lang.invoke.SerializedLambda;
 import java.util.UUID;
 import java.util.function.Function;
 
+import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.serializers.AclKeyKryoSerializer;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.springframework.stereotype.Component;
 
@@ -57,6 +59,8 @@ public class ConductorElasticsearchCallStreamSerializer implements SelfRegisteri
 
             kryo.register( Function.class,
                     new ClosureSerializer() );
+
+            kryo.register( AclKey.class, new AclKeyKryoSerializer() );
 
             return kryo;
         }

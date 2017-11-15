@@ -33,7 +33,10 @@ import com.openlattice.authorization.AclKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.EnumSet;
+import java.util.NavigableSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,7 +47,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
 
     private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
-    private final IMap<List<UUID>, SecurableObjectType>    securableObjectTypes;
     private final AuthorizationQueryService                aqs;
     private final EventBus                                 eventBus;
 
@@ -53,7 +55,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             AuthorizationQueryService aqs,
             EventBus eventBus ) {
         aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
-        securableObjectTypes = hazelcastInstance.getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
         this.aqs = checkNotNull( aqs );
         this.eventBus = checkNotNull( eventBus );
     }
