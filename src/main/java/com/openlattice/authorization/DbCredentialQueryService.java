@@ -24,12 +24,16 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DbCredentialQueryService {
+    private static final Logger logger       = LoggerFactory.getLogger( DbCredentialQueryService.class );
     private static final String SET_PASSWORD = "ALTER USER ? WITH PASSWORD ?";
+    private static final String DELETE_USER  = "DELETE USER ?";
     private static final String CREATE_USER  = "CREATE USER ? WITH PASSWORD ?";
     private final HikariDataSource hds;
 
@@ -38,17 +42,31 @@ public class DbCredentialQueryService {
     }
 
     public void createUser( String userId, String credential ) {
-        try ( Connection conn = hds.getConnection(); PreparedStatement ps = conn.prepareStatement( SET_PASSWORD ) ) {
-
+        try ( Connection conn = hds.getConnection(); PreparedStatement ps = conn.prepareStatement( CREATE_USER ) ) {
             ps.setString( 1, userId );
             ps.setString( 2, credential );
             ps.execute();
         } catch ( SQLException e ) {
-            e.printStackTrace();
+            logger.error( "Unable to create user {}", userId, e );
         }
     }
 
     public void setCredential( String userId, String credential ) {
+        try ( Connection conn = hds.getConnection(); PreparedStatement ps = conn.prepareStatement( SET_PASSWORD ) ) {
+            ps.setString( 1, userId );
+            ps.setString( 2, credential );
+            ps.execute();
+        } catch ( SQLException e ) {
+            logger.error( "Unable to set creds for user {}", userId, e );
+        }
+    }
 
+    public void deleteCredential( String userId ) {
+        try ( Connection conn = hds.getConnection(); PreparedStatement ps = conn.prepareStatement( DELETE_USER ) ) {
+            ps.setString( 1, userId );
+            ps.execute();
+        } catch ( SQLException e ) {
+            logger.error( "Unable to delete user {}", userId, e );
+        }
     }
 }

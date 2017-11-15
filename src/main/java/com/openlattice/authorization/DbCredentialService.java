@@ -42,17 +42,25 @@ public class DbCredentialService {
 
     private static final SecureRandom r = new SecureRandom();
 
-    private final IMap<String, String> dbcreds;
+    private final IMap<String, String>     dbcreds;
+    private final DbCredentialQueryService dcqs;
 
     public DbCredentialService( HazelcastInstance hazelcastInstance, HikariDataSource hds ) {
         this.dbcreds = hazelcastInstance.getMap( HazelcastMap.DB_CREDS.name() );
+        this.dcqs = new DbCredentialQueryService( hds );
     }
 
     public String getDbCredential( String userId ) {
         return Util.getSafely( dbcreds, userId );
     }
 
-    public String newDbCredential( String userId ) {
+    public String createUser( String userId ) {
+        String cred = generateCredential();
+        dcqs.createUser( userId, cred );
+        return cred;
+    }
+
+    public String setDbCredential( String userId ) {
         String cred = generateCredential();
         dbcreds.set( userId, cred );
         return cred;
