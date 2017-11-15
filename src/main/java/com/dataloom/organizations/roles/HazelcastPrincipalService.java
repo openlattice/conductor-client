@@ -15,6 +15,7 @@ import com.dataloom.organizations.processors.NestedPrincipalMerger;
 import com.dataloom.organizations.processors.NestedPrincipalRemover;
 import com.dataloom.organizations.roles.processors.PrincipalDescriptionUpdater;
 import com.dataloom.organizations.roles.processors.PrincipalTitleUpdater;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
@@ -66,7 +67,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         final AclKey aclKey = principal.getAclKey();
 
         try {
-            authorizations .createEmptyAcl( aclKey, principal.getCategory() );
+            authorizations.createEmptyAcl( aclKey, principal.getCategory() );
             authorizations.addPermission( aclKey, owner, EnumSet.allOf( Permission.class ) );
         } catch ( Exception e ) {
             logger.error( "Unable to create principal {}", principal, e );
@@ -241,6 +242,9 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override public Collection<SecurablePrincipal> getAllPrincipals( SecurablePrincipal sp ) {
         final AclKeySet roles = Util.getSafely( principalTrees, sp.getAclKey() );
+        if ( roles == null ) {
+            return ImmutableList.of();
+        }
         Set<AclKey> nextLayer = roles;
 
         while ( !nextLayer.isEmpty() ) {

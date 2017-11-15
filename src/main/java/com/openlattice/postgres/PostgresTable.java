@@ -233,20 +233,6 @@ public final class PostgresTable {
             .addColumns( ACL_KEY, ACL_KEY_SET )
             .primaryKey( ACL_KEY );
 
-    // Consider enforcing ACL_KEY a unique field
-
-    // TODO: Once Cassandra fixes SASI + Collection column inde
-    //            return new CassandraTableBuilder( PERMISSIONS )
-    //                        .ifNotExists()
-    //                        .partitionKey( CommonColumns.ACL_KEYS )
-    //                        .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
-    //                        .columns( CommonColumns.PERMISSIONS )
-    //                        .staticColumns( SECURABLE_OBJECT_TYPE )
-    //                        .secondaryIndex( PRINCIPAL_TYPE,
-    //            PRINCIPAL_ID,
-    //            CommonColumns.PERMISSIONS,
-    //            SECURABLE_OBJECT_TYPE );
-
     private PostgresTable() {
     }
 
