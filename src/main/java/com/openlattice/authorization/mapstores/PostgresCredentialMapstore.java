@@ -21,8 +21,10 @@
 package com.openlattice.authorization.mapstores;
 
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.collect.ImmutableList;
+import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.PreparedStatement;
@@ -35,10 +37,8 @@ import java.util.List;
  */
 public class PostgresCredentialMapstore extends AbstractBasePostgresMapstore<String, String> {
 
-    public PostgresCredentialMapstore(
-            PostgresTableDefinition table,
-            HikariDataSource hds ) {
-        super( HazelcastMap.DB_CREDS.name(), table, hds );
+    public PostgresCredentialMapstore( HikariDataSource hds ) {
+        super( HazelcastMap.DB_CREDS.name(), PostgresTable.DB_CREDS, hds );
     }
 
     @Override public String generateTestKey() {
@@ -50,26 +50,27 @@ public class PostgresCredentialMapstore extends AbstractBasePostgresMapstore<Str
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return null;
+        return ImmutableList.of( PostgresColumn.PRINCIPAL_ID );
     }
 
     @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return null;
+        return ImmutableList.of( PostgresColumn.CREDENTIAL );
     }
 
     @Override protected void bind( PreparedStatement ps, String key, String value ) throws SQLException {
-
+        bind( ps, key );
+        ps.setString( 2, value );
     }
 
     @Override protected void bind( PreparedStatement ps, String key ) throws SQLException {
-
+        ps.setString( 1, key );
     }
 
     @Override protected String mapToValue( ResultSet rs ) throws SQLException {
-        return null;
+        return rs.getString( PostgresColumn.CREDENTIAL_FIELD );
     }
 
     @Override protected String mapToKey( ResultSet rs ) throws SQLException {
-        return null;
+        return rs.getString( PostgresColumn.PRINCIPAL_ID_FIELD );
     }
 }

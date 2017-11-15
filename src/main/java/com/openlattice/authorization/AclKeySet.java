@@ -22,14 +22,16 @@ package com.openlattice.authorization;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class AclKeySet extends HashSet<AclKey> {
     public AclKeySet() {
+    }
+
+    public AclKeySet( int initialCapacity ) {
+        super( initialCapacity );
     }
 
     public AclKeySet( Collection<? extends AclKey> c ) {

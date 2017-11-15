@@ -23,7 +23,6 @@ import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
 
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
@@ -55,9 +54,12 @@ import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
+import com.openlattice.authorization.mapstores.PostgresCredentialMapstore;
 import com.openlattice.authorization.mapstores.PrincipalMapstore;
+import com.openlattice.authorization.mapstores.PrincipalTreeMapstore;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.AclKeysMapstore;
@@ -355,6 +357,16 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, UUID> vertexIdsAfterLinkingMapstore() {
         return new VertexIdsAfterLinkingMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<AclKey, AclKeySet> aclKeySetMapstore() {
+        return new PrincipalTreeMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<String, String> dbCredentialsMapstore() {
+        return new PostgresCredentialMapstore( hikariDataSource );
     }
 
     @Bean
