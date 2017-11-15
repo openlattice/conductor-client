@@ -25,6 +25,7 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers;
+import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
@@ -50,8 +51,8 @@ public class AclKeyStreamSerializer extends DelegatedUUIDListStreamSerializer
         return StreamSerializerTypeIds.ACL_KEY.ordinal();
     }
 
-    public static void serialize( ObjectDataOutput out, AclKey object ) {
-
+    public static void serialize( ObjectDataOutput out, AclKey object ) throws IOException {
+        SetStreamSerializers.fastUUIDSetSerialize( out, object );
     }
 
     public static AclKey deserialize( ObjectDataInput in ) throws IOException {
