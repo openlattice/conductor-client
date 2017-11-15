@@ -49,12 +49,12 @@ public class ConductorElasticsearchCallStreamSerializer implements SelfRegisteri
             kryo.register( EntityDataLambdas.class );
             kryo.register( SearchEntitySetDataLambda.class );
             kryo.register( SerializedLambda.class );
+            kryo.register( AclKeyStreamSerializer.class  );
 
             // always needed for closure serialization, also if
             // registrationRequired=false
             kryo.register( ClosureSerializer.Closure.class,
                     new ClosureSerializer() );
-
             kryo.register( Function.class,
                     new ClosureSerializer() );
 

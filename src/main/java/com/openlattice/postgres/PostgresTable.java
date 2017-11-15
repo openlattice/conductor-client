@@ -21,6 +21,7 @@
 package com.openlattice.postgres;
 
 import static com.openlattice.postgres.PostgresColumn.ACL_KEY;
+import static com.openlattice.postgres.PostgresColumn.ACL_KEY_SET;
 import static com.openlattice.postgres.PostgresColumn.ALLOWED_EMAIL_DOMAINS;
 import static com.openlattice.postgres.PostgresColumn.ANALYZER;
 import static com.openlattice.postgres.PostgresColumn.AUDIT_ID;
@@ -29,6 +30,7 @@ import static com.openlattice.postgres.PostgresColumn.BIDIRECTIONAL;
 import static com.openlattice.postgres.PostgresColumn.BLOCK_ID;
 import static com.openlattice.postgres.PostgresColumn.CATEGORY;
 import static com.openlattice.postgres.PostgresColumn.CONTACTS;
+import static com.openlattice.postgres.PostgresColumn.CREDENTIAL;
 import static com.openlattice.postgres.PostgresColumn.CURRENT_SYNC_ID;
 import static com.openlattice.postgres.PostgresColumn.DATATYPE;
 import static com.openlattice.postgres.PostgresColumn.DATA_ID;
@@ -222,6 +224,15 @@ public final class PostgresTable {
                     .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, NULLABLE_TITLE, DESCRIPTION )
                     .primaryKey( ACL_KEY )
                     .setUnique( PRINCIPAL_TYPE, PRINCIPAL_ID );
+
+    public static final PostgresTableDefinition DB_CREDS       = new PostgresTableDefinition( "db_creds" )
+            .addColumns( PRINCIPAL_ID, CREDENTIAL )
+            .primaryKey( PRINCIPAL_ID );
+
+    public static final PostgresTableDefinition PRINCIPAL_TREES = new PostgresTableDefinition( "principal_tree" )
+            .addColumns( ACL_KEY, ACL_KEY_SET )
+            .primaryKey( ACL_KEY );
+
     // Consider enforcing ACL_KEY a unique field
 
     // TODO: Once Cassandra fixes SASI + Collection column inde

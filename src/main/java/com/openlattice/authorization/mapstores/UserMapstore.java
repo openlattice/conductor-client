@@ -95,6 +95,7 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
 
     @Override public MapStoreConfig getMapStoreConfig() {
         return new MapStoreConfig()
+                .setImplementation( this )
                 .setInitialLoadMode( InitialLoadMode.EAGER );
     }
 

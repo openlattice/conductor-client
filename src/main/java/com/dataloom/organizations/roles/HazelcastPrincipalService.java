@@ -8,7 +8,6 @@ import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
-import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.Role;
@@ -43,7 +42,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     private final AuthorizationManager              authorizations;
     private final HazelcastAclKeyReservationService reservations;
     private final IMap<AclKey, SecurablePrincipal>  principals;
-    private final IMap<AclKey, Set<AclKey>>         nestedPrincipals; // RoleName -> Member RoleNames
+    private final IMap<AclKey, Set<AclKey>>         principalTrees; // RoleName -> Member RoleNames
     private final IMap<String, Auth0UserBasic>      users;
 
     public HazelcastPrincipalService(
@@ -54,7 +53,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         this.authorizations = authorizations;
         this.reservations = reservations;
         this.principals = hazelcastInstance.getMap( HazelcastMap.PRINCIPALS.name() );
-        this.nestedPrincipals = hazelcastInstance.getMap( HazelcastMap.NESTED_PRINCIPALS.name() );
+        this.principalTrees = hazelcastInstance.getMap( HazelcastMap.PRINCIPAL_TREES.name() );
         this.users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
     }
 
@@ -152,13 +151,13 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     @Override
     public void addPrincipalToPrincipal( AclKey source, AclKey target ) {
         ensurePrincipalsExist( source, target );
-        nestedPrincipals
+        principalTrees
                 .executeOnKey( target, new NestedPrincipalMerger( ImmutableSet.of( source ) ) );
     }
 
     public void removePrincipalFromPrincipal( AclKey source, AclKey target ) {
         ensurePrincipalsExist( source, target );
-        nestedPrincipals
+        principalTrees
                 .executeOnKey( target, new NestedPrincipalRemover( ImmutableSet.of( source ) ) );
 
     }
@@ -179,7 +178,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         Predicate hasPrincipal = Predicates.and( Predicates.equal( "value[any]", aclKey ),
                 Predicates.equal( "principalType", PrincipalType.USER ) );
         //It sucks to load all, but being lazy and not using an read only entry processor.
-        return principals.getAll( nestedPrincipals.keySet( hasPrincipal ) )
+        return principals.getAll( principalTrees.keySet( hasPrincipal ) )
                 .values()
                 .stream()
                 .map( SecurablePrincipal::getPrincipal )

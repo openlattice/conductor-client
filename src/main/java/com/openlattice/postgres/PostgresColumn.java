@@ -26,6 +26,7 @@ import static com.openlattice.postgres.PostgresDatatype.TEXT;
 import static com.openlattice.postgres.PostgresDatatype.TEXT_ARRAY;
 import static com.openlattice.postgres.PostgresDatatype.UUID;
 import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY;
+import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY_ARRAY;
 
 import com.dataloom.edm.type.Analyzer;
 
@@ -34,6 +35,7 @@ import com.dataloom.edm.type.Analyzer;
  */
 public final class PostgresColumn {
     public static final String ACL_KEY_FIELD               = "acl_key";
+    public static final String ACL_KEY_SET_FIELD           = "acl_key_set";
     public static final String ALLOWED_EMAIL_DOMAINS_FIELD = "allowed_email_domains";
     public static final String ANALYZER_FIELD              = "analyzer";
     public static final String AUDIT_ID_FIELD              = "audit_id";
@@ -42,6 +44,7 @@ public final class PostgresColumn {
     public static final String BLOCK_ID_FIELD              = "block_id";
     public static final String CATEGORY_FIELD              = "category";
     public static final String CONTACTS_FIELD              = "contacts";
+    public static final String CREDENTIAL_FIELD           = "cred";
     public static final String CURRENT_SYNC_ID_FIELD       = "current_sync_id";
     public static final String DATA_ID_FIELD               = "data_id";
     public static final String DATATYPE_FIELD              = "datatype";
@@ -91,6 +94,8 @@ public final class PostgresColumn {
 
     public static final PostgresColumnDefinition ACL_KEY               =
             new PostgresColumnDefinition( ACL_KEY_FIELD, UUID_ARRAY );
+    public static final PostgresColumnDefinition ACL_KEY_SET           =
+            new PostgresColumnDefinition( ACL_KEY_SET_FIELD, UUID_ARRAY_ARRAY );
     public static final PostgresColumnDefinition ALLOWED_EMAIL_DOMAINS =
             new PostgresColumnDefinition( ALLOWED_EMAIL_DOMAINS_FIELD, TEXT_ARRAY );
     public static final PostgresColumnDefinition ANALYZER              =
@@ -107,6 +112,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( BLOCK_ID_FIELD, UUID );
     public static final PostgresColumnDefinition CATEGORY              =
             new PostgresColumnDefinition( CATEGORY_FIELD, TEXT ).notNull();
+    public static final PostgresColumnDefinition CREDENTIAL              =
+            new PostgresColumnDefinition( CREDENTIAL_FIELD, TEXT ).notNull();
     public static final PostgresColumnDefinition CONTACTS              =
             new PostgresColumnDefinition( CONTACTS_FIELD, TEXT_ARRAY );
     public static final PostgresColumnDefinition CURRENT_SYNC_ID       =
