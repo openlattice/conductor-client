@@ -70,6 +70,10 @@ public final class PostgresTable {
                     .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY )
                     .setUnique( NAMESPACE, NAME );
 
+    public static final PostgresTableDefinition DB_CREDS = new PostgresTableDefinition( "db_creds" )
+            .addColumns( PRINCIPAL_ID, CREDENTIAL )
+            .primaryKey( PRINCIPAL_ID );
+
     public static final PostgresTableDefinition EDM_VERSIONS =
             new PostgresTableDefinition( "edm_versions" )
                     .addColumns( EDM_VERSION_NAME, EDM_VERSION )
@@ -142,6 +146,10 @@ public final class PostgresTable {
             new PostgresTableDefinition( "permissions" )
                     .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, PostgresColumn.PERMISSIONS )
                     .primaryKey( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID );
+
+    public static final PostgresTableDefinition PRINCIPAL_TREES = new PostgresTableDefinition( "principal_tree" )
+            .addColumns( ACL_KEY, ACL_KEY_SET )
+            .primaryKey( ACL_KEY );
 
     public static final PostgresTableDefinition PRINCIPALS =
             new PostgresTableDefinition( "principals" )

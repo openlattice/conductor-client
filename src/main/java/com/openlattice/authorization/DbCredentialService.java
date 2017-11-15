@@ -20,21 +20,23 @@
 
 package com.openlattice.authorization;
 
-import java.util.Collection;
-import java.util.HashSet;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.util.Util;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class AclKeySet extends HashSet<AclKey> {
-    public AclKeySet() {
+public class DbCredentialService {
+    private final IMap<String, String> dbcreds;
+
+    public DbCredentialService( HazelcastInstance hazelcastInstance ) {
+        this.dbcreds = hazelcastInstance.getMap( HazelcastMap.DB_CREDS.name() );
     }
 
-    public AclKeySet( int initialCapacity ) {
-        super( initialCapacity );
+    public String getDbCredential( String userId ) {
+        return Util.getSafely( dbcreds, userId );
     }
 
-    public AclKeySet( Collection<? extends AclKey> c ) {
-        super( c );
-    }
 }

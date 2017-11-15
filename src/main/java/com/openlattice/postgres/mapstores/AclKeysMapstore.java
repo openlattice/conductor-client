@@ -1,21 +1,21 @@
 package com.openlattice.postgres.mapstores;
 
+import static com.openlattice.postgres.PostgresColumn.NAME;
+import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
+import static com.openlattice.postgres.PostgresTable.ACL_KEYS;
+
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
-
-import static com.openlattice.postgres.PostgresColumn.NAME;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
-import static com.openlattice.postgres.PostgresTable.ACL_KEYS;
+import org.apache.commons.lang.RandomStringUtils;
 
 public class AclKeysMapstore extends AbstractBasePostgresMapstore<String, UUID> {
 
@@ -32,7 +32,7 @@ public class AclKeysMapstore extends AbstractBasePostgresMapstore<String, UUID> 
     }
 
     @Override protected void bind( PreparedStatement ps, String key, UUID value ) throws SQLException {
-        ps.setString( 1, key );
+        bind( ps, key );
         ps.setObject( 2, value );
 
         // UPDATE
@@ -52,7 +52,7 @@ public class AclKeysMapstore extends AbstractBasePostgresMapstore<String, UUID> 
     }
 
     @Override public String generateTestKey() {
-        return "testKey";
+        return RandomStringUtils.random( 5 );
     }
 
     @Override public UUID generateTestValue() {

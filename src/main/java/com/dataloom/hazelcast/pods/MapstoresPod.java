@@ -53,22 +53,19 @@ import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
-import com.openlattice.authorization.mapstores.PermissionMapstore;
-import com.openlattice.authorization.mapstores.PrincipalMapstore;
-import com.openlattice.authorization.mapstores.UserMapstore;
+import com.openlattice.authorization.mapstores.*;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.*;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
-import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
@@ -347,6 +344,16 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, UUID> vertexIdsAfterLinkingMapstore() {
         return new VertexIdsAfterLinkingMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<AclKey, AclKeySet> aclKeySetMapstore() {
+        return new PrincipalTreeMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<String, String> dbCredentialsMapstore() {
+        return new PostgresCredentialMapstore( hikariDataSource );
     }
 
     @Bean

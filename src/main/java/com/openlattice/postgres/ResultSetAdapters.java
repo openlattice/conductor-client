@@ -44,6 +44,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -65,6 +66,15 @@ import static com.openlattice.postgres.PostgresColumn.*;
  */
 public final class ResultSetAdapters {
     private static final Logger logger = LoggerFactory.getLogger( ResultSetAdapters.class );
+
+    public static AclKeySet aclKeySet( ResultSet rs ) throws SQLException {
+        UUID[][] ids = PostgresArrays.getUuidArrayOfArrays( rs, PostgresColumn.ACL_KEY_SET_FIELD );
+        AclKeySet keySet = new AclKeySet( ids.length );
+        Stream.of( ids )
+                .map( AclKey::new )
+                .forEach( keySet::add );
+        return keySet;
+    }
 
     public static SecurablePrincipal securablePrincipal( ResultSet rs ) throws SQLException {
         Principal principal = ResultSetAdapters.principal( rs );
