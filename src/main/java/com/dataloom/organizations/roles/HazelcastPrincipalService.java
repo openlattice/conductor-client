@@ -63,7 +63,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         final AclKey aclKey = principal.getAclKey();
 
         try {
-            authorizations.createEmptyAcl( aclKey, principal.getCategory() );
+            authorizations .createEmptyAcl( aclKey, principal.getCategory() );
             authorizations.addPermission( aclKey, owner, EnumSet.allOf( Permission.class ) );
         } catch ( Exception e ) {
             logger.error( "Unable to create principal {}", principal, e );
