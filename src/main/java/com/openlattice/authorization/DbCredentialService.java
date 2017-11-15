@@ -24,14 +24,27 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
+import com.zaxxer.hikari.HikariDataSource;
+import java.security.SecureRandom;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DbCredentialService {
+    private static final String upper   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String lower   = upper.toLowerCase();
+    private static final String digits  = "0123456789";
+    private static final String special = "!@#$%^&*()";
+    private static final String source  = upper + lower + digits + special;
+    private static final char[] srcBuf  = source.toCharArray();
+
+    private static final int CREDENTIAL_LENGTH = 20;
+
+    private static final SecureRandom r = new SecureRandom();
+
     private final IMap<String, String> dbcreds;
 
-    public DbCredentialService( HazelcastInstance hazelcastInstance ) {
+    public DbCredentialService( HazelcastInstance hazelcastInstance, HikariDataSource hds ) {
         this.dbcreds = hazelcastInstance.getMap( HazelcastMap.DB_CREDS.name() );
     }
 
@@ -39,4 +52,17 @@ public class DbCredentialService {
         return Util.getSafely( dbcreds, userId );
     }
 
+    public String newDbCredential( String userId ) {
+        String cred = generateCredential();
+        dbcreds.set( userId, cred );
+        return cred;
+    }
+
+    private String generateCredential() {
+        char[] cred = new char[ CREDENTIAL_LENGTH ];
+        for ( int i = 0; i < CREDENTIAL_LENGTH; ++i ) {
+            cred[ i ] = srcBuf[ r.nextInt( srcBuf.length ) ];
+        }
+        return new String( cred );
+    }
 }
