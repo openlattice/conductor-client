@@ -32,6 +32,7 @@ import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.datastore.services.Auth0ManagementApi;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +58,14 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
     private Auth0ManagementApi                   auth0ManagementApi;
     private LoadingCache<String, Auth0UserBasic> auth0LoadingCache;
 
+    public UserMapstore() {
+    }
+
     public UserMapstore( String token ) {
+        setToken( token );
+    }
+
+    public void setToken( String token ) {
         retrofit = RetrofitFactory.newClient( "https://openlattice.auth0.com/api/v2/", () -> token );
 
         auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
@@ -95,6 +104,7 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
 
     @Override public MapStoreConfig getMapStoreConfig() {
         return new MapStoreConfig()
+                .setImplementation( this )
                 .setInitialLoadMode( InitialLoadMode.EAGER );
     }
 
@@ -140,7 +150,7 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
             this.auth0ManagementApi = auth0ManagementApi;
             this.auth0LoadingCache = auth0LoadingCache;
             this.pos = ImmutableList.<String>of().iterator();
-            next();
+            hasNext();
         }
 
         @Override

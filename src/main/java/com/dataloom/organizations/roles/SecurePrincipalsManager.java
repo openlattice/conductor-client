@@ -57,6 +57,10 @@ public interface SecurePrincipalsManager {
 
     Collection<Auth0UserBasic> getAllUserProfilesWithPrincipal( AclKey principal );
 
+    boolean principalExists( Principal p );
+
+    Auth0UserBasic getUser( String userId );
+
     Role getRole( UUID organizationId, UUID roleId );
 
     AclKey lookup( Principal p );

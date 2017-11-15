@@ -31,6 +31,7 @@ import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.mapstores.EntityKeyIdsMapstore;
 import com.dataloom.data.mapstores.EntityKeysMapstore;
 import com.dataloom.data.mapstores.PostgresDataMapstore;
+import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
@@ -55,16 +56,19 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.authorization.mapstores.PrincipalMapstore;
+import com.openlattice.authorization.mapstores.UserMapstore;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.*;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
+import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
@@ -78,11 +82,13 @@ import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
 public class MapstoresPod {
 
     @Inject
-    private Session                session;
+    private Session session;
+
     @Inject
     private CassandraConfiguration cc;
+
     @Inject
-    private HikariDataSource       hikariDataSource;
+    private HikariDataSource hikariDataSource;
 
     @Inject
     private PostgresTableManager ptMgr;
@@ -387,5 +393,10 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<AppConfigKey, AppTypeSetting> appConfigMapstore() {
         return new AppConfigMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<String, Auth0UserBasic> userMapstore() {
+        return new UserMapstore();
     }
 }

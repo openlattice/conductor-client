@@ -60,7 +60,7 @@ public class LoomAuthentication implements Authentication {
             }
 
             principal = new Principal( PrincipalType.USER, principalId.toString() );
-            principals = new TreeSet<Principal>();
+            principals = new TreeSet<>();
             principals.add( principal );
 
             authorities

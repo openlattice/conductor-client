@@ -3,6 +3,7 @@ package com.openlattice.postgres.mapstores;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
@@ -15,7 +16,9 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresColumn.APP_IDS;
@@ -64,6 +67,23 @@ public class OrganizationAppsMapstore extends AbstractBasePostgresMapstore<UUID,
     @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
         return ResultSetAdapters.id( rs );
     }
+
+    @Override
+    public Map<UUID, DelegatedUUIDSet> loadAll( Collection<UUID> keys ) {
+        Map<UUID, DelegatedUUIDSet> result = Maps.newConcurrentMap();
+        keys.parallelStream().forEach( id -> {
+            DelegatedUUIDSet apps = load( id );
+            if ( apps != null )
+                result.put( id, apps );
+        } );
+        return result;
+    }
+
+    @Override
+    protected List<PostgresColumnDefinition> getInsertColumns() {
+        return ImmutableList.of( ID, APP_IDS );
+    }
+
 
     @Override public UUID generateTestKey() {
         return UUID.randomUUID();

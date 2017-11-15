@@ -2,7 +2,6 @@ package com.dataloom.organizations.roles;
 
 import com.dataloom.authorization.*;
 import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.Role;
@@ -39,7 +38,6 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     private final AuthorizationManager                  authorizations;
     private final HazelcastAclKeyReservationService     reservations;
-    private final UserDirectoryService                  uds;
     private final IMap<AclKey, SecurablePrincipal>      principals;
     private final IMap<AclKey, Set<AclKey>>             nestedPrincipals; // RoleName -> Member RoleNames
     private final IMap<String, Auth0UserBasic>          users;
@@ -48,12 +46,10 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     public HazelcastPrincipalService(
             HazelcastInstance hazelcastInstance,
             HazelcastAclKeyReservationService reservations,
-            UserDirectoryService uds,
             AuthorizationManager authorizations ) {
 
         this.authorizations = authorizations;
         this.reservations = reservations;
-        this.uds = uds;
         this.principals = hazelcastInstance.getMap( HazelcastMap.PRINCIPALS.name() );
         this.nestedPrincipals = hazelcastInstance.getMap( HazelcastMap.NESTED_PRINCIPALS.name() );
         this.users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
@@ -80,6 +76,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     public void createSecurablePrincipalIfNotExists( SecurablePrincipal principal ) {
         reservations.reserveIdAndValidateType( principal, principal::getName );
         principals.set( principal.getAclKey(), principal );
+        securableObjectTypes.putIfAbsent( principal.getAclKey(), principal.getCategory() );
     }
 
     @Override
@@ -135,7 +132,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         authorizations.deletePrincipalPermissions( principal );
         reservations.release( securablePrincipal.getId() );
         securableObjectTypes.delete( securablePrincipal.getAclKey() );
-        principals.delete( principal );
+        principals.delete( securablePrincipal.getAclKey() );
     }
 
     @Override
@@ -197,13 +194,23 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         return principals.executeOnEntries( ep, p );
     }
 
-    @Override public Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p ) {
+    @Override
+    public Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p ) {
         return principals.values( p );
     }
 
     @Override
     public Collection<Principal> getPrincipals( Predicate<AclKey, SecurablePrincipal> p ) {
         return principals.project( new PrincipalProjection(), p );
+    }
+
+    @Override
+    public boolean principalExists( Principal p ) {
+        return reservations.isReserved( p.getId() );
+    }
+
+    @Override public Auth0UserBasic getUser( String userId ) {
+        return Util.getSafely( users, userId );
     }
 
     @Override public Role getRole( UUID organizationId, UUID roleId ) {
