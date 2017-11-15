@@ -16,13 +16,16 @@ import com.dataloom.organizations.processors.NestedPrincipalRemover;
 import com.dataloom.organizations.roles.processors.PrincipalDescriptionUpdater;
 import com.dataloom.organizations.roles.processors.PrincipalTitleUpdater;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
+import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.projections.PrincipalProjection;
 import java.util.Collection;
@@ -42,7 +45,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     private final AuthorizationManager              authorizations;
     private final HazelcastAclKeyReservationService reservations;
     private final IMap<AclKey, SecurablePrincipal>  principals;
-    private final IMap<AclKey, Set<AclKey>>         principalTrees; // RoleName -> Member RoleNames
+    private final IMap<AclKey, AclKeySet>           principalTrees; // RoleName -> Member RoleNames
     private final IMap<String, Auth0UserBasic>      users;
 
     public HazelcastPrincipalService(
@@ -105,6 +108,12 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     //
     //        return principals.get( principal );
     //    }
+
+    @Override
+    public SetMultimap<SecurablePrincipal, SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId ) {
+        new PagingPredicate<>();
+        return null;
+    }
 
     @Override
     public Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId ) {
@@ -210,6 +219,12 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         return principals.project( new PrincipalProjection(), p );
     }
 
+    @Override public Collection<SecurablePrincipal> getSecurablePrincipals( Set<Principal> members ) {
+        Predicate p = Predicates
+                .in( "principal", members.toArray( new Principal[ 0 ] ) );
+        return principals.values( p );
+    }
+
     @Override
     public boolean principalExists( Principal p ) {
         return reservations.isReserved( p.getId() );
@@ -223,6 +238,19 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         AclKey aclKey = new AclKey( organizationId, roleId );
 
         return (Role) Util.getSafely( principals, aclKey );
+    }
+
+    @Override public Collection<SecurablePrincipal> getAllPrincipals( SecurablePrincipal sp ) {
+        final AclKeySet roles = Util.getSafely( principalTrees, sp.getAclKey() );
+        Set<AclKey> nextLayer = roles;
+
+        while ( !nextLayer.isEmpty() ) {
+            Map<AclKey, AclKeySet> nextRoles = principalTrees.getAll( nextLayer );
+            nextLayer = nextRoles.values().stream().flatMap( AclKeySet::stream ).collect( Collectors.toSet() );
+            roles.addAll( nextLayer );
+        }
+
+        return principals.getAll( roles ).values();
     }
 
     @Override

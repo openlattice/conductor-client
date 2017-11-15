@@ -4,12 +4,14 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.organization.roles.Role;
+import com.google.common.collect.SetMultimap;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.query.Predicate;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public interface SecurePrincipalsManager {
@@ -33,6 +35,8 @@ public interface SecurePrincipalsManager {
     Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType );
 
     Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId );
+
+    SetMultimap<SecurablePrincipal,SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId );
 
     Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p );
 
@@ -67,4 +71,7 @@ public interface SecurePrincipalsManager {
 
     Collection<Principal> getPrincipals( Predicate<AclKey, SecurablePrincipal> p );
 
+    Collection<SecurablePrincipal> getSecurablePrincipals( Set<Principal> members );
+
+    Collection<SecurablePrincipal> getAllPrincipals( SecurablePrincipal sp );
 }

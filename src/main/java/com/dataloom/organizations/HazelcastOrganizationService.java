@@ -76,6 +76,7 @@ public class HazelcastOrganizationService {
     private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
     private final IMap<UUID, PrincipalSet>          membersOf;
     private final List<IMap<UUID, ?>>               allMaps;
+
     @Inject
     private       EventBus                          eventBus;
 
