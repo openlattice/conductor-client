@@ -20,10 +20,10 @@
 
 package com.openlattice.postgres;
 
+import java.lang.reflect.Modifier;
+import java.util.stream.Stream;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.stream.Stream;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -32,35 +32,21 @@ import java.util.stream.Stream;
 public class PostgresTablesPod {
     @Bean
     public PostgresTables postgresTables() {
-        return () -> Stream.of(
-                PostgresTable.ACL_KEYS,
-                PostgresTable.APP_CONFIGS,
-                PostgresTable.APP_TYPES,
-                PostgresTable.APPS,
-                PostgresTable.ASSOCIATION_TYPES,
-                PostgresTable.AUDIT_LOG,
-                PostgresTable.COMPLEX_TYPES,
-                PostgresTable.DB_CREDS,
-                PostgresTable.EDM_VERSIONS,
-                PostgresTable.ENTITY_SET_PROPERTY_METADATA,
-                PostgresTable.ENTITY_SETS,
-                PostgresTable.ENTITY_TYPES,
-                PostgresTable.ENUM_TYPES,
-                PostgresTable.LINKED_ENTITY_SETS,
-                PostgresTable.LINKING_VERTICES,
-                PostgresTable.NAMES,
-                PostgresTable.ORGANIZATIONS,
-                PostgresTable.PERMISSIONS,
-                PostgresTable.PRINCIPALS,
-                PostgresTable.PROPERTY_TYPES,
-                PostgresTable.PRINCIPAL_TREES,
-                PostgresTable.PRINCIPALS,
-                PostgresTable.REQUESTS,
-                PostgresTable.ROLES,
-                PostgresTable.SCHEMA,
-                PostgresTable.SECURABLE_OBJECTS,
-                PostgresTable.SYNC_IDS,
-                PostgresTable.VERTEX_IDS_AFTER_LINKING
-        );
+        //TODO: Switch to reflection based enumeration
+
+        return () -> Stream.concat(
+                Stream.of( PostgresTable.class.getFields() ),
+                Stream.of( PostgresTable.class.getDeclaredFields() ) )
+                .filter( field -> Modifier.isStatic( field.getModifiers() )
+                        && Modifier.isFinal( field.getModifiers() ) )
+                .filter( field -> field.getType().equals( PostgresTableDefinition.class ) )
+                .map( field -> {
+                    try {
+                        return (PostgresTableDefinition) field.get( null );
+                    } catch ( IllegalAccessException e ) {
+                        return null;
+                    }
+                } )
+                .filter( type -> type != null );
     }
 }

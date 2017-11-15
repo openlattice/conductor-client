@@ -193,19 +193,6 @@ public final class PostgresTable {
                     .addColumns( GRAPH_ID, VERTEX_ID, NEW_VERTEX_ID )
                     .primaryKey( GRAPH_ID, VERTEX_ID );
 
-
-    // TODO: Once Cassandra fixes SASI + Collection column inde
-    //            return new CassandraTableBuilder( PERMISSIONS )
-    //                        .ifNotExists()
-    //                        .partitionKey( CommonColumns.ACL_KEYS )
-    //                        .clusteringColumns( PRINCIPAL_TYPE, PRINCIPAL_ID )
-    //                        .columns( CommonColumns.PERMISSIONS )
-    //                        .staticColumns( SECURABLE_OBJECT_TYPE )
-    //                        .secondaryIndex( PRINCIPAL_TYPE,
-    //            PRINCIPAL_ID,
-    //            CommonColumns.PERMISSIONS,
-    //            SECURABLE_OBJECT_TYPE );
-
     private PostgresTable() {
     }
 
