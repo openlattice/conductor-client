@@ -172,11 +172,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override
     public Collection<Principal> getAllUsersWithPrincipal( AclKey aclKey ) {
-        Predicate hasPrincipal = Predicates.and( Predicates.equal( "value[any]", aclKey ),
-                Predicates.equal( "principalType", PrincipalType.USER ) );
-        //It sucks to load all, but being lazy and not using an read only entry processor.
-        return principals.getAll( principalTrees.keySet( hasPrincipal ) )
-                .values()
+        return getAllPrincipalsWithPrincipal( aclKey )
                 .stream()
                 .map( SecurablePrincipal::getPrincipal )
                 .collect( Collectors.toList() );
