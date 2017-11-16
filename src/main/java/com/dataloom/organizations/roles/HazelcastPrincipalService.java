@@ -100,13 +100,15 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         return principals.values( findPrincipal( p ) ).stream().map( SecurablePrincipal::getAclKey ).findFirst().get();
     }
 
+    @Override
+    public SecurablePrincipal getPrincipal( String principalId ) {
+        UUID id = checkNotNull( reservations.getId( principalId ), "AclKey not found for Principal" );
+        return Util.getSafely( principals, new AclKey( id ) );
+    }
+
     @Override public Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType ) {
         return principals.values( Predicates.equal( "principalType", principalType ) );
     }
-    //    @Override public SecurablePrincipal getSecurablePrincipal( Principal principal ) {
-    //
-    //        return principals.get( principal );
-    //    }
 
     @Override
     public SetMultimap<SecurablePrincipal, SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId ) {
@@ -123,32 +125,16 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override
     public void deletePrincipal( AclKey aclKey ) {
-        SecurablePrincipal securablePrincipal = Util.getSafely( principals, aclKey );
-        deletePrincipal( securablePrincipal );
-    }
-
-    private void deletePrincipal( SecurablePrincipal securablePrincipal ) {
-        checkNotNull( securablePrincipal, "Principal not found." );
-        Principal principal = securablePrincipal.getPrincipal();
-        AclKey aclKey = securablePrincipal.getAclKey();
-
-        //Remove the role from all users before deleting.
-        for ( SecurablePrincipal user : getAllUsersWithPrincipal( aclKey ) ) {
-            removePrincipalFromPrincipal( aclKey, user.getAclKey() );
-        }
-
-        authorizations.deletePrincipalPermissions( principal );
-        reservations.release( securablePrincipal.getId() );
-        securableObjectTypes.delete( securablePrincipal.getAclKey() );
-        principals.delete( securablePrincipal.getAclKey() );
+        ensurePrincipalsExist( aclKey );
+        removePrincipalFromPrincipals( aclKey, hasSecurablePrincipal( aclKey ) );
+        Util.deleteSafely( principalTrees, aclKey );
+        Util.deleteSafely( principals, aclKey );
     }
 
     @Override
     public void deleteAllRolesInOrganization( UUID organizationId ) {
         Collection<SecurablePrincipal> allRolesInOrg = getAllRolesInOrganization( organizationId );
-        for ( SecurablePrincipal securablePrincipal : allRolesInOrg ) {
-            deletePrincipal( securablePrincipal );
-        }
+        allRolesInOrg.stream().map( SecurablePrincipal::getAclKey ).forEach( this::deletePrincipal );
     }
 
     @Override
@@ -158,6 +144,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
                 .executeOnKey( target, new NestedPrincipalMerger( ImmutableSet.of( source ) ) );
     }
 
+    @Override
     public void removePrincipalFromPrincipal( AclKey source, AclKey target ) {
         ensurePrincipalsExist( source, target );
         principalTrees
@@ -165,25 +152,32 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     }
 
-    private void ensurePrincipalsExist( AclKey... aclKeys ) {
-        ensurePrincipalsExist( "All principals must exist!", aclKeys );
-    }
-
-    private void ensurePrincipalsExist( String msg, AclKey... aclKeys ) {
-        checkState( Stream.of( aclKeys )
-                .filter( aclKey -> !principals.containsKey( aclKey ) )
-                .peek( aclKey -> logger.error( "Principal with acl key {} does not exist!", aclKey ) )
-                .count() == 0, msg );
+    @Override
+    public void removePrincipalFromPrincipals( AclKey source, Predicate targetFilter ) {
+        principalTrees.executeOnEntries( new NestedPrincipalRemover( ImmutableSet.of( source ) ), targetFilter );
     }
 
     @Override
-    public Collection<SecurablePrincipal> getAllUsersWithPrincipal( AclKey aclKey ) {
-        Predicate hasPrincipal = Predicates.and( Predicates.equal( "value[any]", aclKey ),
-                Predicates.equal( "principalType", PrincipalType.USER ) );
-        //It sucks to load all, but being lazy and not using an read only entry processor.
-        return principals.getAll( principalTrees.keySet( hasPrincipal ) )
-                .values()
+    public Collection<SecurablePrincipal> getAllPrincipalsWithPrincipal( AclKey aclKey ) {
+        //We start from the bottom layer and use predicates to sweep up the tree and enumerate all roles with this role.
+        final Set<AclKey> principalsWithPrincipal = new HashSet<>();
+        Set<AclKey> parentLayer = principalTrees.keySet( hasSecurablePrincipal( aclKey ) );
+        principalsWithPrincipal.addAll( parentLayer );
+        while ( !parentLayer.isEmpty() ) {
+            parentLayer = parentLayer
+                    .parallelStream()
+                    .flatMap( ak -> principalTrees.keySet( hasSecurablePrincipal( ak ) ).stream() )
+                    .collect( Collectors.toSet() );
+            principalsWithPrincipal.addAll( parentLayer );
+        }
+        return principals.getAll( principalsWithPrincipal ).values();
+    }
+
+    @Override
+    public Collection<Principal> getAllUsersWithPrincipal( AclKey aclKey ) {
+        return getAllPrincipalsWithPrincipal( aclKey )
                 .stream()
+                .map( SecurablePrincipal::getPrincipal )
                 .collect( Collectors.toList() );
     }
 
@@ -191,7 +185,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     public Collection<Auth0UserBasic> getAllUserProfilesWithPrincipal( AclKey principal ) {
         return users.getAll( getAllUsersWithPrincipal( principal )
                 .stream()
-                .map( SecurablePrincipal::getName )
+                .map( Principal::getId )
                 .collect( Collectors.toSet() ) ).values();
     }
 
@@ -248,6 +242,17 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         return principals.getAll( roles ).values();
     }
 
+    private void ensurePrincipalsExist( AclKey... aclKeys ) {
+        ensurePrincipalsExist( "All principals must exist!", aclKeys );
+    }
+
+    private void ensurePrincipalsExist( String msg, AclKey... aclKeys ) {
+        checkState( Stream.of( aclKeys )
+                .filter( aclKey -> !principals.containsKey( aclKey ) )
+                .peek( aclKey -> logger.error( "Principal with acl key {} does not exist!", aclKey ) )
+                .count() == 0, msg );
+    }
+
     @Override
 
     public AuthorizationManager getAuthorizationManager() {
@@ -256,6 +261,10 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     private static Predicate findPrincipal( Principal p ) {
         return Predicates.equal( "principal", p );
+    }
+
+    private static Predicate hasSecurablePrincipal( AclKey principalAclKey ) {
+        return Predicates.and( Predicates.equal( "value[any]", principalAclKey ) );
     }
 
 }

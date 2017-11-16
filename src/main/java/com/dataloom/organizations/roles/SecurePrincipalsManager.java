@@ -32,6 +32,8 @@ public interface SecurePrincipalsManager {
      */
     SecurablePrincipal getSecurablePrincipal( AclKey aclKey );
 
+    SecurablePrincipal getPrincipal( String principalId );
+
     Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType );
 
     Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId );
@@ -56,8 +58,12 @@ public interface SecurePrincipalsManager {
 
     //More logical to use Principal
 
+    void removePrincipalFromPrincipals( AclKey source, Predicate targetFilter );
+
+    Collection<SecurablePrincipal> getAllPrincipalsWithPrincipal( AclKey aclKey );
+
     // Methods about users
-    Collection<SecurablePrincipal> getAllUsersWithPrincipal( AclKey principal );
+    Collection<Principal> getAllUsersWithPrincipal( AclKey principal );
 
     Collection<Auth0UserBasic> getAllUserProfilesWithPrincipal( AclKey principal );
 
