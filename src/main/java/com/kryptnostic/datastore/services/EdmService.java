@@ -1377,9 +1377,10 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata( UUID entitySetId ) {
-        EntitySet entitySet = getEntitySet( entitySetId );
-        return getEntityType( entitySet.getEntityTypeId() ).getProperties().stream()
+    public Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata(
+            UUID entitySetId,
+            Set<UUID> authorizedPropertyTypes ) {
+        return authorizedPropertyTypes.stream()
                 .collect( Collectors.toMap( propertyTypeId -> propertyTypeId,
                         propertyTypeId -> getEntitySetPropertyMetadata( entitySetId, propertyTypeId ) ) );
     }
