@@ -63,6 +63,6 @@ public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0Authentica
          tokenTracker.untrackUser( userId );
          */
 
-        return new LoomAuthentication( jwtToken );
+        return new LoomAuthentication( jwtToken , spm);
     }
 }
