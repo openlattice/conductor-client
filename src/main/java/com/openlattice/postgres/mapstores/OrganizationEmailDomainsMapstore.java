@@ -54,7 +54,11 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
     }
 
     @Override protected DelegatedStringSet mapToValue( ResultSet rs ) throws SQLException {
-        String[] value = (String[]) rs.getArray( ALLOWED_EMAIL_DOMAINS.getName() ).getArray();
+        Array array = rs.getArray( ALLOWED_EMAIL_DOMAINS.getName() );
+        if( array == null ) {
+            return null;
+        }
+        String[] value = (String[]) array.getArray();
         return DelegatedStringSet.wrap( Sets.newHashSet( value ) );
     }
 

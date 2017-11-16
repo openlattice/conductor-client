@@ -1,5 +1,9 @@
 package com.openlattice.postgres.mapstores;
 
+import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresColumn.MEMBERS;
+import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
+
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -9,21 +13,19 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.commons.lang.RandomStringUtils;
-
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.MEMBERS;
-import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
+import org.apache.commons.lang.RandomStringUtils;
 
 public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UUID, PrincipalSet> {
     public OrganizationMembersMapstore( HikariDataSource hds ) {
@@ -56,7 +58,8 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
     }
 
     @Override protected PrincipalSet mapToValue( ResultSet rs ) throws SQLException {
-        Stream<String> users = Arrays.stream( (String[]) rs.getArray( MEMBERS.getName() ).getArray() );
+        Array array = rs.getArray( MEMBERS.getName() );
+        Stream<String> users = Arrays.stream( (String[]) array.getArray() );
         return PrincipalSet
                 .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
     }
@@ -74,9 +77,9 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
     public Map<UUID, PrincipalSet> loadAll( Collection<UUID> keys ) {
         Map<UUID, PrincipalSet> result = Maps.newConcurrentMap();
         keys.parallelStream().forEach( id -> {
-            PrincipalSet users = load(id);
-            if ( users != null ) result.put( id, users );
-        });
+            PrincipalSet users = load( id );
+            if ( users != null ) { result.put( id, users ); }
+        } );
         return result;
     }
 

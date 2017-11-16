@@ -21,7 +21,6 @@
 package com.openlattice.bootstrap;
 
 import static com.openlattice.bootstrap.AuthorizationBootstrap.GLOBAL_ADMIN_ROLE;
-import static com.openlattice.bootstrap.AuthorizationBootstrap.GLOBAL_USER_ROLE;
 import static com.openlattice.bootstrap.AuthorizationBootstrap.OPENLATTICE_ROLE;
 
 import com.dataloom.authorization.Principal;
@@ -43,15 +42,6 @@ public class OrganizationBootstrap {
     public OrganizationBootstrap( HazelcastOrganizationService organizationService ) {
         organizationService.createOrganization( OPENLATTICE_ROLE.getPrincipal(), OPENLATTICE );
         organizationService.createOrganization( GLOBAL_ADMIN_ROLE.getPrincipal(), GLOBAL );
-        organizationService.addMembers( OPENLATTICE.getId(),
-                ImmutableSet.of(
-                        OPENLATTICE_ROLE.getPrincipal()
-                ) );
-        organizationService.addMembers( OPENLATTICE.getId(),
-                ImmutableSet.of(
-                        GLOBAL_USER_ROLE.getPrincipal(),
-                        GLOBAL_ADMIN_ROLE.getPrincipal()
-                ) );
         initialized = true;
     }
 

@@ -885,7 +885,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public EntityType getEntityTypeByEntitySetId( UUID entitySetId ) {
-        UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
+        UUID entityTypeId  = getEntitySet( entitySetId ).getEntityTypeId();
         return getEntityType( entityTypeId );
     }
 

@@ -10,6 +10,7 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organizations.processors.NestedPrincipalMerger;
@@ -65,7 +66,16 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override public void createSecurablePrincipalIfNotExists(
             Principal owner, SecurablePrincipal principal ) {
-        createSecurablePrincipalIfNotExists( principal );
+        try {
+            createSecurablePrincipal( principal );
+        } catch ( TypeExistsException e ) {
+            logger.warn( "Securable Principal {} already exists", principal, e );
+        }
+    }
+
+    @Override public void crateSecurablePrincipal(
+            Principal owner, SecurablePrincipal principal ) {
+        createSecurablePrincipal( principal );
         final AclKey aclKey = principal.getAclKey();
 
         try {
@@ -80,7 +90,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         }
     }
 
-    public void createSecurablePrincipalIfNotExists( SecurablePrincipal principal ) {
+    private void createSecurablePrincipal( SecurablePrincipal principal ) {
         reservations.reserveIdAndValidateType( principal, principal::getName );
         principals.set( principal.getAclKey(), principal );
     }

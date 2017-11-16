@@ -167,7 +167,7 @@ public class HazelcastAclKeyReservationService {
              * just let one thread win and simplifies code path a lot.
              */
 
-            if ( existingAclKey != null ) {
+            if ( existingAclKey != null && !existingAclKey.equals( type.getId() ) ) {
                 if ( currentName == null ) {
                     // We need to remove UUID reservation
                     names.delete( type.getId() );
