@@ -40,27 +40,28 @@ public class UserBootstrap {
             Auth0UserBasic user = users.load( userId );
             Principal principal = new Principal( PrincipalType.USER, userId );
 
-            if ( user != null && !spm.principalExists( principal ) ) {
-                checkState( user.getUserId().equals( userId ), "Retrieved user id must match submitted user id" );
-                dbCredService.createUser( userId );
-                String title = (user.getNickname() != null && user.getNickname().length() > 0) ? user.getNickname() : user.getEmail();
-                spm.createSecurablePrincipalIfNotExists( principal,
-                        new SecurablePrincipal( Optional.absent(), principal, title, Optional.absent() ) );
+            if ( user != null ) {
 
+                if ( !spm.principalExists( principal ) ) {
+                    checkState( user.getUserId().equals( userId ), "Retrieved user id must match submitted user id" );
+                    dbCredService.createUser( userId );
+                    String title = ( user.getNickname() != null && user.getNickname().length() > 0 ) ?
+                            user.getNickname() :
+                            user.getEmail();
+                    spm.createSecurablePrincipalIfNotExists( principal,
+                            new SecurablePrincipal( Optional.absent(), principal, title, Optional.absent() ) );
+                }
+
+                AclKey userAclKey = spm.lookup( principal );
+
+                if ( user.getRoles().contains( SystemRole.AUTHENTICATED_USER.getName() ) ) {
+                    spm.addPrincipalToPrincipal( userRoleAclKey, userAclKey );
+                }
+
+                if ( user.getRoles().contains( SystemRole.ADMIN.getName() ) ) {
+                    spm.addPrincipalToPrincipal( adminRoleAclKey, userAclKey );
+                }
             }
-
-            AclKey userAclKey = spm.lookup( principal );
-
-            if ( user.getRoles().contains( SystemRole.AUTHENTICATED_USER.getName() ) ) {
-                spm.addPrincipalToPrincipal( userRoleAclKey, userAclKey );
-            }
-
-            if ( user.getRoles().contains( SystemRole.ADMIN.getName() ) ) {
-                spm.addPrincipalToPrincipal( adminRoleAclKey, userAclKey );
-            }
-
         }
     }
-
-
 }

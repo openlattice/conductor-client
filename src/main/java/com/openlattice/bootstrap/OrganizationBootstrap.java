@@ -36,8 +36,8 @@ import static com.openlattice.bootstrap.AuthorizationBootstrap.OPENLATTICE_ROLE;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class OrganizationBootstrap {
-    public static Organization OPENLATTICE = createOpenLatticeOrg();
-    public static Organization GLOBAL      = createGlobalOrg();
+    public static final Organization OPENLATTICE = createOpenLatticeOrg();
+    public static final Organization GLOBAL      = createGlobalOrg();
     private boolean initialized;
 
     public OrganizationBootstrap( HazelcastOrganizationService organizationService ) {
