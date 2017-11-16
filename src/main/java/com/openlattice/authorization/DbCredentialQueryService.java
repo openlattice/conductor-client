@@ -22,7 +22,6 @@ package com.openlattice.authorization;
 
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.slf4j.Logger;
@@ -43,24 +42,24 @@ public class DbCredentialQueryService {
     }
 
     public void createUser( String userId, String credential ) {
-        try ( Connection conn = hds.getConnection();  Statement st = conn.createStatement() ) {
-            st.execute( String.format(CREATE_USER, userId, credential) );
+        try ( Connection conn = hds.getConnection(); Statement st = conn.createStatement() ) {
+            st.execute( String.format( CREATE_USER, userId, credential ) );
         } catch ( SQLException e ) {
             logger.error( "Unable to create user {}", userId, e );
         }
     }
 
     public void setCredential( String userId, String credential ) {
-        try ( Connection conn = hds.getConnection();  Statement st = conn.createStatement() ) {
-            st.execute( String.format(SET_PASSWORD, userId, credential) );
+        try ( Connection conn = hds.getConnection(); Statement st = conn.createStatement() ) {
+            st.execute( String.format( SET_PASSWORD, userId, credential ) );
         } catch ( SQLException e ) {
             logger.error( "Unable to set creds for user {}", userId, e );
         }
     }
 
     public void deleteCredential( String userId ) {
-        try ( Connection conn = hds.getConnection();  Statement st = conn.createStatement() ) {
-            st.execute( String.format(DELETE_USER, userId );
+        try ( Connection conn = hds.getConnection(); Statement st = conn.createStatement() ) {
+            st.execute( String.format( DELETE_USER, userId ) );
         } catch ( SQLException e ) {
             logger.error( "Unable to delete user {}", userId, e );
         }
