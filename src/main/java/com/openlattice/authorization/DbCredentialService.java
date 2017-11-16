@@ -55,7 +55,7 @@ public class DbCredentialService {
     }
 
     public String createUser( String userId ) {
-        String cred = generateCredential();
+        String cred = setDbCredential( userId );
         dcqs.createUser( userId, cred );
         return cred;
     }
