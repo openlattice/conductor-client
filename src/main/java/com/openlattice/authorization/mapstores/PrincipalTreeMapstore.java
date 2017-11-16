@@ -90,7 +90,7 @@ public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, 
 
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
-                .addMapIndexConfig( new MapIndexConfig( "this[any]", false ) );
+                .addMapIndexConfig( new MapIndexConfig( "value[any]", false ) );
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {

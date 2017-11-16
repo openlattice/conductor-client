@@ -34,6 +34,7 @@ import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.google.common.base.Optional;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.openlattice.authorization.AclKey;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -53,6 +54,9 @@ public class AuthorizationBootstrap {
         spm.createSecurablePrincipalIfNotExists( OPENLATTICE_PRINCIPAL, OPENLATTICE_ROLE );
         spm.createSecurablePrincipalIfNotExists( SystemRole.AUTHENTICATED_USER.getPrincipal(), GLOBAL_USER_ROLE );
         spm.createSecurablePrincipalIfNotExists( SystemRole.ADMIN.getPrincipal(), GLOBAL_ADMIN_ROLE );
+        AclKey source = spm.lookup( SystemRole.AUTHENTICATED_USER.getPrincipal() );
+        AclKey target = spm.lookup( SystemRole.AUTHENTICATED_USER.getPrincipal() );
+        spm.addPrincipalToPrincipal( source, target );
         initialized = true;
     }
 

@@ -28,6 +28,10 @@ import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.Role;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.postgres.PostgresArrays;
@@ -79,6 +83,11 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<AclKey, Secu
         ps.setString( 3, value.getName() );
         ps.setString( 4, value.getTitle() );
         ps.setString( 5, value.getDescription() );
+
+        ps.setString( 6, value.getPrincipalType().name() );
+        ps.setString( 7, value.getName() );
+        ps.setString( 8, value.getTitle() );
+        ps.setString( 9, value.getDescription() );
     }
 
     @Override protected void bind( PreparedStatement ps, AclKey key ) throws SQLException {
@@ -92,5 +101,15 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<AclKey, Secu
 
     @Override protected AclKey mapToKey( ResultSet rs ) throws SQLException {
         return ResultSetAdapters.aclKey( rs );
+    }
+
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig().setInitialLoadMode( InitialLoadMode.EAGER );
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( "principal", false ) )
+                .addMapIndexConfig( new MapIndexConfig( "aclKey[0]", false ) );
     }
 }
