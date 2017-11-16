@@ -23,6 +23,10 @@ package com.openlattice.authorization.mapstores;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.collect.ImmutableList;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.postgres.PostgresArrays;
@@ -82,5 +86,15 @@ public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, 
 
     @Override protected AclKey mapToKey( ResultSet rs ) throws SQLException {
         return ResultSetAdapters.aclKey( rs );
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( "this[any]", false ) );
+    }
+
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig()
+                .setInitialLoadMode( InitialLoadMode.EAGER );
     }
 }

@@ -3,6 +3,7 @@ package com.dataloom.organizations.roles;
 import com.dataloom.authorization.*;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organizations.processors.NestedPrincipalMerger;
@@ -264,7 +265,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     }
 
     private static Predicate hasSecurablePrincipal( AclKey principalAclKey ) {
-        return Predicates.and( Predicates.equal( "value[any]", principalAclKey ) );
+        return Predicates.and( Predicates.equal( "this[any]", principalAclKey ) );
     }
 
 }
