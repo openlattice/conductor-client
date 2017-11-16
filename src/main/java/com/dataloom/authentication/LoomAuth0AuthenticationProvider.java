@@ -21,7 +21,9 @@ package com.dataloom.authentication;
 
 import com.auth0.authentication.AuthenticationAPIClient;
 import com.auth0.spring.security.api.Auth0JWTToken;
+import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.dataloom.organizations.roles.TokenExpirationTracker;
+import com.openlattice.authorization.SecurablePrincipal;
 import digital.loom.rhizome.authentication.ConfigurableAuth0AuthenticationProvider;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.security.core.Authentication;
@@ -31,12 +33,11 @@ public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0Authentica
     public static final String SUBJECT_ATTRIBUTE    = "sub";
     public static final String ISSUE_TIME_ATTRIBUTE = "iat";
 
-    @SuppressFBWarnings( value = "URF_UNREAD_FIELD", justification = "Temporarily turn off manual token expiration" )
-    private TokenExpirationTracker tokenTracker;
+    private final SecurePrincipalsManager spm;
 
-    public LoomAuth0AuthenticationProvider( AuthenticationAPIClient auth0Client, TokenExpirationTracker tokenTracker ) {
+    public LoomAuth0AuthenticationProvider( AuthenticationAPIClient auth0Client, SecurePrincipalsManager spm ) {
         super( auth0Client );
-        this.tokenTracker = tokenTracker;
+        this.spm = spm;
     }
 
     @Override

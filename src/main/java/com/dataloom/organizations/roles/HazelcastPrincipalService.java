@@ -1,5 +1,6 @@
 package com.dataloom.organizations.roles;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.dataloom.authorization.AuthorizationManager;
@@ -101,6 +102,12 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override public AclKey lookup( Principal p ) {
         return principals.values( findPrincipal( p ) ).stream().map( SecurablePrincipal::getAclKey ).findFirst().get();
+    }
+
+    @Override
+    public SecurablePrincipal getPrincipal( String principalId ) {
+        UUID id = checkNotNull( reservations.getId( principalId ), "AclKey not found for Principal" );
+        return Util.getSafely( principals, new AclKey( id ) );
     }
 
     @Override public Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType ) {

@@ -141,7 +141,7 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
             this.auth0ManagementApi = auth0ManagementApi;
             this.auth0LoadingCache = auth0LoadingCache;
             this.pos = ImmutableList.<String>of().iterator();
-            next();
+            hasNext();
         }
 
         @Override
@@ -150,11 +150,16 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
             //Populate the loading cached to avoid repeated calls to auth0 for read user data
             if ( !pos.hasNext() ) {
                 pageOfUsers = auth0ManagementApi.getAllUsers( page++, DEFAULT_PAGE_SIZE );
-                if ( pageOfUsers.isEmpty() ) {
+
+                //If no users or a null repsonse return false.
+                if ( pageOfUsers == null || pageOfUsers.isEmpty() ) {
                     logger.warn( "Received null/empty response from auth0." );
+                    return false;
                 }
+
                 auth0LoadingCache.putAll( pageOfUsers.stream()
                         .collect( Collectors.toMap( Auth0UserBasic::getUserId, Function.identity() ) ) );
+
                 pos = pageOfUsers.stream().map( Auth0UserBasic::getUserId ).iterator();
             }
             return pos.hasNext();

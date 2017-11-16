@@ -32,6 +32,8 @@ public interface SecurePrincipalsManager {
      */
     SecurablePrincipal getSecurablePrincipal( AclKey aclKey );
 
+    SecurablePrincipal getPrincipal( String principalId );
+
     Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType );
 
     Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId );
