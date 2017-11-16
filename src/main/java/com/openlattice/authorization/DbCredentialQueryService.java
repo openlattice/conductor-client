@@ -32,9 +32,10 @@ import org.slf4j.LoggerFactory;
  */
 public class DbCredentialQueryService {
     private static final Logger logger       = LoggerFactory.getLogger( DbCredentialQueryService.class );
-    private static final String SET_PASSWORD = "ALTER USER %s WITH PASSWORD '%s'";
-    private static final String DELETE_USER  = "DELETE USER %s";
-    private static final String CREATE_USER  = "CREATE USER %s WITH PASSWORD '%s'";
+    private static final String SET_PASSWORD = "ALTER USER \"%s\" WITH PASSWORD '%s'";
+    private static final String DELETE_USER  = "DELETE USER \"%s\"";
+    private static final String CREATE_USER  = "CREATE USER \"%s\" WITH PASSWORD '%s'";
+
     private final HikariDataSource hds;
 
     public DbCredentialQueryService( HikariDataSource hds ) {
