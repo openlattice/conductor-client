@@ -33,7 +33,7 @@ public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey
     }
 
     @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( ENTITY_SET_ID, PERMISSIONS );
+        return ImmutableList.of( PERMISSIONS, ENTITY_SET_ID );
     }
 
     @Override protected void bind( PreparedStatement ps, AppConfigKey key, AppTypeSetting value ) throws SQLException {
@@ -42,12 +42,12 @@ public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey
         Array permissions = PostgresArrays.createTextArray( ps.getConnection(),
                 value.getPermissions().stream().map( permission -> permission.toString() ) );
 
-        ps.setObject( 4, value.getEntitySetId() );
-        ps.setArray( 5, permissions );
+        ps.setArray( 4, permissions );
+        ps.setObject( 5, value.getEntitySetId() );
 
         // UPDATE
-        ps.setObject( 6, value.getEntitySetId() );
-        ps.setArray( 7, permissions );
+        ps.setArray( 6, permissions );
+        ps.setObject( 7, value.getEntitySetId() );
     }
 
     @Override protected void bind( PreparedStatement ps, AppConfigKey key ) throws SQLException {
