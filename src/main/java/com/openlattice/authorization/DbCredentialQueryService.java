@@ -24,6 +24,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +33,9 @@ import org.slf4j.LoggerFactory;
  */
 public class DbCredentialQueryService {
     private static final Logger logger       = LoggerFactory.getLogger( DbCredentialQueryService.class );
-    private static final String SET_PASSWORD = "ALTER USER ? WITH PASSWORD ?";
-    private static final String DELETE_USER  = "DELETE USER ?";
-    private static final String CREATE_USER  = "CREATE USER ? WITH PASSWORD ?";
+    private static final String SET_PASSWORD = "ALTER USER %s WITH PASSWORD '%s'";
+    private static final String DELETE_USER  = "DELETE USER %s";
+    private static final String CREATE_USER  = "CREATE USER %s WITH PASSWORD '%s'";
     private final HikariDataSource hds;
 
     public DbCredentialQueryService( HikariDataSource hds ) {
@@ -42,31 +43,27 @@ public class DbCredentialQueryService {
     }
 
     public void createUser( String userId, String credential ) {
-        try ( Connection conn = hds.getConnection(); PreparedStatement ps = conn.prepareStatement( CREATE_USER ) ) {
-            ps.setString( 1, userId );
-            ps.setString( 2, credential );
-            ps.execute();
+        try ( Connection conn = hds.getConnection();  Statement st = conn.createStatement() ) {
+            st.execute( String.format(CREATE_USER, userId, credential) );
         } catch ( SQLException e ) {
             logger.error( "Unable to create user {}", userId, e );
         }
     }
 
     public void setCredential( String userId, String credential ) {
-        try ( Connection conn = hds.getConnection(); PreparedStatement ps = conn.prepareStatement( SET_PASSWORD ) ) {
-            ps.setString( 1, userId );
-            ps.setString( 2, credential );
-            ps.execute();
+        try ( Connection conn = hds.getConnection();  Statement st = conn.createStatement() ) {
+            st.execute( String.format(SET_PASSWORD, userId, credential) );
         } catch ( SQLException e ) {
             logger.error( "Unable to set creds for user {}", userId, e );
         }
     }
 
     public void deleteCredential( String userId ) {
-        try ( Connection conn = hds.getConnection(); PreparedStatement ps = conn.prepareStatement( DELETE_USER ) ) {
-            ps.setString( 1, userId );
-            ps.execute();
+        try ( Connection conn = hds.getConnection();  Statement st = conn.createStatement() ) {
+            st.execute( String.format(DELETE_USER, userId );
         } catch ( SQLException e ) {
             logger.error( "Unable to delete user {}", userId, e );
         }
     }
+
 }
