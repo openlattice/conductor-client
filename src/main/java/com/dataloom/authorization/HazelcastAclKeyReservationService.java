@@ -75,8 +75,12 @@ public class HazelcastAclKeyReservationService {
         this.names = hazelcast.getMap( HazelcastMap.NAMES.name() );
     }
 
-    public boolean isReserved( String id ) {
-        return this.aclKeys.containsKey( id );
+    public UUID getId( String name ) {
+        return Util.getSafely( aclKeys, name );
+    }
+
+    public boolean isReserved( String name ) {
+        return this.aclKeys.containsKey( name );
     }
 
     public void renameReservation( String oldName, String newName ) {
@@ -163,7 +167,7 @@ public class HazelcastAclKeyReservationService {
              * just let one thread win and simplifies code path a lot.
              */
 
-            if ( existingAclKey != null ) {
+            if ( existingAclKey != null && !existingAclKey.equals( type.getId() ) ) {
                 if ( currentName == null ) {
                     // We need to remove UUID reservation
                     names.delete( type.getId() );

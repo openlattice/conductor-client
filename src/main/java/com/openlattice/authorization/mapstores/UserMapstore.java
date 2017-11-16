@@ -49,26 +49,12 @@ import retrofit2.Retrofit;
  */
 public class UserMapstore implements TestableSelfRegisteringMapStore<String, Auth0UserBasic> {
     private static final Logger logger            = LoggerFactory.getLogger( UserMapstore.class );
-    private static final int    DEFAULT_PAGE_SIZE = 1000;
+    private static final int    DEFAULT_PAGE_SIZE = 100;
     private static final int    TTL_SECONDS       = 15;
     //TODO: Switch over to a Hazelcast map to relieve pressure from Auth0
     private Retrofit                             retrofit;
     private Auth0ManagementApi                   auth0ManagementApi;
     private LoadingCache<String, Auth0UserBasic> auth0LoadingCache;
-
-    public UserMapstore( String token ) {
-        retrofit = RetrofitFactory.newClient( "https://openlattice.auth0.com/api/v2/", () -> token );
-
-        auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
-
-        auth0LoadingCache = CacheBuilder.newBuilder()
-                .expireAfterAccess( 15, TimeUnit.SECONDS )
-                .build( new CacheLoader<String, Auth0UserBasic>() {
-                    @Override public Auth0UserBasic load( String userId ) throws Exception {
-                        return auth0ManagementApi.getUser( userId );
-                    }
-                } );
-    }
 
     @Override public String getMapName() {
         return HazelcastMap.USERS.name();
@@ -128,6 +114,20 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
         return () -> new Auth0UserIterator( auth0ManagementApi, auth0LoadingCache );
     }
 
+    public void setToken( String token ) {
+        retrofit = RetrofitFactory.newClient( "https://openlattice.auth0.com/api/v2/", () -> token );
+
+        auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
+
+        auth0LoadingCache = CacheBuilder.newBuilder()
+                .expireAfterAccess( 15, TimeUnit.SECONDS )
+                .build( new CacheLoader<String, Auth0UserBasic>() {
+                    @Override public Auth0UserBasic load( String userId ) throws Exception {
+                        return auth0ManagementApi.getUser( userId );
+                    }
+                } );
+    }
+
     public static class Auth0UserIterator implements Iterator<String> {
         private final Auth0ManagementApi                   auth0ManagementApi;
         private final LoadingCache<String, Auth0UserBasic> auth0LoadingCache;
@@ -141,7 +141,7 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
             this.auth0ManagementApi = auth0ManagementApi;
             this.auth0LoadingCache = auth0LoadingCache;
             this.pos = ImmutableList.<String>of().iterator();
-            next();
+            hasNext();
         }
 
         @Override
@@ -150,11 +150,16 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
             //Populate the loading cached to avoid repeated calls to auth0 for read user data
             if ( !pos.hasNext() ) {
                 pageOfUsers = auth0ManagementApi.getAllUsers( page++, DEFAULT_PAGE_SIZE );
-                if ( pageOfUsers.isEmpty() ) {
+
+                //If no users or a null repsonse return false.
+                if ( pageOfUsers == null || pageOfUsers.isEmpty() ) {
                     logger.warn( "Received null/empty response from auth0." );
+                    return false;
                 }
+
                 auth0LoadingCache.putAll( pageOfUsers.stream()
                         .collect( Collectors.toMap( Auth0UserBasic::getUserId, Function.identity() ) ) );
+
                 pos = pageOfUsers.stream().map( Auth0UserBasic::getUserId ).iterator();
             }
             return pos.hasNext();

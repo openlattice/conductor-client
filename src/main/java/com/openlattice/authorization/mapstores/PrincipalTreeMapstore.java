@@ -23,6 +23,10 @@ package com.openlattice.authorization.mapstores;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.collect.ImmutableList;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.postgres.PostgresArrays;
@@ -32,6 +36,7 @@ import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -64,8 +69,11 @@ public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, 
 
     @Override protected void bind( PreparedStatement ps, AclKey key, AclKeySet value ) throws SQLException {
         bind( ps, key );
-        ps.setArray( 2, PostgresArrays.createUuidArrayOfArrays( ps.getConnection(),
-                value.stream().map( aclKey -> aclKey.toArray( new UUID[ 0 ] ) ) ) );
+        Array arr = PostgresArrays.createUuidArrayOfArrays( ps.getConnection(),
+                value.stream().map( aclKey -> aclKey.toArray( new UUID[ 0 ] ) ) );
+        ps.setArray( 2, arr );
+        ps.setArray( 3, arr ); //For update on conflict statement.
+
     }
 
     @Override protected void bind( PreparedStatement ps, AclKey key ) throws SQLException {
@@ -78,5 +86,15 @@ public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, 
 
     @Override protected AclKey mapToKey( ResultSet rs ) throws SQLException {
         return ResultSetAdapters.aclKey( rs );
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( "value[any]", false ) );
+    }
+
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig()
+                .setInitialLoadMode( InitialLoadMode.EAGER );
     }
 }

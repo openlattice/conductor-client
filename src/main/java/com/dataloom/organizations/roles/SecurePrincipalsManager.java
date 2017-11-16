@@ -32,6 +32,8 @@ public interface SecurePrincipalsManager {
      */
     SecurablePrincipal getSecurablePrincipal( AclKey aclKey );
 
+    SecurablePrincipal getPrincipal( String principalId );
+
     Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType );
 
     Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId );
@@ -39,6 +41,9 @@ public interface SecurePrincipalsManager {
     SetMultimap<SecurablePrincipal,SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId );
 
     Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p );
+
+    void crateSecurablePrincipal(
+            Principal owner, SecurablePrincipal principal );
 
     void updateTitle( AclKey aclKey, String title );
 
@@ -55,6 +60,10 @@ public interface SecurePrincipalsManager {
     Map<AclKey, Object> executeOnPrincipal( EntryProcessor<AclKey, SecurablePrincipal> ep, Predicate p );
 
     //More logical to use Principal
+
+    void removePrincipalFromPrincipals( AclKey source, Predicate targetFilter );
+
+    Collection<SecurablePrincipal> getAllPrincipalsWithPrincipal( AclKey aclKey );
 
     // Methods about users
     Collection<Principal> getAllUsersWithPrincipal( AclKey principal );

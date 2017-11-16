@@ -18,27 +18,20 @@
  *
  */
 
-package com.openlattice.authorization;
+package com.openlattice.bootstrap;
 
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class AclKeySet extends HashSet<AclKey> {
-    public AclKeySet() {
-    }
+public final class BootstrapConstants {
+    public static final UUID OPENLATTICE_ORGANIZATION_ID = new UUID( 0, 0 );
+    public static final UUID ROOT_PRINCIPAL_ID           = new UUID( 0, 1 );
 
-    public AclKeySet( int initialCapacity ) {
-        super( initialCapacity );
-    }
+    public static final UUID GLOBAL_ORGANIZATION_ID      = new UUID( 1, 0 );
 
-    public AclKeySet( Collection<? extends AclKey> c ) {
-        super( c );
-    }
 
-    public AclKeySet getValue() {
-        return this;
+    private BootstrapConstants() {
     }
 }
