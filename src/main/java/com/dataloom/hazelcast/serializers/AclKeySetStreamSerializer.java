@@ -23,15 +23,11 @@ package com.dataloom.hazelcast.serializers;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
-import java.util.Set;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AclKeySetStreamSerializer implements SelfRegisteringStreamSerializer<AclKeySet> {
@@ -46,9 +42,12 @@ public class AclKeySetStreamSerializer implements SelfRegisteringStreamSerialize
     }
 
     @Override public AclKeySet read( ObjectDataInput in ) throws IOException {
-        Set<AclKey> aclKeys = SetStreamSerializers.deserialize( in, AclKeyStreamSerializer::deserialize );
-
-        return new AclKeySet( aclKeys );
+        int size = in.readInt();
+        AclKeySet aks = new AclKeySet( size );
+        for ( int i = 0; i < size; ++i ) {
+            aks.add( AclKeyStreamSerializer.deserialize( in ) );
+        }
+        return aks;
     }
 
     @Override public int getTypeId() {
