@@ -38,7 +38,7 @@ public class AclKeySet extends HashSet<AclKey> {
         super( c );
     }
 
-    public Collection<AclKey> getValue() {
+    public AclKeySet getValue() {
         return this;
     }
 }

@@ -58,27 +58,6 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
     private Auth0ManagementApi                   auth0ManagementApi;
     private LoadingCache<String, Auth0UserBasic> auth0LoadingCache;
 
-    public UserMapstore() {
-    }
-
-    public UserMapstore( String token ) {
-        setToken( token );
-    }
-
-    public void setToken( String token ) {
-        retrofit = RetrofitFactory.newClient( "https://openlattice.auth0.com/api/v2/", () -> token );
-
-        auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
-
-        auth0LoadingCache = CacheBuilder.newBuilder()
-                .expireAfterAccess( 15, TimeUnit.SECONDS )
-                .build( new CacheLoader<String, Auth0UserBasic>() {
-                    @Override public Auth0UserBasic load( String userId ) throws Exception {
-                        return auth0ManagementApi.getUser( userId );
-                    }
-                } );
-    }
-
     @Override public String getMapName() {
         return HazelcastMap.USERS.name();
     }
@@ -135,6 +114,20 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
 
     @Override public Iterable<String> loadAllKeys() {
         return () -> new Auth0UserIterator( auth0ManagementApi, auth0LoadingCache );
+    }
+
+    public void setToken( String token ) {
+        retrofit = RetrofitFactory.newClient( "https://openlattice.auth0.com/api/v2/", () -> token );
+
+        auth0ManagementApi = retrofit.create( Auth0ManagementApi.class );
+
+        auth0LoadingCache = CacheBuilder.newBuilder()
+                .expireAfterAccess( 15, TimeUnit.SECONDS )
+                .build( new CacheLoader<String, Auth0UserBasic>() {
+                    @Override public Auth0UserBasic load( String userId ) throws Exception {
+                        return auth0ManagementApi.getUser( userId );
+                    }
+                } );
     }
 
     public static class Auth0UserIterator implements Iterator<String> {

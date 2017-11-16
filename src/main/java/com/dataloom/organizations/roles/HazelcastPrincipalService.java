@@ -245,7 +245,8 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
         while ( !nextLayer.isEmpty() ) {
             Map<AclKey, AclKeySet> nextRoles = principalTrees.getAll( nextLayer );
-            nextLayer = nextRoles.values().stream().flatMap( AclKeySet::stream ).collect( Collectors.toSet() );
+            nextLayer = nextRoles.values().stream().flatMap( AclKeySet::stream )
+                    .filter( aclKey -> !roles.contains( aclKey ) ).collect( Collectors.toSet() );
             roles.addAll( nextLayer );
         }
 

@@ -21,36 +21,45 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.dataloom.organizations.processors.NestedPrincipalMerger;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.openlattice.authorization.AclKey;
-import com.openlattice.authorization.AclKeySet;
+import java.io.IOException;
+import java.util.Arrays;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.util.Set;
-
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
 @Component
-public class AclKeySetStreamSerializer implements SelfRegisteringStreamSerializer<AclKeySet> {
-    @Override public Class<? extends AclKeySet> getClazz() {
-        return AclKeySet.class;
+public class NestedPrincipalMergerStreamSerializer implements SelfRegisteringStreamSerializer<NestedPrincipalMerger> {
+    @Override
+    public Class<NestedPrincipalMerger> getClazz() {
+        return NestedPrincipalMerger.class;
     }
 
-    @Override public void write( ObjectDataOutput out, AclKeySet object ) throws IOException {
-        SetStreamSerializers.serialize( out, object, aclKey -> {
+    @Override
+    public void write( ObjectDataOutput out, NestedPrincipalMerger object ) throws IOException {
+        SetStreamSerializers.serialize( out, object.getBackingCollection(), aclKey -> {
             AclKeyStreamSerializer.serialize( out, aclKey );
         } );
     }
 
-    @Override public AclKeySet read( ObjectDataInput in ) throws IOException {
-        Set<AclKey> aclKeys = SetStreamSerializers.deserialize( in, AclKeyStreamSerializer::deserialize );
-        return new AclKeySet( aclKeys );
+    @Override public NestedPrincipalMerger read( ObjectDataInput in ) throws IOException {
+        //TODO: Add more flexible methods in stream serializers
+        int size = in.readInt();
+        AclKey[] aclKeys = new AclKey[ size ];
+        for ( int i = 0; i < aclKeys.length; ++i ) {
+            aclKeys[ i ] = AclKeyStreamSerializer.deserialize( in );
+        }
+        return new NestedPrincipalMerger( Arrays.asList( aclKeys ) );
     }
 
     @Override public int getTypeId() {
-        return StreamSerializerTypeIds.ACL_KEY_SET.ordinal();
+        return StreamSerializerTypeIds.NESTED_PRINCIPAL_MERGER.ordinal();
     }
 
     @Override public void destroy() {
