@@ -61,7 +61,16 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override public void createSecurablePrincipalIfNotExists(
             Principal owner, SecurablePrincipal principal ) {
-        createSecurablePrincipalIfNotExists( principal );
+        try {
+            createSecurablePrincipal( principal );
+        } catch ( TypeExistsException e ) {
+            logger.warn( "Securable Principal {} already exists", principal, e );
+        }
+    }
+
+    @Override public void crateSecurablePrincipal(
+            Principal owner, SecurablePrincipal principal ) {
+        createSecurablePrincipal( principal );
         final AclKey aclKey = principal.getAclKey();
 
         try {
@@ -76,7 +85,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         }
     }
 
-    public void createSecurablePrincipalIfNotExists( SecurablePrincipal principal ) {
+    private void createSecurablePrincipal( SecurablePrincipal principal ) {
         reservations.reserveIdAndValidateType( principal, principal::getName );
         principals.set( principal.getAclKey(), principal );
         securableObjectTypes.putIfAbsent( principal.getAclKey(), principal.getCategory() );

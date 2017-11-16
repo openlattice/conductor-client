@@ -55,13 +55,12 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
     }
 
     @Override protected DelegatedStringSet mapToValue( ResultSet rs ) throws SQLException {
-        Array arr = rs.getArray( ALLOWED_EMAIL_DOMAINS.getName() );
-        if ( arr != null ) {
-            String[] value = (String[]) arr.getArray();
-            if ( value != null )
-                return DelegatedStringSet.wrap( Sets.newHashSet( value ) );
+        Array array = rs.getArray( ALLOWED_EMAIL_DOMAINS.getName() );
+        if ( array == null ) {
+            return null;
         }
-        return DelegatedStringSet.wrap( Sets.newHashSet() );
+        String[] value = (String[]) array.getArray();
+        return DelegatedStringSet.wrap( Sets.newHashSet( value ) );
     }
 
     @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {

@@ -20,18 +20,17 @@
 
 package com.openlattice.bootstrap;
 
-import static com.openlattice.bootstrap.AuthorizationBootstrap.GLOBAL_ADMIN_ROLE;
-import static com.openlattice.bootstrap.AuthorizationBootstrap.GLOBAL_USER_ROLE;
-import static com.openlattice.bootstrap.AuthorizationBootstrap.OPENLATTICE_ROLE;
-
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
-import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.organization.Organization;
 import com.dataloom.organizations.HazelcastOrganizationService;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+
 import java.util.UUID;
+
+import static com.openlattice.bootstrap.AuthorizationBootstrap.GLOBAL_ADMIN_ROLE;
+import static com.openlattice.bootstrap.AuthorizationBootstrap.OPENLATTICE_ROLE;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -42,8 +41,9 @@ public class OrganizationBootstrap {
     private boolean initialized;
 
     public OrganizationBootstrap( HazelcastOrganizationService organizationService ) {
-            organizationService.createOrganization( OPENLATTICE_ROLE.getPrincipal(), OPENLATTICE );
-            organizationService.createOrganization( GLOBAL_ADMIN_ROLE.getPrincipal(), GLOBAL );
+        organizationService.createOrganization( OPENLATTICE_ROLE.getPrincipal(), OPENLATTICE );
+        organizationService.createOrganization( GLOBAL_ADMIN_ROLE.getPrincipal(), GLOBAL );
+        initialized = true;
     }
 
     public boolean isInitialized() {

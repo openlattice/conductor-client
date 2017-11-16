@@ -76,8 +76,7 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
         Map<UUID, PrincipalSet> result = Maps.newConcurrentMap();
         keys.parallelStream().forEach( id -> {
             PrincipalSet users = load( id );
-            if ( users != null )
-                result.put( id, users );
+            if ( users != null ) { result.put( id, users ); }
         } );
         return result;
     }
