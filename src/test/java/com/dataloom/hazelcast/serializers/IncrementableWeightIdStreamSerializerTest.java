@@ -22,7 +22,9 @@ package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
+
 import java.util.UUID;
+
 import org.apache.commons.lang3.RandomUtils;
 
 /**
@@ -36,9 +38,9 @@ public class IncrementableWeightIdStreamSerializerTest
 
     @Override protected IncrementableWeightId[] createInput() {
         return new IncrementableWeightId[] {
-                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong( Long.MIN_VALUE, Long.MAX_VALUE ) ),
-                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong( Long.MIN_VALUE, Long.MAX_VALUE ) ),
-                new IncrementableWeightId( UUID.randomUUID(),
-                        RandomUtils.nextLong( Long.MIN_VALUE, Long.MAX_VALUE ) ) };
+                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong( 0, Long.MAX_VALUE ) ),
+                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong( 0, Long.MAX_VALUE ) ),
+                new IncrementableWeightId( UUID.randomUUID(), RandomUtils.nextLong( 0, Long.MAX_VALUE ) )
+        };
     }
 }
