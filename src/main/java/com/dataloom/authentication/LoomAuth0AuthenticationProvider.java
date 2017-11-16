@@ -22,10 +22,7 @@ package com.dataloom.authentication;
 import com.auth0.authentication.AuthenticationAPIClient;
 import com.auth0.spring.security.api.Auth0JWTToken;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
-import com.dataloom.organizations.roles.TokenExpirationTracker;
-import com.openlattice.authorization.SecurablePrincipal;
 import digital.loom.rhizome.authentication.ConfigurableAuth0AuthenticationProvider;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.springframework.security.core.Authentication;
 
 public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0AuthenticationProvider {
@@ -63,6 +60,6 @@ public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0Authentica
          tokenTracker.untrackUser( userId );
          */
 
-        return new LoomAuthentication( jwtToken , spm);
+        return new LoomAuthentication( jwtToken, spm );
     }
 }
