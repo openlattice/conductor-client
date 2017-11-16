@@ -21,7 +21,6 @@ public class UpdateEntitySetPropertyMetadataProcessorStreamSerializerTest extend
 
     @Override
     protected UpdateEntitySetPropertyMetadataProcessor createInput() {
-        EntitySet es = TestDataFactory.entitySet();
         MetadataUpdate update = new MetadataUpdate(
                 Optional.of( "title" ),
                 Optional.of( "description" ),

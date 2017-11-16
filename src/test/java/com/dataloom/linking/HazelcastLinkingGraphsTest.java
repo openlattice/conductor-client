@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.openlattice.postgres.mapstores.LinkingVerticesMapstore;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -54,6 +55,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
     protected static final IMap<LinkingVertexKey, WeightedLinkingVertexKeySet> edges;
     protected static final IMap<LinkingVertexKey,LinkingVertex>                linkingVertices;
     protected static final IMap<EntityKey, UUID>                               ids;
+    @SuppressFBWarnings( value = "MS_MUTABLE_COLLECTION_PKGPROTECT", justification = "used is protected" )
     protected static final Set<UUID> used    = new HashSet<>( entityCount );
     protected static final UUID      graphId = UUID.randomUUID();
     private static final   Random    r       = new Random();

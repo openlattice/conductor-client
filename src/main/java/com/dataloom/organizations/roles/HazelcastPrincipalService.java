@@ -122,7 +122,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override
     public SetMultimap<SecurablePrincipal, SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId ) {
-        new PagingPredicate<>();
+      //  new PagingPredicate<>();
         return null;
     }
 

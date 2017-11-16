@@ -32,6 +32,7 @@ import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 import com.openlattice.postgres.CountdownConnectionCloser;
 import com.openlattice.postgres.KeyIterator;
 import com.zaxxer.hikari.HikariDataSource;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -207,7 +208,10 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
         return keys.parallelStream().collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
     }
 
-    @Override public Iterable<EdgeKey> loadAllKeys() {
+    @Override
+    @SuppressFBWarnings(
+            value = { "ODR_OPEN_DATABASE_RESOURCE", "OBL_UNSATISFIED_OBLIGATION" },
+            justification = "Connection intentionally left open for iterator" )    public Iterable<EdgeKey> loadAllKeys() {
         logger.info( "Starting load all keys for Edge Mapstore" );
         Stream<EdgeKey> keys;
         try {

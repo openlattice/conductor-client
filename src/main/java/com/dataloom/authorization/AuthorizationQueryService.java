@@ -31,6 +31,7 @@ import com.hazelcast.core.IMap;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.*;
 import com.zaxxer.hikari.HikariDataSource;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,6 +222,7 @@ public class AuthorizationQueryService {
         return getAuthorizedAclKeysForPrincipals( principals, desiredPermissions, Optional.empty() );
     }
 
+    @SuppressFBWarnings( value = "OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE", justification = "Resources will be closed on error" )
     private PreparedStatement prepareAuthorizedAclKeysQuery(
             Connection connection,
             Set<Principal> principals,
