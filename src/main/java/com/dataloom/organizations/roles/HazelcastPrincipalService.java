@@ -62,13 +62,13 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     @Override public void createSecurablePrincipalIfNotExists(
             Principal owner, SecurablePrincipal principal ) {
         try {
-            createSecurablePrincipal( principal );
+            createSecurablePrincipal( owner, principal );
         } catch ( TypeExistsException e ) {
             logger.warn( "Securable Principal {} already exists", principal, e );
         }
     }
 
-    @Override public void crateSecurablePrincipal(
+    @Override public void createSecurablePrincipal(
             Principal owner, SecurablePrincipal principal ) {
         createSecurablePrincipal( principal );
         final AclKey aclKey = principal.getAclKey();
