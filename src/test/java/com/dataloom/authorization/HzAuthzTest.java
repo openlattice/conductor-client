@@ -32,6 +32,7 @@ import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.conductor.codecs.pods.TypeCodecsPod;
 import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
+import com.kryptnostic.rhizome.configuration.ConfigurationConstants;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.kryptnostic.rhizome.pods.CassandraPod;
@@ -74,7 +75,7 @@ public class HzAuthzTest extends CassandraBootstrap {
                 NeuronPod.class
         );
 
-        testServer.sprout( "local", CassandraPod.CASSANDRA_PROFILE, PostgresPod.PROFILE );
+        testServer.sprout( ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE, CassandraPod.CASSANDRA_PROFILE, PostgresPod.PROFILE );
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
         session = testServer.getContext().getBean( Session.class );
         cc = testServer.getContext().getBean( CassandraConfiguration.class );

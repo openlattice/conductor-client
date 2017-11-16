@@ -2,6 +2,7 @@ package com.openlattice.postgres.mapstores;
 
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingVertexKey;
+import com.dataloom.linking.WeightedLinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
 import com.google.common.collect.ImmutableList;
 import com.hazelcast.config.MapConfig;
@@ -10,6 +11,7 @@ import com.hazelcast.config.MapStoreConfig;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.math.RandomUtils;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -99,6 +101,8 @@ public class LinkingEdgesMapstore extends AbstractBasePostgresMapstore<LinkingVe
     }
 
     @Override public WeightedLinkingVertexKeySet generateTestValue() {
-        return new WeightedLinkingVertexKeySet();
+        WeightedLinkingVertexKeySet val = new WeightedLinkingVertexKeySet();
+        val.add( new WeightedLinkingVertexKey( RandomUtils.nextDouble(), new LinkingVertexKey( UUID.randomUUID(), UUID.randomUUID() ) ) );
+        return val;
     }
 }

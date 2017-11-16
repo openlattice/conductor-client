@@ -53,7 +53,6 @@ public class AuthorizationQueryService {
     private final String ownersForSecurableObjectSql;
     private final String deletePermissionsByAclKeysSql;
     private final String deletePermissionsByPrincipalSql;
-    private final String setObjectTypeSql;
 
     public AuthorizationQueryService( HikariDataSource hds, HazelcastInstance hazelcastInstance ) {
         this.hds = hds;
@@ -61,14 +60,12 @@ public class AuthorizationQueryService {
 
         // Tables
         String PERMISSIONS_TABLE = PostgresTable.PERMISSIONS.getName();
-        String SECURABLE_OBJECTS = PostgresTable.SECURABLE_OBJECTS.getName();
 
         // Columns
         String ACL_KEY = PostgresColumn.ACL_KEY.getName();
         String PRINCIPAL_TYPE = PostgresColumn.PRINCIPAL_TYPE.getName();
         String PRINCIPAL_ID = PostgresColumn.PRINCIPAL_ID.getName();
         String PERMISSIONS = PostgresColumn.PERMISSIONS.getName();
-        String SECURABLE_OBJECT_TYPE = PostgresColumn.SECURABLE_OBJECT_TYPE.getName();
 
         this.aclsForSecurableObjectSql = PostgresQuery
                 .selectColsFrom( PERMISSIONS_TABLE, ImmutableList.of( PRINCIPAL_TYPE, PRINCIPAL_ID ) )
@@ -81,9 +78,7 @@ public class AuthorizationQueryService {
                 .concat( PostgresQuery.whereEq( ImmutableList.of( ACL_KEY ), true ) );
         this.deletePermissionsByPrincipalSql = PostgresQuery.deleteFrom( PERMISSIONS_TABLE )
                 .concat( PostgresQuery.whereEq( ImmutableList.of( PRINCIPAL_TYPE, PRINCIPAL_ID ), true ) );
-        this.setObjectTypeSql = PostgresQuery.update( SECURABLE_OBJECTS )
-                .concat( PostgresQuery.setEq( ImmutableList.of( SECURABLE_OBJECT_TYPE ) ) )
-                .concat( PostgresQuery.whereEq( ImmutableList.of( ACL_KEY ), true ) );
+
     }
 
     private String getAuthorizedAclKeyQuery(
@@ -329,19 +324,6 @@ public class AuthorizationQueryService {
                 .map( AceFuture::getUninterruptibly );
         return new Acl( aclKeys, accessControlEntries::iterator );
 
-    }
-
-    public void createEmptyAcl( AclKey aclKey, SecurableObjectType objectType ) {
-        try ( Connection connection = hds.getConnection();
-                PreparedStatement ps = connection.prepareStatement( setObjectTypeSql ) ) {
-            ps.setString( 1, objectType.name() );
-            ps.setArray( 2, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
-            ps.execute();
-            connection.close();
-            logger.info( "Created empty acl with key {} and type {}", aclKey, objectType );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to create acl with key {} and type {}", aclKey, objectType, e );
-        }
     }
 
     public void deletePermissionsByAclKeys( AclKey aclKey ) {
