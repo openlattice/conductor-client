@@ -51,7 +51,7 @@ import retrofit2.Retrofit;
  */
 public class UserMapstore implements TestableSelfRegisteringMapStore<String, Auth0UserBasic> {
     private static final Logger logger            = LoggerFactory.getLogger( UserMapstore.class );
-    private static final int    DEFAULT_PAGE_SIZE = 1000;
+    private static final int    DEFAULT_PAGE_SIZE = 100;
     private static final int    TTL_SECONDS       = 15;
     //TODO: Switch over to a Hazelcast map to relieve pressure from Auth0
     private Retrofit                             retrofit;
