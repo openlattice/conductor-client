@@ -67,6 +67,7 @@ public class PostgresCredentialMapstore extends AbstractBasePostgresMapstore<Str
     @Override protected void bind( PreparedStatement ps, String key, String value ) throws SQLException {
         bind( ps, key );
         ps.setString( 2, value );
+        ps.setString( 3, value );
     }
 
     @Override protected void bind( PreparedStatement ps, String key ) throws SQLException {

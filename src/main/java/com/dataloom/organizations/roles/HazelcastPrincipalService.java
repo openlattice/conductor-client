@@ -267,7 +267,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     }
 
     private static Predicate hasSecurablePrincipal( AclKey principalAclKey ) {
-        return Predicates.and( Predicates.equal( "value[any]", principalAclKey ) );
+        return Predicates.and( Predicates.equal( "this[any]", principalAclKey ) );
     }
 
 }
