@@ -26,6 +26,7 @@ import com.dataloom.streams.StreamUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.openlattice.authorization.AclKey;
@@ -179,16 +180,28 @@ public class AuthorizationQueryService {
         int limit = pageSize;
         int offset = ( offsetStr == null ) ? 0 : Integer.parseInt( offsetStr );
 
-        Set<AclKey> results = getAuthorizedAclKeysForPrincipals( principals,
-                EnumSet.of( permission ),
-                Optional.of( objectType ),
-                Optional.of( limit ),
-                Optional.of( offset ) )
-                .collect( Collectors.toSet() );
+        try ( Connection connection = hds.getConnection() ) {
+            PreparedStatement ps = prepareAuthorizedAclKeysQuery( connection,
+                    principals,
+                    EnumSet.of( permission ),
+                    Optional.of( objectType ),
+                    Optional.of( limit + 1 ),
+                    Optional.of( offset ) );
+            Set<AclKey> result = Sets.newHashSet();
+            ResultSet rs = ps.executeQuery();
+            while ( rs.next() && result.size() < limit ) {
+                result.add( ResultSetAdapters.aclKey( rs ) );
+            }
+            String newPage = rs.isAfterLast() ? null : String.valueOf( offset + pageSize );
 
-        String newPage = ( results.size() < pageSize ) ? null : String.valueOf( offset + pageSize );
+            rs.close();
+            connection.close();
 
-        return new AuthorizedObjectsSearchResult( newPage, results );
+            return new AuthorizedObjectsSearchResult( newPage, result );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to get authorized acl keys.", e );
+            return null;
+        }
     }
 
     /**
