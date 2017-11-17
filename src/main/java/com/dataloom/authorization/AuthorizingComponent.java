@@ -19,16 +19,12 @@
 
 package com.dataloom.authorization;
 
+import com.dataloom.authorization.securable.AbstractSecurableObject;
+import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.AclKey;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.authorization.securable.AbstractSecurableObject;
-import com.google.common.collect.ImmutableList;
-import com.openlattice.authorization.AclKey;
 
 public interface AuthorizingComponent {
     AuthorizationManager getAuthorizationManager();
@@ -52,7 +48,7 @@ public interface AuthorizingComponent {
                 requiredPermissions );
     }
 
-    default boolean owns( List<UUID> aclKey ) {
+    default boolean owns( AclKey aclKey ) {
         return isAuthorized( Permission.OWNER ).test( new AclKey( aclKey ) );
     }
 

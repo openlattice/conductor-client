@@ -4,18 +4,13 @@ import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.SystemRole;
 import com.dataloom.directory.pojo.Auth0UserBasic;
-import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.google.common.base.Optional;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.DbCredentialService;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.mapstores.UserMapstore;
 import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
-
-import javax.inject.Inject;
 
 import static com.google.common.base.Preconditions.checkState;
 

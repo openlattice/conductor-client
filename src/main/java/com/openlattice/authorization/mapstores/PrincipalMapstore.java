@@ -20,11 +20,8 @@
 
 package com.openlattice.authorization.mapstores;
 
-import static com.openlattice.postgres.PostgresColumn.*;
-import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
 import static com.openlattice.postgres.PostgresTable.PRINCIPALS;
 
-import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.Role;
@@ -42,7 +39,6 @@ import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
 
-import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;

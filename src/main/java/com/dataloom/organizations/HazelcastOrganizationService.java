@@ -26,6 +26,7 @@ import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.Organization;
+import com.dataloom.organization.OrganizationPrincipal;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
@@ -124,7 +125,7 @@ public class HazelcastOrganizationService {
 
         Collection<SecurablePrincipal> maybeOrgs =
                 securePrincipalsManager.getSecurablePrincipals( getOrganizationPredicate( organizationId ) );
-        SecurablePrincipal principal = Iterables.getOnlyElement( maybeOrgs );
+        OrganizationPrincipal principal = (OrganizationPrincipal) Iterables.getOnlyElement( maybeOrgs );
         Set<Role> roles = getRoles( organizationId );
         try {
             return new Organization(
