@@ -20,34 +20,57 @@
 
 package com.openlattice.authorization.mapstores;
 
-import com.dataloom.authorization.*;
+import static com.openlattice.postgres.PostgresArrays.createTextArray;
+import static com.openlattice.postgres.PostgresArrays.createUuidArray;
+import static com.openlattice.postgres.PostgresColumn.ACL_KEY;
+import static com.openlattice.postgres.PostgresColumn.PERMISSIONS;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE;
+
+import com.dataloom.authorization.AceKey;
+import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
+import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
+import com.openlattice.authorization.AceValue;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
+import com.openlattice.postgres.mapstores.SecurableObjectTypeMapstore;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.commons.lang3.RandomStringUtils;
-
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
-
-import static com.openlattice.postgres.PostgresArrays.createTextArray;
-import static com.openlattice.postgres.PostgresArrays.createUuidArray;
-import static com.openlattice.postgres.PostgresColumn.*;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, DelegatedPermissionEnumSet> {
+public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, AceValue> {
+    public static final String PRINCIPAL_INDEX = "__key#principal";
+    public static final String SECURABLE_OBJECT_TYPE_INDEX = "securableObjectType";
+    public static final String PERMISSIONS_INDEX = "permissions[any]";
+    public static final String ACL_KEY_INDEX = "aclKey";
+    private final SecurableObjectTypeMapstore objectTypes;
 
     public PermissionMapstore( HikariDataSource hds ) {
         super( HazelcastMap.PERMISSIONS.name(), PostgresTable.PERMISSIONS, hds );
+        this.objectTypes = new SecurableObjectTypeMapstore( hds );
     }
 
     @Override protected List<PostgresColumnDefinition> keyColumns() {
@@ -59,9 +82,10 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Del
     }
 
     @Override protected void bind(
-            PreparedStatement ps, AceKey key, DelegatedPermissionEnumSet value ) throws SQLException {
+            PreparedStatement ps, AceKey key, AceValue value ) throws SQLException {
         bind( ps, key );
-        Array permissions = createTextArray( ps.getConnection(), value.stream().map( Permission::name ) );
+        Array permissions = createTextArray( ps.getConnection(),
+                value.getPermissions().stream().map( Permission::name ) );
         ps.setArray( 4, permissions );
         ps.setArray( 5, permissions );
     }
@@ -73,9 +97,17 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Del
         ps.setString( 3, p.getId() );
     }
 
-    @Override protected DelegatedPermissionEnumSet mapToValue( ResultSet rs ) throws SQLException {
-        EnumSet<Permission> pset = ResultSetAdapters.permissions( rs );
-        return DelegatedPermissionEnumSet.wrap( pset );
+    @Override protected AceValue mapToValue( ResultSet rs ) throws SQLException {
+        EnumSet<Permission> permissions = ResultSetAdapters.permissions( rs );
+        AclKey aclKey = ResultSetAdapters.aclKey( rs );
+        /*
+         * There is small risk of deadlock here if all readers get stuck waiting for connection from the connection pool
+         * we should keep an eye out to make sure there aren't an unusual number of TimeoutExceptions being thrown.
+         *
+         * Also we only
+         */
+        SecurableObjectType objectType = objectTypes.load( aclKey );
+        return new AceValue( permissions, objectType );
     }
 
     @Override protected AceKey mapToKey( ResultSet rs ) throws SQLException {
@@ -83,25 +115,38 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Del
     }
 
     @Override
-    public Map<AceKey, DelegatedPermissionEnumSet> loadAll( Collection<AceKey> keys ) {
-        Map<AceKey, DelegatedPermissionEnumSet> result = Maps.newConcurrentMap();
+    public Map<AceKey, AceValue> loadAll( Collection<AceKey> keys ) {
+        Map<AceKey, AceValue> result = Maps.newConcurrentMap();
         keys.parallelStream().forEach( key -> {
-            DelegatedPermissionEnumSet value = load( key );
-            if ( value != null )
-                result.put( key, value );
+            AceValue value = load( key );
+            if ( value != null ) { result.put( key, value ); }
         } );
         return result;
+    }
+
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig()
+                .setInitialLoadMode( InitialLoadMode.EAGER );
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( ACL_KEY_INDEX, false ) )
+                .addMapIndexConfig( new MapIndexConfig( PRINCIPAL_INDEX, false ) )
+                .addMapIndexConfig( new MapIndexConfig( SECURABLE_OBJECT_TYPE_INDEX, false ) )
+                .addMapIndexConfig( new MapIndexConfig( PERMISSIONS_INDEX, false ) );
     }
 
     @Override
     public AceKey generateTestKey() {
         return new AceKey(
-                ImmutableList.of( UUID.randomUUID() ),
+                new AclKey( UUID.randomUUID() ),
                 new Principal( PrincipalType.USER, RandomStringUtils.randomAlphanumeric( 5 ) ) );
     }
 
     @Override
-    public DelegatedPermissionEnumSet generateTestValue() {
-        return DelegatedPermissionEnumSet.wrap( EnumSet.of( Permission.READ, Permission.WRITE ) );
+    public AceValue generateTestValue() {
+        return new AceValue( EnumSet.of( Permission.READ, Permission.WRITE ),
+                SecurableObjectType.PropertyTypeInEntitySet );
     }
 }

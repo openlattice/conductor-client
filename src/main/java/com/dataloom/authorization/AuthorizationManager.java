@@ -19,36 +19,31 @@
 
 package com.dataloom.authorization;
 
-import com.dataloom.authorization.paging.AuthorizedObjectsPagingInfo;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.openlattice.authorization.AclKey;
-
 import java.util.EnumSet;
-import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 /**
  * The authorization manager manages permissions for all securable objects in the system.
- * 
+ *
  * Authorization behavior is summarized below:
  * <ul>
  * <li>No inheritance and that all permissions are explicitly set.</li>
  * <li>For permissions that are present we follow a least restrictive model for determining access</li>
  * <li>If no relevant permissions are present for Principal set, access is denied.</li>
  * </ul>
- * 
- * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  *
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public interface AuthorizationManager {
 
     /**
      * Creates an empty acl.
-     * 
+     *
      * @param aclKey The key for the object whose acl is being created.
      * @param objectType The type of the object for lookup purposes.
      */
@@ -57,17 +52,17 @@ public interface AuthorizationManager {
     void addPermission(
             AclKey aclKeys,
             Principal principal,
-            Set<Permission> permissions );
+            EnumSet<Permission> permissions );
 
     void removePermission(
             AclKey aclKeys,
             Principal principal,
-            Set<Permission> permissions );
+            EnumSet<Permission> permissions );
 
     void setPermission(
             AclKey aclKeys,
             Principal principal,
-            Set<Permission> permissions );
+            EnumSet<Permission> permissions );
 
     void deletePermissions( AclKey aclKey );
 
@@ -107,6 +102,6 @@ public interface AuthorizationManager {
     Stream<AclKey> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
 
     Stream<AclKey> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
-    
+
     Iterable<Principal> getSecurableObjectOwners( AclKey key );
 }

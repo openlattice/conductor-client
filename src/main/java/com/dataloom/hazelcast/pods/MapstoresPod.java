@@ -19,12 +19,13 @@
 
 package com.dataloom.hazelcast.pods;
 
+import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
+
 import com.dataloom.apps.App;
 import com.dataloom.apps.AppConfigKey;
 import com.dataloom.apps.AppType;
 import com.dataloom.apps.AppTypeSetting;
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
@@ -35,7 +36,11 @@ import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.*;
+import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.PostgresEdgeMapstore;
@@ -52,6 +57,7 @@ import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
@@ -62,21 +68,40 @@ import com.openlattice.authorization.mapstores.PrincipalTreeMapstore;
 import com.openlattice.authorization.mapstores.UserMapstore;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
-import com.openlattice.postgres.mapstores.*;
+import com.openlattice.postgres.mapstores.AclKeysMapstore;
+import com.openlattice.postgres.mapstores.AppConfigMapstore;
+import com.openlattice.postgres.mapstores.AppMapstore;
+import com.openlattice.postgres.mapstores.AppTypeMapstore;
+import com.openlattice.postgres.mapstores.AssociationTypeMapstore;
+import com.openlattice.postgres.mapstores.ComplexTypeMapstore;
+import com.openlattice.postgres.mapstores.EdmVersionsMapstore;
+import com.openlattice.postgres.mapstores.EntitySetMapstore;
+import com.openlattice.postgres.mapstores.EntitySetPropertyMetadataMapstore;
+import com.openlattice.postgres.mapstores.EntityTypeMapstore;
+import com.openlattice.postgres.mapstores.EnumTypesMapstore;
+import com.openlattice.postgres.mapstores.LinkingEdgesMapstore;
+import com.openlattice.postgres.mapstores.LinkingVerticesMapstore;
+import com.openlattice.postgres.mapstores.NamesMapstore;
+import com.openlattice.postgres.mapstores.OrganizationAppsMapstore;
+import com.openlattice.postgres.mapstores.OrganizationDescriptionsMapstore;
+import com.openlattice.postgres.mapstores.OrganizationEmailDomainsMapstore;
+import com.openlattice.postgres.mapstores.OrganizationMembersMapstore;
+import com.openlattice.postgres.mapstores.OrganizationTitlesMapstore;
+import com.openlattice.postgres.mapstores.RequestsMapstore;
+import com.openlattice.postgres.mapstores.SchemasMapstore;
+import com.openlattice.postgres.mapstores.SecurableObjectTypeMapstore;
+import com.openlattice.postgres.mapstores.SyncIdsMapstore;
+import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
+import java.nio.ByteBuffer;
+import java.sql.SQLException;
+import java.util.UUID;
+import javax.inject.Inject;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-
-import javax.inject.Inject;
-import java.nio.ByteBuffer;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.UUID;
-
-import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
 
 @Configuration
 @Import( { CassandraPod.class, PostgresPod.class } )
@@ -100,15 +125,13 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
-        PermissionMapstore ppm = new PermissionMapstore( hikariDataSource );
-        return ppm;
+    public SelfRegisteringMapStore<AceKey, AceValue> permissionMapstore() {
+        return new PermissionMapstore( hikariDataSource );
     }
 
     @Bean
-    public SelfRegisteringMapStore<List<UUID>, SecurableObjectType> securableObjectTypeMapstore() {
-        SecurableObjectTypeMapstore psotm = new SecurableObjectTypeMapstore( hikariDataSource );
-        return psotm;
+    public SelfRegisteringMapStore<AclKey, SecurableObjectType> securableObjectTypeMapstore() {
+        return new SecurableObjectTypeMapstore( hikariDataSource );
     }
 
     @Bean

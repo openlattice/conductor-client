@@ -165,7 +165,7 @@ public final class ResultSetAdapters {
     }
 
     public static AceKey aceKey( ResultSet rs ) throws SQLException {
-        List<UUID> aclKey = aclKey( rs );
+        AclKey aclKey = aclKey( rs );
         Principal principal = principal( rs );
         return new AceKey( aclKey, principal );
     }
@@ -407,7 +407,7 @@ public final class ResultSetAdapters {
     }
 
     public static Status status( ResultSet rs ) throws SQLException {
-        List<UUID> aclKey = aclKey( rs );
+        AclKey aclKey = aclKey( rs );
         Principal principal = principal( rs );
         EnumSet<Permission> permissions = ResultSetAdapters.permissions( rs );
         Optional<String> reason = Optional.of( reason( rs ) );

@@ -19,6 +19,7 @@
 
 package com.dataloom.requests;
 
+import com.openlattice.authorization.AclKey;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -134,10 +135,10 @@ public class HazelcastRequestsManager {
 
         aceKeyRequestStateMap.forEach( ( aceKey, requestStatus ) -> {
 
-            List<UUID> newAclKey = Collections.unmodifiableList( aceKey.getKey() );
+            AclKey newAclKey = aceKey.getKey();
             if ( newAclKey.size() > 1 ) {
                 // we need a new ArrayList, otherwise we get "java.io.NotSerializableException: java.util.ArrayList$SubList"
-                newAclKey = Lists.newArrayList( newAclKey.subList( 0, newAclKey.size() - 1 ) );
+                newAclKey = new AclKey( Lists.newArrayList( newAclKey.subList( 0, newAclKey.size() - 1 ) ) );
             }
 
             stateToAceKeysMap

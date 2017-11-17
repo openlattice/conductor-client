@@ -19,18 +19,15 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-
-import org.springframework.stereotype.Component;
-
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import com.openlattice.authorization.AclKey;
+import java.io.IOException;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AceKeyStreamSerializer implements SelfRegisteringStreamSerializer<AceKey> {
@@ -38,19 +35,15 @@ public class AceKeyStreamSerializer implements SelfRegisteringStreamSerializer<A
     @Override
     public void write( ObjectDataOutput out, AceKey object )
             throws IOException {
-        StreamSerializerUtils.serializeFromList( out, object.getKey(), ( UUID key ) -> {
-            UUIDStreamSerializer.serialize( out, key );
-        } );
+        AclKeyStreamSerializer.serialize( out, object.getKey() );
         PrincipalStreamSerializer.serialize( out, object.getPrincipal() );
     }
 
     @Override
     public AceKey read( ObjectDataInput in ) throws IOException {
-        List<UUID> keys = StreamSerializerUtils.deserializeToList( in, ( ObjectDataInput dataInput ) -> {
-            return UUIDStreamSerializer.deserialize( dataInput );
-        } );
+        AclKey key = AclKeyStreamSerializer.deserialize( in );
         Principal principal = PrincipalStreamSerializer.deserialize( in );
-        return new AceKey( keys, principal );
+        return new AceKey( key, principal );
     }
 
     @Override
