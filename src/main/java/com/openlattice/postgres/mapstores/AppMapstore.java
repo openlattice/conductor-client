@@ -9,6 +9,7 @@ import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;
@@ -70,6 +71,10 @@ public class AppMapstore extends AbstractBasePostgresMapstore<UUID, App> {
     @Override public App generateTestValue() {
         LinkedHashSet<UUID> configIds = new LinkedHashSet<>();
         configIds.add( UUID.randomUUID() );
-        return new App( UUID.randomUUID(), "name", "title", Optional.of( "description" ), configIds );
+        return new App( UUID.randomUUID(),
+                RandomStringUtils.randomAlphanumeric( 5 ),
+                RandomStringUtils.randomAlphanumeric( 5 ),
+                Optional.of( RandomStringUtils.randomAlphanumeric( 5 ) ),
+                configIds );
     }
 }

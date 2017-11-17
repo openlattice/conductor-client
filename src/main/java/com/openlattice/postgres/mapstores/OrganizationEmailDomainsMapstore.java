@@ -10,7 +10,7 @@ import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;
@@ -88,8 +88,8 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
     }
 
     @Override public DelegatedStringSet generateTestValue() {
-        return DelegatedStringSet.wrap( ImmutableSet.of( RandomStringUtils.random( 10 ),
-                RandomStringUtils.random( 10 ),
-                RandomStringUtils.random( 10 ) ) );
+        return DelegatedStringSet.wrap( ImmutableSet.of( RandomStringUtils.randomAlphanumeric( 5 ),
+                RandomStringUtils.randomAlphanumeric( 5 ),
+                RandomStringUtils.randomAlphanumeric( 5 ) ) );
     }
 }

@@ -8,6 +8,7 @@ import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.sql.PreparedStatement;
@@ -66,9 +67,10 @@ public class AppTypeMapstore extends AbstractBasePostgresMapstore<UUID, AppType>
 
     @Override public AppType generateTestValue() {
         return new AppType( UUID.randomUUID(),
-                new FullQualifiedName( "namespace.name" ),
-                "title",
-                Optional.of( "description" ),
+                new FullQualifiedName( RandomStringUtils.randomAlphanumeric( 5 ),
+                        RandomStringUtils.randomAlphanumeric( 5 ) ),
+                RandomStringUtils.randomAlphanumeric( 5 ),
+                Optional.of( RandomStringUtils.randomAlphanumeric( 5 ) ),
                 UUID.randomUUID() );
     }
 }
