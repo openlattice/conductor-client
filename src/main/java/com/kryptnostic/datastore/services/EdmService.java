@@ -82,7 +82,7 @@ public class EdmService implements EdmManager {
     private final IMap<UUID, AssociationType>                           associationTypes;
     private final IMap<UUID, UUID>                                      syncIds;
     private final IMap<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadata;
-    private final IMap<List<UUID>, SecurableObjectType>                 securableObjectTypes;
+    private final IMap<AclKey, SecurableObjectType>                 securableObjectTypes;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -392,7 +392,7 @@ public class EdmService implements EdmManager {
                                 SecurableObjectType.PropertyTypeInEntitySet );
                     } );
 
-            securableObjectTypes.set( ImmutableList.of( entitySet.getId() ),
+            securableObjectTypes.set( new AclKey( entitySet.getId() ),
                     SecurableObjectType.EntitySet );
 
             eventBus.post( new EntitySetCreatedEvent(
