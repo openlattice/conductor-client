@@ -30,25 +30,25 @@ import com.openlattice.authorization.AclKey;
 
 public class HazelcastAbstractSecurableObjectResolveTypeService implements AbstractSecurableObjectResolveTypeService {
     
-    private final IMap<List<UUID>, SecurableObjectType> securableObjectTypes;
+    private final IMap<AclKey, SecurableObjectType> securableObjectTypes;
     
     public HazelcastAbstractSecurableObjectResolveTypeService( HazelcastInstance hazelcastInstance ) {
         securableObjectTypes = hazelcastInstance.getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
     }
     
     @Override
-    public void createSecurableObjectType( List<UUID> aclKey, SecurableObjectType type ) {
+    public void createSecurableObjectType( AclKey aclKey, SecurableObjectType type ) {
         securableObjectTypes.set( new AclKey( aclKey ), type );
         
     }
 
     @Override
-    public void deleteSecurableObjectType( List<UUID> aclKey ) {
+    public void deleteSecurableObjectType( AclKey aclKey ) {
         securableObjectTypes.remove( new AclKey( aclKey ) );
     }
     
     @Override
-    public SecurableObjectType getSecurableObjectType( List<UUID> aclKey ) {
+    public SecurableObjectType getSecurableObjectType( AclKey aclKey ) {
         return securableObjectTypes.get( new AclKey( aclKey ) );
     }
 
