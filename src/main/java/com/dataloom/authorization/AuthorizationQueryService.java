@@ -189,10 +189,11 @@ public class AuthorizationQueryService {
                     Optional.of( offset ) );
             Set<AclKey> result = Sets.newHashSet();
             ResultSet rs = ps.executeQuery();
-            while ( rs.next() && result.size() < limit ) {
+            boolean next;
+            while ( next = rs.next() && result.size() < limit ) {
                 result.add( ResultSetAdapters.aclKey( rs ) );
             }
-            String newPage = rs.isAfterLast() ? null : String.valueOf( offset + pageSize );
+            String newPage = next ? String.valueOf( offset + pageSize ) : null;
 
             rs.close();
             connection.close();
