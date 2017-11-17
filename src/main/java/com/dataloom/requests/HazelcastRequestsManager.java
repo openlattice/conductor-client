@@ -19,22 +19,12 @@
 
 package com.dataloom.requests;
 
-import com.openlattice.authorization.AclKey;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.processors.PermissionMerger;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.neuron.Neuron;
 import com.dataloom.neuron.SignalType;
@@ -46,21 +36,24 @@ import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.openlattice.authorization.AceValue;
+import com.openlattice.authorization.AclKey;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastRequestsManager {
 
-    private static final Logger logger = LoggerFactory.getLogger( HazelcastRequestsManager.class );
-
-    private final Neuron                                   neuron;
-    private final RequestQueryService                      rqs;
-    private final IMap<AceKey, Status>                     requests;
-    private final IMap<AceKey, DelegatedPermissionEnumSet> aces;
-
+    private static final Logger                         logger              = LoggerFactory
+            .getLogger( HazelcastRequestsManager.class );
     private static final Map<RequestStatus, SignalType> STATE_TO_SIGNAL_MAP = Maps.newEnumMap( RequestStatus.class );
 
     static {
@@ -69,10 +62,17 @@ public class HazelcastRequestsManager {
         STATE_TO_SIGNAL_MAP.put( RequestStatus.SUBMITTED, SignalType.PERMISSION_REQUEST_SUBMITTED );
     }
 
+    private final Neuron                            neuron;
+    private final RequestQueryService               rqs;
+    private final IMap<AceKey, Status>              requests;
+    private final IMap<AceKey, AceValue>            aces;
+    private final IMap<AclKey, SecurableObjectType> objectTypes;
+
     public HazelcastRequestsManager( HazelcastInstance hazelcastInstance, RequestQueryService rqs, Neuron neuron ) {
 
         this.requests = hazelcastInstance.getMap( HazelcastMap.REQUESTS.name() );
         this.aces = hazelcastInstance.getMap( HazelcastMap.PERMISSIONS.name() );
+        this.objectTypes = hazelcastInstance.getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
         this.rqs = checkNotNull( rqs );
 
         // TODO: it's not ideal to have to do "new SignalQueueReceptor( hazelcastInstance )"
@@ -88,17 +88,23 @@ public class HazelcastRequestsManager {
     }
 
     public void submitAll( Map<AceKey, Status> statusMap ) {
-
         statusMap
                 .entrySet()
                 .stream()
                 .filter( e -> e.getValue().getStatus().equals( RequestStatus.APPROVED ) )
                 .forEach( e -> aces.submitToKey(
-                        e.getKey(), new PermissionMerger( e.getValue().getRequest().getPermissions() )
+                        e.getKey(),
+                        new PermissionMerger(
+                                e.getValue().getRequest().getPermissions(),
+                                getNotNull( e.getKey().getKey() ) )
                 ) );
 
         requests.putAll( statusMap );
         signalPermissionRequestStatusUpdates( statusMap );
+    }
+
+    public SecurableObjectType getNotNull( AclKey aclKey ) {
+        return checkNotNull( Util.getSafely( objectTypes, aclKey ), "Securable Object Type isn't found" );
     }
 
     public Stream<Status> getStatuses( Principal principal ) {

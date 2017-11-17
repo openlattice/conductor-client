@@ -33,6 +33,6 @@ hikari:
     #dataSource.sslMode: "verify-full"
     #dataSource.user: "mtamayo"
     #dataSource.databaseName: "openlattice"
-    maximumPoolSize: 2
+    maximumPoolSize: 98
     #20 minutes
     connectionTimeout: 12000000

@@ -44,7 +44,8 @@ public class SecurableObjectTypeMapstore extends AbstractBasePostgresMapstore<Ac
     }
 
     @Override protected SecurableObjectType mapToValue( ResultSet rs ) throws SQLException {
-        return ResultSetAdapters.securableObjectType( rs );
+        SecurableObjectType objectType = ResultSetAdapters.securableObjectType( rs );
+        return objectType == null ? SecurableObjectType.Unknown : objectType;
     }
 
     @Override protected AclKey mapToKey( ResultSet rs ) throws SQLException {

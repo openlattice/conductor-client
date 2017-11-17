@@ -1,7 +1,6 @@
 package com.dataloom.authorization;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -13,11 +12,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.authorization.paging.AuthorizedObjectsPagingFactory;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.collect.ImmutableList;
 
 public class PagingSecurableObjectsTest extends HzAuthzTest {
     private static final Logger logger = LoggerFactory.getLogger( PagingSecurableObjectsTest.class );
@@ -42,11 +39,11 @@ public class PagingSecurableObjectsTest extends HzAuthzTest {
         currentPrincipals.add( r3 );
 
         hzAuthz.addPermission( key1, u1, EnumSet.allOf( Permission.class ) );
-        hzAuthz.createEmptyAcl( key1, SecurableObjectType.EntitySet );
+        hzAuthz.setSecurableObjectType( key1, SecurableObjectType.EntitySet );
         hzAuthz.addPermission( key2, r1, EnumSet.of( Permission.READ, Permission.WRITE ) );
-        hzAuthz.createEmptyAcl( key2, SecurableObjectType.EntitySet );
+        hzAuthz.setSecurableObjectType( key2, SecurableObjectType.EntitySet );
         hzAuthz.addPermission( key3, r2, EnumSet.of( Permission.READ ) );
-        hzAuthz.createEmptyAcl( key3, SecurableObjectType.EntitySet );
+        hzAuthz.setSecurableObjectType( key3, SecurableObjectType.EntitySet );
     }
 
     @Test

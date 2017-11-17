@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. Kryptnostic, Inc (dba Loom)
+ * Copyright (C) 2017. OpenLattice, Inc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,34 +14,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * You can contact the owner of the copyright at support@thedataloom.com
+ * You can contact the owner of the copyright at support@openlattice.com
+ *
  */
 
-package com.dataloom.authorization.processors;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+package com.openlattice.authorization.processors;
 
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.securable.SecurableObjectType;
-import com.kryptnostic.rhizome.hazelcast.processors.AbstractMerger;
+import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 import com.openlattice.authorization.AceValue;
-import java.util.EnumSet;
+import java.util.Map.Entry;
 
-public class PermissionMerger extends AbstractMerger<AceKey, AceValue, Permission> {
-    private static final long serialVersionUID = -3504613417625318717L;
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+public class SecurableObjectTypeUpdater extends AbstractRhizomeEntryProcessor<AceKey,AceValue,Void> {
     private final SecurableObjectType securableObjectType;
 
-    public PermissionMerger(
-            Iterable<Permission> objects,
-            SecurableObjectType securableObjectType ) {
-        super( objects );
-        this.securableObjectType = checkNotNull( securableObjectType );
+    public SecurableObjectTypeUpdater( SecurableObjectType securableObjectType ) {
+        this.securableObjectType = securableObjectType;
     }
 
-    @Override
-    protected AceValue newEmptyCollection() {
-        return new AceValue( EnumSet.noneOf( Permission.class ), securableObjectType );
+    @Override public Void process( Entry<AceKey,AceValue> entry ) {
+        AceValue value = entry.getValue();
+        if(value!=null) {
+            value.setSecurableObjectType( securableObjectType );
+            entry.setValue( value );
+        }
+        return null;
     }
 
     public SecurableObjectType getSecurableObjectType() {

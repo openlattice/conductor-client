@@ -47,7 +47,7 @@ public interface AuthorizationManager {
      * @param aclKey The key for the object whose acl is being created.
      * @param objectType The type of the object for lookup purposes.
      */
-    void createEmptyAcl( AclKey aclKey, SecurableObjectType objectType );
+    void setSecurableObjectType( AclKey aclKey, SecurableObjectType objectType );
 
     void addPermission(
             AclKey aclKeys,

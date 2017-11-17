@@ -377,7 +377,7 @@ public class EdmService implements EdmManager {
                     principal,
                     EnumSet.allOf( Permission.class ) );
 
-            authorizations.createEmptyAcl( new AclKey( entitySet.getId() ), SecurableObjectType.EntitySet );
+            authorizations.setSecurableObjectType( new AclKey( entitySet.getId() ), SecurableObjectType.EntitySet );
 
             ownablePropertyTypes.stream()
                     .map( propertyTypeId -> new AclKey( entitySet.getId(), propertyTypeId ) )
@@ -386,7 +386,7 @@ public class EdmService implements EdmManager {
                             principal,
                             EnumSet.allOf( Permission.class ) ) )
                     .forEach( aclKey -> {
-                        authorizations.createEmptyAcl( aclKey,
+                        authorizations.setSecurableObjectType( aclKey,
                                 SecurableObjectType.PropertyTypeInEntitySet );
                         securableObjectTypes.set( aclKey,
                                 SecurableObjectType.PropertyTypeInEntitySet );
@@ -642,7 +642,7 @@ public class EdmService implements EdmManager {
                                         aclKey,
                                         owner,
                                         EnumSet.allOf( Permission.class ) );
-                                authorizations.createEmptyAcl( aclKey,
+                                authorizations.setSecurableObjectType( aclKey,
                                         SecurableObjectType.PropertyTypeInEntitySet );
 
                                 PropertyType pt = propertyTypes.get( aclKey.get( 1 ) );

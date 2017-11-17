@@ -16,7 +16,6 @@ import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
-import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
@@ -74,7 +73,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         final AclKey aclKey = principal.getAclKey();
 
         try {
-            authorizations.createEmptyAcl( aclKey, principal.getCategory() );
+            authorizations.setSecurableObjectType( aclKey, principal.getCategory() );
             authorizations.addPermission( aclKey, owner, EnumSet.allOf( Permission.class ) );
         } catch ( Exception e ) {
             logger.error( "Unable to create principal {}", principal, e );

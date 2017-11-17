@@ -21,8 +21,8 @@ package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.processors.PermissionMerger;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.PermissionMergerStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**
@@ -35,6 +35,7 @@ public class PermissionMergerStreamSerializerTest
     }
 
     @Override protected PermissionMerger createInput() {
-        return new PermissionMerger( DelegatedPermissionEnumSet.wrap( TestDataFactory.permissions() ) );
+        return new PermissionMerger( DelegatedPermissionEnumSet.wrap( TestDataFactory.permissions() ),
+                SecurableObjectType.EntityType );
     }
 }

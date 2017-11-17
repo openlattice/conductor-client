@@ -62,10 +62,11 @@ import org.apache.commons.lang3.RandomStringUtils;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, AceValue> {
-    public static final String PRINCIPAL_INDEX = "__key#principal";
+    public static final String PRINCIPAL_INDEX             = "__key#principal";
     public static final String SECURABLE_OBJECT_TYPE_INDEX = "securableObjectType";
-    public static final String PERMISSIONS_INDEX = "permissions[any]";
-    public static final String ACL_KEY_INDEX = "aclKey";
+    public static final String PERMISSIONS_INDEX           = "permissions[any]";
+    public static final String ACL_KEY_INDEX               = "__key#key[any]";
+    public static final String ACL_KEY_LENGTH_INDEX        = "__key#key.size";
     private final SecurableObjectTypeMapstore objectTypes;
 
     public PermissionMapstore( HikariDataSource hds ) {
@@ -132,6 +133,7 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Ace
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
                 .addMapIndexConfig( new MapIndexConfig( ACL_KEY_INDEX, false ) )
+                .addMapIndexConfig( new MapIndexConfig( ACL_KEY_LENGTH_INDEX, false ) )
                 .addMapIndexConfig( new MapIndexConfig( PRINCIPAL_INDEX, false ) )
                 .addMapIndexConfig( new MapIndexConfig( SECURABLE_OBJECT_TYPE_INDEX, false ) )
                 .addMapIndexConfig( new MapIndexConfig( PERMISSIONS_INDEX, false ) );

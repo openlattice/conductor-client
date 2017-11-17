@@ -30,6 +30,7 @@ public enum StreamSerializerTypeIds {
      * Move this one, break everything.
      */
     STREAM_SERIALIZER_IDS_MUST_BE_POSTIVE,
+    ACE_VALUE,
     ACL_KEY,
     ACL_KEY_SET,
     AUDIT_METRIC_INCREMENTER,
@@ -94,6 +95,7 @@ public enum StreamSerializerTypeIds {
     ROLE_KEY,
     ROLE_TITLE_UPDATER,
     ROLE_DESCRIPTION_UPDATER,
+    SECURABLE_OBJECT_TYPE_UPDATE,
     EDGE_KEY,
     LOOM_VERTEX,
     LOOM_EDGE,

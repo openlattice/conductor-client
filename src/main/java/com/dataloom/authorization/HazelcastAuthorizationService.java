@@ -39,10 +39,12 @@ import com.kryptnostic.datastore.util.Util;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
+import com.openlattice.authorization.processors.SecurableObjectTypeUpdater;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.NavigableSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -73,8 +75,9 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public void createEmptyAcl( AclKey aclKey, SecurableObjectType objectType ) {
-        securableObjectTypes.putIfAbsent( aclKey, objectType );
+    public void setSecurableObjectType( AclKey aclKey, SecurableObjectType objectType ) {
+        securableObjectTypes.set( aclKey, objectType );
+        aces.executeOnEntries( new SecurableObjectTypeUpdater( objectType ), hasAclKey( aclKey ) );
     }
 
     @Override
@@ -82,7 +85,8 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             AclKey key,
             Principal principal,
             EnumSet<Permission> permissions ) {
-        aces.executeOnKey( new AceKey( key, principal ), new PermissionMerger( permissions ) );
+        SecurableObjectType securableObjectType = securableObjectTypes.getOrDefault( key, SecurableObjectType.Unknown );
+        aces.executeOnKey( new AceKey( key, principal ), new PermissionMerger( permissions, securableObjectType ) );
         updateAcl( key, principal );
     }
 
@@ -101,7 +105,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             EnumSet<Permission> permissions ) {
         //This should be a rare call to overwrite all permissions, so it's okay to do a read before write.
-        SecurableObjectType securableObjectType = Util.getSafely( securableObjectTypes, key );
+        SecurableObjectType securableObjectType = securableObjectTypes.getOrDefault( key, SecurableObjectType.Unknown );
         aces.set( new AceKey( key, principal ), new AceValue( permissions, securableObjectType ) );
         updateAcl( key, principal );
     }
@@ -211,10 +215,19 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         }
         return Predicates.and( subPredicates );
     }
-    private static Predicate hasAclKey( AclKey aclKey ) {
-        return Predicates.equal( PermissionMapstore.ACL_KEY_INDEX, aclKey );
-    }
 
+    private static Predicate hasAclKey( AclKey aclKey ) {
+        Predicate[] subPredicates = new Predicate[ aclKey.size() + 1 ];
+        int i = 0;
+
+        for ( UUID p : aclKey ) {
+            subPredicates[ i++ ] = Predicates.equal( PermissionMapstore.ACL_KEY_INDEX, p );
+        }
+
+        subPredicates[ i ] = Predicates.equal( PermissionMapstore.ACL_KEY_LENGTH_INDEX, aclKey.getSize() );
+
+        return Predicates.and( subPredicates );
+    }
 
     private static Predicate hasType( SecurableObjectType objectType ) {
         return Predicates.equal( PermissionMapstore.SECURABLE_OBJECT_TYPE_INDEX, objectType );

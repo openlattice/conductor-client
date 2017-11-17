@@ -162,7 +162,7 @@ public class HzAuthzTest extends CassandraBootstrap {
                 hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
 
         hzAuthz.addPermission( key, p1, permissions1 );
-        hzAuthz.createEmptyAcl( key, SecurableObjectType.EntitySet );
+        hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
         hzAuthz.addPermission( key, p2, permissions2 );
 
         Assert.assertTrue(
