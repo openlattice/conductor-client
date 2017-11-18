@@ -3,6 +3,7 @@ package com.dataloom.hazelcast.serializers;
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.organization.Organization;
+import com.dataloom.organization.OrganizationPrincipal;
 import com.dataloom.organization.roles.Role;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
@@ -50,7 +51,7 @@ public class OrganizationStreamSerializer implements SelfRegisteringStreamSerial
     }
 
     public static Organization deserialize( ObjectDataInput in ) throws IOException {
-        SecurablePrincipal securablePrincipal = SecurablePrincipalStreamSerializer.deserialize( in );
+        OrganizationPrincipal securablePrincipal = (OrganizationPrincipal) SecurablePrincipalStreamSerializer.deserialize( in );
         Set<String> autoApprovedEmails = SetStreamSerializers.fastStringSetDeserialize( in );
         Set<UUID> apps = SetStreamSerializers.fastUUIDSetDeserialize( in );
         Set<Principal> members = SetStreamSerializers.deserialize( in, PrincipalStreamSerializer::deserialize );
