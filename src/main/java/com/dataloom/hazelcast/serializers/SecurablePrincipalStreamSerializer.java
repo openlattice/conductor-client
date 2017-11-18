@@ -22,16 +22,16 @@ package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
+import com.dataloom.organization.OrganizationPrincipal;
 import com.dataloom.organization.roles.Role;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
-import java.util.UUID;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -39,7 +39,7 @@ import java.util.UUID;
 @Component
 public class SecurablePrincipalStreamSerializer implements SelfRegisteringStreamSerializer<SecurablePrincipal> {
 
-    @Override public Class<SecurablePrincipal> getClazz() {
+    @Override public Class<? extends SecurablePrincipal> getClazz() {
         return SecurablePrincipal.class;
     }
 
@@ -61,31 +61,24 @@ public class SecurablePrincipalStreamSerializer implements SelfRegisteringStream
 
     public static void serialize( ObjectDataOutput out, SecurablePrincipal object ) throws IOException {
         Principal principal = object.getPrincipal();
-        UUIDStreamSerializer.serialize( out, object.getId() );
+        AclKeyStreamSerializer.serialize( out, object.getAclKey() );
         PrincipalStreamSerializer.serialize( out, principal );
         out.writeUTF( object.getTitle() );
         out.writeUTF( object.getDescription() );
-        switch ( principal.getType() ) {
-            case ROLE:
-                //This maybe brittle, but is better than overhead of casting
-                UUIDStreamSerializer.serialize( out, object.getAclKey().get( 0 ) );
-                break;
-            default:
-                //Do nothing
-        }
     }
 
     public static SecurablePrincipal deserialize( ObjectDataInput in ) throws IOException {
-        UUID id = UUIDStreamSerializer.deserialize( in );
         Principal principal = PrincipalStreamSerializer.deserialize( in );
+        AclKey aclKey = AclKeyStreamSerializer.deserialize( in );
         String title = in.readUTF();
         String description = in.readUTF();
         switch ( principal.getType() ) {
             case ROLE:
-                UUID organizationId = UUIDStreamSerializer.deserialize( in );
-                return new Role( Optional.of( id ), organizationId, principal, title, Optional.of( description ) );
+                return new Role( aclKey, principal, title, Optional.of( description ) );
+            case ORGANIZATION:
+                return new OrganizationPrincipal( aclKey, principal, title, Optional.of( description ) );
             default:
-                return new SecurablePrincipal( Optional.of( id ), principal, title, Optional.of( description ) );
+                return new SecurablePrincipal( aclKey, principal, title, Optional.of( description ) );
         }
 
     }
