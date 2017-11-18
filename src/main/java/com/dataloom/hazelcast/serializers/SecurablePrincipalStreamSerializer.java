@@ -61,8 +61,8 @@ public class SecurablePrincipalStreamSerializer implements SelfRegisteringStream
 
     public static void serialize( ObjectDataOutput out, SecurablePrincipal object ) throws IOException {
         Principal principal = object.getPrincipal();
-        AclKeyStreamSerializer.serialize( out, object.getAclKey() );
         PrincipalStreamSerializer.serialize( out, principal );
+        AclKeyStreamSerializer.serialize( out, object.getAclKey() );
         out.writeUTF( object.getTitle() );
         out.writeUTF( object.getDescription() );
     }
