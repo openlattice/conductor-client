@@ -42,10 +42,6 @@ public class OrganizationPrincipalStreamSerializer extends  SecurablePrincipalSt
         return StreamSerializerTypeIds.ORGANIZATION_PRINCIPAL.ordinal();
     }
 
-    @Override public void destroy() {
-
-    }
-
     public static OrganizationPrincipal deserialize( ObjectDataInput in ) throws IOException {
         return (OrganizationPrincipal) SecurablePrincipalStreamSerializer.deserialize( in );
     }
