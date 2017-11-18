@@ -95,6 +95,7 @@ import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
+import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.UUID;
@@ -118,6 +119,9 @@ public class MapstoresPod {
 
     @Inject
     private PostgresTableManager ptMgr;
+
+    @Inject
+    private Auth0Configuration auth0Configuration;
 
     @Bean
     public SelfRegisteringMapStore<EdgeKey, LoomEdge> edgesMapstore() throws SQLException {
@@ -346,7 +350,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<String, Auth0UserBasic> userMapstore() {
-        return new UserMapstore();
+        return new UserMapstore( auth0Configuration.getToken() );
     }
 
     @Bean

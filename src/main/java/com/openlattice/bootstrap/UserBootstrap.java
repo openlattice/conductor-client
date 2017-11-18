@@ -1,5 +1,7 @@
 package com.openlattice.bootstrap;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.SystemRole;
@@ -12,8 +14,6 @@ import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.mapstores.UserMapstore;
 import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
 
-import static com.google.common.base.Preconditions.checkState;
-
 public class UserBootstrap {
     private final SecurePrincipalsManager spm;
     private final DbCredentialService     dbCredService;
@@ -25,8 +25,7 @@ public class UserBootstrap {
         this.spm = spm;
         this.dbCredService = dbCredService;
 
-        UserMapstore users = new UserMapstore();
-        users.setToken( auth0Configuration.getToken() );
+        UserMapstore users = new UserMapstore( auth0Configuration.getToken() );
 
         AclKey userRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_USER_ROLE.getPrincipal() );
         AclKey adminRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_ADMIN_ROLE.getPrincipal() );
