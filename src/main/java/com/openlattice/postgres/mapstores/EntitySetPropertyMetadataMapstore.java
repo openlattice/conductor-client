@@ -55,13 +55,8 @@ public class EntitySetPropertyMetadataMapstore
         return ResultSetAdapters.entitySetPropertyMetadata( rs );
     }
 
-    @Override protected EntitySetPropertyKey mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.entitySetPropertyKey( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map EntitySetPropertyKey", e );
-            return null;
-        }
+    @Override protected EntitySetPropertyKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.entitySetPropertyKey( rs );
     }
 
     @Override public EntitySetPropertyKey generateTestKey() {

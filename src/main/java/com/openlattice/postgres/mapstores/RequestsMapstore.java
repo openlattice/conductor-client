@@ -3,15 +3,13 @@ package com.openlattice.postgres.mapstores;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.requests.Request;
-import com.dataloom.requests.RequestStatus;
 import com.dataloom.requests.Status;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
@@ -21,9 +19,7 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.UUID;
 
 import static com.openlattice.postgres.PostgresArrays.createTextArray;
 import static com.openlattice.postgres.PostgresArrays.createUuidArray;
@@ -31,6 +27,8 @@ import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.REQUESTS;
 
 public class RequestsMapstore extends AbstractBasePostgresMapstore<AceKey, Status> {
+    private static final AclKey    TEST_ACL_KEY        = TestDataFactory.aclKey();
+    private static final Principal TEST_USER_PRINCIPAL = TestDataFactory.userPrincipal();
 
     public RequestsMapstore( HikariDataSource hds ) {
         super( HazelcastMap.REQUESTS.name(), REQUESTS, hds );
@@ -70,20 +68,19 @@ public class RequestsMapstore extends AbstractBasePostgresMapstore<AceKey, Statu
         return ResultSetAdapters.status( rs );
     }
 
-    @Override protected AceKey mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.aceKey( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map row to AceKey", e );
-            return null;
-        }
+    @Override protected AceKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.aceKey( rs );
     }
 
     @Override public AceKey generateTestKey() {
-        return new AceKey( ImmutableList.of( UUID.randomUUID(), UUID.randomUUID() ), TestDataFactory.userPrincipal() );
+        return new AceKey( TEST_ACL_KEY, TEST_USER_PRINCIPAL );
     }
 
     @Override public Status generateTestValue() {
-        return TestDataFactory.status();
+        return new Status( new Request(
+                TEST_ACL_KEY,
+                TestDataFactory.permissions(),
+                Optional.of( "Requesting for this object because RandomStringUtils.randomAlphanumeric( 5 )" ) ),
+        TEST_USER_PRINCIPAL, TestDataFactory.requestStatus() );
     }
 }

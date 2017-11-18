@@ -47,13 +47,8 @@ public class VertexIdsAfterLinkingMapstore extends AbstractBasePostgresMapstore<
         return rs.getObject( NEW_VERTEX_ID.getName(), UUID.class );
     }
 
-    @Override protected LinkingVertexKey mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.linkingVertexKey( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map LinkingVertexKey", e );
-            return null;
-        }
+    @Override protected LinkingVertexKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.linkingVertexKey( rs );
     }
 
     @Override

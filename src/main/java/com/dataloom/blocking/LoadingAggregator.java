@@ -12,6 +12,7 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -24,6 +25,8 @@ public class LoadingAggregator
 
     private final Map<GraphEntityPair, LinkingEntity> entities;
     private final ObjectMapper mapper = ObjectMappers.getJsonMapper();
+
+    @SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented" )
     private final     Map<UUID, Map<UUID, PropertyType>>   authorizedPropertyTypes;
     private final     UUID                                 graphId;
     private transient IMap<GraphEntityPair, LinkingEntity> linkingEntities;

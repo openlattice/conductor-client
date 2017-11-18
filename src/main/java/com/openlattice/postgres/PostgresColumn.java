@@ -30,6 +30,8 @@ import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY_ARRAY;
 
 import com.dataloom.edm.type.Analyzer;
 
+import static com.openlattice.postgres.PostgresDatatype.*;
+
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
@@ -38,11 +40,15 @@ public final class PostgresColumn {
     public static final String ACL_KEY_SET_FIELD           = "acl_key_set";
     public static final String ALLOWED_EMAIL_DOMAINS_FIELD = "allowed_email_domains";
     public static final String ANALYZER_FIELD              = "analyzer";
+    public static final String APP_ID_FIELD                = "app_id";
+    public static final String APP_IDS_FIELD               = "app_ids";
     public static final String AUDIT_ID_FIELD              = "audit_id";
     public static final String BASE_TYPE_FIELD             = "base_type";
     public static final String BIDIRECTIONAL_FIELD         = "bidirectional";
     public static final String BLOCK_ID_FIELD              = "block_id";
     public static final String CATEGORY_FIELD              = "category";
+    public static final String CONFIG_TYPE_ID_FIELD        = "config_type_id";
+    public static final String CONFIG_TYPE_IDS_FIELD       = "config_type_ids";
     public static final String CONTACTS_FIELD              = "contacts";
     public static final String CREDENTIAL_FIELD           = "cred";
     public static final String CURRENT_SYNC_ID_FIELD       = "current_sync_id";
@@ -102,6 +108,10 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( ANALYZER_FIELD, TEXT )
                     .withDefault( "'" + Analyzer.STANDARD.name() + "'" )
                     .notNull();
+    public static final PostgresColumnDefinition APP_ID                =
+            new PostgresColumnDefinition( APP_ID_FIELD, UUID );
+    public static final PostgresColumnDefinition APP_IDS                =
+            new PostgresColumnDefinition( APP_IDS_FIELD, UUID_ARRAY );
     public static final PostgresColumnDefinition AUDIT_ID              =
             new PostgresColumnDefinition( AUDIT_ID_FIELD, UUID );
     public static final PostgresColumnDefinition BASE_TYPE             =
@@ -112,10 +122,14 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( BLOCK_ID_FIELD, UUID );
     public static final PostgresColumnDefinition CATEGORY              =
             new PostgresColumnDefinition( CATEGORY_FIELD, TEXT ).notNull();
-    public static final PostgresColumnDefinition CREDENTIAL              =
-            new PostgresColumnDefinition( CREDENTIAL_FIELD, TEXT ).notNull();
+    public static final PostgresColumnDefinition CONFIG_TYPE_ID        =
+            new PostgresColumnDefinition( CONFIG_TYPE_ID_FIELD, UUID );
+    public static final PostgresColumnDefinition CONFIG_TYPE_IDS       =
+            new PostgresColumnDefinition( CONFIG_TYPE_IDS_FIELD, UUID_ARRAY );
     public static final PostgresColumnDefinition CONTACTS              =
             new PostgresColumnDefinition( CONTACTS_FIELD, TEXT_ARRAY );
+    public static final PostgresColumnDefinition CREDENTIAL              =
+            new PostgresColumnDefinition( CREDENTIAL_FIELD, TEXT ).notNull();
     public static final PostgresColumnDefinition CURRENT_SYNC_ID       =
             new PostgresColumnDefinition( CURRENT_SYNC_ID_FIELD, UUID );
     public static final PostgresColumnDefinition DATA_ID               =
@@ -191,8 +205,7 @@ public final class PostgresColumn {
     public static final PostgresColumnDefinition ROLE_ID               =
             new PostgresColumnDefinition( ROLE_ID_FIELD, UUID ).notNull();
     public static final PostgresColumnDefinition SCHEMAS               =
-            new PostgresColumnDefinition( SCHEMAS_FIELD, TEXT_ARRAY )
-                    .notNull();
+            new PostgresColumnDefinition( SCHEMAS_FIELD, TEXT_ARRAY ).notNull();
     public static final PostgresColumnDefinition SECURABLE_OBJECT_TYPE =
             new PostgresColumnDefinition( SECURABLE_OBJECT_TYPE_FIELD, TEXT ).notNull();
     public static final PostgresColumnDefinition SECURABLE_OBJECTID    =

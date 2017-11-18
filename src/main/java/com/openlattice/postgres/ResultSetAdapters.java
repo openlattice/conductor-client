@@ -20,51 +20,10 @@
 
 package com.openlattice.postgres;
 
-import static com.openlattice.postgres.PostgresArrays.getTextArray;
-import static com.openlattice.postgres.PostgresColumn.ACL_KEY_FIELD;
-import static com.openlattice.postgres.PostgresColumn.ANALYZER;
-import static com.openlattice.postgres.PostgresColumn.BASE_TYPE;
-import static com.openlattice.postgres.PostgresColumn.BIDIRECTIONAL;
-import static com.openlattice.postgres.PostgresColumn.CATEGORY;
-import static com.openlattice.postgres.PostgresColumn.CONTACTS;
-import static com.openlattice.postgres.PostgresColumn.CURRENT_SYNC_ID;
-import static com.openlattice.postgres.PostgresColumn.DATATYPE;
-import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
-import static com.openlattice.postgres.PostgresColumn.DST;
-import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
-import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_KEY_IDS;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_ID;
-import static com.openlattice.postgres.PostgresColumn.FLAGS;
-import static com.openlattice.postgres.PostgresColumn.GRAPH_DIAMETER;
-import static com.openlattice.postgres.PostgresColumn.GRAPH_ID;
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.KEY;
-import static com.openlattice.postgres.PostgresColumn.MEMBERS;
-import static com.openlattice.postgres.PostgresColumn.NAME;
-import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
-import static com.openlattice.postgres.PostgresColumn.NULLABLE_TITLE;
-import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_ID;
-import static com.openlattice.postgres.PostgresColumn.PERMISSIONS_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PII;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_IDS;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PROPERTIES;
-import static com.openlattice.postgres.PostgresColumn.PROPERTY_TYPE_ID;
-import static com.openlattice.postgres.PostgresColumn.REASON;
-import static com.openlattice.postgres.PostgresColumn.ROLE_ID;
-import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
-import static com.openlattice.postgres.PostgresColumn.SHOW;
-import static com.openlattice.postgres.PostgresColumn.SRC;
-import static com.openlattice.postgres.PostgresColumn.STATUS;
-import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
-import static com.openlattice.postgres.PostgresColumn.TITLE;
-import static com.openlattice.postgres.PostgresColumn.VERTEX_ID;
-
+import com.dataloom.apps.App;
+import com.dataloom.apps.AppConfigKey;
+import com.dataloom.apps.AppType;
+import com.dataloom.apps.AppTypeSetting;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
@@ -73,12 +32,7 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.Analyzer;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.type.*;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.organization.roles.Role;
@@ -92,21 +46,20 @@ import com.google.common.collect.Sets;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.openlattice.postgres.PostgresArrays.getTextArray;
+import static com.openlattice.postgres.PostgresColumn.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -152,6 +105,10 @@ public final class ResultSetAdapters {
         }
 
         return permissions;
+    }
+
+    public static UUID idValue( ResultSet rs ) throws SQLException {
+        return rs.getObject( ID_VALUE.getName(), UUID.class );
     }
 
     public static UUID id( ResultSet rs ) throws SQLException {
@@ -208,7 +165,7 @@ public final class ResultSetAdapters {
     }
 
     public static AceKey aceKey( ResultSet rs ) throws SQLException {
-        List<UUID> aclKey = aclKey( rs );
+        AclKey aclKey = aclKey( rs );
         Principal principal = principal( rs );
         return new AceKey( aclKey, principal );
     }
@@ -274,6 +231,18 @@ public final class ResultSetAdapters {
 
     public static boolean flags( ResultSet rs ) throws SQLException {
         return rs.getBoolean( FLAGS.getName() );
+    }
+
+    public static UUID appId( ResultSet rs ) throws SQLException {
+        return rs.getObject( APP_ID.getName(), UUID.class );
+    }
+
+    public static UUID appTypeId( ResultSet rs ) throws SQLException {
+        return rs.getObject( CONFIG_TYPE_ID.getName(), UUID.class );
+    }
+
+    public static LinkedHashSet<UUID> appTypeIds( ResultSet rs ) throws SQLException {
+        return linkedHashSetUUID( rs, CONFIG_TYPE_IDS.getName() );
     }
 
     public static double diameter( ResultSet rs ) throws SQLException {
@@ -438,7 +407,7 @@ public final class ResultSetAdapters {
     }
 
     public static Status status( ResultSet rs ) throws SQLException {
-        List<UUID> aclKey = aclKey( rs );
+        AclKey aclKey = aclKey( rs );
         Principal principal = principal( rs );
         EnumSet<Permission> permissions = ResultSetAdapters.permissions( rs );
         Optional<String> reason = Optional.of( reason( rs ) );
@@ -461,6 +430,37 @@ public final class ResultSetAdapters {
         Stream<String> users = Arrays.stream( (String[]) usersArray.getArray() );
         return PrincipalSet
                 .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
+    }
+
+    public static AppConfigKey appConfigKey( ResultSet rs ) throws SQLException {
+        UUID appId = appId( rs );
+        UUID organizationId = organizationId( rs );
+        UUID appTypeId = appTypeId( rs );
+        return new AppConfigKey( appId, organizationId, appTypeId );
+    }
+
+    public static AppTypeSetting appTypeSetting( ResultSet rs ) throws SQLException {
+        UUID entitySetId = entitySetId( rs );
+        EnumSet<Permission> permissions = permissions( rs );
+        return new AppTypeSetting( entitySetId, permissions );
+    }
+
+    public static App app( ResultSet rs ) throws SQLException {
+        UUID id = id( rs );
+        String name = name( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        LinkedHashSet<UUID> appTypeIds = appTypeIds( rs );
+        return new App( id, name, title, description, appTypeIds );
+    }
+
+    public static AppType appType( ResultSet rs ) throws SQLException {
+        UUID id = id( rs );
+        FullQualifiedName type = fqn( rs );
+        String title = title( rs );
+        Optional<String> description = Optional.fromNullable( description( rs ) );
+        UUID entityTypeId = entityTypeId( rs );
+        return new AppType( id, type, title, description, entityTypeId );
     }
 
 }

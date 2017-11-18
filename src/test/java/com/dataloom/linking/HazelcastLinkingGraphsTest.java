@@ -28,6 +28,7 @@ import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableMap;
 import com.hazelcast.core.IMap;
+
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.openlattice.postgres.mapstores.LinkingVerticesMapstore;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -52,10 +54,10 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
     protected static final DistributedClusterer                                partitioner;
     protected static final LinkingVerticesMapstore                             lvm;
     protected static final IMap<LinkingVertexKey, WeightedLinkingVertexKeySet> edges;
-    protected static final IMap<LinkingVertexKey,LinkingVertex>                linkingVertices;
+    protected static final IMap<LinkingVertexKey, LinkingVertex>               linkingVertices;
     protected static final IMap<EntityKey, UUID>                               ids;
+    @SuppressFBWarnings( value = "MS_MUTABLE_COLLECTION_PKGPROTECT", justification = "used is protected" )
     protected static final Set<UUID> used    = new HashSet<>( entityCount );
-    protected static final UUID      graphId = UUID.randomUUID();
     private static final   Random    r       = new Random();
     private static final   Logger    logger  = LoggerFactory
             .getLogger( HazelcastLinkingGraphsTest.class );
@@ -82,11 +84,11 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
             ids.put( TestDataFactory.entityKey( entitySetId, syncId ), id );
         }
 
-        graphs.initializeLinking( graphId, ImmutableMap.of( entitySetId, syncId ) );
+        graphs.initializeLinking( entitySetId, ImmutableMap.of( entitySetId, syncId ) );
 
-
-
-        Set<LinkingVertexKey> vertices = linkingVertices.keySet(  );
+        Set<LinkingVertexKey> vertices = linkingVertices.keySet().stream()
+                .filter( key -> key.getGraphId().equals( entitySetId ) ).collect(
+                        Collectors.toSet() );
 
         vertices.parallelStream()
                 .flatMap( u -> vertices
@@ -96,13 +98,14 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
                         .map( v -> new LinkingEdge( u, v ) ) )
                 .forEach( edge -> graphs.setEdgeWeight( edge, 2 * r.nextDouble() ) );
 
-        List<WeightedLinkingVertexKey> sortedEdges = edges.values(  )
+        List<WeightedLinkingVertexKey> sortedEdges = edges.entrySet()
                 .stream()
-                .flatMap( WeightedLinkingVertexKeySet::stream )
+                .filter( entry -> entry.getKey().getGraphId().equals( entitySetId ) )
+                .flatMap( entry -> entry.getValue().stream() )
                 .sorted()
                 .collect( Collectors.toList() );
 
-        partitioner.cluster( graphId, sortedEdges.get( 0 ).getWeight() );
+        partitioner.cluster( entitySetId, sortedEdges.get( 0 ).getWeight() );
         //                new WeightedLinkingEdge( sortedEdges.get( 1 ).getValue(), sortedEdges.get( 1 ).getKey() )
 
         StreamUtil.stream( lvm.loadAllKeys() ).map( graphs::getVertex )

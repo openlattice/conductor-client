@@ -10,6 +10,7 @@ import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.ICountDownLatch;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.springframework.scheduling.annotation.Async;
 
@@ -21,10 +22,11 @@ public class MergeVertexAggregator extends Aggregator<Map.Entry<LinkingVertexKey
         implements HazelcastInstanceAware {
     private static final long serialVersionUID = -3109431240337504574L;
 
-    private UUID graphId;
+    @SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented" )
+    private           Map<UUID, PropertyType>         propertyTypesById;
+    private           UUID                            graphId;
     private           UUID                            syncId;
     private           Map<UUID, Set<UUID>>            propertyTypeIdsByEntitySet;
-    private           Map<UUID, PropertyType>         propertyTypesById;
     private           Set<UUID>                       propertyTypesToPopulate;
     private           Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataTypeForLinkedEntitySet;
     private transient ICountDownLatch                 countDownLatch;

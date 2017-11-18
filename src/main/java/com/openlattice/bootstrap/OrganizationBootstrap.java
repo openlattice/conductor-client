@@ -20,24 +20,25 @@
 
 package com.openlattice.bootstrap;
 
-import static com.openlattice.bootstrap.AuthorizationBootstrap.GLOBAL_ADMIN_ROLE;
-import static com.openlattice.bootstrap.AuthorizationBootstrap.OPENLATTICE_ROLE;
-
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.organization.Organization;
 import com.dataloom.organizations.HazelcastOrganizationService;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+
 import java.util.UUID;
+
+import static com.openlattice.bootstrap.AuthorizationBootstrap.GLOBAL_ADMIN_ROLE;
+import static com.openlattice.bootstrap.AuthorizationBootstrap.OPENLATTICE_ROLE;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class OrganizationBootstrap {
-    public static Organization OPENLATTICE = createOpenLatticeOrg();
-    public static Organization GLOBAL      = createGlobalOrg();
-    private final boolean initialized;
+    public static final Organization OPENLATTICE = createOpenLatticeOrg();
+    public static final Organization GLOBAL      = createGlobalOrg();
+    private boolean initialized;
 
     public OrganizationBootstrap( HazelcastOrganizationService organizationService ) {
         organizationService.createOrganization( OPENLATTICE_ROLE.getPrincipal(), OPENLATTICE );
@@ -51,7 +52,7 @@ public class OrganizationBootstrap {
 
     public static Organization createGlobalOrg() {
         UUID id = BootstrapConstants.GLOBAL_ORGANIZATION_ID;
-        Principal org = new Principal( PrincipalType.ORGANIZATION, "global" );
+        Principal org = new Principal( PrincipalType.ORGANIZATION, "globalOrg" );
         String title = "Global Organization";
         return new Organization( Optional.of( id ),
                 org,
@@ -64,7 +65,7 @@ public class OrganizationBootstrap {
 
     public static Organization createOpenLatticeOrg() {
         UUID id = new UUID( 0, 0 );
-        Principal org = new Principal( PrincipalType.ORGANIZATION, "openlattice" );
+        Principal org = new Principal( PrincipalType.ORGANIZATION, "openlatticeOrg" );
         String title = "OpenLattice, Inc.";
         return new Organization( Optional.of( id ),
                 org,

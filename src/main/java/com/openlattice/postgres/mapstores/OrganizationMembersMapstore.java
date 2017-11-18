@@ -1,9 +1,5 @@
 package com.openlattice.postgres.mapstores;
 
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.MEMBERS;
-import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
-
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -11,21 +7,23 @@ import com.dataloom.organizations.PrincipalSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.lang.RandomStringUtils;
+
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.apache.commons.lang.RandomStringUtils;
+
+import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresColumn.MEMBERS;
+import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
 
 public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UUID, PrincipalSet> {
     public OrganizationMembersMapstore( HikariDataSource hds ) {
@@ -58,19 +56,19 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
     }
 
     @Override protected PrincipalSet mapToValue( ResultSet rs ) throws SQLException {
-        Array array = rs.getArray( MEMBERS.getName() );
-        Stream<String> users = Arrays.stream( (String[]) array.getArray() );
-        return PrincipalSet
-                .wrap( users.map( user -> new Principal( PrincipalType.USER, user ) ).collect( Collectors.toSet() ) );
+        Array arr = rs.getArray( MEMBERS.getName() );
+        if ( arr != null ) {
+            String[] value = (String[]) arr.getArray();
+            if ( value != null )
+                return PrincipalSet
+                        .wrap( Arrays.stream( value ).map( user -> new Principal( PrincipalType.USER, user ) )
+                                .collect( Collectors.toSet() ) );
+        }
+        return PrincipalSet.wrap( Sets.newHashSet() );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return rs.getObject( ID.getName(), UUID.class );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ID to UUID class", ex );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override

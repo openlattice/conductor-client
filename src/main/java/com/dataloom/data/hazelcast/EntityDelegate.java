@@ -61,7 +61,7 @@ public class EntityDelegate implements SetMultimap<UUID, Object> {
         return m.asMap();
     }
 
-    @Override public boolean equals( @Nullable Object obj ) {
+    @Override public boolean equals( Object obj ) {
         return m.equals( obj );
     }
 

@@ -4,10 +4,10 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Array;
@@ -54,13 +54,8 @@ public class LinkedEntitySetsMapstore extends AbstractBasePostgresMapstore<UUID,
         return DelegatedUUIDSet.wrap( Sets.newHashSet( (UUID[]) rs.getArray( ENTITY_SET_IDS.getName() ).getArray() ) );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.id( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map ID to UUID", e );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override public UUID generateTestKey() {

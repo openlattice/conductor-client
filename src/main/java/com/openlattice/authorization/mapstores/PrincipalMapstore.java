@@ -22,7 +22,6 @@ package com.openlattice.authorization.mapstores;
 
 import static com.openlattice.postgres.PostgresTable.PRINCIPALS;
 
-import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.Role;
@@ -39,6 +38,7 @@ import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -79,6 +79,7 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<AclKey, Secu
     @Override protected void bind(
             PreparedStatement ps, AclKey key, SecurablePrincipal value ) throws SQLException {
         bind( ps, key );
+
         ps.setString( 2, value.getPrincipalType().name() );
         ps.setString( 3, value.getName() );
         ps.setString( 4, value.getTitle() );

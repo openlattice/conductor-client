@@ -5,11 +5,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
+import com.openlattice.postgres.ResultSetAdapters;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 
 import java.sql.Array;
 import java.sql.PreparedStatement;
@@ -55,29 +56,25 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
 
     @Override protected DelegatedStringSet mapToValue( ResultSet rs ) throws SQLException {
         Array array = rs.getArray( ALLOWED_EMAIL_DOMAINS.getName() );
-        if( array == null ) {
+        if ( array == null ) {
             return null;
         }
         String[] value = (String[]) array.getArray();
         return DelegatedStringSet.wrap( Sets.newHashSet( value ) );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return rs.getObject( ID.getName(), UUID.class );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ID to UUID class", ex );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override
     public Map<UUID, DelegatedStringSet> loadAll( Collection<UUID> keys ) {
         Map<UUID, DelegatedStringSet> result = Maps.newConcurrentMap();
         keys.parallelStream().forEach( id -> {
-            DelegatedStringSet domains = load(id);
-            if ( domains != null ) result.put( id, domains );
-        });
+            DelegatedStringSet domains = load( id );
+            if ( domains != null )
+                result.put( id, domains );
+        } );
         return result;
     }
 
@@ -91,8 +88,8 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
     }
 
     @Override public DelegatedStringSet generateTestValue() {
-        return DelegatedStringSet.wrap( ImmutableSet.of( RandomStringUtils.random( 10 ),
-                RandomStringUtils.random( 10 ),
-                RandomStringUtils.random( 10 ) ) );
+        return DelegatedStringSet.wrap( ImmutableSet.of( RandomStringUtils.randomAlphanumeric( 5 ),
+                RandomStringUtils.randomAlphanumeric( 5 ),
+                RandomStringUtils.randomAlphanumeric( 5 ) ) );
     }
 }

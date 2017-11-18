@@ -19,6 +19,7 @@
 
 package com.dataloom.authorization.mapstores;
 
+import com.openlattice.authorization.AclKey;
 import java.util.EnumSet;
 import java.util.UUID;
 
@@ -78,7 +79,7 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
     @Override
     public AceKey generateTestKey() {
         return new AceKey(
-                ImmutableList.of( UUID.randomUUID() ),
+                new AclKey( UUID.randomUUID() ),
                 new Principal( PrincipalType.USER, RandomStringUtils.randomAlphanumeric( 5 ) ) );
     }
 

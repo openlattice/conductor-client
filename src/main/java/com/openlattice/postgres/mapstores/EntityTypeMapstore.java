@@ -79,13 +79,8 @@ public class EntityTypeMapstore extends AbstractBasePostgresMapstore<UUID, Entit
         return ResultSetAdapters.entityType( rs );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.id( rs );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ID to UUID class", ex );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override public UUID generateTestKey() {

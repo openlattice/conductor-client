@@ -42,7 +42,7 @@ public interface SecurePrincipalsManager {
 
     Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p );
 
-    void crateSecurablePrincipal(
+    void createSecurablePrincipal(
             Principal owner, SecurablePrincipal principal );
 
     void updateTitle( AclKey aclKey, String title );

@@ -29,6 +29,7 @@ import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.EntityType;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.datastore.services.EdmManager;
+import com.openlattice.authorization.AclKey;
 
 public class EdmAuthorizationHelper {
 
@@ -54,7 +55,7 @@ public class EdmAuthorizationHelper {
             Set<UUID> selectedProperties,
             EnumSet<Permission> requiredPermissions ) {
         return selectedProperties.stream()
-                .filter( ptId -> authz.checkIfHasPermissions( Arrays.asList( entitySetId,
+                .filter( ptId -> authz.checkIfHasPermissions( new AclKey( entitySetId,
                         ptId ),
                         Principals.getCurrentPrincipals(),
                         requiredPermissions ) )

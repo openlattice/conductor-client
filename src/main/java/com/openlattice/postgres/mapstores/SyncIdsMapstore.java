@@ -52,13 +52,8 @@ public class SyncIdsMapstore extends AbstractBasePostgresMapstore<UUID, UUID> {
         return ResultSetAdapters.currentSyncId( rs );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.entitySetId( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map result set to entitySetId", e );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.entitySetId( rs );
     }
 
     // This mapstore should never add rows to the existing table -- instead it should just update

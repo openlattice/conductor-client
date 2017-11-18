@@ -19,28 +19,24 @@
 
 package com.dataloom.organizations;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.UserDirectoryService;
-import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organization.Organization;
+import com.dataloom.organization.OrganizationPrincipal;
 import com.dataloom.organization.roles.Role;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
-import com.dataloom.organizations.processors.EmailDomainsMerger;
-import com.dataloom.organizations.processors.EmailDomainsRemover;
-import com.dataloom.organizations.processors.OrganizationMemberMerger;
-import com.dataloom.organizations.processors.OrganizationMemberRemover;
+import com.dataloom.organizations.processors.*;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
@@ -51,6 +47,11 @@ import com.kryptnostic.datastore.util.Util;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -59,9 +60,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastOrganizationService {
 
@@ -75,6 +75,7 @@ public class HazelcastOrganizationService {
     private final IMap<UUID, String>                descriptions;
     private final IMap<UUID, DelegatedStringSet>    autoApprovedEmailDomainsOf;
     private final IMap<UUID, PrincipalSet>          membersOf;
+    private final IMap<UUID, DelegatedUUIDSet>      apps;
     private final List<IMap<UUID, ?>>               allMaps;
 
     @Inject
@@ -90,12 +91,14 @@ public class HazelcastOrganizationService {
         this.descriptions = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS.name() );
         this.autoApprovedEmailDomainsOf = hazelcastInstance.getMap( HazelcastMap.ALLOWED_EMAIL_DOMAINS.name() );
         this.membersOf = hazelcastInstance.getMap( HazelcastMap.ORGANIZATIONS_MEMBERS.name() );
+        this.apps = hazelcastInstance.getMap( HazelcastMap.ORGANIZATION_APPS.name() );
         this.authorizations = authorizations;
         this.reservations = reservations;
         this.allMaps = ImmutableList.of( titles,
                 descriptions,
                 autoApprovedEmailDomainsOf,
-                membersOf );
+                membersOf,
+                apps );
         this.principals = checkNotNull( principals );
         this.securePrincipalsManager = securePrincipalsManager;
     }
@@ -113,6 +116,7 @@ public class HazelcastOrganizationService {
         autoApprovedEmailDomainsOf.set( organizationId,
                 DelegatedStringSet.wrap( organization.getAutoApprovedEmails() ) );
         membersOf.set( organizationId, PrincipalSet.wrap( organization.getMembers() ) );
+        apps.set( organizationId, DelegatedUUIDSet.wrap( organization.getApps() ) );
     }
 
     public Organization getOrganization( UUID organizationId ) {
@@ -121,7 +125,7 @@ public class HazelcastOrganizationService {
 
         Collection<SecurablePrincipal> maybeOrgs =
                 securePrincipalsManager.getSecurablePrincipals( getOrganizationPredicate( organizationId ) );
-        SecurablePrincipal principal = Iterables.getOnlyElement( maybeOrgs );
+        OrganizationPrincipal principal = (OrganizationPrincipal) Iterables.getOnlyElement( maybeOrgs );
         Set<Role> roles = getRoles( organizationId );
         try {
             return new Organization(
@@ -243,6 +247,20 @@ public class HazelcastOrganizationService {
 
     public void removeRoleFromUser( AclKey roleKey, Principal user ) {
         securePrincipalsManager.removePrincipalFromPrincipal( roleKey, securePrincipalsManager.lookup( user ) );
+    }
+
+    public void addAppToOrg( UUID organizationId, UUID appId ) {
+        apps.executeOnKey( organizationId,
+                new OrganizationAppMerger( DelegatedUUIDSet.wrap( ImmutableSet.of( appId ) ) ) );
+    }
+
+    public void removeAppFromOrg( UUID organizationId, UUID appId ) {
+        apps.executeOnKey( organizationId,
+                new OrganizationAppRemover( DelegatedUUIDSet.wrap( ImmutableSet.of( appId ) ) ) );
+    }
+
+    public Set<UUID> getOrganizationApps( UUID organizationId ) {
+        return apps.get( organizationId );
     }
 
     private static Predicate getOrganizationPredicate( UUID organizationId ) {

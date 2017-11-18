@@ -38,6 +38,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +138,10 @@ public class PostgresEntityKeysMapstore implements TestableSelfRegisteringMapSto
         return keys.parallelStream().collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
     }
 
-    @Override public Iterable<UUID> loadAllKeys() {
+    @Override
+    @SuppressFBWarnings(
+            value = { "ODR_OPEN_DATABASE_RESOURCE", "OBL_UNSATISFIED_OBLIGATION" },
+            justification = "Connection intentionally left open for iterator" )    public Iterable<UUID> loadAllKeys() {
         logger.info( "Starting load all keys for Edge Mapstore" );
         Stream<UUID> keys;
         try {

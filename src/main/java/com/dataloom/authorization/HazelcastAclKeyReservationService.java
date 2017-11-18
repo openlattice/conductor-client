@@ -19,11 +19,8 @@
 
 package com.dataloom.authorization;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
-import com.dataloom.authorization.securable.AbstractSchemaAssociatedSecurableType;
 import com.dataloom.authorization.securable.AbstractSecurableObject;
+import com.dataloom.authorization.securable.AbstractSecurableType;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.exceptions.AclKeyConflictException;
@@ -34,12 +31,16 @@ import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastAclKeyReservationService {
     public static final  String                               LOOM_NAMESPACE        = "loom";
@@ -135,7 +136,7 @@ public class HazelcastAclKeyReservationService {
      *
      * @param type The type for which to reserve an FQN and UUID.
      */
-    public void reserveIdAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
+    public void reserveIdAndValidateType( AbstractSecurableType type ) {
         reserveIdAndValidateType( type, Suppliers.compose( Util::fqnToString, type::getType )::get );
     }
 

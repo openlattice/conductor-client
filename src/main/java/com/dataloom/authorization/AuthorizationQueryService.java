@@ -26,10 +26,13 @@ import com.dataloom.streams.StreamUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.*;
 import com.zaxxer.hikari.HikariDataSource;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +53,7 @@ public class AuthorizationQueryService {
     private final String aclsForSecurableObjectSql;
     private final String ownersForSecurableObjectSql;
     private final String deletePermissionsByAclKeysSql;
-    private final String setObjectTypeSql;
+    private final String deletePermissionsByPrincipalSql;
 
     public AuthorizationQueryService( HikariDataSource hds, HazelcastInstance hazelcastInstance ) {
         this.hds = hds;
@@ -58,14 +61,12 @@ public class AuthorizationQueryService {
 
         // Tables
         String PERMISSIONS_TABLE = PostgresTable.PERMISSIONS.getName();
-        String SECURABLE_OBJECTS = PostgresTable.SECURABLE_OBJECTS.getName();
 
         // Columns
         String ACL_KEY = PostgresColumn.ACL_KEY.getName();
         String PRINCIPAL_TYPE = PostgresColumn.PRINCIPAL_TYPE.getName();
         String PRINCIPAL_ID = PostgresColumn.PRINCIPAL_ID.getName();
         String PERMISSIONS = PostgresColumn.PERMISSIONS.getName();
-        String SECURABLE_OBJECT_TYPE = PostgresColumn.SECURABLE_OBJECT_TYPE.getName();
 
         this.aclsForSecurableObjectSql = PostgresQuery
                 .selectColsFrom( PERMISSIONS_TABLE, ImmutableList.of( PRINCIPAL_TYPE, PRINCIPAL_ID ) )
@@ -76,9 +77,9 @@ public class AuthorizationQueryService {
                 .concat( PostgresQuery.AND ).concat( PostgresQuery.valueInArray( PERMISSIONS, true ) );
         this.deletePermissionsByAclKeysSql = PostgresQuery.deleteFrom( PERMISSIONS_TABLE )
                 .concat( PostgresQuery.whereEq( ImmutableList.of( ACL_KEY ), true ) );
-        this.setObjectTypeSql = PostgresQuery.update( SECURABLE_OBJECTS )
-                .concat( PostgresQuery.setEq( ImmutableList.of( SECURABLE_OBJECT_TYPE ) ) )
-                .concat( PostgresQuery.whereEq( ImmutableList.of( ACL_KEY ), true ) );
+        this.deletePermissionsByPrincipalSql = PostgresQuery.deleteFrom( PERMISSIONS_TABLE )
+                .concat( PostgresQuery.whereEq( ImmutableList.of( PRINCIPAL_TYPE, PRINCIPAL_ID ), true ) );
+
     }
 
     private String getAuthorizedAclKeyQuery(
@@ -141,7 +142,7 @@ public class AuthorizationQueryService {
      * @param desiredPermissions
      * @return
      */
-    public Stream<List<UUID>> getAuthorizedAclKeys(
+    public Stream<AclKey> getAuthorizedAclKeys(
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
@@ -158,7 +159,7 @@ public class AuthorizationQueryService {
      * @param desiredPermissions
      * @return
      */
-    public Set<List<UUID>> getAuthorizedAclKeys(
+    public Set<AclKey> getAuthorizedAclKeys(
             Set<Principal> principals,
             SecurableObjectType objectType,
             EnumSet<Permission> desiredPermissions ) {
@@ -179,16 +180,29 @@ public class AuthorizationQueryService {
         int limit = pageSize;
         int offset = ( offsetStr == null ) ? 0 : Integer.parseInt( offsetStr );
 
-        Set<List<UUID>> results = getAuthorizedAclKeysForPrincipals( principals,
-                EnumSet.of( permission ),
-                Optional.of( objectType ),
-                Optional.of( limit ),
-                Optional.of( offset ) )
-                .collect( Collectors.toSet() );
+        try ( Connection connection = hds.getConnection() ) {
+            PreparedStatement ps = prepareAuthorizedAclKeysQuery( connection,
+                    principals,
+                    EnumSet.of( permission ),
+                    Optional.of( objectType ),
+                    Optional.of( limit + 1 ),
+                    Optional.of( offset ) );
+            Set<AclKey> result = Sets.newHashSet();
+            ResultSet rs = ps.executeQuery();
+            boolean next;
+            while ( ( next = rs.next() ) && result.size() < limit ) {
+                result.add( ResultSetAdapters.aclKey( rs ) );
+            }
+            String newPage = next ? String.valueOf( offset + pageSize ) : null;
 
-        String newPage = ( results.size() < pageSize ) ? null : String.valueOf( offset + pageSize );
+            rs.close();
+            connection.close();
 
-        return new AuthorizedObjectsSearchResult( newPage, results );
+            return new AuthorizedObjectsSearchResult( newPage, result );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable to get authorized acl keys.", e );
+            return null;
+        }
     }
 
     /**
@@ -198,7 +212,7 @@ public class AuthorizationQueryService {
      * @param desiredPermissions
      * @return
      */
-    public Stream<List<UUID>> getAuthorizedAclKeys(
+    public Stream<AclKey> getAuthorizedAclKeys(
             Principal principal,
             EnumSet<Permission> desiredPermissions ) {
         return getAuthorizedAclKeysForPrincipals( ImmutableSet.of( principal ), desiredPermissions, Optional.empty() );
@@ -211,12 +225,13 @@ public class AuthorizationQueryService {
      * @param desiredPermissions
      * @return
      */
-    public Stream<List<UUID>> getAuthorizedAclKeys(
+    public Stream<AclKey> getAuthorizedAclKeys(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions ) {
         return getAuthorizedAclKeysForPrincipals( principals, desiredPermissions, Optional.empty() );
     }
 
+    @SuppressFBWarnings( value = "OBL_UNSATISFIED_OBLIGATION_EXCEPTION_EDGE", justification = "Resources will be closed on error" )
     private PreparedStatement prepareAuthorizedAclKeysQuery(
             Connection connection,
             Set<Principal> principals,
@@ -260,7 +275,7 @@ public class AuthorizationQueryService {
 
     }
 
-    public Stream<List<UUID>> getAuthorizedAclKeysForPrincipals(
+    public Stream<AclKey> getAuthorizedAclKeysForPrincipals(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions,
             Optional<SecurableObjectType> securableObjectType ) {
@@ -271,7 +286,7 @@ public class AuthorizationQueryService {
                 Optional.empty() );
     }
 
-    public Stream<List<UUID>> getAuthorizedAclKeysForPrincipals(
+    public Stream<AclKey> getAuthorizedAclKeysForPrincipals(
             Set<Principal> principals,
             EnumSet<Permission> desiredPermissions,
             Optional<SecurableObjectType> securableObjectType,
@@ -284,7 +299,7 @@ public class AuthorizationQueryService {
                     securableObjectType,
                     limit,
                     offset );
-            List<List<UUID>> result = Lists.newArrayList();
+            List<AclKey> result = Lists.newArrayList();
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
                 result.add( ResultSetAdapters.aclKey( rs ) );
@@ -298,7 +313,7 @@ public class AuthorizationQueryService {
         }
     }
 
-    public Stream<Principal> getPrincipalsForSecurableObject( List<UUID> aclKeys ) {
+    public Stream<Principal> getPrincipalsForSecurableObject( AclKey aclKeys ) {
         try ( Connection connection = hds.getConnection();
                 PreparedStatement ps = connection.prepareStatement( aclsForSecurableObjectSql ) ) {
             List<Principal> result = Lists.newArrayList();
@@ -316,7 +331,7 @@ public class AuthorizationQueryService {
         }
     }
 
-    public Acl getAclsForSecurableObject( List<UUID> aclKeys ) {
+    public Acl getAclsForSecurableObject( AclKey aclKeys ) {
         Stream<Ace> accessControlEntries = getPrincipalsForSecurableObject( aclKeys )
                 .map( principal -> new AceKey( aclKeys, principal ) )
                 .map( aceKey -> new AceFuture( aceKey.getPrincipal(), aces.getAsync( aceKey ) ) )
@@ -325,20 +340,7 @@ public class AuthorizationQueryService {
 
     }
 
-    public void createEmptyAcl( List<UUID> aclKey, SecurableObjectType objectType ) {
-        try ( Connection connection = hds.getConnection();
-                PreparedStatement ps = connection.prepareStatement( setObjectTypeSql ) ) {
-            ps.setString( 1, objectType.name() );
-            ps.setArray( 2, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
-            ps.execute();
-            connection.close();
-            logger.info( "Created empty acl with key {} and type {}", aclKey, objectType );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to create acl with key {} and type {}", aclKey, objectType, e );
-        }
-    }
-
-    public void deletePermissionsByAclKeys( List<UUID> aclKey ) {
+    public void deletePermissionsByAclKeys( AclKey aclKey ) {
         try ( Connection connection = hds.getConnection();
                 PreparedStatement ps = connection.prepareStatement( deletePermissionsByAclKeysSql ) ) {
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
@@ -350,7 +352,20 @@ public class AuthorizationQueryService {
         }
     }
 
-    public Iterable<Principal> getOwnersForSecurableObject( List<UUID> aclKeys ) {
+    public void deletePermissionsByPrincipal( Principal principal ) {
+        try ( Connection connection = hds.getConnection();
+                PreparedStatement ps = connection.prepareStatement( deletePermissionsByPrincipalSql ) ) {
+            ps.setString( 1, principal.getType().name() );
+            ps.setString( 2, principal.getId() );
+            ps.execute();
+            connection.close();
+            logger.info( "Deleted all permissions for principal {}", principal );
+        } catch ( SQLException e ) {
+            logger.debug( "Unable delete all permissions for principal {}.", principal, e );
+        }
+    }
+
+    public Iterable<Principal> getOwnersForSecurableObject( AclKey aclKeys ) {
         try ( Connection connection = hds.getConnection();
                 PreparedStatement ps = connection.prepareStatement( ownersForSecurableObjectSql ) ) {
             List<Principal> result = Lists.newArrayList();

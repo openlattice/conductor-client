@@ -19,21 +19,32 @@
 
 package com.dataloom.authorization.processors;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractMerger;
+import com.openlattice.authorization.AceValue;
+import java.util.EnumSet;
 
-public class PermissionMerger extends AbstractMerger<AceKey, DelegatedPermissionEnumSet, Permission> {
+public class PermissionMerger extends AbstractMerger<AceKey, AceValue, Permission> {
     private static final long serialVersionUID = -3504613417625318717L;
+    private final SecurableObjectType securableObjectType;
 
-    public PermissionMerger( Iterable<Permission> objects ) {
+    public PermissionMerger(
+            Iterable<Permission> objects,
+            SecurableObjectType securableObjectType ) {
         super( objects );
+        this.securableObjectType = checkNotNull( securableObjectType );
     }
 
     @Override
-    protected DelegatedPermissionEnumSet newEmptyCollection() {
-        return new DelegatedPermissionEnumSet();
+    protected AceValue newEmptyCollection() {
+        return new AceValue( EnumSet.noneOf( Permission.class ), securableObjectType );
     }
 
+    public SecurableObjectType getSecurableObjectType() {
+        return securableObjectType;
+    }
 }

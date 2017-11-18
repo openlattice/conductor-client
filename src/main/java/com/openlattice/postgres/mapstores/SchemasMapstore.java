@@ -4,10 +4,10 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -54,13 +54,8 @@ public class SchemasMapstore extends AbstractBasePostgresMapstore<String, Delega
         return DelegatedStringSet.wrap( Sets.newHashSet( (String[]) rs.getArray( NAME_SET.getName() ).getArray() ) );
     }
 
-    @Override protected String mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.namespace( rs );
-        } catch ( SQLException e ) {
-            logger.debug( "Unable to map schema names.", e );
-            return null;
-        }
+    @Override protected String mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.namespace( rs );
     }
 
     @Override public String generateTestKey() {

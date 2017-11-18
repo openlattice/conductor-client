@@ -39,9 +39,9 @@ public class GraphCountStreamSerializerTest
     @Override protected GraphCount createInput() {
         UUID r1 = UUID.randomUUID();
         UUID r2 = UUID.randomUUID();
-        return new GraphCount( RandomUtils.nextInt( Integer.MIN_VALUE, Integer.MAX_VALUE ), UUID.randomUUID(),
+        return new GraphCount( RandomUtils.nextInt( 0, Integer.MAX_VALUE ), UUID.randomUUID(),
                 ImmutableMap.of(
-                        r1, new IncrementableWeightId( r1, RandomUtils.nextLong( Long.MIN_VALUE, Long.MAX_VALUE ) ),
-                        r2, new IncrementableWeightId( r2, RandomUtils.nextLong( Long.MIN_VALUE, Long.MAX_VALUE ) ) ) );
+                        r1, new IncrementableWeightId( r1, RandomUtils.nextLong( 0, Long.MAX_VALUE ) ),
+                        r2, new IncrementableWeightId( r2, RandomUtils.nextLong( 0, Long.MAX_VALUE ) ) ) );
     }
 }

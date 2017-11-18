@@ -21,8 +21,11 @@ package com.dataloom.hazelcast.pods;
 
 import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
 
+import com.dataloom.apps.App;
+import com.dataloom.apps.AppConfigKey;
+import com.dataloom.apps.AppType;
+import com.dataloom.apps.AppTypeSetting;
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
@@ -54,6 +57,7 @@ import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
@@ -65,6 +69,9 @@ import com.openlattice.authorization.mapstores.UserMapstore;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.AclKeysMapstore;
+import com.openlattice.postgres.mapstores.AppConfigMapstore;
+import com.openlattice.postgres.mapstores.AppMapstore;
+import com.openlattice.postgres.mapstores.AppTypeMapstore;
 import com.openlattice.postgres.mapstores.AssociationTypeMapstore;
 import com.openlattice.postgres.mapstores.ComplexTypeMapstore;
 import com.openlattice.postgres.mapstores.EdmVersionsMapstore;
@@ -75,6 +82,7 @@ import com.openlattice.postgres.mapstores.EnumTypesMapstore;
 import com.openlattice.postgres.mapstores.LinkingEdgesMapstore;
 import com.openlattice.postgres.mapstores.LinkingVerticesMapstore;
 import com.openlattice.postgres.mapstores.NamesMapstore;
+import com.openlattice.postgres.mapstores.OrganizationAppsMapstore;
 import com.openlattice.postgres.mapstores.OrganizationDescriptionsMapstore;
 import com.openlattice.postgres.mapstores.OrganizationEmailDomainsMapstore;
 import com.openlattice.postgres.mapstores.OrganizationMembersMapstore;
@@ -87,9 +95,9 @@ import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
+import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
 import javax.inject.Inject;
 import org.springframework.context.annotation.Bean;
@@ -112,21 +120,22 @@ public class MapstoresPod {
     @Inject
     private PostgresTableManager ptMgr;
 
+    @Inject
+    private Auth0Configuration auth0Configuration;
+
     @Bean
     public SelfRegisteringMapStore<EdgeKey, LoomEdge> edgesMapstore() throws SQLException {
         return new PostgresEdgeMapstore( HazelcastMap.EDGES.name(), hikariDataSource );
     }
 
     @Bean
-    public SelfRegisteringMapStore<AceKey, DelegatedPermissionEnumSet> permissionMapstore() {
-        PermissionMapstore ppm = new PermissionMapstore( hikariDataSource );
-        return ppm;
+    public SelfRegisteringMapStore<AceKey, AceValue> permissionMapstore() {
+        return new PermissionMapstore( hikariDataSource );
     }
 
     @Bean
-    public SelfRegisteringMapStore<List<UUID>, SecurableObjectType> securableObjectTypeMapstore() {
-        SecurableObjectTypeMapstore psotm = new SecurableObjectTypeMapstore( hikariDataSource );
-        return psotm;
+    public SelfRegisteringMapStore<AclKey, SecurableObjectType> securableObjectTypeMapstore() {
+        return new SecurableObjectTypeMapstore( hikariDataSource );
     }
 
     @Bean
@@ -257,6 +266,11 @@ public class MapstoresPod {
     }
 
     @Bean
+    public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> orgAppsMapstore() {
+        return new OrganizationAppsMapstore( hikariDataSource );
+    }
+
+    @Bean
     public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntityTypesMapstore() {
         return new LinkedEntityTypesMapstore( session );
     }
@@ -336,7 +350,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<String, Auth0UserBasic> userMapstore() {
-        return new UserMapstore();
+        return new UserMapstore( auth0Configuration.getToken() );
     }
 
     @Bean
@@ -349,4 +363,20 @@ public class MapstoresPod {
     public QueueConfigurer defaultQueueConfigurer() {
         return config -> config.setMaxSize( 10000 ).setEmptyQueueTtl( 60 );
     }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, App> appMapstore() {
+        return new AppMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, AppType> appTypeMapstore() {
+        return new AppTypeMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<AppConfigKey, AppTypeSetting> appConfigMapstore() {
+        return new AppConfigMapstore( hikariDataSource );
+    }
+
 }

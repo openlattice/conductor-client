@@ -21,6 +21,7 @@ package com.kryptnostic.datastore.services;
 
 import com.dataloom.authorization.*;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.data.DatasourceManager;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.EntityDataModelDiff;
 import com.dataloom.edm.EntitySet;
@@ -46,6 +47,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
 import com.kryptnostic.datastore.util.Util;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresQuery;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
@@ -80,12 +82,14 @@ public class EdmService implements EdmManager {
     private final IMap<UUID, AssociationType>                           associationTypes;
     private final IMap<UUID, UUID>                                      syncIds;
     private final IMap<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadata;
+    private final IMap<AclKey, SecurableObjectType>                 securableObjectTypes;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
     private final PostgresEntitySetManager          entitySetManager;
     private final PostgresTypeManager               entityTypeManager;
     private final HazelcastSchemaManager            schemaManager;
+    private final DatasourceManager                 datasourceManager;
 
     private final HazelcastInstance hazelcastInstance;
     private final HikariDataSource  hds;
@@ -100,7 +104,9 @@ public class EdmService implements EdmManager {
             AuthorizationManager authorizations,
             PostgresEntitySetManager entitySetManager,
             PostgresTypeManager entityTypeManager,
-            HazelcastSchemaManager schemaManager ) {
+            HazelcastSchemaManager schemaManager,
+            DatasourceManager datasourceManager ) {
+
         this.authorizations = authorizations;
         this.entitySetManager = entitySetManager;
         this.entityTypeManager = entityTypeManager;
@@ -118,7 +124,9 @@ public class EdmService implements EdmManager {
         this.associationTypes = hazelcastInstance.getMap( HazelcastMap.ASSOCIATION_TYPES.name() );
         this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
         this.entitySetPropertyMetadata = hazelcastInstance.getMap( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name() );
+        this.securableObjectTypes = hazelcastInstance.getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
         this.aclKeyReservations = aclKeyReservations;
+        this.datasourceManager = datasourceManager;
         propertyTypes.values().forEach( propertyType -> logger.debug( "Property type read: {}", propertyType ) );
         entityTypes.values().forEach( entityType -> logger.debug( "Object type read: {}", entityType ) );
     }
@@ -329,12 +337,12 @@ public class EdmService implements EdmManager {
         /*
          * We cleanup permissions first as this will make entity set unavailable, even if delete fails.
          */
-        authorizations.deletePermissions( ImmutableList.of( entitySetId ) );
+        authorizations.deletePermissions( new AclKey( entitySetId ) );
         entityType.getProperties().stream()
-                .map( propertyTypeId -> ImmutableList.of( entitySetId, propertyTypeId ) )
-                .forEach( list -> {
-                    authorizations.deletePermissions( list );
-                    entitySetPropertyMetadata.delete( new EntitySetPropertyKey( list.get( 0 ), list.get( 1 ) ) );
+                .map( propertyTypeId -> new AclKey( entitySetId, propertyTypeId ) )
+                .forEach( aclKey -> {
+                    authorizations.deletePermissions( aclKey );
+                    entitySetPropertyMetadata.delete( new EntitySetPropertyKey( aclKey.get( 0 ), aclKey.get( 1 ) ) );
                 } );
 
         Util.deleteSafely( entitySets, entitySetId );
@@ -347,6 +355,8 @@ public class EdmService implements EdmManager {
         aclKeyReservations.reserveIdAndValidateType( entitySet );
 
         checkState( entitySets.putIfAbsent( entitySet.getId(), entitySet ) == null, "Entity set already exists." );
+        datasourceManager.setCurrentSyncId( entitySet.getId(),
+                datasourceManager.createNewSyncIdForEntitySet( entitySet.getId() ) );
     }
 
     @Override
@@ -363,20 +373,27 @@ public class EdmService implements EdmManager {
         try {
             setupDefaultEntitySetPropertyMetadata( entitySet.getId(), entitySet.getEntityTypeId() );
 
-            authorizations.addPermission( ImmutableList.of( entitySet.getId() ),
+            authorizations.addPermission( new AclKey( entitySet.getId() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
 
-            authorizations.createEmptyAcl( ImmutableList.of( entitySet.getId() ), SecurableObjectType.EntitySet );
+            authorizations.setSecurableObjectType( new AclKey( entitySet.getId() ), SecurableObjectType.EntitySet );
 
             ownablePropertyTypes.stream()
-                    .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
+                    .map( propertyTypeId -> new AclKey( entitySet.getId(), propertyTypeId ) )
                     .peek( aclKey -> authorizations.addPermission(
                             aclKey,
                             principal,
                             EnumSet.allOf( Permission.class ) ) )
-                    .forEach( aclKey -> authorizations.createEmptyAcl( aclKey,
-                            SecurableObjectType.PropertyTypeInEntitySet ) );
+                    .forEach( aclKey -> {
+                        authorizations.setSecurableObjectType( aclKey,
+                                SecurableObjectType.PropertyTypeInEntitySet );
+                        securableObjectTypes.set( aclKey,
+                                SecurableObjectType.PropertyTypeInEntitySet );
+                    } );
+
+            securableObjectTypes.set( new AclKey( entitySet.getId() ),
+                    SecurableObjectType.EntitySet );
 
             eventBus.post( new EntitySetCreatedEvent(
                     entitySet,
@@ -616,16 +633,16 @@ public class EdmService implements EdmManager {
                 UUID esId = entitySet.getId();
                 Map<UUID, PropertyType> propertyTypes = propertyTypeIds.stream().collect( Collectors.toMap(
                         propertyTypeId -> propertyTypeId, propertyTypeId -> getPropertyType( propertyTypeId ) ) );
-                Iterable<Principal> owners = authorizations.getSecurableObjectOwners( Arrays.asList( esId ) );
+                Iterable<Principal> owners = authorizations.getSecurableObjectOwners( new AclKey( esId ) );
                 for ( Principal owner : owners ) {
                     propertyTypeIds.stream()
-                            .map( propertyTypeId -> ImmutableList.of( entitySet.getId(), propertyTypeId ) )
+                            .map( propertyTypeId -> new AclKey( entitySet.getId(), propertyTypeId ) )
                             .forEach( aclKey -> {
                                 authorizations.addPermission(
                                         aclKey,
                                         owner,
                                         EnumSet.allOf( Permission.class ) );
-                                authorizations.createEmptyAcl( aclKey,
+                                authorizations.setSecurableObjectType( aclKey,
                                         SecurableObjectType.PropertyTypeInEntitySet );
 
                                 PropertyType pt = propertyTypes.get( aclKey.get( 1 ) );
@@ -1360,9 +1377,10 @@ public class EdmService implements EdmManager {
     }
 
     @Override
-    public Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata( UUID entitySetId ) {
-        EntitySet entitySet = getEntitySet( entitySetId );
-        return getEntityType( entitySet.getEntityTypeId() ).getProperties().stream()
+    public Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata(
+            UUID entitySetId,
+            Set<UUID> authorizedPropertyTypes ) {
+        return authorizedPropertyTypes.stream()
                 .collect( Collectors.toMap( propertyTypeId -> propertyTypeId,
                         propertyTypeId -> getEntitySetPropertyMetadata( entitySetId, propertyTypeId ) ) );
     }

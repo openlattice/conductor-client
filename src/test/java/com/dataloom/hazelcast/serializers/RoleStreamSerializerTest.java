@@ -1,14 +1,10 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.mapstores.TestDataFactory;
-import java.io.Serializable;
-import java.util.UUID;
-
-import org.apache.commons.lang3.RandomStringUtils;
-
 import com.dataloom.organization.roles.Role;
-import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
+
+import java.io.Serializable;
 
 public class RoleStreamSerializerTest
         extends AbstractStreamSerializerTest<RoleStreamSerializer, Role>
@@ -18,16 +14,11 @@ public class RoleStreamSerializerTest
 
     @Override
     protected Role createInput() {
-        return new Role(
-                Optional.of( UUID.randomUUID() ),
-                UUID.randomUUID(),
-                TestDataFactory.rolePrincipal(),
-                RandomStringUtils.randomAlphanumeric( 5 ),
-                Optional.of( RandomStringUtils.randomAlphanumeric( 5 ) ) );
+        return TestDataFactory.role();
     }
 
     @Override
-    protected RoleStreamSerializer createSerializer() {
+    public RoleStreamSerializer createSerializer() {
         return new RoleStreamSerializer();
     }
 

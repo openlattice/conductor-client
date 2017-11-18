@@ -25,6 +25,7 @@ import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.openlattice.authorization.AclKey;
+
 import java.util.UUID;
 
 /**
@@ -56,3 +57,4 @@ public class AclKeyKryoSerializer extends Serializer<AclKey> {
         return new AclKey( ids );
     }
 }
+

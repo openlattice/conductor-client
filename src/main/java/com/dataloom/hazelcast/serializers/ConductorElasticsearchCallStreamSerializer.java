@@ -9,23 +9,20 @@ import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
-import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
-import com.kryptnostic.conductor.rpc.ConductorElasticsearchCall;
-import com.kryptnostic.conductor.rpc.ElasticsearchLambdas;
-import com.kryptnostic.conductor.rpc.EntityDataLambdas;
-import com.kryptnostic.conductor.rpc.SearchEntitySetDataLambda;
+import com.kryptnostic.conductor.rpc.*;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.serializers.AclKeyKryoSerializer;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.objenesis.strategy.StdInstantiatorStrategy;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.SerializedLambda;
 import java.util.UUID;
 import java.util.function.Function;
-import org.objenesis.strategy.StdInstantiatorStrategy;
-import org.springframework.stereotype.Component;
 
 @SuppressWarnings( "rawtypes" )
 @Component
@@ -57,6 +54,8 @@ public class ConductorElasticsearchCallStreamSerializer
                     new ClosureSerializer() );
             kryo.register( Function.class,
                     new ClosureSerializer() );
+
+            kryo.register( AclKey.class, new AclKeyKryoSerializer() );
 
             return kryo;
         }

@@ -52,13 +52,8 @@ public class OrganizationDescriptionsMapstore extends AbstractBasePostgresMapsto
         return ResultSetAdapters.description( rs );
     }
 
-    @Override public UUID mapToKey( ResultSet rs ) {
-        try {
-            return ResultSetAdapters.id( rs );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ID to UUID class", ex );
-            return null;
-        }
+    @Override public UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override

@@ -138,7 +138,7 @@ public class RequestQueryService {
 
     public Stream<AceKey> getRequestKeys( List<UUID> aclKey, RequestStatus requestStatus ) {
         try ( Connection connection = hds.getConnection();
-                PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeySql ) ) {
+                PreparedStatement ps = connection.prepareStatement( getRequestKeysForAclKeyAndStatusSql ) ) {
             List<AceKey> result = Lists.newArrayList();
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKey.stream() ) );
             ps.setString( 2, requestStatus.name() );

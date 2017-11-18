@@ -20,62 +20,7 @@
 
 package com.openlattice.postgres;
 
-import static com.openlattice.postgres.PostgresColumn.ACL_KEY;
-import static com.openlattice.postgres.PostgresColumn.ACL_KEY_SET;
-import static com.openlattice.postgres.PostgresColumn.ALLOWED_EMAIL_DOMAINS;
-import static com.openlattice.postgres.PostgresColumn.ANALYZER;
-import static com.openlattice.postgres.PostgresColumn.AUDIT_ID;
-import static com.openlattice.postgres.PostgresColumn.BASE_TYPE;
-import static com.openlattice.postgres.PostgresColumn.BIDIRECTIONAL;
-import static com.openlattice.postgres.PostgresColumn.BLOCK_ID;
-import static com.openlattice.postgres.PostgresColumn.CATEGORY;
-import static com.openlattice.postgres.PostgresColumn.CONTACTS;
-import static com.openlattice.postgres.PostgresColumn.CREDENTIAL;
-import static com.openlattice.postgres.PostgresColumn.CURRENT_SYNC_ID;
-import static com.openlattice.postgres.PostgresColumn.DATATYPE;
-import static com.openlattice.postgres.PostgresColumn.DATA_ID;
-import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
-import static com.openlattice.postgres.PostgresColumn.DST;
-import static com.openlattice.postgres.PostgresColumn.DST_LINKING_VERTEX_ID;
-import static com.openlattice.postgres.PostgresColumn.EDGE_VALUE;
-import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
-import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_KEY_IDS;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_IDS;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_ID;
-import static com.openlattice.postgres.PostgresColumn.EVENT_TYPE;
-import static com.openlattice.postgres.PostgresColumn.FLAGS;
-import static com.openlattice.postgres.PostgresColumn.GRAPH_DIAMETER;
-import static com.openlattice.postgres.PostgresColumn.GRAPH_ID;
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.KEY;
-import static com.openlattice.postgres.PostgresColumn.MEMBERS;
-import static com.openlattice.postgres.PostgresColumn.NAME;
-import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
-import static com.openlattice.postgres.PostgresColumn.NAME_SET;
-import static com.openlattice.postgres.PostgresColumn.NEW_VERTEX_ID;
-import static com.openlattice.postgres.PostgresColumn.NULLABLE_TITLE;
-import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_ID;
-import static com.openlattice.postgres.PostgresColumn.PII;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_IDS;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE;
-import static com.openlattice.postgres.PostgresColumn.PROPERTIES;
-import static com.openlattice.postgres.PostgresColumn.PROPERTY_TYPE_ID;
-import static com.openlattice.postgres.PostgresColumn.REASON;
-import static com.openlattice.postgres.PostgresColumn.ROLE_ID;
-import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
-import static com.openlattice.postgres.PostgresColumn.SHOW;
-import static com.openlattice.postgres.PostgresColumn.SRC;
-import static com.openlattice.postgres.PostgresColumn.SRC_LINKING_VERTEX_ID;
-import static com.openlattice.postgres.PostgresColumn.STATUS;
-import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
-import static com.openlattice.postgres.PostgresColumn.TIME_UUID;
-import static com.openlattice.postgres.PostgresColumn.TITLE;
-import static com.openlattice.postgres.PostgresColumn.VERTEX_ID;
+import static com.openlattice.postgres.PostgresColumn.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -86,6 +31,21 @@ public final class PostgresTable {
             new PostgresTableDefinition( "acl_keys" )
                     .addColumns( NAME, SECURABLE_OBJECTID )
                     .primaryKey( NAME )
+                    .setUnique( NAME );
+
+    public static final PostgresTableDefinition APP_CONFIGS =
+            new PostgresTableDefinition( "app_configs" )
+                    .addColumns( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID, PostgresColumn.PERMISSIONS, ENTITY_SET_ID )
+                    .primaryKey( APP_ID, ORGANIZATION_ID, CONFIG_TYPE_ID );
+
+    public static final PostgresTableDefinition APP_TYPES =
+            new PostgresTableDefinition( "app_types" )
+                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, ENTITY_TYPE_ID )
+                    .setUnique( NAMESPACE, NAME );
+
+    public static final PostgresTableDefinition APPS =
+            new PostgresTableDefinition( "apps" )
+                    .addColumns( ID, NAME, TITLE, DESCRIPTION, CONFIG_TYPE_IDS )
                     .setUnique( NAME );
 
     public static final PostgresTableDefinition ASSOCIATION_TYPES =
@@ -109,6 +69,10 @@ public final class PostgresTable {
             new PostgresTableDefinition( "complex_types" )
                     .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY )
                     .setUnique( NAMESPACE, NAME );
+
+    public static final PostgresTableDefinition DB_CREDS = new PostgresTableDefinition( "db_creds" )
+            .addColumns( PRINCIPAL_ID, CREDENTIAL )
+            .primaryKey( PRINCIPAL_ID );
 
     public static final PostgresTableDefinition EDM_VERSIONS =
             new PostgresTableDefinition( "edm_versions" )
@@ -176,12 +140,22 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition ORGANIZATIONS =
             new PostgresTableDefinition( "organizations" )
-                    .addColumns( ID, NULLABLE_TITLE, DESCRIPTION, ALLOWED_EMAIL_DOMAINS, MEMBERS );
+                    .addColumns( ID, NULLABLE_TITLE, DESCRIPTION, ALLOWED_EMAIL_DOMAINS, MEMBERS, APP_IDS );
 
     public static final PostgresTableDefinition PERMISSIONS =
             new PostgresTableDefinition( "permissions" )
                     .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, PostgresColumn.PERMISSIONS )
                     .primaryKey( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID );
+
+    public static final PostgresTableDefinition PRINCIPAL_TREES = new PostgresTableDefinition( "principal_tree" )
+            .addColumns( ACL_KEY, ACL_KEY_SET )
+            .primaryKey( ACL_KEY );
+
+    public static final PostgresTableDefinition PRINCIPALS =
+            new PostgresTableDefinition( "principals" )
+                    .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, NULLABLE_TITLE, DESCRIPTION )
+                    .primaryKey( ACL_KEY )
+                    .setUnique( PRINCIPAL_TYPE, PRINCIPAL_ID );
 
     public static final PostgresTableDefinition PROPERTY_TYPES =
             new PostgresTableDefinition( "property_types" )
@@ -218,20 +192,6 @@ public final class PostgresTable {
             new PostgresTableDefinition( "vertex_ids_after_linking" )
                     .addColumns( GRAPH_ID, VERTEX_ID, NEW_VERTEX_ID )
                     .primaryKey( GRAPH_ID, VERTEX_ID );
-
-    public static final PostgresTableDefinition PRINCIPALS =
-            new PostgresTableDefinition( "principals" )
-                    .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, NULLABLE_TITLE, DESCRIPTION )
-                    .primaryKey( ACL_KEY )
-                    .setUnique( PRINCIPAL_TYPE, PRINCIPAL_ID );
-
-    public static final PostgresTableDefinition DB_CREDS       = new PostgresTableDefinition( "db_creds" )
-            .addColumns( PRINCIPAL_ID, CREDENTIAL )
-            .primaryKey( PRINCIPAL_ID );
-
-    public static final PostgresTableDefinition PRINCIPAL_TREES = new PostgresTableDefinition( "principal_tree" )
-            .addColumns( ACL_KEY, ACL_KEY_SET )
-            .primaryKey( ACL_KEY );
 
     private PostgresTable() {
     }

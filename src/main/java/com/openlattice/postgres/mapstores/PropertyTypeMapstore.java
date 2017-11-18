@@ -104,13 +104,8 @@ public class PropertyTypeMapstore extends AbstractBasePostgresMapstore<UUID, Pro
         return ResultSetAdapters.propertyType( rs );
     }
 
-    @Override protected UUID mapToKey( java.sql.ResultSet rs ) {
-        try {
-            return ResultSetAdapters.id( rs );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ID to UUID class", ex );
-            return null;
-        }
+    @Override protected UUID mapToKey( java.sql.ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override

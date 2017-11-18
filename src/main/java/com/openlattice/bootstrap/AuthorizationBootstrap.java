@@ -40,17 +40,18 @@ import com.openlattice.authorization.AclKey;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class AuthorizationBootstrap {
-    public static final Principal OPENLATTICE_PRINCIPAL = new Principal( PrincipalType.ROLE, "openlattice" );
+    public static final Principal OPENLATTICE_PRINCIPAL = new Principal( PrincipalType.ROLE, "openlatticeRole" );
     public static final Role      OPENLATTICE_ROLE      = createOpenlatticeRole();
     public static final Role      GLOBAL_USER_ROLE      = createUserRole();
     public static final Role      GLOBAL_ADMIN_ROLE     = createAdminRole();
     private final IMap<String, Auth0UserBasic> users;
     private final SecurePrincipalsManager      spm;
-    private final boolean                      initialized;
+    private       boolean                      initialized;
 
     public AuthorizationBootstrap( HazelcastInstance hazelcastInstance, SecurePrincipalsManager spm ) {
         this.users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
         this.spm = spm;
+
         spm.createSecurablePrincipalIfNotExists( OPENLATTICE_PRINCIPAL, OPENLATTICE_ROLE );
         spm.createSecurablePrincipalIfNotExists( SystemRole.AUTHENTICATED_USER.getPrincipal(), GLOBAL_USER_ROLE );
         spm.createSecurablePrincipalIfNotExists( SystemRole.ADMIN.getPrincipal(), GLOBAL_ADMIN_ROLE );

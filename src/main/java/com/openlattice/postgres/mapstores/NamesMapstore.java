@@ -48,13 +48,8 @@ public class NamesMapstore extends AbstractBasePostgresMapstore<UUID, String> {
         return ResultSetAdapters.name( rs );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) {
-        try {
-            return rs.getObject( SECURABLE_OBJECTID.getName(), UUID.class );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map SECURABLE_OBJECTID column", ex );
-            return null;
-        }
+    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.securableObjectId( rs );
     }
 
     @Override public UUID generateTestKey() {

@@ -2,6 +2,7 @@ package com.kryptnostic.conductor.rpc;
 
 import com.dataloom.data.EntityKey;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.Serializable;
 import java.util.List;
@@ -15,6 +16,7 @@ public class SearchEntitySetDataAcrossIndicesLambda
     private static final long serialVersionUID = 874720830583573161L;
 
     private Map<UUID, UUID>               entitySetAndSyncIds;
+    @SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented" )
     private Map<UUID, DelegatedStringSet> fieldSearches;
     private int                           size;
     private boolean                       explain;

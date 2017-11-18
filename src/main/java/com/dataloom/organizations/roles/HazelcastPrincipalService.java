@@ -1,14 +1,7 @@
 package com.dataloom.organizations.roles;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-
-import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.authorization.AuthorizingComponent;
-import com.dataloom.authorization.HazelcastAclKeyReservationService;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.*;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -23,7 +16,6 @@ import com.google.common.collect.SetMultimap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
-import com.hazelcast.query.PagingPredicate;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
@@ -31,26 +23,27 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.projections.PrincipalProjection;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 public class HazelcastPrincipalService implements SecurePrincipalsManager, AuthorizingComponent {
 
     private static final Logger logger = LoggerFactory
             .getLogger( HazelcastPrincipalService.class );
-    private final AuthorizationManager              authorizations;
-    private final HazelcastAclKeyReservationService reservations;
-    private final IMap<AclKey, SecurablePrincipal>  principals;
-    private final IMap<AclKey, AclKeySet>           principalTrees; // RoleName -> Member RoleNames
-    private final IMap<String, Auth0UserBasic>      users;
+
+    private final AuthorizationManager                  authorizations;
+    private final HazelcastAclKeyReservationService     reservations;
+    private final IMap<AclKey, SecurablePrincipal>      principals;
+    private final IMap<AclKey, AclKeySet>               principalTrees; // RoleName -> Member RoleNames
+    private final IMap<String, Auth0UserBasic>          users;
+    private final IMap<List<UUID>, SecurableObjectType> securableObjectTypes;
 
     public HazelcastPrincipalService(
             HazelcastInstance hazelcastInstance,
@@ -62,24 +55,25 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
         this.principals = hazelcastInstance.getMap( HazelcastMap.PRINCIPALS.name() );
         this.principalTrees = hazelcastInstance.getMap( HazelcastMap.PRINCIPAL_TREES.name() );
         this.users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
+        this.securableObjectTypes = hazelcastInstance.getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
     }
 
     @Override public void createSecurablePrincipalIfNotExists(
             Principal owner, SecurablePrincipal principal ) {
         try {
-            createSecurablePrincipal( principal );
+            createSecurablePrincipal( owner, principal );
         } catch ( TypeExistsException e ) {
             logger.warn( "Securable Principal {} already exists", principal, e );
         }
     }
 
-    @Override public void crateSecurablePrincipal(
+    @Override public void createSecurablePrincipal(
             Principal owner, SecurablePrincipal principal ) {
         createSecurablePrincipal( principal );
         final AclKey aclKey = principal.getAclKey();
 
         try {
-            authorizations.createEmptyAcl( aclKey, principal.getCategory() );
+            authorizations.setSecurableObjectType( aclKey, principal.getCategory() );
             authorizations.addPermission( aclKey, owner, EnumSet.allOf( Permission.class ) );
         } catch ( Exception e ) {
             logger.error( "Unable to create principal {}", principal, e );
@@ -93,6 +87,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     private void createSecurablePrincipal( SecurablePrincipal principal ) {
         reservations.reserveIdAndValidateType( principal, principal::getName );
         principals.set( principal.getAclKey(), principal );
+        securableObjectTypes.putIfAbsent( principal.getAclKey(), principal.getCategory() );
     }
 
     @Override
@@ -126,7 +121,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override
     public SetMultimap<SecurablePrincipal, SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId ) {
-        new PagingPredicate<>();
+      //  new PagingPredicate<>();
         return null;
     }
 
@@ -249,7 +244,8 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
         while ( !nextLayer.isEmpty() ) {
             Map<AclKey, AclKeySet> nextRoles = principalTrees.getAll( nextLayer );
-            nextLayer = nextRoles.values().stream().flatMap( AclKeySet::stream ).collect( Collectors.toSet() );
+            nextLayer = nextRoles.values().stream().flatMap( AclKeySet::stream )
+                    .filter( aclKey -> !roles.contains( aclKey ) ).collect( Collectors.toSet() );
             roles.addAll( nextLayer );
         }
 
@@ -268,6 +264,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     }
 
     @Override
+
     public AuthorizationManager getAuthorizationManager() {
         return authorizations;
     }

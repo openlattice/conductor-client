@@ -2,6 +2,7 @@ package com.dataloom.blocking;
 
 import com.google.common.collect.Sets;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.UUID;
 public class LinkingEntity implements Serializable {
     private static final long serialVersionUID = 3577378946466844645L;
 
+    @SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented" )
     private final Map<UUID, DelegatedStringSet> entity;
 
     public LinkingEntity( Map<UUID, DelegatedStringSet> entity ) {
