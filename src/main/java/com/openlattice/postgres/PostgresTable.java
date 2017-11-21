@@ -117,8 +117,8 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition APP_TYPES =
             new PostgresTableDefinition( "app_types" )
-                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, ENTITY_TYPE_ID )
-                    .setUnique( NAMESPACE, NAME );
+                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, ENTITY_TYPE_ID );
+    //.setUnique( NAMESPACE, NAME ); //Not allowed by postgres xl
 
     public static final PostgresTableDefinition APPS =
             new PostgresTableDefinition( "apps" )
@@ -144,8 +144,8 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition COMPLEX_TYPES =
             new PostgresTableDefinition( "complex_types" )
-                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY )
-                    .setUnique( NAMESPACE, NAME );
+                    .addColumns( ID, NAMESPACE, NAME, TITLE, DESCRIPTION, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY );
+    //.setUnique( NAMESPACE, NAME ); //Not allowed by postgres xl
 
     public static final PostgresTableDefinition DB_CREDS = new PostgresTableDefinition( "db_creds" )
             .addColumns( PRINCIPAL_ID, CREDENTIAL )
@@ -185,8 +185,8 @@ public final class PostgresTable {
                             PROPERTIES,
                             BASE_TYPE,
                             SCHEMAS,
-                            CATEGORY )
-                    .setUnique( NAMESPACE, NAME );
+                            CATEGORY );
+    //.setUnique( NAMESPACE, NAME ); //Not allowed by postgres xl
 
     public static final PostgresTableDefinition ENUM_TYPES =
             new PostgresTableDefinition( "enum_types" )
@@ -200,8 +200,8 @@ public final class PostgresTable {
                             DATATYPE,
                             FLAGS,
                             PII,
-                            ANALYZER )
-                    .setUnique( NAMESPACE, NAME );
+                            ANALYZER );
+                    //.setUnique( NAMESPACE, NAME );
 
     public static final PostgresTableDefinition ID_GENERATION =
             new PostgresTableDefinition( "id_gen" )
@@ -253,8 +253,8 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition PROPERTY_TYPES =
             new PostgresTableDefinition( "property_types" )
-                    .addColumns( ID, NAMESPACE, NAME, DATATYPE, TITLE, DESCRIPTION, SCHEMAS, PII, ANALYZER )
-                    .setUnique( NAMESPACE, NAME );
+                    .addColumns( ID, NAMESPACE, NAME, DATATYPE, TITLE, DESCRIPTION, SCHEMAS, PII, ANALYZER );
+    //.setUnique( NAMESPACE, NAME ); //Not allowed by postgres xl
 
     public static final PostgresTableDefinition REQUESTS =
             new PostgresTableDefinition( "requests" )
