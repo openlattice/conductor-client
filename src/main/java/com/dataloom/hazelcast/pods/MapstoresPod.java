@@ -47,13 +47,10 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
-import com.dataloom.linking.mapstores.LinkedEntityTypesMapstore;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.requests.Status;
-import com.datastax.driver.core.Session;
 import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
-import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
@@ -77,6 +74,7 @@ import com.openlattice.postgres.mapstores.EntitySetMapstore;
 import com.openlattice.postgres.mapstores.EntitySetPropertyMetadataMapstore;
 import com.openlattice.postgres.mapstores.EntityTypeMapstore;
 import com.openlattice.postgres.mapstores.EnumTypesMapstore;
+import com.openlattice.postgres.mapstores.LinkedEntityTypesMapstore;
 import com.openlattice.postgres.mapstores.LinkingEdgesMapstore;
 import com.openlattice.postgres.mapstores.LinkingVerticesMapstore;
 import com.openlattice.postgres.mapstores.NamesMapstore;
@@ -103,14 +101,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import( { CassandraPod.class, PostgresPod.class } )
+@Import( { PostgresPod.class } )
 public class MapstoresPod {
-
-    @Inject
-    private Session session;
-
-    @Inject
-    private CassandraConfiguration cc;
 
     @Inject
     private HikariDataSource hikariDataSource;
@@ -270,7 +262,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, DelegatedUUIDSet> linkedEntityTypesMapstore() {
-        return new LinkedEntityTypesMapstore( session );
+        return new LinkedEntityTypesMapstore( hikariDataSource );
     }
 
     @Bean
@@ -304,27 +296,14 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, UUID> syncIdsMapstore() {
-        SyncIdsMapstore psim = new SyncIdsMapstore( hikariDataSource );
-
-        com.dataloom.data.mapstores.SyncIdsMapstore sim = new com.dataloom.data.mapstores.SyncIdsMapstore( session );
-        for ( UUID key : sim.loadAllKeys() ) {
-            psim.store( key, sim.load( key ) );
-        }
-        return psim;
+        return new SyncIdsMapstore( hikariDataSource );
     }
 
     //Still using Cassandra for mapstores below to avoid contention on data integrations
     @Bean
     public SelfRegisteringMapStore<EntityKey, UUID> idsMapstore() throws SQLException {
         return new PostgresEntityKeyIdsMapstore( hikariDataSource );
-        //        return new EntityKeyIdsMapstore( keysMapstore(), HazelcastMap.IDS.name(), session, Table.IDS.getBuilder() );
     }
-
-    //    @Bean
-    //    public SelfRegisteringMapStore<UUID, EntityKey> keysMapstore() throws SQLException {
-    //        //        return new PostgresEntityKeysMapstore( HazelcastMap.KEYS.name(), hikariDataSource );
-    //        return new EntityKeysMapstore( HazelcastMap.KEYS.name(), session, Table.KEYS.getBuilder() );
-    //    }
 
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, UUID> vertexIdsAfterLinkingMapstore() {

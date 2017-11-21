@@ -66,6 +66,7 @@ public final class PostgresColumn {
     public static final String ENTITY_SET_ID_FIELD         = "entity_set_id";
     public static final String ENTITY_SET_IDS_FIELD        = "entity_set_ids";
     public static final String ENTITY_TYPE_ID_FIELD        = "entity_type_id";
+    public static final String ENTITY_TYPE_IDS_FIELD       = "entity_type_ids";
     public static final String EVENT_TYPE_FIELD            = "event_type";
     public static final String FLAGS_FIELD                 = "flags";
     public static final String GRAPH_DIAMETER_FIELD        = "graph_diameter";
@@ -176,6 +177,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( ENTITY_SET_IDS_FIELD, UUID_ARRAY ).notNull();
     public static final PostgresColumnDefinition ENTITY_TYPE_ID        =
             new PostgresColumnDefinition( ENTITY_TYPE_ID_FIELD, UUID ).notNull();
+    public static final PostgresColumnDefinition ENTITY_TYPE_IDS       =
+            new PostgresColumnDefinition( ENTITY_TYPE_IDS_FIELD, UUID ).notNull();
     public static final PostgresColumnDefinition EVENT_TYPE            =
             new PostgresColumnDefinition( EVENT_TYPE_FIELD, TEXT );
     public static final PostgresColumnDefinition FLAGS                 =
@@ -240,33 +243,32 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( SHOW_FIELD, BOOLEAN ).notNull();
     public static final PostgresColumnDefinition SRC                   =
             new PostgresColumnDefinition( SRC_FIELD, UUID_ARRAY );
-    
-    public static final PostgresColumnDefinition SRC_ENTITY_KEY_ID     =
+
+    public static final PostgresColumnDefinition SRC_ENTITY_KEY_ID  =
             new PostgresColumnDefinition( SRC_ENTITY_KEY_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition SRC_TYPE_ID     =
+    public static final PostgresColumnDefinition SRC_TYPE_ID        =
             new PostgresColumnDefinition( SRC_TYPE_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition SRC_ENTITY_SET_ID     =
+    public static final PostgresColumnDefinition SRC_ENTITY_SET_ID  =
             new PostgresColumnDefinition( SRC_ENTITY_SET_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition SRC_ENTITY_SYNC_ID     =
+    public static final PostgresColumnDefinition SRC_ENTITY_SYNC_ID =
             new PostgresColumnDefinition( SRC_ENTITY_SYNC_ID_FIELD, UUID );
 
-    public static final PostgresColumnDefinition DST_ENTITY_KEY_ID     =
+    public static final PostgresColumnDefinition DST_ENTITY_KEY_ID  =
             new PostgresColumnDefinition( DST_ENTITY_KEY_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition DST_TYPE_ID     =
+    public static final PostgresColumnDefinition DST_TYPE_ID        =
             new PostgresColumnDefinition( DST_TYPE_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition DST_ENTITY_SET_ID     =
+    public static final PostgresColumnDefinition DST_ENTITY_SET_ID  =
             new PostgresColumnDefinition( DST_ENTITY_SET_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition DST_ENTITY_SYNC_ID     =
+    public static final PostgresColumnDefinition DST_ENTITY_SYNC_ID =
             new PostgresColumnDefinition( DST_ENTITY_SYNC_ID_FIELD, UUID );
 
-    public static final PostgresColumnDefinition EDGE_ENTITY_KEY_ID     =
+    public static final PostgresColumnDefinition EDGE_ENTITY_KEY_ID =
             new PostgresColumnDefinition( EDGE_ENTITY_KEY_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition EDGE_TYPE_ID     =
+    public static final PostgresColumnDefinition EDGE_TYPE_ID       =
             new PostgresColumnDefinition( EDGE_TYPE_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition EDGE_ENTITY_SET_ID     =
+    public static final PostgresColumnDefinition EDGE_ENTITY_SET_ID =
             new PostgresColumnDefinition( EDGE_ENTITY_SET_ID_FIELD, UUID );
- 
-    
+
     public static final PostgresColumnDefinition SRC_LINKING_VERTEX_ID =
             new PostgresColumnDefinition( SRC_LINKING_VERTEX_ID_FIELD, UUID );
     public static final PostgresColumnDefinition STATUS                =

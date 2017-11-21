@@ -57,6 +57,7 @@ import static com.openlattice.postgres.PostgresColumn.ENTITY_KEY_IDS;
 import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
 import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_IDS;
 import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_IDS;
 import static com.openlattice.postgres.PostgresColumn.EVENT_TYPE;
 import static com.openlattice.postgres.PostgresColumn.FLAGS;
 import static com.openlattice.postgres.PostgresColumn.GRAPH_DIAMETER;
@@ -215,6 +216,10 @@ public final class PostgresTable {
     public static final PostgresTableDefinition LINKED_ENTITY_SETS =
             new PostgresTableDefinition( "linked_entity_sets" )
                     .addColumns( ID, ENTITY_SET_IDS );
+
+    public static final PostgresTableDefinition LINKED_ENTITY_TYPES =
+            new PostgresTableDefinition( "linked_entity_types" )
+                    .addColumns( ID, ENTITY_TYPE_IDS );
 
     public static final PostgresTableDefinition LINKING_EDGES =
             new PostgresTableDefinition( "linking_edges" )

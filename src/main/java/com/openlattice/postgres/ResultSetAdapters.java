@@ -131,6 +131,10 @@ import org.slf4j.LoggerFactory;
 public final class ResultSetAdapters {
     private static final Logger logger = LoggerFactory.getLogger( ResultSetAdapters.class );
 
+    public static Set<UUID> entityTypeIds( ResultSet rs ) throws SQLException {
+        return ImmutableSet.copyOf( PostgresArrays.getUuidArray( rs, PostgresColumn.ENTITY_TYPE_IDS_FIELD ) );
+    }
+
     public static LoomEdge loomEdge( ResultSet rs ) throws SQLException {
         EdgeKey key = edgeKey( rs );
         UUID srcType = (UUID) rs.getObject( "src_type_id" );
