@@ -22,33 +22,27 @@ package com.dataloom.graph.mapstores;
 
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.streams.StreamUtil;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
-import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
-import com.openlattice.postgres.CountdownConnectionCloser;
-import com.openlattice.postgres.KeyIterator;
+import com.openlattice.postgres.PostgresTable;
+import com.openlattice.postgres.ResultSetAdapters;
+import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.sql.*;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<EdgeKey, LoomEdge> {
+public class PostgresEdgeMapstore extends AbstractBasePostgresMapstore<EdgeKey, LoomEdge> {
     public static final  String EDGE_SET_ID       = "edgeSetId";
     public static final  String SRC_ENTITY_KEY_ID = "srcEntityKeyId";
     public static final  String DST_ENTITY_KEY_ID = "dstEntityKeyId";
@@ -64,27 +58,9 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
     private static final String SELECT_ROW        = "SELECT * from edges where src_entity_key_id = ? and dst_type_id = ? and edge_type_id=? and dst_entity_key_id = ? and edge_entity_key_id = ?";
     private static final String DELETE_ROW        = "DELETE from edges where src_entity_key_id = ? and dst_type_id = ? and edge_type_id=? and dst_entity_key_id = ? and edge_entity_key_id = ?";
     private static final String LOAD_ALL_KEYS     = "select src_entity_key_id,dst_type_id,edge_type_id,dst_entity_key_id,edge_entity_key_id from edges";
-    private final String           mapName;
-    private final HikariDataSource hds;
 
-    public PostgresEdgeMapstore( String mapName, HikariDataSource hds ) throws SQLException {
-        this.mapName = mapName;
-        this.hds = hds;
-        try ( Connection connection = hds.getConnection(); Statement statement = connection.createStatement() ) {
-            statement.execute( CREATE_TABLE );
-            connection.close();
-            logger.info( "Initialized Postgres Edge Mapstore" );
-        } catch ( SQLException e ) {
-            logger.error( "Unable to initialize Postgres Edge Mapstore", e );
-        }
-    }
-
-    @Override public String getMapName() {
-        return mapName;
-    }
-
-    @Override public String getTable() {
-        return null;
+    public PostgresEdgeMapstore( HikariDataSource hds ) throws SQLException {
+        super( HazelcastMap.EDGES.name(), PostgresTable.EDGES, hds );
     }
 
     @Override public EdgeKey generateTestKey() {
@@ -106,7 +82,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {
-        return new MapStoreConfig()
+        return super.getMapStoreConfig()
                 .setImplementation( this )
                 .setInitialLoadMode( InitialLoadMode.EAGER )
                 .setEnabled( true )
@@ -114,7 +90,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
     }
 
     @Override public MapConfig getMapConfig() {
-        return new MapConfig( mapName )
+        return super.getMapConfig()
                 .setMapStoreConfig( getMapStoreConfig() )
                 .setInMemoryFormat( InMemoryFormat.OBJECT )
                 .addMapIndexConfig( new MapIndexConfig( SRC_ENTITY_KEY_ID, false ) )
@@ -129,107 +105,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
                 .addMapIndexConfig( new MapIndexConfig( EDGE_SET_ID, false ) );
     }
 
-    @Override public void store( EdgeKey key, LoomEdge value ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW );
-            bind( insertRow, key, value );
-            insertRow.executeUpdate();
-        } catch ( SQLException e ) {
-            logger.error( "Error executing SQL during store for key {}.", key, e );
-        }
-    }
-
-    @Override public void storeAll( Map<EdgeKey, LoomEdge> map ) {
-        EdgeKey key = null;
-        try ( Connection connection = hds.getConnection();
-                PreparedStatement insertRow = connection.prepareStatement( INSERT_ROW ) ) {
-            connection.setAutoCommit( false );
-            for ( Entry<EdgeKey, LoomEdge> entry : map.entrySet() ) {
-                key = entry.getKey();
-                bind( insertRow, key, entry.getValue() );
-                insertRow.executeUpdate();
-            }
-            connection.commit();
-            connection.setAutoCommit( true );
-            connection.close();
-        } catch ( SQLException e ) {
-            logger.error( "Error executing SQL during store all for key {}", key, e );
-        }
-    }
-
-    @Override public void delete( EdgeKey key ) {
-        try ( Connection connection = hds.getConnection() ) {
-            PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW );
-            bind( deleteRow, key );
-            deleteRow.executeUpdate();
-            connection.close();
-        } catch ( SQLException e ) {
-            logger.error( "Error executing SQL during delete for key {}.", key, e );
-        }
-    }
-
-    @Override public void deleteAll( Collection<EdgeKey> keys ) {
-        EdgeKey key = null;
-        try ( Connection connection = hds.getConnection();
-                PreparedStatement deleteRow = connection.prepareStatement( DELETE_ROW ) ) {
-            connection.setAutoCommit( false );
-            for ( EdgeKey entry : keys ) {
-                key = entry;
-                bind( deleteRow, key );
-                deleteRow.executeUpdate();
-            }
-            connection.commit();
-            connection.setAutoCommit( true );
-            connection.close();
-        } catch ( SQLException e ) {
-            logger.error( "Error executing SQL during delete all for key {}", key, e );
-        }
-    }
-
-    @Override public LoomEdge load( EdgeKey key ) {
-        LoomEdge val = null;
-        try ( Connection connection = hds.getConnection();
-                PreparedStatement selectRow = connection.prepareStatement( SELECT_ROW ) ) {
-            bind( selectRow, key );
-            ResultSet rs = selectRow.executeQuery();
-            if ( rs.next() ) {
-                val = mapToValue( rs );
-            }
-            logger.debug( "LOADED: {}", val );
-            rs.close();
-            connection.close();
-        } catch ( SQLException e ) {
-            logger.error( "Error executing SQL during select for key {}.", key, e );
-        }
-        return val;
-    }
-
-    @Override public Map<EdgeKey, LoomEdge> loadAll( Collection<EdgeKey> keys ) {
-        return keys.parallelStream().collect( Collectors.toConcurrentMap( Function.identity(), this::load ) );
-    }
-
-    @Override
-    @SuppressFBWarnings(
-            value = { "ODR_OPEN_DATABASE_RESOURCE", "OBL_UNSATISFIED_OBLIGATION" },
-            justification = "Connection intentionally left open for iterator" )    public Iterable<EdgeKey> loadAllKeys() {
-        logger.info( "Starting load all keys for Edge Mapstore" );
-        Stream<EdgeKey> keys;
-        try {
-            final Connection connection = hds.getConnection();
-            final ResultSet rs = connection.createStatement().executeQuery( LOAD_ALL_KEYS );
-            return StreamUtil
-                    .stream( () -> new KeyIterator<>( rs,
-                            new CountdownConnectionCloser( connection, 1 ),
-                            PostgresEdgeMapstore::mapToKey ) )
-                    .peek( key -> logger.debug( "Key to load: {}", key ) )
-                    ::iterator;
-        } catch ( SQLException e ) {
-            logger.error( "Unable to acquire connection load all keys" );
-            return null;
-        }
-    }
-
-    public static void bind( PreparedStatement ps, EdgeKey key ) throws SQLException {
+    public void bind( PreparedStatement ps, EdgeKey key ) throws SQLException {
         ps.setObject( 1, key.getSrcEntityKeyId() );
         ps.setObject( 2, key.getDstTypeId() );
         ps.setObject( 3, key.getEdgeTypeId() );
@@ -237,7 +113,7 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
         ps.setObject( 5, key.getEdgeEntityKeyId() );
     }
 
-    public static void bind( PreparedStatement ps, EdgeKey key, LoomEdge value ) throws SQLException {
+    public void bind( PreparedStatement ps, EdgeKey key, LoomEdge value ) throws SQLException {
         ps.setObject( 1, value.getSrcEntityKeyId() );
         ps.setObject( 2, value.getSrcTypeId() );
         ps.setObject( 3, value.getSrcSetId() );
@@ -251,35 +127,12 @@ public class PostgresEdgeMapstore implements TestableSelfRegisteringMapStore<Edg
         ps.setObject( 11, value.getEdgeSetId() );
     }
 
-    public static LoomEdge mapToValue( ResultSet rs ) {
-        try {
-            EdgeKey key = mapToKey( rs );
-            UUID srcType = (UUID) rs.getObject( "src_type_id" );
-            UUID srcSetId = (UUID) rs.getObject( "src_entity_set_id" );
-
-            UUID srcSyncId = (UUID) rs.getObject( "src_sync_id" );
-            UUID dstSetId = (UUID) rs.getObject( "dst_entity_set_id" );
-            UUID dstSyncId = (UUID) rs.getObject( "dst_sync_id" );
-            UUID edgeSetId = (UUID) rs.getObject( "edge_entity_set_id" );
-            return new LoomEdge( key, srcType, srcSetId, srcSyncId, dstSetId, dstSyncId, edgeSetId );
-        } catch ( SQLException e ) {
-            logger.error( "Unable to map to value.", e );
-            return null;
-        }
+    public LoomEdge mapToValue( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.loomEdge( rs );
     }
 
-    public static EdgeKey mapToKey( ResultSet rs ) {
-        try {
-            UUID srcEntityKeyId = (UUID) rs.getObject( "src_entity_key_id" );
-            UUID dstTypeId = (UUID) rs.getObject( "dst_type_id" );
-            UUID edgeTypeId = (UUID) rs.getObject( "edge_type_id" );
-            UUID dstEntityKeyId = (UUID) rs.getObject( "dst_entity_key_id" );
-            UUID edgeEntityKeyId = (UUID) rs.getObject( "edge_entity_key_id" );
-            return new EdgeKey( srcEntityKeyId, dstTypeId, edgeTypeId, dstEntityKeyId, edgeEntityKeyId );
-        } catch ( SQLException e ) {
-            logger.error( "Unable to map data key.", e );
-            return null;
-        }
+    public EdgeKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.edgeKey( rs );
     }
 
 }

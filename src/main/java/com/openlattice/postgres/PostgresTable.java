@@ -41,7 +41,14 @@ import static com.openlattice.postgres.PostgresColumn.DATATYPE;
 import static com.openlattice.postgres.PostgresColumn.DATA_ID;
 import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
 import static com.openlattice.postgres.PostgresColumn.DST;
+import static com.openlattice.postgres.PostgresColumn.DST_ENTITY_KEY_ID;
+import static com.openlattice.postgres.PostgresColumn.DST_ENTITY_SET_ID;
+import static com.openlattice.postgres.PostgresColumn.DST_ENTITY_SYNC_ID;
 import static com.openlattice.postgres.PostgresColumn.DST_LINKING_VERTEX_ID;
+import static com.openlattice.postgres.PostgresColumn.DST_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.EDGE_ENTITY_KEY_ID;
+import static com.openlattice.postgres.PostgresColumn.EDGE_ENTITY_SET_ID;
+import static com.openlattice.postgres.PostgresColumn.EDGE_TYPE_ID;
 import static com.openlattice.postgres.PostgresColumn.EDGE_VALUE;
 import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
 import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
@@ -69,23 +76,25 @@ import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_ID;
 import static com.openlattice.postgres.PostgresColumn.PARTITION_INDEX;
 import static com.openlattice.postgres.PostgresColumn.PII;
 import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_IDS;
 import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE;
 import static com.openlattice.postgres.PostgresColumn.PROPERTIES;
 import static com.openlattice.postgres.PostgresColumn.PROPERTY_TYPE_ID;
 import static com.openlattice.postgres.PostgresColumn.REASON;
-import static com.openlattice.postgres.PostgresColumn.ROLE_ID;
 import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
 import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
 import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
 import static com.openlattice.postgres.PostgresColumn.SHOW;
 import static com.openlattice.postgres.PostgresColumn.SRC;
+import static com.openlattice.postgres.PostgresColumn.SRC_ENTITY_KEY_ID;
 import static com.openlattice.postgres.PostgresColumn.SRC_LINKING_VERTEX_ID;
 import static com.openlattice.postgres.PostgresColumn.STATUS;
 import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
 import static com.openlattice.postgres.PostgresColumn.TIME_UUID;
 import static com.openlattice.postgres.PostgresColumn.TITLE;
 import static com.openlattice.postgres.PostgresColumn.VERTEX_ID;
+
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -138,6 +147,13 @@ public final class PostgresTable {
     public static final PostgresTableDefinition DB_CREDS = new PostgresTableDefinition( "db_creds" )
             .addColumns( PRINCIPAL_ID, CREDENTIAL )
             .primaryKey( PRINCIPAL_ID );
+
+    public static final PostgresTableDefinition EDGES =
+            new PostgresTableDefinition( "edges" )
+                    .addColumns( DST_ENTITY_KEY_ID, DST_TYPE_ID, DST_ENTITY_SET_ID, DST_ENTITY_SYNC_ID,
+                            DST_ENTITY_KEY_ID, DST_TYPE_ID, DST_ENTITY_SET_ID, DST_ENTITY_SYNC_ID,
+                            EDGE_ENTITY_KEY_ID, EDGE_TYPE_ID, EDGE_ENTITY_SET_ID )
+                    .primaryKey( SRC_ENTITY_KEY_ID, DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID );
 
     public static final PostgresTableDefinition EDM_VERSIONS =
             new PostgresTableDefinition( "edm_versions" )
@@ -242,11 +258,6 @@ public final class PostgresTable {
                     .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, PostgresColumn.PERMISSIONS, REASON, STATUS )
                     .primaryKey( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID );
 
-    public static final PostgresTableDefinition ROLES =
-            new PostgresTableDefinition( "roles" )
-                    .addColumns( ROLE_ID, ORGANIZATION_ID, NULLABLE_TITLE, DESCRIPTION, PRINCIPAL_IDS )
-                    .primaryKey( ROLE_ID, ORGANIZATION_ID );
-
     public static final PostgresTableDefinition SCHEMA =
             new PostgresTableDefinition( "schemas" )
                     .addColumns( NAMESPACE, NAME_SET )
@@ -267,6 +278,21 @@ public final class PostgresTable {
             new PostgresTableDefinition( "vertex_ids_after_linking" )
                     .addColumns( GRAPH_ID, VERTEX_ID, NEW_VERTEX_ID )
                     .primaryKey( GRAPH_ID, VERTEX_ID );
+
+    public static final List<PostgresColumnDefinition> HASH_ON =
+            ImmutableList.of(
+                    ID,
+                    ID_VALUE,
+                    SECURABLE_OBJECTID,
+                    APP_ID,
+                    VERTEX_ID,
+                    SRC_LINKING_VERTEX_ID,
+                    SRC_ENTITY_KEY_ID,
+                    PARTITION_INDEX,
+                    NAME,
+                    ENTITY_SET_ID,
+                    PRINCIPAL_ID
+            );
 
     private PostgresTable() {
     }
