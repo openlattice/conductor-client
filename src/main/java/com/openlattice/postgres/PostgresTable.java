@@ -206,7 +206,7 @@ public final class PostgresTable {
     public static final PostgresTableDefinition ID_GENERATION =
             new PostgresTableDefinition( "id_gen" )
                     .primaryKey( PARTITION_INDEX )
-                    .addColumns( BASE, MSB, LSB );
+                    .addColumns( PARTITION_INDEX, BASE, MSB, LSB );
 
     public static final PostgresTableDefinition IDS =
             new PostgresTableDefinition( "ids" )
