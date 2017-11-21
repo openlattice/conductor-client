@@ -94,6 +94,8 @@ import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.graph.edge.EdgeKey;
+import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.organization.roles.Role;
@@ -128,6 +130,28 @@ import org.slf4j.LoggerFactory;
  */
 public final class ResultSetAdapters {
     private static final Logger logger = LoggerFactory.getLogger( ResultSetAdapters.class );
+
+    public static LoomEdge loomEdge( ResultSet rs ) throws SQLException {
+        EdgeKey key = edgeKey( rs );
+        UUID srcType = (UUID) rs.getObject( "src_type_id" );
+        UUID srcSetId = (UUID) rs.getObject( "src_entity_set_id" );
+
+        UUID srcSyncId = (UUID) rs.getObject( "src_sync_id" );
+        UUID dstSetId = (UUID) rs.getObject( "dst_entity_set_id" );
+        UUID dstSyncId = (UUID) rs.getObject( "dst_sync_id" );
+        UUID edgeSetId = (UUID) rs.getObject( "edge_entity_set_id" );
+        return new LoomEdge( key, srcType, srcSetId, srcSyncId, dstSetId, dstSyncId, edgeSetId );
+    }
+
+    public static EdgeKey edgeKey( ResultSet rs ) throws SQLException {
+        UUID srcEntityKeyId = (UUID) rs.getObject( "src_entity_key_id" );
+        UUID dstTypeId = (UUID) rs.getObject( "dst_type_id" );
+        UUID edgeTypeId = (UUID) rs.getObject( "edge_type_id" );
+        UUID dstEntityKeyId = (UUID) rs.getObject( "dst_entity_key_id" );
+        UUID edgeEntityKeyId = (UUID) rs.getObject( "edge_entity_key_id" );
+        return new EdgeKey( srcEntityKeyId, dstTypeId, edgeTypeId, dstEntityKeyId, edgeEntityKeyId );
+
+    }
 
     public static EntityKey entityKey( ResultSet rs ) throws SQLException {
         UUID entitySetId = (UUID) rs.getObject( ENTITY_SET_ID_FIELD );
