@@ -150,14 +150,14 @@ public class PostgresEntityKeyIdsMapstore extends AbstractBasePostgresMapstore<E
     }
 
     public void bind( PreparedStatement ps, EntityKey key ) throws SQLException {
-        ps.setObject( 1, key.getEntitySetId() );
-        ps.setObject( 2, key.getSyncId() );
-        ps.setObject( 3, key.getEntityId() );
+        ps.setObject( 2, key.getEntitySetId() );
+        ps.setObject( 3, key.getSyncId() );
+        ps.setObject( 4, key.getEntityId() );
     }
 
     public void bind( PreparedStatement ps, EntityKey key, UUID value ) throws SQLException {
         bind( ps, key );
-        ps.setObject( 4, value );
+        ps.setObject( 1, value );
     }
 
     public UUID mapToValue( ResultSet rs ) throws SQLException {
