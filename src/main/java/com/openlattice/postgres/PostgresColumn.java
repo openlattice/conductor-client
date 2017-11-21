@@ -20,8 +20,10 @@
 
 package com.openlattice.postgres;
 
+import static com.openlattice.postgres.PostgresDatatype.BIGINT;
 import static com.openlattice.postgres.PostgresDatatype.BOOLEAN;
 import static com.openlattice.postgres.PostgresDatatype.DECIMAL;
+import static com.openlattice.postgres.PostgresDatatype.INTEGER;
 import static com.openlattice.postgres.PostgresDatatype.TEXT;
 import static com.openlattice.postgres.PostgresDatatype.TEXT_ARRAY;
 import static com.openlattice.postgres.PostgresDatatype.UUID;
@@ -29,8 +31,6 @@ import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY;
 import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY_ARRAY;
 
 import com.dataloom.edm.type.Analyzer;
-
-import static com.openlattice.postgres.PostgresDatatype.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -44,13 +44,14 @@ public final class PostgresColumn {
     public static final String APP_IDS_FIELD               = "app_ids";
     public static final String AUDIT_ID_FIELD              = "audit_id";
     public static final String BASE_TYPE_FIELD             = "base_type";
+    public static final String BASE_FIELD                  = "base";
     public static final String BIDIRECTIONAL_FIELD         = "bidirectional";
     public static final String BLOCK_ID_FIELD              = "block_id";
     public static final String CATEGORY_FIELD              = "category";
     public static final String CONFIG_TYPE_ID_FIELD        = "config_type_id";
     public static final String CONFIG_TYPE_IDS_FIELD       = "config_type_ids";
     public static final String CONTACTS_FIELD              = "contacts";
-    public static final String CREDENTIAL_FIELD           = "cred";
+    public static final String CREDENTIAL_FIELD            = "cred";
     public static final String CURRENT_SYNC_ID_FIELD       = "current_sync_id";
     public static final String DATA_ID_FIELD               = "data_id";
     public static final String DATATYPE_FIELD              = "datatype";
@@ -60,6 +61,7 @@ public final class PostgresColumn {
     public static final String EDGE_VALUE_FIELD            = "edge_value";
     public static final String EDM_VERSION_FIELD           = "edm_version";
     public static final String EDM_VERSION_NAME_FIELD      = "edm_version_name";
+    public static final String ENTITY_ID_FIELD             = "entity_id";
     public static final String ENTITY_KEY_IDS_FIELD        = "entity_key_ids";
     public static final String ENTITY_SET_ID_FIELD         = "entity_set_id";
     public static final String ENTITY_SET_IDS_FIELD        = "entity_set_ids";
@@ -70,13 +72,16 @@ public final class PostgresColumn {
     public static final String GRAPH_ID_FIELD              = "graph_id";
     public static final String ID_FIELD                    = "id";
     public static final String KEY_FIELD                   = "key";
+    public static final String LSB_FIELD                   = "lsb";
     public static final String MEMBERS_FIELD               = "members";
+    public static final String MSB_FIELD                   = "msb";
     public static final String NAME_FIELD                  = "name";
     public static final String NAME_SET_FIELD              = "name_set";
     public static final String NAMESPACE_FIELD             = "namespace";
     public static final String NEW_VERTEX_ID_FIELD         = "new_vertex_id";
     public static final String NULLABLE_TITLE_FIELD        = "title";
     public static final String ORGANIZATION_ID_FIELD       = "organization_id";
+    public static final String PARTITION_INDEX_FIELD       = "partion_index";
     public static final String PII_FIELD                   = "pii";
     public static final String PERMISSIONS_FIELD           = "permissions";
     public static final String PRINCIPAL_TYPE_FIELD        = "principal_type";
@@ -110,10 +115,12 @@ public final class PostgresColumn {
                     .notNull();
     public static final PostgresColumnDefinition APP_ID                =
             new PostgresColumnDefinition( APP_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition APP_IDS                =
+    public static final PostgresColumnDefinition APP_IDS               =
             new PostgresColumnDefinition( APP_IDS_FIELD, UUID_ARRAY );
     public static final PostgresColumnDefinition AUDIT_ID              =
             new PostgresColumnDefinition( AUDIT_ID_FIELD, UUID );
+    public static final PostgresColumnDefinition BASE                  =
+            new PostgresColumnDefinition( BASE_FIELD, BIGINT ).notNull();
     public static final PostgresColumnDefinition BASE_TYPE             =
             new PostgresColumnDefinition( BASE_TYPE_FIELD, UUID );
     public static final PostgresColumnDefinition BIDIRECTIONAL         =
@@ -128,7 +135,7 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( CONFIG_TYPE_IDS_FIELD, UUID_ARRAY );
     public static final PostgresColumnDefinition CONTACTS              =
             new PostgresColumnDefinition( CONTACTS_FIELD, TEXT_ARRAY );
-    public static final PostgresColumnDefinition CREDENTIAL              =
+    public static final PostgresColumnDefinition CREDENTIAL            =
             new PostgresColumnDefinition( CREDENTIAL_FIELD, TEXT ).notNull();
     public static final PostgresColumnDefinition CURRENT_SYNC_ID       =
             new PostgresColumnDefinition( CURRENT_SYNC_ID_FIELD, UUID );
@@ -148,6 +155,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( EDM_VERSION_FIELD, UUID ).notNull();
     public static final PostgresColumnDefinition EDM_VERSION_NAME      =
             new PostgresColumnDefinition( EDM_VERSION_NAME_FIELD, TEXT ).notNull();
+    public static final PostgresColumnDefinition ENTITY_ID        =
+            new PostgresColumnDefinition( ENTITY_ID_FIELD, TEXT );
     public static final PostgresColumnDefinition ENTITY_KEY_IDS        =
             new PostgresColumnDefinition( ENTITY_KEY_IDS_FIELD, UUID_ARRAY );
     public static final PostgresColumnDefinition ENTITY_SET_ID         =
@@ -170,8 +179,12 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( ID_FIELD, UUID );
     public static final PostgresColumnDefinition KEY                   =
             new PostgresColumnDefinition( KEY_FIELD, UUID_ARRAY ).notNull();
+    public static final PostgresColumnDefinition LSB                   =
+            new PostgresColumnDefinition( LSB_FIELD, BIGINT );
     public static final PostgresColumnDefinition MEMBERS               =
             new PostgresColumnDefinition( MEMBERS_FIELD, TEXT_ARRAY );
+    public static final PostgresColumnDefinition MSB                   =
+            new PostgresColumnDefinition( MSB_FIELD, BIGINT );
     public static final PostgresColumnDefinition NAME                  =
             new PostgresColumnDefinition( NAME_FIELD, TEXT ).notNull();
     public static final PostgresColumnDefinition NAME_SET              =
@@ -184,6 +197,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( NULLABLE_TITLE_FIELD, TEXT );
     public static final PostgresColumnDefinition ORGANIZATION_ID       =
             new PostgresColumnDefinition( ORGANIZATION_ID_FIELD, UUID ).notNull();
+    public static final PostgresColumnDefinition PARTITION_INDEX       =
+            new PostgresColumnDefinition( PARTITION_INDEX_FIELD, INTEGER ).notNull();
     public static final PostgresColumnDefinition PII                   =
             new PostgresColumnDefinition( PII_FIELD, BOOLEAN )
                     .withDefault( false )

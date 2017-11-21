@@ -4,10 +4,12 @@ import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.data.DataGraphService;
 import com.dataloom.data.EntityKey;
+import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.aggregators.EntitiesAggregator;
 import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.hazelcast.Entities;
 import com.dataloom.data.hazelcast.EntitySets;
+import com.dataloom.data.ids.HazelcastEntityKeyIdService;
 import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -19,52 +21,47 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import com.kryptnostic.datastore.util.Util;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
-
-import javax.inject.Inject;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.inject.Inject;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 
 public class HazelcastMergingService {
+    private static final Logger logger = LoggerFactory.getLogger( HazelcastMergingService.class );
+    private final EntityKeyIdService                   ekIds;
     @Inject
-    private ConductorElasticsearchApi elasticsearchApi;
+    private       ConductorElasticsearchApi            elasticsearchApi;
+    private       IMap<GraphEntityPair, LinkingEntity> linkingEntities;
+    private       IMap<DataKey, ByteBuffer>            data;
+    private       IMap<LinkingVertexKey, UUID>         newIds;
+    private       IMap<EntityKey, UUID>                ids;
+    private       HazelcastInstance                    hazelcastInstance;
+    private       ObjectMapper                         mapper;
 
-    private static final int     blockSize = 50;
-    private static final boolean explain   = false;
-    private static final Logger  logger    = LoggerFactory.getLogger( HazelcastMergingService.class );
-
-    private IMap<GraphEntityPair, LinkingEntity> linkingEntities;
-    private IMap<DataKey, ByteBuffer>            data;
-    private IMap<UUID, EntityKey>                keys;
-    private IMap<LinkingVertexKey, UUID>         newIds;
-
-    private IMap<EntityKey, UUID> ids;
-    private HazelcastInstance     hazelcastInstance;
-    private ObjectMapper          mapper;
-
-    public HazelcastMergingService( HazelcastInstance hazelcastInstance ) {
+    public HazelcastMergingService( HazelcastInstance hazelcastInstance, ListeningExecutorService executor ) {
         this.data = hazelcastInstance.getMap( HazelcastMap.DATA.name() );
-        this.keys = hazelcastInstance.getMap( HazelcastMap.KEYS.name() );
         this.newIds = hazelcastInstance.getMap( HazelcastMap.VERTEX_IDS_AFTER_LINKING.name() );
         this.mapper = ObjectMappers.getJsonMapper();
 
         this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
+        this.ekIds = new HazelcastEntityKeyIdService( hazelcastInstance, executor );
         this.hazelcastInstance = hazelcastInstance;
     }
 
@@ -73,10 +70,11 @@ public class HazelcastMergingService {
             Map<UUID, Set<UUID>> propertyTypeIdsByEntitySet,
             Map<UUID, PropertyType> propertyTypesById,
             Set<UUID> propertyTypesToPopulate ) {
-        Map<UUID, Set<UUID>> authorizedPropertyTypesForEntity = Util.getSafely( keys, entityKeyIds ).entrySet()
+
+        Map<UUID, Set<UUID>> authorizedPropertyTypesForEntity = ekIds.getEntityKeyEntries( entityKeyIds )
                 .stream()
-                .collect( Collectors.toMap( entry -> entry.getKey(),
-                        entry -> propertyTypeIdsByEntitySet.get( entry.getValue().getEntitySetId() ) ) );
+                .collect( Collectors.toMap( Entry::getValue,
+                        entry -> propertyTypeIdsByEntitySet.get( entry.getKey().getEntitySetId() ) ) );
 
         Predicate entitiesFilter = EntitySets
                 .getEntities( authorizedPropertyTypesForEntity.keySet().toArray( new UUID[ 0 ] ) );
