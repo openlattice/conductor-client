@@ -172,7 +172,7 @@ public final class PostgresTable {
     public static final PostgresTableDefinition ENTITY_SETS =
             new PostgresTableDefinition( "entity_sets" )
                     .addColumns( ID, NAME, ENTITY_TYPE_ID, TITLE, DESCRIPTION, CONTACTS );
-                    //.setUnique( NAME );
+    //.setUnique( NAME );
 
     public static final PostgresTableDefinition ENTITY_TYPES =
             new PostgresTableDefinition( "entity_types" )
@@ -201,23 +201,23 @@ public final class PostgresTable {
                             FLAGS,
                             PII,
                             ANALYZER );
-                    //.setUnique( NAMESPACE, NAME );
+    //.setUnique( NAMESPACE, NAME );
 
     public static final PostgresTableDefinition ID_GENERATION =
             new PostgresTableDefinition( "id_gen" )
                     .primaryKey( PARTITION_INDEX )
                     .addColumns( BASE, MSB, LSB );
 
-    public static final PostgresTableDefinition IDS                =
+    public static final PostgresTableDefinition IDS =
             new PostgresTableDefinition( "ids" )
-                    .addColumns( ENTITY_SET_ID, SYNC_ID, ENTITY_ID, ID_VALUE )
-                    .primaryKey( ENTITY_SET_ID, SYNC_ID, ENTITY_ID )
-                    .setUnique( ID_VALUE );
+                    .addColumns( ID_VALUE, ENTITY_SET_ID, SYNC_ID, ENTITY_ID )
+                    .primaryKey( ID_VALUE ); //Done this way because IDS mapstore
+
     public static final PostgresTableDefinition LINKED_ENTITY_SETS =
             new PostgresTableDefinition( "linked_entity_sets" )
                     .addColumns( ID, ENTITY_SET_IDS );
 
-    public static final PostgresTableDefinition LINKING_EDGES =
+    public static final PostgresTableDefinition LINKINGIDS_EDGES =
             new PostgresTableDefinition( "linking_edges" )
                     .addColumns( GRAPH_ID, SRC_LINKING_VERTEX_ID, EDGE_VALUE, DST_LINKING_VERTEX_ID )
                     .primaryKey( GRAPH_ID, SRC_LINKING_VERTEX_ID, EDGE_VALUE, DST_LINKING_VERTEX_ID );
@@ -296,6 +296,10 @@ public final class PostgresTable {
                     ENTITY_SET_ID,
                     PRINCIPAL_ID
             );
+
+    static {
+        IDS.addIndexes( new PostgresIndexDefinition( , ENTITY_SET_ID, SYNC_ID, ENTITY_ID ) );
+    }
 
     private PostgresTable() {
     }
