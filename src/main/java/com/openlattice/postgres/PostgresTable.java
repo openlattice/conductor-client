@@ -210,8 +210,7 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition IDS =
             new PostgresTableDefinition( "ids" )
-                    .addColumns( ID_VALUE, ENTITY_SET_ID, SYNC_ID, ENTITY_ID )
-                    .primaryKey( ID_VALUE ); //Done this way because IDS mapstore
+                    .addColumns( ID, ENTITY_SET_ID, SYNC_ID, ENTITY_ID );
 
     public static final PostgresTableDefinition LINKED_ENTITY_SETS =
             new PostgresTableDefinition( "linked_entity_sets" )
@@ -298,7 +297,7 @@ public final class PostgresTable {
             );
 
     static {
-        IDS.addIndexes( new PostgresIndexDefinition( , ENTITY_SET_ID, SYNC_ID, ENTITY_ID ) );
+        IDS.addIndexes( new PostgresIndexDefinition( IDS, ENTITY_SET_ID, SYNC_ID, ENTITY_ID ) );
     }
 
     private PostgresTable() {

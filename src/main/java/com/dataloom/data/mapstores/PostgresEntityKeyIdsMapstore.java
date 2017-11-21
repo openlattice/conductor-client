@@ -21,17 +21,23 @@
 package com.dataloom.data.mapstores;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_ID;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
+import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
 
 import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.RateLimiter;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
+import com.openlattice.postgres.PostgresColumn;
+import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
@@ -40,7 +46,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -51,9 +57,10 @@ import org.slf4j.LoggerFactory;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PostgresEntityKeyIdsMapstore extends AbstractBasePostgresMapstore<EntityKey, UUID> {
-    public static final  String ID     = "this";
-    private static final Logger logger = LoggerFactory.getLogger( PostgresEntityKeyIdsMapstore.class );
-    private static Cache<EntityKey, UUID> entityKeyIdCache = CacheBuilder
+    public static final  String                 ID               = "this";
+    private static final Logger                 logger           = LoggerFactory
+            .getLogger( PostgresEntityKeyIdsMapstore.class );
+    private static       Cache<EntityKey, UUID> entityKeyIdCache = CacheBuilder
             .newBuilder()
             .expireAfterAccess( 5, TimeUnit.SECONDS )
             .build();
@@ -109,10 +116,10 @@ public class PostgresEntityKeyIdsMapstore extends AbstractBasePostgresMapstore<E
         }
     }
 
-//    @Override
-//    public void storeAll( Map<EntityKey, UUID> map ) {
-//        throw new UnsupportedOperationException( "Directly writing entity key ids is not supported." );
-//    }
+    //    @Override
+    //    public void storeAll( Map<EntityKey, UUID> map ) {
+    //        throw new UnsupportedOperationException( "Directly writing entity key ids is not supported." );
+    //    }
 
     @Override public UUID load( EntityKey key ) {
         UUID id = super.load( key );
@@ -125,6 +132,14 @@ public class PostgresEntityKeyIdsMapstore extends AbstractBasePostgresMapstore<E
         }
 
         return id;
+    }
+
+    @Override protected List<PostgresColumnDefinition> keyColumns() {
+        return ImmutableList.of( ENTITY_SET_ID, SYNC_ID, ENTITY_ID );
+    }
+
+    @Override protected List<PostgresColumnDefinition> valueColumns() {
+        return ImmutableList.of( PostgresColumn.ID );
     }
 
     @Override
