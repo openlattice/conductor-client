@@ -216,7 +216,7 @@ public final class PostgresTable {
             new PostgresTableDefinition( "linked_entity_sets" )
                     .addColumns( ID, ENTITY_SET_IDS );
 
-    public static final PostgresTableDefinition LINKINGIDS_EDGES =
+    public static final PostgresTableDefinition LINKING_EDGES =
             new PostgresTableDefinition( "linking_edges" )
                     .addColumns( GRAPH_ID, SRC_LINKING_VERTEX_ID, EDGE_VALUE, DST_LINKING_VERTEX_ID )
                     .primaryKey( GRAPH_ID, SRC_LINKING_VERTEX_ID, EDGE_VALUE, DST_LINKING_VERTEX_ID );
