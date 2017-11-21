@@ -50,7 +50,6 @@ public class PostgresEntitySetManager {
             ps.setString( 1, entitySetName );
             ResultSet rs = ps.executeQuery();
             if ( rs.next() ) {
-                rs.next();
                 entitySet = ResultSetAdapters.entitySet( rs );
             }
             rs.close();
