@@ -171,8 +171,8 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition ENTITY_SETS =
             new PostgresTableDefinition( "entity_sets" )
-                    .addColumns( ID, NAME, ENTITY_TYPE_ID, TITLE, DESCRIPTION, CONTACTS )
-                    .setUnique( NAME );
+                    .addColumns( ID, NAME, ENTITY_TYPE_ID, TITLE, DESCRIPTION, CONTACTS );
+                    //.setUnique( NAME );
 
     public static final PostgresTableDefinition ENTITY_TYPES =
             new PostgresTableDefinition( "entity_types" )
