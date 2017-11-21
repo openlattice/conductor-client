@@ -123,7 +123,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<EdgeKey, LoomEdge> edgesMapstore() throws SQLException {
-        return new PostgresEdgeMapstore( HazelcastMap.EDGES.name(), hikariDataSource );
+        return new PostgresEdgeMapstore( hikariDataSource );
     }
 
     @Bean

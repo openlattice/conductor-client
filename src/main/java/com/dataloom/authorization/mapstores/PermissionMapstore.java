@@ -19,30 +19,29 @@
 
 package com.dataloom.authorization.mapstores;
 
-import com.openlattice.authorization.AclKey;
-import java.util.EnumSet;
-import java.util.UUID;
-
-import com.kryptnostic.conductor.rpc.odata.Table;
-import org.apache.commons.lang3.RandomStringUtils;
-
 import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.collect.ImmutableList;
 import com.kryptnostic.conductor.codecs.EnumSetTypeCodec;
+import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
+import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
+import com.openlattice.authorization.AceValue;
+import com.openlattice.authorization.AclKey;
+import java.util.EnumSet;
+import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 
-public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceKey, DelegatedPermissionEnumSet> {
+public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceKey, AceValue> {
     public PermissionMapstore( Session session ) {
         super( HazelcastMap.PERMISSIONS.name(), session, Table.PERMISSIONS.getBuilder() );
     }
@@ -55,12 +54,13 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
     }
 
     @Override
-    protected BoundStatement bind( AceKey key, DelegatedPermissionEnumSet permissions, BoundStatement bs ) {
+    protected BoundStatement bind( AceKey key, AceValue value, BoundStatement bs ) {
+        EnumSet permissions = value.getPermissions();
         return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), UUID.class )
                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), key.getPrincipal().getType(), PrincipalType.class )
                 .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getId() )
                 .set( CommonColumns.PERMISSIONS.cql(),
-                        permissions.unwrap(),
+                        permissions,
                         EnumSetTypeCodec.getTypeTokenForEnumSetPermission() );
     }
 
@@ -70,10 +70,14 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
     }
 
     @Override
-    protected DelegatedPermissionEnumSet mapValue( ResultSet rs ) {
+    protected AceValue mapValue( ResultSet rs ) {
         Row row = rs.one();
-        return row == null ? null
-                : DelegatedPermissionEnumSet.wrap( AuthorizationUtils.permissions( row ) );
+        if ( row != null ) {
+            EnumSet<Permission> permissions = AuthorizationUtils.permissions( row );
+            SecurableObjectType objectType = RowAdapters.securableObjectType( row );
+            return new AceValue( permissions, objectType );
+        }
+        return null;
     }
 
     @Override
@@ -84,7 +88,8 @@ public class PermissionMapstore extends AbstractStructuredCassandraMapstore<AceK
     }
 
     @Override
-    public DelegatedPermissionEnumSet generateTestValue() {
-        return DelegatedPermissionEnumSet.wrap( EnumSet.of( Permission.READ, Permission.WRITE ) );
+    public AceValue generateTestValue() {
+        return new AceValue( EnumSet.of( Permission.READ, Permission.WRITE ),
+                SecurableObjectType.PropertyTypeInEntitySet );
     }
 }
