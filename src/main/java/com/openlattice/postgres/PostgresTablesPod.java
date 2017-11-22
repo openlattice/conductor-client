@@ -26,14 +26,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * When included as a pod this class automatically registers core openlattice tables for running the system.
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Configuration
 public class PostgresTablesPod {
     @Bean
     public PostgresTables postgresTables() {
-        //TODO: Switch to reflection based enumeration
-
         return () -> Stream.concat(
                 Stream.of( PostgresTable.class.getFields() ),
                 Stream.of( PostgresTable.class.getDeclaredFields() ) )
