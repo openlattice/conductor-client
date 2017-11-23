@@ -42,11 +42,11 @@ import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -106,20 +106,20 @@ public class PostgresEntityKeyIdsMapstore extends AbstractBasePostgresMapstore<E
         //The problem is that a failed write will lead to an unexpected value being written.
         //Code shouldn't be setting EntityKeyIds directly anyway.
         //TODO: Disable after migration
-        //throw new UnsupportedOperationException( "Directly writing entity key id is not supported." );
-        try ( Connection connection = hds.getConnection(); PreparedStatement insertRow = prepareInsert( connection ) ) {
-            bind( insertRow, key, value );
-            logger.info( insertRow.toString() );
-            insertRow.execute();
-        } catch ( SQLException e ) {
-            logger.error( "Error executing SQL during store for key {}.", key, e );
-        }
+        throw new UnsupportedOperationException( "Directly writing entity key id is not supported." );
+        //        try ( Connection connection = hds.getConnection(); PreparedStatement insertRow = prepareInsert( connection ) ) {
+        //            bind( insertRow, key, value );
+        //            logger.info( insertRow.toString() );
+        //            insertRow.execute();
+        //        } catch ( SQLException e ) {
+        //            logger.error( "Error executing SQL during store for key {}.", key, e );
+        //        }
     }
 
-    //    @Override
-    //    public void storeAll( Map<EntityKey, UUID> map ) {
-    //        throw new UnsupportedOperationException( "Directly writing entity key ids is not supported." );
-    //    }
+    @Override
+    public void storeAll( Map<EntityKey, UUID> map ) {
+        throw new UnsupportedOperationException( "Directly writing entity key ids is not supported." );
+    }
 
     @Override public UUID load( EntityKey key ) {
         UUID id = super.load( key );
