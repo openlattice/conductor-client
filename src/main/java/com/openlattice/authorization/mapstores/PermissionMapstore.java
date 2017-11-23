@@ -108,6 +108,10 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Ace
          * Also we only
          */
         SecurableObjectType objectType = objectTypes.load( aclKey );
+
+        if ( objectType == null ) {
+            logger.info( "SecurableObjectType was null for key {}", aclKey );
+        }
         return new AceValue( permissions, objectType );
     }
 

@@ -302,7 +302,10 @@ public final class PostgresTable {
             );
 
     static {
-        IDS.addIndexes( new PostgresIndexDefinition( IDS, ENTITY_SET_ID, SYNC_ID, ENTITY_ID ) );
+        IDS.addIndexes(
+                new PostgresIndexDefinition( IDS, ENTITY_SET_ID, SYNC_ID, ENTITY_ID )
+                        .ifNotExists()
+                        .name( "entity_key_idx" ) );
     }
 
     private PostgresTable() {
