@@ -32,7 +32,7 @@ public class PermissionMerger extends AbstractMerger<AceKey, AceValue, Permissio
     private static final long serialVersionUID = -3504613417625318717L;
     private final SecurableObjectType securableObjectType;
 
-    public PermissionMerger(
+    public  PermissionMerger(
             Iterable<Permission> objects,
             SecurableObjectType securableObjectType ) {
         super( objects );

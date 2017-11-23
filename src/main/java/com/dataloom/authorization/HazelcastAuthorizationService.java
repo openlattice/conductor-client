@@ -111,8 +111,10 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
-    public void deletePermissions( AclKey aclKeys ) {
-        aqs.deletePermissionsByAclKeys( aclKeys );
+    public void deletePermissions( AclKey aclKey ) {
+        securableObjectTypes.delete( aclKey );
+        aces.removeAll( hasAclKey( aclKey ) );
+        aqs.deletePermissionsByAclKeys( aclKey );
     }
 
     @Override
