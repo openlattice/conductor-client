@@ -1,37 +1,36 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organizations.processors.OrganizationMemberRoleMerger;
+import com.dataloom.organizations.processors.NestedPrincipalMerger;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
+import org.springframework.stereotype.Component;
 
 @Component
 public class OrganizationMemberRoleMergerStreamSerializer
-        implements SelfRegisteringStreamSerializer<OrganizationMemberRoleMerger> {
+        implements SelfRegisteringStreamSerializer<NestedPrincipalMerger> {
 
     @Override
-    public Class<OrganizationMemberRoleMerger> getClazz() {
-        return OrganizationMemberRoleMerger.class;
+    public Class<NestedPrincipalMerger> getClazz() {
+        return NestedPrincipalMerger.class;
     }
 
     @Override
-    public void write( ObjectDataOutput out, OrganizationMemberRoleMerger object ) throws IOException {
+    public void write( ObjectDataOutput out, NestedPrincipalMerger object ) throws IOException {
         SetStreamSerializers.serialize(
                 out,
                 object.getBackingCollection(),
-                elem -> PrincipalStreamSerializer.serialize( out, elem )
+                elem -> SetStreamSerializers.fastUUIDSetSerialize( out, elem )
         );
     }
 
     @Override
-    public OrganizationMemberRoleMerger read( ObjectDataInput in ) throws IOException {
-        return new OrganizationMemberRoleMerger(
-                SetStreamSerializers.deserialize( in, PrincipalStreamSerializer::deserialize )
+    public NestedPrincipalMerger read( ObjectDataInput in ) throws IOException {
+        return new NestedPrincipalMerger(
+                SetStreamSerializers.deserialize( in, AclKeyStreamSerializer::deserialize )
         );
     }
 

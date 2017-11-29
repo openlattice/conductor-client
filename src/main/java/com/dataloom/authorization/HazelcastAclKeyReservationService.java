@@ -19,8 +19,19 @@
 
 package com.dataloom.authorization;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.dataloom.authorization.securable.AbstractSecurableObject;
+import com.dataloom.authorization.securable.AbstractSecurableType;
+import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.exceptions.AclKeyConflictException;
+import com.dataloom.edm.exceptions.TypeExistsException;
+import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableSet;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
+import com.kryptnostic.datastore.util.Util;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -28,24 +39,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 
-import com.dataloom.authorization.securable.SecurableObjectType;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import com.dataloom.edm.exceptions.AclKeyConflictException;
-import com.dataloom.edm.exceptions.TypeExistsException;
-import com.dataloom.authorization.securable.AbstractSchemaAssociatedSecurableType;
-import com.dataloom.authorization.securable.AbstractSecurableObject;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organization.roles.Role;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableSet;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
-import com.kryptnostic.datastore.util.Util;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastAclKeyReservationService {
-    public static final String                                LOOM_NAMESPACE        = "loom";
+    public static final  String                               LOOM_NAMESPACE        = "loom";
     /**
      * This keeps mapping between SecurableObjectTypes that aren't associated to names and their placeholder names.
      */
@@ -53,19 +51,14 @@ public class HazelcastAclKeyReservationService {
             SecurableObjectType.class );
     private static final Set<String>                          RESERVED_NAMES        = ImmutableSet
             .copyOf( RESERVED_NAMES_AS_MAP.values() );
-
-    private static String getPlaceholder( String objName ) {
-        return LOOM_NAMESPACE + "." + objName;
-    }
-
     /*
      * List of name associated types.
      */
-    private static final EnumSet<SecurableObjectType> NAME_ASSOCIATED_TYPES = EnumSet
+    private static final EnumSet<SecurableObjectType>         NAME_ASSOCIATED_TYPES = EnumSet
             .of( SecurableObjectType.EntityType,
                     SecurableObjectType.PropertyTypeInEntitySet,
                     SecurableObjectType.EntitySet,
-                    SecurableObjectType.Role );
+                    SecurableObjectType.Principal );
 
     static {
         for ( SecurableObjectType objectType : SecurableObjectType.values() ) {
@@ -81,6 +74,14 @@ public class HazelcastAclKeyReservationService {
     public HazelcastAclKeyReservationService( HazelcastInstance hazelcast ) {
         this.aclKeys = hazelcast.getMap( HazelcastMap.ACL_KEYS.name() );
         this.names = hazelcast.getMap( HazelcastMap.NAMES.name() );
+    }
+
+    public UUID getId( String name ) {
+        return Util.getSafely( aclKeys, name );
+    }
+
+    public boolean isReserved( String name ) {
+        return this.aclKeys.containsKey( name );
     }
 
     public void renameReservation( String oldName, String newName ) {
@@ -135,7 +136,7 @@ public class HazelcastAclKeyReservationService {
      *
      * @param type The type for which to reserve an FQN and UUID.
      */
-    public void reserveIdAndValidateType( AbstractSchemaAssociatedSecurableType type ) {
+    public void reserveIdAndValidateType( AbstractSecurableType type ) {
         reserveIdAndValidateType( type, Suppliers.compose( Util::fqnToString, type::getType )::get );
     }
 
@@ -147,9 +148,6 @@ public class HazelcastAclKeyReservationService {
      * This function reserves an {@code AclKey} for a SecurableObject that has a name. It throws unchecked exceptions
      * {@link TypeExistsException} if the type already exists with the same name or {@link AclKeyConflictException} if a
      * different AclKey is already associated with the type.
-     *
-     * @param type
-     * @param namer
      */
     public <T extends AbstractSecurableObject> void reserveIdAndValidateType( T type, Supplier<String> namer ) {
         /*
@@ -170,7 +168,7 @@ public class HazelcastAclKeyReservationService {
              * just let one thread win and simplifies code path a lot.
              */
 
-            if ( existingAclKey != null ) {
+            if ( existingAclKey != null && !existingAclKey.equals( type.getId() ) ) {
                 if ( currentName == null ) {
                     // We need to remove UUID reservation
                     names.delete( type.getId() );
@@ -191,8 +189,6 @@ public class HazelcastAclKeyReservationService {
      * This function reserves an id for a SecurableObject. It throws unchecked exceptions
      * {@link TypeExistsException} if the type already exists or {@link AclKeyConflictException} if a different AclKey
      * is already associated with the type.
-     *
-     * @param type
      */
     public void reserveId( AbstractSecurableObject type ) {
         checkArgument( RESERVED_NAMES_AS_MAP.containsKey( type.getCategory() ),
@@ -225,5 +221,9 @@ public class HazelcastAclKeyReservationService {
          */
 
         aclKeys.delete( name );
+    }
+
+    private static String getPlaceholder( String objName ) {
+        return LOOM_NAMESPACE + "." + objName;
     }
 }

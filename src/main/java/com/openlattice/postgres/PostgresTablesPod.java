@@ -20,6 +20,7 @@
 
 package com.openlattice.postgres;
 
+import java.lang.reflect.Modifier;
 import java.util.stream.Stream;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +32,21 @@ import org.springframework.context.annotation.Configuration;
 public class PostgresTablesPod {
     @Bean
     public PostgresTables postgresTables() {
-        return () -> Stream.of( PostgresTable.PROPERTY_TYPES );
+        //TODO: Switch to reflection based enumeration
+
+        return () -> Stream.concat(
+                Stream.of( PostgresTable.class.getFields() ),
+                Stream.of( PostgresTable.class.getDeclaredFields() ) )
+                .filter( field -> Modifier.isStatic( field.getModifiers() )
+                        && Modifier.isFinal( field.getModifiers() ) )
+                .filter( field -> field.getType().equals( PostgresTableDefinition.class ) )
+                .map( field -> {
+                    try {
+                        return (PostgresTableDefinition) field.get( null );
+                    } catch ( IllegalAccessException e ) {
+                        return null;
+                    }
+                } )
+                .filter( type -> type != null );
     }
 }

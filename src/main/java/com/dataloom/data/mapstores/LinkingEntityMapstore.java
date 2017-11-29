@@ -2,20 +2,17 @@ package com.dataloom.data.mapstores;
 
 import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
-import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.*;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
-import com.hazelcast.config.MapStoreConfig;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;
 
 import java.util.Map;

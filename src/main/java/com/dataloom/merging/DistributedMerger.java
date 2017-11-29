@@ -91,8 +91,6 @@ public class DistributedMerger {
         // EntityType.getKey returns an unmodifiable view of the underlying linked hash set, so the order is still
         // preserved, although
 
-        List<UUID> keyProperties = new LinkedList<>( dms.getEntityTypeByEntitySetId( graphId ).getKey() );
-
         Map<UUID, Set<UUID>> propertyTypeIdsByEntitySet = Maps.newHashMap();
         Map<UUID, PropertyType> propertyTypesById = Maps.newHashMap();
 

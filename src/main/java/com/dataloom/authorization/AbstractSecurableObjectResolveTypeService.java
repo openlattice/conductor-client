@@ -21,15 +21,16 @@ package com.dataloom.authorization;
 
 import com.dataloom.authorization.securable.SecurableObjectType;
 
+import com.openlattice.authorization.AclKey;
 import java.util.List;
 import java.util.UUID;
 
 public interface AbstractSecurableObjectResolveTypeService {
     
-    void createSecurableObjectType( List<UUID> aclKey, SecurableObjectType type );
+    void createSecurableObjectType( AclKey aclKey, SecurableObjectType type );
     
-    void deleteSecurableObjectType( List<UUID> aclKey );
+    void deleteSecurableObjectType( AclKey aclKey );
     
-    SecurableObjectType getSecurableObjectType( List<UUID> aclKey );
+    SecurableObjectType getSecurableObjectType( AclKey aclKey );
 
 }

@@ -44,11 +44,11 @@ import com.hazelcast.map.EntryProcessor;
 
 public interface EdmManager {
     void clearTables();
-    
+
     UUID getCurrentEntityDataModelVersion();
-    
+
     UUID generateNewEntityDataModelVersion();
-    
+
     PropertyType getPropertyType( FullQualifiedName propertyTypeFqn );
 
     PropertyType getPropertyType( UUID propertyTypeId );
@@ -189,10 +189,12 @@ public interface EdmManager {
     Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId );
 
     void setEntityDataModel( EntityDataModel edm );
-    
+
     EntityDataModelDiff getEntityDataModelDiff( EntityDataModel edm );
 
-    Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata( UUID entitySetId );
+    Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata(
+            UUID entitySetId,
+            Set<UUID> authorizedPropertyTypes );
 
     EntitySetPropertyMetadata getEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId );
 

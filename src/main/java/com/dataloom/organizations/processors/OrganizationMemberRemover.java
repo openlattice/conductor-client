@@ -2,7 +2,7 @@ package com.dataloom.organizations.processors;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.organizations.PrincipalSet;
-import com.kryptnostic.rhizome.hazelcast.objects.SetProxy;
+import com.openlattice.rhizome.hazelcast.SetProxy;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRemover;
 
 import java.util.Map;

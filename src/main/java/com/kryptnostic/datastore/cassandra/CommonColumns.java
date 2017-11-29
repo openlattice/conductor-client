@@ -24,8 +24,9 @@ import com.datastax.driver.core.querybuilder.BindMarker;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.common.base.Preconditions;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
-import java.util.function.Function;
 import org.apache.commons.lang3.RandomStringUtils;
+
+import java.util.function.Function;
 
 public enum CommonColumns implements ColumnDef {
     ACLID( DataType.uuid() ),
@@ -132,10 +133,11 @@ public enum CommonColumns implements ColumnDef {
     EDGE_ENTITY_SET_ID( DataType.uuid() ),
     PROPERTY_BUFFER( DataType.blob() ),
     SRC_SYNC_ID( DataType.uuid() ),
-    DST_SYNC_ID(  DataType.uuid() ),
+    DST_SYNC_ID( DataType.uuid() ),
     ENTITY( DataType.map( DataType.uuid(), DataType.frozenSet( DataType.text() ) ) ),
     ENTITY_KEY_ID( DataType.uuid() ),
-    ENTITY_KEY_IDS( DataType.set( DataType.uuid() ) );
+    ENTITY_KEY_IDS( DataType.set( DataType.uuid() ) ),
+    APPS( DataType.set( DataType.uuid() ) );
 
     private transient final DataType type;
 

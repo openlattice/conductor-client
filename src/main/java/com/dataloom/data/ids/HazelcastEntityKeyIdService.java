@@ -22,19 +22,21 @@ package com.dataloom.data.ids;
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
-import com.dataloom.hazelcast.ListenableHazelcastFuture;
+import com.dataloom.data.mapstores.PostgresEntityKeyIdsMapstore;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
+import com.hazelcast.query.Predicate;
+import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
-
 import java.util.Map;
-import java.util.Optional;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
-
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Most of the logic for this class is handled by the map store, which ensures a unique id
  * is assigned on read.
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
 public class HazelcastEntityKeyIdService implements EntityKeyIdService {
@@ -49,30 +52,31 @@ public class HazelcastEntityKeyIdService implements EntityKeyIdService {
     private final ListeningExecutorService executor;
 
     private final IMap<EntityKey, UUID> ids;
-    private final IMap<UUID, EntityKey> keys;
 
     public HazelcastEntityKeyIdService(
             HazelcastInstance hazelcastInstance,
             ListeningExecutorService executor ) {
         this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
-        this.keys = hazelcastInstance.getMap( HazelcastMap.KEYS.name() );
         this.executor = executor;
-    }
-
-    @Override
-    public Optional<EntityKey> tryGetEntityKey( UUID entityKeyId ) {
-        return Optional.ofNullable( getEntityKey( entityKeyId ) );
     }
 
     @Override
     @Timed
     public EntityKey getEntityKey( UUID entityKeyId ) {
-        return Util.getSafely( keys, entityKeyId );
+        Set<EntityKey> entityKeys = ids.keySet( Predicates.equal( PostgresEntityKeyIdsMapstore.ID, entityKeyId ) );
+        if ( entityKeys == null || entityKeys.isEmpty() ) {
+            return null;
+        }
+        return entityKeys.iterator().next();
     }
-    
+
     @Override
+    @Timed
     public Map<UUID, EntityKey> getEntityKeys( Set<UUID> entityKeyIds ) {
-        return Util.getSafely( keys, entityKeyIds );
+        Set<Entry<EntityKey, UUID>> entries = getEntityKeyEntries( entityKeyIds );
+        return entries
+                .stream()
+                .collect( Collectors.toMap( Entry::getValue, Entry::getKey ) );
     }
 
     @Override
@@ -87,18 +91,21 @@ public class HazelcastEntityKeyIdService implements EntityKeyIdService {
         return Util.getSafely( ids, entityKeys );
     }
 
-    public Stream<EntityKey> getEntityKeysInEntitySet( ) {
+    @Timed
+    @Override
+    public Set<Entry<EntityKey, UUID>> getEntityKeyEntries( Set<UUID> entityKeyIds ) {
+        Predicate<EntityKey, UUID> p = Predicates
+                .in( PostgresEntityKeyIdsMapstore.ID, entityKeyIds.toArray( new UUID[ 0 ] ) );
+        return ids.entrySet( p );
+    }
+
+    public Stream<EntityKey> getEntityKeysInEntitySet() {
         return null;
     }
 
     @Override
     public ListenableFuture<UUID> getEntityKeyIdAsync( EntityKey entityKey ) {
         return new ListenableHazelcastFuture<>( ids.getAsync( entityKey ) );
-    }
-
-    @Override
-    public ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId ) {
-        return new ListenableHazelcastFuture<>( keys.getAsync( entityKeyId ) );
     }
 
 }

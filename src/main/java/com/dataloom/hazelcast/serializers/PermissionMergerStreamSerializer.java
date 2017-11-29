@@ -21,15 +21,15 @@ package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.processors.PermissionMerger;
+import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.EnumSet;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -49,6 +49,8 @@ public class PermissionMergerStreamSerializer implements SelfRegisteringStreamSe
             bs.set( p.ordinal() );
         }
         out.writeLongArray( bs.toLongArray() );
+        //TODO: Move this method to class where it's not as hidden
+        AceValueStreamSerializer.serialize( out, object.getSecurableObjectType() );
     }
 
     @Override public PermissionMerger read( ObjectDataInput in ) throws IOException {
@@ -60,8 +62,8 @@ public class PermissionMergerStreamSerializer implements SelfRegisteringStreamSe
                 ps.add( P[ i ] );
             }
         }
-
-        return new PermissionMerger( ps );
+        SecurableObjectType securableObjectType = AceValueStreamSerializer.deserialize( in );
+        return new PermissionMerger( ps, securableObjectType );
     }
 
     @Override public int getTypeId() {

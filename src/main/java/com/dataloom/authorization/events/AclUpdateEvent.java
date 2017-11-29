@@ -24,18 +24,19 @@ import java.util.Set;
 import java.util.UUID;
 
 import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.AclKey;
 
 public class AclUpdateEvent {
     
-    private List<UUID> aclKeys;
+    private AclKey         aclKeys;
     private Set<Principal> principals;
     
-    public AclUpdateEvent( List<UUID> aclKeys, Set<Principal> principals ) {
+    public AclUpdateEvent( AclKey aclKeys, Set<Principal> principals ) {
         this.aclKeys = aclKeys;
         this.principals = principals;
     }
     
-    public List<UUID> getAclKeys() {
+    public AclKey getAclKeys() {
         return aclKeys;
     }
     

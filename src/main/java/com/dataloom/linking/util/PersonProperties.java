@@ -1,7 +1,7 @@
 package com.dataloom.linking.util;
 
 import com.google.common.collect.Sets;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.joda.time.DateTime;

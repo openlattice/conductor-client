@@ -19,12 +19,6 @@
 
 package com.dataloom.neuron.pods;
 
-import javax.inject.Inject;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.AuthorizationQueryService;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
@@ -35,26 +29,28 @@ import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.ids.HazelcastEntityKeyIdService;
 import com.dataloom.data.storage.CassandraEntityDatastore;
-import com.dataloom.edm.properties.CassandraTypeManager;
+import com.dataloom.edm.properties.PostgresTypeManager;
 import com.dataloom.edm.schemas.SchemaQueryService;
-import com.dataloom.edm.schemas.cassandra.CassandraSchemaQueryService;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
-import com.dataloom.graph.core.GraphQueryService;
+import com.dataloom.edm.schemas.postgres.PostgresSchemaQueryService;
 import com.dataloom.graph.core.LoomGraph;
-import com.dataloom.linking.CassandraLinkingGraphsQueryService;
 import com.dataloom.linking.HazelcastLinkingGraphs;
 import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.neuron.Neuron;
-import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
-import com.kryptnostic.datastore.services.CassandraEntitySetManager;
 import com.kryptnostic.datastore.services.EdmManager;
 import com.kryptnostic.datastore.services.EdmService;
-import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
+import com.kryptnostic.datastore.services.PostgresEntitySetManager;
 import com.kryptnostic.rhizome.pods.CassandraPod;
+import com.zaxxer.hikari.HikariDataSource;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+
+import javax.inject.Inject;
 
 @Configuration
 @Import( {
@@ -62,9 +58,6 @@ import com.kryptnostic.rhizome.pods.CassandraPod;
         CassandraPod.class
 } )
 public class NeuronPod {
-
-    @Inject
-    private CassandraConfiguration cassandraConfiguration;
 
     @Inject
     private EventBus eventBus;
@@ -76,7 +69,7 @@ public class NeuronPod {
     private ListeningExecutorService executor;
 
     @Inject
-    private Session session;
+    private HikariDataSource hikariDataSource;
 
     /*
      *
@@ -86,12 +79,7 @@ public class NeuronPod {
 
     @Bean
     public Neuron neuron() {
-        return new Neuron(
-                dataGraphService(),
-                idService(),
-                cassandraConfiguration,
-                session
-        );
+        return new Neuron( dataGraphService(), idService(), hikariDataSource );
     }
 
     /*
@@ -102,7 +90,7 @@ public class NeuronPod {
 
     @Bean
     public AuthorizationQueryService authorizationQueryService() {
-        return new AuthorizationQueryService( cassandraConfiguration.getKeyspace(), session, hazelcastInstance );
+        return new AuthorizationQueryService( hikariDataSource, hazelcastInstance );
     }
 
     @Bean
@@ -113,29 +101,22 @@ public class NeuronPod {
     @Bean
     public CassandraEntityDatastore cassandraDataManager() {
         return new CassandraEntityDatastore(
-                session,
                 hazelcastInstance,
                 executor,
                 defaultObjectMapper(),
                 idService(),
-                linkingGraph(),
-                loomGraph(),
                 dataSourceManager()
         );
     }
 
     @Bean
-    public CassandraEntitySetManager entitySetManager() {
-        return new CassandraEntitySetManager( cassandraConfiguration.getKeyspace(), session, authorizationManager() );
+    public PostgresEntitySetManager entitySetManager() {
+        return new PostgresEntitySetManager( hikariDataSource );
     }
 
     @Bean
-    public CassandraLinkingGraphsQueryService linkingGraphQueryService() {
-        return new CassandraLinkingGraphsQueryService( cassandraConfiguration.getKeyspace(), session );
-    }
-    @Bean
-    public CassandraTypeManager entityTypeManager() {
-        return new CassandraTypeManager( cassandraConfiguration.getKeyspace(), session );
+    public PostgresTypeManager entityTypeManager() {
+        return new PostgresTypeManager( hikariDataSource );
     }
 
     @Bean
@@ -152,30 +133,25 @@ public class NeuronPod {
 
     @Bean
     public DatasourceManager dataSourceManager() {
-        return new DatasourceManager( session, hazelcastInstance );
+        return new DatasourceManager( hikariDataSource, hazelcastInstance );
     }
 
     @Bean
     public EdmManager dataModelService() {
         return new EdmService(
-                cassandraConfiguration.getKeyspace(),
-                session,
+                hikariDataSource,
                 hazelcastInstance,
                 aclKeyReservationService(),
                 authorizationManager(),
                 entitySetManager(),
                 entityTypeManager(),
-                schemaManager() );
+                schemaManager(),
+                dataSourceManager() );
     }
 
     @Bean
     public EntityKeyIdService idService() {
         return new HazelcastEntityKeyIdService( hazelcastInstance, executor );
-    }
-
-    @Bean
-    public GraphQueryService graphQueryService() {
-        return new GraphQueryService( session );
     }
 
     @Bean
@@ -191,14 +167,13 @@ public class NeuronPod {
     @Bean
     public HazelcastSchemaManager schemaManager() {
         return new HazelcastSchemaManager(
-                cassandraConfiguration.getKeyspace(),
                 hazelcastInstance,
                 schemaQueryService() );
     }
 
     @Bean
     public LoomGraph loomGraph() {
-        return new LoomGraph(executor, hazelcastInstance );
+        return new LoomGraph( executor, hazelcastInstance );
     }
 
     @Bean
@@ -208,6 +183,6 @@ public class NeuronPod {
 
     @Bean
     public SchemaQueryService schemaQueryService() {
-        return new CassandraSchemaQueryService( cassandraConfiguration.getKeyspace(), session );
+        return new PostgresSchemaQueryService( hikariDataSource );
     }
 }

@@ -19,12 +19,12 @@
  */
 package com.dataloom.data;
 
+import com.codahale.metrics.annotation.Timed;
+import com.google.common.util.concurrent.ListenableFuture;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -33,6 +33,7 @@ public interface EntityKeyIdService {
 
     /**
      * Retrieves the assigned id for an entity key. Assigns one if entity key hasn't been assigned.
+     *
      * @param entityKey The entity key for which to retrieve an assigned id.
      * @return The id assigned to entity key.
      */
@@ -40,20 +41,12 @@ public interface EntityKeyIdService {
 
     Map<EntityKey, UUID> getEntityKeyIds( Set<EntityKey> entityKeys );
 
+    @Timed Set<Entry<EntityKey, UUID>> getEntityKeyEntries( Set<UUID> entityKeyIds );
+
     ListenableFuture<UUID> getEntityKeyIdAsync( EntityKey entityKey );
 
-    /**
-     * Retrieves the entity key id previously assigned for this entity key
-     *
-     * @param entityKeyId The id of the entity key to be retrieved.
-     * @return An entity key id, if this entity key previously had one assigned.
-     */
-    //TODO: Change this to throwing an exception.
-    Optional<EntityKey> tryGetEntityKey( UUID entityKeyId );
-
     EntityKey getEntityKey( UUID entityKeyId );
-    
+
     Map<UUID, EntityKey> getEntityKeys( Set<UUID> entityKeyIds );
 
-    ListenableFuture<EntityKey> getEntityKeyAsync( UUID entityKeyId );
 }

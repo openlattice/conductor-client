@@ -42,7 +42,7 @@ public class DataKey {
         this.syncId = syncId;
         this.entityId = entityId;
         this.propertyTypeId = propertyTypeId;
-        this.hash = hash;
+        this.hash = hash.clone();
     }
 
     public UUID getId() {
@@ -66,7 +66,7 @@ public class DataKey {
     }
 
     public byte[] getHash() {
-        return hash;
+        return hash.clone();
     }
 
     public PropertyKey toPropertyKey() {

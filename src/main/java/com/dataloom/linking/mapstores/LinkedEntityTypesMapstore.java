@@ -1,7 +1,5 @@
 package com.dataloom.linking.mapstores;
 
-import java.util.UUID;
-
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
@@ -10,8 +8,10 @@ import com.datastax.driver.core.Session;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraPartitionKeyValueStore;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
+
+import java.util.UUID;
 
 public class LinkedEntityTypesMapstore
         extends AbstractStructuredCassandraPartitionKeyValueStore<UUID, DelegatedUUIDSet> {

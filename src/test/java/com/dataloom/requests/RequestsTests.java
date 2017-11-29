@@ -25,6 +25,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import com.openlattice.authorization.AclKey;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -66,7 +67,7 @@ public class RequestsTests extends HzAuthzTest {
             expected4 );
 
     static {
-        aqs = new RequestQueryService( cc.getKeyspace(), session );
+        aqs = new RequestQueryService( hds );
         hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs, neuron );
         Map<AceKey, Status> statusMap = RequestUtil.statusMap( ss );
         hzRequests.submitAll( statusMap );
@@ -128,7 +129,7 @@ public class RequestsTests extends HzAuthzTest {
     @Test
     public void testApproval() {
         Assert.assertTrue( submitted.stream().allMatch( s -> !hzAuthz
-                .checkIfHasPermissions( s.getRequest().getAclKey(),
+                .checkIfHasPermissions( new AclKey( s.getRequest().getAclKey() ),
                         ImmutableSet.of( s.getPrincipal() ),
                         s.getRequest().getPermissions() ) ) );
         ;
@@ -136,7 +137,7 @@ public class RequestsTests extends HzAuthzTest {
                 .statusMap( submitted.stream().map( RequestUtil::approve ).collect( Collectors.toSet() ) ) );
 
         Assert.assertTrue( submitted.stream().allMatch( s -> hzAuthz
-                .checkIfHasPermissions( s.getRequest().getAclKey(),
+                .checkIfHasPermissions( new AclKey( s.getRequest().getAclKey() ),
                         ImmutableSet.of( s.getPrincipal() ),
                         s.getRequest().getPermissions() ) ) );
 

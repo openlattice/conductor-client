@@ -26,13 +26,13 @@ hikari:
     jdbcUrl: jdbc:postgresql://localhost:5432/openlattice
     #"jdbc:postgresql://wonderwoman.openlattice.com:30001,captainamerica.openlattice.com:30002/openlattice?ssl=true"
     #dataSourceClassName: "org.postgresql.ds.PGSimpleDataSource"
-    username: "mtamayo"
+    username: "oltest"
     #username: "openlattice"
-    #password: "q6j>RgjfMm9fK7UAbDz"
+    password: "test"
     #dataSource.ssl: true
     #dataSource.sslMode: "verify-full"
     #dataSource.user: "mtamayo"
     #dataSource.databaseName: "openlattice"
-    maximumPoolSize: 2
+    maximumPoolSize: 50
     #20 minutes
     connectionTimeout: 12000000

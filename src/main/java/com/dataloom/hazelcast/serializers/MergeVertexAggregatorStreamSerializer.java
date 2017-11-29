@@ -8,9 +8,9 @@ import com.google.common.collect.Maps;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
-import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +28,9 @@ public class MergeVertexAggregatorStreamSerializer implements SelfRegisteringStr
         return MergeVertexAggregator.class;
     }
 
-    @Override public void write(
+    @Override
+    @SuppressFBWarnings
+    public void write(
             ObjectDataOutput out, MergeVertexAggregator object ) throws IOException {
         UUIDStreamSerializer.serialize( out, object.getGraphId() );
         UUIDStreamSerializer.serialize( out, object.getSyncId() );
@@ -58,7 +60,9 @@ public class MergeVertexAggregatorStreamSerializer implements SelfRegisteringStr
         }
     }
 
-    @Override public MergeVertexAggregator read( ObjectDataInput in ) throws IOException {
+    @Override
+    @SuppressFBWarnings
+    public MergeVertexAggregator read( ObjectDataInput in ) throws IOException {
         UUID graphId = UUIDStreamSerializer.deserialize( in );
         UUID syncId = UUIDStreamSerializer.deserialize( in );
 

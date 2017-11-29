@@ -49,7 +49,7 @@ import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 
 public class HazelcastSchemaManager {
     // map( namespace -> set<name> )
@@ -60,7 +60,6 @@ public class HazelcastSchemaManager {
     private final SchemaQueryService        schemaQueryService;
 
     public HazelcastSchemaManager(
-            String keyspace,
             HazelcastInstance hazelcastInstance,
             SchemaQueryService schemaQueryService ) {
         this.schemas = checkNotNull( hazelcastInstance.getMap( HazelcastMap.SCHEMAS.name() ) );

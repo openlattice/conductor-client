@@ -5,23 +5,23 @@ import java.io.IOException;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organizations.roles.processors.RoleTitleUpdater;
+import com.dataloom.organizations.roles.processors.PrincipalTitleUpdater;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 
 @Component
-public class RoleTitleUpdaterStreamSerializer implements SelfRegisteringStreamSerializer<RoleTitleUpdater> {
+public class RoleTitleUpdaterStreamSerializer implements SelfRegisteringStreamSerializer<PrincipalTitleUpdater> {
 
     @Override
-    public void write( ObjectDataOutput out, RoleTitleUpdater object ) throws IOException {
+    public void write( ObjectDataOutput out, PrincipalTitleUpdater object ) throws IOException {
         out.writeUTF( object.getTitle() );
     }
 
     @Override
-    public RoleTitleUpdater read( ObjectDataInput in ) throws IOException {
+    public PrincipalTitleUpdater read( ObjectDataInput in ) throws IOException {
         String newTitle = in.readUTF();
-        return new RoleTitleUpdater( newTitle );
+        return new PrincipalTitleUpdater( newTitle );
     }
 
     @Override
@@ -33,7 +33,7 @@ public class RoleTitleUpdaterStreamSerializer implements SelfRegisteringStreamSe
     public void destroy() {}
 
     @Override
-    public Class<RoleTitleUpdater> getClazz() {
-        return RoleTitleUpdater.class;
+    public Class<PrincipalTitleUpdater> getClazz() {
+        return PrincipalTitleUpdater.class;
     }
 }

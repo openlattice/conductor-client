@@ -28,7 +28,7 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.collect.Sets;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 
 @Component

@@ -22,6 +22,7 @@ package com.dataloom.authorization.util;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import com.openlattice.authorization.AclKey;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
@@ -55,8 +56,8 @@ public final class AuthorizationUtils {
         return new AceKey( aclKey( row ), principal );
     }
 
-    public static List<UUID> aclKey( Row row ) {
-        return row.getList( CommonColumns.ACL_KEYS.cql(), UUID.class );
+    public static AclKey aclKey( Row row ) {
+        return new AclKey( row.getList( CommonColumns.ACL_KEYS.cql(), UUID.class ) );
     }
 
     public static EnumSet<Permission> permissions( Row row ) {

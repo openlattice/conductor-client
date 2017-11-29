@@ -24,17 +24,16 @@ import com.auth0.spring.security.api.Auth0UserDetails;
 import com.dataloom.authorization.ForbiddenException;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
+import com.dataloom.organizations.roles.SecurePrincipalsManager;
+import com.openlattice.authorization.SecurablePrincipal;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.Collection;
+import java.util.NavigableSet;
+import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-
-import java.util.Collection;
-import java.util.NavigableSet;
-import java.util.TreeSet;
-import java.util.stream.Collectors;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class LoomAuthentication implements Authentication {
 
@@ -45,14 +44,14 @@ public class LoomAuthentication implements Authentication {
     private final NavigableSet<Principal> principals;
     private final Auth0JWTToken           jwtToken;
 
-    public LoomAuthentication( Authentication authentication ) {
+    public LoomAuthentication( Authentication authentication, SecurePrincipalsManager spm ) {
         if ( authentication != null
                 && Auth0JWTToken.class.isAssignableFrom( authentication.getClass() )
                 && authentication.isAuthenticated() ) {
 
             jwtToken = (Auth0JWTToken) authentication;
             Auth0UserDetails details = (Auth0UserDetails) jwtToken.getPrincipal();
-            final Collection<? extends GrantedAuthority> authorities = details.getAuthorities();
+
             Object principalId = details.getAuth0Attribute( LoomAuth0AuthenticationProvider.SUBJECT_ATTRIBUTE );
 
             if ( principalId == null ) {
@@ -60,13 +59,17 @@ public class LoomAuthentication implements Authentication {
             }
 
             principal = new Principal( PrincipalType.USER, principalId.toString() );
-            principals = new TreeSet<Principal>();
+
+            SecurablePrincipal sp = spm.getPrincipal( principal.getId() );
+            Collection<SecurablePrincipal> securablePrincipals = spm.getAllPrincipals( sp );
+
+            principals = new TreeSet<>();
             principals.add( principal );
 
-            authorities
+            securablePrincipals
                     .stream()
-                    .map( authority -> new Principal( PrincipalType.ROLE, authority.getAuthority() ) )
-                    .collect( Collectors.toCollection( () -> principals ) );
+                    .map( SecurablePrincipal::getPrincipal )
+                    .forEach( principals::add );
         } else {
             logger.debug( "Authentication failed for authentication: {}", authentication );
             throw new ForbiddenException( "Unable to authorize access to requested resource." );

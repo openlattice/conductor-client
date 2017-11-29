@@ -1,12 +1,12 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.organizations.processors.OrganizationMemberRoleMerger;
+import com.dataloom.organizations.processors.NestedPrincipalMerger;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class OrganizationMemberRoleMergerStreamSerializerTest extends
-        AbstractStreamSerializerTest<OrganizationMemberRoleMergerStreamSerializer, OrganizationMemberRoleMerger> {
+        AbstractStreamSerializerTest<OrganizationMemberRoleMergerStreamSerializer, NestedPrincipalMerger> {
 
     @Override
     protected OrganizationMemberRoleMergerStreamSerializer createSerializer() {
@@ -14,10 +14,10 @@ public class OrganizationMemberRoleMergerStreamSerializerTest extends
     }
 
     @Override
-    protected OrganizationMemberRoleMerger createInput() {
-        return new OrganizationMemberRoleMerger( ImmutableSet.of(
-                TestDataFactory.userPrincipal(),
-                TestDataFactory.userPrincipal()
+    protected NestedPrincipalMerger createInput() {
+        return new NestedPrincipalMerger( ImmutableSet.of(
+                TestDataFactory.aclKey(),
+                TestDataFactory.aclKey()
         ) );
     }
 }

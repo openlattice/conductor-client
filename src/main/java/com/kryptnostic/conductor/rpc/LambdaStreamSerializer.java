@@ -52,7 +52,6 @@ public class LambdaStreamSerializer implements SelfRegisteringStreamSerializer<R
             kryo.register( java.lang.Class.class );
 
             // Shared Lambdas
-            kryo.register( Lambdas.class );
             kryo.register( ElasticsearchLambdas.class );
             kryo.register( SerializedLambda.class );
 

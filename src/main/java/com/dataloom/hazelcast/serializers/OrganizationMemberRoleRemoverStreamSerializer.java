@@ -1,37 +1,36 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organizations.processors.OrganizationMemberRoleRemover;
+import com.dataloom.organizations.processors.NestedPrincipalRemover;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import org.springframework.stereotype.Component;
-
 import java.io.IOException;
+import org.springframework.stereotype.Component;
 
 @Component
 public class OrganizationMemberRoleRemoverStreamSerializer
-        implements SelfRegisteringStreamSerializer<OrganizationMemberRoleRemover> {
+        implements SelfRegisteringStreamSerializer<NestedPrincipalRemover> {
 
     @Override
-    public Class<OrganizationMemberRoleRemover> getClazz() {
-        return OrganizationMemberRoleRemover.class;
+    public Class<NestedPrincipalRemover> getClazz() {
+        return NestedPrincipalRemover.class;
     }
 
     @Override
-    public void write( ObjectDataOutput out, OrganizationMemberRoleRemover object ) throws IOException {
+    public void write( ObjectDataOutput out, NestedPrincipalRemover object ) throws IOException {
         SetStreamSerializers.serialize(
                 out,
                 object.getBackingCollection(),
-                elem -> PrincipalStreamSerializer.serialize( out, elem )
+                elem -> SetStreamSerializers.fastUUIDSetSerialize( out, elem )
         );
     }
 
     @Override
-    public OrganizationMemberRoleRemover read( ObjectDataInput in ) throws IOException {
-        return new OrganizationMemberRoleRemover(
-                SetStreamSerializers.deserialize( in, PrincipalStreamSerializer::deserialize )
+    public NestedPrincipalRemover read( ObjectDataInput in ) throws IOException {
+        return new NestedPrincipalRemover(
+                SetStreamSerializers.deserialize( in, AclKeyStreamSerializer::deserialize )
         );
     }
 

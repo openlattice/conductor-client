@@ -35,10 +35,7 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.openlattice.postgres.PostgresArrays;
-import com.openlattice.postgres.PostgresColumn;
-import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.*;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Array;
 import java.sql.PreparedStatement;
@@ -104,35 +101,11 @@ public class PropertyTypeMapstore extends AbstractBasePostgresMapstore<UUID, Pro
     }
 
     @Override protected PropertyType mapToValue( java.sql.ResultSet rs ) throws SQLException {
-        UUID id = mapToKey( rs );
-        String namespace = rs.getString( NAMESPACE.getName() );
-        String name = rs.getString( NAME.getName() );
-        EdmPrimitiveTypeKind datatype = EdmPrimitiveTypeKind.valueOf( rs.getString( DATATYPE.getName() ) );
-        FullQualifiedName fqn = new FullQualifiedName( namespace, name );
-        String title = rs.getString( TITLE.getName() );
-        Optional<String> description = Optional.fromNullable( rs.getString( DESCRIPTION.getName() ) );
-        String[] schemasFqns = (String[]) rs.getArray( SCHEMAS.getName() ).getArray();
-        boolean pii = rs.getBoolean( PII.getName() );
-        Analyzer analyzer = Analyzer.valueOf( rs.getString( ANALYZER.getName() ) );
-
-        return new PropertyType( id,
-                fqn,
-                title,
-                description,
-                Arrays.asList( schemasFqns ).stream().map( FullQualifiedName::new ).collect( Collectors.toSet() ),
-                datatype,
-                Optional.of( pii ),
-                Optional.of( analyzer )
-        );
+        return ResultSetAdapters.propertyType( rs );
     }
 
-    @Override protected UUID mapToKey( java.sql.ResultSet rs ) {
-        try {
-            return rs.getObject( ID.getName(), UUID.class );
-        } catch ( SQLException ex ) {
-            logger.error( "Unable to map ID to UUID class", ex );
-            return null;
-        }
+    @Override protected UUID mapToKey( java.sql.ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.id( rs );
     }
 
     @Override

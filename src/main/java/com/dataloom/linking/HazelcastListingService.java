@@ -22,13 +22,11 @@ package com.dataloom.linking;
 import java.util.Set;
 import java.util.UUID;
 
-import com.dataloom.edm.EntitySet;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.kryptnostic.datastore.services.EdmManager;
 import com.kryptnostic.datastore.util.Util;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedUUIDSet;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;

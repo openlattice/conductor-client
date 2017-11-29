@@ -23,8 +23,9 @@ import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.Permission;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRemover;
+import com.openlattice.authorization.AceValue;
 
-public class PermissionRemover extends AbstractRemover<AceKey, DelegatedPermissionEnumSet, Permission> {
+public class PermissionRemover extends AbstractRemover<AceKey, AceValue, Permission> {
     private static final long serialVersionUID = 541402002243327088L;
 
     public PermissionRemover( Iterable<Permission> objectsToRemove ) {

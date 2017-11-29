@@ -33,6 +33,8 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class CreateEntitySetTableEP extends AbstractRhizomeEntryProcessor<UUID, EntityType, Void> {
+    private static final long serialVersionUID = -232768367290446715L;
+
     private transient HikariDataSource hds;
     private final UUID entitySetId;
 
@@ -41,9 +43,6 @@ public class CreateEntitySetTableEP extends AbstractRhizomeEntryProcessor<UUID, 
     }
 
     @Override public Void process( Entry<UUID, EntityType> entry ) {
-        UUID entityTypeId = entry.getKey();
-        EntityType entityType = entry.getValue();
-//        es.get
         return null;
     }
 

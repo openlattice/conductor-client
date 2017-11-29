@@ -1,5 +1,6 @@
 package com.dataloom.hazelcast.serializers;
 
+import com.openlattice.authorization.AclKey;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
@@ -51,9 +52,9 @@ public class RequestStreamSerializer implements SelfRegisteringStreamSerializer<
     }
 
     public static Request deserialize( ObjectDataInput in ) throws IOException {
-        List<UUID> aclKey = ListStreamSerializers.fastUUIDListDeserialize( in );
+        UUID[] aclKey = ListStreamSerializers.fastUUIDArrayDeserialize( in );
         EnumSet<Permission> permissions = DelegatedPermissionEnumSetStreamSerializer.deserialize( in );
         String reason = in.readUTF();
-        return new Request( aclKey, permissions, reason );
+        return new Request( new AclKey( aclKey ), permissions, reason );
     }
 }

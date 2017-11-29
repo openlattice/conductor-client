@@ -1,20 +1,18 @@
 package com.dataloom.blocking;
 
-import com.dataloom.data.EntityKey;
 import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
-import com.google.common.collect.SetMultimap;
-import com.google.common.collect.Sets;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
-import com.kryptnostic.rhizome.hazelcast.objects.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
@@ -23,8 +21,12 @@ import java.util.UUID;
 public class LoadingAggregator
         extends Aggregator<Map.Entry<DataKey, ByteBuffer>, Integer>
         implements HazelcastInstanceAware {
+    private static final long serialVersionUID = -8998522786390338940L;
+
     private final Map<GraphEntityPair, LinkingEntity> entities;
     private final ObjectMapper mapper = ObjectMappers.getJsonMapper();
+
+    @SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented" )
     private final     Map<UUID, Map<UUID, PropertyType>>   authorizedPropertyTypes;
     private final     UUID                                 graphId;
     private transient IMap<GraphEntityPair, LinkingEntity> linkingEntities;
