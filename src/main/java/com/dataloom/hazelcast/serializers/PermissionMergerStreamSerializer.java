@@ -44,24 +44,12 @@ public class PermissionMergerStreamSerializer implements SelfRegisteringStreamSe
 
     @Override public void write(
             ObjectDataOutput out, PermissionMerger object ) throws IOException {
-        BitSet bs = new BitSet( P.length );
-        for ( Permission p : object.getBackingCollection() ) {
-            bs.set( p.ordinal() );
-        }
-        out.writeLongArray( bs.toLongArray() );
-        //TODO: Move this method to class where it's not as hidden
+        serialize( out, object.getBackingCollection() );
         AceValueStreamSerializer.serialize( out, object.getSecurableObjectType() );
     }
 
     @Override public PermissionMerger read( ObjectDataInput in ) throws IOException {
-        BitSet bs = BitSet.valueOf( in.readLongArray() );
-
-        EnumSet<Permission> ps = EnumSet.noneOf( Permission.class );
-        for ( int i = 0; i < P.length; ++i ) {
-            if ( bs.get( i ) ) {
-                ps.add( P[ i ] );
-            }
-        }
+        EnumSet<Permission> ps = deserialize( in );
         SecurableObjectType securableObjectType = AceValueStreamSerializer.deserialize( in );
         return new PermissionMerger( ps, securableObjectType );
     }
@@ -71,6 +59,28 @@ public class PermissionMergerStreamSerializer implements SelfRegisteringStreamSe
     }
 
     @Override public void destroy() {
+
+    }
+
+    public static EnumSet<Permission> deserialize( ObjectDataInput in ) throws IOException {
+        BitSet bs = BitSet.valueOf( in.readLongArray() );
+
+        EnumSet<Permission> ps = EnumSet.noneOf( Permission.class );
+        for ( int i = 0; i < P.length; ++i ) {
+            if ( bs.get( i ) ) {
+                ps.add( P[ i ] );
+            }
+        }
+        return ps;
+    }
+
+    public static void serialize( ObjectDataOutput out, Iterable<Permission> object ) throws IOException {
+        BitSet bs = new BitSet( P.length );
+        for ( Permission p : object ) {
+            bs.set( p.ordinal() );
+        }
+        out.writeLongArray( bs.toLongArray() );
+        //TODO: Move this method to class where it's not as hidden
 
     }
 }

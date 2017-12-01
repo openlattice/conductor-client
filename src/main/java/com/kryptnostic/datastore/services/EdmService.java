@@ -373,11 +373,12 @@ public class EdmService implements EdmManager {
         try {
             setupDefaultEntitySetPropertyMetadata( entitySet.getId(), entitySet.getEntityTypeId() );
 
+            authorizations.setSecurableObjectType( new AclKey( entitySet.getId() ), SecurableObjectType.EntitySet );
+
             authorizations.addPermission( new AclKey( entitySet.getId() ),
                     principal,
                     EnumSet.allOf( Permission.class ) );
 
-            authorizations.setSecurableObjectType( new AclKey( entitySet.getId() ), SecurableObjectType.EntitySet );
 
             ownablePropertyTypes.stream()
                     .map( propertyTypeId -> new AclKey( entitySet.getId(), propertyTypeId ) )
@@ -388,12 +389,7 @@ public class EdmService implements EdmManager {
                     .forEach( aclKey -> {
                         authorizations.setSecurableObjectType( aclKey,
                                 SecurableObjectType.PropertyTypeInEntitySet );
-                        securableObjectTypes.set( aclKey,
-                                SecurableObjectType.PropertyTypeInEntitySet );
                     } );
-
-            securableObjectTypes.set( new AclKey( entitySet.getId() ),
-                    SecurableObjectType.EntitySet );
 
             eventBus.post( new EntitySetCreatedEvent(
                     entitySet,
@@ -638,12 +634,13 @@ public class EdmService implements EdmManager {
                     propertyTypeIds.stream()
                             .map( propertyTypeId -> new AclKey( entitySet.getId(), propertyTypeId ) )
                             .forEach( aclKey -> {
+                                authorizations.setSecurableObjectType( aclKey,
+                                        SecurableObjectType.PropertyTypeInEntitySet );
+
                                 authorizations.addPermission(
                                         aclKey,
                                         owner,
                                         EnumSet.allOf( Permission.class ) );
-                                authorizations.setSecurableObjectType( aclKey,
-                                        SecurableObjectType.PropertyTypeInEntitySet );
 
                                 PropertyType pt = propertyTypes.get( aclKey.get( 1 ) );
                                 EntitySetPropertyMetadata defaultMetadata = new EntitySetPropertyMetadata(

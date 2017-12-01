@@ -31,32 +31,32 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.conductor.codecs.pods.TypeCodecsPod;
-import com.kryptnostic.datastore.cassandra.CassandraTablesPod;
 import com.kryptnostic.rhizome.configuration.ConfigurationConstants;
-import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
-import com.kryptnostic.rhizome.pods.CassandraPod;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.jdbc.JdbcPod;
 import com.openlattice.postgres.PostgresPod;
+import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
+import digital.loom.rhizome.authentication.Auth0Pod;
+import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-public class HzAuthzTest extends CassandraBootstrap {
+public class HzAuthzTest {
     protected static final RhizomeApplicationServer      testServer;
     protected static final HazelcastInstance             hazelcastInstance;
-    protected static final Session                       session;
-    protected static final CassandraConfiguration        cc;
     protected static final AuthorizationQueryService     aqs;
     protected static final HazelcastAuthorizationService hzAuthz;
     protected static final Neuron                        neuron;
@@ -64,21 +64,19 @@ public class HzAuthzTest extends CassandraBootstrap {
     private static final Logger logger = LoggerFactory.getLogger( HzAuthzTest.class );
 
     static {
-        EmbeddedCassandraServerHelper.cleanEmbeddedCassandra();
-
         testServer = new RhizomeApplicationServer(
+                Auth0Pod.class,
                 MapstoresPod.class,
-                CassandraPod.class,
+                JdbcPod.class,
+                PostgresPod.class,
                 TypeCodecsPod.class,
                 SharedStreamSerializersPod.class,
-                CassandraTablesPod.class,
+                PostgresTablesPod.class,
                 NeuronPod.class
         );
 
-        testServer.sprout( ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE, CassandraPod.CASSANDRA_PROFILE, PostgresPod.PROFILE );
+        testServer.sprout( ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE, PostgresPod.PROFILE );
         hazelcastInstance = testServer.getContext().getBean( HazelcastInstance.class );
-        session = testServer.getContext().getBean( Session.class );
-        cc = testServer.getContext().getBean( CassandraConfiguration.class );
 
         neuron = testServer.getContext().getBean( Neuron.class );
         hds = testServer.getContext().getBean( HikariDataSource.class );
@@ -182,8 +180,8 @@ public class HzAuthzTest extends CassandraBootstrap {
         Set<List<UUID>> p1s = p1Owned.collect( Collectors.toSet() );
 
         if ( p1s.size() > 0 ) {
-            Set<Permission> permissions =  hzAuthz.getSecurableObjectPermissions( key, ImmutableSet.of( p1 ) );
-            Assert.assertTrue( permissions.contains( Permission.OWNER) );
+            Set<Permission> permissions = hzAuthz.getSecurableObjectPermissions( key, ImmutableSet.of( p1 ) );
+            Assert.assertTrue( permissions.contains( Permission.OWNER ) );
             Assert.assertTrue(
                     hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), EnumSet.of( Permission.OWNER ) ) );
         }
@@ -199,5 +197,46 @@ public class HzAuthzTest extends CassandraBootstrap {
         Assert.assertTrue( p2s.contains( key ) );
     }
 
+    @Test
+    public void testAccessChecks() {
+        AclKey key = new AclKey( UUID.randomUUID() );
+        Principal p1 = TestDataFactory.userPrincipal();
+        Principal p2 = TestDataFactory.userPrincipal();
+
+        EnumSet<Permission> permissions1 = EnumSet.of( Permission.DISCOVER, Permission.READ, Permission.OWNER );
+        EnumSet<Permission> permissions2 = EnumSet
+                .of( Permission.DISCOVER, Permission.READ, Permission.WRITE, Permission.LINK  );
+
+        Assert.assertFalse(
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions1 ) );
+        Assert.assertFalse(
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
+
+        hzAuthz.addPermission( key, p1, permissions1 );
+        hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
+        hzAuthz.addPermission( key, p2, permissions2 );
+
+        Assert.assertTrue(
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions1 ) );
+
+        Assert.assertFalse( hzAuthz.checkIfHasPermissions( key,
+                ImmutableSet.of( p1 ),
+                EnumSet.of( Permission.WRITE, Permission.OWNER ) ) );
+
+        Assert.assertTrue(
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
+
+        AccessCheck ac = new AccessCheck( key, permissions1 );
+        Map<AclKey, EnumMap<Permission, Boolean>> result =
+                hzAuthz.accessChecksForPrincipals( ImmutableSet.of( ac ), ImmutableSet.of( p2 ) );
+
+        Assert.assertTrue( result.containsKey( key ) );
+        EnumMap<Permission,Boolean> checkForKey = result.get( key );
+        Assert.assertTrue( checkForKey.size() == permissions1.size() );
+
+        Assert.assertTrue( result.get( key ).get( Permission.DISCOVER )  );
+        Assert.assertTrue( result.get( key ).get( Permission.READ )  );
+        Assert.assertFalse( result.get( key ).get( Permission.OWNER )  );
+    }
 
 }

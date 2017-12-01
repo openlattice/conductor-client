@@ -21,8 +21,11 @@ package com.dataloom.authorization;
 
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -68,6 +71,10 @@ public interface AuthorizationManager {
 
     void deletePrincipalPermissions( Principal principal );
 
+    Map<AclKey, EnumMap<Permission, Boolean>> accessChecksForPrincipals(
+            Set<AccessCheck> accessChecks,
+            Set<Principal> principals );
+
     boolean checkIfHasPermissions(
             AclKey aclKeys,
             Set<Principal> principals,
@@ -104,4 +111,6 @@ public interface AuthorizationManager {
     Stream<AclKey> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
 
     Iterable<Principal> getSecurableObjectOwners( AclKey key );
+
+    Map<AceKey, AceValue> getPermissionMap( Set<AclKey> aclKeys, Set<Principal> principals );
 }
