@@ -32,9 +32,9 @@ public enum PersonMetric {
     LAST_NAME_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasLastName( e, map ) ) ),
     LAST_NAME_RHS_PRESENCE( rhs( ( e, map ) -> PersonProperties.getHasLastName( e, map ) ) ),
 
-    SSN_STRING( jaroWinkler( ( e, map ) -> PersonProperties.getSsn( e, map ) ) ),
-    SSN_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasSsn( e, map ) ) ),
-    SSN_RHS_PRESENCE( rhs( ( e, map ) -> PersonProperties.getHasSsn( e, map ) ) ),
+//    SSN_STRING( jaroWinkler( ( e, map ) -> PersonProperties.getSsn( e, map ) ) ),
+//    SSN_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasSsn( e, map ) ) ),
+//    SSN_RHS_PRESENCE( rhs( ( e, map ) -> PersonProperties.getHasSsn( e, map ) ) ),
 
     SEX_STRING( jaroWinkler( ( e, map ) -> PersonProperties.getSex( e, map ) ) ),
     SEX_LHS_PRESENCE( lhs( ( e, map ) -> PersonProperties.getHasSex( e, map ) ) ),
