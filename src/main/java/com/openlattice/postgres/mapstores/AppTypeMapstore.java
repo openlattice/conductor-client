@@ -24,16 +24,8 @@ public class AppTypeMapstore extends AbstractBasePostgresMapstore<UUID, AppType>
         super( HazelcastMap.APP_TYPES.name(), PostgresTable.APP_TYPES, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( NAMESPACE, NAME, TITLE, DESCRIPTION, ENTITY_TYPE_ID );
-    }
-
     @Override protected void bind( PreparedStatement ps, UUID key, AppType value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind( ps, key, 1 );
 
         ps.setString( 2, value.getType().getNamespace() );
         ps.setString( 3, value.getType().getName() );
@@ -49,8 +41,9 @@ public class AppTypeMapstore extends AbstractBasePostgresMapstore<UUID, AppType>
         ps.setObject( 11, value.getEntityTypeId() );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected AppType mapToValue( ResultSet rs ) throws SQLException {

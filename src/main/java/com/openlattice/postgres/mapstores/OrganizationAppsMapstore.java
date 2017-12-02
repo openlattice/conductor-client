@@ -30,17 +30,13 @@ public class OrganizationAppsMapstore extends AbstractBasePostgresMapstore<UUID,
         super( HazelcastMap.ORGANIZATION_APPS.name(), PostgresTable.ORGANIZATIONS, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
+    @Override protected List<PostgresColumnDefinition> initValueColumns() {
         return ImmutableList.of( APP_IDS );
     }
 
     @Override protected void bind(
             PreparedStatement ps, UUID key, DelegatedUUIDSet value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind( ps, key, 1);
 
         Array arr = PostgresArrays.createUuidArray( ps.getConnection(), value.stream() );
 
@@ -50,8 +46,9 @@ public class OrganizationAppsMapstore extends AbstractBasePostgresMapstore<UUID,
         ps.setArray( 3, arr );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected DelegatedUUIDSet mapToValue( ResultSet rs ) throws SQLException {

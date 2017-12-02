@@ -30,8 +30,6 @@ import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.postgres.PostgresArrays;
-import com.openlattice.postgres.PostgresColumn;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
@@ -40,7 +38,6 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -59,16 +56,8 @@ public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, 
         return new AclKeySet( ImmutableList.of( generateTestKey(), generateTestKey(), generateTestKey() ) );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( PostgresColumn.ACL_KEY );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( PostgresColumn.ACL_KEY_SET );
-    }
-
     @Override protected void bind( PreparedStatement ps, AclKey key, AclKeySet value ) throws SQLException {
-        bind( ps, key );
+        bind( ps, key, 1 );
         Array arr = PostgresArrays.createUuidArrayOfArrays( ps.getConnection(),
                 value.stream().map( aclKey -> aclKey.toArray( new UUID[ 0 ] ) ) );
         ps.setArray( 2, arr );
@@ -76,8 +65,9 @@ public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, 
 
     }
 
-    @Override protected void bind( PreparedStatement ps, AclKey key ) throws SQLException {
-        ps.setArray( 1, PostgresArrays.createUuidArray( ps.getConnection(), key.stream() ) );
+    @Override protected int bind( PreparedStatement ps, AclKey key, int parameterIndex ) throws SQLException {
+        ps.setArray( parameterIndex++, PostgresArrays.createUuidArray( ps.getConnection(), key.stream() ) );
+        return parameterIndex;
     }
 
     @Override protected AclKeySet mapToValue( ResultSet rs ) throws SQLException {

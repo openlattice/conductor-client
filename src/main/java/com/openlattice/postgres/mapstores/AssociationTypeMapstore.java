@@ -28,17 +28,8 @@ public class AssociationTypeMapstore extends AbstractBasePostgresMapstore<UUID, 
         super( HazelcastMap.ASSOCIATION_TYPES.name(), ASSOCIATION_TYPES, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( SRC, DST, BIDIRECTIONAL );
-    }
-
     @Override protected void bind( PreparedStatement ps, UUID key, AssociationType value ) throws SQLException {
-        ps.setObject( 1, key );
-
+        bind( ps, key, 1);
         Array src = PostgresArrays.createUuidArray( ps.getConnection(), value.getSrc().stream() );
         Array dst = PostgresArrays.createUuidArray( ps.getConnection(), value.getDst().stream() );
 
@@ -54,8 +45,9 @@ public class AssociationTypeMapstore extends AbstractBasePostgresMapstore<UUID, 
 
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected AssociationType mapToValue( ResultSet rs ) throws SQLException {

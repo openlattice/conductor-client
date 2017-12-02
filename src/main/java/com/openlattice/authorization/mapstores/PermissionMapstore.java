@@ -75,17 +75,9 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Ace
         this.objectTypes = new SecurableObjectTypeMapstore( hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( PERMISSIONS );
-    }
-
     @Override protected void bind(
             PreparedStatement ps, AceKey key, AceValue value ) throws SQLException {
-        bind( ps, key );
+        bind( ps, key, 1 );
         Array permissions = createTextArray( ps.getConnection(),
                 value.getPermissions().stream().map( Permission::name ) );
         ps.setArray( 4, permissions );
@@ -93,11 +85,12 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Ace
     }
 
     @Override
-    protected void bind( PreparedStatement ps, AceKey key ) throws SQLException {
+    protected int bind( PreparedStatement ps, AceKey key , int parameterIndex ) throws SQLException {
         Principal p = key.getPrincipal();
-        ps.setArray( 1, createUuidArray( ps.getConnection(), key.getKey().stream() ) );
-        ps.setString( 2, p.getType().name() );
-        ps.setString( 3, p.getId() );
+        ps.setArray( parameterIndex++, createUuidArray( ps.getConnection(), key.getKey().stream() ) );
+        ps.setString( parameterIndex++, p.getType().name() );
+        ps.setString( parameterIndex++, p.getId() );
+        return parameterIndex;
     }
 
     @Timed

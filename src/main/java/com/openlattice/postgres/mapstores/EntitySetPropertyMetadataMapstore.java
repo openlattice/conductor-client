@@ -1,22 +1,17 @@
 package com.openlattice.postgres.mapstores;
 
+import static com.openlattice.postgres.PostgresTable.ENTITY_SET_PROPERTY_METADATA;
+
 import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.google.common.collect.ImmutableList;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
-
-import static com.openlattice.postgres.PostgresColumn.*;
-import static com.openlattice.postgres.PostgresTable.ENTITY_SET_PROPERTY_METADATA;
 
 public class EntitySetPropertyMetadataMapstore
         extends AbstractBasePostgresMapstore<EntitySetPropertyKey, EntitySetPropertyMetadata> {
@@ -25,17 +20,9 @@ public class EntitySetPropertyMetadataMapstore
         super( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name(), ENTITY_SET_PROPERTY_METADATA, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ENTITY_SET_ID, PROPERTY_TYPE_ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( TITLE, DESCRIPTION, SHOW );
-    }
-
     @Override protected void bind(
             PreparedStatement ps, EntitySetPropertyKey key, EntitySetPropertyMetadata value ) throws SQLException {
-        bind( ps, key );
+        bind( ps, key, 1 );
 
         ps.setString( 3, value.getTitle() );
         ps.setString( 4, value.getDescription() );
@@ -46,9 +33,11 @@ public class EntitySetPropertyMetadataMapstore
         ps.setBoolean( 8, value.getDefaultShow() );
     }
 
-    @Override protected void bind( PreparedStatement ps, EntitySetPropertyKey key ) throws SQLException {
-        ps.setObject( 1, key.getEntitySetId() );
-        ps.setObject( 2, key.getPropertyTypeId() );
+    @Override protected int bind( PreparedStatement ps, EntitySetPropertyKey key, int parameterIndex )
+            throws SQLException {
+        ps.setObject( parameterIndex++, key.getEntitySetId() );
+        ps.setObject( parameterIndex++, key.getPropertyTypeId() );
+        return parameterIndex;
     }
 
     @Override protected EntitySetPropertyMetadata mapToValue( ResultSet rs ) throws SQLException {

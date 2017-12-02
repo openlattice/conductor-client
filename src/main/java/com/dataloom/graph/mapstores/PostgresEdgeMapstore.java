@@ -105,15 +105,17 @@ public class PostgresEdgeMapstore extends AbstractBasePostgresMapstore<EdgeKey, 
                 .addMapIndexConfig( new MapIndexConfig( EDGE_SET_ID, false ) );
     }
 
-    public void bind( PreparedStatement ps, EdgeKey key ) throws SQLException {
-        ps.setObject( 1, key.getSrcEntityKeyId() );
-        ps.setObject( 2, key.getDstTypeId() );
-        ps.setObject( 3, key.getEdgeTypeId() );
-        ps.setObject( 4, key.getDstEntityKeyId() );
-        ps.setObject( 5, key.getEdgeEntityKeyId() );
+    public int bind( PreparedStatement ps, EdgeKey key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key.getSrcEntityKeyId() );
+        ps.setObject( parameterIndex++, key.getDstTypeId() );
+        ps.setObject( parameterIndex++, key.getEdgeTypeId() );
+        ps.setObject( parameterIndex++, key.getDstEntityKeyId() );
+        ps.setObject( parameterIndex++, key.getEdgeEntityKeyId() );
+        return parameterIndex;
     }
 
     public void bind( PreparedStatement ps, EdgeKey key, LoomEdge value ) throws SQLException {
+        //This mapstore is exception to the rule-- order of key and value bindings is different.
         ps.setObject( 1, value.getSrcEntityKeyId() );
         ps.setObject( 2, value.getSrcTypeId() );
         ps.setObject( 3, value.getSrcSetId() );

@@ -23,24 +23,22 @@ public class OrganizationTitlesMapstore extends AbstractBasePostgresMapstore<UUI
         super( HazelcastMap.ORGANIZATIONS_TITLES.name(), ORGANIZATIONS, hds );
     }
 
-    @Override public List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
 
-    @Override public List<PostgresColumnDefinition> valueColumns() {
+    @Override public List<PostgresColumnDefinition> initValueColumns() {
         return ImmutableList.of( NULLABLE_TITLE );
     }
 
     @Override public void bind( PreparedStatement ps, UUID key, String value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind( ps, key , 1 );
         ps.setString( 2, value );
 
         // UPDATE
         ps.setString( 3, value );
     }
 
-    @Override public void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override public int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override public String mapToValue( ResultSet rs ) throws SQLException {

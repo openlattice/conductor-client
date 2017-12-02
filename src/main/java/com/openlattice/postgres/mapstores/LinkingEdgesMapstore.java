@@ -10,6 +10,7 @@ import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.zaxxer.hikari.HikariDataSource;
+import java.util.Optional;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.math.RandomUtils;
 
@@ -29,12 +30,8 @@ public class LinkingEdgesMapstore extends AbstractBasePostgresMapstore<LinkingVe
         super( HazelcastMap.LINKING_EDGES.name(), LINKING_EDGES, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( GRAPH_ID, SRC_LINKING_VERTEX_ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( EDGE_VALUE, DST_LINKING_VERTEX_ID );
+    @Override protected Optional<String> buildOnConflictQuery() {
+        return Optional.empty();
     }
 
     @Override protected void bind(
@@ -42,7 +39,7 @@ public class LinkingEdgesMapstore extends AbstractBasePostgresMapstore<LinkingVe
         throw new NotImplementedException( "Something went very wrong. This should never happen." );
     }
 
-    @Override protected void bind( PreparedStatement ps, LinkingVertexKey key ) throws SQLException {
+    @Override protected int bind( PreparedStatement ps, LinkingVertexKey key, int parameterIndex ) throws SQLException {
         throw new NotImplementedException( "Something went very wrong. This should never happen." );
     }
 

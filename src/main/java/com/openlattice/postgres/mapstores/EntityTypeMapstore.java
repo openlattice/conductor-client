@@ -1,24 +1,19 @@
 package com.openlattice.postgres.mapstores;
 
+import static com.openlattice.postgres.PostgresTable.ENTITY_TYPES;
+
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresArrays;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
-
-import static com.openlattice.postgres.PostgresColumn.*;
-import static com.openlattice.postgres.PostgresTable.ENTITY_TYPES;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 public class EntityTypeMapstore extends AbstractBasePostgresMapstore<UUID, EntityType> {
 
@@ -26,16 +21,8 @@ public class EntityTypeMapstore extends AbstractBasePostgresMapstore<UUID, Entit
         super( HazelcastMap.ENTITY_TYPES.name(), ENTITY_TYPES, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( NAMESPACE, NAME, TITLE, DESCRIPTION, KEY, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY );
-    }
-
     @Override protected void bind( PreparedStatement ps, UUID key, EntityType value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind( ps, key, 1 );
 
         FullQualifiedName fqn = value.getType();
         ps.setString( 2, fqn.getNamespace() );
@@ -71,8 +58,9 @@ public class EntityTypeMapstore extends AbstractBasePostgresMapstore<UUID, Entit
         ps.setString( 19, value.getCategory().name() );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected EntityType mapToValue( ResultSet rs ) throws SQLException {

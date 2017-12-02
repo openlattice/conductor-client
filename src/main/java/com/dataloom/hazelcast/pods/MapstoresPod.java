@@ -19,8 +19,6 @@
 
 package com.dataloom.hazelcast.pods;
 
-import static com.openlattice.postgres.PostgresTable.PROPERTY_TYPES;
-
 import com.dataloom.apps.App;
 import com.dataloom.apps.AppConfigKey;
 import com.dataloom.apps.AppType;
@@ -49,7 +47,6 @@ import com.dataloom.linking.LinkingVertexKey;
 import com.dataloom.linking.WeightedLinkingVertexKeySet;
 import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.requests.Status;
-import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.authorization.AceValue;
@@ -130,26 +127,12 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, PropertyType> propertyTypeMapstore() {
-        //        PropertyTypeMapstore cptm = new PropertyTypeMapstore( session );
-        com.openlattice.postgres.mapstores.PropertyTypeMapstore ptm = new com.openlattice.postgres.mapstores.PropertyTypeMapstore(
-                HazelcastMap.PROPERTY_TYPES.name(),
-                PROPERTY_TYPES,
-                hikariDataSource );
-        //        for ( UUID id : cptm.loadAllKeys() ) {
-        //            ptm.store( id, cptm.load( id ) );
-        //        }
-        return ptm;
+        return new com.openlattice.postgres.mapstores.PropertyTypeMapstore( hikariDataSource );
     }
 
     @Bean
     public SelfRegisteringMapStore<UUID, EntityType> entityTypeMapstore() {
-        EntityTypeMapstore petm = new EntityTypeMapstore( hikariDataSource );
-
-        //        com.dataloom.edm.mapstores.EntityTypeMapstore etm = new com.dataloom.edm.mapstores.EntityTypeMapstore( session );
-        //        for ( UUID id : etm.loadAllKeys() ) {
-        //            petm.store( id, etm.load( id ) );
-        //        }
-        return petm;
+        return new EntityTypeMapstore( hikariDataSource );
     }
 
     @Bean
@@ -164,13 +147,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<UUID, EntitySet> entitySetMapstore() {
-        EntitySetMapstore pesm = new EntitySetMapstore( hikariDataSource );
-
-        //        com.dataloom.edm.mapstores.EntitySetMapstore esm = new com.dataloom.edm.mapstores.EntitySetMapstore( session );
-        //        for ( UUID id : esm.loadAllKeys() ) {
-        //            pesm.store( id, esm.load( id ) );
-        //        }
-        return pesm;
+        return new EntitySetMapstore( hikariDataSource );
     }
 
     @Bean

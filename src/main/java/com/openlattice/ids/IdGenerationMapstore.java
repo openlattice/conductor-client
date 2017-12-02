@@ -20,16 +20,10 @@
 
 package com.openlattice.ids;
 
-import static com.openlattice.postgres.PostgresColumn.BASE;
-import static com.openlattice.postgres.PostgresColumn.LSB;
-import static com.openlattice.postgres.PostgresColumn.MSB;
-import static com.openlattice.postgres.PostgresColumn.PARTITION_INDEX;
 import static com.openlattice.postgres.PostgresColumn.PARTITION_INDEX_FIELD;
 
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.collect.ImmutableList;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
@@ -37,7 +31,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -52,19 +45,11 @@ public class IdGenerationMapstore extends AbstractBasePostgresMapstore<Integer, 
     }
 
     @Override public Range generateTestValue() {
-        return new Range( HazelcastIdGenerationService.MASK,0,1,2 );
-    }
-
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( PARTITION_INDEX );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( BASE, MSB, LSB );
+        return new Range( HazelcastIdGenerationService.MASK, 0, 1, 2 );
     }
 
     @Override protected void bind( PreparedStatement ps, Integer key, Range value ) throws SQLException {
-        bind( ps, key );
+        bind( ps, key, 1 );
 
         ps.setLong( 2, value.getBase() );
         ps.setLong( 3, value.getMsb() );
@@ -77,8 +62,9 @@ public class IdGenerationMapstore extends AbstractBasePostgresMapstore<Integer, 
 
     }
 
-    @Override protected void bind( PreparedStatement ps, Integer key ) throws SQLException {
-        ps.setInt( 1, key );
+    @Override protected int bind( PreparedStatement ps, Integer key, int parameterIndex ) throws SQLException {
+        ps.setInt( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected Range mapToValue( ResultSet rs ) throws SQLException {
