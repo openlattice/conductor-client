@@ -34,6 +34,7 @@ public enum StreamSerializerTypeIds {
     ACL_KEY,
     ACL_KEY_SET,
     AUDIT_METRIC_INCREMENTER,
+    AUTHORIZATION_AGGREGATOR,
     BYTE_BUFFER,
     RUNNABLE,
     CALLABLE,

@@ -40,7 +40,7 @@ public class SecurableObjectTypeMapstore extends AbstractBasePostgresMapstore<Ac
     }
 
     @Override protected void bind( PreparedStatement ps, AclKey key ) throws SQLException {
-        ps.setArray( 1, PostgresArrays.createUuidArray( ps.getConnection(), key.stream() ) );
+        ps.setArray( 1, PostgresArrays.createUuidArray( ps.getConnection(), key ) );
     }
 
     @Override protected SecurableObjectType mapToValue( ResultSet rs ) throws SQLException {

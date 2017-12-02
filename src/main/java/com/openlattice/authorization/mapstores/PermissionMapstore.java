@@ -27,6 +27,7 @@ import static com.openlattice.postgres.PostgresColumn.PERMISSIONS;
 import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID;
 import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE;
 
+import com.codahale.metrics.annotation.Timed;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
@@ -91,21 +92,22 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Ace
         ps.setArray( 5, permissions );
     }
 
-    @Override protected void bind( PreparedStatement ps, AceKey key ) throws SQLException {
+    @Override
+    protected void bind( PreparedStatement ps, AceKey key ) throws SQLException {
         Principal p = key.getPrincipal();
         ps.setArray( 1, createUuidArray( ps.getConnection(), key.getKey().stream() ) );
         ps.setString( 2, p.getType().name() );
         ps.setString( 3, p.getId() );
     }
 
-    @Override protected AceValue mapToValue( ResultSet rs ) throws SQLException {
+    @Timed
+    @Override
+    protected AceValue mapToValue( ResultSet rs ) throws SQLException {
         EnumSet<Permission> permissions = ResultSetAdapters.permissions( rs );
         AclKey aclKey = ResultSetAdapters.aclKey( rs );
         /*
          * There is small risk of deadlock here if all readers get stuck waiting for connection from the connection pool
          * we should keep an eye out to make sure there aren't an unusual number of TimeoutExceptions being thrown.
-         *
-         * Also we only
          */
         SecurableObjectType objectType = objectTypes.load( aclKey );
 
@@ -117,16 +119,6 @@ public class PermissionMapstore extends AbstractBasePostgresMapstore<AceKey, Ace
 
     @Override protected AceKey mapToKey( ResultSet rs ) throws SQLException {
         return ResultSetAdapters.aceKey( rs );
-    }
-
-    @Override
-    public Map<AceKey, AceValue> loadAll( Collection<AceKey> keys ) {
-        Map<AceKey, AceValue> result = Maps.newConcurrentMap();
-        keys.parallelStream().forEach( key -> {
-            AceValue value = load( key );
-            if ( value != null ) { result.put( key, value ); }
-        } );
-        return result;
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {

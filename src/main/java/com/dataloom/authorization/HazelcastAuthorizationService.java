@@ -35,13 +35,15 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
-import com.kryptnostic.datastore.util.Util;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.AuthorizationAggregator;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.authorization.processors.SecurableObjectTypeUpdater;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
@@ -85,7 +87,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             AclKey key,
             Principal principal,
             EnumSet<Permission> permissions ) {
+        //TODO: We should do something better than reading the securable object type.
         SecurableObjectType securableObjectType = securableObjectTypes.getOrDefault( key, SecurableObjectType.Unknown );
+        if ( securableObjectType == SecurableObjectType.Unknown ) {
+            logger.warn( "Unrecognized object type for acl key {} key ", key );
+        }
         aces.executeOnKey( new AceKey( key, principal ), new PermissionMerger( permissions, securableObjectType ) );
         updateAcl( key, principal );
     }
@@ -123,6 +129,28 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
+    public Map<AclKey, EnumMap<Permission, Boolean>> accessChecksForPrincipals(
+            Set<AccessCheck> accessChecks,
+            Set<Principal> principals ) {
+        return accessChecks
+                .parallelStream()
+                .collect( Collectors.toConcurrentMap(
+                        ac -> ac.getAclKey(),
+                        ac ->
+                                aces.aggregate( new AuthorizationAggregator( ac.getPermissions() ),
+                                        matches( ac.getAclKey(), principals, ac.getPermissions() ) ).getPermissions()
+                ) );
+
+    }
+
+    public Predicate matches( AclKey aclKey, Collection<Principal> principals, EnumSet<Permission> permissions ) {
+        return Predicates.and(
+                hasAclKey( aclKey ),
+                hasPrincipals( principals ),
+                hasAnyPermissions( permissions ) );
+    }
+
+    @Override
     public boolean checkIfHasPermissions(
             AclKey key,
             Set<Principal> principals,
@@ -142,16 +170,20 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public Set<Permission> getSecurableObjectPermissions(
             AclKey key,
             Set<Principal> principals ) {
-        return aces
-                .getAll( principals
-                        .stream()
-                        .map( principal -> new AceKey( key, principal ) )
-                        .collect( Collectors.toSet() ) )
+        final EnumSet<Permission> objectPermissions = EnumSet.noneOf( Permission.class );
+        final Set<AceKey> aceKeys = principals
+                .stream()
+                .map( principal -> new AceKey( key, principal ) )
+                .collect( Collectors.toSet() );
+        aces
+                .getAll( aceKeys )
                 .values()
                 .stream()
                 //                .peek( ps -> logger.info( "Implementing class: {}", ps.getClass().getCanonicalName() ) )
-                .flatMap( permissions -> permissions.getPermissions().stream() )
-                .collect( Collectors.toCollection( () -> EnumSet.noneOf( Permission.class ) ) );
+                .map( AceValue::getPermissions )
+                .filter( permissions -> permissions != null )
+                .forEach( objectPermissions::addAll );
+        return objectPermissions;
     }
 
     @Override
@@ -159,7 +191,8 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             SecurableObjectType objectType,
             EnumSet<Permission> permissions ) {
-        Predicate p = Predicates.and( hasPrincipal( principal ), hasType( objectType ), hasPermissions( permissions ) );
+        Predicate p = Predicates
+                .and( hasPrincipal( principal ), hasType( objectType ), hasExactPermissions( permissions ) );
         return this.aces.keySet( p )
                 .stream()
                 .map( AceKey::getKey );
@@ -171,7 +204,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             SecurableObjectType objectType,
             EnumSet<Permission> permissions ) {
         Predicate p = Predicates
-                .and( hasPrincipals( principals ), hasType( objectType ), hasPermissions( permissions ) );
+                .and( hasPrincipals( principals ), hasType( objectType ), hasExactPermissions( permissions ) );
         return this.aces.keySet( p )
                 .stream()
                 .map( AceKey::getKey );
@@ -209,7 +242,17 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return aqs.getOwnersForSecurableObject( key );
     }
 
-    private static Predicate hasPermissions( EnumSet<Permission> permissions ) {
+    @Override
+    public Map<AceKey, AceValue> getPermissionMap( Set<AclKey> aclKeys, Set<Principal> principals ) {
+        Set<AceKey> aceKeys = aclKeys
+                .stream()
+                .flatMap( aclKey -> principals.stream().map( p -> new AceKey( aclKey, p ) ) )
+                .collect( Collectors.toSet() );
+
+        return aces.getAll( aceKeys );
+    }
+
+    private static Predicate hasExactPermissions( EnumSet<Permission> permissions ) {
         Predicate[] subPredicates = new Predicate[ permissions.size() ];
         int i = 0;
         for ( Permission p : permissions ) {
@@ -218,7 +261,12 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return Predicates.and( subPredicates );
     }
 
+    private static Predicate hasAnyPermissions( EnumSet<Permission> permissions ) {
+        return Predicates.in( PermissionMapstore.PERMISSIONS_INDEX, permissions.toArray( new Permission[ 0 ] ) );
+    }
+
     private static Predicate hasAclKey( AclKey aclKey ) {
+        //TODO: Do something about ignored order of acl key pieces.
         Predicate[] subPredicates = new Predicate[ aclKey.size() + 1 ];
         int i = 0;
 
