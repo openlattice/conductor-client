@@ -9,8 +9,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.dataloom.data.events.EntityDataCreatedEvent;
+import com.google.common.base.Optional;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -172,6 +175,22 @@ public class DataGraphService implements DataGraphManager {
         final ListenableFuture reservationAndVertex = idService.getEntityKeyIdAsync( key );
         final Stream<ListenableFuture> writes = eds.updateEntityAsync( key, details, authorizedPropertiesWithDataType );
         return Stream.concat( Stream.of( reservationAndVertex ), writes );
+    }
+
+    public void replaceEntity(
+            UUID entityKeyId,
+            SetMultimap<UUID, Object> entity,
+            Map<UUID, EdmPrimitiveTypeKind> propertyTypes ) {
+        EntityKey key = idService.getEntityKey( entityKeyId );
+        eds.deleteEntity( key );
+        eds.updateEntityAsync( key, entity, propertyTypes ).forEach( DataGraphService::tryGetAndLogErrors );
+
+        Map<UUID, Object> entityAsMap = entity.asMap().entrySet().stream()
+                .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue() ) );
+        eventBus.post( new EntityDataCreatedEvent( key.getEntitySetId(),
+                Optional.of( key.getSyncId() ),
+                key.getEntityId(),
+                entityAsMap ) );
     }
 
     @Override
