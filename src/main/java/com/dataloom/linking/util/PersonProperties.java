@@ -2,12 +2,16 @@ package com.dataloom.linking.util;
 
 import com.google.common.collect.Sets;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.joda.time.DateTime;
 
+import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.UUID;
 
 public class PersonProperties {
+    private static DecimalFormat dd = new DecimalFormat( "00" );
 
     private static FullQualifiedName FIRST_NAME_FQN     = new FullQualifiedName( "nc.PersonGivenName" );
     private static FullQualifiedName MIDDLE_NAME_FQN    = new FullQualifiedName( "nc.PersonMiddleName" );
@@ -63,7 +67,9 @@ public class PersonProperties {
         return valueIsPresent( entity, fqnToIdMap.get( LAST_NAME_FQN ) );
     }
 
-    public static DelegatedStringSet getSex( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
+    public static DelegatedStringSet getSex(
+            Map<UUID, DelegatedStringSet> entity,
+            Map<FullQualifiedName, UUID> fqnToIdMap ) {
         return getValuesAsSet( entity, fqnToIdMap.get( SEX_FQN ) );
     }
 
@@ -71,7 +77,9 @@ public class PersonProperties {
         return valueIsPresent( entity, fqnToIdMap.get( SEX_FQN ) );
     }
 
-    public static DelegatedStringSet getRace( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
+    public static DelegatedStringSet getRace(
+            Map<UUID, DelegatedStringSet> entity,
+            Map<FullQualifiedName, UUID> fqnToIdMap ) {
         return getValuesAsSet( entity, fqnToIdMap.get( RACE_FQN ) );
     }
 
@@ -89,7 +97,9 @@ public class PersonProperties {
         return valueIsPresent( entity, fqnToIdMap.get( ETHNICITY_FQN ) );
     }
 
-    public static DelegatedStringSet getDob( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
+    public static DelegatedStringSet getDob(
+            Map<UUID, DelegatedStringSet> entity,
+            Map<FullQualifiedName, UUID> fqnToIdMap ) {
         return getValuesAsSet( entity, fqnToIdMap.get( DOB_FQN ) );
     }
 
@@ -109,7 +119,9 @@ public class PersonProperties {
         return valueIsPresent( entity, fqnToIdMap.get( IDENTIFICATION_FQN ) );
     }
 
-    public static DelegatedStringSet getSsn( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
+    public static DelegatedStringSet getSsn(
+            Map<UUID, DelegatedStringSet> entity,
+            Map<FullQualifiedName, UUID> fqnToIdMap ) {
         return getValuesAsSet( entity, fqnToIdMap.get( SSN_FQN ) );
     }
 
@@ -117,7 +129,9 @@ public class PersonProperties {
         return valueIsPresent( entity, fqnToIdMap.get( SSN_FQN ) );
     }
 
-    public static DelegatedStringSet getAge( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
+    public static DelegatedStringSet getAge(
+            Map<UUID, DelegatedStringSet> entity,
+            Map<FullQualifiedName, UUID> fqnToIdMap ) {
         return getValuesAsSet( entity, fqnToIdMap.get( AGE_FQN ) );
     }
 
@@ -125,12 +139,38 @@ public class PersonProperties {
         return valueIsPresent( entity, fqnToIdMap.get( AGE_FQN ) );
     }
 
-    public static DelegatedStringSet getXref( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
+    public static DelegatedStringSet getXref(
+            Map<UUID, DelegatedStringSet> entity,
+            Map<FullQualifiedName, UUID> fqnToIdMap ) {
         return getValuesAsSet( entity, fqnToIdMap.get( XREF_FQN ) );
     }
 
     public static int getHasXref( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
         return valueIsPresent( entity, fqnToIdMap.get( XREF_FQN ) );
+    }
+
+    public static DelegatedStringSet getDobStrs(
+            Map<UUID, DelegatedStringSet> entity,
+            Map<FullQualifiedName, UUID> fqnToIdMap ) {
+        DelegatedStringSet dobStrings = getValuesAsSet( entity, fqnToIdMap.get( DOB_FQN ) );
+        if ( dobStrings.isEmpty() )
+            return dobStrings;
+        DelegatedStringSet values = new DelegatedStringSet( Sets.newHashSet() );
+        for ( String dobUnparsed : dobStrings ) {
+            if ( dobUnparsed != null ) {
+                if ( StringUtils.isEmpty( dobUnparsed ) )
+                    values.add( "" );
+                else {
+                    try {
+                        DateTime dt = DateTime.parse( dobUnparsed );
+                        String dobParsed = dd.format( dt.getDayOfMonth() ) + dd.format( dt.getMonthOfYear() ) + String
+                                .valueOf( dt.getYear() );
+                        values.add( dobParsed );
+                    } catch ( Exception e ) { }
+                }
+            }
+        }
+        return values;
     }
 
 }
