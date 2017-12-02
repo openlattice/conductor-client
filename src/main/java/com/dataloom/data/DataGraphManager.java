@@ -65,7 +65,9 @@ public interface DataGraphManager {
             Map<String, SetMultimap<UUID, Object>> entities,
             Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType )
             throws ExecutionException, InterruptedException;
-    
+
+    void replaceEntity( UUID entityKeyId, SetMultimap<UUID, Object> entity, Map<UUID, EdmPrimitiveTypeKind> propertyTypes );
+
     void createAssociations(
             UUID entitySetId,
             UUID syncId,
