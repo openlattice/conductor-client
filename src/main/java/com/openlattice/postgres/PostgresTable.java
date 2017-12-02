@@ -210,7 +210,7 @@ public final class PostgresTable {
                     .addColumns( PARTITION_INDEX, BASE, MSB, LSB );
 
     public static final PostgresTableDefinition IDS =
-            new PostgresTableDefinition( "ids" )
+            new PostgresTableDefinition( "entity_key_ids" )
                     .addColumns( ENTITY_SET_ID, SYNC_ID, ENTITY_ID, ID );
 
     public static final PostgresTableDefinition LINKED_ENTITY_SETS =
@@ -302,7 +302,10 @@ public final class PostgresTable {
             );
 
     static {
-        IDS.addIndexes( new PostgresIndexDefinition( IDS, ENTITY_SET_ID, SYNC_ID, ENTITY_ID ) );
+        IDS.addIndexes(
+                new PostgresIndexDefinition( IDS, ENTITY_SET_ID, SYNC_ID, ENTITY_ID )
+                        .name( "entity_key_idx" )
+                        .ifNotExists() );
     }
 
     private PostgresTable() {

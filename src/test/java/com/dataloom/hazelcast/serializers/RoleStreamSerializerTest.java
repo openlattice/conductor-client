@@ -4,10 +4,11 @@ import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.organization.roles.Role;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
+import com.openlattice.authorization.SecurablePrincipal;
 import java.io.Serializable;
 
 public class RoleStreamSerializerTest
-        extends AbstractStreamSerializerTest<RoleStreamSerializer, Role>
+        extends AbstractStreamSerializerTest<SecurablePrincipalStreamSerializer, SecurablePrincipal>
         implements Serializable {
 
     private static final long serialVersionUID = 8223378929816938716L;
