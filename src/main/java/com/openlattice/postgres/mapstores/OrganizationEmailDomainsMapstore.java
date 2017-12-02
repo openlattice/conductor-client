@@ -31,17 +31,13 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
         super( HazelcastMap.ALLOWED_EMAIL_DOMAINS.name(), ORGANIZATIONS, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
+    @Override protected List<PostgresColumnDefinition> initValueColumns() {
         return ImmutableList.of( ALLOWED_EMAIL_DOMAINS );
     }
 
     @Override protected void bind(
             PreparedStatement ps, UUID key, DelegatedStringSet value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind( ps, key, 1 );
 
         Array valueArr = PostgresArrays.createTextArray( ps.getConnection(), value.stream() );
         ps.setObject( 2, valueArr );
@@ -50,8 +46,9 @@ public class OrganizationEmailDomainsMapstore extends AbstractBasePostgresMapsto
         ps.setObject( 3, valueArr );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected DelegatedStringSet mapToValue( ResultSet rs ) throws SQLException {

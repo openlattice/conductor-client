@@ -56,23 +56,17 @@ public class PostgresCredentialMapstore extends AbstractBasePostgresMapstore<Str
         return RandomStringUtils.random( 5 );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( PostgresColumn.PRINCIPAL_ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( PostgresColumn.CREDENTIAL );
-    }
 
     @Override protected void bind( PreparedStatement ps, String key, String value ) throws SQLException {
-        bind( ps, key );
+        bind( ps, key,1 );
         ps.setString( 2, value );
 
         ps.setString( 3, value );
     }
 
-    @Override protected void bind( PreparedStatement ps, String key ) throws SQLException {
-        ps.setString( 1, key );
+    @Override protected int bind( PreparedStatement ps, String key, int parameterIndex ) throws SQLException {
+        ps.setString( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override public void store( String key, String value ) {

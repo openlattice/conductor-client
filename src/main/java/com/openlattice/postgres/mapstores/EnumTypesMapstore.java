@@ -1,24 +1,19 @@
 package com.openlattice.postgres.mapstores;
 
+import static com.openlattice.postgres.PostgresTable.ENUM_TYPES;
+
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.PostgresArrays;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
-
-import static com.openlattice.postgres.PostgresColumn.*;
-import static com.openlattice.postgres.PostgresTable.ENUM_TYPES;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 public class EnumTypesMapstore extends AbstractBasePostgresMapstore<UUID, EnumType> {
 
@@ -26,26 +21,8 @@ public class EnumTypesMapstore extends AbstractBasePostgresMapstore<UUID, EnumTy
         super( HazelcastMap.ENUM_TYPES.name(), ENUM_TYPES, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of(
-                NAMESPACE,
-                NAME,
-                TITLE,
-                DESCRIPTION,
-                MEMBERS,
-                SCHEMAS,
-                DATATYPE,
-                FLAGS,
-                PII,
-                ANALYZER );
-    }
-
     @Override protected void bind( PreparedStatement ps, UUID key, EnumType value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind(ps,key, 1);
 
         FullQualifiedName fqn = value.getType();
         ps.setString( 2, fqn.getNamespace() );
@@ -80,8 +57,9 @@ public class EnumTypesMapstore extends AbstractBasePostgresMapstore<UUID, EnumTy
         ps.setString( 21, value.getAnalyzer().name() );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected EnumType mapToValue( ResultSet rs ) throws SQLException {

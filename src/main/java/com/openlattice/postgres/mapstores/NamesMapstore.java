@@ -24,24 +24,18 @@ public class NamesMapstore extends AbstractBasePostgresMapstore<UUID, String> {
         super( HazelcastMap.NAMES.name(), NAMES, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( PostgresColumn.SECURABLE_OBJECTID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( PostgresColumn.NAME );
-    }
 
     @Override protected void bind( PreparedStatement ps, UUID key, String value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind( ps, key ,1 );
         ps.setString( 2, value );
 
         // UPDATE
         ps.setString( 3, value );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected String mapToValue( ResultSet rs ) throws SQLException {

@@ -26,16 +26,8 @@ public class ComplexTypeMapstore extends AbstractBasePostgresMapstore<UUID, Comp
         super( HazelcastMap.COMPLEX_TYPES.name(), COMPLEX_TYPES, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( NAMESPACE, NAME, TITLE, DESCRIPTION, PROPERTIES, BASE_TYPE, SCHEMAS, CATEGORY );
-    }
-
     @Override protected void bind( PreparedStatement ps, UUID key, ComplexType value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind( ps, key, 1);
 
         FullQualifiedName fqn = value.getType();
         ps.setString( 2, fqn.getNamespace() );
@@ -67,8 +59,9 @@ public class ComplexTypeMapstore extends AbstractBasePostgresMapstore<UUID, Comp
         ps.setString( 17, value.getCategory().name() );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected ComplexType mapToValue( ResultSet rs ) throws SQLException {

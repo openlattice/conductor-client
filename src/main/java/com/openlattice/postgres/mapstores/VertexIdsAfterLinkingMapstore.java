@@ -1,20 +1,16 @@
 package com.openlattice.postgres.mapstores;
 
+import static com.openlattice.postgres.PostgresColumn.NEW_VERTEX_ID;
+import static com.openlattice.postgres.PostgresTable.VERTEX_IDS_AFTER_LINKING;
+
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.LinkingVertexKey;
-import com.google.common.collect.ImmutableList;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
-
-import static com.openlattice.postgres.PostgresColumn.*;
-import static com.openlattice.postgres.PostgresTable.VERTEX_IDS_AFTER_LINKING;
 
 public class VertexIdsAfterLinkingMapstore extends AbstractBasePostgresMapstore<LinkingVertexKey, UUID> {
 
@@ -22,25 +18,18 @@ public class VertexIdsAfterLinkingMapstore extends AbstractBasePostgresMapstore<
         super( HazelcastMap.VERTEX_IDS_AFTER_LINKING.name(), VERTEX_IDS_AFTER_LINKING, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( GRAPH_ID, VERTEX_ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( NEW_VERTEX_ID );
-    }
-
     @Override protected void bind( PreparedStatement ps, LinkingVertexKey key, UUID value ) throws SQLException {
-        bind( ps, key );
+        bind( ps, key, 1 );
         ps.setObject( 3, value );
 
         // UPDATE
         ps.setObject( 4, value );
     }
 
-    @Override protected void bind( PreparedStatement ps, LinkingVertexKey key ) throws SQLException {
-        ps.setObject( 1, key.getGraphId() );
-        ps.setObject( 2, key.getVertexId() );
+    @Override protected int bind( PreparedStatement ps, LinkingVertexKey key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key.getGraphId() );
+        ps.setObject( parameterIndex++, key.getVertexId() );
+        return parameterIndex;
     }
 
     @Override protected UUID mapToValue( ResultSet rs ) throws SQLException {

@@ -28,17 +28,9 @@ public class LinkingVerticesMapstore extends AbstractBasePostgresMapstore<Linkin
         super( HazelcastMap.LINKING_VERTICES.name(), LINKING_VERTICES, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( GRAPH_ID, VERTEX_ID );
-    }
-
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
-        return ImmutableList.of( GRAPH_DIAMETER, ENTITY_KEY_IDS );
-    }
-
     @Override protected void bind( PreparedStatement ps, LinkingVertexKey key, LinkingVertex value )
             throws SQLException {
-        bind( ps, key );
+        bind( ps, key , 1);
 
         ps.setDouble( 3, value.getDiameter() );
         Array entityKeyIds = PostgresArrays.createUuidArray( ps.getConnection(), value.getEntityKeys().stream() );
@@ -49,9 +41,10 @@ public class LinkingVerticesMapstore extends AbstractBasePostgresMapstore<Linkin
         ps.setArray( 6, entityKeyIds );
     }
 
-    @Override protected void bind( PreparedStatement ps, LinkingVertexKey key ) throws SQLException {
-        ps.setObject( 1, key.getGraphId() );
-        ps.setObject( 2, key.getVertexId() );
+    @Override protected int bind( PreparedStatement ps, LinkingVertexKey key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key.getGraphId() );
+        ps.setObject( parameterIndex++, key.getVertexId() );
+        return parameterIndex;
     }
 
     @Override protected LinkingVertex mapToValue( ResultSet rs ) throws SQLException {

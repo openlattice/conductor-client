@@ -20,7 +20,6 @@
 
 package com.dataloom.data.mapstores;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.openlattice.postgres.PostgresColumn.ENTITY_ID;
 import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
 import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
@@ -124,21 +123,26 @@ public class PostgresEntityKeyIdsMapstore extends AbstractBasePostgresMapstore<E
     @Override public UUID load( EntityKey key ) {
         UUID id = super.load( key );
 
-        if ( id == null ) {
+        while ( id == null ) {
             id = UUID.randomUUID();
-            entityKeyIdCache.put( key, id );
             super.store( key, id );
-            id = checkNotNull( entityKeyIdCache.getIfPresent( key ), "Unable to generate id." );
+            id = entityKeyIdCache.getIfPresent( key );
         }
-
+        //Clean up the cache
+        entityKeyIdCache.invalidate( key );
         return id;
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
+    @Override protected void handleStoreSucceeded( EntityKey key, UUID value ) {
+        entityKeyIdCache.put( key, value );
+        logger.debug( "Successfully stored key {} and value {} in map {}.", key, value, getMapName() );
+    }
+
+    @Override protected List<PostgresColumnDefinition> initKeyColumns() {
         return ImmutableList.of( ENTITY_SET_ID, SYNC_ID, ENTITY_ID );
     }
 
-    @Override protected List<PostgresColumnDefinition> valueColumns() {
+    @Override protected List<PostgresColumnDefinition> initValueColumns() {
         return ImmutableList.of( PostgresColumn.ID );
     }
 
@@ -149,14 +153,15 @@ public class PostgresEntityKeyIdsMapstore extends AbstractBasePostgresMapstore<E
         super.store( key, UUID.randomUUID() );
     }
 
-    public void bind( PreparedStatement ps, EntityKey key ) throws SQLException {
-        ps.setObject( 1, key.getEntitySetId() );
-        ps.setObject( 2, key.getSyncId() );
-        ps.setObject( 3, key.getEntityId() );
+    public int bind( PreparedStatement ps, EntityKey key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key.getEntitySetId() );
+        ps.setObject( parameterIndex++, key.getSyncId() );
+        ps.setObject( parameterIndex++, key.getEntityId() );
+        return parameterIndex;
     }
 
     public void bind( PreparedStatement ps, EntityKey key, UUID value ) throws SQLException {
-        bind( ps, key );
+        bind( ps, key, 1 );
         ps.setObject( 4, value );
     }
 

@@ -49,12 +49,13 @@ public class LinkedEntityTypesMapstore extends AbstractBasePostgresMapstore<UUID
     }
 
     @Override protected void bind( PreparedStatement ps, UUID key, DelegatedUUIDSet value ) throws SQLException {
-        bind( ps, key );
+        bind( ps, key , 1 );
         ps.setObject( 2, PostgresArrays.createUuidArray( ps.getConnection(), value.stream() ) );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key , int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected DelegatedUUIDSet mapToValue( ResultSet rs ) throws SQLException {

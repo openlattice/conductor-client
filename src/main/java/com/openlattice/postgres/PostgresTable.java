@@ -108,8 +108,7 @@ public final class PostgresTable {
     public static final PostgresTableDefinition ACL_KEYS =
             new PostgresTableDefinition( "acl_keys" )
                     .addColumns( NAME, SECURABLE_OBJECTID )
-                    .primaryKey( NAME )
-                    .setUnique( NAME );
+                    .primaryKey( NAME );
 
     public static final PostgresTableDefinition APP_CONFIGS =
             new PostgresTableDefinition( "app_configs" )
@@ -123,7 +122,8 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition APPS =
             new PostgresTableDefinition( "apps" )
-                    .addColumns( ID, NAME, TITLE, DESCRIPTION, CONFIG_TYPE_IDS )
+                    .addColumns( ID_VALUE, NAME, TITLE, DESCRIPTION, CONFIG_TYPE_IDS )
+                    .primaryKey( ID_VALUE, NAME )
                     .setUnique( NAME );
 
     public static final PostgresTableDefinition ASSOCIATION_TYPES =
@@ -305,6 +305,10 @@ public final class PostgresTable {
         IDS.addIndexes(
                 new PostgresIndexDefinition( IDS, ENTITY_SET_ID, SYNC_ID, ENTITY_ID )
                         .name( "entity_key_idx" )
+                        .ifNotExists() );
+        APPS.addIndexes(
+                new PostgresIndexDefinition( APPS, ID )
+                        .name( "id_idx" )
                         .ifNotExists() );
     }
 

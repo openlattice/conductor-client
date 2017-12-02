@@ -1,5 +1,9 @@
 package com.openlattice.postgres.mapstores;
 
+import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresColumn.MEMBERS;
+import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
+
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -12,36 +16,31 @@ import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.commons.lang.RandomStringUtils;
-
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.MEMBERS;
-import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
+import org.apache.commons.lang.RandomStringUtils;
 
 public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UUID, PrincipalSet> {
     public OrganizationMembersMapstore( HikariDataSource hds ) {
         super( HazelcastMap.ORGANIZATIONS_MEMBERS.name(), ORGANIZATIONS, hds );
     }
 
-    @Override protected List<PostgresColumnDefinition> keyColumns() {
-        return ImmutableList.of( ID );
-    }
-
     @Override
-    protected List<PostgresColumnDefinition> valueColumns() {
+    protected List<PostgresColumnDefinition> initValueColumns() {
         return ImmutableList.of( MEMBERS );
     }
 
     @Override
     protected void bind( PreparedStatement ps, UUID key, PrincipalSet value ) throws SQLException {
-        ps.setObject( 1, key );
+        bind( ps, key, 1 );
 
         Array principalArray = PostgresArrays
                 .createTextArray( ps.getConnection(), value.stream().map( Principal::getId ) );
@@ -51,18 +50,20 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
         ps.setArray( 3, principalArray );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key ) throws SQLException {
-        ps.setObject( 1, key );
+    @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
+        ps.setObject( parameterIndex++, key );
+        return parameterIndex;
     }
 
     @Override protected PrincipalSet mapToValue( ResultSet rs ) throws SQLException {
         Array arr = rs.getArray( MEMBERS.getName() );
         if ( arr != null ) {
             String[] value = (String[]) arr.getArray();
-            if ( value != null )
+            if ( value != null ) {
                 return PrincipalSet
                         .wrap( Arrays.stream( value ).map( user -> new Principal( PrincipalType.USER, user ) )
                                 .collect( Collectors.toSet() ) );
+            }
         }
         return PrincipalSet.wrap( Sets.newHashSet() );
     }
