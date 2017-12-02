@@ -44,6 +44,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -136,6 +137,10 @@ public class PostgresEntityKeyIdsMapstore extends AbstractBasePostgresMapstore<E
     @Override protected void handleStoreSucceeded( EntityKey key, UUID value ) {
         entityKeyIdCache.put( key, value );
         logger.debug( "Successfully stored key {} and value {} in map {}.", key, value, getMapName() );
+    }
+
+    @Override public Map<EntityKey, UUID> loadAll( Collection<EntityKey> keys ) {
+        return super.loadAll( keys );
     }
 
     @Override protected List<PostgresColumnDefinition> initKeyColumns() {
