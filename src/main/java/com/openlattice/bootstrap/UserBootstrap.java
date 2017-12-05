@@ -10,6 +10,7 @@ import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.google.common.base.Optional;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.core.IMap;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.DbCredentialService;
@@ -21,11 +22,15 @@ public class UserBootstrap {
     public UserBootstrap(
             HazelcastInstance hazelcastInstance,
             SecurePrincipalsManager spm,
-            DbCredentialService dbCredService ) {
+            DbCredentialService dbCredService ) throws InterruptedException {
         IMap<String, Auth0UserBasic> users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
-
+        IAtomicLong nextTime = hazelcastInstance.getAtomicLong( Auth0UserBasic.class.getCanonicalName() );
         AclKey userRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_USER_ROLE.getPrincipal() );
         AclKey adminRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_ADMIN_ROLE.getPrincipal() );
+
+        while ( nextTime.get() == 0 ) {
+            Thread.sleep( 500 );
+        }
 
         for ( Entry<String, Auth0UserBasic> userEntry : users.entrySet() ) {
             String userId = userEntry.getKey();
@@ -33,9 +38,9 @@ public class UserBootstrap {
             Principal principal = new Principal( PrincipalType.USER, userId );
 
             if ( user != null ) {
-
                 if ( !spm.principalExists( principal ) ) {
-                    checkState( user.getUserId().equals( userId ), "Retrieved user id must match submitted user id" );
+                    checkState( user.getUserId().equals( userId ),
+                            "Retrieved user id must match submitted user id" );
                     dbCredService.createUser( userId );
                     String title = ( user.getNickname() != null && user.getNickname().length() > 0 ) ?
                             user.getNickname() :
