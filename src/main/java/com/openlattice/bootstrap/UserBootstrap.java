@@ -15,6 +15,7 @@ import com.hazelcast.core.IMap;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.DbCredentialService;
 import com.openlattice.authorization.SecurablePrincipal;
+import com.openlattice.authorization.mapstores.UserMapstore;
 import java.util.Map.Entry;
 
 public class UserBootstrap {
@@ -24,7 +25,7 @@ public class UserBootstrap {
             SecurePrincipalsManager spm,
             DbCredentialService dbCredService ) throws InterruptedException {
         IMap<String, Auth0UserBasic> users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
-        IAtomicLong nextTime = hazelcastInstance.getAtomicLong( Auth0UserBasic.class.getCanonicalName() );
+        IAtomicLong nextTime = hazelcastInstance.getAtomicLong( UserMapstore.class.getCanonicalName() );
         AclKey userRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_USER_ROLE.getPrincipal() );
         AclKey adminRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_ADMIN_ROLE.getPrincipal() );
 
