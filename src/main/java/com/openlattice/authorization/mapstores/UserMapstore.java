@@ -149,11 +149,11 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
             //If iterator for current page is exhausted get the next page and refresh iterator.
             //Populate the loading cached to avoid repeated calls to auth0 for read user data
             if ( !pos.hasNext() ) {
+                logger.debug("Loading page {} of auth0 users", page );
                 pageOfUsers = auth0ManagementApi.getAllUsers( page++, DEFAULT_PAGE_SIZE );
-
                 //If no users or a null repsonse return false.
                 if ( pageOfUsers == null || pageOfUsers.isEmpty() ) {
-                    logger.warn( "Received null/empty response from auth0." );
+                    logger.debug( "Received null/empty response for page {}", 0 );
                     return false;
                 }
 
