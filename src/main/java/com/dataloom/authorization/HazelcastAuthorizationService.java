@@ -43,6 +43,8 @@ import com.openlattice.authorization.processors.SecurableObjectTypeUpdater;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
@@ -123,11 +125,47 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         aqs.deletePermissionsByAclKeys( aclKey );
     }
 
+    @Timed
     @Override
-    public void deletePrincipalPermissions( Principal principal ) {
-        aqs.deletePermissionsByPrincipal( principal );
+    public Map<AclKey, EnumMap<Permission, Boolean>> maybeFastAccessChecksForPrincipals(
+            Set<AccessCheck> accessChecks,
+            Set<Principal> principals ) {
+        final Map<AclKey, EnumMap<Permission, Boolean>> results = new HashMap<>( accessChecks.size() );
+        final Set<AceKey> aceKeys = new HashSet<>( accessChecks.size() * principals.size() );
+        final Map<AceKey, AceValue> aceMap;
+
+        //Prepare the results data structure
+        for ( AccessCheck accessCheck : accessChecks ) {
+            AclKey aclKey = accessCheck.getAclKey();
+            EnumMap<Permission, Boolean> granted = results.get( aclKey );
+
+            if ( granted == null ) {
+                granted = new EnumMap<>( Permission.class );
+                results.put( aclKey, granted );
+            }
+
+            for ( Permission permission : accessCheck.getPermissions() ) {
+                granted.putIfAbsent( permission, false );
+            }
+        }
+
+        accessChecks
+                .forEach( ac -> principals.forEach( p -> aceKeys.add( new AceKey( ac.getAclKey(), p ) ) ) );
+
+        aceMap = aces.getAll( aceKeys );
+
+        aceMap.forEach( ( ak, av ) -> {
+            EnumMap<Permission, Boolean> granted = results.get( ak.getKey() );
+            av.getPermissions().forEach( p -> {
+                if ( granted.containsKey( p ) ) {
+                    granted.put( p, true );
+                }
+            } );
+        } );
+        return results;
     }
 
+    @Timed
     @Override
     public Map<AclKey, EnumMap<Permission, Boolean>> accessChecksForPrincipals(
             Set<AccessCheck> accessChecks,
@@ -141,6 +179,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                                         matches( ac.getAclKey(), principals, ac.getPermissions() ) ).getPermissions()
                 ) );
 
+    }
+
+    @Override
+    public void deletePrincipalPermissions( Principal principal ) {
+        aqs.deletePermissionsByPrincipal( principal );
     }
 
     public Predicate matches( AclKey aclKey, Collection<Principal> principals, EnumSet<Permission> permissions ) {

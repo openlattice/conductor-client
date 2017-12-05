@@ -19,6 +19,7 @@
 
 package com.dataloom.authorization;
 
+import com.codahale.metrics.annotation.Timed;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.openlattice.authorization.AceValue;
@@ -70,6 +71,10 @@ public interface AuthorizationManager {
     void deletePermissions( AclKey aclKey );
 
     void deletePrincipalPermissions( Principal principal );
+
+    @Timed Map<AclKey, EnumMap<Permission, Boolean>> maybeFastAccessChecksForPrincipals(
+            Set<AccessCheck> accessChecks,
+            Set<Principal> principals );
 
     Map<AclKey, EnumMap<Permission, Boolean>> accessChecksForPrincipals(
             Set<AccessCheck> accessChecks,
