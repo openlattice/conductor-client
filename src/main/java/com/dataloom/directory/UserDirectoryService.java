@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory;
 import retrofit2.Retrofit;
 
 public class UserDirectoryService {
-    private static final Logger logger = LoggerFactory.getLogger( UserDirectoryService.class );
-    private static final int DEFAULT_PAGE_SIZE = 100;
+    private static final Logger logger            = LoggerFactory.getLogger( UserDirectoryService.class );
+    private static final int    DEFAULT_PAGE_SIZE = 100;
     //TODO: Switch over to a Hazelcast map to relieve pressure from Auth0
     @SuppressWarnings( "unused" )
     private final IMap<String, Auth0UserBasic> users;
@@ -61,27 +61,11 @@ public class UserDirectoryService {
     }
 
     public Map<String, Auth0UserBasic> getAllUsers() {
-        int page = 0;
-        Set<Auth0UserBasic> pageOfUsers;
-        Set<Auth0UserBasic> users = Sets.newHashSet();
-
-        do {
-            pageOfUsers = auth0ManagementApi.getAllUsers( page++, DEFAULT_PAGE_SIZE );
-            users.addAll( pageOfUsers );
-        } while ( pageOfUsers.size() == DEFAULT_PAGE_SIZE );
-
-        if ( users.isEmpty() ) {
-            logger.warn( "Received null response from auth0" );
-            return ImmutableMap.of();
-        }
-
-        return users
-                .stream()
-                .collect( Collectors.toMap( Auth0UserBasic::getUserId, Function.identity() ) );
+        return ImmutableMap.copyOf( users );
     }
 
     public Auth0UserBasic getUser( String userId ) {
-        return auth0ManagementApi.getUser( userId );
+        return users.get( userId );
     }
 
     public void setRolesOfUser( String userId, Set<String> roleList ) {
