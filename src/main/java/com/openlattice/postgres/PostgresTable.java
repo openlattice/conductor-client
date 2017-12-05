@@ -43,7 +43,7 @@ import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
 import static com.openlattice.postgres.PostgresColumn.DST;
 import static com.openlattice.postgres.PostgresColumn.DST_ENTITY_KEY_ID;
 import static com.openlattice.postgres.PostgresColumn.DST_ENTITY_SET_ID;
-import static com.openlattice.postgres.PostgresColumn.DST_ENTITY_SYNC_ID;
+import static com.openlattice.postgres.PostgresColumn.DST_SYNC_ID;
 import static com.openlattice.postgres.PostgresColumn.DST_LINKING_VERTEX_ID;
 import static com.openlattice.postgres.PostgresColumn.DST_TYPE_ID;
 import static com.openlattice.postgres.PostgresColumn.EDGE_ENTITY_KEY_ID;
@@ -88,7 +88,7 @@ import static com.openlattice.postgres.PostgresColumn.SHOW;
 import static com.openlattice.postgres.PostgresColumn.SRC;
 import static com.openlattice.postgres.PostgresColumn.SRC_ENTITY_KEY_ID;
 import static com.openlattice.postgres.PostgresColumn.SRC_ENTITY_SET_ID;
-import static com.openlattice.postgres.PostgresColumn.SRC_ENTITY_SYNC_ID;
+import static com.openlattice.postgres.PostgresColumn.SRC_SYNC_ID;
 import static com.openlattice.postgres.PostgresColumn.SRC_LINKING_VERTEX_ID;
 import static com.openlattice.postgres.PostgresColumn.SRC_TYPE_ID;
 import static com.openlattice.postgres.PostgresColumn.STATUS;
@@ -152,8 +152,8 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition EDGES =
             new PostgresTableDefinition( "edges" )
-                    .addColumns( SRC_ENTITY_KEY_ID, SRC_TYPE_ID, SRC_ENTITY_SET_ID, SRC_ENTITY_SYNC_ID,
-                            DST_ENTITY_KEY_ID, DST_TYPE_ID, DST_ENTITY_SET_ID, DST_ENTITY_SYNC_ID,
+                    .addColumns( SRC_ENTITY_KEY_ID, SRC_TYPE_ID, SRC_ENTITY_SET_ID, SRC_SYNC_ID,
+                            DST_ENTITY_KEY_ID, DST_TYPE_ID, DST_ENTITY_SET_ID, DST_SYNC_ID,
                             EDGE_ENTITY_KEY_ID, EDGE_TYPE_ID, EDGE_ENTITY_SET_ID )
                     .primaryKey( SRC_ENTITY_KEY_ID, DST_TYPE_ID, EDGE_TYPE_ID, DST_ENTITY_KEY_ID, EDGE_ENTITY_KEY_ID );
 

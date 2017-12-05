@@ -100,11 +100,11 @@ public final class PostgresColumn {
     public static final String SRC_ENTITY_KEY_ID_FIELD     = "src_entity_key_id";
     public static final String SRC_TYPE_ID_FIELD           = "src_type_id";
     public static final String SRC_ENTITY_SET_ID_FIELD     = "src_entity_set_id";
-    public static final String SRC_ENTITY_SYNC_ID_FIELD    = "src_entity_sync_id";
+    public static final String SRC_SYNC_ID_FIELD           = "src_sync_id";
     public static final String DST_ENTITY_KEY_ID_FIELD     = "dst_entity_key_id";
     public static final String DST_TYPE_ID_FIELD           = "dst_type_id";
     public static final String DST_ENTITY_SET_ID_FIELD     = "dst_entity_set_id";
-    public static final String DST_ENTITY_SYNC_ID_FIELD    = "dst_entity_sync_id";
+    public static final String DST_SYNC_ID_FIELD           = "dst_sync_id";
     public static final String EDGE_ENTITY_KEY_ID_FIELD    = "edge_entity_key_id";
     public static final String EDGE_TYPE_ID_FIELD          = "edge_type_id";
     public static final String EDGE_ENTITY_SET_ID_FIELD    = "edge_entity_set_id";
@@ -244,23 +244,23 @@ public final class PostgresColumn {
     public static final PostgresColumnDefinition SRC                   =
             new PostgresColumnDefinition( SRC_FIELD, UUID_ARRAY );
 
-    public static final PostgresColumnDefinition SRC_ENTITY_KEY_ID  =
+    public static final PostgresColumnDefinition SRC_ENTITY_KEY_ID =
             new PostgresColumnDefinition( SRC_ENTITY_KEY_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition SRC_TYPE_ID        =
+    public static final PostgresColumnDefinition SRC_TYPE_ID       =
             new PostgresColumnDefinition( SRC_TYPE_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition SRC_ENTITY_SET_ID  =
+    public static final PostgresColumnDefinition SRC_ENTITY_SET_ID =
             new PostgresColumnDefinition( SRC_ENTITY_SET_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition SRC_ENTITY_SYNC_ID =
-            new PostgresColumnDefinition( SRC_ENTITY_SYNC_ID_FIELD, UUID );
+    public static final PostgresColumnDefinition SRC_SYNC_ID       =
+            new PostgresColumnDefinition( SRC_SYNC_ID_FIELD, UUID );
 
-    public static final PostgresColumnDefinition DST_ENTITY_KEY_ID  =
+    public static final PostgresColumnDefinition DST_ENTITY_KEY_ID =
             new PostgresColumnDefinition( DST_ENTITY_KEY_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition DST_TYPE_ID        =
+    public static final PostgresColumnDefinition DST_TYPE_ID       =
             new PostgresColumnDefinition( DST_TYPE_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition DST_ENTITY_SET_ID  =
+    public static final PostgresColumnDefinition DST_ENTITY_SET_ID =
             new PostgresColumnDefinition( DST_ENTITY_SET_ID_FIELD, UUID );
-    public static final PostgresColumnDefinition DST_ENTITY_SYNC_ID =
-            new PostgresColumnDefinition( DST_ENTITY_SYNC_ID_FIELD, UUID );
+    public static final PostgresColumnDefinition DST_SYNC_ID       =
+            new PostgresColumnDefinition( DST_SYNC_ID_FIELD, UUID );
 
     public static final PostgresColumnDefinition EDGE_ENTITY_KEY_ID =
             new PostgresColumnDefinition( EDGE_ENTITY_KEY_ID_FIELD, UUID );
