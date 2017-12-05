@@ -122,9 +122,7 @@ public final class PostgresTable {
 
     public static final PostgresTableDefinition APPS =
             new PostgresTableDefinition( "apps" )
-                    .addColumns( ID_VALUE, NAME, TITLE, DESCRIPTION, CONFIG_TYPE_IDS )
-                    .primaryKey( ID_VALUE, NAME )
-                    .setUnique( NAME );
+                    .addColumns( ID, NAME, TITLE, DESCRIPTION, CONFIG_TYPE_IDS );
 
     public static final PostgresTableDefinition ASSOCIATION_TYPES =
             new PostgresTableDefinition( "association_types" )
