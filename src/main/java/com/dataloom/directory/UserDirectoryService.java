@@ -19,6 +19,7 @@
 
 package com.dataloom.directory;
 
+import com.codahale.metrics.annotation.Timed;
 import com.dataloom.client.RetrofitFactory;
 import com.dataloom.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -31,6 +32,7 @@ import com.kryptnostic.datastore.services.Auth0ManagementApi;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -60,10 +62,15 @@ public class UserDirectoryService {
         users = null;
     }
 
+    @Timed
     public Map<String, Auth0UserBasic> getAllUsers() {
-        return ImmutableMap.copyOf( users );
+        return users
+                .entrySet()
+                .stream().filter( e-> !(e.getValue()==null ))
+                .collect( Collectors.toConcurrentMap( Entry::getKey, Entry::getValue ) );
     }
 
+    @Timed
     public Auth0UserBasic getUser( String userId ) {
         return users.get( userId );
     }
