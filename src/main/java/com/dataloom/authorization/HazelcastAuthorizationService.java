@@ -231,6 +231,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return objectPermissions;
     }
 
+    @Timed
     @Override
     public Stream<AclKey> getAuthorizedObjectsOfType(
             Principal principal,
@@ -243,6 +244,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                 .map( AceKey::getKey );
     }
 
+    @Timed
     @Override
     public Stream<AclKey> getAuthorizedObjectsOfType(
             Set<Principal> principals,
@@ -255,6 +257,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                 .map( AceKey::getKey );
     }
 
+    @Timed
     @Override
     public AuthorizedObjectsSearchResult getAuthorizedObjectsOfType(
             NavigableSet<Principal> principals,
@@ -266,27 +269,32 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return aqs.getAuthorizedAclKeys( principals, objectType, permission, offset, pageSize );
     }
 
+    @Timed
     @Override
     public Acl getAllSecurableObjectPermissions( AclKey key ) {
 
         return aqs.getAclsForSecurableObject( key );
     }
 
+    @Timed
     @Override
     public Stream<AclKey> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions ) {
         return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
+    @Timed
     @Override
     public Stream<AclKey> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions ) {
         return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
+    @Timed
     @Override
     public Iterable<Principal> getSecurableObjectOwners( AclKey key ) {
         return aqs.getOwnersForSecurableObject( key );
     }
 
+    @Timed
     @Override
     public Map<AceKey, AceValue> getPermissionMap( Set<AclKey> aclKeys, Set<Principal> principals ) {
         Set<AceKey> aceKeys = aclKeys
