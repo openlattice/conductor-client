@@ -23,7 +23,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.dataloom.authentication.LoomAuthentication;
-import com.dataloom.organizations.roles.TokenExpirationTracker;
 import java.util.NavigableSet;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
@@ -33,18 +32,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public final class Principals {
     private static final Logger logger = LoggerFactory.getLogger( Principals.class );
 
-    private static TokenExpirationTracker tokenTracker;
-
     private Principals() {
     }
 
     public static void requireOrganization( Principal principal ) {
         checkArgument( principal.getType().equals( PrincipalType.ORGANIZATION ) );
-    }
-
-    public static void setExpiringTokenTracker( TokenExpirationTracker tokenTracker ) {
-        logger.info( "Expiring Token Tracker hooked up to Principals" );
-        Principals.tokenTracker = tokenTracker;
     }
 
     public static void ensureUser( Principal principal ) {
@@ -67,13 +59,7 @@ public final class Principals {
 
     public static LoomAuthentication getLoomAuthentication() {
         LoomAuthentication auth = (LoomAuthentication) SecurityContextHolder.getContext().getAuthentication();
-        // TODO: Temporarily turn off manual token expiration
-        /**
-         if( tokenTracker.needsNewToken( auth.getLoomPrincipal().getId() ) ){
-         throw new TokenRefreshException();
-         }
-         */
-        return ( (LoomAuthentication) auth );
+        return auth;
     }
 
     public static Principal getAdminRole() {
