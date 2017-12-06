@@ -17,9 +17,11 @@ import com.openlattice.authorization.DbCredentialService;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.mapstores.UserMapstore;
 import java.util.Map.Entry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UserBootstrap {
-
+    private static final Logger logger = LoggerFactory.getLogger(UserBootstrap.class);
     public UserBootstrap(
             HazelcastInstance hazelcastInstance,
             SecurePrincipalsManager spm,
@@ -30,7 +32,8 @@ public class UserBootstrap {
         AclKey adminRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_ADMIN_ROLE.getPrincipal() );
 
         while ( nextTime.get() == 0 ) {
-            Thread.sleep( 500 );
+            Thread.sleep( 1000 );
+            logger.warn( "Waiting for User mapstore to be initialized..." );
         }
 
         for ( Entry<String, Auth0UserBasic> userEntry : users.entrySet() ) {
