@@ -26,7 +26,7 @@ plugins {
     id 'findbugs'
 }
 
-description = "Kryptnostic Conductor Client"
+description = "Conductor Client"
 group = "com.openlattice"
 
 ext.projectName = "conductor-client"
