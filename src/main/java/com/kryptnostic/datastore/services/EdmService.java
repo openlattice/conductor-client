@@ -19,14 +19,30 @@
 
 package com.kryptnostic.datastore.services;
 
-import com.dataloom.authorization.*;
+import static com.google.common.base.Preconditions.checkState;
+
+import com.dataloom.authorization.AuthorizationManager;
+import com.dataloom.authorization.HazelcastAclKeyReservationService;
+import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.Principal;
+import com.dataloom.authorization.Principals;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.edm.EntityDataModel;
 import com.dataloom.edm.EntityDataModelDiff;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.Schema;
-import com.dataloom.edm.events.*;
+import com.dataloom.edm.events.AssociationTypeCreatedEvent;
+import com.dataloom.edm.events.AssociationTypeDeletedEvent;
+import com.dataloom.edm.events.ClearAllDataEvent;
+import com.dataloom.edm.events.EntitySetCreatedEvent;
+import com.dataloom.edm.events.EntitySetDeletedEvent;
+import com.dataloom.edm.events.EntitySetMetadataUpdatedEvent;
+import com.dataloom.edm.events.EntityTypeCreatedEvent;
+import com.dataloom.edm.events.EntityTypeDeletedEvent;
+import com.dataloom.edm.events.PropertyTypeCreatedEvent;
+import com.dataloom.edm.events.PropertyTypeDeletedEvent;
+import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
 import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.PostgresTypeManager;
@@ -34,14 +50,35 @@ import com.dataloom.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.*;
-import com.dataloom.edm.types.processors.*;
+import com.dataloom.edm.type.AssociationDetails;
+import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.PropertyType;
+import com.dataloom.edm.types.processors.AddDstEntityTypesToAssociationTypeProcessor;
+import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
+import com.dataloom.edm.types.processors.AddSrcEntityTypesToAssociationTypeProcessor;
+import com.dataloom.edm.types.processors.RemoveDstEntityTypesFromAssociationTypeProcessor;
+import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
+import com.dataloom.edm.types.processors.RemoveSrcEntityTypesFromAssociationTypeProcessor;
+import com.dataloom.edm.types.processors.ReorderPropertyTypesInEntityTypeProcessor;
+import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
+import com.dataloom.edm.types.processors.UpdateEntitySetPropertyMetadataProcessor;
+import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
+import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.google.common.base.Functions;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.*;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -51,21 +88,25 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresQuery;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.google.common.base.Preconditions.checkState;
+import javax.inject.Inject;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EdmService implements EdmManager {
 
@@ -82,7 +123,7 @@ public class EdmService implements EdmManager {
     private final IMap<UUID, AssociationType>                           associationTypes;
     private final IMap<UUID, UUID>                                      syncIds;
     private final IMap<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadata;
-    private final IMap<AclKey, SecurableObjectType>                 securableObjectTypes;
+    private final IMap<AclKey, SecurableObjectType>                     securableObjectTypes;
 
     private final HazelcastAclKeyReservationService aclKeyReservations;
     private final AuthorizationManager              authorizations;
@@ -379,17 +420,15 @@ public class EdmService implements EdmManager {
                     principal,
                     EnumSet.allOf( Permission.class ) );
 
-
             ownablePropertyTypes.stream()
                     .map( propertyTypeId -> new AclKey( entitySet.getId(), propertyTypeId ) )
-                    .peek( aclKey -> authorizations.addPermission(
-                            aclKey,
-                            principal,
-                            EnumSet.allOf( Permission.class ) ) )
-                    .forEach( aclKey -> {
+                    .peek( aclKey -> {
                         authorizations.setSecurableObjectType( aclKey,
                                 SecurableObjectType.PropertyTypeInEntitySet );
-                    } );
+                    } ).forEach( aclKey -> authorizations.addPermission(
+                    aclKey,
+                    principal,
+                    EnumSet.allOf( Permission.class ) ) );
 
             eventBus.post( new EntitySetCreatedEvent(
                     entitySet,
@@ -899,7 +938,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public EntityType getEntityTypeByEntitySetId( UUID entitySetId ) {
-        UUID entityTypeId  = getEntitySet( entitySetId ).getEntityTypeId();
+        UUID entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
         return getEntityType( entityTypeId );
     }
 

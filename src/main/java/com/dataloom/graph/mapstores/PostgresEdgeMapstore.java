@@ -127,6 +127,14 @@ public class PostgresEdgeMapstore extends AbstractBasePostgresMapstore<EdgeKey, 
         ps.setObject( 9, value.getEdgeEntityKeyId() );
         ps.setObject( 10, value.getEdgeTypeId() );
         ps.setObject( 11, value.getEdgeSetId() );
+
+        //Update
+        ps.setObject( 12, value.getSrcTypeId() );
+        ps.setObject( 13, value.getSrcSetId() );
+        ps.setObject( 14, value.getSrcSyncId() );
+        ps.setObject( 15, value.getDstSetId() );
+        ps.setObject( 16, value.getDstSyncId() );
+        ps.setObject( 17, value.getEdgeSetId() );
     }
 
     public LoomEdge mapToValue( ResultSet rs ) throws SQLException {
