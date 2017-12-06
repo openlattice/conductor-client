@@ -32,7 +32,6 @@ import com.kryptnostic.datastore.services.Auth0ManagementApi;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -64,10 +63,11 @@ public class UserDirectoryService {
 
     @Timed
     public Map<String, Auth0UserBasic> getAllUsers() {
-        return users
-                .entrySet()
-                .stream().filter( e-> !(e.getValue()==null ))
-                .collect( Collectors.toConcurrentMap( Entry::getKey, Entry::getValue ) );
+        return ImmutableMap.copyOf( users );
+        //        return users
+        //                .entrySet()
+        //                .stream().filter( e-> !(e.getValue()==null ))
+        //                .collect( Collectors.toConcurrentMap( Entry::getKey, Entry::getValue ) );
     }
 
     @Timed

@@ -135,22 +135,23 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         final Map<AceKey, AceValue> aceMap;
 
         //Prepare the results data structure
-        for ( AccessCheck accessCheck : accessChecks ) {
-            AclKey aclKey = accessCheck.getAclKey();
-            EnumMap<Permission, Boolean> granted = results.get( aclKey );
-
-            if ( granted == null ) {
-                granted = new EnumMap<>( Permission.class );
-                results.put( aclKey, granted );
-            }
-
-            for ( Permission permission : accessCheck.getPermissions() ) {
-                granted.putIfAbsent( permission, false );
-            }
-        }
-
         accessChecks
-                .forEach( ac -> principals.forEach( p -> aceKeys.add( new AceKey( ac.getAclKey(), p ) ) ) );
+                .parallelStream()
+                .forEach( accessCheck -> {
+                    AclKey aclKey = accessCheck.getAclKey();
+                    EnumMap<Permission, Boolean> granted = results.get( aclKey );
+
+                    if ( granted == null ) {
+                        granted = new EnumMap<>( Permission.class );
+                        results.put( aclKey, granted );
+                    }
+
+                    for ( Permission permission : accessCheck.getPermissions() ) {
+                        granted.putIfAbsent( permission, false );
+                    }
+
+                    principals.forEach( p -> aceKeys.add( new AceKey( aclKey, p ) ) );
+                } );
 
         aceMap = aces.getAll( aceKeys );
 
@@ -162,6 +163,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                 }
             } );
         } );
+
         return results;
     }
 
