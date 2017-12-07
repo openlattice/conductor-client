@@ -21,26 +21,44 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.authorization.Permission;
+import com.dataloom.mapstores.TestDataFactory;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AuthorizationAggregator;
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class AuthorizationAggregatorStreamSerializerTest extends AbstractStreamSerializerTest<AuthorizationAggregatorStreamSerializer,AuthorizationAggregator> {
+public class AuthorizationAggregatorStreamSerializerTest
+        extends AbstractStreamSerializerTest<AuthorizationAggregatorStreamSerializer, AuthorizationAggregator> {
+    private static Random       r           = new Random();
+    private static Permission[] permissions = Permission.values();
 
     @Override protected AuthorizationAggregatorStreamSerializer createSerializer() {
         return new AuthorizationAggregatorStreamSerializer();
     }
 
     @Override protected AuthorizationAggregator createInput() {
-        EnumMap<Permission, Boolean> pmap = new EnumMap<> (Permission.class);
-        pmap.put( Permission.OWNER, true );
-        pmap.put( Permission.LINK, true );
-        pmap.put( Permission.READ, false );
-        pmap.put( Permission.WRITE, true );
-        pmap.put( Permission.DISCOVER, false );
-        return new AuthorizationAggregator( pmap );
+        Map<AclKey, EnumMap<Permission, Boolean>> permissionsMap = new HashMap<>();
+
+        permissionsMap.put( TestDataFactory.aclKey(), createPermissionEntry() );
+        permissionsMap.put( TestDataFactory.aclKey(), createPermissionEntry() );
+        permissionsMap.put( TestDataFactory.aclKey(), createPermissionEntry() );
+        permissionsMap.put( TestDataFactory.aclKey(), createPermissionEntry() );
+        permissionsMap.put( TestDataFactory.aclKey(), createPermissionEntry() );
+        return new AuthorizationAggregator( permissionsMap );
+    }
+
+    private static EnumMap<Permission, Boolean> createPermissionEntry() {
+        EnumMap<Permission, Boolean> pmap = new EnumMap<>( Permission.class );
+        int count = r.nextInt( permissions.length );
+        for ( int i = 0; i < count; ++i ) {
+            pmap.put( permissions[ r.nextInt( permissions.length ) ], r.nextBoolean() );
+        }
+        return pmap;
     }
 }

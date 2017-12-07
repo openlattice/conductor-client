@@ -35,7 +35,7 @@ public class AceKeyStreamSerializer implements SelfRegisteringStreamSerializer<A
     @Override
     public void write( ObjectDataOutput out, AceKey object )
             throws IOException {
-        AclKeyStreamSerializer.serialize( out, object.getKey() );
+        AclKeyStreamSerializer.serialize( out, object.getAclKey() );
         PrincipalStreamSerializer.serialize( out, object.getPrincipal() );
     }
 

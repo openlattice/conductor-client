@@ -25,6 +25,7 @@ import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.neuron.Neuron;
 import com.dataloom.neuron.pods.NeuronPod;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
@@ -39,10 +40,12 @@ import com.zaxxer.hikari.HikariDataSource;
 import digital.loom.rhizome.authentication.Auth0Pod;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Assert;
@@ -155,8 +158,8 @@ public class HzAuthzTest {
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
 
-        hzAuthz.addPermission( key, p1, permissions1 );
         hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
+        hzAuthz.addPermission( key, p1, permissions1 );
         hzAuthz.addPermission( key, p2, permissions2 );
 
         Assert.assertTrue(
@@ -195,47 +198,75 @@ public class HzAuthzTest {
 
     @Test
     public void testAccessChecks() {
-        AclKey key = new AclKey( UUID.randomUUID() );
-        Principal p1 = TestDataFactory.userPrincipal();
-        Principal p2 = TestDataFactory.userPrincipal();
+        final int size = 100;
+        Set<AccessCheck> accessChecks = new HashSet<>( size );
+        AclKey[] aclKeys = new AclKey[ size ];
+        Principal[] p1s = new Principal[ size ];
+        Principal[] p2s = new Principal[ size ];
+        EnumSet<Permission>[] permissions1s = new EnumSet[ size ];
+        EnumSet<Permission>[] permissions2s = new EnumSet[ size ];
+        EnumSet<Permission> all = EnumSet.noneOf( Permission.class );
 
-        EnumSet<Permission> permissions1 = EnumSet.of( Permission.DISCOVER, Permission.READ, Permission.OWNER );
-        EnumSet<Permission> permissions2 = EnumSet
-                .of( Permission.DISCOVER, Permission.READ, Permission.WRITE, Permission.LINK );
+        for ( int i = 0; i < size; ++i ) {
+            AclKey key = new AclKey( UUID.randomUUID() );
+            Principal p1 = TestDataFactory.userPrincipal();
+            Principal p2 = TestDataFactory.userPrincipal();
+            aclKeys[ i ] = key;
+            p1s[ i ] = p1;
+            p2s[ i ] = p2;
 
-        Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions1 ) );
-        Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
+            EnumSet<Permission> permissions1 = permissions1s[ i ] = TestDataFactory.nonEmptyPermissions();
+            EnumSet<Permission> permissions2 = permissions2s[ i ] = TestDataFactory.nonEmptyPermissions();
 
-        hzAuthz.addPermission( key, p1, permissions1 );
-        hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
-        hzAuthz.addPermission( key, p2, permissions2 );
+            all.addAll( permissions2 );
 
-        Assert.assertTrue(
-                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions1 ) );
+            Assert.assertFalse(
+                    hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions1 ) );
+            Assert.assertFalse(
+                    hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
 
-        Assert.assertFalse( hzAuthz.checkIfHasPermissions( key,
-                ImmutableSet.of( p1 ),
-                EnumSet.of( Permission.WRITE, Permission.OWNER ) ) );
+            hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
+            hzAuthz.addPermission( key, p1, permissions1 );
+            hzAuthz.addPermission( key, p2, permissions2 );
 
-        Assert.assertTrue(
-                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
+            Assert.assertTrue( hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions1 ) );
 
-        AccessCheck ac = new AccessCheck( key, permissions1 );
+            Assert.assertEquals( permissions1.containsAll( permissions2 ),
+                    hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions2 ) );
+
+            Assert.assertTrue( hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
+
+            AccessCheck ac = new AccessCheck( key, permissions1 );
+        }
+        int i = 0;
+        for ( AccessCheck ac : accessChecks ) {
+            AclKey key = aclKeys[ i ];
+            Principal p1 = p1s[ i ];
+            Principal p2 = p2s[ i ];
+            EnumSet<Permission> permissions1 = permissions1s[ i ];
+            EnumSet<Permission> permissions2 = permissions2s[ i++ ];
+
+            Map<AclKey, EnumMap<Permission, Boolean>> result =
+                    hzAuthz.accessChecksForPrincipals( ImmutableSet.of( ac ), ImmutableSet.of( p2 ) )
+                            .collect( Collectors.toConcurrentMap( a -> a.getAclKey(),
+                                    a -> new EnumMap<>( a.getPermissions() ) ) );
+
+            Assert.assertTrue( result.containsKey( key ) );
+            EnumMap<Permission, Boolean> checkForKey = result.get( key );
+            Assert.assertTrue( checkForKey.size() == permissions1.size() );
+
+            Assert.assertTrue( permissions2.stream().allMatch( result.get( key )::get ) );
+            //            Assert.assertTrue( result.get( key ).get( Permission.DISCOVER ) );
+            //            Assert.assertTrue( result.get( key ).get( Permission.READ ) );
+            //            Assert.assertFalse( result.get( key ).get( Permission.OWNER ) );
+        }
+        Stopwatch w = Stopwatch.createStarted();
         Map<AclKey, EnumMap<Permission, Boolean>> result =
-                hzAuthz.accessChecksForPrincipals( ImmutableSet.of( ac ), ImmutableSet.of( p2 ) )
-                        //                        .collect( Collectors.toConcurrentMap( a->a.getAclKey(), a-> a.getPermissions() ) );
+                hzAuthz.accessChecksForPrincipals( accessChecks, ImmutableSet.copyOf( p2s ) )
                         .collect( Collectors.toConcurrentMap( a -> a.getAclKey(),
                                 a -> new EnumMap<>( a.getPermissions() ) ) );
+        logger.info( "Elapsed time to access check: {} ms", w.elapsed( TimeUnit.MILLISECONDS ) );
 
-        Assert.assertTrue( result.containsKey( key ) );
-        EnumMap<Permission, Boolean> checkForKey = result.get( key );
-        Assert.assertTrue( checkForKey.size() == permissions1.size() );
-
-        Assert.assertTrue( result.get( key ).get( Permission.DISCOVER ) );
-        Assert.assertTrue( result.get( key ).get( Permission.READ ) );
-        Assert.assertFalse( result.get( key ).get( Permission.OWNER ) );
     }
 
 }

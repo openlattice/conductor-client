@@ -19,6 +19,10 @@
 
 package com.dataloom.authorization;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.openlattice.authorization.mapstores.PermissionMapstore.ACL_KEY_INDEX;
+
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.processors.PermissionMerger;
@@ -37,16 +41,19 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AuthorizationAggregator;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.authorization.processors.SecurableObjectTypeUpdater;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
     private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
@@ -139,6 +146,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                     principals.forEach( p -> aceKeys.add( new AceKey( aclKey, p ) ) );
                 } );
         logger.info( "Preparing result data structure took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ) );
+
         w.reset();
         w.start();
         aceMap = aces.getAll( aceKeys );
@@ -147,7 +155,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         w.start();
 
         aceMap.forEach( ( ak, av ) -> {
-            EnumMap<Permission, Boolean> granted = results.get( ak.getKey() );
+            EnumMap<Permission, Boolean> granted = results.get( ak.getAclKey() );
             av.getPermissions().forEach( p -> {
                 if ( granted.containsKey( p ) ) {
                     granted.put( p, true );
@@ -165,13 +173,31 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public Stream<Authorization> accessChecksForPrincipals(
             Set<AccessCheck> accessChecks,
             Set<Principal> principals ) {
-        return accessChecks
+        final Map<AclKey, EnumMap<Permission, Boolean>> results = new HashMap<>( accessChecks.size() );
+        accessChecks
                 .parallelStream()
-                .map( ac -> new Authorization(
-                        ac.getAclKey(),
-                        aces.aggregate( new AuthorizationAggregator( ac.getPermissions() ),
-                                matches( ac.getAclKey(), principals, ac.getPermissions() ) ).getPermissions()
-                ) );
+                .forEach( accessCheck -> {
+                    AclKey aclKey = accessCheck.getAclKey();
+                    EnumMap<Permission, Boolean> granted = results.get( aclKey );
+
+                    if ( granted == null ) {
+                        granted = new EnumMap<>( Permission.class );
+                        results.put( aclKey, granted );
+                    }
+
+                    for ( Permission permission : accessCheck.getPermissions() ) {
+                        granted.putIfAbsent( permission, false );
+                    }
+                } );
+
+        AuthorizationAggregator agg =
+                aces.aggregate( new AuthorizationAggregator( results ), matches( results.keySet(), principals ) );
+
+        return agg
+                .getPermissions()
+                .entrySet()
+                .stream()
+                .map( e -> new Authorization( e.getKey(), e.getValue() ) );
 
     }
 
@@ -183,7 +209,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public Predicate matches( AclKey aclKey, Collection<Principal> principals, EnumSet<Permission> permissions ) {
         return Predicates.and(
                 hasAclKey( aclKey ),
-                hasPrincipals( principals ),
+                hasAnyPrincipals( principals ),
                 hasAnyPermissions( permissions ) );
     }
 
@@ -233,7 +259,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                 .and( hasPrincipal( principal ), hasType( objectType ), hasExactPermissions( permissions ) );
         return this.aces.keySet( p )
                 .stream()
-                .map( AceKey::getKey );
+                .map( AceKey::getAclKey );
     }
 
     @Timed
@@ -243,10 +269,10 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             SecurableObjectType objectType,
             EnumSet<Permission> permissions ) {
         Predicate p = Predicates
-                .and( hasPrincipals( principals ), hasType( objectType ), hasExactPermissions( permissions ) );
+                .and( hasAnyPrincipals( principals ), hasType( objectType ), hasExactPermissions( permissions ) );
         return this.aces.keySet( p )
                 .stream()
-                .map( AceKey::getKey );
+                .map( AceKey::getAclKey );
     }
 
     @Timed
@@ -297,6 +323,10 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return aces.getAll( aceKeys );
     }
 
+    private static Predicate matches( Collection<AclKey> aclKeys, Set<Principal> principals ) {
+        return Predicates.and( hasAnyAclKeys( aclKeys ), hasAnyPrincipals( principals ) );
+    }
+
     private static Predicate hasExactPermissions( EnumSet<Permission> permissions ) {
         Predicate[] subPredicates = new Predicate[ permissions.size() ];
         int i = 0;
@@ -310,26 +340,38 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return Predicates.in( PermissionMapstore.PERMISSIONS_INDEX, permissions.toArray( new Permission[ 0 ] ) );
     }
 
-    private static Predicate hasAclKey( AclKey aclKey ) {
-        //TODO: Do something about ignored order of acl key pieces.
-        Predicate[] subPredicates = new Predicate[ aclKey.size() + 1 ];
+    private static Predicate hasExactAclKeys( Collection<AclKey> aclKeys ) {
+        Predicate[] subPredicates = new Predicate[ aclKeys.size() ];
         int i = 0;
-
-        for ( UUID p : aclKey ) {
-            subPredicates[ i++ ] = Predicates.equal( PermissionMapstore.ACL_KEY_INDEX, p );
+        for ( AclKey aclKey : aclKeys ) {
+            subPredicates[ i++ ] = Predicates.equal( ACL_KEY_INDEX, aclKey );
         }
-
-        subPredicates[ i ] = Predicates.equal( PermissionMapstore.ACL_KEY_LENGTH_INDEX, aclKey.getSize() );
-
         return Predicates.and( subPredicates );
+    }
+
+    private static Predicate hasExactPrincipals( Collection<Principal> principals ) {
+        Predicate[] subPredicates = new Predicate[ principals.size() ];
+        int i = 0;
+        for ( Principal principal : principals ) {
+            subPredicates[ i++ ] = Predicates.equal( PermissionMapstore.PRINCIPAL_INDEX, principal );
+        }
+        return Predicates.and( subPredicates );
+    }
+
+    private static Predicate hasAnyPrincipals( Collection<Principal> principals ) {
+        return Predicates.in( PermissionMapstore.PRINCIPAL_INDEX, principals.toArray( new Principal[ 0 ] ) );
+    }
+
+    private static Predicate hasAnyAclKeys( Collection<AclKey> aclKeys ) {
+        return Predicates.in( ACL_KEY_INDEX, aclKeys.stream().map( AclKey::getIndex ).toArray( String[]::new ) );
+    }
+
+    private static Predicate hasAclKey( AclKey aclKey ) {
+        return Predicates.equal( ACL_KEY_INDEX, aclKey.getIndex() );
     }
 
     private static Predicate hasType( SecurableObjectType objectType ) {
         return Predicates.equal( PermissionMapstore.SECURABLE_OBJECT_TYPE_INDEX, objectType );
-    }
-
-    private static Predicate hasPrincipals( Collection<Principal> principals ) {
-        return Predicates.in( PermissionMapstore.PRINCIPAL_INDEX, principals.toArray( new Principal[ 0 ] ) );
     }
 
     private static Predicate hasPrincipal( Principal principal ) {

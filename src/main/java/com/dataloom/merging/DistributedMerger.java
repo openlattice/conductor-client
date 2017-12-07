@@ -88,7 +88,7 @@ public class DistributedMerger {
 
         Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataTypeForLinkedEntitySet = Maps.transformValues(
                 authorizedPropertyTypesForEntitySets.get( graphId ), pt -> pt.getDatatype() );
-        // EntityType.getKey returns an unmodifiable view of the underlying linked hash set, so the order is still
+        // EntityType.getAclKey returns an unmodifiable view of the underlying linked hash set, so the order is still
         // preserved, although
 
         Map<UUID, Set<UUID>> propertyTypeIdsByEntitySet = Maps.newHashMap();

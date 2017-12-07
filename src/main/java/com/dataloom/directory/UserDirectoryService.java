@@ -67,7 +67,7 @@ public class UserDirectoryService {
         //        return users
         //                .entrySet()
         //                .stream().filter( e-> !(e.getValue()==null ))
-        //                .collect( Collectors.toConcurrentMap( Entry::getKey, Entry::getValue ) );
+        //                .collect( Collectors.toConcurrentMap( Entry::getAclKey, Entry::getValue ) );
     }
 
     @Timed

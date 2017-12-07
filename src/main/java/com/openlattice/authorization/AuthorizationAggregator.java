@@ -27,8 +27,8 @@ import com.dataloom.authorization.Permission;
 import com.hazelcast.aggregation.Aggregator;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,24 +37,24 @@ import org.slf4j.LoggerFactory;
  */
 public class AuthorizationAggregator extends Aggregator<Entry<AceKey, AceValue>, AuthorizationAggregator> {
     private static final Logger logger = LoggerFactory.getLogger( AuthorizationAggregator.class );
-    private final EnumMap<Permission, Boolean> permissions;
+    //    private final EnumMap<Permission, Boolean> permissions;
+    private final Map<AclKey, EnumMap<Permission, Boolean>> permissionsMap;
 
-    public AuthorizationAggregator( Set<Permission> requestedPermissions ) {
-        this.permissions = new EnumMap<>( Permission.class );
-        requestedPermissions.forEach( ac -> permissions.put( ac, false ) );
-    }
-
-    public AuthorizationAggregator( EnumMap<Permission, Boolean> permissions ) {
-        this.permissions = permissions;
+    public AuthorizationAggregator( Map<AclKey, EnumMap<Permission, Boolean>> permissionsMap ) {
+        this.permissionsMap = permissionsMap;
     }
 
     @Override public void accumulate( Entry<AceKey, AceValue> input ) {
+        AclKey aclKey = input.getKey().getAclKey();
+
+        EnumMap<Permission, Boolean> permissions = permissionsMap.get( aclKey );
+
         final EnumSet<Permission> acePermissions = checkNotNull(
                 input.getValue().getPermissions(),
                 "Permissions shouldn't be null" );
 
         for ( Permission p : acePermissions ) {
-            permissions.computeIfPresent( p, ( k, v ) -> acePermissions.contains( p ) || v.booleanValue() );
+            permissions.computeIfPresent( p, ( k, v ) -> true );
         }
 
     }
@@ -63,14 +63,19 @@ public class AuthorizationAggregator extends Aggregator<Entry<AceKey, AceValue>,
         //A class cast exception = madness
         AuthorizationAggregator other = (AuthorizationAggregator) aggregator;
         //They should be the same keysets
-        for ( Entry<Permission, Boolean> e : other.permissions.entrySet() ) {
-            Permission p = e.getKey();
-            permissions.put( p, permissions.get( p ).booleanValue() || e.getValue().booleanValue() );
+
+        for ( Entry<AclKey, EnumMap<Permission, Boolean>> permissionEntry : permissionsMap.entrySet() ) {
+            EnumMap<Permission, Boolean> permissions = permissionEntry.getValue();
+            EnumMap<Permission, Boolean> otherPermissions = other.permissionsMap.get( permissionEntry.getKey() );
+            for ( Entry<Permission, Boolean> e : otherPermissions.entrySet() ) {
+                Permission p = e.getKey();
+                permissions.put( p, permissions.get( p ).booleanValue() || e.getValue().booleanValue() );
+            }
         }
     }
 
-    public EnumMap<Permission, Boolean> getPermissions() {
-        return permissions;
+    public Map<AclKey, EnumMap<Permission, Boolean>> getPermissions() {
+        return permissionsMap;
     }
 
     @Override public AuthorizationAggregator aggregate() {
@@ -83,11 +88,16 @@ public class AuthorizationAggregator extends Aggregator<Entry<AceKey, AceValue>,
 
         AuthorizationAggregator that = (AuthorizationAggregator) o;
 
-        return permissions.equals( that.permissions );
+        return permissionsMap.equals( that.permissionsMap );
     }
 
     @Override public int hashCode() {
-        return permissions.hashCode();
+        return permissionsMap.hashCode();
     }
 
+    @Override public String toString() {
+        return "AuthorizationAggregator{" +
+                "permissionsMap=" + permissionsMap +
+                '}';
+    }
 }
