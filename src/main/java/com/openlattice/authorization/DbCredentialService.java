@@ -61,6 +61,7 @@ public class DbCredentialService {
     public String createUser( String userId ) {
         logger.info( "Generating credentials for user id {}", userId );
         String cred = generateCredential();
+        logger.info( "Generated credentials for user id {}", userId );
         dcqs.createUser( userId, cred );
         return cred;
     }
