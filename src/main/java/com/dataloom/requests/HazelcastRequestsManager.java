@@ -96,7 +96,7 @@ public class HazelcastRequestsManager {
                         e.getKey(),
                         new PermissionMerger(
                                 e.getValue().getRequest().getPermissions(),
-                                getNotNull( e.getKey().getKey() ) )
+                                getNotNull( e.getKey().getAclKey() ) )
                 ) );
 
         requests.putAll( statusMap );
@@ -141,7 +141,7 @@ public class HazelcastRequestsManager {
 
         aceKeyRequestStateMap.forEach( ( aceKey, requestStatus ) -> {
 
-            AclKey newAclKey = aceKey.getKey();
+            AclKey newAclKey = aceKey.getAclKey();
             if ( newAclKey.size() > 1 ) {
                 // we need a new ArrayList, otherwise we get "java.io.NotSerializableException: java.util.ArrayList$SubList"
                 newAclKey = new AclKey( Lists.newArrayList( newAclKey.subList( 0, newAclKey.size() - 1 ) ) );
@@ -156,7 +156,7 @@ public class HazelcastRequestsManager {
             aceKeys.forEach( aceKey -> {
                 this.neuron.transmit( new Signal(
                         STATE_TO_SIGNAL_MAP.get( state ),
-                        aceKey.getKey(),
+                        aceKey.getAclKey(),
                         aceKey.getPrincipal()
                 ) );
             } );

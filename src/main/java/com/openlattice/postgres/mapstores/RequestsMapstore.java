@@ -45,7 +45,7 @@ public class RequestsMapstore extends AbstractBasePostgresMapstore<AceKey, Statu
 
     @Override protected int bind( PreparedStatement ps, AceKey key, int parameterIndex ) throws SQLException {
         Principal p = key.getPrincipal();
-        ps.setArray( parameterIndex++, createUuidArray( ps.getConnection(), key.getKey().stream() ) );
+        ps.setArray( parameterIndex++, createUuidArray( ps.getConnection(), key.getAclKey().stream() ) );
         ps.setString( parameterIndex++, p.getType().name() );
         ps.setString( parameterIndex++, p.getId() );
         return parameterIndex;

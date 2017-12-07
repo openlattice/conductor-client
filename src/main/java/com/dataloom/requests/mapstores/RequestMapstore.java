@@ -47,14 +47,14 @@ public class RequestMapstore extends AbstractStructuredCassandraMapstore<AceKey,
 
     @Override
     protected BoundStatement bind( AceKey key, BoundStatement bs ) {
-        return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), UUID.class )
+        return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getAclKey(), UUID.class )
                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), key.getPrincipal().getType(), PrincipalType.class )
                 .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getId() );
     }
 
     @Override
     protected BoundStatement bind( AceKey key, Status status, BoundStatement bs ) {
-        return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getKey(), UUID.class )
+        return bs.setList( CommonColumns.ACL_KEYS.cql(), key.getAclKey(), UUID.class )
                 .set( CommonColumns.PRINCIPAL_TYPE.cql(), key.getPrincipal().getType(), PrincipalType.class )
                 .setString( CommonColumns.PRINCIPAL_ID.cql(), key.getPrincipal().getId() )
                 .set( CommonColumns.PERMISSIONS.cql(),

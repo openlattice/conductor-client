@@ -21,7 +21,7 @@ public class LoomGraphTest extends HzAuthzTest {
 //        // verification
 //        Assert.assertNotNull( v );
 //        Assert.assertEquals( v, lg.getVertexByEntityKey( entityKey ) );
-//        Assert.assertEquals( v, lg.getVertexById( v.getKey() ) );
+//        Assert.assertEquals( v, lg.getVertexById( v.getAclKey() ) );
 //
 //        return v;
 //    }
@@ -44,9 +44,9 @@ public class LoomGraphTest extends HzAuthzTest {
 //
 //        // verification
 //        Assert.assertEquals( v1, lg.getVertexByEntityKey( key1 ) );
-//        Assert.assertEquals( v1, lg.getVertexById( v1.getKey() ) );
+//        Assert.assertEquals( v1, lg.getVertexById( v1.getAclKey() ) );
 //        Assert.assertEquals( v2, lg.getVertexByEntityKey( key2 ) );
-//        Assert.assertEquals( v2, lg.getVertexById( v2.getKey() ) );
+//        Assert.assertEquals( v2, lg.getVertexById( v2.getAclKey() ) );
 //    }
 //
 //    @Test
@@ -56,13 +56,13 @@ public class LoomGraphTest extends HzAuthzTest {
 //        EntityKey label = TestDataFactory.entityKey();
 //
 //        lg.addEdge( v1, v2, label );
-//        LoomEdge edge = lg.getEdge( new EdgeKey( v1.getKey(), v2.getKey(), label ) );
+//        LoomEdge edge = lg.getEdge( new EdgeKey( v1.getAclKey(), v2.getAclKey(), label ) );
 //
 //        // verification
 //        Assert.assertNotNull( edge );
-//        Assert.assertEquals( v1.getKey(), edge.getKey().getSrcId() );
+//        Assert.assertEquals( v1.getAclKey(), edge.getAclKey().getSrcId() );
 //        Assert.assertEquals( v1.getReference().getEntitySetId(), edge.getSrcTypeId() );
-//        Assert.assertEquals( v2.getKey(), edge.getKey().getDstId() );
+//        Assert.assertEquals( v2.getAclKey(), edge.getAclKey().getDstId() );
 //        Assert.assertEquals( v2.getReference().getEntitySetId(), edge.getDstType() );
 //        Assert.assertEquals( label, edge.getReference() );
 //    }
@@ -90,7 +90,7 @@ public class LoomGraphTest extends HzAuthzTest {
 //        lg.addEdge( vC, vA, labelCA );
 //
 //        EdgeSelection srcIdOnly = new EdgeSelection(
-//                Optional.of( vA.getKey() ),
+//                Optional.of( vA.getAclKey() ),
 //                Optional.absent(),
 //                Optional.absent(),
 //                Optional.absent(),
@@ -108,7 +108,7 @@ public class LoomGraphTest extends HzAuthzTest {
 //        EdgeSelection dstIdOnly = new EdgeSelection(
 //                Optional.absent(),
 //                Optional.absent(),
-//                Optional.of( vB.getKey() ),
+//                Optional.of( vB.getAclKey() ),
 //                Optional.absent(),
 //                Optional.absent() );
 //        Assert.assertEquals( 1, Iterables.size( lg.getEdges( dstIdOnly ) ) );
@@ -134,14 +134,14 @@ public class LoomGraphTest extends HzAuthzTest {
 //    public void testDeleteVertex() {
 //        LoomVertexKey v = createVertex();
 //
-//        lg.deleteVertex( v.getKey() );
+//        lg.deleteVertex( v.getAclKey() );
 //
-//        Assert.assertNull( lg.getVertexById( v.getKey() ) );
+//        Assert.assertNull( lg.getVertexById( v.getAclKey() ) );
 //
 //        //Check no edges to/from that vertex
-//        EdgeSelection es1 = new EdgeSelection( Optional.of( v.getKey() ), Optional.absent(), Optional.absent(), Optional.absent(), Optional.absent() );
+//        EdgeSelection es1 = new EdgeSelection( Optional.of( v.getAclKey() ), Optional.absent(), Optional.absent(), Optional.absent(), Optional.absent() );
 //        Assert.assertEquals( 0, Iterables.size( lg.getEdges( es1 ) ) );
-//        EdgeSelection es2 = new EdgeSelection( Optional.absent(), Optional.absent(), Optional.of( v.getKey() ), Optional.absent(), Optional.absent() );
+//        EdgeSelection es2 = new EdgeSelection( Optional.absent(), Optional.absent(), Optional.of( v.getAclKey() ), Optional.absent(), Optional.absent() );
 //        Assert.assertEquals( 0, Iterables.size( lg.getEdges( es2 ) ) );
 //    }
 //
@@ -150,7 +150,7 @@ public class LoomGraphTest extends HzAuthzTest {
 //        LoomVertexKey v1 = createVertex();
 //        LoomVertexKey v2 = createVertex();
 //        EntityKey label = TestDataFactory.entityKey();
-//        EdgeKey edgeKey = new EdgeKey( v1.getKey(), v2.getKey(), label );
+//        EdgeKey edgeKey = new EdgeKey( v1.getAclKey(), v2.getAclKey(), label );
 //
 //        lg.addEdge( v1, v2, label );
 //        LoomEdge edge = lg.getEdge( edgeKey );
@@ -198,7 +198,7 @@ public class LoomGraphTest extends HzAuthzTest {
 //        futures.forEach( ResultSetFuture::getUninterruptibly );
 //
 //        EdgeSelection fixSrc = new EdgeSelection(
-//                Optional.of( vA.getKey() ),
+//                Optional.of( vA.getAclKey() ),
 //                Optional.absent(),
 //                Optional.absent(),
 //                Optional.absent(),

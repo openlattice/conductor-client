@@ -38,6 +38,7 @@ public enum StreamSerializerTypeIds {
     BYTE_BUFFER,
     RUNNABLE,
     CALLABLE,
+    COMP_ACL_KEY,
     DATA_KEY,
     EDGE_COUNT_ENTRY_PROCESSOR,
     EMPLOYEE,

@@ -48,7 +48,7 @@ public class AclKeyStreamSerializer extends DelegatedUUIDListStreamSerializer
     }
 
     @Override public int getTypeId() {
-        return StreamSerializerTypeIds.ACL_KEY.ordinal();
+        return StreamSerializerTypeIds.COMP_ACL_KEY.ordinal();
     }
 
     public static void serialize( ObjectDataOutput out, AclKey object ) throws IOException {

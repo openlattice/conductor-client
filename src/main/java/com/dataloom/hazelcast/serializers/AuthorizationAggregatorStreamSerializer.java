@@ -26,10 +26,13 @@ import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AuthorizationAggregator;
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import org.springframework.stereotype.Component;
 
@@ -47,17 +50,46 @@ public class AuthorizationAggregatorStreamSerializer
     @Override
     public void write(
             ObjectDataOutput out, AuthorizationAggregator object ) throws IOException {
-        //TODO: We can improve performance of this.
+        Map<AclKey, EnumMap<Permission, Boolean>> permissionMap = object.getPermissions();
+        out.writeInt( permissionMap.size() );
+        for ( Entry<AclKey, EnumMap<Permission, Boolean>> permissionEntry : permissionMap.entrySet() ) {
+            AclKeyStreamSerializer.serialize( out, permissionEntry.getKey() );
+            serializePermissionEntry( out, permissionEntry.getValue() );
+        }
+    }
+
+    @Timed
+    @Override public AuthorizationAggregator read( ObjectDataInput in ) throws IOException {
+        int size = in.readInt();
+        Map<AclKey, EnumMap<Permission, Boolean>> permissionMap = new HashMap<>( size );
+        for ( int i = 0; i < size; ++i ) {
+            AclKey aclKey = AclKeyStreamSerializer.deserialize( in );
+            EnumMap<Permission, Boolean> permissions = deserializePermissionEntry( in );
+            permissionMap.put( aclKey, permissions );
+        }
+        return new AuthorizationAggregator( permissionMap );
+    }
+
+    @Override public int getTypeId() {
+        return StreamSerializerTypeIds.AUTHORIZATION_AGGREGATOR.ordinal();
+    }
+
+    @Override public void destroy() {
+
+    }
+
+    public static void serializePermissionEntry( ObjectDataOutput out, EnumMap<Permission, Boolean> object )
+            throws IOException {
         PermissionMergerStreamSerializer
-                .serialize( out, object.getPermissions().entrySet().stream().filter( e -> e.getValue() ).map(
+                .serialize( out, object.entrySet().stream().filter( e -> e.getValue() ).map(
                         Entry::getKey )::iterator );
         PermissionMergerStreamSerializer
-                .serialize( out, object.getPermissions().entrySet().stream().filter( e -> !e.getValue() ).map(
+                .serialize( out, object.entrySet().stream().filter( e -> !e.getValue() ).map(
                         Entry::getKey )::iterator );
 
     }
 
-    @Override public AuthorizationAggregator read( ObjectDataInput in ) throws IOException {
+    public static EnumMap<Permission, Boolean> deserializePermissionEntry( ObjectDataInput in ) throws IOException {
         EnumMap<Permission, Boolean> pMap = new EnumMap<>( Permission.class );
         EnumSet<Permission> truePermissions = PermissionMergerStreamSerializer.deserialize( in );
         EnumSet<Permission> falsePermissions = PermissionMergerStreamSerializer.deserialize( in );
@@ -69,14 +101,6 @@ public class AuthorizationAggregatorStreamSerializer
             pMap.put( p, false );
         }
 
-        return new AuthorizationAggregator( pMap );
-    }
-
-    @Override public int getTypeId() {
-        return StreamSerializerTypeIds.AUTHORIZATION_AGGREGATOR.ordinal();
-    }
-
-    @Override public void destroy() {
-
+        return pMap;
     }
 }

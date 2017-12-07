@@ -107,7 +107,7 @@ public class DataMapstore
 
 //    private BoundStatement bindProperty( Entry<UUID, byte[]> property ) {
 //        return getStoreQuery().bind()
-//                .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), property.getKey() )
+//                .setUUID( CommonColumns.PROPERTY_TYPE_ID.cql(), property.getAclKey() )
 //                .setBytes( CommonColumns.PROPERTY_VALUE.cql(),
 //                        ByteBuffer.wrap( hf.hashBytes( property.getValue() ).asBytes() ) )
 //                .setBytes( CommonColumns.PROPERTY_BUFFER.cql(), ByteBuffer.wrap( property.getValue() ) );

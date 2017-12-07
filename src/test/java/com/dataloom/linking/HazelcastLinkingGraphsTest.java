@@ -106,7 +106,7 @@ public class HazelcastLinkingGraphsTest extends HzAuthzTest {
                 .collect( Collectors.toList() );
 
         partitioner.cluster( entitySetId, sortedEdges.get( 0 ).getWeight() );
-        //                new WeightedLinkingEdge( sortedEdges.get( 1 ).getValue(), sortedEdges.get( 1 ).getKey() )
+        //                new WeightedLinkingEdge( sortedEdges.get( 1 ).getValue(), sortedEdges.get( 1 ).getAclKey() )
 
         StreamUtil.stream( lvm.loadAllKeys() ).map( graphs::getVertex )
                 .sorted( Comparator.comparing( LinkingVertex::getDiameter ) )
