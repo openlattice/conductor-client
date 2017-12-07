@@ -370,7 +370,7 @@ public class AuthorizationQueryService {
                 PreparedStatement ps = connection.prepareStatement( ownersForSecurableObjectSql ) ) {
             List<Principal> result = Lists.newArrayList();
             ps.setArray( 1, PostgresArrays.createUuidArray( connection, aclKeys.stream() ) );
-            ps.setArray( 2, PostgresArrays.createTextArray( connection, Stream.of( Permission.OWNER.name() ) ) );
+            ps.setString( 2, Permission.OWNER.name() );
 
             ResultSet rs = ps.executeQuery();
             while ( rs.next() ) {
