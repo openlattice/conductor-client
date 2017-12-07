@@ -42,24 +42,27 @@ public class DbCredentialQueryService {
         this.hds = hds;
     }
 
-    public void createUser( String userId, String credential ) {
+    public boolean createUser( String userId, String credential ) {
         logger.info( "About to create connection for userId {}", userId );
         try ( Connection conn = hds.getConnection(); Statement st = conn.createStatement() ) {
             String query = String.format( CREATE_USER, userId, credential );
-            logger.info( "About to execute statement {}", query );
             st.execute( query );
+            return true;
         } catch ( Exception e ) {
             logger.error( "Unable to create user {}", userId, e );
         }
         logger.info( "Successfully executed statement for userId {}", userId );
+        return false;
     }
 
-    public void setCredential( String userId, String credential ) {
+    public boolean setCredential( String userId, String credential ) {
         try ( Connection conn = hds.getConnection(); Statement st = conn.createStatement() ) {
             st.execute( String.format( SET_PASSWORD, userId, credential ) );
+            return true;
         } catch ( SQLException e ) {
             logger.error( "Unable to set creds for user {}", userId, e );
         }
+        return false;
     }
 
     public void deleteCredential( String userId ) {

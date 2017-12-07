@@ -58,17 +58,30 @@ public class DbCredentialService {
         return Util.getSafely( dbcreds, userId );
     }
 
+    public String createUserIfNotExists( String userId ) {
+        if ( !userExists( userId ) ) {
+            return createUser( userId );
+        }
+        return null;
+    }
+
     public String createUser( String userId ) {
+        //Try to create user, will fail silently if user already exists.
         logger.info( "Generating credentials for user id {}", userId );
         String cred = generateCredential();
         logger.info( "Generated credentials for user id {}", userId );
-        dcqs.createUser( userId, cred );
+        if ( dcqs.createUser( userId, cred ) ) {
+            //User with cred was successfully created so store credentials in db.
+            dbcreds.putIfAbsent( userId, cred );
+        }
         return cred;
     }
 
     public String setDbCredential( String userId ) {
         String cred = generateCredential();
-        dbcreds.set( userId, cred );
+        if ( dcqs.setCredential( userId, cred ) ) {
+            dbcreds.set( userId, cred );
+        }
         return cred;
     }
 
@@ -78,5 +91,9 @@ public class DbCredentialService {
             cred[ i ] = srcBuf[ r.nextInt( srcBuf.length ) ];
         }
         return new String( cred );
+    }
+
+    public boolean userExists( String userId ) {
+        return dbcreds.containsKey( userId );
     }
 }
