@@ -19,6 +19,8 @@
 
 package com.kryptnostic.conductor.rpc;
 
+import com.dataloom.apps.App;
+import com.dataloom.apps.AppType;
 import com.dataloom.authorization.Principal;
 import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
@@ -105,6 +107,14 @@ public interface ConductorElasticsearchApi {
     final String ASSOCIATION_TYPE       = "association_type";
     final String ENTITY_TYPE_FIELD      = "entityType";
 
+    // app_index setup consts
+    final String APP_INDEX = "app_index";
+    final String APP       = "app";
+
+    // app_type_index setup consts
+    final String APP_TYPE_INDEX = "app_type_index";
+    final String APP_TYPE       = "app_type";
+
     // entity set field consts
     final String TYPE_FIELD     = "_type";
     final String ENTITY_SET     = "entitySet";
@@ -121,6 +131,7 @@ public interface ConductorElasticsearchApi {
     final String SRC            = "src";
     final String DST            = "dst";
     final String BIDIRECTIONAL  = "bidirectional";
+    final String URL            = "url";
 
     boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
 
@@ -211,5 +222,21 @@ public interface ConductorElasticsearchApi {
     boolean triggerEntityTypeIndex( List<EntityType> entityTypes );
 
     boolean triggerAssociationTypeIndex( List<AssociationType> associationTypes );
+
+    boolean triggerAppIndex(List<App> apps);
+
+    boolean triggerAppTypeIndex(List<AppType> appTypes);
+
+    boolean saveAppToElasticsearch( App app );
+
+    boolean deleteApp( UUID appId );
+
+    SearchResult executeAppSearch( String searchTerm, int start, int maxHits );
+
+    boolean saveAppTypeToElasticsearch( AppType appType );
+
+    boolean deleteAppType( UUID appTypeId );
+
+    SearchResult executeAppTypeSearch( String searchTerm, int start, int maxHits );
 
 }

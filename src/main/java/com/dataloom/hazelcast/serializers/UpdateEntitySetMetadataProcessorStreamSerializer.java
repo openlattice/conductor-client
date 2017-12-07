@@ -40,6 +40,7 @@ public class UpdateEntitySetMetadataProcessorStreamSerializer
                 contacts,
                 Optional.absent(),
                 Optional.absent(),
+                Optional.absent(),
                 Optional.absent() );
         return new UpdateEntitySetMetadataProcessor( update );
     }

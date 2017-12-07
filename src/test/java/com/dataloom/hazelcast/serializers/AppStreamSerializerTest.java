@@ -17,6 +17,6 @@ public class AppStreamSerializerTest extends AbstractStreamSerializerTest<AppStr
         configIds.add( UUID.randomUUID() );
         configIds.add( UUID.randomUUID() );
         configIds.add( UUID.randomUUID() );
-        return new App( UUID.randomUUID(), "name", "title", Optional.of( "description" ), configIds );
+        return new App( UUID.randomUUID(), "name", "title", Optional.of( "description" ), configIds, "https://openlattice.com/app" );
     }
 }
