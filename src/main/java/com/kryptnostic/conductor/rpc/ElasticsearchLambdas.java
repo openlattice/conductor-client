@@ -1,5 +1,7 @@
 package com.kryptnostic.conductor.rpc;
 
+import com.dataloom.apps.App;
+import com.dataloom.apps.AppType;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.Principals;
 import com.dataloom.edm.EntitySet;
@@ -121,6 +123,16 @@ public class ElasticsearchLambdas implements Serializable {
                 .savePropertyTypeToElasticsearch( propertyType );
     }
 
+    public static Function<ConductorElasticsearchApi, Boolean> saveAppToElasticsearch( App app ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .saveAppToElasticsearch( app );
+    }
+
+    public static Function<ConductorElasticsearchApi, Boolean> saveAppTypeToElasticsearch( AppType appType ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .saveAppTypeToElasticsearch( appType );
+    }
+
     public static Function<ConductorElasticsearchApi, Boolean> deleteEntityType( UUID entityTypeId ) {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .deleteEntityType( entityTypeId );
@@ -134,6 +146,16 @@ public class ElasticsearchLambdas implements Serializable {
     public static Function<ConductorElasticsearchApi, Boolean> deletePropertyType( UUID propertyTypeId ) {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .deletePropertyType( propertyTypeId );
+    }
+
+    public static Function<ConductorElasticsearchApi, Boolean> deleteApp( UUID appId ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .deleteApp( appId );
+    }
+
+    public static Function<ConductorElasticsearchApi, Boolean> deleteAppType( UUID appTypeId ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .deleteAppType( appTypeId );
     }
 
     public static Function<ConductorElasticsearchApi, SearchResult> executeEntityTypeSearch(
@@ -150,6 +172,22 @@ public class ElasticsearchLambdas implements Serializable {
             int maxHits ) {
         return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
                 .executeAssociationTypeSearch( searchTerm, start, maxHits );
+    }
+
+    public static Function<ConductorElasticsearchApi, SearchResult> executeAppSearch(
+            String searchTerm,
+            int start,
+            int maxHits ) {
+        return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
+                .executeAppSearch( searchTerm, start, maxHits );
+    }
+
+    public static Function<ConductorElasticsearchApi, SearchResult> executeAppTypeSearch(
+            String searchTerm,
+            int start,
+            int maxHits ) {
+        return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
+                .executeAppTypeSearch( searchTerm, start, maxHits );
     }
 
     public static Function<ConductorElasticsearchApi, SearchResult> executePropertyTypeSearch(
@@ -210,5 +248,17 @@ public class ElasticsearchLambdas implements Serializable {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .triggerAssociationTypeIndex( associationTypes );
     }
+
+    public static Function<ConductorElasticsearchApi, Boolean> triggerAppIndex( List<App> apps ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .triggerAppIndex( apps );
+    }
+
+    public static Function<ConductorElasticsearchApi, Boolean> triggerAppTypeIndex( List<AppType> appTypes ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .triggerAppTypeIndex( appTypes );
+    }
+
+
 
 }
