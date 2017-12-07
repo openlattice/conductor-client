@@ -45,10 +45,12 @@ public class DbCredentialQueryService {
     public void createUser( String userId, String credential ) {
         logger.info( "About to create connection for userId {}", userId );
         try ( Connection conn = hds.getConnection(); Statement st = conn.createStatement() ) {
+            logger.info( "About to execute statement for userId {}", userId );
             st.execute( String.format( CREATE_USER, userId, credential ) );
         } catch ( SQLException e ) {
             logger.error( "Unable to create user {}", userId, e );
         }
+        logger.info( "Successfully executed statement for userId {}", userId );
     }
 
     public void setCredential( String userId, String credential ) {
