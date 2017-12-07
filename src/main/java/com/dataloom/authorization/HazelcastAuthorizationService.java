@@ -53,7 +53,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javafx.scene.paint.Stop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,11 +155,13 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
                     principals.forEach( p -> aceKeys.add( new AceKey( aclKey, p ) ) );
                 } );
-        logger.info("Preparing result data structure took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ));
-        w.reset();w.start();
+        logger.info( "Preparing result data structure took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ) );
+        w.reset();
+        w.start();
         aceMap = aces.getAll( aceKeys );
-        logger.info("Preparing getting all data took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ));
-        w.reset();w.start();
+        logger.info( "Preparing getting all data took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ) );
+        w.reset();
+        w.start();
 
         aceMap.forEach( ( ak, av ) -> {
             EnumMap<Permission, Boolean> granted = results.get( ak.getKey() );
@@ -171,23 +172,22 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             } );
         } );
 
-        logger.info("Populating return map took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ));
+        logger.info( "Populating return map took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ) );
 
         return results;
     }
 
     @Timed
     @Override
-    public Map<AclKey, EnumMap<Permission, Boolean>> accessChecksForPrincipals(
+    public Stream<Authorization> accessChecksForPrincipals(
             Set<AccessCheck> accessChecks,
             Set<Principal> principals ) {
         return accessChecks
                 .parallelStream()
-                .collect( Collectors.toConcurrentMap(
-                        ac -> ac.getAclKey(),
-                        ac ->
-                                aces.aggregate( new AuthorizationAggregator( ac.getPermissions() ),
-                                        matches( ac.getAclKey(), principals, ac.getPermissions() ) ).getPermissions()
+                .map( ac -> new Authorization(
+                        ac.getAclKey(),
+                        aces.aggregate( new AuthorizationAggregator( ac.getPermissions() ),
+                                matches( ac.getAclKey(), principals, ac.getPermissions() ) ).getPermissions()
                 ) );
 
     }
@@ -196,7 +196,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public void deletePrincipalPermissions( Principal principal ) {
         aqs.deletePermissionsByPrincipal( principal );
     }
-
 
     public Predicate matches( AclKey aclKey, Collection<Principal> principals, EnumSet<Permission> permissions ) {
         return Predicates.and(

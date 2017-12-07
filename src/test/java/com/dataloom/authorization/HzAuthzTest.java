@@ -25,8 +25,6 @@ import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.neuron.Neuron;
 import com.dataloom.neuron.pods.NeuronPod;
-import com.datastax.driver.core.Session;
-import com.geekbeast.rhizome.tests.bootstrap.CassandraBootstrap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
@@ -39,7 +37,6 @@ import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
 import digital.loom.rhizome.authentication.Auth0Pod;
-import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -48,7 +45,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -205,7 +201,7 @@ public class HzAuthzTest {
 
         EnumSet<Permission> permissions1 = EnumSet.of( Permission.DISCOVER, Permission.READ, Permission.OWNER );
         EnumSet<Permission> permissions2 = EnumSet
-                .of( Permission.DISCOVER, Permission.READ, Permission.WRITE, Permission.LINK  );
+                .of( Permission.DISCOVER, Permission.READ, Permission.WRITE, Permission.LINK );
 
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions1 ) );
@@ -228,15 +224,18 @@ public class HzAuthzTest {
 
         AccessCheck ac = new AccessCheck( key, permissions1 );
         Map<AclKey, EnumMap<Permission, Boolean>> result =
-                hzAuthz.accessChecksForPrincipals( ImmutableSet.of( ac ), ImmutableSet.of( p2 ) );
+                hzAuthz.accessChecksForPrincipals( ImmutableSet.of( ac ), ImmutableSet.of( p2 ) )
+                        //                        .collect( Collectors.toConcurrentMap( a->a.getAclKey(), a-> a.getPermissions() ) );
+                        .collect( Collectors.toConcurrentMap( a -> a.getAclKey(),
+                                a -> new EnumMap<>( a.getPermissions() ) ) );
 
         Assert.assertTrue( result.containsKey( key ) );
-        EnumMap<Permission,Boolean> checkForKey = result.get( key );
+        EnumMap<Permission, Boolean> checkForKey = result.get( key );
         Assert.assertTrue( checkForKey.size() == permissions1.size() );
 
-        Assert.assertTrue( result.get( key ).get( Permission.DISCOVER )  );
-        Assert.assertTrue( result.get( key ).get( Permission.READ )  );
-        Assert.assertFalse( result.get( key ).get( Permission.OWNER )  );
+        Assert.assertTrue( result.get( key ).get( Permission.DISCOVER ) );
+        Assert.assertTrue( result.get( key ).get( Permission.READ ) );
+        Assert.assertFalse( result.get( key ).get( Permission.OWNER ) );
     }
 
 }

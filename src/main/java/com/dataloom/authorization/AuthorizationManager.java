@@ -76,7 +76,7 @@ public interface AuthorizationManager {
             Set<AccessCheck> accessChecks,
             Set<Principal> principals );
 
-    Map<AclKey, EnumMap<Permission, Boolean>> accessChecksForPrincipals(
+    Stream<Authorization> accessChecksForPrincipals(
             Set<AccessCheck> accessChecks,
             Set<Principal> principals );
 
