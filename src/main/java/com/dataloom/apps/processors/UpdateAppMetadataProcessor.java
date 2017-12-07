@@ -30,6 +30,9 @@ public class UpdateAppMetadataProcessor extends AbstractRhizomeEntryProcessor<UU
             if ( update.getName().isPresent() ) {
                 app.setName( update.getName().get() );
             }
+            if ( update.getUrl().isPresent() ) {
+                app.setUrl( update.getUrl().get() );
+            }
             entry.setValue( app );
         }
         return null;

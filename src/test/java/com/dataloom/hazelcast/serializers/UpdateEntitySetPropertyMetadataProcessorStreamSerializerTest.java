@@ -28,7 +28,8 @@ public class UpdateEntitySetPropertyMetadataProcessorStreamSerializerTest extend
                 Optional.absent(),
                 Optional.absent(),
                 Optional.absent(),
-                Optional.of( true ) );
+                Optional.of( true ),
+                Optional.absent() );
         return new UpdateEntitySetPropertyMetadataProcessor( update );
     }
 

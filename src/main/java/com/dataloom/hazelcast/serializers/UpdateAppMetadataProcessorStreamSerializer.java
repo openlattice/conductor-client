@@ -24,12 +24,14 @@ public class UpdateAppMetadataProcessorStreamSerializer implements
         OptionalStreamSerializers.serialize( out, update.getTitle(), ObjectDataOutput::writeUTF );
         OptionalStreamSerializers.serialize( out, update.getDescription(), ObjectDataOutput::writeUTF );
         OptionalStreamSerializers.serialize( out, update.getName(), ObjectDataOutput::writeUTF );
+        OptionalStreamSerializers.serialize( out, update.getUrl(), ObjectDataOutput::writeUTF );
     }
 
     @Override public UpdateAppMetadataProcessor read( ObjectDataInput in ) throws IOException {
         Optional<String> title = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
         Optional<String> description = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
         Optional<String> name = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
+        Optional<String> url = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
 
         MetadataUpdate update = new MetadataUpdate(
                 title,
@@ -38,7 +40,8 @@ public class UpdateAppMetadataProcessorStreamSerializer implements
                 Optional.absent(),
                 Optional.absent(),
                 Optional.absent(),
-                Optional.absent() );
+                Optional.absent(),
+                url );
         return new UpdateAppMetadataProcessor( update );
     }
 

@@ -39,6 +39,7 @@ public class UpdateAppTypeMetadataProcessorStreamSerializer implements SelfRegis
                 Optional.absent(),
                 type,
                 Optional.absent(),
+                Optional.absent(),
                 Optional.absent() );
         return new UpdateAppTypeMetadataProcessor( update );
     }

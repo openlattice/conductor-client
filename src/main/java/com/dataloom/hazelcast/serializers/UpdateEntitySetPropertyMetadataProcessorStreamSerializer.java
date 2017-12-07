@@ -37,7 +37,8 @@ public class UpdateEntitySetPropertyMetadataProcessorStreamSerializer
                 Optional.absent(),
                 Optional.absent(),
                 Optional.absent(),
-                defaultShow );
+                defaultShow,
+                Optional.absent() );
         return new UpdateEntitySetPropertyMetadataProcessor( update );
     }
 
