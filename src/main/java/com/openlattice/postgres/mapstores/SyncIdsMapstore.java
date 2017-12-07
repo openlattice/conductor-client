@@ -43,8 +43,8 @@ public class SyncIdsMapstore extends AbstractBasePostgresMapstore<UUID, UUID> {
     }
 
     @Override protected void bind( PreparedStatement ps, UUID key, UUID value ) throws SQLException {
-        bind( ps, key, 1 );
-        ps.setObject( 2, key );
+        bind( ps, key, 2 );
+        ps.setObject( 1, value );
     }
 
     @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {
