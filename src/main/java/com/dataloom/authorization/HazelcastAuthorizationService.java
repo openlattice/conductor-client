@@ -29,6 +29,7 @@ import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
@@ -49,8 +50,10 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javafx.scene.paint.Stop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,8 +136,9 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         final Map<AclKey, EnumMap<Permission, Boolean>> results = new HashMap<>( accessChecks.size() );
         final Set<AceKey> aceKeys = new HashSet<>( accessChecks.size() * principals.size() );
         final Map<AceKey, AceValue> aceMap;
-
+        Stopwatch w = Stopwatch.createStarted();
         //Prepare the results data structure
+
         accessChecks
                 .parallelStream()
                 .forEach( accessCheck -> {
@@ -152,8 +156,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
                     principals.forEach( p -> aceKeys.add( new AceKey( aclKey, p ) ) );
                 } );
-
+        logger.info("Preparing result data structure took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ));
+        w.reset();w.start();
         aceMap = aces.getAll( aceKeys );
+        logger.info("Preparing getting all data took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ));
+        w.reset();w.start();
 
         aceMap.forEach( ( ak, av ) -> {
             EnumMap<Permission, Boolean> granted = results.get( ak.getKey() );
@@ -163,6 +170,8 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                 }
             } );
         } );
+
+        logger.info("Populating return map took: {} ms", w.elapsed( TimeUnit.MILLISECONDS ));
 
         return results;
     }
@@ -187,6 +196,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public void deletePrincipalPermissions( Principal principal ) {
         aqs.deletePermissionsByPrincipal( principal );
     }
+
 
     public Predicate matches( AclKey aclKey, Collection<Principal> principals, EnumSet<Permission> permissions ) {
         return Predicates.and(

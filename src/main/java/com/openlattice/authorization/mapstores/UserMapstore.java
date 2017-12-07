@@ -44,7 +44,6 @@ public class UserMapstore implements TestableSelfRegisteringMapStore<String, Aut
     private static final Logger logger            = LoggerFactory.getLogger( UserMapstore.class );
     private static final int    DEFAULT_PAGE_SIZE = 100;
     private static final int    TTL_SECONDS       = 60;
-    //TODO: Switch over to a Hazelcast map to relieve pressure from Auth0
     private final Retrofit           retrofit;
     private final Auth0ManagementApi auth0ManagementApi;
 
