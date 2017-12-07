@@ -47,7 +47,7 @@ public class DbCredentialQueryService {
         try ( Connection conn = hds.getConnection(); Statement st = conn.createStatement() ) {
             logger.info( "About to execute statement for userId {}", userId );
             st.execute( String.format( CREATE_USER, userId, credential ) );
-        } catch ( SQLException e ) {
+        } catch ( Exception e ) {
             logger.error( "Unable to create user {}", userId, e );
         }
         logger.info( "Successfully executed statement for userId {}", userId );
