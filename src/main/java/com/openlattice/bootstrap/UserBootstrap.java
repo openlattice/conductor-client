@@ -44,7 +44,6 @@ public class UserBootstrap {
             String userId = userEntry.getKey();
             Auth0UserBasic user = userEntry.getValue();
             Principal principal = new Principal( PrincipalType.USER, userId );
-
             if ( user != null ) {
                 if ( !spm.principalExists( principal ) ) {
                     checkState( user.getUserId().equals( userId ),
