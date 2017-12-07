@@ -22,6 +22,7 @@ public class AppStreamSerializer implements SelfRegisteringStreamSerializer<App>
         UUIDStreamSerializer.serialize( out, object.getId() );
         out.writeUTF( object.getName() );
         out.writeUTF( object.getTitle() );
+        out.writeUTF( object.getUrl() );
         out.writeUTF( object.getDescription() );
         out.writeInt( object.getAppTypeIds().size() );
         for ( UUID id : object.getAppTypeIds() ) {
@@ -33,13 +34,15 @@ public class AppStreamSerializer implements SelfRegisteringStreamSerializer<App>
         UUID id = UUIDStreamSerializer.deserialize( in );
         String name = in.readUTF();
         String title = in.readUTF();
+        String url = in.readUTF();
         Optional<String> description = Optional.of( in.readUTF() );
+
         int numConfigTypeIds = in.readInt();
         LinkedHashSet<UUID> configTypeIds = new LinkedHashSet<>();
         for ( int i = 0; i < numConfigTypeIds; i++ ) {
             configTypeIds.add( UUIDStreamSerializer.deserialize( in ) );
         }
-        return new App( id, name, title, description, configTypeIds );
+        return new App( id, name, title, description, configTypeIds, url );
     }
 
     @Override public int getTypeId() {

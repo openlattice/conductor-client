@@ -113,6 +113,7 @@ public final class PostgresColumn {
     public static final String SYNC_ID_FIELD               = "sync_id";
     public static final String TIME_UUID_FIELD             = "time_uuid";
     public static final String TITLE_FIELD                 = "title";
+    public static final String URL_FIELD                   = "url";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
 
     public static final PostgresColumnDefinition ACL_KEY               =
@@ -279,6 +280,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( TIME_UUID_FIELD, UUID );
     public static final PostgresColumnDefinition TITLE                 =
             new PostgresColumnDefinition( TITLE_FIELD, TEXT ).notNull();
+    public static final PostgresColumnDefinition URL                   =
+            new PostgresColumnDefinition( URL_FIELD, TEXT );
     public static final PostgresColumnDefinition VERTEX_ID             =
             new PostgresColumnDefinition( VERTEX_ID_FIELD, UUID );
 
