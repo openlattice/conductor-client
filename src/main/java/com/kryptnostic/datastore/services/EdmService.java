@@ -1035,6 +1035,7 @@ public class EdmService implements EdmManager {
                     Optional.absent(),
                     optionalFqnUpdate,
                     optionalPiiUpdate,
+                    Optional.absent(),
                     Optional.absent() ) );
         }
     }
@@ -1059,7 +1060,8 @@ public class EdmService implements EdmManager {
                     Optional.absent(),
                     optionalFqnUpdate,
                     Optional.absent(),
-                    Optional.absent() ) );
+                    Optional.absent(),
+                    Optional.absent()) );
             if ( !et.getProperties().equals( existing.getProperties() ) ) {
                 addPropertyTypesToEntityType( existing.getId(), et.getProperties() );
             }
