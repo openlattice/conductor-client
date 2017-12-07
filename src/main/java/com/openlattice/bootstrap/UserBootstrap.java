@@ -26,15 +26,18 @@ public class UserBootstrap {
             HazelcastInstance hazelcastInstance,
             SecurePrincipalsManager spm,
             DbCredentialService dbCredService ) throws InterruptedException {
+        logger.info("Starting activation of existing auth0 users.");
         IMap<String, Auth0UserBasic> users = hazelcastInstance.getMap( HazelcastMap.USERS.name() );
         IAtomicLong nextTime = hazelcastInstance.getAtomicLong( UserMapstore.class.getCanonicalName() );
         AclKey userRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_USER_ROLE.getPrincipal() );
         AclKey adminRoleAclKey = spm.lookup( AuthorizationBootstrap.GLOBAL_ADMIN_ROLE.getPrincipal() );
 
         while ( nextTime.get() == 0 ) {
-            Thread.sleep( 1000 );
             logger.warn( "Waiting for User mapstore to be initialized..." );
+            Thread.sleep( 1000 );
         }
+
+        logger.info("Starting processing of {} users.",users.size() );
 
         for ( Entry<String, Auth0UserBasic> userEntry : users.entrySet() ) {
             String userId = userEntry.getKey();
