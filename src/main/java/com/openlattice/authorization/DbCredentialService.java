@@ -26,11 +26,15 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 import com.zaxxer.hikari.HikariDataSource;
 import java.security.SecureRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DbCredentialService {
+    private static final Logger logger = LoggerFactory.getLogger( DbCredentialService.class );
+
     private static final String upper   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     private static final String lower   = upper.toLowerCase();
     private static final String digits  = "0123456789";
@@ -55,6 +59,7 @@ public class DbCredentialService {
     }
 
     public String createUser( String userId ) {
+        logger.info( "Generating credentials for user id {}", userId );
         String cred = generateCredential();
         dcqs.createUser( userId, cred );
         return cred;
