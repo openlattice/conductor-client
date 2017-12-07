@@ -19,11 +19,7 @@
 
 package com.dataloom.authorization;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.codahale.metrics.annotation.Timed;
-import com.dataloom.authorization.events.AclUpdateEvent;
 import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
 import com.dataloom.authorization.processors.PermissionMerger;
 import com.dataloom.authorization.processors.PermissionRemover;
@@ -41,20 +37,16 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AuthorizationAggregator;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.authorization.processors.SecurableObjectTypeUpdater;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.NavigableSet;
-import java.util.Set;
-import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastAuthorizationService implements AuthorizationManager {
     private static final Logger logger = LoggerFactory.getLogger( AuthorizationManager.class );
@@ -74,12 +66,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         this.eventBus = checkNotNull( eventBus );
     }
 
-    private void updateAcl( AclKey aclKey, Principal principal ) {
-        if ( aclKey.size() == 1 ) {
-            eventBus.post( new AclUpdateEvent( aclKey, ImmutableSet.of( principal ) ) );
-        }
-    }
-
     @Override
     public void setSecurableObjectType( AclKey aclKey, SecurableObjectType objectType ) {
         securableObjectTypes.set( aclKey, objectType );
@@ -97,7 +83,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             logger.warn( "Unrecognized object type for acl key {} key ", key );
         }
         aces.executeOnKey( new AceKey( key, principal ), new PermissionMerger( permissions, securableObjectType ) );
-        updateAcl( key, principal );
     }
 
     @Override
@@ -106,7 +91,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Principal principal,
             EnumSet<Permission> permissions ) {
         aces.executeOnKey( new AceKey( key, principal ), new PermissionRemover( permissions ) );
-        updateAcl( key, principal );
     }
 
     @Override
@@ -117,7 +101,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         //This should be a rare call to overwrite all permissions, so it's okay to do a read before write.
         SecurableObjectType securableObjectType = securableObjectTypes.getOrDefault( key, SecurableObjectType.Unknown );
         aces.set( new AceKey( key, principal ), new AceValue( permissions, securableObjectType ) );
-        updateAcl( key, principal );
     }
 
     @Override
