@@ -129,4 +129,9 @@ public final class Util {
     public static Set<String> fqnToString( Set<FullQualifiedName> fqns ){
         return fqns.stream().map( Util::fqnToString ).collect( Collectors.toSet() );
     }
+
+    public static <T> T returnAndLog( T obj, String msg, Object... args ) {
+        logger.info( msg, args );
+        return obj;
+    }
 }
