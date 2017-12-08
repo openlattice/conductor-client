@@ -367,11 +367,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     private static Predicate hasAnyAclKeys( Collection<AclKey> aclKeys ) {
-        AclKey[] values = new AclKey[ aclKeys.size() ];
-        int i = 0;
-        for ( AclKey aclKey : aclKeys ) {
-            values[ i++ ] = aclKey.getIndex();
-        }
+//        String[] values = new AclKey[ aclKeys.size() ];
+//        int i = 0;
+//        for ( AclKey aclKey : aclKeys ) {
+//            values[ i++ ] = aclKey.getIndex();
+//        }
         return Predicates.in( ACL_KEY_INDEX, aclKeys.stream().map( AclKey::getIndex ).toArray( String[]::new ) );
     }
 
