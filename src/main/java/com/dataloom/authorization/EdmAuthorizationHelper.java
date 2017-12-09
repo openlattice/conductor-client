@@ -54,12 +54,17 @@ public class EdmAuthorizationHelper {
             UUID entitySetId,
             Set<UUID> selectedProperties,
             EnumSet<Permission> requiredPermissions ) {
-        return selectedProperties.stream()
-                .filter( ptId -> authz.checkIfHasPermissions( new AclKey( entitySetId,
-                        ptId ),
-                        Principals.getCurrentPrincipals(),
-                        requiredPermissions ) )
-                .collect( Collectors.toSet() );
+        return authz.accessChecksForPrincipals( selectedProperties.stream()
+                .map( ptId -> new AccessCheck( new AclKey( entitySetId, ptId ), requiredPermissions ) ).collect(
+                        Collectors.toSet() ), Principals.getCurrentPrincipals() )
+                .filter( authorization -> {
+                    boolean allPermissions = true;
+                    for ( Permission permission : requiredPermissions ) {
+                        if ( !authorization.getPermissions().get( permission ) )
+                            allPermissions = false;
+                    }
+                    return allPermissions;
+                } ).map( authorization -> authorization.getAclKey().get( 1 ) ).collect( Collectors.toSet() );
     }
 
     public Set<UUID> getAllPropertiesOnEntitySet( UUID entitySetId ) {
