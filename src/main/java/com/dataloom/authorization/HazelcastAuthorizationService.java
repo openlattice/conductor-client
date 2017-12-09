@@ -31,6 +31,7 @@ import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MapMaker;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
@@ -173,7 +174,10 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     public Stream<Authorization> accessChecksForPrincipals(
             Set<AccessCheck> accessChecks,
             Set<Principal> principals ) {
-        final Map<AclKey, EnumMap<Permission, Boolean>> results = new HashMap<>( accessChecks.size() );
+        final Map<AclKey, EnumMap<Permission, Boolean>> results = new MapMaker()
+                .concurrencyLevel( Runtime.getRuntime().availableProcessors() )
+                .initialCapacity( accessChecks.size() )
+                .makeMap();
         accessChecks
                 .parallelStream()
                 .forEach( accessCheck -> {
@@ -363,6 +367,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     private static Predicate hasAnyAclKeys( Collection<AclKey> aclKeys ) {
+//        String[] values = new AclKey[ aclKeys.size() ];
+//        int i = 0;
+//        for ( AclKey aclKey : aclKeys ) {
+//            values[ i++ ] = aclKey.getIndex();
+//        }
         return Predicates.in( ACL_KEY_INDEX, aclKeys.stream().map( AclKey::getIndex ).toArray( String[]::new ) );
     }
 
