@@ -3,6 +3,8 @@ package com.dataloom.graph.core;
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.graph.aggregators.GraphCount;
+import com.dataloom.graph.aggregators.NeighborEntitySetAggregator;
+import com.dataloom.graph.core.objects.NeighborTripletSet;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -16,6 +18,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
+
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
@@ -150,6 +154,16 @@ public class LoomGraph implements LoomGraphApi {
             SetMultimap<UUID, UUID> dstFilters ) {
         Predicate p = edgesMatching( entitySetId, syncId, srcFilters, dstFilters );
         return this.edges.aggregate( new GraphCount( limit, entitySetId ), p );
+    }
+
+    @Override
+    @Timed
+    public NeighborTripletSet getNeighborEntitySets( UUID entitySetId, UUID syncId ) {
+        Predicate p = Predicates.or(
+                Predicates.and( Predicates.equal( "srcSetId", entitySetId ), Predicates.equal( "srcSyncId", syncId ) ),
+                Predicates.and( Predicates.equal( "dstSetId", entitySetId ), Predicates.equal( "dstSyncId", syncId ) )
+        );
+        return edges.aggregate( new NeighborEntitySetAggregator(), p );
     }
 
     static Predicate neighborhood( UUID entityKeyId ) {

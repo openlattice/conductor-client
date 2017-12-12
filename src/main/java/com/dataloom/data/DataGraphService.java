@@ -12,8 +12,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.dataloom.analysis.requests.NeighborType;
 import com.dataloom.data.events.EntityDataCreatedEvent;
+import com.dataloom.graph.core.objects.NeighborTripletSet;
 import com.google.common.base.Optional;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -370,6 +373,11 @@ public class DataGraphService implements DataGraphManager {
          * key.getEntityId(), authorizedPropertyTypes ) ); entity.put( "id", vertexId.toString() ); return entity; } );
          * return entities;
          */
+    }
+
+    @Override
+    public NeighborTripletSet getNeighborEntitySets( UUID entitySetId, UUID syncId ) {
+        return lm.getNeighborEntitySets( entitySetId, syncId );
     }
 
     public static void tryGetAndLogErrors( ListenableFuture<?> f ) {
