@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.dataloom.edm.EntitySet;
@@ -54,12 +55,11 @@ public class EdmAuthorizationHelper {
             UUID entitySetId,
             Set<UUID> selectedProperties,
             EnumSet<Permission> requiredPermissions ) {
-        return selectedProperties.stream()
-                .filter( ptId -> authz.checkIfHasPermissions( new AclKey( entitySetId,
-                        ptId ),
-                        Principals.getCurrentPrincipals(),
-                        requiredPermissions ) )
-                .collect( Collectors.toSet() );
+        return authz.accessChecksForPrincipals( selectedProperties.stream()
+                .map( ptId -> new AccessCheck( new AclKey( entitySetId, ptId ), requiredPermissions ) ).collect(
+                        Collectors.toSet() ), Principals.getCurrentPrincipals() )
+                .filter( authorization -> authorization.getPermissions().values().stream().allMatch( val -> val ) )
+                .map( authorization -> authorization.getAclKey().get( 1 ) ).collect( Collectors.toSet() );
     }
 
     public Set<UUID> getAllPropertiesOnEntitySet( UUID entitySetId ) {
