@@ -7,6 +7,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import com.dataloom.analysis.requests.NeighborType;
+import com.dataloom.graph.core.objects.NeighborTripletSet;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -88,4 +91,6 @@ public interface DataGraphManager {
             int numResults,
             Map<UUID, PropertyType> authorizedPropertyTypes )
             throws InterruptedException, ExecutionException;
+
+    NeighborTripletSet getNeighborEntitySets( UUID entitySetId, UUID syncId );
 }

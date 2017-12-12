@@ -1,12 +1,15 @@
 package com.dataloom.graph.core;
 
 import com.dataloom.data.analytics.IncrementableWeightId;
+import com.dataloom.graph.core.objects.NeighborTripletSet;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.query.Predicate;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
+
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
@@ -83,5 +86,7 @@ public interface LoomGraphApi {
             UUID syncId,
             SetMultimap<UUID, UUID> srcFilters,
             SetMultimap<UUID, UUID> dstFilters );
+
+    NeighborTripletSet getNeighborEntitySets( UUID entitySetId, UUID syncId );
 
 }
