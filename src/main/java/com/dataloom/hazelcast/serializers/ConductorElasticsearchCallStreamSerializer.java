@@ -44,8 +44,7 @@ public class ConductorElasticsearchCallStreamSerializer
             kryo.register( Object[].class );
             kryo.register( java.lang.Class.class );
             kryo.register( Organization.class );
-            kryo.register( UUID.class );
-            kryo.register( SetMultimap.class, new HashMultimapSerializer() );
+
             // Shared Lambdas
             kryo.register( ElasticsearchLambdas.class );
             kryo.register( EntityDataLambdas.class, new EntityDataLambdasStreamSerializer() );
