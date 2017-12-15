@@ -1,37 +1,18 @@
 package com.dataloom.data;
 
-import static com.google.common.util.concurrent.Futures.transformAsync;
-
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import com.dataloom.analysis.requests.NeighborType;
-import com.dataloom.data.events.EntityDataCreatedEvent;
-import com.dataloom.graph.core.objects.NeighborTripletSet;
-import com.google.common.base.Optional;
-import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.analytics.IncrementableWeightId;
+import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.Entity;
 import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
+import com.dataloom.graph.core.objects.NeighborTripletSet;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.base.Optional;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -46,6 +27,15 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
 import org.apache.commons.collections4.keyvalue.MultiKey;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -188,12 +178,16 @@ public class DataGraphService implements DataGraphManager {
         eds.deleteEntity( key );
         eds.updateEntityAsync( key, entity, propertyTypes ).forEach( DataGraphService::tryGetAndLogErrors );
 
-        Map<UUID, Object> entityAsMap = entity.asMap().entrySet().stream()
-                .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue() ) );
+        propertyTypes.entrySet().forEach( entry -> {
+            if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) )
+                entity.removeAll( entry.getKey() );
+        } );
+
         eventBus.post( new EntityDataCreatedEvent( key.getEntitySetId(),
                 Optional.of( key.getSyncId() ),
                 key.getEntityId(),
-                entityAsMap ) );
+                entity,
+                false ) );
     }
 
     @Override
