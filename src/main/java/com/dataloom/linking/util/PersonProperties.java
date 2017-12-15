@@ -34,7 +34,7 @@ public class PersonProperties {
 
     public static int valueIsPresent( Map<UUID, DelegatedStringSet> entity, UUID propertyTypeId ) {
         if ( !entity.containsKey( propertyTypeId )
-                || entity.get( propertyTypeId ).stream().filter( val -> StringUtils.isNotBlank( val ) ).count() == 0 )
+                || entity.get( propertyTypeId ).stream().filter( StringUtils::isNotBlank ).count() == 0 )
             return 0;
         return 1;
     }
