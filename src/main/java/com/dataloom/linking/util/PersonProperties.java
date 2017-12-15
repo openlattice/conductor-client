@@ -9,6 +9,7 @@ import org.joda.time.DateTime;
 import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class PersonProperties {
     private static DecimalFormat dd = new DecimalFormat( "00" );
@@ -26,11 +27,14 @@ public class PersonProperties {
     private static FullQualifiedName XREF_FQN           = new FullQualifiedName( "justice.xref" );
 
     public static DelegatedStringSet getValuesAsSet( Map<UUID, DelegatedStringSet> entity, UUID id ) {
-        return ( entity.containsKey( id ) ) ? entity.get( id ) : DelegatedStringSet.wrap( Sets.newHashSet() );
+        return DelegatedStringSet.wrap( entity.containsKey( id )
+                ? entity.get( id ).stream().filter( StringUtils::isNotBlank ).collect( Collectors.toSet() )
+                : Sets.newHashSet() );
     }
 
     public static int valueIsPresent( Map<UUID, DelegatedStringSet> entity, UUID propertyTypeId ) {
-        if ( !entity.containsKey( propertyTypeId ) || entity.get( propertyTypeId ).size() == 0 )
+        if ( !entity.containsKey( propertyTypeId )
+                || entity.get( propertyTypeId ).stream().filter( val -> StringUtils.isNotBlank( val ) ).count() == 0 )
             return 0;
         return 1;
     }
