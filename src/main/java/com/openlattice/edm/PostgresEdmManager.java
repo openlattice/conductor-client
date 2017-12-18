@@ -21,6 +21,8 @@
 package com.openlattice.edm;
 
 import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresColumn.PROPERTY_ID;
+import static com.openlattice.postgres.PostgresColumn.VERSION;
 import static com.openlattice.postgres.PostgresDatatype.TIMESTAMPTZ;
 
 import com.dataloom.authorization.Permission;
@@ -78,7 +80,6 @@ public class PostgresEdmManager implements DbEdmManager {
         for ( PropertyType pt : propertyTypes ) {
             createPropertyTypeTableIfNotExist( entitySet, pt );
         }
-
         //Method is idempotent and should be re-executable in case of a failure.
     }
 
@@ -118,13 +119,6 @@ public class PostgresEdmManager implements DbEdmManager {
         }
     }
 
-    public static void changePermission(
-            Principal principal,
-            EntitySet entitySet,
-            Set<PropertyType> propertyTypes,
-            EnumSet<Permission> permissions ) {
-
-    }
     @Override
     public void revoke(
             Principal principal,
@@ -154,6 +148,14 @@ public class PostgresEdmManager implements DbEdmManager {
         ptm.registerTables( ptd );
     }
 
+    public static void changePermission(
+            Principal principal,
+            EntitySet entitySet,
+            Set<PropertyType> propertyTypes,
+            EnumSet<Permission> permissions ) {
+
+    }
+
     private static PostgresTableDefinition buildEntitySetTableDefinition( EntitySet entitySet ) {
         PostgresTableDefinition ptd = new PostgresTableDefinition( entityTableName( entitySet.getId() ) )
                 .addColumns( ID, LAST_WRITE, LAST_INDEXED, READERS, WRITERS, OWNERS )
@@ -177,9 +179,10 @@ public class PostgresEdmManager implements DbEdmManager {
         PostgresColumnDefinition valueColumn = value( propertyType );
         PostgresTableDefinition ptd = new PostgresTableDefinition(
                 propertyTableName( entitySet.getId(), propertyType.getId() ) )
-                .addColumns( ID, valueColumn, LAST_WRITE, LAST_INDEXED, READERS, WRITERS, OWNERS )
-                .primaryKey( ID );
+                .addColumns( ID, PROPERTY_ID, valueColumn, VERSION, LAST_WRITE, LAST_INDEXED, READERS, WRITERS, OWNERS )
+                .primaryKey( ID, PROPERTY_ID, valueColumn, VERSION );
 
+        //#4 n44r
         PostgresIndexDefinition valueIndex = new PostgresIndexDefinition( ptd, valueColumn );
 
         PostgresIndexDefinition readersIndex = new PostgresIndexDefinition( ptd, READERS );

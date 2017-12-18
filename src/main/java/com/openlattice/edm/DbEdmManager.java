@@ -28,6 +28,11 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
+ * Some design assumptions:
+ * <uL>
+ *     <li>Folks directly accessing data via SQL will be sophisticated and can deal with complexity of EAV</li>
+ *     <li>At scale on a live system renaming</li>
+ * </uL>
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public interface DbEdmManager {

@@ -88,6 +88,7 @@ public final class PostgresColumn {
     public static final String PRINCIPAL_TYPE_FIELD        = "principal_type";
     public static final String PRINCIPAL_ID_FIELD          = "principal_id";
     public static final String PRINCIPAL_IDS_FIELD         = "principal_ids";
+    public static final String PROPERTY_ID_FIELD           = "propertyId";
     public static final String PROPERTIES_FIELD            = "properties";
     public static final String PROPERTY_TYPE_ID_FIELD      = "property_type_id";
     public static final String REASON_FIELD                = "reason";
@@ -115,6 +116,7 @@ public final class PostgresColumn {
     public static final String TITLE_FIELD                 = "title";
     public static final String URL_FIELD                   = "url";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
+    public static final String VERSION_FIELD               = "version";
 
     public static final PostgresColumnDefinition ACL_KEY               =
             new PostgresColumnDefinition( ACL_KEY_FIELD, UUID_ARRAY );
@@ -226,6 +228,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( PRINCIPAL_ID_FIELD, TEXT );
     public static final PostgresColumnDefinition PRINCIPAL_IDS         =
             new PostgresColumnDefinition( PRINCIPAL_IDS_FIELD, TEXT_ARRAY );
+    public static final PostgresColumnDefinition PROPERTY_ID           =
+            new PostgresColumnDefinition( PROPERTY_ID_FIELD, UUID ).notNull();
     public static final PostgresColumnDefinition PROPERTIES            =
             new PostgresColumnDefinition( PROPERTIES_FIELD, UUID_ARRAY ).notNull();
     public static final PostgresColumnDefinition PROPERTY_TYPE_ID      =
@@ -284,6 +288,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( URL_FIELD, TEXT );
     public static final PostgresColumnDefinition VERTEX_ID             =
             new PostgresColumnDefinition( VERTEX_ID_FIELD, UUID );
+    public static final PostgresColumnDefinition VERSION               =
+            new PostgresColumnDefinition( VERSION_FIELD, BIGINT).notNull();
 
     private PostgresColumn() {
     }
