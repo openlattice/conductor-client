@@ -119,7 +119,6 @@ public class PostgresEdmManager implements DbEdmManager {
         }
     }
 
-    @Override
     public void revoke(
             Principal principal,
             EntitySet entitySet,
@@ -128,6 +127,7 @@ public class PostgresEdmManager implements DbEdmManager {
 
     }
 
+    @Override
     private String grantOnTable( String table, String principalId, String permission ) {
         return String.format( "GRANT %s ON TABLE %s TO %s", permission, table, principalId );
     }
@@ -146,6 +146,14 @@ public class PostgresEdmManager implements DbEdmManager {
             throws SQLException {
         PostgresTableDefinition ptd = buildPropertyTableDefinition( entitySet, propertyType );
         ptm.registerTables( ptd );
+    }
+
+    public static void changePermission(
+            Principal principal,
+            EntitySet entitySet,
+            Set<PropertyType> propertyTypes,
+            EnumSet<Permission> permissions ) {
+
     }
 
     public static void changePermission(
@@ -182,7 +190,6 @@ public class PostgresEdmManager implements DbEdmManager {
                 .addColumns( ID, PROPERTY_ID, valueColumn, VERSION, LAST_WRITE, LAST_INDEXED, READERS, WRITERS, OWNERS )
                 .primaryKey( ID, PROPERTY_ID, valueColumn, VERSION );
 
-        //#4 n44r
         PostgresIndexDefinition valueIndex = new PostgresIndexDefinition( ptd, valueColumn );
 
         PostgresIndexDefinition readersIndex = new PostgresIndexDefinition( ptd, READERS );
