@@ -37,7 +37,7 @@ import com.openlattice.jdbc.JdbcPod;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
-import digital.loom.rhizome.authentication.Auth0Pod;
+import com.openlattice.auth0.Auth0Pod;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashSet;
