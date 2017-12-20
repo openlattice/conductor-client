@@ -49,6 +49,7 @@ import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.requests.Status;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import com.openlattice.auth0.Auth0Pod;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
@@ -98,7 +99,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import( { PostgresPod.class } )
+@Import( { PostgresPod.class, Auth0Pod.class } )
 public class MapstoresPod {
 
     @Inject

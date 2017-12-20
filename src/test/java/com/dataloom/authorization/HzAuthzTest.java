@@ -203,7 +203,7 @@ public class HzAuthzTest {
         final int size = 100;
         Set<AccessCheck> accessChecks = new HashSet<>( size );
         AclKey[] aclKeys = new AclKey[ size ];
-        Principal[] p1s = new Principal[ size ];
+//        Principal[] p1s = new Principal[ size ];
         Principal[] p2s = new Principal[ size ];
         EnumSet<Permission>[] permissions1s = new EnumSet[ size ];
         EnumSet<Permission>[] permissions2s = new EnumSet[ size ];
@@ -214,7 +214,7 @@ public class HzAuthzTest {
             Principal p1 = TestDataFactory.userPrincipal();
             Principal p2 = TestDataFactory.userPrincipal();
             aclKeys[ i ] = key;
-            p1s[ i ] = p1;
+//            p1s[ i ] = p1;
             p2s[ i ] = p2;
 
             EnumSet<Permission> permissions1 = permissions1s[ i ] = TestDataFactory.nonEmptyPermissions();
@@ -242,7 +242,7 @@ public class HzAuthzTest {
         int i = 0;
         for ( AccessCheck ac : accessChecks ) {
             AclKey key = aclKeys[ i ];
-            Principal p1 = p1s[ i ];
+//            Principal p1 = p1s[ i ];
             Principal p2 = p2s[ i ];
             EnumSet<Permission> permissions1 = permissions1s[ i ];
             EnumSet<Permission> permissions2 = permissions2s[ i++ ];
