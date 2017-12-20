@@ -19,29 +19,60 @@
 
 package com.kryptnostic.conductor.rpc;
 
+import com.google.common.collect.SetMultimap;
+
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
 public class EntityDataLambdas implements Function<ConductorElasticsearchApi, Boolean>, Serializable {
     private static final long serialVersionUID = -1071651645473672891L;
-    
-    private UUID entitySetId;
-    private UUID syncId;
-    private String entityId;
-    private Map<UUID, Object> propertyValues;
 
-    public EntityDataLambdas( UUID entitySetId, UUID syncId, String entityId, Map<UUID, Object> propertyValues ) {
+    private UUID                      entitySetId;
+    private UUID                      syncId;
+    private String                    entityId;
+    private SetMultimap<UUID, Object> propertyValues;
+    private boolean                   shouldUpdate;
+
+    public EntityDataLambdas(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            SetMultimap<UUID, Object> propertyValues,
+            boolean shouldUpdate ) {
         this.entitySetId = entitySetId;
         this.syncId = syncId;
         this.entityId = entityId;
         this.propertyValues = propertyValues;
+        this.shouldUpdate = shouldUpdate;
     }
 
     @Override
     public Boolean apply( ConductorElasticsearchApi api ) {
-        return api.createEntityData( entitySetId, syncId, entityId, propertyValues );
+        return shouldUpdate ?
+                api.updateEntityData( entitySetId, syncId, entityId, propertyValues ) :
+                api.createEntityData( entitySetId, syncId, entityId, propertyValues );
     }
 
+    public UUID getEntitySetId() {
+        return entitySetId;
+    }
+
+    public UUID getSyncId() {
+        return syncId;
+    }
+
+    public String getEntityId() {
+        return entityId;
+    }
+
+    public SetMultimap<UUID, Object> getPropertyValues() {
+        return propertyValues;
+    }
+
+    public boolean getShouldUpdate() {
+        return shouldUpdate;
+    }
 }
