@@ -19,6 +19,8 @@
 
 package com.dataloom.authorization;
 
+import static com.google.common.collect.Sets.newHashSet;
+
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.pods.MapstoresPod;
 import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
@@ -236,7 +238,6 @@ public class HzAuthzTest {
 
             Assert.assertTrue( hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
 
-            AccessCheck ac = new AccessCheck( key, permissions1 );
         }
         int i = 0;
         for ( AccessCheck ac : accessChecks ) {
@@ -266,6 +267,7 @@ public class HzAuthzTest {
                         .collect( Collectors.toConcurrentMap( a -> a.getAclKey(),
                                 a -> new EnumMap<>( a.getPermissions() ) ) );
         logger.info( "Elapsed time to access check: {} ms", w.elapsed( TimeUnit.MILLISECONDS ) );
+        Assert.assertTrue( newHashSet(aclKeys).size() == result.keySet().size() );
 
     }
 
