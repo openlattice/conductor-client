@@ -19,7 +19,7 @@ public class PermissionsAggregator extends Aggregator<Map.Entry<AceKey, AceValue
     private static final long serialVersionUID = -1015754054455567010L;
 
     private final SecurableObjectType objectType;
-    private final Set<Principal> principals;
+    private final transient Set<Principal> principals;
     private final Set<Permission> permissions;
 
     private Set<AclKey> result;
