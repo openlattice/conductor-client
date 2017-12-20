@@ -19,11 +19,11 @@ public class PermissionsAggregator extends Aggregator<Map.Entry<AceKey, AceValue
     private static final long serialVersionUID = -1015754054455567010L;
 
     private final SecurableObjectType objectType;
-    @SuppressFBWarnings( value = {
-            "SE_BAD_FIELD" }, justification = "This class is unused and will need a stream serializer if used." )
+    @SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "This class is unused and will need a stream serializer if used." )
     private final Set<Principal>      principals;
     private final Set<Permission>     permissions;
 
+    @SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "This class is unused and will need a stream serializer if used." )
     private Set<AclKey> result;
 
     public PermissionsAggregator(
