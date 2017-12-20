@@ -121,7 +121,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override
     public SetMultimap<SecurablePrincipal, SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId ) {
-      //  new PagingPredicate<>();
+        //  new PagingPredicate<>();
         return null;
     }
 
@@ -136,6 +136,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     public void deletePrincipal( AclKey aclKey ) {
         ensurePrincipalsExist( aclKey );
         removePrincipalFromPrincipals( aclKey, hasSecurablePrincipal( aclKey ) );
+        authorizations.deletePrincipalPermissions( principals.get( aclKey ).getPrincipal() );
         Util.deleteSafely( principalTrees, aclKey );
         Util.deleteSafely( principals, aclKey );
     }
@@ -274,7 +275,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
     }
 
     private static Predicate hasSecurablePrincipal( AclKey principalAclKey ) {
-        return Predicates.and( Predicates.equal( "this[any]", principalAclKey ) );
+        return Predicates.and( Predicates.equal( "this.index[any]", principalAclKey.getIndex() ) );
     }
 
 }
