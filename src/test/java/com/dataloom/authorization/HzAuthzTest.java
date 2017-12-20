@@ -19,8 +19,6 @@
 
 package com.dataloom.authorization;
 
-import static com.google.common.collect.Sets.newHashSet;
-
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.pods.MapstoresPod;
 import com.dataloom.hazelcast.pods.SharedStreamSerializersPod;
@@ -34,12 +32,13 @@ import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.conductor.codecs.pods.TypeCodecsPod;
 import com.kryptnostic.rhizome.configuration.ConfigurationConstants;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
+import com.openlattice.auth0.Auth0Pod;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.jdbc.JdbcPod;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
-import com.openlattice.auth0.Auth0Pod;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -203,7 +202,7 @@ public class HzAuthzTest {
         final int size = 100;
         Set<AccessCheck> accessChecks = new HashSet<>( size );
         AclKey[] aclKeys = new AclKey[ size ];
-//        Principal[] p1s = new Principal[ size ];
+        //        Principal[] p1s = new Principal[ size ];
         Principal[] p2s = new Principal[ size ];
         EnumSet<Permission>[] permissions1s = new EnumSet[ size ];
         EnumSet<Permission>[] permissions2s = new EnumSet[ size ];
@@ -214,7 +213,7 @@ public class HzAuthzTest {
             Principal p1 = TestDataFactory.userPrincipal();
             Principal p2 = TestDataFactory.userPrincipal();
             aclKeys[ i ] = key;
-//            p1s[ i ] = p1;
+            //            p1s[ i ] = p1;
             p2s[ i ] = p2;
 
             EnumSet<Permission> permissions1 = permissions1s[ i ] = TestDataFactory.nonEmptyPermissions();
@@ -237,12 +236,13 @@ public class HzAuthzTest {
                     hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), permissions2 ) );
 
             Assert.assertTrue( hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p2 ), permissions2 ) );
-
+            AccessCheck ac = new AccessCheck( key, permissions1 );
+            accessChecks.add( ac );
         }
         int i = 0;
         for ( AccessCheck ac : accessChecks ) {
             AclKey key = aclKeys[ i ];
-//            Principal p1 = p1s[ i ];
+            //            Principal p1 = p1s[ i ];
             Principal p2 = p2s[ i ];
             EnumSet<Permission> permissions1 = permissions1s[ i ];
             EnumSet<Permission> permissions2 = permissions2s[ i++ ];
@@ -267,7 +267,7 @@ public class HzAuthzTest {
                         .collect( Collectors.toConcurrentMap( a -> a.getAclKey(),
                                 a -> new EnumMap<>( a.getPermissions() ) ) );
         logger.info( "Elapsed time to access check: {} ms", w.elapsed( TimeUnit.MILLISECONDS ) );
-        Assert.assertTrue( newHashSet(aclKeys).size() == result.keySet().size() );
+        Assert.assertTrue( result.keySet().containsAll( Arrays.asList( aclKeys ) ) );
 
     }
 
