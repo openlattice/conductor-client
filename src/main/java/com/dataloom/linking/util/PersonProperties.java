@@ -2,16 +2,18 @@ package com.dataloom.linking.util;
 
 import com.google.common.collect.Sets;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.joda.time.DateTime;
-
 import java.text.DecimalFormat;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PersonProperties {
-    private static DecimalFormat dd = new DecimalFormat( "00" );
+    private static final Logger        logger = LoggerFactory.getLogger( PersonProperties.class );
+    private static       DecimalFormat dd     = new DecimalFormat( "00" );
 
     private static FullQualifiedName FIRST_NAME_FQN     = new FullQualifiedName( "nc.PersonGivenName" );
     private static FullQualifiedName MIDDLE_NAME_FQN    = new FullQualifiedName( "nc.PersonMiddleName" );
@@ -30,8 +32,7 @@ public class PersonProperties {
     }
 
     public static int valueIsPresent( Map<UUID, DelegatedStringSet> entity, UUID propertyTypeId ) {
-        if ( !entity.containsKey( propertyTypeId ) || entity.get( propertyTypeId ).size() == 0 )
-            return 0;
+        if ( !entity.containsKey( propertyTypeId ) || entity.get( propertyTypeId ).size() == 0 ) { return 0; }
         return 1;
     }
 
@@ -153,20 +154,19 @@ public class PersonProperties {
             Map<UUID, DelegatedStringSet> entity,
             Map<FullQualifiedName, UUID> fqnToIdMap ) {
         DelegatedStringSet dobStrings = getValuesAsSet( entity, fqnToIdMap.get( DOB_FQN ) );
-        if ( dobStrings.isEmpty() )
-            return dobStrings;
+        if ( dobStrings.isEmpty() ) { return dobStrings; }
         DelegatedStringSet values = new DelegatedStringSet( Sets.newHashSet() );
         for ( String dobUnparsed : dobStrings ) {
             if ( dobUnparsed != null ) {
-                if ( StringUtils.isEmpty( dobUnparsed ) )
-                    values.add( "" );
-                else {
+                if ( StringUtils.isEmpty( dobUnparsed ) ) { values.add( "" ); } else {
                     try {
                         DateTime dt = DateTime.parse( dobUnparsed );
                         String dobParsed = dd.format( dt.getDayOfMonth() ) + dd.format( dt.getMonthOfYear() ) + String
                                 .valueOf( dt.getYear() );
                         values.add( dobParsed );
-                    } catch ( Exception e ) { }
+                    } catch ( Exception e ) {
+                        logger.error( "Unable to parse date string" );
+                    }
                 }
             }
         }
