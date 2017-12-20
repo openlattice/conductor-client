@@ -24,36 +24,80 @@ import com.dataloom.authorization.securable.AbstractSecurableObject;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.mapstores.PostgresCredentialMapstore;
 import com.openlattice.authorization.mapstores.UserMapstore;
 import com.openlattice.postgres.mapstores.SyncIdsMapstore;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.Collection;
-import java.util.Set;
-import java.util.UUID;
-
 public class MapstoresTest extends HzAuthzTest {
     private static final Logger      logger   = LoggerFactory
             .getLogger( MapstoresTest.class );
     private static final Set<String> excluded =
             ImmutableSet.of( HazelcastMap.EDGES.name(),
-                    HazelcastMap.BACKEDGES.name() );
+                    HazelcastMap.BACKEDGES.name(),
+                    HazelcastMap.PERMISSIONS.name() );
     @SuppressWarnings( "rawtypes" )
-    private static final Collection<TestableSelfRegisteringMapStore> mapstores;
+    private static final Map<String, TestableSelfRegisteringMapStore> mapstoreMap;
+    private static final Collection<TestableSelfRegisteringMapStore>  mapstores;
 
     static {
         mapstores = testServer.getContext().getBeansOfType( TestableSelfRegisteringMapStore.class ).values();
+        mapstoreMap = mapstores.stream().collect( Collectors.toMap( TestableSelfRegisteringMapStore::getMapName,
+                Function.identity() ) );
+    }
+
+    @Test
+    public void testPermissionMapstore() {
+        TestableSelfRegisteringMapStore permissions = mapstoreMap.get( HazelcastMap.PERMISSIONS.name() );
+        TestableSelfRegisteringMapStore objectTypes = mapstoreMap.get( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
+
+        AceValue expected = (AceValue) permissions.generateTestValue();
+        Object key = permissions.generateTestKey();
+
+        Object actual = null;
+        try {
+            objectTypes.store( key, expected.getSecurableObjectType() );
+            permissions.store( key, expected );
+            actual = permissions.load( key );
+            if ( !expected.equals( actual ) ) {
+                logger.error( "Incorrect r/w to mapstore {} for key {}. expected({}) != actual({})",
+                        permissions.getMapName(),
+                        key,
+                        expected,
+                        actual );
+            }
+            Assert.assertEquals( expected, actual );
+        } catch ( NotImplementedException | UnsupportedOperationException e ) {
+            logger.info( "Mapstore not implemented." );
+        } catch ( Exception e ) {
+            logger.error( "Unable to r/w to mapstore {} value: ({},{})", permissions.getMapName(), key, expected, e );
+            throw e;
+        }
+    }
+
+    @Test
+    public void testMapstore() {
+        mapstores.stream()
+                .filter( ms -> !excluded.contains( ms.getMapName() ) )
+                .forEach( MapstoresTest::test );
     }
 
     @SuppressWarnings( { "rawtypes", "unchecked" } )
     private static void test( TestableSelfRegisteringMapStore ms ) {
-        if ( ms instanceof SyncIdsMapstore || ms instanceof PostgresCredentialMapstore || ms instanceof UserMapstore )
+        if ( ms instanceof SyncIdsMapstore || ms instanceof PostgresCredentialMapstore || ms instanceof UserMapstore ) {
             return;
+        }
         Object expected = ms.generateTestValue();
         Object key = ms.generateTestKey();
         if ( AbstractSecurableObject.class.isAssignableFrom( expected.getClass() )
@@ -78,12 +122,5 @@ public class MapstoresTest extends HzAuthzTest {
             logger.error( "Unable to r/w to mapstore {} value: ({},{})", ms.getMapName(), key, expected, e );
             throw e;
         }
-    }
-
-    @Test
-    public void testMapstore() {
-        mapstores.stream()
-                .filter( ms -> !excluded.contains( ms.getMapName() ) )
-                .forEach( MapstoresTest::test );
     }
 }

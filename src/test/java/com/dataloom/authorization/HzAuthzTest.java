@@ -92,24 +92,25 @@ public class HzAuthzTest {
 
     @Test
     public void testAddEntitySetPermission() {
-        UUID key = UUID.randomUUID();
+        AclKey key = new AclKey( UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.addPermission( new AclKey( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), permissions ) );
+        hzAuthz.addPermission( key, p, permissions );
         Assert.assertTrue(
-                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), permissions ) );
     }
 
     @Test
     public void testTypeMistmatchPermission() {
-        UUID key = UUID.randomUUID();
+        AclKey key = new AclKey( UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.addPermission( new AclKey( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), permissions ) );
+        hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
+        hzAuthz.addPermission( key, p, permissions );
         UUID badkey = UUID.randomUUID();
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( new AclKey( badkey ), ImmutableSet.of( p ), permissions ) );
@@ -117,32 +118,36 @@ public class HzAuthzTest {
 
     @Test
     public void testRemovePermissions() {
-        UUID key = UUID.randomUUID();
+        AclKey key = new AclKey( UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.addPermission( new AclKey( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( key , ImmutableSet.of( p ), permissions ) );
+        hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
+        hzAuthz.addPermission( key, p, permissions );
         Assert.assertTrue(
                 hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.removePermission( new AclKey( key ), p, permissions );
+        hzAuthz.removePermission( key , p, permissions );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), permissions ) );
     }
 
     @Test
     public void testSetPermissions() {
-        UUID key = UUID.randomUUID();
+        AclKey key = new AclKey( UUID.randomUUID() );
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         EnumSet<Permission> badPermissions = EnumSet.of( Permission.DISCOVER, Permission.READ, Permission.LINK );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.setPermission( new AclKey( key ), p, permissions );
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), permissions ) );
+
+        hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
+        hzAuthz.setPermission( key, p, permissions );
+
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), badPermissions ) );
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), badPermissions ) );
         Assert.assertTrue(
-                hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), permissions ) );
     }
 
     @Test

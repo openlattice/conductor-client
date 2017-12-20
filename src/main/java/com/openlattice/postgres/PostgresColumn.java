@@ -179,7 +179,7 @@ public final class PostgresColumn {
     public static final PostgresColumnDefinition ENTITY_TYPE_ID        =
             new PostgresColumnDefinition( ENTITY_TYPE_ID_FIELD, UUID ).notNull();
     public static final PostgresColumnDefinition ENTITY_TYPE_IDS       =
-            new PostgresColumnDefinition( ENTITY_TYPE_IDS_FIELD, UUID ).notNull();
+            new PostgresColumnDefinition( ENTITY_TYPE_IDS_FIELD, UUID_ARRAY ).notNull();
     public static final PostgresColumnDefinition EVENT_TYPE            =
             new PostgresColumnDefinition( EVENT_TYPE_FIELD, TEXT );
     public static final PostgresColumnDefinition FLAGS                 =
