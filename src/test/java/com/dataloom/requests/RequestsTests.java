@@ -22,9 +22,11 @@ package com.dataloom.requests;
 import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.HzAuthzTest;
 import com.dataloom.authorization.securable.SecurableObjectType;
+import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.requests.util.RequestUtil;
 import com.google.common.collect.ImmutableSet;
+import com.hazelcast.core.IMap;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.mapstores.SecurableObjectTypeMapstore;
 import java.util.Map;
@@ -67,11 +69,13 @@ public class RequestsTests extends HzAuthzTest {
             expected4 );
 
     static {
+        IMap<AclKey, SecurableObjectType> objectTypes = hazelcastInstance
+                .getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
+        ss.forEach( s -> objectTypes.set( s.getRequest().getAclKey(), SecurableObjectType.PropertyTypeInEntitySet ) );
         aqs = new RequestQueryService( hds );
         hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs, neuron );
         Map<AceKey, Status> statusMap = RequestUtil.statusMap( ss );
         SecurableObjectTypeMapstore objectTypes = new SecurableObjectTypeMapstore( hds );
-        ss.forEach( s -> objectTypes.store( s.getRequest().getAclKey(), SecurableObjectType.PropertyTypeInEntitySet ) );
         hzRequests.submitAll( statusMap );
     }
 
