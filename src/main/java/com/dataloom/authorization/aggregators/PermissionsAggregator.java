@@ -11,6 +11,7 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,7 +20,8 @@ public class PermissionsAggregator extends Aggregator<Map.Entry<AceKey, AceValue
     private static final long serialVersionUID = -1015754054455567010L;
 
     private final SecurableObjectType objectType;
-    private final transient Set<Principal> principals;
+    @SuppressFBWarnings({"SE_BAD_FIELD"},"This class is unused and will need a stream serializer if used." )
+    private final Set<Principal> principals;
     private final Set<Permission> permissions;
 
     private Set<AclKey> result;
