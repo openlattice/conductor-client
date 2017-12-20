@@ -19,19 +19,16 @@
 
 package com.dataloom.neuron.signals;
 
-import com.openlattice.authorization.AclKey;
-import java.util.List;
-import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.client.serialization.SerializationConstants;
 import com.dataloom.neuron.SignalType;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.openlattice.authorization.AclKey;
+import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AuditableSignal extends Signal {
 
@@ -78,5 +75,48 @@ public class AuditableSignal extends Signal {
     @JsonProperty( SerializationConstants.BLOCK_ID )
     public UUID getBlockId() {
         return blockId;
+    }
+
+    @Override public String toString() {
+        return "AuditableSignal{" +
+                "auditId=" + auditId +
+                ", timeId=" + timeId +
+                ", dataId=" + dataId +
+                ", blockId=" + blockId +
+                '}';
+    }
+
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof AuditableSignal ) ) { return false; }
+        if ( !super.equals( o ) ) { return false; }
+
+        AuditableSignal that = (AuditableSignal) o;
+
+        if ( !auditId.equals( that.auditId ) ) { return false; }
+        if ( !timeId.equals( that.timeId ) ) { return false; }
+        if ( !dataId.equals( that.dataId ) ) { return false; }
+        return blockId.equals( that.blockId );
+    }
+
+    @Override public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + auditId.hashCode();
+        result = 31 * result + timeId.hashCode();
+        result = 31 * result + dataId.hashCode();
+        result = 31 * result + blockId.hashCode();
+        return result;
+    }
+
+    public static AuditableSignal randomValue() {
+        Signal s = Signal.randomValue();
+        return new AuditableSignal( s.getType(),
+                s.getAclKey(),
+                s.getPrincipal(),
+                s.getDetails(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID() );
     }
 }

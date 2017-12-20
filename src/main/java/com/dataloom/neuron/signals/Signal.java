@@ -23,7 +23,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.client.serialization.SerializationConstants;
-import com.dataloom.hazelcast.serializers.SignalTypeStreamSerializer;
 import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.neuron.SignalType;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -36,9 +35,9 @@ import org.apache.commons.lang.math.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Signal implements Serializable {
-
-    private static final Logger logger = LoggerFactory.getLogger( Signal.class );
+public class Signal {
+    private static final Logger       logger = LoggerFactory.getLogger( Signal.class );
+    private static final SignalType[] values = SignalType.values();
 
     private SignalType type;
     private AclKey     aclKey;
@@ -120,8 +119,8 @@ public class Signal implements Serializable {
 
     @VisibleForTesting
     public static Signal randomValue() {
-        SignalType st = SignalTypeStreamSerializer.values[ RandomUtils
-                .nextInt( SignalTypeStreamSerializer.values.length ) ];
+        SignalType st = values[ RandomUtils
+                .nextInt( values.length ) ];
         return new Signal( st,
                 TestDataFactory.aclKey(),
                 TestDataFactory.userPrincipal(),
