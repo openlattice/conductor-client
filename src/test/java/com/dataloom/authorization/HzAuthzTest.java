@@ -27,6 +27,7 @@ import com.dataloom.neuron.Neuron;
 import com.dataloom.neuron.pods.NeuronPod;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.hazelcast.core.HazelcastInstance;
 import com.kryptnostic.conductor.codecs.pods.TypeCodecsPod;
@@ -240,9 +241,11 @@ public class HzAuthzTest {
             accessChecks.add( ac );
         }
         int i = 0;
+        List<AclKey> keys = Arrays.asList( aclKeys );
         for ( AccessCheck ac : accessChecks ) {
-            AclKey key = aclKeys[ i ];
+            AclKey key = ac.getAclKey();
             //            Principal p1 = p1s[ i ];
+            i = keys.indexOf( key );
             Principal p2 = p2s[ i ];
             EnumSet<Permission> permissions1 = permissions1s[ i ];
             EnumSet<Permission> permissions2 = permissions2s[ i++ ];
@@ -254,9 +257,10 @@ public class HzAuthzTest {
 
             Assert.assertTrue( result.containsKey( key ) );
             EnumMap<Permission, Boolean> checkForKey = result.get( key );
-            Assert.assertTrue( checkForKey.size() == permissions1.size() );
-
-            Assert.assertTrue( permissions2.stream().allMatch( result.get( key )::get ) );
+            Assert.assertTrue( checkForKey.size() == ac.getPermissions().size() );
+            Assert.assertTrue( checkForKey.keySet().containsAll(  ac.getPermissions() ) );
+            Set<Permission> overlapping = ImmutableSet.copyOf( Sets.intersection(permissions2, ac.getPermissions() ) );
+            Assert.assertTrue( overlapping.stream().allMatch( result.get( key )::get ) );
             //            Assert.assertTrue( result.get( key ).get( Permission.DISCOVER ) );
             //            Assert.assertTrue( result.get( key ).get( Permission.READ ) );
             //            Assert.assertFalse( result.get( key ).get( Permission.OWNER ) );
