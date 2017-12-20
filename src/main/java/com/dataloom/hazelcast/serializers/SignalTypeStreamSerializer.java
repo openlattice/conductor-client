@@ -32,7 +32,7 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 @Component
 public class SignalTypeStreamSerializer implements SelfRegisteringStreamSerializer<SignalType> {
 
-    private static SignalType[] values = SignalType.values();
+    public static SignalType[] values = SignalType.values();
 
     @Override
     public void write( ObjectDataOutput out, SignalType object ) throws IOException {

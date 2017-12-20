@@ -19,6 +19,7 @@
 
 package com.dataloom.neuron.signals;
 
+import com.openlattice.authorization.AclKey;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,7 +44,7 @@ public class AuditableSignal extends Signal {
 
     public AuditableSignal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
-            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
+            @JsonProperty( SerializationConstants.ACL_KEY ) AclKey aclKey,
             @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.DETAILS_FIELD ) String details,
             @JsonProperty( SerializationConstants.AUDIT_ID ) UUID auditId,

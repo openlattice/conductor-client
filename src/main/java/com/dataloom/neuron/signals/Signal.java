@@ -19,34 +19,36 @@
 
 package com.dataloom.neuron.signals;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.UUID;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.dataloom.authorization.Principal;
 import com.dataloom.client.serialization.SerializationConstants;
+import com.dataloom.hazelcast.serializers.SignalTypeStreamSerializer;
+import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.neuron.SignalType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.common.annotations.VisibleForTesting;
+import com.openlattice.authorization.AclKey;
+import java.io.Serializable;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.math.RandomUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Signal implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( Signal.class );
 
     private SignalType type;
-    private List<UUID> aclKey;
+    private AclKey     aclKey;
     private Principal  principal;
     private String     details;
 
     @JsonCreator
     public Signal(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) SignalType type,
-            @JsonProperty( SerializationConstants.ACL_KEY ) List<UUID> aclKey,
+            @JsonProperty( SerializationConstants.ACL_KEY ) AclKey aclKey,
             @JsonProperty( SerializationConstants.PRINCIPAL ) Principal principal,
             @JsonProperty( SerializationConstants.DETAILS_FIELD ) String details ) {
 
@@ -62,7 +64,7 @@ public class Signal implements Serializable {
         }
     }
 
-    public Signal(SignalType type, List<UUID> aclKey, Principal principal ) {
+    public Signal( SignalType type, AclKey aclKey, Principal principal ) {
 
         this( type, aclKey, principal, "" );
     }
@@ -73,7 +75,7 @@ public class Signal implements Serializable {
     }
 
     @JsonProperty( SerializationConstants.ACL_KEY )
-    public List<UUID> getAclKey() {
+    public AclKey getAclKey() {
         return aclKey;
     }
 
@@ -87,4 +89,42 @@ public class Signal implements Serializable {
         return details;
     }
 
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof Signal ) ) { return false; }
+
+        Signal signal = (Signal) o;
+
+        if ( type != signal.type ) { return false; }
+        if ( !aclKey.equals( signal.aclKey ) ) { return false; }
+        if ( !principal.equals( signal.principal ) ) { return false; }
+        return details.equals( signal.details );
+    }
+
+    @Override public int hashCode() {
+        int result = type.hashCode();
+        result = 31 * result + aclKey.hashCode();
+        result = 31 * result + principal.hashCode();
+        result = 31 * result + details.hashCode();
+        return result;
+    }
+
+    @Override public String toString() {
+        return "Signal{" +
+                "type=" + type +
+                ", aclKey=" + aclKey +
+                ", principal=" + principal +
+                ", details='" + details + '\'' +
+                '}';
+    }
+
+    @VisibleForTesting
+    public static Signal randomValue() {
+        SignalType st = SignalTypeStreamSerializer.values[ RandomUtils
+                .nextInt( SignalTypeStreamSerializer.values.length ) ];
+        return new Signal( st,
+                TestDataFactory.aclKey(),
+                TestDataFactory.userPrincipal(),
+                RandomStringUtils.random( 10 ) );
+    }
 }

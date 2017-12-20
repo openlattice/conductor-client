@@ -19,6 +19,7 @@
 
 package com.dataloom.mapstores;
 
+import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.HzAuthzTest;
 import com.dataloom.authorization.securable.AbstractSecurableObject;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -63,11 +64,11 @@ public class MapstoresTest extends HzAuthzTest {
         TestableSelfRegisteringMapStore objectTypes = mapstoreMap.get( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
 
         AceValue expected = (AceValue) permissions.generateTestValue();
-        Object key = permissions.generateTestKey();
+        AceKey key = (AceKey) permissions.generateTestKey();
 
         Object actual = null;
         try {
-            objectTypes.store( key, expected.getSecurableObjectType() );
+            objectTypes.store( key.getAclKey(), expected.getSecurableObjectType() );
             permissions.store( key, expected );
             actual = permissions.load( key );
             if ( !expected.equals( actual ) ) {
