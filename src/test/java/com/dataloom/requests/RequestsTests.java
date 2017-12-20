@@ -27,8 +27,8 @@ import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.requests.util.RequestUtil;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.IMap;
+import com.hazelcast.spi.exception.RetryableHazelcastException;
 import com.openlattice.authorization.AclKey;
-import com.openlattice.postgres.mapstores.SecurableObjectTypeMapstore;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -36,6 +36,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RequestsTests extends HzAuthzTest {
     protected static final RequestQueryService      aqs;
@@ -67,11 +69,26 @@ public class RequestsTests extends HzAuthzTest {
             expected2,
             expected3,
             expected4 );
+    private static final Logger logger = LoggerFactory.getLogger( RequestsTests.class );
 
     static {
         IMap<AclKey, SecurableObjectType> objectTypes = hazelcastInstance
                 .getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
-        ss.forEach( s -> objectTypes.set( s.getRequest().getAclKey(), SecurableObjectType.PropertyTypeInEntitySet ) );
+        for ( Status s : ss ) {
+            boolean successful = false;
+            while ( !successful ) {
+                try {
+                    Thread.sleep( 1000 );
+                    objectTypes.set( s.getRequest().getAclKey(), SecurableObjectType.PropertyTypeInEntitySet );
+                    successful = true;
+                } catch ( RetryableHazelcastException e ) {
+                    logger.info( "Unable to execute hazelcast operation waiting 1 s and retrying" );
+                } catch ( InterruptedException e ) {
+                    logger.info( "FML" );
+                }
+
+            }
+        }
         aqs = new RequestQueryService( hds );
         hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs, neuron );
         Map<AceKey, Status> statusMap = RequestUtil.statusMap( ss );
