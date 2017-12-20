@@ -78,7 +78,6 @@ public class ElasticsearchLambdas implements Serializable {
             Set<AclKey> authorizedOrganizationIds,
             int start,
             int maxHits ) {
-        Set<Principal> principals = Principals.getCurrentPrincipals();
         return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
                 .executeOrganizationSearch( searchTerm, authorizedOrganizationIds, start, maxHits );
     }
