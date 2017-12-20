@@ -27,6 +27,7 @@ import java.util.NavigableSet;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 public final class Principals {
@@ -64,6 +65,10 @@ public final class Principals {
 
     public static Principal getAdminRole() {
         return SystemRole.ADMIN.getPrincipal();
+    }
+
+    public static SimpleGrantedAuthority fromPrincipal( Principal p ) {
+        return new SimpleGrantedAuthority( p.getType().name() + "|" + p.getId() );
     }
 
 }

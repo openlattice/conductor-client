@@ -21,7 +21,6 @@ package com.kryptnostic.datastore.services;
 
 import static com.kryptnostic.datastore.cassandra.CommonColumns.PARTITION_INDEX;
 
-import com.auth0.jwt.internal.org.apache.commons.lang3.StringUtils;
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.edm.EntitySet;
@@ -40,6 +39,7 @@ import com.kryptnostic.datastore.cassandra.RowAdapters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
 
 public class CassandraEntitySetManager {
     private final String               keyspace;

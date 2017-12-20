@@ -19,47 +19,39 @@
 
 package com.dataloom.authentication;
 
-import com.auth0.authentication.AuthenticationAPIClient;
-import com.auth0.spring.security.api.Auth0JWTToken;
+import com.auth0.spring.security.api.JwtAuthenticationProvider;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
-import digital.loom.rhizome.authentication.ConfigurableAuth0AuthenticationProvider;
+import com.openlattice.auth0.WrappedPreAuthenticatedAuthenticationJwt;
 import org.springframework.security.core.Authentication;
 
-public class LoomAuth0AuthenticationProvider extends ConfigurableAuth0AuthenticationProvider {
+public class LoomAuth0AuthenticationProvider extends JwtAuthenticationProvider {
     public static final String USER_ID_ATTRIBUTE    = "user_id";
     public static final String SUBJECT_ATTRIBUTE    = "sub";
     public static final String ISSUE_TIME_ATTRIBUTE = "iat";
 
     private final SecurePrincipalsManager spm;
 
-    public LoomAuth0AuthenticationProvider( AuthenticationAPIClient auth0Client, SecurePrincipalsManager spm ) {
-        super( auth0Client );
+    public LoomAuth0AuthenticationProvider(
+            byte[] secret,
+            String issuer,
+            String audience,
+            SecurePrincipalsManager spm ) {
+        super( secret, issuer, audience );
         this.spm = spm;
     }
 
     @Override
     public Authentication authenticate( Authentication authentication ) {
-        final Auth0JWTToken jwtToken = ( (Auth0JWTToken) super.authenticate( authentication ) );
-        // TODO: Temporarily turn off manual token expiration
-        /**
-         Auth0UserDetails details = (Auth0UserDetails) jwtToken.getSecurablePrincipal();
-         Object userIdAsObj = details.getAuth0Attribute( LoomAuth0AuthenticationProvider.SUBJECT_ATTRIBUTE );
-         if ( userIdAsObj == null ) {
-         userIdAsObj = details.getAuth0Attribute( LoomAuth0AuthenticationProvider.USER_ID_ATTRIBUTE );
-         }
-         String userId = userIdAsObj.toString();
+        if ( !supports( authentication.getClass() ) ) {
+            return null;
+        }
 
-         Long tokenIssueTime = Long.parseLong( details.getAuth0Attribute( LoomAuth0AuthenticationProvider.ISSUE_TIME_ATTRIBUTE ).toString() );
-         if( !tokenTracker.accept( userId, tokenIssueTime ) ){
-         jwtToken.setAuthenticated(false);
-         //Token is issued before the token acceptance time - should be rejected
-         throw new TokenRefreshException();
-         }
+        final WrappedPreAuthenticatedAuthenticationJwt jwt = (WrappedPreAuthenticatedAuthenticationJwt) authentication;
 
-         //Successful login should remove user from USERS_NEEDING_NEW_TOKEN set
-         tokenTracker.untrackUser( userId );
-         */
+        return new LoomAuthentication( super.authenticate( jwt.unwrap() ), spm );
+    }
 
-        return new LoomAuthentication( jwtToken, spm );
+    @Override public boolean supports( Class<?> authentication ) {
+        return WrappedPreAuthenticatedAuthenticationJwt.class.isAssignableFrom( authentication );
     }
 }

@@ -21,7 +21,6 @@ package com.dataloom.organizations.mapstores;
 
 import java.util.UUID;
 
-import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
@@ -29,6 +28,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.rhizome.cassandra.ColumnDef;
+import org.apache.commons.lang3.RandomStringUtils;
 
 public class StringMapstore extends UUIDKeyMapstore<String> {
     private final ColumnDef valueCol;
