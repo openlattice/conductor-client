@@ -75,7 +75,6 @@ public class RequestsTests extends HzAuthzTest {
         aqs = new RequestQueryService( hds );
         hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs, neuron );
         Map<AceKey, Status> statusMap = RequestUtil.statusMap( ss );
-        SecurableObjectTypeMapstore objectTypes = new SecurableObjectTypeMapstore( hds );
         hzRequests.submitAll( statusMap );
     }
 
