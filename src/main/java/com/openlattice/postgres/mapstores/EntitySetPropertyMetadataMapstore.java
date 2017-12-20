@@ -2,7 +2,6 @@ package com.openlattice.postgres.mapstores;
 
 import static com.openlattice.postgres.PostgresTable.ENTITY_SET_PROPERTY_METADATA;
 
-import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -12,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 
 public class EntitySetPropertyMetadataMapstore
         extends AbstractBasePostgresMapstore<EntitySetPropertyKey, EntitySetPropertyMetadata> {

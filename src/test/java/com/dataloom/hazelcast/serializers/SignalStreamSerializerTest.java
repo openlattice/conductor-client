@@ -18,23 +18,24 @@
  *
  */
 
-package com.openlattice.ids;
+package com.dataloom.hazelcast.serializers;
 
-import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
-import java.util.Map.Entry;
-import java.util.UUID;
+import com.dataloom.neuron.signals.Signal;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**
- * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class IdGeneratingEntryProcessor extends AbstractRhizomeEntryProcessor<Integer, Range, UUID> {
+public class SignalStreamSerializerTest extends
+        AbstractStreamSerializerTest<SignalStreamSerializer, Signal> {
 
     @Override
-    public UUID process( Entry<Integer, Range> entry ) {
-        Range range = entry.getValue(); //Range should never be null in the EP.
+    protected SignalStreamSerializer createSerializer() {
+        return new SignalStreamSerializer();
+    }
 
-        UUID id = range.getNextId();
-        entry.setValue( range );
-        return id;
+    @Override
+    protected Signal createInput() {
+        return Signal.randomValue();
     }
 }

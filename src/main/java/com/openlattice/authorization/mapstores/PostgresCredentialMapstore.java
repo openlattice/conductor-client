@@ -22,6 +22,8 @@ package com.openlattice.authorization.mapstores;
 
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
+import com.hazelcast.config.MapStoreConfig;
+import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.openlattice.authorization.DbCredentialQueryService;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresColumnDefinition;
@@ -95,5 +97,10 @@ public class PostgresCredentialMapstore extends AbstractBasePostgresMapstore<Str
 
     @Override protected String mapToKey( ResultSet rs ) throws SQLException {
         return rs.getString( PostgresColumn.PRINCIPAL_ID_FIELD );
+    }
+
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig()
+                .setInitialLoadMode( InitialLoadMode.EAGER );
     }
 }
