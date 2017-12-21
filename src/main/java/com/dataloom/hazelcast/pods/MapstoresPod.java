@@ -89,7 +89,7 @@ import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
-import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
+import com.openlattice.authentication.Auth0Configuration;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.UUID;
