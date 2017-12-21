@@ -49,6 +49,7 @@ import com.dataloom.organizations.PrincipalSet;
 import com.dataloom.requests.Status;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
+import com.openlattice.auth0.Auth0Pod;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
@@ -88,7 +89,7 @@ import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
-import digital.loom.rhizome.configuration.auth0.Auth0Configuration;
+import com.openlattice.authentication.Auth0Configuration;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.UUID;
@@ -98,7 +99,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@Import( { PostgresPod.class } )
+@Import( { PostgresPod.class, Auth0Pod.class } )
 public class MapstoresPod {
 
     @Inject

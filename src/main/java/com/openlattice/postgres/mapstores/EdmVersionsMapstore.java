@@ -4,9 +4,7 @@ import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
 import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
 import static com.openlattice.postgres.PostgresTable.EDM_VERSIONS;
 
-import com.auth0.jwt.internal.org.apache.commons.lang3.RandomStringUtils;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.google.common.collect.ImmutableList;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.PreparedStatement;
@@ -14,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 
 public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UUID> {
     private final HikariDataSource hds;
@@ -32,7 +31,6 @@ public class EdmVersionsMapstore extends AbstractBasePostgresMapstore<String, UU
     @Override protected Optional<String> buildOnConflictQuery() {
         return Optional.empty();
     }
-
 
     @Override protected void bind( PreparedStatement ps, String key, UUID value ) throws SQLException {
         bind( ps, key, 1 );

@@ -44,6 +44,8 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, AclKeySet> {
+    public static final  String INDEX       = "index[any]";
+
     public PrincipalTreeMapstore( HikariDataSource hds ) {
         super( HazelcastMap.PRINCIPAL_TREES.name(), PostgresTable.PRINCIPAL_TREES, hds );
     }
@@ -80,7 +82,7 @@ public class PrincipalTreeMapstore extends AbstractBasePostgresMapstore<AclKey, 
 
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
-                .addMapIndexConfig( new MapIndexConfig( "value[any]", false ) );
+                .addMapIndexConfig( new MapIndexConfig( INDEX, false ) );
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {

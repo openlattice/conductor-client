@@ -29,12 +29,10 @@ public class EntitySetCreatedEvent {
 	
 	private EntitySet entitySet;
 	private List<PropertyType> propertyTypes;
-	private Principal principal;
-	
-	public EntitySetCreatedEvent( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal ) {
+
+	public EntitySetCreatedEvent( EntitySet entitySet, List<PropertyType> propertyTypes ) {
 		this.entitySet = entitySet;
 		this.propertyTypes = propertyTypes;
-		this.principal = principal;
 	}
 	
 	public EntitySet getEntitySet() {
@@ -43,10 +41,6 @@ public class EntitySetCreatedEvent {
 	
 	public List<PropertyType> getPropertyTypes() {
 		return propertyTypes;
-	}
-	
-	public Principal getPrincipal() {
-		return principal;
 	}
 
 }

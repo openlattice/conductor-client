@@ -11,12 +11,11 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.organization.Organization;
 import com.dataloom.search.requests.SearchResult;
 import com.google.common.base.Optional;
+import com.google.common.collect.SetMultimap;
 import com.openlattice.authorization.AclKey;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 
 public class ElasticsearchLambdas implements Serializable {
@@ -24,10 +23,9 @@ public class ElasticsearchLambdas implements Serializable {
 
     public static Function<ConductorElasticsearchApi, Boolean> submitEntitySetToElasticsearch(
             EntitySet entitySet,
-            List<PropertyType> propertyTypes,
-            Principal principal ) {
+            List<PropertyType> propertyTypes ) {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
-                .saveEntitySetToElasticsearch( entitySet, propertyTypes, principal );
+                .saveEntitySetToElasticsearch( entitySet, propertyTypes );
     }
 
     public static Function<ConductorElasticsearchApi, Boolean> createSecurableObjectIndex(
@@ -66,11 +64,9 @@ public class ElasticsearchLambdas implements Serializable {
                 .deleteEntitySetForSyncId( entitySetId, syncId );
     }
 
-    public static Function<ConductorElasticsearchApi, Boolean> createOrganization(
-            Organization organization,
-            Principal principal ) {
+    public static Function<ConductorElasticsearchApi, Boolean> createOrganization( Organization organization ) {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
-                .createOrganization( organization, principal );
+                .createOrganization( organization );
     }
 
     public static Function<ConductorElasticsearchApi, SearchResult> executeOrganizationKeywordSearch(
@@ -78,7 +74,6 @@ public class ElasticsearchLambdas implements Serializable {
             Set<AclKey> authorizedOrganizationIds,
             int start,
             int maxHits ) {
-        Set<Principal> principals = Principals.getCurrentPrincipals();
         return (Function<ConductorElasticsearchApi, SearchResult> & Serializable) ( api ) -> api
                 .executeOrganizationSearch( searchTerm, authorizedOrganizationIds, start, maxHits );
     }
@@ -249,6 +244,13 @@ public class ElasticsearchLambdas implements Serializable {
                 .triggerAssociationTypeIndex( associationTypes );
     }
 
+    public static Function<ConductorElasticsearchApi, Boolean> triggerEntitySetIndex(
+            Map<EntitySet, Set<UUID>> entitySets,
+            Map<UUID, PropertyType> propertyTypes ) {
+        return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
+                .triggerEntitySetIndex( entitySets, propertyTypes );
+    }
+
     public static Function<ConductorElasticsearchApi, Boolean> triggerAppIndex( List<App> apps ) {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .triggerAppIndex( apps );
@@ -258,7 +260,5 @@ public class ElasticsearchLambdas implements Serializable {
         return (Function<ConductorElasticsearchApi, Boolean> & Serializable) ( api ) -> api
                 .triggerAppTypeIndex( appTypes );
     }
-
-
 
 }

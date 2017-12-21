@@ -160,7 +160,7 @@ public class HazelcastMergingService {
             return Stream.empty();
         }
 
-        SetMultimap<UUID, Object> normalizedPropertyValues = null;
+        SetMultimap<UUID, Object> normalizedPropertyValues;
         try {
             normalizedPropertyValues = CassandraSerDesFactory.validateFormatAndNormalize( entityDetails,
                     propertyTypesWithDatatype );
@@ -196,16 +196,14 @@ public class HazelcastMergingService {
                         } )
                         .map( ListenableHazelcastFuture::new );
 
-        Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues
-                .asMap().entrySet().stream()
-                .filter( entry -> !propertyTypesWithDatatype.get( entry.getKey() )
-                        .equals( EdmPrimitiveTypeKind.Binary ) )
-                .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
+        propertyTypesWithDatatype.entrySet().forEach( entry -> {
+            if (entry.getValue().equals( EdmPrimitiveTypeKind.Binary )) normalizedPropertyValues.removeAll( entry.getKey() );
+        } );
 
-        elasticsearchApi.createEntityData( graphId,
+        elasticsearchApi.updateEntityData( graphId,
                 syncId,
                 entityId,
-                normalizedPropertyValuesAsMap );
+                normalizedPropertyValues );
 
         return futures;
     }

@@ -18,34 +18,24 @@
  *
  */
 
-package com.openlattice.authorization;
+package com.dataloom.hazelcast.serializers;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.dataloom.neuron.signals.Signal;
+import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**
- * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
-public class AclKeySet extends HashSet<AclKey> {
-    public AclKeySet() {
+public class SignalStreamSerializerTest extends
+        AbstractStreamSerializerTest<SignalStreamSerializer, Signal> {
+
+    @Override
+    protected SignalStreamSerializer createSerializer() {
+        return new SignalStreamSerializer();
     }
 
-    public AclKeySet( int initialCapacity ) {
-        super( initialCapacity );
+    @Override
+    protected Signal createInput() {
+        return Signal.randomValue();
     }
-
-    public AclKeySet( Collection<? extends AclKey> c ) {
-        super( c );
-    }
-
-    public AclKeySet getValue() {
-        return this;
-    }
-
-    public Set<String> getIndex() {
-        return this.stream().map( AclKey::getIndex ).collect( Collectors.toSet() );
-    }
-
 }

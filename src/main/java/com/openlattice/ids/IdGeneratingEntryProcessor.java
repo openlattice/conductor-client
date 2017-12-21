@@ -31,7 +31,6 @@ public class IdGeneratingEntryProcessor extends AbstractRhizomeEntryProcessor<In
 
     @Override
     public UUID process( Entry<Integer, Range> entry ) {
-        long msb = entry.getKey();
         Range range = entry.getValue(); //Range should never be null in the EP.
 
         UUID id = range.getNextId();

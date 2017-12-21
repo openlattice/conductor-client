@@ -22,17 +22,64 @@ package com.dataloom.authorization;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
-import com.dataloom.authentication.LoomAuthentication;
+import com.dataloom.organizations.roles.SecurePrincipalsManager;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.openlattice.authorization.SecurablePrincipal;
+import java.util.Collection;
 import java.util.NavigableSet;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 public final class Principals {
     private static final Logger logger = LoggerFactory.getLogger( Principals.class );
+    private static final Lock startupLock = new ReentrantLock();
+    private static LoadingCache<String, SecurablePrincipal>      users;
+    private static LoadingCache<String, NavigableSet<Principal>> principals;
 
     private Principals() {
+    }
+
+    public static void init( SecurePrincipalsManager spm ) {
+        if ( startupLock.tryLock() ) {
+            users = CacheBuilder
+                    .newBuilder()
+                    .expireAfterWrite( 1, TimeUnit.SECONDS )
+                    .build( new CacheLoader<String, SecurablePrincipal>() {
+                        @Override public SecurablePrincipal load( String principalId ) throws Exception {
+                            return spm.getPrincipal( principalId );
+                        }
+                    } );
+
+            principals = CacheBuilder
+                    .newBuilder()
+                    .expireAfterWrite( 1, TimeUnit.SECONDS )
+                    .build( new CacheLoader<String, NavigableSet<Principal>>() {
+                        @Override public NavigableSet<Principal> load( String principalId ) throws Exception {
+                            SecurablePrincipal sp = users.getUnchecked( principalId );
+                            Collection<SecurablePrincipal> securablePrincipals = spm.getAllPrincipals( sp );
+                            if ( securablePrincipals == null ) {
+                                return null;
+                            }
+                            NavigableSet<Principal> currentPrincipals = new TreeSet<>();
+                            securablePrincipals.stream().map( SecurablePrincipal::getPrincipal )
+                                    .forEach( currentPrincipals::add );
+                            return currentPrincipals;
+                        }
+                    } );
+        } else {
+            logger.error( "Principals security processing can only be initialized once." );
+            throw new IllegalStateException( "Principals context already initialized." );
+        }
     }
 
     public static void requireOrganization( Principal principal ) {
@@ -50,20 +97,36 @@ public final class Principals {
      * @return The principal for the current request.
      */
     public static @Nonnull Principal getCurrentUser() {
-        return getLoomAuthentication().getLoomPrincipal();
+        return getUserPrincipal( getCurrentPrincipalId() );
+    }
+
+    public static SecurablePrincipal getCurrentSecurablePrincipal() {
+        return users.getUnchecked( getCurrentPrincipalId() );
+    }
+
+    public static Principal getUserPrincipal( String principalId ) {
+        return new Principal( PrincipalType.USER, principalId );
     }
 
     public static NavigableSet<Principal> getCurrentPrincipals() {
-        return getLoomAuthentication().getLoomPrincipals();
-    }
+        return principals.getUnchecked( getCurrentPrincipalId() );
 
-    public static LoomAuthentication getLoomAuthentication() {
-        LoomAuthentication auth = (LoomAuthentication) SecurityContextHolder.getContext().getAuthentication();
-        return auth;
     }
 
     public static Principal getAdminRole() {
         return SystemRole.ADMIN.getPrincipal();
+    }
+
+    public static SimpleGrantedAuthority fromPrincipal( Principal p ) {
+        return new SimpleGrantedAuthority( p.getType().name() + "|" + p.getId() );
+    }
+
+    private static String getPrincipalId( Authentication authentication ) {
+        return authentication.getPrincipal().toString();
+    }
+
+    private static String getCurrentPrincipalId() {
+        return getPrincipalId( SecurityContextHolder.getContext().getAuthentication() );
     }
 
 }

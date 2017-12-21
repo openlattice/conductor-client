@@ -41,6 +41,11 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
  */
@@ -182,12 +187,16 @@ public class DataGraphService implements DataGraphManager {
         eds.deleteEntity( key );
         eds.updateEntityAsync( key, entity, propertyTypes ).forEach( DataGraphService::tryGetAndLogErrors );
 
-        Map<UUID, Object> entityAsMap = entity.asMap().entrySet().stream()
-                .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue() ) );
+        propertyTypes.entrySet().forEach( entry -> {
+            if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) )
+                entity.removeAll( entry.getKey() );
+        } );
+
         eventBus.post( new EntityDataCreatedEvent( key.getEntitySetId(),
                 Optional.of( key.getSyncId() ),
                 key.getEntityId(),
-                entityAsMap ) );
+                entity,
+                false ) );
     }
 
     @Override

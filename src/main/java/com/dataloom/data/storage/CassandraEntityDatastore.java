@@ -533,7 +533,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             return Stream.empty();
         }
 
-        SetMultimap<UUID, Object> normalizedPropertyValues = null;
+        SetMultimap<UUID, Object> normalizedPropertyValues;
         try {
             normalizedPropertyValues = CassandraSerDesFactory.validateFormatAndNormalize( entityDetails,
                     authorizedPropertiesWithDataType );
@@ -568,17 +568,16 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         } )
                         .map( ListenableHazelcastFuture::new );
 
-        Map<UUID, Object> normalizedPropertyValuesAsMap = normalizedPropertyValues
-                .asMap().entrySet().stream()
-                .filter( entry -> !authorizedPropertiesWithDataType.get( entry.getKey() )
-                        .equals( EdmPrimitiveTypeKind.Binary ) )
-                .collect( Collectors.toMap( e -> e.getKey(), e -> new HashSet<>( e.getValue() ) ) );
+        authorizedPropertiesWithDataType.entrySet().forEach( entry -> {
+            if (entry.getValue().equals( EdmPrimitiveTypeKind.Binary )) normalizedPropertyValues.removeAll( entry.getKey() );
+        } );
 
         eventBus.post( new EntityDataCreatedEvent(
                 entitySetId,
                 Optional.of( syncId ),
                 entityId,
-                normalizedPropertyValuesAsMap ) );
+                normalizedPropertyValues,
+                true ) );
 
         return futures;
     }

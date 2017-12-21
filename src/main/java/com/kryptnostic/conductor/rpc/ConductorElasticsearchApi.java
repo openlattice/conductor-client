@@ -21,7 +21,6 @@ package com.kryptnostic.conductor.rpc;
 
 import com.dataloom.apps.App;
 import com.dataloom.apps.AppType;
-import com.dataloom.authorization.Principal;
 import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.AssociationType;
@@ -31,6 +30,7 @@ import com.dataloom.organization.Organization;
 import com.dataloom.search.requests.SearchDetails;
 import com.dataloom.search.requests.SearchResult;
 import com.google.common.base.Optional;
+import com.google.common.collect.SetMultimap;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 
@@ -133,7 +133,7 @@ public interface ConductorElasticsearchApi {
     final String BIDIRECTIONAL  = "bidirectional";
     final String URL            = "url";
 
-    boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes, Principal principal );
+    boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes );
 
     boolean createSecurableObjectIndex( UUID entitySetId, UUID syncId, List<PropertyType> propertyTypes );
 
@@ -153,7 +153,7 @@ public interface ConductorElasticsearchApi {
 
     boolean updatePropertyTypesInEntitySet( UUID entitySetId, List<PropertyType> newPropertyTypes );
 
-    boolean createOrganization( Organization organization, Principal principal );
+    boolean createOrganization( Organization organization );
 
     boolean deleteOrganization( UUID organizationId );
 
@@ -165,7 +165,17 @@ public interface ConductorElasticsearchApi {
 
     boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
 
-    boolean createEntityData( UUID entitySetId, UUID syncId, String entityId, Map<UUID, Object> propertyValues );
+    boolean createEntityData(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            SetMultimap<UUID, Object> propertyValues );
+
+    boolean updateEntityData(
+            UUID entitySetId,
+            UUID syncId,
+            String entityId,
+            SetMultimap<UUID, Object> propertyValues );
 
     boolean deleteEntityData( UUID entitySetId, UUID syncId, String entityId );
 
@@ -223,9 +233,11 @@ public interface ConductorElasticsearchApi {
 
     boolean triggerAssociationTypeIndex( List<AssociationType> associationTypes );
 
-    boolean triggerAppIndex(List<App> apps);
+    boolean triggerEntitySetIndex( Map<EntitySet, Set<UUID>> entitySets, Map<UUID, PropertyType> propertyTypes );
 
-    boolean triggerAppTypeIndex(List<AppType> appTypes);
+    boolean triggerAppIndex( List<App> apps );
+
+    boolean triggerAppTypeIndex( List<AppType> appTypes );
 
     boolean saveAppToElasticsearch( App app );
 
