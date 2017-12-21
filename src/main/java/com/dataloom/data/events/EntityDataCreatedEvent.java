@@ -19,39 +19,49 @@
 
 package com.dataloom.data.events;
 
-import java.util.Map;
+import com.google.common.base.Optional;
+import com.google.common.collect.SetMultimap;
+
 import java.util.UUID;
 
-import com.google.common.base.Optional;
-
 public class EntityDataCreatedEvent {
-    
-    private UUID entitySetId;
-    private Optional<UUID> syncId;
-    private String entityId;
-    private Map<UUID, Object> propertyValues;
-    
-    public EntityDataCreatedEvent( UUID entitySetId, Optional<UUID> syncId, String entityId, Map<UUID, Object> propertyValues ) {
+
+    private UUID                      entitySetId;
+    private Optional<UUID>            syncId;
+    private String                    entityId;
+    private SetMultimap<UUID, Object> propertyValues;
+    private boolean                   shouldUpdate;
+
+    public EntityDataCreatedEvent(
+            UUID entitySetId,
+            Optional<UUID> syncId,
+            String entityId,
+            SetMultimap<UUID, Object> propertyValues,
+            boolean shouldUpdate ) {
         this.entitySetId = entitySetId;
         this.syncId = syncId;
         this.entityId = entityId;
         this.propertyValues = propertyValues;
+        this.shouldUpdate = shouldUpdate;
     }
-    
+
     public UUID getEntitySetId() {
         return entitySetId;
     }
-    
+
     public Optional<UUID> getOptionalSyncId() {
         return syncId;
     }
-    
+
     public String getEntityId() {
         return entityId;
     }
-    
-    public Map<UUID, Object> getPropertyValues() {
+
+    public SetMultimap<UUID, Object> getPropertyValues() {
         return propertyValues;
     }
 
+    public boolean getShouldUpdate() {
+        return shouldUpdate;
+    }
 }

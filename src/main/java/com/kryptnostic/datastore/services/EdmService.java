@@ -88,6 +88,7 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresQuery;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -103,6 +104,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -430,10 +432,8 @@ public class EdmService implements EdmManager {
                     principal,
                     EnumSet.allOf( Permission.class ) ) );
 
-            eventBus.post( new EntitySetCreatedEvent(
-                    entitySet,
-                    Lists.newArrayList( propertyTypes.getAll( ownablePropertyTypes ).values() ),
-                    principal ) );
+            eventBus.post( new EntitySetCreatedEvent( entitySet,
+                    Lists.newArrayList( propertyTypes.getAll( ownablePropertyTypes ).values() ) ) );
 
         } catch ( Exception e ) {
             logger.error( "Unable to create entity set {} for principal {}", entitySet, principal, e );
@@ -1061,7 +1061,7 @@ public class EdmService implements EdmManager {
                     optionalFqnUpdate,
                     Optional.absent(),
                     Optional.absent(),
-                    Optional.absent()) );
+                    Optional.absent() ) );
             if ( !et.getProperties().equals( existing.getProperties() ) ) {
                 addPropertyTypesToEntityType( existing.getId(), et.getProperties() );
             }

@@ -1,6 +1,5 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.organization.Organization;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
@@ -21,13 +20,11 @@ public class OrganizationCreatedEventStreamSerializer implements
     @Override public void write(
             ObjectDataOutput out, OrganizationCreatedEvent object ) throws IOException {
         OrganizationStreamSerializer.serialize( out, object.getOrganization() );
-        PrincipalStreamSerializer.serialize( out, object.getPrincipal() );
     }
 
     @Override public OrganizationCreatedEvent read( ObjectDataInput in ) throws IOException {
         Organization organization = OrganizationStreamSerializer.deserialize( in );
-        Principal principal = PrincipalStreamSerializer.deserialize( in );
-        return new OrganizationCreatedEvent( organization, principal );
+        return new OrganizationCreatedEvent( organization );
     }
 
     @Override public int getTypeId() {

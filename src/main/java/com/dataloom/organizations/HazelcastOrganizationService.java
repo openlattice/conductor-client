@@ -106,7 +106,7 @@ public class HazelcastOrganizationService {
     public void createOrganization( Principal principal, Organization organization ) {
         securePrincipalsManager.createSecurablePrincipalIfNotExists( principal, organization.getSecurablePrincipal() );
         createOrganization( organization );
-        eventBus.post( new OrganizationCreatedEvent( organization, principal ) );
+        eventBus.post( new OrganizationCreatedEvent( organization ) );
     }
 
     public void createOrganization( Organization organization ) {
