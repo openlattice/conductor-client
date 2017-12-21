@@ -6,6 +6,7 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
+import com.hazelcast.config.MapStoreConfig;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
@@ -52,6 +53,11 @@ public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey
 
     @Override protected AppConfigKey mapToKey( ResultSet rs ) throws SQLException {
         return ResultSetAdapters.appConfigKey( rs );
+    }
+
+    @Override public MapStoreConfig getMapStoreConfig() {
+        return super.getMapStoreConfig()
+                .setInitialLoadMode( MapStoreConfig.InitialLoadMode.EAGER );
     }
 
     @Override public MapConfig getMapConfig() {
