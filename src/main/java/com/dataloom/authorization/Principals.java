@@ -31,6 +31,8 @@ import java.util.Collection;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,38 +42,44 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 public final class Principals {
     private static final Logger logger = LoggerFactory.getLogger( Principals.class );
+    private static final Lock startupLock = new ReentrantLock();
     private static LoadingCache<String, SecurablePrincipal>      users;
     private static LoadingCache<String, NavigableSet<Principal>> principals;
 
     private Principals() {
     }
 
-    static void init( SecurePrincipalsManager spm ) {
-        users = CacheBuilder
-                .newBuilder()
-                .expireAfterWrite( 1, TimeUnit.SECONDS )
-                .build( new CacheLoader<String, SecurablePrincipal>() {
-                    @Override public SecurablePrincipal load( String principalId ) throws Exception {
-                        return spm.getPrincipal( principalId );
-                    }
-                } );
-
-        principals = CacheBuilder
-                .newBuilder()
-                .expireAfterWrite( 1, TimeUnit.SECONDS )
-                .build( new CacheLoader<String, NavigableSet<Principal>>() {
-                    @Override public NavigableSet<Principal> load( String principalId ) throws Exception {
-                        SecurablePrincipal sp = users.getUnchecked( principalId );
-                        Collection<SecurablePrincipal> securablePrincipals = spm.getAllPrincipals( sp );
-                        if ( securablePrincipals == null ) {
-                            return null;
+    public static void init( SecurePrincipalsManager spm ) {
+        if ( startupLock.tryLock() ) {
+            users = CacheBuilder
+                    .newBuilder()
+                    .expireAfterWrite( 1, TimeUnit.SECONDS )
+                    .build( new CacheLoader<String, SecurablePrincipal>() {
+                        @Override public SecurablePrincipal load( String principalId ) throws Exception {
+                            return spm.getPrincipal( principalId );
                         }
-                        NavigableSet<Principal> currentPrincipals = new TreeSet<>();
-                        securablePrincipals.stream().map( SecurablePrincipal::getPrincipal )
-                                .forEach( currentPrincipals::add );
-                        return currentPrincipals;
-                    }
-                } );
+                    } );
+
+            principals = CacheBuilder
+                    .newBuilder()
+                    .expireAfterWrite( 1, TimeUnit.SECONDS )
+                    .build( new CacheLoader<String, NavigableSet<Principal>>() {
+                        @Override public NavigableSet<Principal> load( String principalId ) throws Exception {
+                            SecurablePrincipal sp = users.getUnchecked( principalId );
+                            Collection<SecurablePrincipal> securablePrincipals = spm.getAllPrincipals( sp );
+                            if ( securablePrincipals == null ) {
+                                return null;
+                            }
+                            NavigableSet<Principal> currentPrincipals = new TreeSet<>();
+                            securablePrincipals.stream().map( SecurablePrincipal::getPrincipal )
+                                    .forEach( currentPrincipals::add );
+                            return currentPrincipals;
+                        }
+                    } );
+        } else {
+            logger.error( "Principals security processing can only be initialized once." );
+            throw new IllegalStateException( "Principals context already initialized." );
+        }
     }
 
     public static void requireOrganization( Principal principal ) {
