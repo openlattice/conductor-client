@@ -27,7 +27,7 @@ import java.util.UUID;
  */
 public class PropertyKey<T> {
     private final UUID entityKeyId;
-    private final UUID propertyTypeId
+    private final UUID propertyTypeId;
     private final T    value;
     private final long version;
 
