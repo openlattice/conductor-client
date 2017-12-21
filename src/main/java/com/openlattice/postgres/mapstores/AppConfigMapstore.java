@@ -4,10 +4,13 @@ import com.dataloom.apps.AppConfigKey;
 import com.dataloom.apps.AppTypeSetting;
 import com.dataloom.authorization.Permission;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,6 +19,8 @@ import java.util.EnumSet;
 import java.util.UUID;
 
 public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey, AppTypeSetting> {
+    public static String APP_ID = "__key#appId";
+
     public AppConfigMapstore( HikariDataSource hds ) {
         super( HazelcastMap.APP_CONFIGS.name(), PostgresTable.APP_CONFIGS, hds );
     }
@@ -47,6 +52,11 @@ public class AppConfigMapstore extends AbstractBasePostgresMapstore<AppConfigKey
 
     @Override protected AppConfigKey mapToKey( ResultSet rs ) throws SQLException {
         return ResultSetAdapters.appConfigKey( rs );
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addMapIndexConfig( new MapIndexConfig( APP_ID, false ) );
     }
 
     @Override public AppConfigKey generateTestKey() {
