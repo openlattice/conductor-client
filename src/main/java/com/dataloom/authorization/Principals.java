@@ -71,7 +71,7 @@ public final class Principals {
                                 return null;
                             }
                             NavigableSet<Principal> currentPrincipals = new TreeSet<>();
-                            currentPrincipals.add( sp.getPrincipal());
+                            currentPrincipals.add( sp.getPrincipal() );
                             securablePrincipals.stream().map( SecurablePrincipal::getPrincipal )
                                     .forEach( currentPrincipals::add );
                             return currentPrincipals;
