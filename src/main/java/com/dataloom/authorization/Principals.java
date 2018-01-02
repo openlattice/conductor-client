@@ -71,6 +71,7 @@ public final class Principals {
                                 return null;
                             }
                             NavigableSet<Principal> currentPrincipals = new TreeSet<>();
+                            currentPrincipals.add( sp.getPrincipal() );
                             securablePrincipals.stream().map( SecurablePrincipal::getPrincipal )
                                     .forEach( currentPrincipals::add );
                             return currentPrincipals;
@@ -110,7 +111,6 @@ public final class Principals {
 
     public static NavigableSet<Principal> getCurrentPrincipals() {
         return principals.getUnchecked( getCurrentPrincipalId() );
-
     }
 
     public static Principal getAdminRole() {

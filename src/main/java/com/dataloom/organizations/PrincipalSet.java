@@ -19,7 +19,7 @@
 
 package com.dataloom.organizations;
 
-import java.io.Serializable;
+import com.dataloom.authorization.Principal;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
@@ -28,18 +28,11 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import com.dataloom.authorization.Principal;
-
-public class PrincipalSet implements Set<Principal>, Serializable {
-    private static final long serialVersionUID = 1851088039565151792L;
-    private Set<Principal>    principals;
+public class PrincipalSet implements Set<Principal> {
+    private Set<Principal> principals;
 
     public PrincipalSet( Set<Principal> principals ) {
         this.principals = principals;
-    }
-
-    public static PrincipalSet wrap( Set<Principal> principals ) {
-        return new PrincipalSet( principals );
     }
 
     public Set<Principal> unwrap() {
@@ -124,6 +117,10 @@ public class PrincipalSet implements Set<Principal>, Serializable {
 
     public Stream<Principal> parallelStream() {
         return principals.parallelStream();
+    }
+
+    public static PrincipalSet wrap( Set<Principal> principals ) {
+        return new PrincipalSet( principals );
     }
 
 }
