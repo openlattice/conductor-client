@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. OpenLattice, Inc
+ * Copyright (C) 2018. OpenLattice, Inc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,20 +25,20 @@ import java.util.UUID;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class PropertyKey {
-    private final UUID   entityKeyId;
-    private final Object value;
+public class EntityDataKey {
+    private final UUID entitySetId;
+    private final UUID entityKeyId;
 
-    public PropertyKey( UUID entityKeyId, Object value ) {
+    public EntityDataKey( UUID entitySetId, UUID entityKeyId ) {
+        this.entitySetId = entitySetId;
         this.entityKeyId = entityKeyId;
-        this.value = value;
+    }
+
+    public UUID getEntitySetId() {
+        return entitySetId;
     }
 
     public UUID getEntityKeyId() {
         return entityKeyId;
-    }
-
-    public Object getValue() {
-        return value;
     }
 }

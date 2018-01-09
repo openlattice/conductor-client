@@ -50,6 +50,16 @@ public final class PostgresEdmTypeConverter {
                 return PostgresDatatype.INTEGER;
             case Int64:
                 return PostgresDatatype.BIGINT;
+            case Date:
+                return PostgresDatatype.DATE;
+            case DateTimeOffset:
+                return PostgresDatatype.TIMESTAMPTZ;
+            case Double:
+                return PostgresDatatype.DOUBLE;
+            case Boolean:
+                return PostgresDatatype.BOOLEAN;
+            case TimeOfDay:
+                return PostgresDatatype.TIMETZ;
             default:
                 throw new NotImplementedException( "Don't know how to convert {}", edmType.name() );
         }
@@ -69,6 +79,14 @@ public final class PostgresEdmTypeConverter {
                 return PostgresDatatype.INTEGER_ARRAY;
             case Int64:
                 return PostgresDatatype.BIGINT_ARRAY;
+            case Date:
+                return PostgresDatatype.DATE_ARRAY;
+            case DateTimeOffset:
+                return PostgresDatatype.TIMESTAMPTZ_ARRAY;
+            case Double:
+                return PostgresDatatype.DOUBLE_ARRAY;
+            case Boolean:
+                return PostgresDatatype.BOOLEAN_ARRAY;
             case Binary:
                 //TODO: Find out of if there are arrays of byte arrays in Postgres.
             default:

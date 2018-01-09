@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. OpenLattice, Inc
+ * Copyright (C) 2018. OpenLattice, Inc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,25 +20,33 @@
 
 package com.openlattice.data;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
+ * Metadata associated with an entity that tracks last write time, last index time, and current version.
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class PropertyKey {
-    private final UUID   entityKeyId;
-    private final Object value;
+public class EntityDataMetadata {
+    private final long           version;
+    private final OffsetDateTime lastWrite;
+    private final OffsetDateTime lastIndex;
 
-    public PropertyKey( UUID entityKeyId, Object value ) {
-        this.entityKeyId = entityKeyId;
-        this.value = value;
+    public EntityDataMetadata( long version, OffsetDateTime lastWrite, OffsetDateTime lastIndex ) {
+        this.version = version;
+        this.lastWrite = lastWrite;
+        this.lastIndex = lastIndex;
     }
 
-    public UUID getEntityKeyId() {
-        return entityKeyId;
+    public long getVersion() {
+        return version;
     }
 
-    public Object getValue() {
-        return value;
+    public OffsetDateTime getLastWrite() {
+        return lastWrite;
+    }
+
+    public OffsetDateTime getLastIndex() {
+        return lastIndex;
     }
 }

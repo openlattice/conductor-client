@@ -20,26 +20,32 @@
 
 package com.openlattice.data;
 
-import java.sql.Timestamp;
-import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.List;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PropertyMetadata {
-    private final Instant lastWrite;
-    private final Instant lastIndex;
+    private final long           version;
+    private final List<Long>     versions;
+    private final OffsetDateTime lastWrite;
 
-    public PropertyMetadata( Instant lastWrite, Instant lastIndex ) {
+    public PropertyMetadata( long version, List<Long> versions, OffsetDateTime lastWrite ) {
+        this.version = version;
+        this.versions = versions;
         this.lastWrite = lastWrite;
-        this.lastIndex = lastIndex;
     }
 
-    public Timestamp getLastWriteTimestamp() {
-        return new Timestamp( lastWrite.toEpochMilli() );
+    public long getVersion() {
+        return version;
     }
 
-    public Timestamp getLastIndexTimestamp() {
-        return new Timestamp( lastIndex.toEpochMilli() );
+    public List<Long> getVersions() {
+        return versions;
+    }
+
+    public OffsetDateTime getLastWrite() {
+        return lastWrite;
     }
 }

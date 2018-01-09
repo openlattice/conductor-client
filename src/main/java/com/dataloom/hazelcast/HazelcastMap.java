@@ -31,6 +31,7 @@ public enum HazelcastMap {
     DB_CREDS( null ),
     EDM_VERSIONS( Table.EDM_VERSIONS ),
     ENUM_TYPES( Table.ENUM_TYPES ),
+    ENTITY_DATA( null ),
     IDS( Table.IDS ),
     ID_GENERATION( null),
     KEYS( Table.KEYS ),

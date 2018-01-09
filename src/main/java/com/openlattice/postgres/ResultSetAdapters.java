@@ -20,6 +20,62 @@
 
 package com.openlattice.postgres;
 
+import static com.openlattice.postgres.PostgresArrays.getTextArray;
+import static com.openlattice.postgres.PostgresColumn.ACL_KEY_FIELD;
+import static com.openlattice.postgres.PostgresColumn.ANALYZER;
+import static com.openlattice.postgres.PostgresColumn.APP_ID;
+import static com.openlattice.postgres.PostgresColumn.BASE_FIELD;
+import static com.openlattice.postgres.PostgresColumn.BASE_TYPE;
+import static com.openlattice.postgres.PostgresColumn.BIDIRECTIONAL;
+import static com.openlattice.postgres.PostgresColumn.CATEGORY;
+import static com.openlattice.postgres.PostgresColumn.CONFIG_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.CONFIG_TYPE_IDS;
+import static com.openlattice.postgres.PostgresColumn.CONTACTS;
+import static com.openlattice.postgres.PostgresColumn.CURRENT_SYNC_ID;
+import static com.openlattice.postgres.PostgresColumn.DATATYPE;
+import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
+import static com.openlattice.postgres.PostgresColumn.DST;
+import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
+import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_ID_FIELD;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_KEY_IDS;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID_FIELD;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.FLAGS;
+import static com.openlattice.postgres.PostgresColumn.GRAPH_DIAMETER;
+import static com.openlattice.postgres.PostgresColumn.GRAPH_ID;
+import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresColumn.ID_VALUE;
+import static com.openlattice.postgres.PostgresColumn.KEY;
+import static com.openlattice.postgres.PostgresColumn.LSB_FIELD;
+import static com.openlattice.postgres.PostgresColumn.MEMBERS;
+import static com.openlattice.postgres.PostgresColumn.MSB_FIELD;
+import static com.openlattice.postgres.PostgresColumn.NAME;
+import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
+import static com.openlattice.postgres.PostgresColumn.NULLABLE_TITLE;
+import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_ID;
+import static com.openlattice.postgres.PostgresColumn.PERMISSIONS_FIELD;
+import static com.openlattice.postgres.PostgresColumn.PII;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_IDS;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID_FIELD;
+import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE_FIELD;
+import static com.openlattice.postgres.PostgresColumn.PROPERTIES;
+import static com.openlattice.postgres.PostgresColumn.PROPERTY_TYPE_ID;
+import static com.openlattice.postgres.PostgresColumn.REASON;
+import static com.openlattice.postgres.PostgresColumn.ROLE_ID;
+import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
+import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
+import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
+import static com.openlattice.postgres.PostgresColumn.SHOW;
+import static com.openlattice.postgres.PostgresColumn.SRC;
+import static com.openlattice.postgres.PostgresColumn.STATUS;
+import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
+import static com.openlattice.postgres.PostgresColumn.SYNC_ID_FIELD;
+import static com.openlattice.postgres.PostgresColumn.TITLE;
+import static com.openlattice.postgres.PostgresColumn.URL;
+import static com.openlattice.postgres.PostgresColumn.VERTEX_ID;
+
 import com.dataloom.apps.App;
 import com.dataloom.apps.AppConfigKey;
 import com.dataloom.apps.AppType;
@@ -33,7 +89,12 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.set.EntitySetPropertyKey;
 import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.*;
+import com.dataloom.edm.type.Analyzer;
+import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.ComplexType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.EnumType;
+import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.linking.LinkingVertex;
@@ -49,27 +110,37 @@ import com.google.common.collect.Sets;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
+import com.openlattice.data.EntityDataMetadata;
 import com.openlattice.ids.Range;
+import java.sql.Array;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.sql.Array;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.openlattice.postgres.PostgresArrays.getTextArray;
-import static com.openlattice.postgres.PostgresColumn.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public final class ResultSetAdapters {
     private static final Logger logger = LoggerFactory.getLogger( ResultSetAdapters.class );
+
+    public static EntityDataMetadata entityDataMetadata( ResultSet rs ) throws SQLException {
+        long version = rs.getLong( PostgresColumn.VERSION_FIELD );
+        //Long[] versions = PostgresArrays.getLongArray( rs, PostgresColumn.VERSIONS_FIELD );
+        OffsetDateTime lastWrite = rs.getObject( PostgresColumn.LAST_WRITE_FIELD, OffsetDateTime.class );
+        OffsetDateTime lastIndex = rs.getObject( PostgresColumn.LAST_WRITE_FIELD, OffsetDateTime.class );
+        return new EntityDataMetadata( version, lastWrite,lastIndex );
+    }
 
     public static Set<UUID> entityTypeIds( ResultSet rs ) throws SQLException {
         return ImmutableSet.copyOf( PostgresArrays.getUuidArray( rs, PostgresColumn.ENTITY_TYPE_IDS_FIELD ) );

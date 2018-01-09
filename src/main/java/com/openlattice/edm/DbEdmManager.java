@@ -24,6 +24,7 @@ import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.PropertyType;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -42,7 +43,7 @@ public interface DbEdmManager {
      * @param entitySet The entity set to instantiate.
      * @param propertyTypes The property types to instantiate.
      */
-    void createEntitySet( EntitySet entitySet, Set<PropertyType> propertyTypes ) throws Exception;
+    void createEntitySet( EntitySet entitySet, Collection<PropertyType> propertyTypes ) throws Exception;
 
     /**
      * Grants {@code permissions} on an entity sets property types for a given principal.
@@ -55,7 +56,7 @@ public interface DbEdmManager {
     void grant(
             Principal principal,
             EntitySet entitySet,
-            Set<PropertyType> propertyTypes,
+            Collection<PropertyType> propertyTypes,
             EnumSet<Permission> permissions );
 
     /**
@@ -70,6 +71,6 @@ public interface DbEdmManager {
     void revoke(
             Principal principal,
             EntitySet entitySet,
-            Set<PropertyType> propertyTypes,
+            Collection<PropertyType> propertyTypes,
             EnumSet<Permission> permissions );
 }
