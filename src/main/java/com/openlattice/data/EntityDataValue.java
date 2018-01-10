@@ -29,11 +29,11 @@ import java.util.UUID;
  */
 public class EntityDataValue {
     private final EntityDataMetadata                       metadata;
-    private final Map<UUID, Map<PropertyKey, PropertyMetadata>> properties;
+    private final Map<UUID, Map<Object, PropertyMetadata>> properties;
 
     public EntityDataValue(
             EntityDataMetadata metadata,
-            Map<UUID, Map<PropertyKey, PropertyMetadata>> properties ) {
+            Map<UUID, Map<Object, PropertyMetadata>> properties ) {
         this.metadata = metadata;
         this.properties = properties;
     }
@@ -42,7 +42,7 @@ public class EntityDataValue {
         return metadata;
     }
 
-    public Map<UUID, Map<PropertyKey, PropertyMetadata>> getProperties() {
+    public Map<UUID, Map<Object, PropertyMetadata>> getProperties() {
         return properties;
     }
 

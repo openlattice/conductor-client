@@ -40,20 +40,21 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DataTables {
-    private static final Map<UUID, PostgresTableDefinition> ES_TABLES  = Maps.newConcurrentMap();
-    public static        PostgresColumnDefinition           LAST_WRITE = new PostgresColumnDefinition( LAST_WRITE_FIELD,
+    public static final  String                             VALUE_FIELD = "value";
+    private static final Map<UUID, PostgresTableDefinition> ES_TABLES   = Maps.newConcurrentMap();
+    public static        PostgresColumnDefinition           LAST_WRITE  = new PostgresColumnDefinition( LAST_WRITE_FIELD,
             TIMESTAMPTZ )
             .notNull();
-    public static        PostgresColumnDefinition           LAST_INDEX = new PostgresColumnDefinition( LAST_INDEX_FIELD,
+    public static        PostgresColumnDefinition           LAST_INDEX  = new PostgresColumnDefinition( LAST_INDEX_FIELD,
             TIMESTAMPTZ )
             .notNull();
-    public static        PostgresColumnDefinition           READERS    = new PostgresColumnDefinition(
+    public static        PostgresColumnDefinition           READERS     = new PostgresColumnDefinition(
             "readers",
             PostgresDatatype.UUID );
-    public static        PostgresColumnDefinition           WRITERS    = new PostgresColumnDefinition(
+    public static        PostgresColumnDefinition           WRITERS     = new PostgresColumnDefinition(
             "writers",
             PostgresDatatype.UUID );
-    public static        PostgresColumnDefinition           OWNERS     = new PostgresColumnDefinition(
+    public static        PostgresColumnDefinition           OWNERS      = new PostgresColumnDefinition(
             "owners",
             PostgresDatatype.UUID );
 
@@ -70,7 +71,7 @@ public class DataTables {
     }
 
     public static PostgresColumnDefinition value( PropertyType pt ) {
-        return new PostgresColumnDefinition( "value", PostgresEdmTypeConverter.map( pt.getDatatype() ) );
+        return new PostgresColumnDefinition( VALUE_FIELD, PostgresEdmTypeConverter.map( pt.getDatatype() ) );
 
     }
 

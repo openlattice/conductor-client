@@ -21,6 +21,7 @@
 package com.openlattice.postgres;
 
 import static com.openlattice.postgres.PostgresDatatype.BIGINT;
+import static com.openlattice.postgres.PostgresDatatype.BIGINT_ARRAY;
 import static com.openlattice.postgres.PostgresDatatype.BOOLEAN;
 import static com.openlattice.postgres.PostgresDatatype.DECIMAL;
 import static com.openlattice.postgres.PostgresDatatype.INTEGER;
@@ -294,7 +295,7 @@ public final class PostgresColumn {
     public static final PostgresColumnDefinition VERSION               =
             new PostgresColumnDefinition( VERSION_FIELD, BIGINT ).notNull();
     public static final PostgresColumnDefinition VERSIONS              =
-            new PostgresColumnDefinition( VERSIONS_FIELD, BIGINT ).notNull();
+            new PostgresColumnDefinition( VERSIONS_FIELD, BIGINT_ARRAY ).notNull();
 
     private PostgresColumn() {
     }

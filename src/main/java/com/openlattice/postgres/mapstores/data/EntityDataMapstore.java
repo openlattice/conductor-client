@@ -24,16 +24,8 @@ import static com.openlattice.postgres.DataTables.LAST_INDEX;
 import static com.openlattice.postgres.DataTables.LAST_WRITE;
 import static com.openlattice.postgres.PostgresColumn.VERSION;
 
-import com.dataloom.edm.type.PropertyType;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
-import com.hazelcast.core.MapStore;
-import com.openlattice.authorization.AclKey;
 import com.openlattice.data.EntityDataMetadata;
-import com.openlattice.data.EntityDataValue;
-import com.openlattice.data.PropertyKey;
-import com.openlattice.data.PropertyMetadata;
-import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
@@ -43,27 +35,17 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 /**
+ * Map from entity key id to entity data metadata.
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class EntityDataMapstore extends AbstractBasePostgresMapstore<UUID, EntityDataValue> {
-    private final Map<AclKey, PropertyDataMapstore> propertyMapstores;
-    private final MapStore<UUID, PropertyType>      propertyTypes;
-    private final UUID                              entitySetId;
+class EntityDataMapstore extends AbstractBasePostgresMapstore<UUID, EntityDataMetadata> {
 
-    public EntityDataMapstore(
-            HikariDataSource hds,
-            PostgresTableDefinition table,
-            UUID entitySetId,
-            MapStore<UUID, PropertyType> propertyTypes ) {
+    public EntityDataMapstore( HikariDataSource hds, PostgresTableDefinition table ) {
         super( "edms", table, hds );
-        this.propertyTypes = propertyTypes;
-        this.entitySetId = entitySetId;
-        this.propertyMapstores = Maps.newConcurrentMap();
     }
 
     @Override protected List<PostgresColumnDefinition> initValueColumns() {
@@ -74,11 +56,11 @@ class EntityDataMapstore extends AbstractBasePostgresMapstore<UUID, EntityDataVa
         return null;
     }
 
-    @Override public EntityDataValue generateTestValue() {
+    @Override public EntityDataMetadata generateTestValue() {
         return null;
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key, EntityDataValue value )
+    @Override protected void bind( PreparedStatement ps, UUID key, EntityDataMetadata value )
             throws SQLException {
         bind( ps, key, 1 );
 
@@ -89,25 +71,8 @@ class EntityDataMapstore extends AbstractBasePostgresMapstore<UUID, EntityDataVa
         ps.setLong( 5, value.getVersion() );
         ps.setObject( 6, value.getLastWrite() );
         ps.setObject( 7, value.getLastIndex() );
-    }
 
-    @Override
-    protected void handleStoreSucceeded( UUID key, EntityDataValue value ) {
-
-    }
-
-    @Override
-    protected void handleStoreAllSucceeded( Map<UUID, EntityDataValue> m ) {
-        for ( Entry<UUID, EntityDataValue> edEntry : m.entrySet() ) {
-            final UUID edk = edEntry.getKey();
-            final EntityDataValue edv = edEntry.getValue();
-            final Map<UUID, Map<PropertyKey, PropertyMetadata>> properties = edv.getProperties();
-            for ( Entry<UUID, Map<PropertyKey, PropertyMetadata>> propertyEntry : properties.entrySet() ) {
-                UUID propertyTypeId = propertyEntry.getKey();
-                PropertyDataMapstore pdm = getPropertyDataMapstore( entitySetId, propertyTypeId );
-                pdm.storeAll( propertyEntry.getValue() );
-            }
-        }
+//        ps.setObject( 8, key );
     }
 
     @Override
@@ -117,28 +82,13 @@ class EntityDataMapstore extends AbstractBasePostgresMapstore<UUID, EntityDataVa
     }
 
     @Override
-    protected EntityDataValue mapToValue( ResultSet rs ) throws SQLException {
-        UUID entityKeyId = ResultSetAdapters.id( rs );
-        EntityDataMetadata entityDataMetadata = ResultSetAdapters.entityDataMetadata( rs );
-        
-        return rs.getO;
+    protected EntityDataMetadata mapToValue( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.entityDataMetadata( rs );
     }
 
     @Override
     protected UUID mapToKey( ResultSet rs ) throws SQLException {
-        return null;
+        return ResultSetAdapters.id( rs );
     }
 
-    public PropertyDataMapstore getPropertyDataMapstore( UUID entitySetId, UUID propertyTypeId ) {
-        return propertyMapstores
-                .computeIfAbsent( new AclKey( entitySetId, propertyTypeId ), this::newPropertyDataMapstore );
-    }
-
-    protected PropertyDataMapstore newPropertyDataMapstore( AclKey aclKey ) {
-        UUID entitySetId = aclKey.get( 0 );
-        UUID propertyTypeId = aclKey.get( 1 );
-        PropertyType propertyType = propertyTypes.load( propertyTypeId );
-        PostgresTableDefinition table = DataTables.buildPropertyTableDefinition( entitySetId, propertyType );
-        return new PropertyDataMapstore( table, hds );
-    }
 }

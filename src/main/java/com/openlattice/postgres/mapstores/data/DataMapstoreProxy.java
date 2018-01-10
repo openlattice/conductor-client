@@ -21,6 +21,7 @@
 package com.openlattice.postgres.mapstores.data;
 
 import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.streams.StreamUtil;
@@ -29,7 +30,9 @@ import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.core.MapStore;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 import com.openlattice.data.EntityDataKey;
+import com.openlattice.data.EntityDataMetadata;
 import com.openlattice.data.EntityDataValue;
+import com.openlattice.data.PropertyMetadata;
 import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;
@@ -37,26 +40,34 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<EntityDataKey, EntityDataValue> {
-    private final Map<UUID, EntityDataMapstore> entitySetMapstores;
-    private final HikariDataSource              hds;
-    private final MapStore<UUID, PropertyType>  propertyTypes;
-    private final MapStore<UUID, EntitySet>     entitySets;
+    private final Map<UUID, EntityDataMapstore>              entitySetMapstores; //Entity Set ID -> Mapstore for Entity Set Table
+    private final Map<UUID, Map<UUID, PropertyDataMapstore>> propertyDataMapstores;
+
+    private final HikariDataSource             hds;
+    private final MapStore<UUID, PropertyType> propertyTypes;
+    private final MapStore<UUID, EntitySet>    entitySets;
+    private final MapStore<UUID, EntityType>   entityTypes;
 
     public DataMapstoreProxy(
-            Map<UUID, EntityDataMapstore> entitySetMapstores,
+           // Map<UUID, EntityDataMapstore> entitySetMapstores,
+//            Map<UUID, Map<UUID, PropertyDataMapstore>> propertyDataMapstores,
             HikariDataSource hds,
             MapStore<UUID, PropertyType> propertyTypes,
-            MapStore<UUID, EntitySet> entitySets ) {
-        this.entitySetMapstores = entitySetMapstores;
+            MapStore<UUID, EntitySet> entitySets,
+            MapStore<UUID, EntityType> entityTypes ) {
+        this.entitySetMapstores = new HashMap<>();
+        this.propertyDataMapstores = new HashMap<>();
         this.hds = hds;
         this.propertyTypes = propertyTypes;
         this.entitySets = entitySets;
+        this.entityTypes = entityTypes;
     }
 
     public EntityDataMapstore getMapstore( UUID entitySetId ) {
@@ -65,7 +76,7 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
 
     protected EntityDataMapstore newEntitySetMapStore( UUID entitySetId ) {
         PostgresTableDefinition table = DataTables.buildEntitySetTableDefinition( entitySetId );
-        return new EntityDataMapstore( hds, table, entitySetId, propertyTypes );
+        return new EntityDataMapstore( hds, table );
     }
 
     @Override public String getMapName() {
@@ -99,8 +110,23 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
     }
 
     @Override public void store( EntityDataKey key, EntityDataValue value ) {
-        EntityDataMapstore edms = getMapstore( key.getEntitySetId() );
-        edms.store( key.getEntityKeyId(), value );
+        final UUID entitySetId = key.getEntitySetId();
+        final UUID entityKeyId = key.getEntityKeyId();
+        final EntityDataMapstore edms = getMapstore( key.getEntitySetId() );
+
+        //Store the metadata
+        edms.store( entityKeyId, value.getMetadata() );
+
+        //Store the property values
+        final Map<UUID, Map<Object, PropertyMetadata>> properties = value.getProperties();
+        for ( Entry<UUID, Map<Object, PropertyMetadata>> propertyEntry : properties.entrySet() ) {
+            final UUID propertyTypeId = propertyEntry.getKey();
+            final PropertyDataMapstore propertyDataMapstore = propertyDataMapstores
+                    .computeIfAbsent( entitySetId, esId -> new HashMap<>() )
+                    .computeIfAbsent( propertyTypeId, ptId -> newPropertyDataMapstore( entitySetId, ptId ) );
+            propertyDataMapstore.store( entityKeyId, propertyEntry.getValue() );
+        }
+
     }
 
     @Override public void storeAll( Map<EntityDataKey, EntityDataValue> map ) {
@@ -121,8 +147,36 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
     }
 
     @Override public EntityDataValue load( EntityDataKey key ) {
-        EntityDataMapstore edms = getMapstore( key.getEntitySetId() );
-        return edms.load( key.getEntityKeyId() );
+        final UUID entitySetId = key.getEntitySetId();
+        final UUID entityKeyId = key.getEntityKeyId();
+        final EntitySet es = entitySets.load( entitySetId );
+
+        //If entity set is not found return immediately.
+        if ( es == null ) {
+            return null;
+        }
+
+        final EntityType entityType = entityTypes.load( es.getEntityTypeId() );
+
+        if ( entityType == null ) {
+            return null;
+        }
+
+        final Set<UUID> propertyTypes = entityType.getProperties();
+
+        final EntityDataMapstore edms = getMapstore( entitySetId );
+        final EntityDataMetadata metadata = edms.load( entityKeyId );
+        final Map<UUID, Map<Object, PropertyMetadata>> properties = new HashMap<>();
+        for ( UUID propertyTypeId : propertyTypes ) {
+            final PropertyDataMapstore propertyDataMapstore = propertyDataMapstores
+                    .computeIfAbsent( entitySetId, esId -> new HashMap<>() )
+                    .computeIfAbsent( propertyTypeId, ptId -> newPropertyDataMapstore( entitySetId, ptId ) );
+            final Map<Object, PropertyMetadata> propertiesOfType = propertyDataMapstore.load( entityKeyId );
+            properties.put( propertyTypeId, propertiesOfType );
+        }
+
+        return new EntityDataValue( metadata, properties );
+
     }
 
     @Override public Map<EntityDataKey, EntityDataValue> loadAll( Collection<EntityDataKey> keys ) {
@@ -142,5 +196,11 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
                         .stream( getMapstore( entitySetId ).loadAllKeys() )
                         .map( entityKeyId -> new EntityDataKey( entitySetId, entityKeyId ) ) ).iterator();
 
+    }
+
+    protected PropertyDataMapstore newPropertyDataMapstore( UUID entitySetId, UUID propertyTypeId ) {
+        PropertyType propertyType = propertyTypes.load( propertyTypeId );
+        PostgresTableDefinition table = DataTables.buildPropertyTableDefinition( entitySetId, propertyType );
+        return new PropertyDataMapstore( table, hds );
     }
 }

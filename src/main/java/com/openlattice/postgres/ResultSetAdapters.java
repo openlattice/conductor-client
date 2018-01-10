@@ -111,6 +111,7 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.data.EntityDataMetadata;
+import com.openlattice.data.PropertyMetadata;
 import com.openlattice.ids.Range;
 import java.sql.Array;
 import java.sql.ResultSet;
@@ -134,12 +135,22 @@ import org.slf4j.LoggerFactory;
 public final class ResultSetAdapters {
     private static final Logger logger = LoggerFactory.getLogger( ResultSetAdapters.class );
 
+    public static Object propertyValue( ResultSet rs ) throws SQLException {
+        return rs.getObject( DataTables.VALUE_FIELD );
+    }
+
+    public static PropertyMetadata propertyMetadata( ResultSet rs ) throws SQLException {
+        long version = rs.getLong( PostgresColumn.VERSION_FIELD );
+        Long[] versions = PostgresArrays.getLongArray( rs, PostgresColumn.VERSIONS_FIELD );
+        OffsetDateTime lastWrite = rs.getObject( PostgresColumn.LAST_WRITE_FIELD, OffsetDateTime.class );
+        return new PropertyMetadata( version, Arrays.asList( versions ), lastWrite );
+    }
+
     public static EntityDataMetadata entityDataMetadata( ResultSet rs ) throws SQLException {
         long version = rs.getLong( PostgresColumn.VERSION_FIELD );
-        //Long[] versions = PostgresArrays.getLongArray( rs, PostgresColumn.VERSIONS_FIELD );
         OffsetDateTime lastWrite = rs.getObject( PostgresColumn.LAST_WRITE_FIELD, OffsetDateTime.class );
         OffsetDateTime lastIndex = rs.getObject( PostgresColumn.LAST_WRITE_FIELD, OffsetDateTime.class );
-        return new EntityDataMetadata( version, lastWrite,lastIndex );
+        return new EntityDataMetadata( version, lastWrite, lastIndex );
     }
 
     public static Set<UUID> entityTypeIds( ResultSet rs ) throws SQLException {
