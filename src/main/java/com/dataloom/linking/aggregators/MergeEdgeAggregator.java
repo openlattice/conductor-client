@@ -32,6 +32,8 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
+import org.springframework.scheduling.annotation.Async;
+
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -75,6 +77,7 @@ public class MergeEdgeAggregator extends Aggregator<Entry<EdgeKey, LoomEdge>, Vo
         return Util.getSafely( newIds, new LinkingVertexKey( graphId, oldId ) );
     }
 
+    @Async
     private void mergeEdgeAsync( UUID linkedEntitySetId, UUID syncId, LoomEdge edge ) {
         UUID srcEntitySetId = edge.getSrcSetId();
         UUID srcSyncId = edge.getSrcSyncId();
