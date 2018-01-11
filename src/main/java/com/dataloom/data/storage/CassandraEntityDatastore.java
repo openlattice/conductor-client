@@ -45,6 +45,8 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
+import com.openlattice.data.EntityDataKey;
+import com.openlattice.data.EntityDataValue;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -71,6 +73,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
     private final HazelcastInstance         hazelcastInstance;
     private final IMap<DataKey, ByteBuffer> data;
+    private final IMap<EntityDataKey, EntityDataValue> entities;
     private final EntityKeyIdService        idService;
     private final ListeningExecutorService  executor;
 
@@ -84,6 +87,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             EntityKeyIdService idService,
             DatasourceManager dsm ) {
         this.data = hazelastInstance.getMap( HazelcastMap.DATA.name() );
+        this.entities = hazelastInstance.getMap( HazelcastMap.ENTITY_DATA.name() );
 
         this.mapper = mapper;
         this.dsm = dsm;
@@ -99,6 +103,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        entities.get
         EntitySetHazelcastStream es = new EntitySetHazelcastStream( executor, hazelcastInstance, entitySetId, syncId );
         return new EntitySetData<>(
                 orderedPropertyNames,
@@ -526,6 +531,7 @@ public class CassandraEntityDatastore implements EntityDatastore {
             String entityId,
             SetMultimap<UUID, Object> entityDetails ) {
         // does not write the row if some property values that user is trying to write to are not authorized.
+        //TODO: Don't fail silently
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
             logger.error( "Entity {} not written because the following properties are not authorized: {}",
                     entityId,
@@ -542,11 +548,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
                     entityId,
                     e );
             return Stream.empty();
-
         }
 
         EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
         UUID id = idService.getEntityKeyId( ek );
+
         Stream<ListenableFuture> futures =
                 normalizedPropertyValues
                         .entries().stream()

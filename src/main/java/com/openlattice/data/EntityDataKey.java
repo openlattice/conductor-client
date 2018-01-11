@@ -41,4 +41,27 @@ public class EntityDataKey {
     public UUID getEntityKeyId() {
         return entityKeyId;
     }
+
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof EntityDataKey ) ) { return false; }
+
+        EntityDataKey that = (EntityDataKey) o;
+
+        if ( !entitySetId.equals( that.entitySetId ) ) { return false; }
+        return entityKeyId.equals( that.entityKeyId );
+    }
+
+    @Override public int hashCode() {
+        int result = entitySetId.hashCode();
+        result = 31 * result + entityKeyId.hashCode();
+        return result;
+    }
+
+    @Override public String toString() {
+        return "EntityDataKey{" +
+                "entitySetId=" + entitySetId +
+                ", entityKeyId=" + entityKeyId +
+                '}';
+    }
 }
