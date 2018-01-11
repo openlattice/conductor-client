@@ -12,6 +12,8 @@ import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.data.ids.HazelcastEntityKeyIdService;
 import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.edm.type.PropertyType;
+import com.dataloom.graph.core.LoomGraph;
+import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.mappers.ObjectMappers;
@@ -28,8 +30,14 @@ import com.hazelcast.query.Predicate;
 import com.kryptnostic.conductor.rpc.ConductorElasticsearchApi;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
+import com.kryptnostic.datastore.util.Util;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+
+import javax.inject.Inject;
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -37,11 +45,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.inject.Inject;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
 
 public class HazelcastMergingService {
     private static final Logger logger = LoggerFactory.getLogger( HazelcastMergingService.class );
@@ -52,6 +55,7 @@ public class HazelcastMergingService {
     private       IMap<DataKey, ByteBuffer>            data;
     private       IMap<LinkingVertexKey, UUID>         newIds;
     private       IMap<EntityKey, UUID>                ids;
+    private       LoomGraph                            graph;
     private       HazelcastInstance                    hazelcastInstance;
     private       ObjectMapper                         mapper;
 
@@ -62,7 +66,9 @@ public class HazelcastMergingService {
 
         this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
         this.ekIds = new HazelcastEntityKeyIdService( hazelcastInstance, executor );
+        this.graph = new LoomGraph( executor, hazelcastInstance );
         this.hazelcastInstance = hazelcastInstance;
+
     }
 
     private SetMultimap<UUID, Object> computeMergedEntity(
@@ -197,7 +203,8 @@ public class HazelcastMergingService {
                         .map( ListenableHazelcastFuture::new );
 
         propertyTypesWithDatatype.entrySet().forEach( entry -> {
-            if (entry.getValue().equals( EdmPrimitiveTypeKind.Binary )) normalizedPropertyValues.removeAll( entry.getKey() );
+            if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) )
+                normalizedPropertyValues.removeAll( entry.getKey() );
         } );
 
         elasticsearchApi.updateEntityData( graphId,
@@ -206,5 +213,52 @@ public class HazelcastMergingService {
                 normalizedPropertyValues );
 
         return futures;
+    }
+
+    public UUID getMergedId( UUID graphId, UUID oldId ) {
+        return Util.getSafely( newIds, new LinkingVertexKey( graphId, oldId ) );
+    }
+
+    @Async
+    public void mergeEdgeAsync( UUID linkedEntitySetId, UUID syncId, LoomEdge edge ) {
+        UUID srcEntitySetId = edge.getSrcSetId();
+        UUID srcSyncId = edge.getSrcSyncId();
+        UUID dstEntitySetId = edge.getDstSetId();
+        UUID dstSyncId = edge.getDstSyncId();
+        UUID edgeEntitySetId = edge.getEdgeSetId();
+
+        UUID srcId = edge.getKey().getSrcEntityKeyId();
+        UUID dstId = edge.getKey().getDstEntityKeyId();
+        UUID edgeId = edge.getKey().getEdgeEntityKeyId();
+
+        UUID newSrcId = getMergedId( linkedEntitySetId, srcId );
+        if ( newSrcId != null ) {
+            srcEntitySetId = linkedEntitySetId;
+            srcSyncId = syncId;
+            srcId = newSrcId;
+        }
+        UUID newDstId = getMergedId( linkedEntitySetId, dstId );
+        if ( newDstId != null ) {
+            dstEntitySetId = linkedEntitySetId;
+            dstSyncId = syncId;
+            dstId = newDstId;
+        }
+        UUID newEdgeId = getMergedId( linkedEntitySetId, edgeId );
+        if ( newEdgeId != null ) {
+            edgeEntitySetId = linkedEntitySetId;
+            edgeId = newEdgeId;
+        }
+
+        graph.addEdge( srcId,
+                edge.getSrcTypeId(),
+                srcEntitySetId,
+                srcSyncId,
+                dstId,
+                edge.getDstTypeId(),
+                dstEntitySetId,
+                dstSyncId,
+                edgeId,
+                edge.getEdgeTypeId(),
+                edgeEntitySetId );
     }
 }
