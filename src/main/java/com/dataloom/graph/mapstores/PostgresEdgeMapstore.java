@@ -49,15 +49,6 @@ public class PostgresEdgeMapstore extends AbstractBasePostgresMapstore<EdgeKey, 
     public static final  String SRC_SET_ID        = "srcSetId";
     public static final  String DST_SET_ID        = "dstSetId";
     private static final Logger logger            = LoggerFactory.getLogger( PostgresEdgeMapstore.class );
-    private static final String CREATE_TABLE      = "CREATE TABLE IF NOT EXISTS edges ("
-            + "src_entity_key_id UUID, src_type_id UUID, src_entity_set_id UUID, src_sync_id UUID,"
-            + "dst_entity_key_id UUID, dst_type_id UUID, dst_entity_set_id UUID, dst_sync_id UUID,"
-            + "edge_entity_key_id UUID, edge_type_id UUID, edge_entity_set_id UUID,"
-            + "PRIMARY KEY(src_entity_key_id,dst_type_id,edge_type_id,dst_entity_key_id,edge_entity_key_id) )";
-    private static final String INSERT_ROW        = "INSERT INTO edges VALUES(?,?,?,?,?,?,?,?,?,?,?) on conflict do nothing";
-    private static final String SELECT_ROW        = "SELECT * from edges where src_entity_key_id = ? and dst_type_id = ? and edge_type_id=? and dst_entity_key_id = ? and edge_entity_key_id = ?";
-    private static final String DELETE_ROW        = "DELETE from edges where src_entity_key_id = ? and dst_type_id = ? and edge_type_id=? and dst_entity_key_id = ? and edge_entity_key_id = ?";
-    private static final String LOAD_ALL_KEYS     = "select src_entity_key_id,dst_type_id,edge_type_id,dst_entity_key_id,edge_entity_key_id from edges";
 
     public PostgresEdgeMapstore( HikariDataSource hds ) throws SQLException {
         super( HazelcastMap.EDGES.name(), PostgresTable.EDGES, hds );
