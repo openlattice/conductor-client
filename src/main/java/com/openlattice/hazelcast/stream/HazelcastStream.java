@@ -1,17 +1,17 @@
 package com.openlattice.hazelcast.stream;
 
-import static com.google.common.base.Preconditions.checkState;
-
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.ILock;
+import com.hazelcast.core.IMap;
 import com.hazelcast.core.IQueue;
+import com.hazelcast.query.Predicate;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.lang3.tuple.Pair;
@@ -21,37 +21,30 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public abstract class HazelcastStream<T> implements Iterable<T>, HazelcastInstanceAware {
+public abstract class HazelcastStream<T, K,V> implements Iterable<T> {
     private static final Map<Class<?>, Logger> subclassLoggers = new HashMap<>();
 
     private final Logger logger = subclassLoggers.computeIfAbsent( getClass(), LoggerFactory::getLogger );
-
-    private final AtomicBoolean initialized;
 
     private UUID                     streamId;
     private ILock                    streamLock;
     private IQueue<StreamElement<T>> stream;
 
-    /**
-     * This constructor is primarily for serialization and shoul
-     */
-    protected HazelcastStream() {
-        initialized = new AtomicBoolean( false );
+    protected HazelcastStream( HazelcastInstance hazelcastInstance ) {
+        Pair<UUID, ILock> idAndLock = acquireSafeId( hazelcastInstance );
+        this.streamId = idAndLock.getLeft();
+        this.streamLock = idAndLock.getRight();
+        this.stream = hazelcastInstance.getQueue( streamId.toString() );
     }
 
-    protected HazelcastStream( HazelcastInstance hazelcastInstance ) {
-        this();
-        init( hazelcastInstance );
-    }
+    public abstract ListenableFuture<Long> start(
+            ListeningExecutorService executorService,
+            IMap<K,V> map,
+            Predicate p );
 
     @Override public Iterator<T> iterator() {
-        checkState( initialized.get(), "Cannot acquire iterator for uninitialized stream." );
-        HazelcastIterator hzIterator = new HazelcastIterator<T>( streamLock, streamId, stream );
+        HazelcastIterator<T> hzIterator = new HazelcastIterator<>( streamLock, streamId, stream );
         return hzIterator;
-    }
-
-    @Override public void setHazelcastInstance( HazelcastInstance hazelcastInstance ) {
-        init( hazelcastInstance );
     }
 
     public UUID getStreamId() {
@@ -75,14 +68,6 @@ public abstract class HazelcastStream<T> implements Iterable<T>, HazelcastInstan
         } while ( !maybeStreamLock.tryLock() );
 
         return Pair.of( id, maybeStreamLock );
-    }
-
-    private void init( HazelcastInstance hazelcastInstance ) {
-        Pair<UUID, ILock> idAndLock = acquireSafeId( hazelcastInstance );
-        this.streamId = idAndLock.getLeft();
-        this.streamLock = idAndLock.getRight();
-        this.stream = hazelcastInstance.getQueue( streamId.toString() );
-        initialized.set( true );
     }
 
     public static class HazelcastIterator<T> implements Iterator<T> {

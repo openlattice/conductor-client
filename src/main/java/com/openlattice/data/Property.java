@@ -20,38 +20,27 @@
 
 package com.openlattice.data;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class PropertyValue {
+public class Property {
     private final Optional<UUID> entitySetId;
-    private final Object         value;
-    private final long           version;
-    private final long[]         versions;
+    private final PropertyMetadata metadata;
+    private final Object value;
 
-    public PropertyValue( Optional<UUID> entitySetId, Object value, long version, long[] versions ) {
+    @JsonCreator
+    public Property( Optional<UUID> entitySetId, PropertyMetadata metadata, Object value ) {
         this.entitySetId = entitySetId;
+        this.metadata= metadata;
         this.value = value;
-        this.version = version;
-        this.versions = versions;
     }
 
     public Optional<UUID> getEntitySetId() {
         return entitySetId;
     }
 
-    public Object getValue() {
-        return value;
-    }
-
-    public long getVersion() {
-        return version;
-    }
-
-    public long[] getVersions() {
-        return versions;
-    }
 }

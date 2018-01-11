@@ -19,14 +19,23 @@
 
 package com.dataloom.data.storage;
 
+import static com.google.common.util.concurrent.Futures.transformAsync;
+
 import com.codahale.metrics.annotation.Timed;
-import com.dataloom.data.*;
+import com.dataloom.data.DatasourceManager;
+import com.dataloom.data.EntityDatastore;
+import com.dataloom.data.EntityKey;
+import com.dataloom.data.EntityKeyIdService;
+import com.dataloom.data.EntitySetData;
 import com.dataloom.data.aggregators.EntitiesAggregator;
 import com.dataloom.data.aggregators.EntityAggregator;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
-import com.dataloom.data.hazelcast.*;
+import com.dataloom.data.hazelcast.DataKey;
+import com.dataloom.data.hazelcast.Entities;
+import com.dataloom.data.hazelcast.EntityKeyHazelcastStream;
+import com.dataloom.data.hazelcast.EntitySets;
 import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
@@ -36,7 +45,11 @@ import com.datastax.driver.core.ResultSet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.*;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -45,24 +58,29 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
+import com.kryptnostic.datastore.util.Util;
 import com.openlattice.data.EntityDataKey;
 import com.openlattice.data.EntityDataValue;
+import com.openlattice.data.PropertyMetadata;
+import com.openlattice.hazelcast.predicates.EntitySetPredicates;
+import com.openlattice.hazelcast.stream.EntitySetHazelcastStream;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.google.common.util.concurrent.Futures.transformAsync;
+import javax.inject.Inject;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CassandraEntityDatastore implements EntityDatastore {
     private static final Logger logger = LoggerFactory
@@ -71,11 +89,11 @@ public class CassandraEntityDatastore implements EntityDatastore {
     private final ObjectMapper      mapper;
     private final DatasourceManager dsm;
 
-    private final HazelcastInstance         hazelcastInstance;
-    private final IMap<DataKey, ByteBuffer> data;
+    private final HazelcastInstance                    hazelcastInstance;
+    private final IMap<DataKey, ByteBuffer>            data;
     private final IMap<EntityDataKey, EntityDataValue> entities;
-    private final EntityKeyIdService        idService;
-    private final ListeningExecutorService  executor;
+    private final EntityKeyIdService                   idService;
+    private final ListeningExecutorService             executor;
 
     @Inject
     private EventBus eventBus;
@@ -103,12 +121,15 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        entities.get
-        EntitySetHazelcastStream es = new EntitySetHazelcastStream( executor, hazelcastInstance, entitySetId, syncId );
+
+        EntitySetHazelcastStream entitySetStream = new EntitySetHazelcastStream( hazelcastInstance );
+
+        entitySetStream.start( executor, entities, EntitySetPredicates.entitySet( entitySetId ) );
+
         return new EntitySetData<>(
                 orderedPropertyNames,
-                StreamUtil.stream( es )
-                        .map( e -> fromEntityBytes( e.getByteBuffers(), authorizedPropertyTypes ) )::iterator );
+                StreamUtil.stream( entitySetStream )
+                        .map( e -> fromEntityDataValue( e, authorizedPropertyTypes ) )::iterator );
     }
 
     @Override
@@ -118,13 +139,15 @@ public class CassandraEntityDatastore implements EntityDatastore {
             UUID syncId,
             String entityId,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        SetMultimap<FullQualifiedName, Object> e = fromEntityBytes( entityId,
-                data.aggregate( new EntityAggregator(), EntitySets.getEntity( entitySetId, syncId, entityId ) )
-                        .getByteBuffers(),
+        UUID entityKeyId = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
+        EntityDataKey edk = new EntityDataKey( entitySetId, entityKeyId );
+        SetMultimap<FullQualifiedName, Object> e = fromEntityDataValue( Util.getSafely( entities, edk ),
                 authorizedPropertyTypes );
+
         if ( e == null ) {
             return ImmutableSetMultimap.of();
         }
+
         return e;
     }
 
@@ -133,6 +156,18 @@ public class CassandraEntityDatastore implements EntityDatastore {
     public Stream<SetMultimap<Object, Object>> getEntities(
             IncrementableWeightId[] utilizers,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        Map<UUID, EntityKey> entityKeys = idService.getEntityKeys( Stream.of( utilizers )
+                        .map( IncrementableWeightId::getId )
+                .collect( Collectors.toSet()) );
+
+        Set<EntityDataKey> dataKeys = entityKeys
+                .entrySet()
+                .stream()
+                .map( e -> new EntityDataKey( e.getValue().getEntitySetId(), e.getKey() ) )
+                .collect( Collectors.toSet() );
+
+        Map<EntityDataKey, EntityDataValue> valueMap = entities.getAll( dataKeys );
+
         Predicate entitiesFilter = EntitySets.getEntities( Stream.of( utilizers )
                 .map( IncrementableWeightId::getId )
                 .toArray( UUID[]::new ) );
@@ -214,6 +249,21 @@ public class CassandraEntityDatastore implements EntityDatastore {
             }
         } );
         return entityData;
+    }
+
+    public SetMultimap<FullQualifiedName, Object> fromEntityDataValue(
+            EntityDataValue edv,
+            Map<UUID, PropertyType> propertyTypes ) {
+        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
+        Map<UUID, Map<Object, PropertyMetadata>> properties = edv.getProperties();
+        for ( Entry<UUID, PropertyType> propertyTypeEntry : propertyTypes.entrySet() ) {
+            UUID propertyTypeId = propertyTypeEntry.getKey();
+            Map<Object, PropertyMetadata> valueMap = properties.get( propertyTypeId );
+            if ( valueMap != null ) {
+                PropertyType propertyType = propertyTypeEntry.getValue();
+                entityData.putAll( propertyType.getType(), valueMap.keySet() );
+            }
+        }
     }
 
     public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
@@ -575,7 +625,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
                         .map( ListenableHazelcastFuture::new );
 
         authorizedPropertiesWithDataType.entrySet().forEach( entry -> {
-            if (entry.getValue().equals( EdmPrimitiveTypeKind.Binary )) normalizedPropertyValues.removeAll( entry.getKey() );
+            if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) ) {
+                normalizedPropertyValues.removeAll( entry.getKey() );
+            }
         } );
 
         eventBus.post( new EntityDataCreatedEvent(

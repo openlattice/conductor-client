@@ -20,6 +20,9 @@
 
 package com.openlattice.data;
 
+import com.dataloom.client.serialization.SerializationConstants;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -31,7 +34,9 @@ public class PropertyMetadata {
     private final List<Long>     versions;
     private final OffsetDateTime lastWrite;
 
-    public PropertyMetadata( long version, List<Long> versions, OffsetDateTime lastWrite ) {
+    @JsonCreator
+    public PropertyMetadata(
+            @JsonProperty( SerializationConstants.VERSION ) long version, List<Long> versions, OffsetDateTime lastWrite ) {
         this.version = version;
         this.versions = versions;
         this.lastWrite = lastWrite;

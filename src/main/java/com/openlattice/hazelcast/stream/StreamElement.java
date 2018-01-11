@@ -31,6 +31,22 @@ public class StreamElement<T> {
         return elem;
     }
 
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof StreamElement ) ) { return false; }
+
+        StreamElement<?> that = (StreamElement<?>) o;
+
+        if ( eof != that.eof ) { return false; }
+        return elem.equals( that.elem );
+    }
+
+    @Override public int hashCode() {
+        int result = elem.hashCode();
+        result = 31 * result + ( eof ? 1 : 0 );
+        return result;
+    }
+
     public static StreamElement eof() {
         return EOF;
     }

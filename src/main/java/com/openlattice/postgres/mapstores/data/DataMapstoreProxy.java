@@ -26,6 +26,7 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.streams.StreamUtil;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.core.MapStore;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
@@ -47,6 +48,11 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<EntityDataKey, EntityDataValue> {
+    public static final String VERSION    = "version";
+    public static final String LAST_WRITE = "lastWrite";
+    public static final String LAST_INDEX = "lastIndex";
+    public static final String KEY_ENTITY_SET_ID = "key#entitySetId";
+
     private final Map<UUID, EntityDataMapstore>              entitySetMapstores; //Entity Set ID -> Mapstore for Entity Set Table
     private final Map<UUID, Map<UUID, PropertyDataMapstore>> propertyDataMapstores;
 
@@ -56,8 +62,8 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
     private final MapStore<UUID, EntityType>   entityTypes;
 
     public DataMapstoreProxy(
-           // Map<UUID, EntityDataMapstore> entitySetMapstores,
-//            Map<UUID, Map<UUID, PropertyDataMapstore>> propertyDataMapstores,
+            // Map<UUID, EntityDataMapstore> entitySetMapstores,
+            //            Map<UUID, Map<UUID, PropertyDataMapstore>> propertyDataMapstores,
             HikariDataSource hds,
             MapStore<UUID, PropertyType> propertyTypes,
             MapStore<UUID, EntitySet> entitySets,
@@ -106,7 +112,11 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
     @Override
     public MapConfig getMapConfig() {
         return new MapConfig( getMapName() )
-                .setMapStoreConfig( getMapStoreConfig() );
+                .setMapStoreConfig( getMapStoreConfig() )
+                .addMapIndexConfig( new MapIndexConfig( KEY_ENTITY_SET_ID,false ) )
+                .addMapIndexConfig( new MapIndexConfig( VERSION, true ) )
+                .addMapIndexConfig( new MapIndexConfig( LAST_WRITE, true ) )
+                .addMapIndexConfig( new MapIndexConfig( LAST_INDEX, true ) );
     }
 
     @Override public void store( EntityDataKey key, EntityDataValue value ) {

@@ -49,6 +49,8 @@ public interface EntityDatastore {
             LinkedHashSet<String> orderedPropertyNames,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 
+
+
     /**
      * Reads a single row from an entity set.
      */
