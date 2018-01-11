@@ -19,6 +19,8 @@
 
 package com.dataloom.organizations;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.authorization.Principal;
@@ -31,7 +33,12 @@ import com.dataloom.organization.roles.Role;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
-import com.dataloom.organizations.processors.*;
+import com.dataloom.organizations.processors.EmailDomainsMerger;
+import com.dataloom.organizations.processors.EmailDomainsRemover;
+import com.dataloom.organizations.processors.OrganizationAppMerger;
+import com.dataloom.organizations.processors.OrganizationAppRemover;
+import com.dataloom.organizations.processors.OrganizationMemberMerger;
+import com.dataloom.organizations.processors.OrganizationMemberRemover;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.base.Optional;
@@ -48,10 +55,6 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -60,8 +63,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HazelcastOrganizationService {
 
@@ -79,7 +83,7 @@ public class HazelcastOrganizationService {
     private final List<IMap<UUID, ?>>               allMaps;
 
     @Inject
-    private       EventBus                          eventBus;
+    private EventBus eventBus;
 
     public HazelcastOrganizationService(
             HazelcastInstance hazelcastInstance,
@@ -125,6 +129,11 @@ public class HazelcastOrganizationService {
 
         Collection<SecurablePrincipal> maybeOrgs =
                 securePrincipalsManager.getSecurablePrincipals( getOrganizationPredicate( organizationId ) );
+        if ( maybeOrgs.isEmpty() ) {
+            logger.error("Organization id {} has no corresponding securable principal." , organizationId );
+            return null;
+        }
+
         OrganizationPrincipal principal = (OrganizationPrincipal) Iterables.getOnlyElement( maybeOrgs );
         Set<Role> roles = getRoles( organizationId );
         try {
