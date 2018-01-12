@@ -326,25 +326,6 @@ public class DataGraphService implements DataGraphManager {
 
             } );
             utilizers = lm.computeGraphAggregation( numResults, entitySetId, syncId, srcFilters, dstFilters );
-            //            eds.getEntityKeysForEntitySet( entitySetId, syncId )
-            //                    .parallel()
-            //                    .map( idService::getEntityKeyId )
-            //                    .forEach( vertexId -> {
-            //                        long score = topUtilizerDetailsList.parallelStream()
-            //                                /*.map( details -> lm.getEdgeCount( vertexId,
-            //                                        details.getAssociationTypeId(),
-            //                                        details.getNeighborTypeIds(),
-            //                                        details.getUtilizerIsSrc() ) )
-            //                                .map( ResultSetFuture::getUninterruptibly )*/
-            //                                .mapToLong( details -> lm.getHazelcastEdgeCount( vertexId,
-            //                                        details.getAssociationTypeId(),
-            //                                        details.getNeighborTypeIds(),
-            //                                        details.getUtilizerIsSrc() ) )
-            //                                //.mapToLong( Util::getCount )
-            //                                .sum();
-            //                        utilizers.accumulate( vertexId, score );
-            //                        // eds.writeVertexCount( queryId, vertexId, 1.0D * score );
-            //                    } );
 
             queryCache.put( new MultiKey( entitySetId, topUtilizerDetailsList ), utilizers );
         } else {
@@ -352,30 +333,6 @@ public class DataGraphService implements DataGraphManager {
         }
 
         return eds.getEntities( utilizers, authorizedPropertyTypes )::iterator;
-        //
-        //        return utilizers
-        //                .stream()
-        //                .map( longWeightedId -> {
-        //                    UUID vertexId = longWeightedId.getId();
-        //                    EntityKey key = idService.getEntityKey( vertexId );
-        //                    SetMultimap<Object, Object> entity = HashMultimap.create();
-        //                    entity.put( "count", longWeightedId.getWeight() );
-        //                    entity.putAll(
-        //                            eds.getEntity( key.getEntitySetId(),
-        //                                    key.getSyncId(),
-        //                                    key.getEntityId(),
-        //                                    authorizedPropertyTypes ) );
-        //                    entity.put( "id", vertexId.toString() );
-        //                    return entity;
-        //                } )::iterator;
-
-        /*
-         * Iterable<SetMultimap<Object, Object>> entities = Iterables .transform( eds.readTopUtilizers( queryId,
-         * numResults ), vertexId -> { EntityKey key = idService.getEntityKey( vertexId ); SetMultimap<Object, Object>
-         * entity = HashMultimap.create(); entity.putAll( eds.getEntity( key.getEntitySetId(), key.getSyncId(),
-         * key.getEntityId(), authorizedPropertyTypes ) ); entity.put( "id", vertexId.toString() ); return entity; } );
-         * return entities;
-         */
     }
 
     @Override

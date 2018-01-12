@@ -21,16 +21,16 @@
 package com.openlattice.data;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 /**
  * Metadata associated with an entity that tracks last write time, last index time, and current version.
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class EntityDataMetadata {
-    private final long           version;
-    private final OffsetDateTime lastWrite;
-    private final OffsetDateTime lastIndex;
+    private long           version;
+    private OffsetDateTime lastWrite;
+    private OffsetDateTime lastIndex;
 
     public EntityDataMetadata( long version, OffsetDateTime lastWrite, OffsetDateTime lastIndex ) {
         this.version = version;
@@ -42,11 +42,53 @@ public class EntityDataMetadata {
         return version;
     }
 
+    public void setVersion( long version ) {
+        this.version = version;
+    }
+
     public OffsetDateTime getLastWrite() {
         return lastWrite;
     }
 
+    public void setLastWrite( OffsetDateTime lastWrite ) {
+        this.lastWrite = lastWrite;
+    }
+
     public OffsetDateTime getLastIndex() {
         return lastIndex;
+    }
+
+    public void setLastIndex( OffsetDateTime lastIndex ) {
+        this.lastIndex = lastIndex;
+    }
+
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof EntityDataMetadata ) ) { return false; }
+
+        EntityDataMetadata that = (EntityDataMetadata) o;
+
+        if ( version != that.version ) { return false; }
+        if ( !lastWrite.equals( that.lastWrite ) ) { return false; }
+        return lastIndex.equals( that.lastIndex );
+    }
+
+    @Override public int hashCode() {
+        int result = (int) ( version ^ ( version >>> 32 ) );
+        result = 31 * result + lastWrite.hashCode();
+        result = 31 * result + lastIndex.hashCode();
+        return result;
+    }
+
+    @Override public String toString() {
+        return "EntityDataMetadata{" +
+                "version=" + version +
+                ", lastWrite=" + lastWrite +
+                ", lastIndex=" + lastIndex +
+                '}';
+    }
+
+    public void incrementVersion() {
+        ++version;
     }
 }

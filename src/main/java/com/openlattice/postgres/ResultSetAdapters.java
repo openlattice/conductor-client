@@ -112,6 +112,7 @@ import com.openlattice.authorization.AclKeySet;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.data.EntityDataMetadata;
 import com.openlattice.data.PropertyMetadata;
+import com.openlattice.data.PropertyValueKey;
 import com.openlattice.ids.Range;
 import java.sql.Array;
 import java.sql.ResultSet;
@@ -134,6 +135,13 @@ import org.slf4j.LoggerFactory;
  */
 public final class ResultSetAdapters {
     private static final Logger logger = LoggerFactory.getLogger( ResultSetAdapters.class );
+
+    public static PropertyValueKey propertyValueKey( ResultSet rs ) throws SQLException {
+        UUID entityKeyId = id( rs );
+        Object value = propertyValue( rs );
+        return new PropertyValueKey( entityKeyId, value );
+    }
+
 
     public static Object propertyValue( ResultSet rs ) throws SQLException {
         return rs.getObject( DataTables.VALUE_FIELD );

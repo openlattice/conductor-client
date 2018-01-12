@@ -102,7 +102,6 @@ public class LoomGraph implements LoomGraphApi {
 
     @Override
     public ListenableFuture deleteVertexAsync( UUID vertex ) {
-        // TODO: Implement delete for neighborhoods
         return executor.submit( () -> edges.removeAll( neighborhood( vertex ) ) );
     }
 

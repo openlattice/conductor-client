@@ -80,4 +80,12 @@ public class EntityDataValue {
                 ", properties=" + properties +
                 '}';
     }
+
+    public void setLastWrite( OffsetDateTime lastWrite ) {
+        metadata.setLastWrite( lastWrite );
+    }
+
+    public void incrementVersion() {
+        metadata.incrementVersion();
+    }
 }

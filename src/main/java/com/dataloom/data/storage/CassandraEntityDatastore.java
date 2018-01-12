@@ -41,13 +41,10 @@ import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.ResultSet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
@@ -57,15 +54,16 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
-import com.kryptnostic.datastore.cassandra.RowAdapters;
 import com.kryptnostic.datastore.util.Util;
 import com.openlattice.data.EntityDataKey;
 import com.openlattice.data.EntityDataValue;
 import com.openlattice.data.PropertyMetadata;
 import com.openlattice.hazelcast.predicates.EntitySetPredicates;
+import com.openlattice.hazelcast.processors.EntityDataUpserter;
 import com.openlattice.hazelcast.stream.EntitySetHazelcastStream;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -73,7 +71,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
@@ -157,8 +154,8 @@ public class CassandraEntityDatastore implements EntityDatastore {
             IncrementableWeightId[] utilizers,
             Map<UUID, PropertyType> authorizedPropertyTypes ) {
         Map<UUID, EntityKey> entityKeys = idService.getEntityKeys( Stream.of( utilizers )
-                        .map( IncrementableWeightId::getId )
-                .collect( Collectors.toSet()) );
+                .map( IncrementableWeightId::getId )
+                .collect( Collectors.toSet() ) );
 
         Set<EntityDataKey> dataKeys = entityKeys
                 .entrySet()
@@ -251,56 +248,58 @@ public class CassandraEntityDatastore implements EntityDatastore {
         return entityData;
     }
 
-    public SetMultimap<FullQualifiedName, Object> fromEntityDataValue(
-            EntityDataValue edv,
-            Map<UUID, PropertyType> propertyTypes ) {
-        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
-        Map<UUID, Map<Object, PropertyMetadata>> properties = edv.getProperties();
-        for ( Entry<UUID, PropertyType> propertyTypeEntry : propertyTypes.entrySet() ) {
-            UUID propertyTypeId = propertyTypeEntry.getKey();
-            Map<Object, PropertyMetadata> valueMap = properties.get( propertyTypeId );
-            if ( valueMap != null ) {
-                PropertyType propertyType = propertyTypeEntry.getValue();
-                entityData.putAll( propertyType.getType(), valueMap.keySet() );
-            }
-        }
+    @Override public ListenableHazelcastFuture asyncUpsertEntity(
+            EntityKey entityKey,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        return asyncUpsertEntity( fromEntityKey( entityKey ), entityDetails, authorizedPropertiesWithDataType );
     }
 
-    public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
-            SetMultimap<UUID, ByteBuffer> rawData,
-            Map<UUID, PropertyType> propertyType ) {
-        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
-
-        rawData.entries().forEach( prop -> {
-            PropertyType pt = propertyType.get( prop.getKey() );
-            if ( pt != null ) {
-                entityData.put( pt.getType(), CassandraSerDesFactory.deserializeValue( mapper,
-                        prop.getValue(),
-                        pt.getDatatype(),
-                        "Entity id unavailable" ) );
-            }
-        } );
-        return entityData;
+    private EntityDataKey fromEntityKey( EntityKey entityKey ) {
+        UUID entityKeyId = idService.getEntityKeyId( entityKey );
+        return new EntityDataKey( entityKey.getEntitySetId(), entityKeyId );
     }
 
-    public SetMultimap<Object, Object> untypedFromEntityBytes(
-            SetMultimap<UUID, ByteBuffer> rawData,
-            Map<UUID, PropertyType> propertyType ) {
+    @Override public ListenableHazelcastFuture asyncUpsertEntity(
+            EntityDataKey entityDataKey,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType,
+            OffsetDateTime lastWrite ) {
+        EntityDataValue edv = fromSetMultimap( entityDetails );
+        return new ListenableHazelcastFuture<>( entities
+                .submitToKey( entityDataKey, new EntityDataUpserter( entityDetails, OffsetDateTime.now() ) ) );
 
-        SetMultimap<Object, Object> entityData = HashMultimap
-                .create( rawData.keySet().size(), rawData.size() / rawData.keySet().size() );
+    }
 
-        rawData.entries().forEach( prop -> {
-            PropertyType pt = propertyType.get( prop.getKey() );
-            if ( pt != null ) {
-                entityData.put( pt.getType(), CassandraSerDesFactory.deserializeValue( mapper,
-                        prop.getValue(),
-                        pt.getDatatype(),
-                        "Entity id unavailable." ) );
-            }
-        } );
+    @Override public ListenableHazelcastFuture asyncUpsertEntity(
+            EntityDataKey entityDataKey,
+            SetMultimap<UUID, Object> entityDetails,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        return asyncUpsertEntity( entityDataKey,
+                entityDetails,
+                authorizedPropertiesWithDataType,
+                OffsetDateTime.now() );
 
-        return entityData;
+    }
+
+    @Override
+    public void finalizeSync( EntityKey entityKey ) {
+    
+    }
+
+    @Override
+    public void finalizeSync( EntityDataKey entityDataKey ) {
+
+    }
+
+    @Override
+    public void finalizeMerge( EntityKey entityKey ) {
+
+    }
+
+    @Override
+    public void finalizeMerge( EntityDataKey entityKey ) {
+
     }
 
     public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
@@ -384,87 +383,9 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 entityDetails );
     }
 
-    public Stream<SetMultimap<UUID, Object>> getEntitySetDataIndexedById(
-            UUID entitySetId,
-            UUID syncId,
-            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return getRows( entitySetId, syncId, authorizedPropertyTypes.keySet() )
-                .map( rs -> rowToEntityIndexedById( rs, authorizedPropertyTypes ) );
-    }
-
-    public SetMultimap<FullQualifiedName, Object> rowToEntity(
-            ResultSet rs,
-            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return RowAdapters.entity( rs, authorizedPropertyTypes, mapper );
-    }
-
-    public SetMultimap<UUID, Object> rowToEntityIndexedById(
-            ResultSet rs,
-            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return RowAdapters.entityIndexedById( rs, authorizedPropertyTypes, mapper );
-    }
-
-    public SetMultimap<UUID, Object> rowToEntityIndexedById(
-            EntityBytes eb,
-            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return RowAdapters.entityIndexedById( eb, authorizedPropertyTypes, mapper );
-    }
-
-    public SetMultimap<UUID, Object> rowToEntityIndexedById(
-            String entityId,
-            SetMultimap<UUID, ByteBuffer> eb,
-            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return RowAdapters.entityIndexedById( entityId, eb, authorizedPropertyTypes, mapper );
-    }
-
-    private Stream<EntityBytes> getRows(
-            UUID entitySetId,
-            UUID syncId,
-            Set<UUID> authorizedProperties ) {
-        // If syncId is not specified, retrieve latest snapshot of entity
-        final UUID finalSyncId;
-        if ( syncId == null ) {
-            finalSyncId = dsm.getCurrentSyncId( entitySetId );
-        } else {
-            finalSyncId = syncId;
-        }
-
-        // return StreamUtil
-        // .stream( asyncLoadEntitySet( entitySetId, finalSyncId, authorizedProperties ).getUninterruptibly() )
-        // .map( row -> RowAdapters.entity( ) );
-        return getEntityIds( entitySetId, finalSyncId )
-                .map( entityId -> asyncLoadEntity( entitySetId, entityId, finalSyncId ) )
-                .map( rsf -> {
-                    Stopwatch w = Stopwatch.createStarted();
-                    // ResultSet rs = rsf.getUninterruptibly();
-                    EntityBytes eb = StreamUtil.safeGet( rsf );
-                    logger.info( "Load entity took: {}", w.elapsed( TimeUnit.MILLISECONDS ) );
-                    return eb;
-                } );
-        // .map( ResultSetFuture::getUninterruptibly );
-    }
-
     public Stream<String> getEntityIds( UUID entitySetId, UUID syncId ) {
         return getEntityKeysForEntitySet( entitySetId, syncId ).map( EntityKey::getEntityId );
-        // BoundStatement boundEntityIdsQuery = entityIdsQuery.bind()
-        // .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-        // .setUUID( CommonColumns.SYNCID.cql(), syncId );
-        // ResultSet entityIds = session.execute( boundEntityIdsQuery );
-        // return StreamUtil
-        // .stream( entityIds )
-        // .parallel()
-        // .unordered()
-        // .map( RowAdapters::entityId )
-        // .distinct()
-        // .filter( StringUtils::isNotBlank );
     }
-
-    // public ResultSetFuture asyncLoadEntitySet( UUID entitySetId, UUID syncId, Set<UUID> authorizedProperties ) {
-    // return session.executeAsync( entitySetQuery.bind()
-    // .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-    // .setUUID( CommonColumns.SYNCID.cql(), syncId )
-    // .setSet( CommonColumns.PRINCIPAL_TYPE.cql(), authorizedProperties ) );
-    // }
 
     @Override
     public ListenableFuture<SetMultimap<UUID, ByteBuffer>> asyncLoadEntity(
@@ -484,58 +405,6 @@ public class CassandraEntityDatastore implements EntityDatastore {
             return byteBuffers;
         } );
         return f;
-        // return new ListenableHazelcastFuture( data.getAsync( id ) );
-
-        // return session.executeAsync( entityQuery.bind()
-        // .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-        // .setString( CommonColumns.ENTITYID.cql(), entityId )
-        // .setSet( CommonColumns.PROPERTY_TYPE_ID.cql(), authorizedProperties )
-        // .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
-    }
-
-    @Override
-    public SetMultimap<UUID, Object> loadEntities(
-            Map<UUID, Set<UUID>> authorizedPropertyTypesForEntity,
-            Map<UUID, PropertyType> propertyTypesById,
-            Set<UUID> propertyTypesToPopulate ) {
-
-        Predicate entitiesFilter = EntitySets
-                .getEntities( authorizedPropertyTypesForEntity.keySet().toArray( new UUID[ 0 ] ) );
-        Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
-
-        SetMultimap<UUID, ByteBuffer> mergedEntity = HashMultimap.create();
-
-        entities.entrySet().forEach( entityDetails -> {
-            Set<UUID> authorizedPropertyTypes = authorizedPropertyTypesForEntity.get( entityDetails.getKey() );
-            mergedEntity.putAll(
-                    Multimaps.filterKeys( entityDetails.getValue(), key -> authorizedPropertyTypes.contains( key ) ) );
-        } );
-
-        return RowAdapters.entityIndexedById( UUID.randomUUID().toString(),
-                mergedEntity,
-                propertyTypesById,
-                propertyTypesToPopulate,
-                mapper );
-    }
-
-    /*
-     * Warning: this loads ALL the properties of the entity, authorized or not.
-     */
-    @Override
-    public ListenableFuture<EntityBytes> asyncLoadEntity(
-            UUID entitySetId,
-            String entityId,
-            UUID syncId ) {
-
-        // UUID id = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
-        return executor.submit( () -> {
-            EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
-            SetMultimap<UUID, byte[]> mm = HashMultimap.create();
-            EntityBytes eb = new EntityBytes( ek, mm );
-            data.entrySet( EntitySets.getEntity( entitySetId, syncId, entityId ) )
-                    .forEach( e -> mm.put( e.getKey().getPropertyTypeId(), e.getValue().array() ) );
-            return eb;
-        } );
     }
 
     @Deprecated
@@ -667,26 +536,10 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 .parallel()
                 .flatMap( syncId -> getEntityKeysForEntitySet( entitySetId, syncId ) )
                 .forEach( data::delete ) );
-
-        // return StreamUtil.stream( dsm.getAllSyncIds( entitySetId ) )
-        // .parallel()
-        // .flatMap( syncId ->
-        // PARTITION_INDEXES
-        // .stream()
-        // .map( partitionIndex -> deleteEntitySetQuery.bind()
-        // .setByte( CommonColumns.PARTITION_INDEX.cql(), partitionIndex )
-        // .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-        // .setUUID( CommonColumns.SYNCID.cql(), syncId ) ) )
-        // .map( session::executeAsync );
     }
 
     public ListenableFuture<?> asyncDeleteEntity( UUID entitySetId, String entityId, UUID syncId ) {
-        // UUID id = idService.getEntityKeyId( new EntityKey( entitySetId, entityId, syncId ) );
         return executor.submit( () -> data.removeAll( EntitySets.getEntity( entitySetId, syncId, entityId ) ) );
-        // return session.executeAsync( deleteEntityQuery.bind()
-        // .setUUID( CommonColumns.ENTITY_SET_ID.cql(), entitySetId )
-        // .setString( CommonColumns.ENTITYID.cql(), entityId )
-        // .setUUID( CommonColumns.SYNCID.cql(), syncId ) );
     }
 
     @Override
@@ -710,5 +563,25 @@ public class CassandraEntityDatastore implements EntityDatastore {
                 entitySetId,
                 syncId );
         return StreamUtil.stream( es );
+    }
+
+    public static EntityDataValue fromSetMultimap( SetMultimap<UUID, Object> entityDetails ) {
+        return null;
+    }
+
+    public static SetMultimap<FullQualifiedName, Object> fromEntityDataValue(
+            EntityDataValue edv,
+            Map<UUID, PropertyType> propertyTypes ) {
+        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
+        Map<UUID, Map<Object, PropertyMetadata>> properties = edv.getProperties();
+        for ( Entry<UUID, PropertyType> propertyTypeEntry : propertyTypes.entrySet() ) {
+            UUID propertyTypeId = propertyTypeEntry.getKey();
+            Map<Object, PropertyMetadata> valueMap = properties.get( propertyTypeId );
+            if ( valueMap != null ) {
+                PropertyType propertyType = propertyTypeEntry.getValue();
+                entityData.putAll( propertyType.getType(), valueMap.keySet() );
+            }
+        }
+        return entityData;
     }
 }

@@ -26,16 +26,28 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PropertyKey {
+    private final UUID   entitySetId;
     private final UUID   entityKeyId;
+    private final UUID   propertyTypeId;
     private final Object value;
 
-    public PropertyKey( UUID entityKeyId, Object value ) {
+    public PropertyKey( UUID entitySetId, UUID entityKeyId, UUID propertyTypeId, Object value ) {
+        this.entitySetId = entitySetId;
         this.entityKeyId = entityKeyId;
+        this.propertyTypeId = propertyTypeId;
         this.value = value;
+    }
+
+    public UUID getEntitySetId() {
+        return entitySetId;
     }
 
     public UUID getEntityKeyId() {
         return entityKeyId;
+    }
+
+    public UUID getPropertyTypeId() {
+        return propertyTypeId;
     }
 
     public Object getValue() {

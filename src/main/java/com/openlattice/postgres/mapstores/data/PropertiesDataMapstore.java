@@ -26,34 +26,31 @@ import static com.openlattice.postgres.PostgresColumn.VERSION;
 import static com.openlattice.postgres.PostgresColumn.VERSIONS;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.openlattice.data.PropertyMetadata;
+import com.openlattice.data.PropertyValueKey;
 import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
-import com.openlattice.postgres.mapstores.AbstractBaseSplitKeyPostgresMapstore;
+import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.RandomStringUtils;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class PropertyDataMapstore extends AbstractBaseSplitKeyPostgresMapstore<UUID, Object, PropertyMetadata> {
+class PropertiesDataMapstore extends AbstractBasePostgresMapstore<PropertyValueKey, PropertyMetadata> {
     private final PostgresColumnDefinition valueColumn;
 
-    public PropertyDataMapstore( PostgresTableDefinition table, HikariDataSource hds ) {
+    public PropertiesDataMapstore( PostgresTableDefinition table, HikariDataSource hds ) {
         //Table name doesn't matter as these aer used for configuring maps.
         super( "pdms", table, hds );
         for ( PostgresColumnDefinition pcd : table.getColumns() ) {
@@ -69,7 +66,7 @@ class PropertyDataMapstore extends AbstractBaseSplitKeyPostgresMapstore<UUID, Ob
         return ImmutableList.of( ID_VALUE );
     }
 
-    @Override protected Optional<String> buildOnConflictQuery() {
+    protected Optional<String> buildOnConflictQuery() {
         return Optional.of( ( " ON CONFLICT ("
                 + keyColumns().stream()
                 .map( PostgresColumnDefinition::getName )
@@ -85,10 +82,9 @@ class PropertyDataMapstore extends AbstractBaseSplitKeyPostgresMapstore<UUID, Ob
         //        return ImmutableList.copyOf( Sets.difference( table.getColumns(), ImmutableSet.of( ID_VALUE ) ) );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key, Object subKey, PropertyMetadata value )
+    @Override protected void bind( PreparedStatement ps, PropertyValueKey key, PropertyMetadata value )
             throws SQLException {
         int parameterIndex = bind( ps, key, 1 );
-        ps.setObject( parameterIndex++, subKey );
 
         ps.setLong( parameterIndex++, value.getVersion() );
         ps.setArray( parameterIndex++, PostgresArrays.createLongArray( ps.getConnection(), value.getVersions() ) );
@@ -100,38 +96,25 @@ class PropertyDataMapstore extends AbstractBaseSplitKeyPostgresMapstore<UUID, Ob
         ps.setObject( parameterIndex++, value.getLastWrite() );
     }
 
-    @Override protected int bind( PreparedStatement ps, UUID key, int offset ) throws SQLException {
-        ps.setObject( offset++, key );
+    @Override protected int bind( PreparedStatement ps, PropertyValueKey key, int offset ) throws SQLException {
+        ps.setObject( offset++, key.getEntityKeyId() );
+        ps.setObject( offset++, key.getValue() );
         return offset;
     }
 
-    @Override protected Map<Object, PropertyMetadata> mapToValue( ResultSet rs ) throws SQLException {
-        final Map<Object, PropertyMetadata> value = new HashMap<>();
-
-        if ( !rs.next() ) {
-            return null;
-        }
-
-        do {
-            Object key = ResultSetAdapters.propertyValue( rs );
-            PropertyMetadata metadata = ResultSetAdapters.propertyMetadata( rs );
-            value.put( key, metadata );
-        } while ( rs.next() );
-
-        return value;
+    @Override protected PropertyMetadata mapToValue( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.propertyMetadata( rs );
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
-        return ResultSetAdapters.id( rs );
+    @Override protected PropertyValueKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.propertyValueKey( rs );
     }
 
-    @Override public UUID generateTestKey() {
-        return UUID.randomUUID();
+    @Override public PropertyValueKey generateTestKey() {
+        return new PropertyValueKey( UUID.randomUUID(), UUID.randomUUID().toString() );
     }
 
-    @Override public Map<Object, PropertyMetadata> generateTestValue() {
-        return ImmutableMap
-                .of( RandomStringUtils.randomAlphanumeric( 10 ), new PropertyMetadata( 5, ImmutableList.of( 1L, 2L ),
-                        OffsetDateTime.now() ) );
+    @Override public PropertyMetadata generateTestValue() {
+        return new PropertyMetadata( 5, ImmutableList.of( 1L, 2L ), OffsetDateTime.now() );
     }
 }

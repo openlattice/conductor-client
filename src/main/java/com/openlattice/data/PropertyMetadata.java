@@ -30,13 +30,15 @@ import java.util.List;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PropertyMetadata {
-    private final long           version;
     private final List<Long>     versions;
-    private final OffsetDateTime lastWrite;
+    private       long           version;
+    private       OffsetDateTime lastWrite;
 
     @JsonCreator
     public PropertyMetadata(
-            @JsonProperty( SerializationConstants.VERSION ) long version, List<Long> versions, OffsetDateTime lastWrite ) {
+            @JsonProperty( SerializationConstants.VERSION ) long version,
+            List<Long> versions,
+            OffsetDateTime lastWrite ) {
         this.version = version;
         this.versions = versions;
         this.lastWrite = lastWrite;
@@ -46,11 +48,23 @@ public class PropertyMetadata {
         return version;
     }
 
+    public void setVersion( long version ) {
+        this.version = version;
+    }
+
     public List<Long> getVersions() {
         return versions;
     }
 
     public OffsetDateTime getLastWrite() {
         return lastWrite;
+    }
+
+    public void setLastWrite( OffsetDateTime lastWrite ) {
+        this.lastWrite = lastWrite;
+    }
+
+    public void incrementVersion() {
+        ++version;
     }
 }
