@@ -113,6 +113,15 @@ public interface EntityDatastore {
      * @param entityKey The entity key of the entity to finalize synchronization for.
      */
     void finalizeSync( EntityKey entityKey );
+
+    void finalizeSync( EntityKey entityKey, OffsetDateTime lastWrite );
+
+    void finalizeSync( EntityDataKey entityDataKey, OffsetDateTime lastWrite );
+
+    void finalizeSync( UUID entitySetId, OffsetDateTime lastWrite );
+
+    void finalizeSync( UUID entitySetId );
+
     void finalizeSync( EntityDataKey entityDataKey );
 
     void finalizeMerge( EntityKey entityKey );

@@ -60,6 +60,7 @@ import com.openlattice.data.EntityDataValue;
 import com.openlattice.data.PropertyMetadata;
 import com.openlattice.hazelcast.predicates.EntitySetPredicates;
 import com.openlattice.hazelcast.processors.EntityDataUpserter;
+import com.openlattice.hazelcast.processors.SyncFinalizer;
 import com.openlattice.hazelcast.stream.EntitySetHazelcastStream;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
@@ -283,15 +284,34 @@ public class CassandraEntityDatastore implements EntityDatastore {
     }
 
     @Override
+    public void finalizeSync( EntityKey entityKey, OffsetDateTime lastWrite ) {
+        finalizeSync( fromEntityKey( entityKey ) );
+    }
+
+    @Override
     public void finalizeSync( EntityKey entityKey ) {
-    
+        finalizeSync( entityKey, OffsetDateTime.now() );
+    }
+
+    @Override
+    public void finalizeSync( EntityDataKey entityDataKey, OffsetDateTime lastWrite ) {
+        entities.executeOnEntries( new SyncFinalizer( lastWrite ) , EntitySetPredicates.entity( entityDataKey  ));
+    }
+
+    @Override
+    public void finalizeSync( UUID entitySetId, OffsetDateTime lastWrite ) {
+        entities.executeOnEntries( new SyncFinalizer( lastWrite ) , EntitySetPredicates.entitySet( entitySetId  ));
+    }
+
+    @Override
+    public void finalizeSync( UUID entitySetId ) {
+        finalizeSync( entitySetId, OffsetDateTime.now() );
     }
 
     @Override
     public void finalizeSync( EntityDataKey entityDataKey ) {
-
+        finalizeSync( entityDataKey, OffsetDateTime.now() );
     }
-
     @Override
     public void finalizeMerge( EntityKey entityKey ) {
 
