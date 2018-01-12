@@ -83,6 +83,10 @@ public interface EntityDatastore {
     SetMultimap<FullQualifiedName, Object> getEntity(
             UUID id, Map<UUID, PropertyType> authorizedPropertyTypes );
 
+    void finalizeMerge( UUID entitySetId, OffsetDateTime lastWrite );
+
+    void finalizeMerge( UUID entitySetId );
+
     ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
             UUID entitySetId,
             UUID syncId,
@@ -124,7 +128,12 @@ public interface EntityDatastore {
 
     void finalizeSync( EntityDataKey entityDataKey );
 
+    void finalizeMerge( EntityKey entityKey, OffsetDateTime lastWrite );
+
     void finalizeMerge( EntityKey entityKey );
+
+    void finalizeMerge( EntityDataKey entityKey, OffsetDateTime offsetDateTime );
+
     void finalizeMerge( EntityDataKey entityKey );
 
 

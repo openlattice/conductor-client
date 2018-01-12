@@ -60,6 +60,7 @@ import com.openlattice.data.EntityDataValue;
 import com.openlattice.data.PropertyMetadata;
 import com.openlattice.hazelcast.predicates.EntitySetPredicates;
 import com.openlattice.hazelcast.processors.EntityDataUpserter;
+import com.openlattice.hazelcast.processors.MergeFinalizer;
 import com.openlattice.hazelcast.processors.SyncFinalizer;
 import com.openlattice.hazelcast.stream.EntitySetHazelcastStream;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -295,12 +296,12 @@ public class CassandraEntityDatastore implements EntityDatastore {
 
     @Override
     public void finalizeSync( EntityDataKey entityDataKey, OffsetDateTime lastWrite ) {
-        entities.executeOnEntries( new SyncFinalizer( lastWrite ) , EntitySetPredicates.entity( entityDataKey  ));
+        entities.executeOnEntries( new SyncFinalizer( lastWrite ), EntitySetPredicates.entity( entityDataKey ) );
     }
 
     @Override
     public void finalizeSync( UUID entitySetId, OffsetDateTime lastWrite ) {
-        entities.executeOnEntries( new SyncFinalizer( lastWrite ) , EntitySetPredicates.entitySet( entitySetId  ));
+        entities.executeOnEntries( new SyncFinalizer( lastWrite ), EntitySetPredicates.entitySet( entitySetId ) );
     }
 
     @Override
@@ -311,15 +312,37 @@ public class CassandraEntityDatastore implements EntityDatastore {
     @Override
     public void finalizeSync( EntityDataKey entityDataKey ) {
         finalizeSync( entityDataKey, OffsetDateTime.now() );
+
     }
+
+    @Override
+    public void finalizeMerge( EntityKey entityKey, OffsetDateTime lastWrite ) {
+        finalizeMerge( fromEntityKey( entityKey ), lastWrite );
+    }
+
     @Override
     public void finalizeMerge( EntityKey entityKey ) {
-
+        finalizeMerge( entityKey, OffsetDateTime.now() );
     }
 
     @Override
-    public void finalizeMerge( EntityDataKey entityKey ) {
+    public void finalizeMerge( EntityDataKey entityDataKey, OffsetDateTime lastWrite ) {
+        entities.executeOnEntries( new MergeFinalizer( lastWrite ), EntitySetPredicates.entity( entityDataKey ) );
+    }
 
+    @Override
+    public void finalizeMerge( EntityDataKey entityDataKey ) {
+        finalizeMerge( entityDataKey, OffsetDateTime.now() );
+    }
+
+    @Override
+    public void finalizeMerge( UUID entitySetId, OffsetDateTime lastWrite ) {
+        entities.executeOnEntries( new MergeFinalizer( lastWrite ), EntitySetPredicates.entitySet( entitySetId ) );
+    }
+
+    @Override
+    public void finalizeMerge( UUID entitySetId ) {
+        finalizeMerge( entitySetId, OffsetDateTime.now() );
     }
 
     public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
