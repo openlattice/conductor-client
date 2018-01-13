@@ -19,13 +19,9 @@
 
 package com.kryptnostic.datastore.services;
 
-import static com.kryptnostic.datastore.cassandra.CommonColumns.PARTITION_INDEX;
-
 import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.data.storage.CassandraEntityDatastore;
 import com.dataloom.edm.EntitySet;
 import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
@@ -36,8 +32,6 @@ import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 
@@ -74,7 +68,7 @@ public class CassandraEntitySetManager {
 //                        .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
 //                        .column( CommonColumns.SYNCID.cql() )
 //                        .from( keyspace, Table.DATA.getName() )
-//                        .where( QueryBuilder.in( PARTITION_INDEX.cql(), CassandraEntityDatastore.PARTITION_INDEXES ) )
+//                        .where( QueryBuilder.in( PARTITION_INDEX.cql(), HazelcastEntityDatastore.PARTITION_INDEXES ) )
 //                        .and( CommonColumns.ENTITY_SET_ID.eq() )
 //                        .and( CommonColumns.SYNCID.eq() ) );
     }

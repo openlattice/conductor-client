@@ -62,11 +62,11 @@ public interface EntityDatastore {
     /**
      * Asynchronously load an entity with specified properties
      */
-    ListenableFuture<SetMultimap<UUID, ByteBuffer>> asyncLoadEntity(
-            UUID entitySetId,
-            String entityId,
-            UUID syncId,
-            Set<UUID> properties );
+//    ListenableFuture<SetMultimap<UUID, ByteBuffer>> asyncLoadEntity(
+//            UUID entitySetId,
+//            String entityId,
+//            UUID syncId,
+//            Set<UUID> properties );
 
     // TODO remove vertices too
     void deleteEntitySetData( UUID entitySetId );
@@ -80,18 +80,18 @@ public interface EntityDatastore {
             Map<UUID, UUID> entityKeyIdToEntitySetId,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypesByEntitySet );
 
-    SetMultimap<FullQualifiedName, Object> getEntity(
-            UUID id, Map<UUID, PropertyType> authorizedPropertyTypes );
+//    SetMultimap<FullQualifiedName, Object> getEntity(
+//            UUID id, Map<UUID, PropertyType> authorizedPropertyTypes );
 
     void finalizeMerge( UUID entitySetId, OffsetDateTime lastWrite );
 
     void finalizeMerge( UUID entitySetId );
 
-    ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
-            UUID entitySetId,
-            UUID syncId,
-            String entityId,
-            Map<UUID, PropertyType> authorizedPropertyTypes );
+//    ListenableFuture<SetMultimap<FullQualifiedName, Object>> getEntityAsync(
+//            UUID entitySetId,
+//            UUID syncId,
+//            String entityId,
+//            Map<UUID, PropertyType> authorizedPropertyTypes );
 
     ListenableHazelcastFuture asyncUpsertEntity(
             EntityKey entityKey,
@@ -158,6 +158,7 @@ public interface EntityDatastore {
     Stream<EntityKey> getEntityKeysForEntitySet( UUID entitySetId, UUID syncId );
 
     Stream<SetMultimap<Object, Object>> getEntities(
+            UUID entitySetId,
             IncrementableWeightId[] utilizers,
             Map<UUID, PropertyType> authorizedPropertyTypes );
 

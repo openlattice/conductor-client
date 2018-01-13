@@ -7,14 +7,15 @@ import com.google.common.collect.Sets;
 import com.hazelcast.aggregation.Aggregator;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 
+import java.util.HashSet;
 import java.util.Map;
 
 public class NeighborEntitySetAggregator extends Aggregator<Map.Entry<EdgeKey, LoomEdge>, NeighborTripletSet> {
 
-    private NeighborTripletSet edgeTriplets;
+    private final NeighborTripletSet edgeTriplets;
 
     public NeighborEntitySetAggregator() {
-        this.edgeTriplets = new NeighborTripletSet( Sets.newHashSet() );
+        this.edgeTriplets = new NeighborTripletSet( new HashSet<>() );
     }
 
     public NeighborEntitySetAggregator( NeighborTripletSet edgeTriplets ) {

@@ -34,7 +34,9 @@ public class SyncFinalizer extends AbstractRhizomeEntryProcessor<EntityDataKey, 
                 .values()
                 .forEach( p ->
                         p.values().forEach( v -> {
-                            v.setVersion( nextDeleteVersion );
+                            if ( v.getVersion() > 0 ) {
+                                v.setVersion( nextDeleteVersion );
+                            }
                             v.setLastWrite( lastWrite );
                         } ) );
         entityDataValue.setLastWrite( lastWrite );

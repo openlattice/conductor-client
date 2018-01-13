@@ -5,7 +5,7 @@ import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.Entity;
-import com.dataloom.data.storage.CassandraEntityDatastore;
+import com.dataloom.data.storage.HazelcastEntityDatastore;
 import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
@@ -33,18 +33,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.collections4.keyvalue.MultiKey;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@kryptnostic.com&gt;
@@ -69,7 +63,7 @@ public class DataGraphService implements DataGraphManager {
 
     public DataGraphService(
             HazelcastInstance hazelcastInstance,
-            CassandraEntityDatastore eds,
+            HazelcastEntityDatastore eds,
             LoomGraph lm,
             EntityKeyIdService ids,
             ListeningExecutorService executor,
@@ -332,7 +326,7 @@ public class DataGraphService implements DataGraphManager {
             utilizers = maybeUtilizers;
         }
 
-        return eds.getEntities( utilizers, authorizedPropertyTypes )::iterator;
+        return eds.getEntities( entitySetId, utilizers, authorizedPropertyTypes )::iterator;
     }
 
     @Override
