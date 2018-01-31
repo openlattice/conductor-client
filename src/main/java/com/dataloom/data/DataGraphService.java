@@ -108,6 +108,12 @@ public class DataGraphService implements DataGraphManager {
     }
 
     @Override
+    public SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID entityKeyId, Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        return eds.getEntity( entityKeyId, authorizedPropertyTypes );
+    }
+
+    @Override
     public void updateEntity(
             UUID id,
             SetMultimap<UUID, Object> entityDetails,
