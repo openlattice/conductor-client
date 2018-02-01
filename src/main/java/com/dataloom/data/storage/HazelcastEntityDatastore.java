@@ -19,8 +19,6 @@
 
 package com.dataloom.data.storage;
 
-import static com.google.common.util.concurrent.Futures.transformAsync;
-
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityDatastore;
@@ -28,7 +26,6 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.EntitySetData;
 import com.dataloom.data.aggregators.EntitiesAggregator;
-import com.dataloom.data.aggregators.EntityAggregator;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.events.EntityDataCreatedEvent;
 import com.dataloom.data.events.EntityDataDeletedEvent;
@@ -36,7 +33,6 @@ import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.hazelcast.Entities;
 import com.dataloom.data.hazelcast.EntityKeyHazelcastStream;
 import com.dataloom.data.hazelcast.EntitySets;
-import com.dataloom.data.mapstores.DataMapstore;
 import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
@@ -63,6 +59,7 @@ import com.openlattice.hazelcast.processors.EntityDataUpserter;
 import com.openlattice.hazelcast.processors.MergeFinalizer;
 import com.openlattice.hazelcast.processors.SyncFinalizer;
 import com.openlattice.hazelcast.stream.EntitySetHazelcastStream;
+import com.openlattice.postgres.JsonDeserializer;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.time.OffsetDateTime;
@@ -211,45 +208,6 @@ public class HazelcastEntityDatastore implements EntityDatastore {
                 .collect( Collectors.toMap( e -> e.getKey().getEntityKeyId(),
                         e -> fromEntityDataValue( e.getValue(),
                                 authorizedPropertyTypesByEntitySet.get( e.getKey().getEntitySetId() ) ) ) );
-//        return entityKeyIdToEntitySetId.entrySet().stream().collect( Collectors.toMap( Entry::getKey, entry -> {
-//            UUID entityKeyId = entry.getKey();
-//            UUID entitySetId = entry.getValue();
-//            SetMultimap<FullQualifiedName, Object> entity = from
-//            fromEntityBytes( entityKeyId,
-//                    entities.get( entityKeyId ),
-//                    authorizedPropertyTypesByEntitySet.get( entitySetId ) );
-//            return entity;
-//
-//        } ) );
-    }
-
-//    @Override
-//    @Timed
-//    public SetMultimap<FullQualifiedName, Object> getEntity(
-//            UUID id,
-//            Map<UUID, PropertyType> authorizedPropertyTypes ) {
-//        Predicate entitiesFilter = EntitySets.getEntity( id );
-//        Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
-//
-//        return fromEntityBytes( id, entities.get( id ), authorizedPropertyTypes );
-//    }
-
-    public SetMultimap<FullQualifiedName, Object> fromEntityBytes(
-            String entityId,
-            SetMultimap<UUID, ByteBuffer> eb,
-            Map<UUID, PropertyType> propertyType ) {
-        SetMultimap<FullQualifiedName, Object> entityData = HashMultimap.create();
-
-        eb.entries().forEach( prop -> {
-            PropertyType pt = propertyType.get( prop.getKey() );
-            if ( pt != null ) {
-                entityData.put( pt.getType(), CassandraSerDesFactory.deserializeValue( mapper,
-                        prop.getValue(),
-                        pt.getDatatype(),
-                        entityId ) );
-            }
-        } );
-        return entityData;
     }
 
     @Override public ListenableHazelcastFuture asyncUpsertEntity(
@@ -420,25 +378,6 @@ public class HazelcastEntityDatastore implements EntityDatastore {
         return getEntityKeysForEntitySet( entitySetId, syncId ).map( EntityKey::getEntityId );
     }
 
-//    @Override
-//    public ListenableFuture<SetMultimap<UUID, ByteBuffer>> asyncLoadEntity(
-//            UUID entitySetId,
-//            String entityId,
-//            UUID syncId,
-//            Set<UUID> authorizedProperties ) {
-//        ListenableFuture<SetMultimap<UUID, ByteBuffer>> f = executor.submit( () -> {
-//            SetMultimap<UUID, ByteBuffer> byteBuffers = data.aggregate( new EntityAggregator(),
-//                    EntitySets.getEntity(
-//                            entitySetId,
-//                            syncId,
-//                            entityId,
-//                            authorizedProperties ) )
-//                    .getByteBuffers();
-//            return byteBuffers;
-//        } );
-//        return f;
-//    }
-
     @Deprecated
     public void createEntityData(
             UUID entitySetId,
@@ -492,7 +431,7 @@ public class HazelcastEntityDatastore implements EntityDatastore {
 
         SetMultimap<UUID, Object> normalizedPropertyValues;
         try {
-            normalizedPropertyValues = CassandraSerDesFactory.validateFormatAndNormalize( entityDetails,
+            normalizedPropertyValues = JsonDeserializer.validateFormatAndNormalize( entityDetails,
                     authorizedPropertiesWithDataType );
         } catch ( Exception e ) {
             logger.error( "Entity {} not written because some property values are of invalid format.",
@@ -503,33 +442,16 @@ public class HazelcastEntityDatastore implements EntityDatastore {
 
         EntityKey ek = new EntityKey( entitySetId, entityId, syncId );
         UUID id = idService.getEntityKeyId( ek );
+        EntityDataKey edk = new EntityDataKey( entitySetId, id );
+        EntityDataUpserter entityDataUpserter =
+                new EntityDataUpserter( normalizedPropertyValues, OffsetDateTime.now() );
 
-        Stream<ListenableFuture> futures =
-                normalizedPropertyValues
-                        .entries().stream()
-                        .map( entry -> {
-                            UUID propertyTypeId = entry.getKey();
-                            EdmPrimitiveTypeKind datatype = authorizedPropertiesWithDataType.get( propertyTypeId );
-                            ByteBuffer buffer = CassandraSerDesFactory.serializeValue(
-                                    mapper,
-                                    entry.getValue(),
-                                    datatype,
-                                    entityId );
-                            return data.setAsync( new DataKey(
-                                    id,
-                                    entitySetId,
-                                    syncId,
-                                    entityId,
-                                    propertyTypeId,
-                                    DataMapstore.hf.hashBytes( buffer.array() ).asBytes() ), buffer );
-                        } )
-                        .map( ListenableHazelcastFuture::new );
-
+        /*
         authorizedPropertiesWithDataType.entrySet().forEach( entry -> {
             if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) ) {
                 normalizedPropertyValues.removeAll( entry.getKey() );
             }
-        } );
+        } );*/
 
         eventBus.post( new EntityDataCreatedEvent(
                 entitySetId,
@@ -537,8 +459,7 @@ public class HazelcastEntityDatastore implements EntityDatastore {
                 entityId,
                 normalizedPropertyValues,
                 true ) );
-
-        return futures;
+        return Stream.of( new ListenableHazelcastFuture( entities.submitToKey( edk, entityDataUpserter ) ) );
     }
 
     /**
