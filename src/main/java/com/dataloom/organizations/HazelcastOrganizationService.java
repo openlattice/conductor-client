@@ -19,8 +19,11 @@
 
 package com.dataloom.organizations;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
+import com.dataloom.authorization.Permission;
 import com.dataloom.authorization.Principal;
 import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.UserDirectoryService;
@@ -31,7 +34,12 @@ import com.dataloom.organization.roles.Role;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
-import com.dataloom.organizations.processors.*;
+import com.dataloom.organizations.processors.EmailDomainsMerger;
+import com.dataloom.organizations.processors.EmailDomainsRemover;
+import com.dataloom.organizations.processors.OrganizationAppMerger;
+import com.dataloom.organizations.processors.OrganizationAppRemover;
+import com.dataloom.organizations.processors.OrganizationMemberMerger;
+import com.dataloom.organizations.processors.OrganizationMemberRemover;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.base.Optional;
@@ -48,11 +56,8 @@ import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -60,8 +65,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HazelcastOrganizationService {
 
@@ -79,7 +85,7 @@ public class HazelcastOrganizationService {
     private final List<IMap<UUID, ?>>               allMaps;
 
     @Inject
-    private       EventBus                          eventBus;
+    private EventBus eventBus;
 
     public HazelcastOrganizationService(
             HazelcastInstance hazelcastInstance,
@@ -180,6 +186,10 @@ public class HazelcastOrganizationService {
     public void addMembers( UUID organizationId, Set<Principal> members ) {
         membersOf.submitToKey( organizationId, new OrganizationMemberMerger( members ) );
         addOrganizationToMembers( organizationId, members );
+        final AclKey orgAclKey = new AclKey( organizationId );
+        members.stream().filter( PrincipalType.USER::equals )
+                .map( securePrincipalsManager::lookup )
+                .forEach( target -> securePrincipalsManager.addPrincipalToPrincipal( orgAclKey, target ) );
     }
 
     public void setMembers( UUID organizationId, Set<Principal> members ) {
@@ -207,6 +217,11 @@ public class HazelcastOrganizationService {
                         .map( securePrincipalsManager::lookup ) );
         membersOf.submitToKey( organizationId, new OrganizationMemberRemover( members ) );
         removeOrganizationFromMembers( organizationId, members );
+
+        final AclKey orgAclKey = new AclKey( organizationId );
+        members.stream().filter( PrincipalType.USER::equals )
+                .map( securePrincipalsManager::lookup )
+                .forEach( target -> securePrincipalsManager.removePrincipalFromPrincipal( orgAclKey, target ) );
     }
 
     private void addOrganizationToMembers( UUID organizationId, Set<Principal> members ) {
@@ -232,6 +247,11 @@ public class HazelcastOrganizationService {
 
     public void createRoleIfNotExists( Principal callingUser, Role role ) {
         securePrincipalsManager.createSecurablePrincipalIfNotExists( callingUser, role );
+
+        final UUID organizationId = role.getOrganizationId();
+        final SecurablePrincipal orgPrincipal = securePrincipalsManager
+                .getSecurablePrincipal( new AclKey( organizationId ) );
+        authorizations.addPermission( role.getAclKey(), orgPrincipal.getPrincipal(), EnumSet.of( Permission.READ ) );
     }
 
     private Collection<Role> getRolesInFull( UUID organizationId ) {
