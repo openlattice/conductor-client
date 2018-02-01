@@ -20,6 +20,7 @@
 package com.dataloom.data.storage;
 
 import com.codahale.metrics.annotation.Timed;
+import com.dataloom.authorization.ForbiddenException;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityDatastore;
 import com.dataloom.data.EntityKey;
@@ -423,10 +424,12 @@ public class HazelcastEntityDatastore implements EntityDatastore {
         // does not write the row if some property values that user is trying to write to are not authorized.
         //TODO: Don't fail silently
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
-            logger.error( "Entity {} not written because the following properties are not authorized: {}",
-                    entityId,
-                    Sets.difference( entityDetails.keySet(), authorizedProperties ) );
-            return Stream.empty();
+            String msg = String
+                    .format( "Entity % s not written because the following properties are not authorized: %s",
+                            entityId,
+                            Sets.difference( entityDetails.keySet(), authorizedProperties ) );
+            logger.error( msg );
+            throw new ForbiddenException( msg );
         }
 
         SetMultimap<UUID, Object> normalizedPropertyValues;
