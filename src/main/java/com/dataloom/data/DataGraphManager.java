@@ -36,6 +36,10 @@ public interface DataGraphManager {
     /*
      * CRUD methods for entity
      */
+    SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID entityKeyId,
+            Map<UUID, PropertyType> authorizedPropertyTypes );
+
     void updateEntity(
             UUID elementId,
             SetMultimap<UUID, Object> entityDetails,
