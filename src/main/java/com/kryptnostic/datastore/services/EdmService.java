@@ -767,6 +767,13 @@ public class EdmService implements EdmManager {
                 "Entity type does not contain all the requested primary key property types." );
 
         entityTypes.executeOnKey( entityTypeId, new AddPrimaryKeysToEntityTypeProcessor( propertyTypeIds ) );
+
+        entityType = entityTypes.get( entityTypeId );
+        if ( entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+        }
     }
 
     @Override
@@ -778,6 +785,13 @@ public class EdmService implements EdmManager {
                 "Entity type does not contain all the requested primary key property types." );
 
         entityTypes.executeOnKey( entityTypeId, new RemovePrimaryKeysFromEntityTypeProcessor( propertyTypeIds ) );
+
+        entityType = entityTypes.get( entityTypeId );
+        if ( entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+        }
     }
 
     @Override
