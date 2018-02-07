@@ -97,6 +97,10 @@ public interface EdmManager {
 
     void removePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
+    void addPrimaryKeysToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+
+    void removePrimaryKeysFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
+
     void forceRemovePropertyTypesFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds );
 
     void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds );

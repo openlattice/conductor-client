@@ -56,17 +56,7 @@ import com.dataloom.edm.type.ComplexType;
 import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.EnumType;
 import com.dataloom.edm.type.PropertyType;
-import com.dataloom.edm.types.processors.AddDstEntityTypesToAssociationTypeProcessor;
-import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
-import com.dataloom.edm.types.processors.AddSrcEntityTypesToAssociationTypeProcessor;
-import com.dataloom.edm.types.processors.RemoveDstEntityTypesFromAssociationTypeProcessor;
-import com.dataloom.edm.types.processors.RemovePropertyTypesFromEntityTypeProcessor;
-import com.dataloom.edm.types.processors.RemoveSrcEntityTypesFromAssociationTypeProcessor;
-import com.dataloom.edm.types.processors.ReorderPropertyTypesInEntityTypeProcessor;
-import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
-import com.dataloom.edm.types.processors.UpdateEntitySetPropertyMetadataProcessor;
-import com.dataloom.edm.types.processors.UpdateEntityTypeMetadataProcessor;
-import com.dataloom.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
+import com.dataloom.edm.types.processors.*;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.HazelcastUtils;
 import com.google.common.base.Functions;
@@ -766,6 +756,28 @@ public class EdmService implements EdmManager {
         } else {
             eventBus.post( new EntityTypeCreatedEvent( entityType ) );
         }
+    }
+
+    @Override
+    public void addPrimaryKeysToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
+        EntityType entityType = entityTypes.get( entityTypeId );
+        Preconditions.checkNotNull( entityType, "No entity type with id {}", entityTypeId );
+        Preconditions.checkArgument( entityType.getProperties().containsAll( propertyTypeIds ),
+                "Entity type does not contain all the requested primary key property types." );
+
+        entityTypes.executeOnKey( entityTypeId, new AddPrimaryKeysToEntityTypeProcessor( propertyTypeIds ) );
+    }
+
+    @Override
+    public void removePrimaryKeysFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
+        EntityType entityType = entityTypes.get( entityTypeId );
+        Preconditions.checkNotNull( entityType, "No entity type with id {}", entityTypeId );
+        Preconditions.checkArgument( entityType.getProperties().containsAll( propertyTypeIds ),
+                "Entity type does not contain all the requested primary key property types." );
+
+        entityTypes.executeOnKey( entityTypeId, new RemovePrimaryKeysFromEntityTypeProcessor( propertyTypeIds ) );
     }
 
     @Override
