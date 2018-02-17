@@ -2,7 +2,7 @@ package com.dataloom.graph.core.objects;
 
 import java.util.UUID;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 
 public class LoomVertexKey {
 

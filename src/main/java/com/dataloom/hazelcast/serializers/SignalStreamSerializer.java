@@ -20,7 +20,7 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.neuron.SignalType;
 import com.dataloom.neuron.signals.Signal;

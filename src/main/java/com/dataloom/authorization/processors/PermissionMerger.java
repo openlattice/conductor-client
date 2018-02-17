@@ -21,9 +21,9 @@ package com.dataloom.authorization.processors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractMerger;
 import com.openlattice.authorization.AceValue;
 import java.util.EnumSet;

@@ -1,7 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.organization.roles.Role;
 import com.hazelcast.nio.ObjectDataInput;
 import com.openlattice.authorization.SecurablePrincipal;
 import java.io.IOException;

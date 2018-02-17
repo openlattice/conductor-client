@@ -22,10 +22,9 @@ package com.dataloom.data.hazelcast;
 
 import static com.dataloom.data.hazelcast.EntitySets.filterByEntitySetIdAndSyncId;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.data.HazelcastStream;
 import com.dataloom.data.aggregators.EntityKeyAggregator;
-import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;

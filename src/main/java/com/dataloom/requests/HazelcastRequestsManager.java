@@ -21,10 +21,10 @@ package com.dataloom.requests;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.Principal;
 import com.dataloom.authorization.processors.PermissionMerger;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.neuron.Neuron;
 import com.dataloom.neuron.SignalType;
@@ -38,6 +38,8 @@ import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.util.Util;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.requests.RequestStatus;
+import com.openlattice.requests.Status;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;

@@ -19,7 +19,7 @@
 
 package com.kryptnostic.conductor.rpc.odata;
 
-import com.dataloom.edm.internal.DatastoreConstants;
+import com.openlattice.edm.internal.DatastoreConstants;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.cassandra.CassandraMaterializedViewBuilder;
 import com.kryptnostic.rhizome.cassandra.CassandraTableBuilder;

@@ -19,14 +19,15 @@
 
 package com.dataloom.requests;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.Principal;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.collect.Lists;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumn;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
+import com.openlattice.requests.RequestStatus;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

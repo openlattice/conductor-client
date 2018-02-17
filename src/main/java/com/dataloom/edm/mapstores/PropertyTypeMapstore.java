@@ -24,10 +24,10 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.edm.type.Analyzer;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.edm.type.Analyzer;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;

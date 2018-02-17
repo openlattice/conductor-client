@@ -19,7 +19,7 @@
 
 package com.dataloom.authorization.mapstores;
 
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.*;

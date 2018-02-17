@@ -19,15 +19,15 @@
 
 package com.dataloom.authorization;
 
-import java.util.Arrays;
+import com.openlattice.authorization.AccessCheck;
+import com.openlattice.authorization.Permission;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.EntityType;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.type.EntityType;
 import com.hazelcast.util.Preconditions;
 import com.kryptnostic.datastore.services.EdmManager;
 import com.openlattice.authorization.AclKey;

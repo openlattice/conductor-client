@@ -20,7 +20,7 @@
 
 package com.dataloom.data.hazelcast;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.data.HazelcastStream;
 import com.dataloom.data.aggregators.EntityAggregator;
 import com.dataloom.data.aggregators.EntitySetAggregator;

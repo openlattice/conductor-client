@@ -20,8 +20,7 @@
 
 package com.openlattice.postgres.processors;
 
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.EntityType;
+import com.openlattice.edm.type.EntityType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 import com.zaxxer.hikari.HikariDataSource;
 import java.util.Map.Entry;

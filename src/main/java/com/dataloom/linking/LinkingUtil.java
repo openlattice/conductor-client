@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.linking.util.UnorderedPair;
 import com.datastax.driver.core.Row;
 import com.kryptnostic.datastore.cassandra.CommonColumns;

@@ -1,11 +1,9 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.mapstores.TestDataFactory;
 import java.io.Serializable;
 
 import com.dataloom.linking.LinkingEdge;
-import com.dataloom.linking.mapstores.LinkingEdgesMapstore;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import java.util.UUID;
 

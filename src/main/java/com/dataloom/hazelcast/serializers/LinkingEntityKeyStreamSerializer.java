@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.linking.LinkingEntityKey;
 import com.hazelcast.nio.ObjectDataInput;

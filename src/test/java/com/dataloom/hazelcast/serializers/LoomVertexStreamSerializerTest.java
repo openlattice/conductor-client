@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.UUID;
 
 import com.dataloom.graph.core.objects.LoomVertexKey;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.mapstores.TestDataFactory;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class LoomVertexStreamSerializerTest extends AbstractStreamSerializerTest<LoomVertexStreamSerializer, LoomVertexKey>

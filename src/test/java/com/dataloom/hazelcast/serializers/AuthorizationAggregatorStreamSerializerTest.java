@@ -20,8 +20,8 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.authorization.Permission;
+import com.openlattice.mapstores.TestDataFactory;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AuthorizationAggregator;

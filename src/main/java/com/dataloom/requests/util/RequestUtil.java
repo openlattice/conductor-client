@@ -19,13 +19,12 @@
 
 package com.dataloom.requests.util;
 
-import com.dataloom.authorization.AceKey;
+import com.openlattice.authorization.AceKey;
 import com.dataloom.authorization.Principals;
-import com.dataloom.requests.Request;
-import com.dataloom.requests.RequestStatus;
-import com.dataloom.requests.Status;
+import com.openlattice.requests.Request;
+import com.openlattice.requests.RequestStatus;
+import com.openlattice.requests.Status;
 import com.datastax.driver.core.Row;
-import com.google.common.base.Optional;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 
 import javax.annotation.Nonnull;

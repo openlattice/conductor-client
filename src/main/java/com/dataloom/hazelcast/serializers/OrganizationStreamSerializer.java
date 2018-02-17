@@ -1,15 +1,14 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organization.Organization;
-import com.dataloom.organization.OrganizationPrincipal;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.organization.Organization;
+import com.openlattice.organization.OrganizationPrincipal;
+import com.openlattice.organization.roles.Role;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import com.openlattice.authorization.SecurablePrincipal;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

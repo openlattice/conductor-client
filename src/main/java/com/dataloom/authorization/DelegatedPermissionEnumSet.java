@@ -19,6 +19,7 @@
 
 package com.dataloom.authorization;
 
+import com.openlattice.authorization.Permission;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;

@@ -20,9 +20,9 @@
 
 package com.openlattice.bootstrap;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.organization.Organization;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.organization.Organization;
 import com.dataloom.organizations.HazelcastOrganizationService;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;

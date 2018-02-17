@@ -1,7 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.organization.Organization;
+import com.openlattice.mapstores.TestDataFactory;
+import com.openlattice.organization.Organization;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class OrganizationStreamSerializerTest extends
