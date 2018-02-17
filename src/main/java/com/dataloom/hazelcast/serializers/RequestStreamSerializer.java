@@ -3,14 +3,13 @@ package com.dataloom.hazelcast.serializers;
 import com.openlattice.authorization.AclKey;
 import java.io.IOException;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.dataloom.authorization.Permission;
+import com.openlattice.authorization.Permission;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.requests.Request;
+import com.openlattice.requests.Request;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers;

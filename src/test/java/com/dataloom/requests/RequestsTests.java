@@ -19,16 +19,19 @@
 
 package com.dataloom.requests;
 
-import com.dataloom.authorization.AceKey;
+import com.openlattice.authorization.AceKey;
 import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.mapstores.TestDataFactory;
 import com.dataloom.requests.util.RequestUtil;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.IMap;
 import com.hazelcast.spi.exception.RetryableHazelcastException;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.requests.Request;
+import com.openlattice.requests.RequestStatus;
+import com.openlattice.requests.Status;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;

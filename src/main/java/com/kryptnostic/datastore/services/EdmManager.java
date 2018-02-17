@@ -28,18 +28,18 @@ import java.util.stream.Stream;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.edm.EntityDataModel;
-import com.dataloom.edm.EntityDataModelDiff;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.requests.MetadataUpdate;
-import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.AssociationDetails;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.authorization.Principal;
+import com.openlattice.edm.EntityDataModel;
+import com.openlattice.edm.EntityDataModelDiff;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.requests.MetadataUpdate;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.type.AssociationDetails;
+import com.openlattice.edm.type.ComplexType;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.EnumType;
+import com.openlattice.edm.type.AssociationType;
+import com.openlattice.edm.type.PropertyType;
 import com.hazelcast.map.EntryProcessor;
 
 public interface EdmManager {

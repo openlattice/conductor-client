@@ -1,7 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.apps.processors.UpdateAppMetadataProcessor;
-import com.dataloom.edm.requests.MetadataUpdate;
+import com.openlattice.apps.processors.UpdateAppMetadataProcessor;
+import com.openlattice.edm.requests.MetadataUpdate;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;

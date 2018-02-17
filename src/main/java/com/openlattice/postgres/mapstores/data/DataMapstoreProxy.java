@@ -20,9 +20,6 @@
 
 package com.openlattice.postgres.mapstores.data;
 
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.streams.StreamUtil;
 import com.hazelcast.config.MapConfig;
@@ -34,6 +31,9 @@ import com.openlattice.data.EntityDataKey;
 import com.openlattice.data.EntityDataMetadata;
 import com.openlattice.data.EntityDataValue;
 import com.openlattice.data.PropertyMetadata;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.PropertyType;
 import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresTableDefinition;
 import com.zaxxer.hikari.HikariDataSource;

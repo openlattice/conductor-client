@@ -19,26 +19,27 @@
 
 package com.dataloom.mapstores;
 
-import com.dataloom.authorization.AceKey;
 import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.securable.AbstractSecurableObject;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.datastore.services.EdmService;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.authorization.AceKey;
 import com.openlattice.authorization.AceValue;
+import com.openlattice.authorization.Principal;
 import com.openlattice.authorization.mapstores.PostgresCredentialMapstore;
 import com.openlattice.authorization.mapstores.UserMapstore;
+import com.openlattice.authorization.securable.AbstractSecurableObject;
 import com.openlattice.data.EntityDataKey;
 import com.openlattice.data.EntityDataMetadata;
 import com.openlattice.data.EntityDataValue;
 import com.openlattice.data.PropertyMetadata;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.PropertyType;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.postgres.mapstores.SyncIdsMapstore;
 import com.openlattice.postgres.mapstores.data.DataMapstoreProxy;
 import java.time.LocalDate;
@@ -132,7 +133,7 @@ public class MapstoresTest extends HzAuthzTest {
 
         Stream.of( propertyTypes ).forEach( edm::createPropertyTypeIfNotExists );
 
-        EntityType entityType = TestDataFactory.entityType(propertyTypes[7], propertyTypes );
+        EntityType entityType = TestDataFactory.entityTypesFromKeyAndTypes( propertyTypes[ 7 ], propertyTypes );
 
         edm.createEntityType( entityType );
 

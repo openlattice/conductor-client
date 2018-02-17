@@ -1,6 +1,6 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.openlattice.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

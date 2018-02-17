@@ -23,7 +23,6 @@ import com.codahale.metrics.annotation.Timed;
 import com.dataloom.authorization.ForbiddenException;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityDatastore;
-import com.dataloom.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.EntitySetData;
 import com.dataloom.data.aggregators.EntitiesAggregator;
@@ -34,7 +33,6 @@ import com.dataloom.data.hazelcast.DataKey;
 import com.dataloom.data.hazelcast.Entities;
 import com.dataloom.data.hazelcast.EntityKeyHazelcastStream;
 import com.dataloom.data.hazelcast.EntitySets;
-import com.dataloom.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.streams.StreamUtil;
@@ -54,7 +52,9 @@ import com.kryptnostic.datastore.cassandra.CassandraSerDesFactory;
 import com.kryptnostic.datastore.util.Util;
 import com.openlattice.data.EntityDataKey;
 import com.openlattice.data.EntityDataValue;
+import com.openlattice.data.EntityKey;
 import com.openlattice.data.PropertyMetadata;
+import com.openlattice.edm.type.PropertyType;
 import com.openlattice.hazelcast.predicates.EntitySetPredicates;
 import com.openlattice.hazelcast.processors.EntityDataUpserter;
 import com.openlattice.hazelcast.processors.MergeFinalizer;
@@ -425,7 +425,7 @@ public class HazelcastEntityDatastore implements EntityDatastore {
         //TODO: Don't fail silently
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
             String msg = String
-                    .format( "Entity % s not written because the following properties are not authorized: %s",
+                    .format( "Entity %s not written because the following properties are not authorized: %s",
                             entityId,
                             Sets.difference( entityDetails.keySet(), authorizedProperties ) );
             logger.error( msg );

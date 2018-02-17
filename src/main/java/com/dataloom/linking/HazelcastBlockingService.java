@@ -2,7 +2,7 @@ package com.dataloom.linking;
 
 import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.linking.predicates.LinkingPredicates;
 import com.dataloom.matching.FeatureExtractionAggregator;

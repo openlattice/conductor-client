@@ -3,7 +3,7 @@ package com.dataloom.linking.components;
 import java.util.Set;
 import java.util.UUID;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.google.common.collect.SetMultimap;
 
 /**

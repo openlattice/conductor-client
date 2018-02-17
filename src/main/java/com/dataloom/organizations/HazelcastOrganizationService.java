@@ -23,14 +23,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organization.Organization;
-import com.dataloom.organization.OrganizationPrincipal;
-import com.dataloom.organization.roles.Role;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
@@ -53,7 +47,13 @@ import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
 import com.openlattice.authorization.SecurablePrincipal;
+import com.openlattice.organization.Organization;
+import com.openlattice.organization.OrganizationPrincipal;
+import com.openlattice.organization.roles.Role;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import java.util.Collection;
@@ -131,6 +131,11 @@ public class HazelcastOrganizationService {
 
         Collection<SecurablePrincipal> maybeOrgs =
                 securePrincipalsManager.getSecurablePrincipals( getOrganizationPredicate( organizationId ) );
+        if ( maybeOrgs.isEmpty() ) {
+            logger.error( "Organization id {} has no corresponding securable principal.", organizationId );
+            return null;
+        }
+
         OrganizationPrincipal principal = (OrganizationPrincipal) Iterables.getOnlyElement( maybeOrgs );
         Set<Role> roles = getRoles( organizationId );
         try {
@@ -247,7 +252,6 @@ public class HazelcastOrganizationService {
 
     public void createRoleIfNotExists( Principal callingUser, Role role ) {
         securePrincipalsManager.createSecurablePrincipalIfNotExists( callingUser, role );
-
         final UUID organizationId = role.getOrganizationId();
         final SecurablePrincipal orgPrincipal = securePrincipalsManager
                 .getSecurablePrincipal( new AclKey( organizationId ) );

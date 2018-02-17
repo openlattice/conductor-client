@@ -1,5 +1,6 @@
 package com.dataloom.data;
 
+import com.openlattice.data.EntityKey;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -7,16 +8,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import com.dataloom.analysis.requests.NeighborType;
 import com.dataloom.graph.core.objects.NeighborTripletSet;
-import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
-import com.dataloom.analysis.requests.TopUtilizerDetails;
-import com.dataloom.data.requests.Association;
-import com.dataloom.data.requests.Entity;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.analysis.requests.TopUtilizerDetails;
+import com.openlattice.data.requests.Association;
+import com.openlattice.data.requests.Entity;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.graph.edge.EdgeKey;
 import com.google.common.collect.SetMultimap;
 
@@ -36,6 +35,10 @@ public interface DataGraphManager {
     /*
      * CRUD methods for entity
      */
+    SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID entityKeyId,
+            Map<UUID, PropertyType> authorizedPropertyTypes );
+
     void updateEntity(
             UUID elementId,
             SetMultimap<UUID, Object> entityDetails,

@@ -22,12 +22,11 @@ package com.openlattice.edm;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.edm.EntitySet;
 import com.dataloom.edm.events.EntitySetCreatedEvent;
-import com.dataloom.edm.type.PropertyType;
 import com.google.common.eventbus.Subscribe;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.edm.type.PropertyType;
 import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresTableDefinition;
 import com.openlattice.postgres.PostgresTableManager;

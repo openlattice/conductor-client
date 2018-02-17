@@ -19,9 +19,8 @@
 
 package com.dataloom.authorization.processors;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.Permission;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.Permission;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRemover;
 import com.openlattice.authorization.AceValue;
 

@@ -23,9 +23,9 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 
-import com.dataloom.exceptions.ErrorDTO;
-import com.dataloom.exceptions.ErrorsDTO;
-import com.dataloom.exceptions.LoomExceptions;
+import com.openlattice.exceptions.ErrorDTO;
+import com.openlattice.exceptions.ErrorsDTO;
+import com.openlattice.exceptions.LoomExceptions;
 
 public class BatchException extends RuntimeException {
     private static final long serialVersionUID = 7632884063119454460L;

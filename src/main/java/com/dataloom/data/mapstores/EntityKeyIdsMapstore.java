@@ -1,9 +1,8 @@
 package com.dataloom.data.mapstores;
 
 import com.codahale.metrics.annotation.Timed;
-import com.dataloom.data.EntityKey;
-import com.dataloom.data.hazelcast.EntitySets;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.data.EntityKey;
+import com.openlattice.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.ResultSet;

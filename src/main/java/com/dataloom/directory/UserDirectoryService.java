@@ -20,10 +20,10 @@
 package com.dataloom.directory;
 
 import com.codahale.metrics.annotation.Timed;
-import com.dataloom.client.RetrofitFactory;
-import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.openlattice.client.RetrofitFactory;
+import com.openlattice.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.organization.roles.Role;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.hazelcast.core.HazelcastInstance;

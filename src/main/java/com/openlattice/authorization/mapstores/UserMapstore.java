@@ -20,12 +20,11 @@
 
 package com.openlattice.authorization.mapstores;
 
-import com.dataloom.client.RetrofitFactory;
-import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.openlattice.client.RetrofitFactory;
+import com.openlattice.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
-import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.kryptnostic.datastore.services.Auth0ManagementApi;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
 import java.util.Collection;

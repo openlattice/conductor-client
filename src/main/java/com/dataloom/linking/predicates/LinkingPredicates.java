@@ -20,12 +20,10 @@
 
 package com.dataloom.linking.predicates;
 
-import com.dataloom.data.EntityKey;
 import com.dataloom.linking.LinkingEdge;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 
-import java.util.Set;
 import java.util.UUID;
 
 /**

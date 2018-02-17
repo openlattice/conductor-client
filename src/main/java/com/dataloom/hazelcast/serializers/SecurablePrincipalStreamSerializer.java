@@ -20,10 +20,10 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organization.OrganizationPrincipal;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.organization.OrganizationPrincipal;
+import com.openlattice.organization.roles.Role;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

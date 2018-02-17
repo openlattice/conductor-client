@@ -20,7 +20,7 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;

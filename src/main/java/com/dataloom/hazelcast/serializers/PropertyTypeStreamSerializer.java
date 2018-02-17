@@ -27,8 +27,8 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.stereotype.Component;
 
-import com.dataloom.edm.type.Analyzer;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.edm.type.Analyzer;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;

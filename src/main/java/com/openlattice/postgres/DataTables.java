@@ -28,11 +28,11 @@ import static com.openlattice.postgres.PostgresColumn.VERSION;
 import static com.openlattice.postgres.PostgresColumn.VERSIONS;
 import static com.openlattice.postgres.PostgresDatatype.TIMESTAMPTZ;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.PropertyType;
 import com.google.common.collect.Maps;
+import com.openlattice.authorization.Permission;
+import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.PostgresEdmTypeConverter;
+import com.openlattice.edm.type.PropertyType;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,22 +41,22 @@ import java.util.UUID;
  */
 public class DataTables {
     public static final  String                             VALUE_FIELD = "value";
-    private static final Map<UUID, PostgresTableDefinition> ES_TABLES   = Maps.newConcurrentMap();
-    public static        PostgresColumnDefinition           LAST_WRITE  = new PostgresColumnDefinition( LAST_WRITE_FIELD,
+    public static final  PostgresColumnDefinition           LAST_WRITE  = new PostgresColumnDefinition( LAST_WRITE_FIELD,
             TIMESTAMPTZ )
             .notNull();
-    public static        PostgresColumnDefinition           LAST_INDEX  = new PostgresColumnDefinition( LAST_INDEX_FIELD,
+    public static final  PostgresColumnDefinition           LAST_INDEX  = new PostgresColumnDefinition( LAST_INDEX_FIELD,
             TIMESTAMPTZ )
             .notNull();
-    public static        PostgresColumnDefinition           READERS     = new PostgresColumnDefinition(
+    public static final  PostgresColumnDefinition           READERS     = new PostgresColumnDefinition(
             "readers",
             PostgresDatatype.UUID );
-    public static        PostgresColumnDefinition           WRITERS     = new PostgresColumnDefinition(
+    public static final  PostgresColumnDefinition           WRITERS     = new PostgresColumnDefinition(
             "writers",
             PostgresDatatype.UUID );
-    public static        PostgresColumnDefinition           OWNERS      = new PostgresColumnDefinition(
+    public static final  PostgresColumnDefinition           OWNERS      = new PostgresColumnDefinition(
             "owners",
             PostgresDatatype.UUID );
+    private static final Map<UUID, PostgresTableDefinition> ES_TABLES   = Maps.newConcurrentMap();
 
     public static String propertyTableName( UUID entitySetId, UUID propertyTypeId ) {
         return entitySetId.toString() + "_" + propertyTypeId.toString();

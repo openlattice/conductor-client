@@ -6,8 +6,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
-import com.dataloom.search.requests.SearchDetails;
-import com.dataloom.search.requests.SearchResult;
+import com.openlattice.search.requests.SearchDetails;
+import com.openlattice.search.requests.SearchResult;
 
 public class AdvancedSearchEntitySetDataLambda
         implements Function<ConductorElasticsearchApi, SearchResult>, Serializable {

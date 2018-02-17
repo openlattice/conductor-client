@@ -20,9 +20,9 @@
 
 package com.openlattice.data;
 
-import com.dataloom.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.openlattice.client.serialization.SerializationConstants;
 import java.time.OffsetDateTime;
 import java.util.List;
 

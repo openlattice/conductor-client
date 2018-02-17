@@ -19,7 +19,7 @@
 
 package com.dataloom.linking;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 
 import java.util.UUID;
 

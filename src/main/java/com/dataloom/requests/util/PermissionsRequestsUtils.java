@@ -23,16 +23,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.requests.PermissionsRequest;
-import com.dataloom.requests.PermissionsRequestDetails;
-import com.dataloom.requests.RequestStatus;
-import com.datastax.driver.core.ResultSetFuture;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.requests.PermissionsRequest;
+import com.openlattice.requests.PermissionsRequestDetails;
+import com.openlattice.requests.RequestStatus;
 import com.datastax.driver.core.Row;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
 

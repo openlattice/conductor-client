@@ -22,8 +22,6 @@ package com.openlattice.authorization;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Permission;
 import com.hazelcast.aggregation.Aggregator;
 import java.util.EnumMap;
 import java.util.EnumSet;

@@ -1,7 +1,7 @@
-package com.dataloom.apps.processors;
+package com.openlattice.apps.processors;
 
-import com.dataloom.apps.AppConfigKey;
-import com.dataloom.apps.AppTypeSetting;
+import com.openlattice.apps.AppConfigKey;
+import com.openlattice.apps.AppTypeSetting;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 import java.util.Map;

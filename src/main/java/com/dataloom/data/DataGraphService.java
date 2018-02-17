@@ -1,13 +1,8 @@
 package com.dataloom.data;
 
-import com.dataloom.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.events.EntityDataCreatedEvent;
-import com.dataloom.data.requests.Association;
-import com.dataloom.data.requests.Entity;
 import com.dataloom.data.storage.HazelcastEntityDatastore;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.PropertyType;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.core.objects.NeighborTripletSet;
 import com.dataloom.graph.edge.EdgeKey;
@@ -26,6 +21,12 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
+import com.openlattice.analysis.requests.TopUtilizerDetails;
+import com.openlattice.data.EntityKey;
+import com.openlattice.data.requests.Association;
+import com.openlattice.data.requests.Entity;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.type.PropertyType;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -99,6 +100,13 @@ public class DataGraphService implements DataGraphManager {
     public void deleteEntitySetData( UUID entitySetId ) {
         eds.deleteEntitySetData( entitySetId );
         // TODO delete all vertices
+    }
+
+    @Override
+    public SetMultimap<FullQualifiedName, Object> getEntity(
+            UUID entityKeyId, Map<UUID, PropertyType> authorizedPropertyTypes ) {
+        EntityKey entityKey = idService.getEntityKey( entityKeyId );
+        return eds.getEntity( entityKeyId, entityKey.getSyncId(), entityKey.getEntityId(), authorizedPropertyTypes );
     }
 
     @Override
@@ -182,8 +190,7 @@ public class DataGraphService implements DataGraphManager {
         eds.updateEntityAsync( key, entity, propertyTypes ).forEach( DataGraphService::tryGetAndLogErrors );
 
         propertyTypes.entrySet().forEach( entry -> {
-            if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) )
-                entity.removeAll( entry.getKey() );
+            if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) ) { entity.removeAll( entry.getKey() ); }
         } );
 
         eventBus.post( new EntityDataCreatedEvent( key.getEntitySetId(),

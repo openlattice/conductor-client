@@ -24,8 +24,8 @@ import java.nio.ByteBuffer;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.data.EntityKey;
+import com.openlattice.mapstores.TestDataFactory;
 import com.datastax.driver.core.ProtocolVersion;
 import com.kryptnostic.conductor.codecs.EntityKeyTypeCodec;
 

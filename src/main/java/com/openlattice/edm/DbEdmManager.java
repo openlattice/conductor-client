@@ -20,26 +20,26 @@
 
 package com.openlattice.edm;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.edm.type.PropertyType;
 import java.util.Collection;
 import java.util.EnumSet;
-import java.util.Set;
 
 /**
  * Some design assumptions:
  * <uL>
- *     <li>Folks directly accessing data via SQL will be sophisticated and can deal with complexity of EAV</li>
- *     <li>At scale on a live system renaming</li>
+ * <li>Folks directly accessing data via SQL will be sophisticated and can deal with complexity of EAV</li>
+ * <li>At scale on a live system renaming</li>
  * </uL>
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public interface DbEdmManager {
 
     /**
      * Instantiates the entity set structure inside the database.
+     *
      * @param entitySet The entity set to instantiate.
      * @param propertyTypes The property types to instantiate.
      */
@@ -47,6 +47,7 @@ public interface DbEdmManager {
 
     /**
      * Grants {@code permissions} on an entity sets property types for a given principal.
+     *
      * @param principal The principal from which to grant permissions.
      * @param entitySet The entity set to grant permissions on.
      * @param propertyTypes The property types on which to grant permissions on. If no property types are provided

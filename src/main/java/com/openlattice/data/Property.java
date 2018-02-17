@@ -28,14 +28,14 @@ import java.util.UUID;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class Property {
-    private final Optional<UUID> entitySetId;
+    private final Optional<UUID>   entitySetId;
     private final PropertyMetadata metadata;
-    private final Object value;
+    private final Object           value;
 
     @JsonCreator
     public Property( Optional<UUID> entitySetId, PropertyMetadata metadata, Object value ) {
         this.entitySetId = entitySetId;
-        this.metadata= metadata;
+        this.metadata = metadata;
         this.value = value;
     }
 
