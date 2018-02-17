@@ -9,7 +9,7 @@ import java.util.Base64.Encoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.dataloom.mappers.ObjectMappers;
 import com.datastax.driver.core.PagingState;
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -1,6 +1,6 @@
 package com.dataloom.organizations.processors;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.dataloom.organizations.PrincipalSet;
 import com.openlattice.rhizome.hazelcast.SetProxy;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRemover;

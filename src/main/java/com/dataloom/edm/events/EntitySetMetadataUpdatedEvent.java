@@ -19,7 +19,7 @@
 
 package com.dataloom.edm.events;
 
-import com.dataloom.edm.EntitySet;
+import com.openlattice.edm.EntitySet;
 
 public class EntitySetMetadataUpdatedEvent {
     

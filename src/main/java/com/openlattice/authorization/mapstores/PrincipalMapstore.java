@@ -23,8 +23,8 @@ package com.openlattice.authorization.mapstores;
 import static com.openlattice.postgres.PostgresTable.PRINCIPALS;
 
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.mapstores.TestDataFactory;
+import com.openlattice.organization.roles.Role;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;

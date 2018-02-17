@@ -19,7 +19,7 @@
 
 package com.dataloom.directory;
 
-import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.openlattice.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;

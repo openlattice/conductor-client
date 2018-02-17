@@ -20,7 +20,7 @@
 
 package com.dataloom.data.hazelcast;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;

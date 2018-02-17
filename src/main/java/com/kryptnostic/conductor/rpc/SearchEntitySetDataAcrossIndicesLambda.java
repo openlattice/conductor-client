@@ -1,6 +1,6 @@
 package com.kryptnostic.conductor.rpc;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 

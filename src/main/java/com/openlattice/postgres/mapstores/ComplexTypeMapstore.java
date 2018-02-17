@@ -1,11 +1,9 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.edm.type.ComplexType;
+import com.openlattice.edm.type.ComplexType;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
-import com.google.common.collect.ImmutableList;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.postgres.PostgresArrays;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -14,10 +12,8 @@ import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
 
-import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.COMPLEX_TYPES;
 
 public class ComplexTypeMapstore extends AbstractBasePostgresMapstore<UUID, ComplexType> {

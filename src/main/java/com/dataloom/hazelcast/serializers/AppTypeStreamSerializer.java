@@ -1,6 +1,6 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.apps.AppType;
+import com.openlattice.apps.AppType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;

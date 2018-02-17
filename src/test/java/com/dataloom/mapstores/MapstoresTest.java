@@ -19,9 +19,9 @@
 
 package com.dataloom.mapstores;
 
-import com.dataloom.authorization.AceKey;
+import com.openlattice.authorization.AceKey;
 import com.dataloom.authorization.HzAuthzTest;
-import com.dataloom.authorization.securable.AbstractSecurableObject;
+import com.openlattice.authorization.securable.AbstractSecurableObject;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;

@@ -21,7 +21,7 @@
 package com.openlattice.authorization.mapstores;
 
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.mapstores.TestDataFactory;
 import com.google.common.collect.ImmutableList;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;

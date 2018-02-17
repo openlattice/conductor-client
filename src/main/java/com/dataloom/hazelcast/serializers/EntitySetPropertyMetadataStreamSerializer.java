@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.springframework.stereotype.Component;
 
-import com.dataloom.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

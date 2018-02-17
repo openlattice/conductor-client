@@ -1,7 +1,7 @@
-package com.dataloom.apps.processors;
+package com.openlattice.apps.processors;
 
-import com.dataloom.apps.AppType;
-import com.dataloom.edm.requests.MetadataUpdate;
+import com.openlattice.apps.AppType;
+import com.openlattice.edm.requests.MetadataUpdate;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 

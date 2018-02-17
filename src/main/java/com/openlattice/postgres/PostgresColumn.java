@@ -30,7 +30,7 @@ import static com.openlattice.postgres.PostgresDatatype.UUID;
 import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY;
 import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY_ARRAY;
 
-import com.dataloom.edm.type.Analyzer;
+import com.openlattice.edm.type.Analyzer;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;

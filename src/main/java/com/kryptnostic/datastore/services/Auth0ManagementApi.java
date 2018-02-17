@@ -22,7 +22,7 @@ package com.kryptnostic.datastore.services;
 import java.util.Map;
 import java.util.Set;
 
-import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.openlattice.directory.pojo.Auth0UserBasic;
 
 import retrofit2.http.*;
 

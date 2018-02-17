@@ -1,6 +1,6 @@
 package com.dataloom.organizations.processors;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.dataloom.organizations.PrincipalSet;
 import com.google.common.collect.Sets;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractMerger;

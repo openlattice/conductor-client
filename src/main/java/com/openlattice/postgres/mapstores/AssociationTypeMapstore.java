@@ -1,13 +1,10 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.edm.type.AssociationType;
+import com.openlattice.edm.type.AssociationType;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.openlattice.postgres.PostgresArrays;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -16,10 +13,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
-import static com.openlattice.postgres.PostgresColumn.*;
 import static com.openlattice.postgres.PostgresTable.ASSOCIATION_TYPES;
 
 public class AssociationTypeMapstore extends AbstractBasePostgresMapstore<UUID, AssociationType> {

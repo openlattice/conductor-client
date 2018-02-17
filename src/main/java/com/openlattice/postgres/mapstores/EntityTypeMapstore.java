@@ -2,9 +2,9 @@ package com.openlattice.postgres.mapstores;
 
 import static com.openlattice.postgres.PostgresTable.ENTITY_TYPES;
 
-import com.dataloom.edm.type.EntityType;
+import com.openlattice.edm.type.EntityType;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;

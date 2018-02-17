@@ -19,12 +19,13 @@
 
 package com.dataloom.graph;
 
+import com.openlattice.graph.DirectedEdge;
 import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.linking.LinkingEdge;
 import com.dataloom.linking.LinkingVertexKey;
 import com.datastax.driver.core.Row;

@@ -21,11 +21,11 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import com.dataloom.edm.type.ComplexType;
+import com.openlattice.edm.type.ComplexType;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;

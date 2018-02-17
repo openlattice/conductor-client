@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.springframework.stereotype.Component;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.organizations.PrincipalSet;
 import com.google.common.collect.Sets;

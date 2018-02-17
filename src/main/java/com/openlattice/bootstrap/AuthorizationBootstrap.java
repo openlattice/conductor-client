@@ -24,12 +24,12 @@ import static com.openlattice.bootstrap.BootstrapConstants.GLOBAL_ORGANIZATION_I
 import static com.openlattice.bootstrap.BootstrapConstants.OPENLATTICE_ORGANIZATION_ID;
 import static com.openlattice.bootstrap.BootstrapConstants.ROOT_PRINCIPAL_ID;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.SystemRole;
-import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.authorization.SystemRole;
+import com.openlattice.directory.pojo.Auth0UserBasic;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.organization.roles.Role;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.google.common.base.Optional;
 import com.hazelcast.core.HazelcastInstance;

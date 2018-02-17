@@ -21,8 +21,8 @@ package com.dataloom.neuron.signals;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.client.serialization.SerializationConstants;
+import com.openlattice.authorization.Principal;
+import com.openlattice.client.serialization.SerializationConstants;
 import com.dataloom.neuron.SignalType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.authorization.AclKey;

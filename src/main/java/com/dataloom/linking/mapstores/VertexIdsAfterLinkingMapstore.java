@@ -1,20 +1,13 @@
 package com.dataloom.linking.mapstores;
 
-import java.util.Set;
 import java.util.UUID;
 
-import org.apache.commons.lang.math.RandomUtils;
-
-import com.dataloom.data.EntityKey;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
-import com.dataloom.mapstores.TestDataFactory;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
-import com.google.common.collect.ImmutableSet;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.rhizome.mapstores.cassandra.AbstractStructuredCassandraMapstore;

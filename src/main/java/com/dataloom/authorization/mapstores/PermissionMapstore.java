@@ -19,11 +19,11 @@
 
 package com.dataloom.authorization.mapstores;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;

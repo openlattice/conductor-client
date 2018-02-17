@@ -1,7 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.mapstores.TestDataFactory;
+import com.openlattice.organization.roles.Role;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 import com.openlattice.authorization.SecurablePrincipal;

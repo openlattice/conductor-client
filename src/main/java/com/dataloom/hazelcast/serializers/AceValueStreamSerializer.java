@@ -20,8 +20,8 @@
 
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

@@ -1,7 +1,7 @@
 package com.dataloom.blocking;
 
 import com.dataloom.data.hazelcast.DataKey;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.databind.ObjectMapper;

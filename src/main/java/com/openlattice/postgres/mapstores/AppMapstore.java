@@ -1,6 +1,6 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.apps.App;
+import com.openlattice.apps.App;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.base.Optional;
 import com.openlattice.postgres.PostgresArrays;

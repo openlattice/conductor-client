@@ -26,8 +26,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.requests.AclRootRequestDetailsPair;
-import com.dataloom.requests.PermissionsRequestDetails;
+import com.openlattice.requests.AclRootRequestDetailsPair;
+import com.openlattice.requests.PermissionsRequestDetails;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;

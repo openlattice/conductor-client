@@ -2,7 +2,7 @@ package com.openlattice.postgres.mapstores;
 
 import static com.openlattice.postgres.PostgresTable.SECURABLE_OBJECTS;
 
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresArrays;

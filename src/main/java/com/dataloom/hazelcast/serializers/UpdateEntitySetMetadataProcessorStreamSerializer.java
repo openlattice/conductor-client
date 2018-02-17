@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.springframework.stereotype.Component;
 
-import com.dataloom.edm.requests.MetadataUpdate;
+import com.openlattice.edm.requests.MetadataUpdate;
 import com.dataloom.edm.types.processors.UpdateEntitySetMetadataProcessor;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;

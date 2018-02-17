@@ -1,7 +1,7 @@
 package com.dataloom.merging;
 
 import com.dataloom.data.DatasourceManager;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
 import com.dataloom.graph.mapstores.PostgresEdgeMapstore;

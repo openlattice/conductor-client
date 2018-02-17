@@ -4,7 +4,7 @@ import java.util.LinkedHashSet;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import com.dataloom.edm.type.EntityType;
+import com.openlattice.edm.type.EntityType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class ReorderPropertyTypesInEntityTypeProcessor extends AbstractRhizomeEntryProcessor<UUID, EntityType, Object> {

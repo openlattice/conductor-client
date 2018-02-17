@@ -3,7 +3,7 @@ package com.dataloom.hazelcast.serializers;
 import com.dataloom.blocking.GraphEntityPair;
 import com.dataloom.blocking.LinkingEntity;
 import com.dataloom.blocking.LoadingAggregator;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.collect.Maps;
 import com.hazelcast.nio.ObjectDataInput;

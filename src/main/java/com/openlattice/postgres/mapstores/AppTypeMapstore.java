@@ -1,10 +1,8 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.apps.AppType;
+import com.openlattice.apps.AppType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
@@ -14,10 +12,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
-
-import static com.openlattice.postgres.PostgresColumn.*;
 
 public class AppTypeMapstore extends AbstractBasePostgresMapstore<UUID, AppType> {
     public AppTypeMapstore( HikariDataSource hds ) {

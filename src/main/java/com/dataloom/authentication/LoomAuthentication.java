@@ -21,8 +21,8 @@ package com.dataloom.authentication;
 
 import com.auth0.spring.security.api.authentication.JwtAuthentication;
 import com.dataloom.authorization.ForbiddenException;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
 import com.dataloom.authorization.Principals;
 import com.dataloom.organizations.roles.SecurePrincipalsManager;
 import com.openlattice.authorization.SecurablePrincipal;

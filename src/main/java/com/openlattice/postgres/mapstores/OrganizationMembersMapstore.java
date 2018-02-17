@@ -4,8 +4,8 @@ import static com.openlattice.postgres.PostgresColumn.ID;
 import static com.openlattice.postgres.PostgresColumn.MEMBERS;
 import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.PrincipalSet;
 import com.google.common.collect.ImmutableList;

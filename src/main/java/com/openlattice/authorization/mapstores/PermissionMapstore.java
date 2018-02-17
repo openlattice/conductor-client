@@ -24,11 +24,11 @@ import static com.openlattice.postgres.PostgresArrays.createTextArray;
 import static com.openlattice.postgres.PostgresArrays.createUuidArray;
 
 import com.codahale.metrics.annotation.Timed;
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;

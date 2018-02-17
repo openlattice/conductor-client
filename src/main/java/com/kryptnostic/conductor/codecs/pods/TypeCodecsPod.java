@@ -19,13 +19,13 @@
 
 package com.kryptnostic.conductor.codecs.pods;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.data.EntityKey;
-import com.dataloom.edm.type.Analyzer;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.data.EntityKey;
+import com.openlattice.edm.type.Analyzer;
 import com.dataloom.neuron.SignalType;
-import com.dataloom.requests.RequestStatus;
+import com.openlattice.requests.RequestStatus;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.extras.codecs.date.SimpleTimestampCodec;
 import com.datastax.driver.extras.codecs.enums.EnumNameCodec;

@@ -22,7 +22,7 @@ package com.dataloom.edm.events;
 import java.util.List;
 import java.util.UUID;
 
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.edm.type.PropertyType;
 
 public class PropertyTypesInEntitySetUpdatedEvent {
     

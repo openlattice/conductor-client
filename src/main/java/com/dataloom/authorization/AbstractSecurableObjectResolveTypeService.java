@@ -19,11 +19,9 @@
 
 package com.dataloom.authorization;
 
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.securable.SecurableObjectType;
 
 import com.openlattice.authorization.AclKey;
-import java.util.List;
-import java.util.UUID;
 
 public interface AbstractSecurableObjectResolveTypeService {
     

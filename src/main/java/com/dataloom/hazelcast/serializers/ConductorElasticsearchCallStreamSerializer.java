@@ -1,12 +1,11 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organization.Organization;
+import com.openlattice.organization.Organization;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ClosureSerializer;
-import com.google.common.collect.SetMultimap;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.util.Preconditions;
@@ -15,7 +14,6 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.serializers.AclKeyKryoSerializer;
 import com.openlattice.authorization.serializers.EntityDataLambdasStreamSerializer;
-import de.javakaffee.kryoserializers.guava.HashMultimapSerializer;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.springframework.stereotype.Component;
