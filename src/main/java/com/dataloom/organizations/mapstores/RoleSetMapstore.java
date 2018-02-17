@@ -25,8 +25,8 @@ import java.util.stream.Collectors;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import org.apache.commons.lang.RandomStringUtils;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.PrincipalSet;
 import com.datastax.driver.core.ResultSet;

@@ -22,7 +22,7 @@ package com.dataloom.organizations.mapstores;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.organizations.PrincipalSet;
 import com.datastax.driver.core.BoundStatement;

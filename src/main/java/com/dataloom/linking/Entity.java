@@ -2,7 +2,7 @@ package com.dataloom.linking;
 
 import java.util.Map;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 
 public class Entity {
     private EntityKey           key;

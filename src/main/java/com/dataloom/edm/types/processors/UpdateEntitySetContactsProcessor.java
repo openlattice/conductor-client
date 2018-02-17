@@ -4,8 +4,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
-import com.dataloom.edm.EntitySet;
-import com.google.common.base.Optional;
+import com.openlattice.edm.EntitySet;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class UpdateEntitySetContactsProcessor extends AbstractRhizomeEntryProcessor<UUID, EntitySet, Object> {

@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
-import com.dataloom.search.requests.SearchResult;
+import com.openlattice.search.requests.SearchResult;
 
 public class SearchEntitySetDataLambda implements Function<ConductorElasticsearchApi, SearchResult>, Serializable {
     private static final long serialVersionUID = -3273005291047567056L;

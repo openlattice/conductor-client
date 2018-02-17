@@ -2,9 +2,9 @@ package com.dataloom.edm.types.processors;
 
 import java.util.Map.Entry;
 
-import com.dataloom.edm.requests.MetadataUpdate;
-import com.dataloom.edm.set.EntitySetPropertyKey;
-import com.dataloom.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.requests.MetadataUpdate;
+import com.openlattice.edm.set.EntitySetPropertyKey;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 

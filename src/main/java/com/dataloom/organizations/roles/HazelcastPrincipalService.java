@@ -1,11 +1,14 @@
 package com.dataloom.organizations.roles;
 
 import com.dataloom.authorization.*;
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.directory.pojo.Auth0UserBasic;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.directory.pojo.Auth0UserBasic;
 import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.organization.roles.Role;
 import com.dataloom.organizations.processors.NestedPrincipalMerger;
 import com.dataloom.organizations.processors.NestedPrincipalRemover;
 import com.dataloom.organizations.roles.processors.PrincipalDescriptionUpdater;

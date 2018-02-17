@@ -6,8 +6,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.EntityType;
+import com.openlattice.edm.type.AssociationType;
+import com.openlattice.edm.type.EntityType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;

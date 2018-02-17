@@ -19,23 +19,23 @@
 
 package com.kryptnostic.datastore.cassandra;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.data.EntityKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.data.EntityKey;
 import com.dataloom.data.storage.EntityBytes;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.set.EntitySetPropertyKey;
-import com.dataloom.edm.set.EntitySetPropertyMetadata;
-import com.dataloom.edm.type.Analyzer;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.ComplexType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.EnumType;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.set.EntitySetPropertyKey;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.type.Analyzer;
+import com.openlattice.edm.type.AssociationType;
+import com.openlattice.edm.type.ComplexType;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.EnumType;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.graph.core.objects.LoomVertexKey;
 import com.dataloom.graph.edge.EdgeKey;
 import com.dataloom.graph.edge.LoomEdge;
-import com.dataloom.requests.RequestStatus;
+import com.openlattice.requests.RequestStatus;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.fasterxml.jackson.databind.ObjectMapper;

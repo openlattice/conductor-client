@@ -19,10 +19,7 @@
 
 package com.dataloom.authorization;
 
-import java.util.List;
-import java.util.UUID;
-
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;

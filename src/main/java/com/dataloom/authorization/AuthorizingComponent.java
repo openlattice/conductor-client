@@ -19,8 +19,9 @@
 
 package com.dataloom.authorization;
 
-import com.dataloom.authorization.securable.AbstractSecurableObject;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.securable.AbstractSecurableObject;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.authorization.AclKey;
 import java.util.EnumSet;
 import java.util.function.Predicate;

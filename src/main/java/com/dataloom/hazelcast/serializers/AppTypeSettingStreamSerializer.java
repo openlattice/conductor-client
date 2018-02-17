@@ -1,7 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.apps.AppTypeSetting;
-import com.dataloom.authorization.Permission;
+import com.openlattice.apps.AppTypeSetting;
+import com.openlattice.authorization.Permission;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

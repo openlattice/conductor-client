@@ -1,9 +1,9 @@
 package com.dataloom.authorization.aggregators;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.google.common.collect.Sets;
 import com.hazelcast.aggregation.Aggregator;
 import com.hazelcast.core.HazelcastInstance;

@@ -1,13 +1,11 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.linking.Entity;
-import com.esotericsoftware.kryo.Kryo;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import de.javakaffee.kryoserializers.guava.HashMultimapSerializer;
 import java.io.IOException;
 import java.util.Map;
 import org.springframework.stereotype.Component;

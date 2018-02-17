@@ -1,6 +1,6 @@
 package com.dataloom.edm.events;
 
-import com.dataloom.edm.type.EntityType;
+import com.openlattice.edm.type.EntityType;
 
 public class EntityTypeCreatedEvent {
     

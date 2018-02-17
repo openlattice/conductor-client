@@ -19,13 +19,13 @@
 
 package com.dataloom.requests.mapstores;
 
-import com.dataloom.authorization.AceKey;
-import com.dataloom.authorization.PrincipalType;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.PrincipalType;
 import com.dataloom.authorization.util.AuthorizationUtils;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.requests.RequestStatus;
-import com.dataloom.requests.Status;
+import com.openlattice.mapstores.TestDataFactory;
+import com.openlattice.requests.RequestStatus;
+import com.openlattice.requests.Status;
 import com.dataloom.requests.util.RequestUtil;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;

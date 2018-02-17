@@ -2,10 +2,8 @@ package com.dataloom.hazelcast.serializers;
 
 import java.io.Serializable;
 
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.requests.MetadataUpdate;
+import com.openlattice.edm.requests.MetadataUpdate;
 import com.dataloom.edm.types.processors.UpdateEntitySetPropertyMetadataProcessor;
-import com.dataloom.mapstores.TestDataFactory;
 import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 

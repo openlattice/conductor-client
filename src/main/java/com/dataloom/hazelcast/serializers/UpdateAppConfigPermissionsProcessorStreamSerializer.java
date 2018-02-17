@@ -1,6 +1,6 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.apps.processors.UpdateAppConfigPermissionsProcessor;
+import com.openlattice.apps.processors.UpdateAppConfigPermissionsProcessor;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

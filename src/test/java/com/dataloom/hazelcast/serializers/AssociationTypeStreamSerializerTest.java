@@ -2,8 +2,8 @@ package com.dataloom.hazelcast.serializers;
 
 import java.io.Serializable;
 
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.edm.type.AssociationType;
+import com.openlattice.mapstores.TestDataFactory;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class AssociationTypeStreamSerializerTest

@@ -19,7 +19,7 @@
 
 package com.dataloom.organizations;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;

@@ -19,10 +19,10 @@
 
 package com.dataloom.authorization;
 
-import com.dataloom.authorization.securable.AbstractSecurableObject;
-import com.dataloom.authorization.securable.AbstractSecurableType;
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.edm.EntitySet;
+import com.openlattice.authorization.securable.AbstractSecurableObject;
+import com.openlattice.authorization.securable.AbstractSecurableType;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.edm.EntitySet;
 import com.dataloom.edm.exceptions.AclKeyConflictException;
 import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.hazelcast.HazelcastMap;

@@ -19,7 +19,7 @@
 
 package com.kryptnostic.datastore.cassandra;
 
-import com.dataloom.edm.internal.DatastoreConstants;
+import com.openlattice.edm.internal.DatastoreConstants;
 import com.datastax.driver.core.RegularStatement;
 import com.datastax.driver.core.querybuilder.Insert;
 import com.datastax.driver.core.querybuilder.QueryBuilder;

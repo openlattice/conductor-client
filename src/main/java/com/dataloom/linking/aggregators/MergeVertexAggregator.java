@@ -1,8 +1,6 @@
 package com.dataloom.linking.aggregators;
 
-import com.dataloom.edm.type.PropertyType;
-import com.dataloom.graph.edge.EdgeKey;
-import com.dataloom.graph.edge.LoomEdge;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.linking.HazelcastMergingService;
 import com.dataloom.linking.LinkingVertex;
 import com.dataloom.linking.LinkingVertexKey;
@@ -12,7 +10,6 @@ import com.hazelcast.core.HazelcastInstanceAware;
 import com.hazelcast.core.ICountDownLatch;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.springframework.scheduling.annotation.Async;
 
 import java.util.Map;
 import java.util.Set;

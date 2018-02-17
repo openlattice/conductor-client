@@ -1,6 +1,6 @@
 package com.dataloom.edm.events;
 
-import com.dataloom.edm.type.AssociationType;
+import com.openlattice.edm.type.AssociationType;
 
 public class AssociationTypeCreatedEvent {
 

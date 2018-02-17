@@ -1,9 +1,9 @@
 package com.dataloom.organizations.roles;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
-import com.dataloom.directory.pojo.Auth0UserBasic;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.directory.pojo.Auth0UserBasic;
+import com.openlattice.organization.roles.Role;
 import com.google.common.collect.SetMultimap;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.query.Predicate;

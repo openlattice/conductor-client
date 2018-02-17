@@ -1,7 +1,7 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organization.Organization;
+import com.openlattice.organization.Organization;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

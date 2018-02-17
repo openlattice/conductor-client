@@ -1,6 +1,6 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.apps.App;
+import com.openlattice.apps.App;
 import com.google.common.base.Optional;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 

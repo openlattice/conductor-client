@@ -2,7 +2,7 @@ package com.dataloom.hazelcast.serializers;
 
 import java.io.Serializable;
 
-import com.dataloom.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class EntitySetPropertyMetadataStreamSerializerTest

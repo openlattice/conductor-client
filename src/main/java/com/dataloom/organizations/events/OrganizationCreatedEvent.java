@@ -19,7 +19,7 @@
 
 package com.dataloom.organizations.events;
 
-import com.dataloom.organization.Organization;
+import com.openlattice.organization.Organization;
 
 public class OrganizationCreatedEvent {
 

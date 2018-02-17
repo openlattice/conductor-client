@@ -21,8 +21,8 @@ package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
 import com.dataloom.authorization.processors.PermissionMerger;
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.mapstores.TestDataFactory;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 /**

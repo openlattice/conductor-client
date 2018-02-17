@@ -20,8 +20,6 @@
 
 package com.openlattice.authorization;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.authorization.Principal;
 import java.util.Set;
 import java.util.UUID;
 
