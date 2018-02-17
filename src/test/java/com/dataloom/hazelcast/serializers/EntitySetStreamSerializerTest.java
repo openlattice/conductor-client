@@ -21,9 +21,8 @@ package com.dataloom.hazelcast.serializers;
 
 import java.io.Serializable;
 
-import com.dataloom.edm.EntitySet;
-import com.dataloom.mapstores.TestDataFactory;
-import com.dataloom.hazelcast.serializers.EntitySetStreamSerializer;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.mapstores.TestDataFactory;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class EntitySetStreamSerializerTest extends AbstractStreamSerializerTest<EntitySetStreamSerializer, EntitySet>

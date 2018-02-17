@@ -4,7 +4,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
-import com.dataloom.edm.type.AssociationType;
+import com.openlattice.edm.type.AssociationType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 public class RemoveSrcEntityTypesFromAssociationTypeProcessor

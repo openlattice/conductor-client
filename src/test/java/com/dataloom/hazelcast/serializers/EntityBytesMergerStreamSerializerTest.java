@@ -22,7 +22,7 @@ package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.data.storage.EntityBytes;
 import com.dataloom.data.storage.EntityBytesMerger;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.mapstores.TestDataFactory;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;

@@ -31,18 +31,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 
 import com.dataloom.data.DataGraphManager;
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.neuron.audit.AuditEntitySetUtils;
 import com.dataloom.neuron.audit.AuditLogQueryService;
 import com.dataloom.neuron.receptors.Receptor;
 import com.dataloom.neuron.signals.AuditableSignal;
 import com.dataloom.neuron.signals.Signal;
-import com.datastax.driver.core.Session;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.kryptnostic.rhizome.configuration.cassandra.CassandraConfiguration;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

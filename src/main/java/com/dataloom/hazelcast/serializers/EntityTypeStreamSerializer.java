@@ -27,8 +27,8 @@ import java.util.UUID;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.springframework.stereotype.Component;
 
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.edm.type.EntityType;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.edm.type.EntityType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.google.common.base.Optional;
 import com.hazelcast.nio.ObjectDataInput;

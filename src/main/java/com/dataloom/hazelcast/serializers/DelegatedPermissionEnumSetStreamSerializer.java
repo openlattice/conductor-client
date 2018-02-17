@@ -25,7 +25,7 @@ import java.util.EnumSet;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.authorization.DelegatedPermissionEnumSet;
-import com.dataloom.authorization.Permission;
+import com.openlattice.authorization.Permission;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

@@ -1,8 +1,8 @@
 package com.openlattice.postgres.mapstores;
 
-import com.dataloom.apps.AppConfigKey;
-import com.dataloom.apps.AppTypeSetting;
-import com.dataloom.authorization.Permission;
+import com.openlattice.apps.AppConfigKey;
+import com.openlattice.apps.AppTypeSetting;
+import com.openlattice.authorization.Permission;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;

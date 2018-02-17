@@ -22,13 +22,11 @@ package com.dataloom.data.mapstores;
 import java.util.Map;
 import java.util.UUID;
 
-import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MapStoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.data.EntityKey;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.data.EntityKey;
+import com.openlattice.mapstores.TestDataFactory;
 import com.datastax.driver.core.AtomicMonotonicTimestampGenerator;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;

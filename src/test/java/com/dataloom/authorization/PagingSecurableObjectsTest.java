@@ -1,5 +1,7 @@
 package com.dataloom.authorization;
 
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
 import java.util.EnumSet;
 import java.util.NavigableSet;
 import java.util.TreeSet;
@@ -12,9 +14,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.authorization.paging.AuthorizedObjectsSearchResult;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.mapstores.TestDataFactory;
 
 public class PagingSecurableObjectsTest extends HzAuthzTest {
     private static final Logger logger = LoggerFactory.getLogger( PagingSecurableObjectsTest.class );

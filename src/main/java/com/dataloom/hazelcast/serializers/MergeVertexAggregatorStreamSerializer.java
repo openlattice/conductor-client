@@ -1,6 +1,6 @@
 package com.dataloom.hazelcast.serializers;
 
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.linking.HazelcastMergingService;
 import com.dataloom.linking.aggregators.MergeVertexAggregator;

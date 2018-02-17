@@ -1,6 +1,6 @@
 package com.dataloom.edm.events;
 
-import com.dataloom.apps.AppType;
+import com.openlattice.apps.AppType;
 
 public class AppTypeCreatedEvent {
 

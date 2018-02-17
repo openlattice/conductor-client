@@ -1,6 +1,6 @@
 package com.dataloom.authorization.paging;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.datastax.driver.core.PagingState;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;

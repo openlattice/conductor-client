@@ -2,8 +2,8 @@ package com.openlattice.postgres.mapstores;
 
 import static com.openlattice.postgres.PostgresTable.ENTITY_SET_PROPERTY_METADATA;
 
-import com.dataloom.edm.set.EntitySetPropertyKey;
-import com.dataloom.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.set.EntitySetPropertyKey;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;

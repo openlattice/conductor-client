@@ -1,6 +1,6 @@
 package com.kryptnostic.datastore.services;
 
-import com.dataloom.edm.EntitySet;
+import com.openlattice.edm.EntitySet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.openlattice.postgres.PostgresColumn;

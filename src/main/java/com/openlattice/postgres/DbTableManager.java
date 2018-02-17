@@ -20,8 +20,8 @@
 
 package com.openlattice.postgres;
 
-import com.dataloom.authorization.Principal;
-import com.dataloom.edm.EntitySet;
+import com.openlattice.authorization.Principal;
+import com.openlattice.edm.EntitySet;
 import java.util.Optional;
 import java.util.Set;
 

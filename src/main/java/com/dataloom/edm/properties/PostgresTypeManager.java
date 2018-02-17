@@ -1,8 +1,8 @@
 package com.dataloom.edm.properties;
 
-import com.dataloom.authorization.securable.SecurableObjectType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.PropertyType;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.PropertyType;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

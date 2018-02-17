@@ -23,7 +23,7 @@ package com.openlattice.ids;
 import static com.openlattice.postgres.PostgresColumn.PARTITION_INDEX_FIELD;
 
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.mapstores.TestDataFactory;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;

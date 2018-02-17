@@ -21,6 +21,7 @@ package com.dataloom.data;
 
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.openlattice.data.EntityKey;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;

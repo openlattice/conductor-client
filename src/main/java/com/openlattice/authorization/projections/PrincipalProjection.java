@@ -20,7 +20,7 @@
 
 package com.openlattice.authorization.projections;
 
-import com.dataloom.authorization.Principal;
+import com.openlattice.authorization.Principal;
 import com.hazelcast.projection.Projection;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;

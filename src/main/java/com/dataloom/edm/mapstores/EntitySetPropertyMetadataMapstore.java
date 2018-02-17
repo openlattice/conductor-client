@@ -2,8 +2,8 @@ package com.dataloom.edm.mapstores;
 
 import java.util.UUID;
 
-import com.dataloom.edm.set.EntitySetPropertyKey;
-import com.dataloom.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.set.EntitySetPropertyKey;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.ResultSet;

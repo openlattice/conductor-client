@@ -21,15 +21,12 @@ package com.dataloom.organizations;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.dataloom.authorization.AuthorizationManager;
-import com.dataloom.authorization.HazelcastAclKeyReservationService;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.PrincipalType;
+import com.dataloom.authorization.*;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.dataloom.organization.Organization;
-import com.dataloom.organization.OrganizationPrincipal;
-import com.dataloom.organization.roles.Role;
+import com.openlattice.organization.Organization;
+import com.openlattice.organization.OrganizationPrincipal;
+import com.openlattice.organization.roles.Role;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
@@ -52,13 +49,14 @@ import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.kryptnostic.datastore.util.Util;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -241,6 +239,9 @@ public class HazelcastOrganizationService {
 
     public void createRoleIfNotExists( Principal callingUser, Role role ) {
         securePrincipalsManager.createSecurablePrincipalIfNotExists( callingUser, role );
+        authorizations.getSecurableObjectOwners( new AclKey( role.getOrganizationId() ) ).forEach( owner -> {
+            authorizations.addPermission( role.getAclKey(), owner, EnumSet.allOf( Permission.class ) );
+        } );
     }
 
     private Collection<Role> getRolesInFull( UUID organizationId ) {

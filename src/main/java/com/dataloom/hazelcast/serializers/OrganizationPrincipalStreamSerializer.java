@@ -21,9 +21,8 @@
 package com.dataloom.hazelcast.serializers;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.organization.OrganizationPrincipal;
+import com.openlattice.organization.OrganizationPrincipal;
 import com.hazelcast.nio.ObjectDataInput;
-import com.hazelcast.nio.ObjectDataOutput;
 import com.openlattice.authorization.SecurablePrincipal;
 import java.io.IOException;
 import org.springframework.stereotype.Component;

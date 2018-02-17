@@ -19,8 +19,13 @@
 
 package com.dataloom.authorization;
 
-import com.dataloom.authorization.paging.AuthorizedObjectsSearchResult;
-import com.dataloom.authorization.securable.SecurableObjectType;
+import com.openlattice.authorization.Ace;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.Acl;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.paging.AuthorizedObjectsSearchResult;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.hazelcast.HazelcastMap;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.collect.ImmutableList;

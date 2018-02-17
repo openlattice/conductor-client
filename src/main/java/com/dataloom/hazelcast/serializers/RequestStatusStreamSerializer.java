@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
-import com.dataloom.requests.RequestStatus;
+import com.openlattice.requests.RequestStatus;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;

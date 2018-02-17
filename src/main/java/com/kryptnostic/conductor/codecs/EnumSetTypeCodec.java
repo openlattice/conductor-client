@@ -21,8 +21,8 @@ package com.kryptnostic.conductor.codecs;
 
 import java.util.EnumSet;
 
-import com.dataloom.authorization.Permission;
-import com.dataloom.requests.RequestStatus;
+import com.openlattice.authorization.Permission;
+import com.openlattice.requests.RequestStatus;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.TypeCodec;
 import com.datastax.driver.core.TypeCodec.AbstractCollectionCodec;

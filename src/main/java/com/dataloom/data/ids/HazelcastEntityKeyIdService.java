@@ -20,7 +20,7 @@
 package com.dataloom.data.ids;
 
 import com.codahale.metrics.annotation.Timed;
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.mapstores.PostgresEntityKeyIdsMapstore;
 import com.dataloom.hazelcast.HazelcastMap;

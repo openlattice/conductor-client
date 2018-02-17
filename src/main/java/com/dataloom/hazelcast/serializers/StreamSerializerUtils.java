@@ -24,7 +24,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
-import com.dataloom.authorization.Permission;
+import com.openlattice.authorization.Permission;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.hazelcast.nio.ObjectDataInput;

@@ -3,7 +3,7 @@ package com.dataloom.hazelcast.serializers;
 import java.io.Serializable;
 import java.util.UUID;
 
-import com.dataloom.edm.set.EntitySetPropertyKey;
+import com.openlattice.edm.set.EntitySetPropertyKey;
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
 
 public class EntitySetPropertyKeyStreamSerializerTest

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.dataloom.hazelcast.StreamSerializerTypeIds;
 import com.dataloom.mappers.ObjectMappers;
-import com.dataloom.search.requests.SearchResult;
+import com.openlattice.search.requests.SearchResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;

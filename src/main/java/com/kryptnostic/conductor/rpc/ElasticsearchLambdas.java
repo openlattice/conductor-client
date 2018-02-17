@@ -1,17 +1,14 @@
 package com.kryptnostic.conductor.rpc;
 
-import com.dataloom.apps.App;
-import com.dataloom.apps.AppType;
-import com.dataloom.authorization.Principal;
-import com.dataloom.authorization.Principals;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.PropertyType;
-import com.dataloom.organization.Organization;
-import com.dataloom.search.requests.SearchResult;
+import com.openlattice.apps.App;
+import com.openlattice.apps.AppType;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.type.AssociationType;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.PropertyType;
+import com.openlattice.organization.Organization;
+import com.openlattice.search.requests.SearchResult;
 import com.google.common.base.Optional;
-import com.google.common.collect.SetMultimap;
 import com.openlattice.authorization.AclKey;
 
 import java.io.Serializable;

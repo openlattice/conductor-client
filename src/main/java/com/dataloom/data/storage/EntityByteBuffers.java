@@ -20,7 +20,7 @@
 
 package com.dataloom.data.storage;
 
-import com.dataloom.data.EntityKey;
+import com.openlattice.data.EntityKey;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.SetMultimap;
 import java.nio.ByteBuffer;

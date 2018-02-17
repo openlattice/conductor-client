@@ -19,6 +19,8 @@
 
 package com.dataloom.authorization;
 
+import com.openlattice.authorization.Ace;
+import com.openlattice.authorization.Principal;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +35,7 @@ import com.hazelcast.core.ICompletableFuture;
 
 public class AceFuture implements ListenableFuture<Ace> {
     private static final Logger                              logger = LoggerFactory.getLogger( AceFuture.class );
-    private final Principal                                  principal;
+    private final Principal                                      principal;
     private final ICompletableFuture<DelegatedPermissionEnumSet> futurePermissions;
 
     public AceFuture( Principal principal, ICompletableFuture<DelegatedPermissionEnumSet> futurePermissions ) {
