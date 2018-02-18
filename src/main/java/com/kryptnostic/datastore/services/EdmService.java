@@ -23,15 +23,8 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.dataloom.authorization.AuthorizationManager;
 import com.dataloom.authorization.HazelcastAclKeyReservationService;
-import com.openlattice.authorization.Permission;
-import com.openlattice.authorization.Principal;
 import com.dataloom.authorization.Principals;
-import com.openlattice.authorization.securable.SecurableObjectType;
 import com.dataloom.data.DatasourceManager;
-import com.openlattice.edm.EntityDataModel;
-import com.openlattice.edm.EntityDataModelDiff;
-import com.openlattice.edm.EntitySet;
-import com.openlattice.edm.Schema;
 import com.dataloom.edm.events.AssociationTypeCreatedEvent;
 import com.dataloom.edm.events.AssociationTypeDeletedEvent;
 import com.dataloom.edm.events.ClearAllDataEvent;
@@ -46,16 +39,7 @@ import com.dataloom.edm.events.PropertyTypesInEntitySetUpdatedEvent;
 import com.dataloom.edm.exceptions.TypeExistsException;
 import com.dataloom.edm.exceptions.TypeNotFoundException;
 import com.dataloom.edm.properties.PostgresTypeManager;
-import com.openlattice.edm.requests.MetadataUpdate;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
-import com.openlattice.edm.set.EntitySetPropertyKey;
-import com.openlattice.edm.set.EntitySetPropertyMetadata;
-import com.openlattice.edm.type.AssociationDetails;
-import com.openlattice.edm.type.AssociationType;
-import com.openlattice.edm.type.ComplexType;
-import com.openlattice.edm.type.EntityType;
-import com.openlattice.edm.type.EnumType;
-import com.openlattice.edm.type.PropertyType;
 import com.dataloom.edm.types.processors.AddDstEntityTypesToAssociationTypeProcessor;
 import com.dataloom.edm.types.processors.AddPropertyTypesToEntityTypeProcessor;
 import com.dataloom.edm.types.processors.AddSrcEntityTypesToAssociationTypeProcessor;
@@ -85,10 +69,25 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
 import com.kryptnostic.datastore.util.Util;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.edm.EntityDataModel;
+import com.openlattice.edm.EntityDataModelDiff;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.Schema;
+import com.openlattice.edm.requests.MetadataUpdate;
+import com.openlattice.edm.set.EntitySetPropertyKey;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.type.AssociationDetails;
+import com.openlattice.edm.type.AssociationType;
+import com.openlattice.edm.type.ComplexType;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.EnumType;
+import com.openlattice.edm.type.PropertyType;
 import com.openlattice.postgres.PostgresQuery;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
-
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -104,7 +103,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -761,6 +759,42 @@ public class EdmService implements EdmManager {
     public void reorderPropertyTypesInEntityType( UUID entityTypeId, LinkedHashSet<UUID> propertyTypeIds ) {
         entityTypes.executeOnKey( entityTypeId, new ReorderPropertyTypesInEntityTypeProcessor( propertyTypeIds ) );
         EntityType entityType = getEntityType( entityTypeId );
+        if ( entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+        }
+    }
+
+    @Override
+    public void addPrimaryKeysToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
+        EntityType entityType = entityTypes.get( entityTypeId );
+        Preconditions.checkNotNull( entityType, "No entity type with id {}", entityTypeId );
+        Preconditions.checkArgument( entityType.getProperties().containsAll( propertyTypeIds ),
+                "Entity type does not contain all the requested primary key property types." );
+
+        entityTypes.executeOnKey( entityTypeId, new AddPrimaryKeysToEntityTypeProcessor( propertyTypeIds ) );
+
+        entityType = entityTypes.get( entityTypeId );
+        if ( entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
+            eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
+        } else {
+            eventBus.post( new EntityTypeCreatedEvent( entityType ) );
+        }
+    }
+
+    @Override
+    public void removePrimaryKeysFromEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
+        Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exist." );
+        EntityType entityType = entityTypes.get( entityTypeId );
+        Preconditions.checkNotNull( entityType, "No entity type with id {}", entityTypeId );
+        Preconditions.checkArgument( entityType.getProperties().containsAll( propertyTypeIds ),
+                "Entity type does not contain all the requested primary key property types." );
+
+        entityTypes.executeOnKey( entityTypeId, new RemovePrimaryKeysFromEntityTypeProcessor( propertyTypeIds ) );
+
+        entityType = entityTypes.get( entityTypeId );
         if ( entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
             eventBus.post( new AssociationTypeCreatedEvent( getAssociationType( entityTypeId ) ) );
         } else {
