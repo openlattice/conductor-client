@@ -54,8 +54,7 @@ public class BlockingAggregatorStreamSerializer implements SelfRegisteringStream
             entitySetIdsToSyncIds.put( entitySetId, syncId );
         }
 
-        Map<FullQualifiedName, UUID> propertyTypeIdIndexedByFqn = jersey.repackaged.com.google.common.collect.Maps
-                .newHashMap();
+        Map<FullQualifiedName, UUID> propertyTypeIdIndexedByFqn = Maps.newHashMap();
         int fqnMapSize = in.readInt();
         for ( int i = 0; i < fqnMapSize; i++ ) {
             FullQualifiedName fqn = FullQualifiedNameStreamSerializer.deserialize( in );
