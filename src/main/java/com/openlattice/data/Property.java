@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. OpenLattice, Inc
+ * Copyright (C) 2018. OpenLattice, Inc
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,18 +18,29 @@
  *
  */
 
-package com.openlattice.postgres;
+package com.openlattice.data;
 
-import com.openlattice.authorization.Principal;
-import com.openlattice.edm.EntitySet;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Optional;
-import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public interface DbTableManager {
-    void createEntitySets( Optional<String> schema, Principal owner, Set<EntitySet> entitySet );
+public class Property {
+    private final Optional<UUID>   entitySetId;
+    private final PropertyMetadata metadata;
+    private final Object           value;
 
-    void deleteEntitySets( Optional<String> schema, Principal owner, Set<EntitySet> entitySet );
+    @JsonCreator
+    public Property( Optional<UUID> entitySetId, PropertyMetadata metadata, Object value ) {
+        this.entitySetId = entitySetId;
+        this.metadata = metadata;
+        this.value = value;
+    }
+
+    public Optional<UUID> getEntitySetId() {
+        return entitySetId;
+    }
+
 }

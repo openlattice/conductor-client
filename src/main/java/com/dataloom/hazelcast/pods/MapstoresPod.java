@@ -50,6 +50,7 @@ import com.openlattice.requests.Status;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.auth0.Auth0Pod;
+import com.openlattice.authentication.Auth0Configuration;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
@@ -59,6 +60,8 @@ import com.openlattice.authorization.mapstores.PostgresCredentialMapstore;
 import com.openlattice.authorization.mapstores.PrincipalMapstore;
 import com.openlattice.authorization.mapstores.PrincipalTreeMapstore;
 import com.openlattice.authorization.mapstores.UserMapstore;
+import com.openlattice.data.EntityDataKey;
+import com.openlattice.data.EntityDataValue;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.AclKeysMapstore;
@@ -86,10 +89,10 @@ import com.openlattice.postgres.mapstores.SchemasMapstore;
 import com.openlattice.postgres.mapstores.SecurableObjectTypeMapstore;
 import com.openlattice.postgres.mapstores.SyncIdsMapstore;
 import com.openlattice.postgres.mapstores.VertexIdsAfterLinkingMapstore;
+import com.openlattice.postgres.mapstores.data.DataMapstoreProxy;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
-import com.openlattice.authentication.Auth0Configuration;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.UUID;
@@ -332,6 +335,14 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<AppConfigKey, AppTypeSetting> appConfigMapstore() {
         return new AppConfigMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<EntityDataKey, EntityDataValue> entityDataMapstore() {
+        return new DataMapstoreProxy( hikariDataSource,
+                propertyTypeMapstore(),
+                entitySetMapstore(),
+                entityTypeMapstore() );
     }
 
 }

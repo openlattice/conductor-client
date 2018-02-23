@@ -25,7 +25,7 @@ import org.springframework.http.HttpStatus;
 
 import com.openlattice.exceptions.ErrorDTO;
 import com.openlattice.exceptions.ErrorsDTO;
-import com.openlattice.exceptions.LoomExceptions;
+import com.openlattice.exceptions.ApiExceptions;
 
 public class BatchException extends RuntimeException {
     private static final long serialVersionUID = 7632884063119454460L;
@@ -54,7 +54,7 @@ public class BatchException extends RuntimeException {
         return errors;
     }
 
-    public void addError( LoomExceptions error, String message ) {
+    public void addError( ApiExceptions error, String message ) {
         errors.addError( error, message );
     }
 

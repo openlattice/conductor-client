@@ -19,22 +19,43 @@
 
 package com.dataloom.mapstores;
 
-import com.openlattice.authorization.AceKey;
 import com.dataloom.authorization.HzAuthzTest;
-import com.openlattice.authorization.securable.AbstractSecurableObject;
 import com.dataloom.hazelcast.HazelcastMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.kryptnostic.datastore.services.EdmService;
 import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore;
+import com.openlattice.authorization.AceKey;
 import com.openlattice.authorization.AceValue;
+import com.openlattice.authorization.Principal;
 import com.openlattice.authorization.mapstores.PostgresCredentialMapstore;
 import com.openlattice.authorization.mapstores.UserMapstore;
+import com.openlattice.authorization.securable.AbstractSecurableObject;
+import com.openlattice.data.EntityDataKey;
+import com.openlattice.data.EntityDataMetadata;
+import com.openlattice.data.EntityDataValue;
+import com.openlattice.data.PropertyMetadata;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.PropertyType;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.postgres.mapstores.SyncIdsMapstore;
+import com.openlattice.postgres.mapstores.data.DataMapstoreProxy;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.math.RandomUtils;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -94,9 +115,63 @@ public class MapstoresTest extends HzAuthzTest {
                 .forEach( MapstoresTest::test );
     }
 
+    @Test
+    public void testDataMapstore() throws InterruptedException {
+        EdmService edm = testServer.getContext().getBean( EdmService.class );
+
+        PropertyType[] propertyTypes = new PropertyType[] {
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.String ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.Int64 ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.DateTimeOffset ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.Date ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.TimeOfDay ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.Boolean ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.Binary ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.Guid ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.Int32 ),
+                TestDataFactory.propertyType( EdmPrimitiveTypeKind.Double ) };
+
+        Stream.of( propertyTypes ).forEach( edm::createPropertyTypeIfNotExists );
+
+        EntityType entityType = TestDataFactory.entityTypesFromKeyAndTypes( propertyTypes[ 7 ], propertyTypes );
+
+        edm.createEntityType( entityType );
+
+        EntitySet entitySet = TestDataFactory.entitySetWithType( entityType.getId() );
+        Principal p = TestDataFactory.userPrincipal();
+        edm.createEntitySet( p, entitySet );
+        Thread.sleep( 1000 );
+        DataMapstoreProxy dmp = testServer.getContext().getBean( DataMapstoreProxy.class );
+        UUID entityKeyId = UUID.randomUUID();
+
+        long version = 0;
+
+        OffsetDateTime lastWrite = OffsetDateTime.now();
+        OffsetDateTime lastIndex = OffsetDateTime.now();
+
+        EntityDataKey entityDataKey = new EntityDataKey( entitySet.getId(), entityKeyId );
+        EntityDataMetadata metadata = new EntityDataMetadata( version, lastWrite, lastIndex );
+        Map<UUID, Map<Object, PropertyMetadata>> properties = new HashMap<>();
+        PropertyMetadata pm = new PropertyMetadata( 1, ImmutableList.of( 1L ), OffsetDateTime.now() );
+
+        properties.put( propertyTypes[ 0 ].getId(), ImmutableMap.of( RandomStringUtils.randomAlphanumeric( 5 ), pm ) );
+        properties.put( propertyTypes[ 1 ].getId(), ImmutableMap.of( RandomUtils.nextLong(), pm ) );
+        properties.put( propertyTypes[ 2 ].getId(), ImmutableMap.of( OffsetDateTime.now(), pm ) );
+        properties.put( propertyTypes[ 3 ].getId(), ImmutableMap.of( LocalDate.now(), pm ) );
+        properties.put( propertyTypes[ 4 ].getId(), ImmutableMap.of( LocalTime.now(), pm ) );
+        properties.put( propertyTypes[ 5 ].getId(), ImmutableMap.of( RandomUtils.nextBoolean(), pm ) );
+        properties.put( propertyTypes[ 6 ].getId(), ImmutableMap.of( new byte[] { 1, 2, 3, 4 }, pm ) );
+        properties.put( propertyTypes[ 7 ].getId(), ImmutableMap.of( UUID.randomUUID(), pm ) );
+        properties.put( propertyTypes[ 8 ].getId(), ImmutableMap.of( RandomUtils.nextDouble(), pm ) );
+
+        EntityDataValue edv = new EntityDataValue( metadata, properties );
+        dmp.store( entityDataKey, edv );
+    }
+
     @SuppressWarnings( { "rawtypes", "unchecked" } )
     private static void test( TestableSelfRegisteringMapStore ms ) {
-        if ( ms instanceof SyncIdsMapstore || ms instanceof PostgresCredentialMapstore || ms instanceof UserMapstore ) {
+        if ( ms instanceof SyncIdsMapstore || ms instanceof PostgresCredentialMapstore || ms instanceof UserMapstore
+                || ms instanceof DataMapstoreProxy ) {
             return;
         }
         Object expected = ms.generateTestValue();

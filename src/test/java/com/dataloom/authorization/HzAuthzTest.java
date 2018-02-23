@@ -39,8 +39,10 @@ import com.kryptnostic.rhizome.configuration.ConfigurationConstants;
 import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
 import com.openlattice.auth0.Auth0Pod;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.edm.PostgresEdmManager;
 import com.openlattice.jdbc.JdbcPod;
 import com.openlattice.postgres.PostgresPod;
+import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.PostgresTablesPod;
 import com.zaxxer.hikari.HikariDataSource;
 import java.util.Arrays;
@@ -92,6 +94,9 @@ public class HzAuthzTest {
                 aqs,
                 testServer.getContext().getBean( EventBus.class )
         );
+
+        PostgresTableManager ptm = testServer.getContext().getBean( PostgresTableManager.class );
+        testServer.getContext().getBean( EventBus.class ).register( new PostgresEdmManager( ptm, hds ) );
     }
 
     @Test
@@ -126,12 +131,12 @@ public class HzAuthzTest {
         Principal p = new Principal( PrincipalType.USER, "grid|TRON" );
         EnumSet<Permission> permissions = EnumSet.of( Permission.DISCOVER, Permission.READ );
         Assert.assertFalse(
-                hzAuthz.checkIfHasPermissions( key , ImmutableSet.of( p ), permissions ) );
+                hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), permissions ) );
         hzAuthz.setSecurableObjectType( key, SecurableObjectType.EntitySet );
         hzAuthz.addPermission( key, p, permissions );
         Assert.assertTrue(
                 hzAuthz.checkIfHasPermissions( new AclKey( key ), ImmutableSet.of( p ), permissions ) );
-        hzAuthz.removePermission( key , p, permissions );
+        hzAuthz.removePermission( key, p, permissions );
         Assert.assertFalse(
                 hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p ), permissions ) );
     }
@@ -267,8 +272,8 @@ public class HzAuthzTest {
             Assert.assertTrue( result.containsKey( key ) );
             EnumMap<Permission, Boolean> checkForKey = result.get( key );
             Assert.assertTrue( checkForKey.size() == ac.getPermissions().size() );
-            Assert.assertTrue( checkForKey.keySet().containsAll(  ac.getPermissions() ) );
-            Set<Permission> overlapping = ImmutableSet.copyOf( Sets.intersection(permissions2, ac.getPermissions() ) );
+            Assert.assertTrue( checkForKey.keySet().containsAll( ac.getPermissions() ) );
+            Set<Permission> overlapping = ImmutableSet.copyOf( Sets.intersection( permissions2, ac.getPermissions() ) );
             Assert.assertTrue( overlapping.stream().allMatch( result.get( key )::get ) );
             //            Assert.assertTrue( result.get( key ).get( Permission.DISCOVER ) );
             //            Assert.assertTrue( result.get( key ).get( Permission.READ ) );

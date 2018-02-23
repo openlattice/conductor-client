@@ -21,12 +21,10 @@ package com.dataloom.organizations;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.dataloom.authorization.*;
+import com.dataloom.authorization.AuthorizationManager;
+import com.dataloom.authorization.HazelcastAclKeyReservationService;
 import com.dataloom.directory.UserDirectoryService;
 import com.dataloom.hazelcast.HazelcastMap;
-import com.openlattice.organization.Organization;
-import com.openlattice.organization.OrganizationPrincipal;
-import com.openlattice.organization.roles.Role;
 import com.dataloom.organizations.events.OrganizationCreatedEvent;
 import com.dataloom.organizations.events.OrganizationDeletedEvent;
 import com.dataloom.organizations.events.OrganizationUpdatedEvent;
@@ -53,10 +51,16 @@ import com.openlattice.authorization.Permission;
 import com.openlattice.authorization.Principal;
 import com.openlattice.authorization.PrincipalType;
 import com.openlattice.authorization.SecurablePrincipal;
+import com.openlattice.organization.Organization;
+import com.openlattice.organization.OrganizationPrincipal;
+import com.openlattice.organization.roles.Role;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
-
-import java.util.*;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -128,7 +132,7 @@ public class HazelcastOrganizationService {
         Collection<SecurablePrincipal> maybeOrgs =
                 securePrincipalsManager.getSecurablePrincipals( getOrganizationPredicate( organizationId ) );
         if ( maybeOrgs.isEmpty() ) {
-            logger.error("Organization id {} has no corresponding securable principal." , organizationId );
+            logger.error( "Organization id {} has no corresponding securable principal.", organizationId );
             return null;
         }
 
@@ -187,6 +191,10 @@ public class HazelcastOrganizationService {
     public void addMembers( UUID organizationId, Set<Principal> members ) {
         membersOf.submitToKey( organizationId, new OrganizationMemberMerger( members ) );
         addOrganizationToMembers( organizationId, members );
+        final AclKey orgAclKey = new AclKey( organizationId );
+        members.stream().filter( PrincipalType.USER::equals )
+                .map( securePrincipalsManager::lookup )
+                .forEach( target -> securePrincipalsManager.addPrincipalToPrincipal( orgAclKey, target ) );
     }
 
     public void setMembers( UUID organizationId, Set<Principal> members ) {
@@ -214,6 +222,11 @@ public class HazelcastOrganizationService {
                         .map( securePrincipalsManager::lookup ) );
         membersOf.submitToKey( organizationId, new OrganizationMemberRemover( members ) );
         removeOrganizationFromMembers( organizationId, members );
+
+        final AclKey orgAclKey = new AclKey( organizationId );
+        members.stream().filter( PrincipalType.USER::equals )
+                .map( securePrincipalsManager::lookup )
+                .forEach( target -> securePrincipalsManager.removePrincipalFromPrincipal( orgAclKey, target ) );
     }
 
     private void addOrganizationToMembers( UUID organizationId, Set<Principal> members ) {
@@ -239,9 +252,10 @@ public class HazelcastOrganizationService {
 
     public void createRoleIfNotExists( Principal callingUser, Role role ) {
         securePrincipalsManager.createSecurablePrincipalIfNotExists( callingUser, role );
-        authorizations.getSecurableObjectOwners( new AclKey( role.getOrganizationId() ) ).forEach( owner -> {
-            authorizations.addPermission( role.getAclKey(), owner, EnumSet.allOf( Permission.class ) );
-        } );
+        final UUID organizationId = role.getOrganizationId();
+        final SecurablePrincipal orgPrincipal = securePrincipalsManager
+                .getSecurablePrincipal( new AclKey( organizationId ) );
+        authorizations.addPermission( role.getAclKey(), orgPrincipal.getPrincipal(), EnumSet.of( Permission.READ ) );
     }
 
     private Collection<Role> getRolesInFull( UUID organizationId ) {

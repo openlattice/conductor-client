@@ -96,7 +96,10 @@ import com.openlattice.authorization.Principal;
 import com.openlattice.authorization.PrincipalType;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.data.EntityDataMetadata;
 import com.openlattice.data.EntityKey;
+import com.openlattice.data.PropertyMetadata;
+import com.openlattice.data.PropertyValueKey;
 import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.set.EntitySetPropertyKey;
 import com.openlattice.edm.set.EntitySetPropertyMetadata;
@@ -114,6 +117,7 @@ import com.openlattice.requests.Status;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -131,6 +135,30 @@ import org.slf4j.LoggerFactory;
  */
 public final class ResultSetAdapters {
     private static final Logger logger = LoggerFactory.getLogger( ResultSetAdapters.class );
+
+    public static PropertyValueKey propertyValueKey( ResultSet rs ) throws SQLException {
+        UUID entityKeyId = id( rs );
+        Object value = propertyValue( rs );
+        return new PropertyValueKey( entityKeyId, value );
+    }
+
+    public static Object propertyValue( ResultSet rs ) throws SQLException {
+        return rs.getObject( DataTables.VALUE_FIELD );
+    }
+
+    public static PropertyMetadata propertyMetadata( ResultSet rs ) throws SQLException {
+        long version = rs.getLong( PostgresColumn.VERSION_FIELD );
+        Long[] versions = PostgresArrays.getLongArray( rs, PostgresColumn.VERSIONS_FIELD );
+        OffsetDateTime lastWrite = rs.getObject( PostgresColumn.LAST_WRITE_FIELD, OffsetDateTime.class );
+        return new PropertyMetadata( version, Arrays.asList( versions ), lastWrite );
+    }
+
+    public static EntityDataMetadata entityDataMetadata( ResultSet rs ) throws SQLException {
+        long version = rs.getLong( PostgresColumn.VERSION_FIELD );
+        OffsetDateTime lastWrite = rs.getObject( PostgresColumn.LAST_WRITE_FIELD, OffsetDateTime.class );
+        OffsetDateTime lastIndex = rs.getObject( PostgresColumn.LAST_WRITE_FIELD, OffsetDateTime.class );
+        return new EntityDataMetadata( version, lastWrite, lastIndex );
+    }
 
     public static Set<UUID> entityTypeIds( ResultSet rs ) throws SQLException {
         return ImmutableSet.copyOf( PostgresArrays.getUuidArray( rs, PostgresColumn.ENTITY_TYPE_IDS_FIELD ) );

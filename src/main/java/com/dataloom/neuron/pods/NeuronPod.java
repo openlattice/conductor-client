@@ -28,7 +28,7 @@ import com.dataloom.data.DataGraphService;
 import com.dataloom.data.DatasourceManager;
 import com.dataloom.data.EntityKeyIdService;
 import com.dataloom.data.ids.HazelcastEntityKeyIdService;
-import com.dataloom.data.storage.CassandraEntityDatastore;
+import com.dataloom.data.storage.HazelcastEntityDatastore;
 import com.dataloom.edm.properties.PostgresTypeManager;
 import com.dataloom.edm.schemas.SchemaQueryService;
 import com.dataloom.edm.schemas.manager.HazelcastSchemaManager;
@@ -99,8 +99,8 @@ public class NeuronPod {
     }
 
     @Bean
-    public CassandraEntityDatastore cassandraDataManager() {
-        return new CassandraEntityDatastore(
+    public HazelcastEntityDatastore cassandraDataManager() {
+        return new HazelcastEntityDatastore(
                 hazelcastInstance,
                 executor,
                 defaultObjectMapper(),

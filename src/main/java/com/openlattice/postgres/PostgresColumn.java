@@ -21,6 +21,7 @@
 package com.openlattice.postgres;
 
 import static com.openlattice.postgres.PostgresDatatype.BIGINT;
+import static com.openlattice.postgres.PostgresDatatype.BIGINT_ARRAY;
 import static com.openlattice.postgres.PostgresDatatype.BOOLEAN;
 import static com.openlattice.postgres.PostgresDatatype.DECIMAL;
 import static com.openlattice.postgres.PostgresDatatype.INTEGER;
@@ -73,6 +74,8 @@ public final class PostgresColumn {
     public static final String GRAPH_ID_FIELD              = "graph_id";
     public static final String ID_FIELD                    = "id";
     public static final String KEY_FIELD                   = "key";
+    public static final String LAST_WRITE_FIELD            = "last_write";
+    public static final String LAST_INDEX_FIELD            = "last_index";
     public static final String LSB_FIELD                   = "lsb";
     public static final String MEMBERS_FIELD               = "members";
     public static final String MSB_FIELD                   = "msb";
@@ -88,6 +91,7 @@ public final class PostgresColumn {
     public static final String PRINCIPAL_TYPE_FIELD        = "principal_type";
     public static final String PRINCIPAL_ID_FIELD          = "principal_id";
     public static final String PRINCIPAL_IDS_FIELD         = "principal_ids";
+    public static final String PROPERTY_ID_FIELD           = "propertyId";
     public static final String PROPERTIES_FIELD            = "properties";
     public static final String PROPERTY_TYPE_ID_FIELD      = "property_type_id";
     public static final String REASON_FIELD                = "reason";
@@ -115,6 +119,8 @@ public final class PostgresColumn {
     public static final String TITLE_FIELD                 = "title";
     public static final String URL_FIELD                   = "url";
     public static final String VERTEX_ID_FIELD             = "vertex_id";
+    public static final String VERSION_FIELD               = "version";
+    public static final String VERSIONS_FIELD              = "versions";
 
     public static final PostgresColumnDefinition ACL_KEY               =
             new PostgresColumnDefinition( ACL_KEY_FIELD, UUID_ARRAY );
@@ -226,6 +232,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( PRINCIPAL_ID_FIELD, TEXT );
     public static final PostgresColumnDefinition PRINCIPAL_IDS         =
             new PostgresColumnDefinition( PRINCIPAL_IDS_FIELD, TEXT_ARRAY );
+    public static final PostgresColumnDefinition PROPERTY_ID           =
+            new PostgresColumnDefinition( PROPERTY_ID_FIELD, UUID ).notNull();
     public static final PostgresColumnDefinition PROPERTIES            =
             new PostgresColumnDefinition( PROPERTIES_FIELD, UUID_ARRAY ).notNull();
     public static final PostgresColumnDefinition PROPERTY_TYPE_ID      =
@@ -284,6 +292,10 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( URL_FIELD, TEXT );
     public static final PostgresColumnDefinition VERTEX_ID             =
             new PostgresColumnDefinition( VERTEX_ID_FIELD, UUID );
+    public static final PostgresColumnDefinition VERSION               =
+            new PostgresColumnDefinition( VERSION_FIELD, BIGINT ).notNull();
+    public static final PostgresColumnDefinition VERSIONS              =
+            new PostgresColumnDefinition( VERSIONS_FIELD, BIGINT_ARRAY ).notNull();
 
     private PostgresColumn() {
     }

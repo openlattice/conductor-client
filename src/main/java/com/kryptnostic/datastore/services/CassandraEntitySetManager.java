@@ -20,7 +20,6 @@
 package com.kryptnostic.datastore.services;
 
 import com.dataloom.authorization.AuthorizationManager;
-import com.openlattice.edm.EntitySet;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
@@ -32,6 +31,7 @@ import com.google.common.collect.Iterables;
 import com.kryptnostic.conductor.rpc.odata.Table;
 import com.kryptnostic.datastore.cassandra.CommonColumns;
 import com.kryptnostic.datastore.cassandra.RowAdapters;
+import com.openlattice.edm.EntitySet;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 
@@ -40,7 +40,7 @@ public class CassandraEntitySetManager {
     private final Session              session;
     private final AuthorizationManager authorizations;
 
-//    private final PreparedStatement getEntities;
+    //    private final PreparedStatement getEntities;
     private final PreparedStatement getEntitySetsByType;
     private final PreparedStatement getEntitySet;
     private final Select            getAllEntitySets;
@@ -63,14 +63,14 @@ public class CassandraEntitySetManager {
 
         this.getAllEntitySets = QueryBuilder.select().all().from( keyspace, Table.ENTITY_SETS.getName() );
 
-//        this.getEntities = session
-//                .prepare( QueryBuilder.select()
-//                        .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
-//                        .column( CommonColumns.SYNCID.cql() )
-//                        .from( keyspace, Table.DATA.getName() )
-//                        .where( QueryBuilder.in( PARTITION_INDEX.cql(), CassandraEntityDatastore.PARTITION_INDEXES ) )
-//                        .and( CommonColumns.ENTITY_SET_ID.eq() )
-//                        .and( CommonColumns.SYNCID.eq() ) );
+        //        this.getEntities = session
+        //                .prepare( QueryBuilder.select()
+        //                        .column( CommonColumns.ENTITY_SET_ID.cql() ).column( CommonColumns.ENTITYID.cql() )
+        //                        .column( CommonColumns.SYNCID.cql() )
+        //                        .from( keyspace, Table.DATA.getName() )
+        //                        .where( QueryBuilder.in( PARTITION_INDEX.cql(), HazelcastEntityDatastore.PARTITION_INDEXES ) )
+        //                        .and( CommonColumns.ENTITY_SET_ID.eq() )
+        //                        .and( CommonColumns.SYNCID.eq() ) );
     }
 
     public EntitySet getEntitySet( String entitySetName ) {
@@ -83,11 +83,11 @@ public class CassandraEntitySetManager {
      */
     @Deprecated
     public Iterable<String> getEntitiesInEntitySet( String entitySetName ) {
-//        ResultSet rs = session
-//                .execute( getEntities.bind()
-//                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(),
-//                                getEntitySet( entitySetName ).getId() ) );
-//        return Iterables.transform( rs, row -> row.getString( CommonColumns.ENTITYID.cql() ) );
+        //        ResultSet rs = session
+        //                .execute( getEntities.bind()
+        //                        .setUUID( CommonColumns.ENTITY_SET_ID.cql(),
+        //                                getEntitySet( entitySetName ).getId() ) );
+        //        return Iterables.transform( rs, row -> row.getString( CommonColumns.ENTITYID.cql() ) );
         return null;
     }
 

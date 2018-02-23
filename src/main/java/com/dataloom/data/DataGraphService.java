@@ -1,14 +1,8 @@
 package com.dataloom.data;
 
-import com.openlattice.analysis.requests.TopUtilizerDetails;
 import com.dataloom.data.analytics.IncrementableWeightId;
 import com.dataloom.data.events.EntityDataCreatedEvent;
-import com.openlattice.data.EntityKey;
-import com.openlattice.data.requests.Association;
-import com.openlattice.data.requests.Entity;
-import com.dataloom.data.storage.CassandraEntityDatastore;
-import com.openlattice.edm.EntitySet;
-import com.openlattice.edm.type.PropertyType;
+import com.dataloom.data.storage.HazelcastEntityDatastore;
 import com.dataloom.graph.core.LoomGraph;
 import com.dataloom.graph.core.objects.NeighborTripletSet;
 import com.dataloom.graph.edge.EdgeKey;
@@ -27,6 +21,12 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.kryptnostic.datastore.exceptions.ResourceNotFoundException;
+import com.openlattice.analysis.requests.TopUtilizerDetails;
+import com.openlattice.data.EntityKey;
+import com.openlattice.data.requests.Association;
+import com.openlattice.data.requests.Entity;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.type.PropertyType;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +64,7 @@ public class DataGraphService implements DataGraphManager {
 
     public DataGraphService(
             HazelcastInstance hazelcastInstance,
-            CassandraEntityDatastore eds,
+            HazelcastEntityDatastore eds,
             LoomGraph lm,
             EntityKeyIdService ids,
             ListeningExecutorService executor,
@@ -105,7 +105,8 @@ public class DataGraphService implements DataGraphManager {
     @Override
     public SetMultimap<FullQualifiedName, Object> getEntity(
             UUID entityKeyId, Map<UUID, PropertyType> authorizedPropertyTypes ) {
-        return eds.getEntity( entityKeyId, authorizedPropertyTypes );
+        EntityKey entityKey = idService.getEntityKey( entityKeyId );
+        return eds.getEntity( entityKeyId, entityKey.getSyncId(), entityKey.getEntityId(), authorizedPropertyTypes );
     }
 
     @Override
@@ -189,8 +190,7 @@ public class DataGraphService implements DataGraphManager {
         eds.updateEntityAsync( key, entity, propertyTypes ).forEach( DataGraphService::tryGetAndLogErrors );
 
         propertyTypes.entrySet().forEach( entry -> {
-            if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) )
-                entity.removeAll( entry.getKey() );
+            if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) ) { entity.removeAll( entry.getKey() ); }
         } );
 
         eventBus.post( new EntityDataCreatedEvent( key.getEntitySetId(),
@@ -327,56 +327,13 @@ public class DataGraphService implements DataGraphManager {
 
             } );
             utilizers = lm.computeGraphAggregation( numResults, entitySetId, syncId, srcFilters, dstFilters );
-            //            eds.getEntityKeysForEntitySet( entitySetId, syncId )
-            //                    .parallel()
-            //                    .map( idService::getEntityKeyId )
-            //                    .forEach( vertexId -> {
-            //                        long score = topUtilizerDetailsList.parallelStream()
-            //                                /*.map( details -> lm.getEdgeCount( vertexId,
-            //                                        details.getAssociationTypeId(),
-            //                                        details.getNeighborTypeIds(),
-            //                                        details.getUtilizerIsSrc() ) )
-            //                                .map( ResultSetFuture::getUninterruptibly )*/
-            //                                .mapToLong( details -> lm.getHazelcastEdgeCount( vertexId,
-            //                                        details.getAssociationTypeId(),
-            //                                        details.getNeighborTypeIds(),
-            //                                        details.getUtilizerIsSrc() ) )
-            //                                //.mapToLong( Util::getCount )
-            //                                .sum();
-            //                        utilizers.accumulate( vertexId, score );
-            //                        // eds.writeVertexCount( queryId, vertexId, 1.0D * score );
-            //                    } );
 
             queryCache.put( new MultiKey( entitySetId, topUtilizerDetailsList ), utilizers );
         } else {
             utilizers = maybeUtilizers;
         }
 
-        return eds.getEntities( utilizers, authorizedPropertyTypes )::iterator;
-        //
-        //        return utilizers
-        //                .stream()
-        //                .map( longWeightedId -> {
-        //                    UUID vertexId = longWeightedId.getId();
-        //                    EntityKey key = idService.getEntityKey( vertexId );
-        //                    SetMultimap<Object, Object> entity = HashMultimap.create();
-        //                    entity.put( "count", longWeightedId.getWeight() );
-        //                    entity.putAll(
-        //                            eds.getEntity( key.getEntitySetId(),
-        //                                    key.getSyncId(),
-        //                                    key.getEntityId(),
-        //                                    authorizedPropertyTypes ) );
-        //                    entity.put( "id", vertexId.toString() );
-        //                    return entity;
-        //                } )::iterator;
-
-        /*
-         * Iterable<SetMultimap<Object, Object>> entities = Iterables .transform( eds.readTopUtilizers( queryId,
-         * numResults ), vertexId -> { EntityKey key = idService.getEntityKey( vertexId ); SetMultimap<Object, Object>
-         * entity = HashMultimap.create(); entity.putAll( eds.getEntity( key.getEntitySetId(), key.getSyncId(),
-         * key.getEntityId(), authorizedPropertyTypes ) ); entity.put( "id", vertexId.toString() ); return entity; } );
-         * return entities;
-         */
+        return eds.getEntities( entitySetId, utilizers, authorizedPropertyTypes )::iterator;
     }
 
     @Override
