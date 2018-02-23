@@ -1,6 +1,6 @@
 package com.dataloom.edm.types.processors;
 
-import com.dataloom.edm.type.EntityType;
+import com.openlattice.edm.type.EntityType;
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 
 import java.util.Map;
