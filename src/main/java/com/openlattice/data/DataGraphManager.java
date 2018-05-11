@@ -23,7 +23,9 @@ package com.openlattice.data;
 import com.google.common.collect.SetMultimap;
 import com.openlattice.analysis.requests.TopUtilizerDetails;
 import com.openlattice.data.requests.Association;
+import com.openlattice.data.requests.AssociationRequest;
 import com.openlattice.data.requests.Entity;
+import com.openlattice.data.requests.EntityRequest;
 import com.openlattice.edm.type.PropertyType;
 import com.openlattice.graph.core.objects.NeighborTripletSet;
 import com.openlattice.graph.edge.EdgeKey;
@@ -107,6 +109,12 @@ public interface DataGraphManager {
             Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
             throws ExecutionException, InterruptedException;
 
+    void bulkCreateEntityData(
+            Set<EntityRequest> entities,
+            Set<AssociationRequest> associations,
+            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
+            throws ExecutionException, InterruptedException;
+
     public Iterable<SetMultimap<Object, Object>> getTopUtilizers(
             UUID entitySetId,
             UUID syncId,
@@ -116,4 +124,5 @@ public interface DataGraphManager {
             throws InterruptedException, ExecutionException;
 
     NeighborTripletSet getNeighborEntitySets( UUID entitySetId, UUID syncId );
+
 }

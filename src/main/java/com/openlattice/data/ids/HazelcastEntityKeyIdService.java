@@ -24,6 +24,7 @@ package com.openlattice.data.ids;
 
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.hazelcast.ListenableHazelcastFuture;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
@@ -35,14 +36,15 @@ import com.openlattice.data.EntityKeyIdService;
 import com.openlattice.data.mapstores.PostgresEntityKeyIdsMapstore;
 import com.openlattice.datastore.util.Util;
 import com.openlattice.hazelcast.HazelcastMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Most of the logic for this class is handled by the map store, which ensures a unique id
@@ -50,7 +52,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class    HazelcastEntityKeyIdService implements EntityKeyIdService {
+public class HazelcastEntityKeyIdService implements EntityKeyIdService {
     private static final Logger logger = LoggerFactory.getLogger( HazelcastEntityKeyIdService.class );
     private final ListeningExecutorService executor;
 
@@ -91,7 +93,10 @@ public class    HazelcastEntityKeyIdService implements EntityKeyIdService {
     @Override
     @Timed
     public Map<EntityKey, UUID> getEntityKeyIds( Set<EntityKey> entityKeys ) {
-        return Util.getSafely( ids, entityKeys );
+        Map<EntityKey, UUID> entityKeyIds = Util.getSafely( ids, entityKeys );
+        Sets.difference( entityKeys, entityKeyIds.keySet() )
+                .forEach( entityKey -> entityKeyIds.put( entityKey, getEntityKeyId( entityKey ) ) );
+        return entityKeyIds;
     }
 
     @Timed
