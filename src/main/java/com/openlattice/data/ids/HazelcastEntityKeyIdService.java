@@ -35,12 +35,14 @@ import com.openlattice.data.EntityKeyIdService;
 import com.openlattice.data.mapstores.PostgresEntityKeyIdsMapstore;
 import com.openlattice.datastore.util.Util;
 import com.openlattice.hazelcast.HazelcastMap;
+
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +52,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class    HazelcastEntityKeyIdService implements EntityKeyIdService {
+public class HazelcastEntityKeyIdService implements EntityKeyIdService {
     private static final Logger logger = LoggerFactory.getLogger( HazelcastEntityKeyIdService.class );
     private final ListeningExecutorService executor;
 
@@ -109,6 +111,19 @@ public class    HazelcastEntityKeyIdService implements EntityKeyIdService {
     @Override
     public ListenableFuture<UUID> getEntityKeyIdAsync( EntityKey entityKey ) {
         return new ListenableHazelcastFuture<>( ids.getAsync( entityKey ) );
+    }
+
+    @Timed
+    @Override
+    public void deleteEntityKey( EntityKey entityKey ) {
+        Util.deleteSafely( ids, entityKey );
+    }
+
+    @Timed
+    @Override
+    public void deleteEntityKeyId( UUID entityKeyId ) {
+        ids.keySet( Predicates.equal( PostgresEntityKeyIdsMapstore.ID, entityKeyId ) )
+                .forEach( key -> Util.deleteSafely( ids, key ) );
     }
 
 }
