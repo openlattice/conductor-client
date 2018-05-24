@@ -50,4 +50,8 @@ public interface EntityKeyIdService {
 
     Map<UUID, EntityKey> getEntityKeys( Set<UUID> entityKeyIds );
 
+    void deleteEntityKey( EntityKey entityKey );
+
+    void deleteEntityKeyId( UUID entityKeyId );
+
 }

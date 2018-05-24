@@ -76,7 +76,7 @@ public class HazelcastEntityDatastore implements EntityDatastore {
     private final PostgresDataManager                  pdm;
 
     @Inject
-    private EventBus eventBus;
+    private EventBus                             eventBus;
 
     public HazelcastEntityDatastore(
             HazelcastInstance hazelastInstance,
@@ -462,6 +462,7 @@ public class HazelcastEntityDatastore implements EntityDatastore {
     public void deleteEntity( EntityDataKey entityDataKey ) {
         try {
             asyncDeleteEntity( entityDataKey ).get();
+            idService.deleteEntityKeyId( entityDataKey.getEntityKeyId() );
         } catch ( InterruptedException | ExecutionException e ) {
             logger.error( "Unable to delete entity {}", entityDataKey );
         }
