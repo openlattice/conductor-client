@@ -36,7 +36,9 @@ import com.openlattice.analysis.requests.TopUtilizerDetails;
 import com.openlattice.data.analytics.IncrementableWeightId;
 import com.openlattice.data.events.EntityDataCreatedEvent;
 import com.openlattice.data.requests.Association;
+import com.openlattice.data.requests.AssociationRequest;
 import com.openlattice.data.requests.Entity;
+import com.openlattice.data.requests.EntityRequest;
 import com.openlattice.data.storage.HazelcastEntityDatastore;
 import com.openlattice.datastore.exceptions.ResourceNotFoundException;
 import com.openlattice.edm.EntitySet;
@@ -54,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -198,6 +201,15 @@ public class DataGraphService implements DataGraphManager {
         return Stream.concat( Stream.of( reservationAndVertex ), writes );
     }
 
+    private Stream<ListenableFuture> createEntity(
+            UUID entityKeyId,
+            EntityKey key,
+            SetMultimap<UUID, Object> details,
+            Map<UUID, EdmPrimitiveTypeKind> authorizedPropertiesWithDataType ) {
+        final Stream<ListenableFuture> writes = eds.updateEntityAsync( key, details, authorizedPropertiesWithDataType );
+        return Stream.concat( Stream.of( Futures.immediateFuture( entityKeyId ) ), writes );
+    }
+
     public void replaceEntity(
             EntityDataKey edk,
             SetMultimap<UUID, Object> entity,
@@ -258,6 +270,37 @@ public class DataGraphService implements DataGraphManager {
                 } ).forEach( DataGraphService::tryGetAndLogErrors );
     }
 
+    private ListenableFuture createEdge(
+            UUID associationId,
+            UUID srcId,
+            UUID dstId,
+            EntityKey associationKey,
+            EntityKey srcKey,
+            EntityKey dstKey ) {
+
+        UUID srcTypeId = typeIds.getUnchecked( srcKey.getEntitySetId() );
+        UUID srcSetId = srcKey.getEntitySetId();
+        UUID srcSyncId = srcKey.getSyncId();
+        UUID dstTypeId = typeIds.getUnchecked( dstKey.getEntitySetId() );
+        UUID dstSetId = dstKey.getEntitySetId();
+        UUID dstSyncId = dstKey.getSyncId();
+        UUID edgeTypeId = typeIds.getUnchecked( associationKey.getEntitySetId() );
+        UUID edgeSetId = associationKey.getEntitySetId();
+
+        return lm.addEdgeAsync(
+                srcId,
+                srcTypeId,
+                srcSetId,
+                srcSyncId,
+                dstId,
+                dstTypeId,
+                dstSetId,
+                dstSyncId,
+                associationId,
+                edgeTypeId,
+                edgeSetId );
+    }
+
     @Override
     public void createEntitiesAndAssociations(
             Set<Entity> entities,
@@ -282,34 +325,71 @@ public class DataGraphService implements DataGraphManager {
                 logger.debug( err );
                 return Stream.of( Futures.immediateFailedFuture( new ResourceNotFoundException( err ) ) );
             } else {
+                UUID edgeId = idService.getEntityKeyId( association.getKey() );
+
                 Stream<ListenableFuture> writes = eds.updateEntityAsync( association.getKey(),
                         association.getDetails(),
                         authorizedPropertiesByEntitySetId.get( association.getKey().getEntitySetId() ) );
 
-                UUID srcTypeId = typeIds.getUnchecked( association.getSrc().getEntitySetId() );
-                UUID srcSetId = association.getSrc().getEntitySetId();
-                UUID srcSyncId = association.getSrc().getSyncId();
-                UUID dstTypeId = typeIds.getUnchecked( association.getDst().getEntitySetId() );
-                UUID dstSetId = association.getDst().getEntitySetId();
-                UUID dstSyncId = association.getDst().getSyncId();
-                UUID edgeId = idService.getEntityKeyId( association.getKey() );
-                UUID edgeTypeId = typeIds.getUnchecked( association.getKey().getEntitySetId() );
-                UUID edgeSetId = association.getKey().getEntitySetId();
-
-                ListenableFuture addEdge = lm.addEdgeAsync( srcId,
-                        srcTypeId,
-                        srcSetId,
-                        srcSyncId,
-                        dstId,
-                        dstTypeId,
-                        dstSetId,
-                        dstSyncId,
-                        edgeId,
-                        edgeTypeId,
-                        edgeSetId );
-                return Stream.concat( writes, Stream.of( addEdge ) );
+                return Stream.concat( writes,
+                        Stream.of( createEdge( edgeId,
+                                srcId,
+                                dstId,
+                                association.getKey(),
+                                association.getSrc(),
+                                association.getDst() ) ) );
             }
         } ).forEach( DataGraphService::tryGetAndLogErrors );
+    }
+
+    @Override
+    public void bulkCreateEntityData(
+            Set<EntityRequest> entities,
+            Set<AssociationRequest> associations,
+            Map<UUID, Map<UUID, EdmPrimitiveTypeKind>> authorizedPropertiesByEntitySetId )
+            throws ExecutionException, InterruptedException {
+
+        Set<UUID> entityKeyIds = Stream.concat( entities.stream().map( entity -> entity.getEntityKeyId() ),
+                associations.stream().flatMap( association -> Stream
+                        .of( association.getEntityKeyId(), association.getSrc(), association.getDst() ) ) ).collect(
+                        Collectors.toSet() );
+
+        Map<UUID, EntityKey> entityKeys = idService.getEntityKeys( entityKeyIds );
+
+        entities.parallelStream()
+                .filter( entity -> entity.getDetails().size() > 0 )
+                .flatMap( entity -> createEntity( entity.getEntityKeyId(),
+                        entityKeys.get( entity.getEntityKeyId() ),
+                        entity.getDetails(),
+                        authorizedPropertiesByEntitySetId
+                                .get( entityKeys.get( entity.getEntityKeyId() ).getEntitySetId() ) ) )
+                .forEach( DataGraphService::tryGetAndLogErrors );
+
+        associations.parallelStream().flatMap( association -> {
+            EntityKey associationKey = entityKeys.get( association.getEntityKeyId() );
+            EntityKey srcKey = entityKeys.get( association.getSrc() );
+            EntityKey dstKey = entityKeys.get( association.getDst() );
+            if ( srcKey == null || dstKey == null ) {
+                String err = String.format(
+                        "Edge %s cannot be created because some vertex ids do not exist.",
+                        association.toString() );
+                logger.debug( err );
+                return Stream.of( Futures.immediateFailedFuture( new ResourceNotFoundException( err ) ) );
+            } else {
+                Stream<ListenableFuture> writes = eds.updateEntityAsync( associationKey,
+                        association.getDetails(),
+                        authorizedPropertiesByEntitySetId.get( associationKey.getEntitySetId() ) );
+
+                return Stream.concat( writes,
+                        Stream.of( createEdge( association.getEntityKeyId(),
+                                association.getSrc(),
+                                association.getDst(),
+                                associationKey,
+                                srcKey,
+                                dstKey ) ) );
+            }
+        } ).forEach( DataGraphService::tryGetAndLogErrors );
+
     }
 
     @Override
@@ -361,4 +441,5 @@ public class DataGraphService implements DataGraphManager {
             logger.error( "Future execution failed.", e );
         }
     }
+
 }
