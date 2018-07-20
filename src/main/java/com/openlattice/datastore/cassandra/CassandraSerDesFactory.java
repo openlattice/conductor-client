@@ -29,6 +29,11 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -40,7 +45,6 @@ import org.apache.olingo.commons.api.edm.geo.Geospatial.Dimension;
 import org.apache.olingo.commons.api.edm.geo.Geospatial.Type;
 import org.apache.olingo.commons.api.edm.geo.Point;
 import org.joda.time.DateTime;
-import org.joda.time.LocalTime;
 import org.joda.time.format.ISOPeriodFormat;
 
 public class CassandraSerDesFactory {
@@ -138,16 +142,34 @@ public class CassandraSerDesFactory {
              * validateFormatAndNormalize binds to ByteBuffer
              */
             case Binary:
-                return TypeCodec.blob().deserialize( bytes, protocolVersion );
+                return TypeCodec.blob().deserialize( bytes, protocolVersion ).array();
             /**
              * validateFormatAndNormalize binds to String
              */
             case Date:
             case DateTimeOffset:
+                String dateStr = TypeCodec.varchar().deserialize( bytes, protocolVersion );
+                if ( dateStr.contains( "Supplemental" ) ) {
+                    return null;
+                } else if ( dateStr.length() == 10 ) {
+                    return LocalDate.parse( dateStr );
+                } else if ( !dateStr.contains( "Z" ) && dateStr.length() >= 21 && dateStr.length() <= 23 ) {
+                    return LocalDateTime.parse( dateStr ).toLocalDate();
+                } else if ( dateStr.contains( "Z" ) || dateStr.contains( "+" ) || dateStr.lastIndexOf( "-" ) > 18 ) {
+                    return OffsetDateTime.parse( dateStr ).toLocalDate();
+                } else {
+                    return LocalDateTime.parse( dateStr ).toLocalDate();
+                }
+
+                //                return OffsetDateTime.parse( TypeCodec.varchar().deserialize( bytes, protocolVersion ) );
             case Duration:
+                return Duration.ofMillis( ISOPeriodFormat.standard()
+                        .parsePeriod( TypeCodec.varchar().deserialize( bytes, protocolVersion ) ).getMillis() );
             case Guid:
-            case String:
+                return UUID.fromString( TypeCodec.varchar().deserialize( bytes, protocolVersion ) );
             case TimeOfDay:
+                return LocalTime.parse( TypeCodec.varchar().deserialize( bytes, protocolVersion ) );
+            case String:
             case GeographyPoint:
                 return TypeCodec.varchar().deserialize( bytes, protocolVersion );
             /**

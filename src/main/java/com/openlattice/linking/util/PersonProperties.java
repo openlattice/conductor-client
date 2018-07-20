@@ -28,10 +28,10 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
 public class PersonProperties {
     private static final Logger        logger = LoggerFactory.getLogger( PersonProperties.class );
     private static       DecimalFormat dd     = new DecimalFormat( "00" );
@@ -185,8 +185,8 @@ public class PersonProperties {
             if ( dobUnparsed != null ) {
                 if ( StringUtils.isEmpty( dobUnparsed ) ) { values.add( "" ); } else {
                     try {
-                        DateTime dt = DateTime.parse( dobUnparsed );
-                        String dobParsed = dd.format( dt.getDayOfMonth() ) + dd.format( dt.getMonthOfYear() ) + String
+                        LocalDate dt = LocalDate.parse( dobUnparsed );
+                        String dobParsed = dd.format( dt.getDayOfMonth() ) + dd.format( dt.getMonthValue() ) + String
                                 .valueOf( dt.getYear() );
                         values.add( dobParsed );
                     } catch ( Exception e ) {

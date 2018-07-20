@@ -22,10 +22,12 @@ package com.openlattice.edm;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
-import com.openlattice.edm.events.EntitySetCreatedEvent;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.eventbus.Subscribe;
 import com.openlattice.authorization.Permission;
 import com.openlattice.authorization.Principal;
+import com.openlattice.edm.events.EntitySetCreatedEvent;
+import com.openlattice.edm.events.PropertyTypeCreatedEvent;
 import com.openlattice.edm.type.PropertyType;
 import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresTableDefinition;
@@ -35,6 +37,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -66,6 +69,34 @@ public class PostgresEdmManager implements DbEdmManager {
         //Method is idempotent and should be re-executable in case of a failure.
     }
 
+    @Override public void deleteEntitySet(
+            EntitySet entitySet, Collection<PropertyType> propertyTypes ) {
+        PostgresTableDefinition ptd = DataTables.buildEntitySetTableDefinition( entitySet );
+        dropTable( ptd.getName() );
+        removePropertiesFromEntitySet( entitySet, propertyTypes );
+
+    }
+
+    @Override public void removePropertiesFromEntitySet( EntitySet entitySet, PropertyType... propertyTypes ) {
+        removePropertiesFromEntitySet( entitySet, Arrays.asList( propertyTypes ) );
+    }
+
+    @Override public void removePropertiesFromEntitySet(
+            EntitySet entitySet, Collection<PropertyType> propertyTypes ) {
+//        for ( PropertyType propertyType : propertyTypes ) {
+//            PostgresTableDefinition ptd = DataTables.buildPropertyTableDefinition( entitySet, propertyType );
+//            dropTable( ptd.getName() );
+//        }
+    }
+
+    public void dropTable( String table ) {
+        try ( Connection conn = hds.getConnection(); Statement s = conn.createStatement() ) {
+            s.execute( "DROP TABLE " + table );
+        } catch ( SQLException e ) {
+            logger.error( "Encountered exception while dropping table: {}", table, e );
+        }
+    }
+
     @Override
     public void grant(
             Principal principal,
@@ -82,7 +113,7 @@ public class PostgresEdmManager implements DbEdmManager {
         tables.add( DataTables.entityTableName( entitySet.getId() ) );
 
         for ( PropertyType pt : propertyTypes ) {
-            tables.add( DataTables.propertyTableName( entitySet.getId(), pt.getId() ) );
+            tables.add( DataTables.propertyTableName( pt.getId() ) );
         }
 
         String principalId = principal.getId();
@@ -122,7 +153,8 @@ public class PostgresEdmManager implements DbEdmManager {
      * all include an if not exists. If the behavior of that class changes this function should be updated
      * appropriately.
      */
-    private void createPropertyTypeTableIfNotExist( EntitySet entitySet, PropertyType propertyType )
+    @VisibleForTesting
+    public void createPropertyTypeTableIfNotExist( EntitySet entitySet, PropertyType propertyType )
             throws SQLException {
         PostgresTableDefinition ptd = DataTables.buildPropertyTableDefinition( entitySet, propertyType );
         ptm.registerTables( ptd );
@@ -137,6 +169,13 @@ public class PostgresEdmManager implements DbEdmManager {
         } catch ( SQLException e ) {
             logger.error( "Unable to create entity set {}", entitySetCreatedEvent.getEntitySet() );
         }
+    }
+
+    @Subscribe
+    @ExceptionMetered
+    @Timed
+    public void handlePropertyTypeCreated(PropertyTypeCreatedEvent propertyTypeCreatedEvent ) {
+
     }
 
 }

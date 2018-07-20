@@ -1,5 +1,7 @@
 package com.openlattice.hazelcast.stream;
 
+import static com.openlattice.hazelcast.stream.HazelcastStreamSink.EOF;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
@@ -10,6 +12,7 @@ import com.hazelcast.query.Predicate;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -21,7 +24,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public abstract class HazelcastStream<T, K,V> implements Iterable<T> {
+public abstract class HazelcastStream<T, K, V> implements Iterable<T> {
     private static final Map<Class<?>, Logger> subclassLoggers = new HashMap<>();
 
     private final Logger logger = subclassLoggers.computeIfAbsent( getClass(), LoggerFactory::getLogger );
@@ -39,11 +42,16 @@ public abstract class HazelcastStream<T, K,V> implements Iterable<T> {
 
     public abstract ListenableFuture<Long> start(
             ListeningExecutorService executorService,
-            IMap<K,V> map,
+            IMap<K, V> map,
             Predicate p );
 
     @Override public Iterator<T> iterator() {
-        HazelcastIterator<T> hzIterator = new HazelcastIterator<>( streamLock, streamId, stream );
+        HazelcastIterator<T> hzIterator = null;
+        try {
+            hzIterator = new HazelcastIterator<>( streamLock, streamId, stream );
+        } catch ( InterruptedException e ) {
+            logger.error( "Unable to create iterator for stream id {}", streamId, e );
+        }
         return hzIterator;
     }
 
@@ -64,27 +72,32 @@ public abstract class HazelcastStream<T, K,V> implements Iterable<T> {
         ILock maybeStreamLock;
         do {
             id = UUID.randomUUID();
-            maybeStreamLock = hazelcastInstance.getLock( id.toString() );
+            maybeStreamLock = hazelcastInstance.getLock( getStreamLockName( id ) );
         } while ( !maybeStreamLock.tryLock() );
 
         return Pair.of( id, maybeStreamLock );
     }
 
+    public static String getStreamLockName( UUID id ) {
+        return "stream-" + id.toString();
+    }
+
     public static class HazelcastIterator<T> implements Iterator<T> {
         private static final Logger logger = LoggerFactory.getLogger( HazelcastIterator.class );
-        private final ILock                    streamLock;
-        private final UUID                     streamId;
-        private final IQueue<StreamElement<T>> stream;
+        private final ILock  streamLock;
+        private final UUID   streamId;
+        private final IQueue stream;
         private final Lock lock = new ReentrantLock();
-        private StreamElement<T> next;
+        private Object next;
 
         public HazelcastIterator(
                 ILock streamLock,
                 UUID streamId,
-                IQueue<StreamElement<T>> stream ) {
+                IQueue stream ) throws InterruptedException {
             this.streamLock = streamLock;
             this.streamId = streamId;
             this.stream = stream;
+            retrieveNext();
         }
 
         public UUID getStreamId() {
@@ -93,20 +106,12 @@ public abstract class HazelcastStream<T, K,V> implements Iterable<T> {
 
         @Override
         public boolean hasNext() {
-            final boolean eof;
-            //Try for safety, but unnecessary as no exceptions would be thrown.
             try {
                 lock.lock();
-                eof = next.isEof();
+                return next != EOF;
             } finally {
                 lock.unlock();
             }
-            //If we have found that end of stream rel
-            if ( eof ) {
-                releaseId();
-                return false;
-            }
-            return true;
         }
 
         private void releaseId() {
@@ -115,25 +120,29 @@ public abstract class HazelcastStream<T, K,V> implements Iterable<T> {
             streamLock.destroy();
         }
 
+        private void retrieveNext() throws InterruptedException {
+            next = (T) stream.poll( 60, TimeUnit.SECONDS );
+            if ( next == null ) {
+                next = HazelcastStreamSink.EOF;
+            }
+        }
+
         @Override
         public T next() {
-            T nextElem = next.get();
-
+            final T nextElem;
             try {
                 lock.lock();
-                next = stream.poll( 60, TimeUnit.SECONDS );
-                if ( next == null ) {
-                    next = StreamElement.eof();
-                }
+                nextElem = (T) next;
+                retrieveNext();
             } catch ( InterruptedException e ) {
                 logger.error( "Unable to retrieve next element from stream queue {}", streamId, e );
                 next = StreamElement.eof();
+                throw new NoSuchElementException( "Unable to retrieve next element from " + streamId.toString() );
             } finally {
                 lock.unlock();
-                ;
             }
 
-            if ( next.isEof() ) {
+            if ( !hasNext() ) {
                 releaseId();
             }
 

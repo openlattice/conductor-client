@@ -43,12 +43,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.RandomUtils;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class PropertiesDataMapstore extends AbstractBasePostgresMapstore<PropertyValueKey, PropertyMetadata> {
+public class PropertiesDataMapstore extends AbstractBasePostgresMapstore<PropertyValueKey, PropertyMetadata> {
     private final PostgresColumnDefinition valueColumn;
+    private final String                   valueColumnName;
 
     public PropertiesDataMapstore( PostgresTableDefinition table, HikariDataSource hds ) {
         //Table name doesn't matter as these aer used for configuring maps.
@@ -56,6 +58,7 @@ class PropertiesDataMapstore extends AbstractBasePostgresMapstore<PropertyValueK
         for ( PostgresColumnDefinition pcd : table.getColumns() ) {
             if ( pcd.getName().equals( DataTables.VALUE_FIELD ) ) {
                 valueColumn = pcd;
+                valueColumnName = valueColumn.getName().replace( "\"", "" );
                 return;
             }
         }
@@ -107,7 +110,7 @@ class PropertiesDataMapstore extends AbstractBasePostgresMapstore<PropertyValueK
     }
 
     @Override protected PropertyValueKey mapToKey( ResultSet rs ) throws SQLException {
-        return ResultSetAdapters.propertyValueKey( rs );
+        return ResultSetAdapters.propertyValueKey( valueColumnName, rs );
     }
 
     @Override public PropertyValueKey generateTestKey() {
@@ -115,6 +118,6 @@ class PropertiesDataMapstore extends AbstractBasePostgresMapstore<PropertyValueK
     }
 
     @Override public PropertyMetadata generateTestValue() {
-        return new PropertyMetadata( 5, ImmutableList.of( 1L, 2L ), OffsetDateTime.now() );
+        return new PropertyMetadata( RandomUtils.nextBytes( 16 ), 5, ImmutableList.of( 1L, 2L ), OffsetDateTime.now() );
     }
 }

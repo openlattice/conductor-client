@@ -24,36 +24,32 @@ import com.dataloom.hazelcast.ListenableHazelcastFuture;
 import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
-import com.hazelcast.query.Predicate;
+import com.openlattice.authorization.ForbiddenException;
 import com.openlattice.blocking.GraphEntityPair;
 import com.openlattice.blocking.LinkingEntity;
 import com.openlattice.conductor.rpc.ConductorElasticsearchApi;
 import com.openlattice.data.DataGraphService;
+import com.openlattice.data.EntityDataKey;
+import com.openlattice.data.EntityDataValue;
 import com.openlattice.data.EntityKey;
 import com.openlattice.data.EntityKeyIdService;
-import com.openlattice.data.aggregators.EntitiesAggregator;
-import com.openlattice.data.hazelcast.DataKey;
-import com.openlattice.data.hazelcast.Entities;
-import com.openlattice.data.hazelcast.EntitySets;
-import com.openlattice.data.ids.HazelcastEntityKeyIdService;
-import com.openlattice.data.mapstores.DataMapstore;
-import com.openlattice.datastore.cassandra.CassandraSerDesFactory;
-import com.openlattice.datastore.cassandra.RowAdapters;
+import com.openlattice.data.ids.PostgresEntityKeyIdService;
+import com.openlattice.data.storage.HazelcastEntityDatastore;
+import com.openlattice.datastore.services.EdmManager;
 import com.openlattice.datastore.util.Util;
-import com.openlattice.edm.type.PropertyType;
-import com.openlattice.graph.core.Graph;
+import com.openlattice.graph.Graph;
 import com.openlattice.graph.edge.Edge;
 import com.openlattice.hazelcast.HazelcastMap;
-import java.nio.ByteBuffer;
+import com.openlattice.hazelcast.processors.EntityDataUpserter;
+import com.openlattice.ids.HazelcastIdGenerationService;
+import com.zaxxer.hikari.HikariDataSource;
+import java.time.OffsetDateTime;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -71,21 +67,23 @@ public class HazelcastMergingService {
     @Inject
     private       ConductorElasticsearchApi            elasticsearchApi;
     private       IMap<GraphEntityPair, LinkingEntity> linkingEntities;
-    private       IMap<DataKey, ByteBuffer>            data;
+    private       IMap<EntityDataKey, EntityDataValue> entities;
     private       IMap<LinkingVertexKey, UUID>         newIds;
     private       IMap<EntityKey, UUID>                ids;
     private       Graph                                graph;
     private       HazelcastInstance                    hazelcastInstance;
     private       ObjectMapper                         mapper;
 
-    public HazelcastMergingService( HazelcastInstance hazelcastInstance, ListeningExecutorService executor ) {
-        this.data = hazelcastInstance.getMap( HazelcastMap.DATA.name() );
+    public HazelcastMergingService( HazelcastInstance hazelcastInstance, HikariDataSource hds, EdmManager edm ) {
+        this.entities = hazelcastInstance.getMap( HazelcastMap.DATA.name() );
         this.newIds = hazelcastInstance.getMap( HazelcastMap.VERTEX_IDS_AFTER_LINKING.name() );
         this.mapper = ObjectMappers.getJsonMapper();
 
         this.ids = hazelcastInstance.getMap( HazelcastMap.IDS.name() );
-        this.ekIds = new HazelcastEntityKeyIdService( hazelcastInstance, executor );
-        this.graph = new Graph( executor, hazelcastInstance );
+        this.ekIds = new PostgresEntityKeyIdService( hazelcastInstance,
+                hds,
+                new HazelcastIdGenerationService( hazelcastInstance ) );
+        this.graph = new Graph( hds, edm );
         this.hazelcastInstance = hazelcastInstance;
 
     }
@@ -93,44 +91,37 @@ public class HazelcastMergingService {
     private SetMultimap<UUID, Object> computeMergedEntity(
             Set<UUID> entityKeyIds,
             Map<UUID, Set<UUID>> propertyTypeIdsByEntitySet,
-            Map<UUID, PropertyType> propertyTypesById,
             Set<UUID> propertyTypesToPopulate ) {
 
-        Map<UUID, Set<UUID>> authorizedPropertyTypesForEntity = ekIds.getEntityKeyEntries( entityKeyIds )
-                .stream()
-                .collect( Collectors.toMap( Entry::getValue,
-                        entry -> propertyTypeIdsByEntitySet.get( entry.getKey().getEntitySetId() ) ) );
+        Set<EntityDataKey> entityDataKeys = ekIds.getEntityKeys( entityKeyIds ).entrySet().stream()
+                .map( entry -> new EntityDataKey( entry.getValue().getEntitySetId(), entry.getKey() ) ).collect(
+                        Collectors.toSet() );
 
-        Predicate entitiesFilter = EntitySets
-                .getEntities( authorizedPropertyTypesForEntity.keySet().toArray( new UUID[ 0 ] ) );
-        Entities entities = data.aggregate( new EntitiesAggregator(), entitiesFilter );
+        Map<EntityDataKey, EntityDataValue> entityValues = entities.getAll( entityDataKeys );
 
-        SetMultimap<UUID, ByteBuffer> mergedEntity = HashMultimap.create();
+        SetMultimap<UUID, Object> mergedEntity = HashMultimap.create();
 
-        entities.entrySet().forEach( entityDetails -> {
-            Set<UUID> authorizedPropertyTypes = authorizedPropertyTypesForEntity.get( entityDetails.getKey() );
-            mergedEntity.putAll(
-                    Multimaps.filterKeys( entityDetails.getValue(), key -> authorizedPropertyTypes.contains( key ) ) );
+        entityValues.entrySet().forEach( entry -> {
+            UUID entitySetId = entry.getKey().getEntitySetId();
+            Set<UUID> authorizedPropertyTypes = Sets
+                    .intersection( propertyTypeIdsByEntitySet.get( entitySetId ), propertyTypesToPopulate );
+            mergedEntity.putAll( HazelcastEntityDatastore
+                    .fromEntityDataValue( entry.getValue(), authorizedPropertyTypes ) );
         } );
 
-        return RowAdapters.entityIndexedById( UUID.randomUUID().toString(),
-                mergedEntity,
-                propertyTypesById,
-                propertyTypesToPopulate,
-                mapper );
+        return mergedEntity;
     }
 
     @Async
     public void mergeEntity(
-            Set<UUID> entityKeyIds, UUID graphId,
+            Set<UUID> entityKeyIds,
+            UUID graphId,
             UUID syncId,
             Map<UUID, Set<UUID>> propertyTypeIdsByEntitySet,
-            Map<UUID, PropertyType> propertyTypesById,
             Set<UUID> propertyTypesToPopulate,
             Map<UUID, EdmPrimitiveTypeKind> propertyTypesWithDatatype ) {
         SetMultimap<UUID, Object> mergedEntity = computeMergedEntity( entityKeyIds,
                 propertyTypeIdsByEntitySet,
-                propertyTypesById,
                 propertyTypesToPopulate );
 
         String entityId = UUID.randomUUID().toString();
@@ -138,7 +129,7 @@ public class HazelcastMergingService {
         // create merged entity, in particular get back the entity key id for the new entity
         UUID mergedEntityKeyId;
         try {
-            mergedEntityKeyId = createEntity( entityId, mergedEntity, graphId, syncId, propertyTypesWithDatatype );
+            mergedEntityKeyId = createEntity( entityId, mergedEntity, graphId, propertyTypesWithDatatype );
 
             // write to a lookup table from old entity key id to new, merged entity key id
             entityKeyIds.forEach( oldId -> newIds.put( new LinkingVertexKey( graphId, oldId ), mergedEntityKeyId ) );
@@ -154,15 +145,13 @@ public class HazelcastMergingService {
             String entityId,
             SetMultimap<UUID, Object> entityDetails,
             UUID graphId,
-            UUID syncId,
             Map<UUID, EdmPrimitiveTypeKind> propertyTypesWithDatatype )
             throws ExecutionException, InterruptedException {
 
-        final EntityKey key = new EntityKey( graphId, entityId, syncId );
+        final EntityKey key = new EntityKey( graphId, entityId );
         final ListenableFuture reservationAndVertex = new ListenableHazelcastFuture<>( ids.getAsync( key ) );
         final Stream<ListenableFuture> writes = createDataAsync( entityId,
                 graphId,
-                syncId,
                 entityDetails,
                 propertyTypesWithDatatype );
         Stream.concat( Stream.of( reservationAndVertex ), writes ).forEach( DataGraphService::tryGetAndLogErrors );
@@ -172,65 +161,37 @@ public class HazelcastMergingService {
     private Stream<ListenableFuture> createDataAsync(
             String entityId,
             UUID graphId,
-            UUID syncId,
             SetMultimap<UUID, Object> entityDetails,
             Map<UUID, EdmPrimitiveTypeKind> propertyTypesWithDatatype ) {
 
         Set<UUID> authorizedProperties = propertyTypesWithDatatype.keySet();
         // does not write the row if some property values that user is trying to write to are not authorized.
         if ( !authorizedProperties.containsAll( entityDetails.keySet() ) ) {
-            logger.error( "Entity {} not written because the following properties are not authorized: {}",
-                    entityId,
-                    Sets.difference( entityDetails.keySet(), authorizedProperties ) );
-            return Stream.empty();
+            String msg = String
+                    .format( "Entity %s not written because the following properties are not authorized: %s",
+                            entityId,
+                            Sets.difference( entityDetails.keySet(), authorizedProperties ) );
+            logger.error( msg );
+            throw new ForbiddenException( msg );
         }
 
-        SetMultimap<UUID, Object> normalizedPropertyValues;
-        try {
-            normalizedPropertyValues = CassandraSerDesFactory.validateFormatAndNormalize( entityDetails,
-                    propertyTypesWithDatatype );
-        } catch ( Exception e ) {
-            logger.error( "Entity {} not written because some property values are of invalid format.",
-                    entityId,
-                    e );
-            return Stream.empty();
-
-        }
-
-        EntityKey ek = new EntityKey( graphId, entityId, syncId );
+        EntityKey ek = new EntityKey( graphId, entityId );
         UUID id = ids.get( ek );
-        Stream<ListenableFuture> futures =
-                normalizedPropertyValues
-                        .entries().stream()
-                        .map( entry -> {
-                            UUID propertyTypeId = entry.getKey();
-                            EdmPrimitiveTypeKind datatype = propertyTypesWithDatatype
-                                    .get( propertyTypeId );
-                            ByteBuffer buffer = CassandraSerDesFactory.serializeValue(
-                                    mapper,
-                                    entry.getValue(),
-                                    datatype,
-                                    entityId );
-                            return data.setAsync( new DataKey(
-                                    id,
-                                    graphId,
-                                    syncId,
-                                    entityId,
-                                    propertyTypeId,
-                                    DataMapstore.hf.hashBytes( buffer.array() ).asBytes() ), buffer );
-                        } )
-                        .map( ListenableHazelcastFuture::new );
+        EntityDataKey edk = new EntityDataKey( graphId, id );
+        EntityDataUpserter entityDataUpserter =
+                new EntityDataUpserter( entityDetails, OffsetDateTime.now() );
+
+        Stream<ListenableFuture> futures = Stream
+                .of( new ListenableHazelcastFuture( entities.submitToKey( edk, entityDataUpserter ) ) );
 
         propertyTypesWithDatatype.entrySet().forEach( entry -> {
             if ( entry.getValue().equals( EdmPrimitiveTypeKind.Binary ) ) {
-                normalizedPropertyValues.removeAll( entry.getKey() );
+                entityDetails.removeAll( entry.getKey() );
             }
         } );
 
-        elasticsearchApi.updateEntityData( graphId,
-                syncId,
-                entityId,
-                normalizedPropertyValues );
+        elasticsearchApi.updateEntityData( new EntityDataKey( graphId, id ),
+                entityDetails );
 
         return futures;
     }
@@ -240,27 +201,23 @@ public class HazelcastMergingService {
     }
 
     @Async
-    public void mergeEdgeAsync( UUID linkedEntitySetId, UUID syncId, Edge edge ) {
-        UUID srcEntitySetId = edge.getSrcSetId();
-        UUID srcSyncId = edge.getSrcSyncId();
-        UUID dstEntitySetId = edge.getDstSetId();
-        UUID dstSyncId = edge.getDstSyncId();
-        UUID edgeEntitySetId = edge.getEdgeSetId();
+    public void mergeEdgeAsync( UUID linkedEntitySetId, Edge edge ) {
+        UUID srcEntitySetId = edge.getSrc().getEntitySetId();
+        UUID dstEntitySetId = edge.getDst().getEntitySetId();
+        UUID edgeEntitySetId = edge.getEdge().getEntitySetId();
 
-        UUID srcId = edge.getKey().getSrcEntityKeyId();
-        UUID dstId = edge.getKey().getDstEntityKeyId();
-        UUID edgeId = edge.getKey().getEdgeEntityKeyId();
+        UUID srcId = edge.getKey().getSrc().getEntityKeyId();
+        UUID dstId = edge.getKey().getDst().getEntityKeyId();
+        UUID edgeId = edge.getKey().getEdge().getEntityKeyId();
 
         UUID newSrcId = getMergedId( linkedEntitySetId, srcId );
         if ( newSrcId != null ) {
             srcEntitySetId = linkedEntitySetId;
-            srcSyncId = syncId;
             srcId = newSrcId;
         }
         UUID newDstId = getMergedId( linkedEntitySetId, dstId );
         if ( newDstId != null ) {
             dstEntitySetId = linkedEntitySetId;
-            dstSyncId = syncId;
             dstId = newDstId;
         }
         UUID newEdgeId = getMergedId( linkedEntitySetId, edgeId );
@@ -269,16 +226,5 @@ public class HazelcastMergingService {
             edgeId = newEdgeId;
         }
 
-        graph.addEdge( srcId,
-                edge.getSrcTypeId(),
-                srcEntitySetId,
-                srcSyncId,
-                dstId,
-                edge.getDstTypeId(),
-                dstEntitySetId,
-                dstSyncId,
-                edgeId,
-                edge.getEdgeTypeId(),
-                edgeEntitySetId );
     }
 }

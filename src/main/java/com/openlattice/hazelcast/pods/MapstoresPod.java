@@ -22,6 +22,8 @@
 
 package com.openlattice.hazelcast.pods;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Resources;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.kryptnostic.rhizome.pods.hazelcast.QueueConfigurer;
 import com.openlattice.apps.App;
@@ -29,11 +31,13 @@ import com.openlattice.apps.AppConfigKey;
 import com.openlattice.apps.AppType;
 import com.openlattice.apps.AppTypeSetting;
 import com.openlattice.auth0.Auth0Pod;
+import com.openlattice.auth0.Auth0TokenProvider;
 import com.openlattice.authentication.Auth0Configuration;
 import com.openlattice.authorization.AceKey;
 import com.openlattice.authorization.AceValue;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.AclKeySet;
+import com.openlattice.authorization.PostgresUserApi;
 import com.openlattice.authorization.SecurablePrincipal;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.authorization.mapstores.PostgresCredentialMapstore;
@@ -43,10 +47,6 @@ import com.openlattice.authorization.mapstores.UserMapstore;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.data.EntityDataKey;
 import com.openlattice.data.EntityDataValue;
-import com.openlattice.data.EntityKey;
-import com.openlattice.data.hazelcast.DataKey;
-import com.openlattice.data.mapstores.PostgresDataMapstore;
-import com.openlattice.data.mapstores.PostgresEntityKeyIdsMapstore;
 import com.openlattice.directory.pojo.Auth0UserBasic;
 import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.set.EntitySetPropertyKey;
@@ -56,10 +56,8 @@ import com.openlattice.edm.type.ComplexType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.EnumType;
 import com.openlattice.edm.type.PropertyType;
-import com.openlattice.graph.edge.Edge;
-import com.openlattice.graph.edge.EdgeKey;
-import com.openlattice.graph.mapstores.PostgresEdgeMapstore;
-import com.openlattice.hazelcast.HazelcastMap;
+import com.openlattice.ids.IdGenerationMapstore;
+import com.openlattice.ids.Range;
 import com.openlattice.linking.LinkingVertex;
 import com.openlattice.linking.LinkingVertexKey;
 import com.openlattice.linking.WeightedLinkingVertexKeySet;
@@ -96,10 +94,15 @@ import com.openlattice.requests.Status;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
-import java.nio.ByteBuffer;
+import java.io.IOException;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.UUID;
 import javax.inject.Inject;
+import org.jdbi.v3.core.Jdbi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -107,7 +110,7 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @Import( { PostgresPod.class, Auth0Pod.class } )
 public class MapstoresPod {
-
+    private static final Logger logger = LoggerFactory.getLogger( MapstoresPod.class );
     @Inject
     private HikariDataSource hikariDataSource;
 
@@ -117,9 +120,24 @@ public class MapstoresPod {
     @Inject
     private Auth0Configuration auth0Configuration;
 
+    @Inject
+    private Jdbi jdbi;
+
     @Bean
-    public SelfRegisteringMapStore<EdgeKey, Edge> edgesMapstore() throws SQLException {
-        return new PostgresEdgeMapstore( hikariDataSource );
+    public PostgresUserApi pgUserApi() {
+        try ( Connection conn = hikariDataSource.getConnection(); Statement stmt = conn.createStatement(); ) {
+            String createUserSql = Resources.toString( Resources.getResource( "create_user.sql" ), Charsets.UTF_8 );
+            String alterUserSql = Resources.toString( Resources.getResource( "alter_user.sql" ), Charsets.UTF_8 );
+            String deleteUserSql = Resources.toString( Resources.getResource( "delete_user.sql" ), Charsets.UTF_8 );
+            stmt.addBatch( createUserSql );
+            stmt.addBatch( alterUserSql );
+            stmt.addBatch( deleteUserSql );
+            stmt.executeBatch();
+        } catch ( SQLException | IOException e ) {
+            logger.error( "Unable to configure postgres functions for user management." );
+        }
+
+        return jdbi.onDemand( PostgresUserApi.class );
     }
 
     @Bean
@@ -283,12 +301,6 @@ public class MapstoresPod {
         return new SyncIdsMapstore( hikariDataSource );
     }
 
-    //Still using Cassandra for mapstores below to avoid contention on data integrations
-    @Bean
-    public SelfRegisteringMapStore<EntityKey, UUID> idsMapstore() throws SQLException {
-        return new PostgresEntityKeyIdsMapstore( hikariDataSource );
-    }
-
     @Bean
     public SelfRegisteringMapStore<LinkingVertexKey, UUID> vertexIdsAfterLinkingMapstore() {
         return new VertexIdsAfterLinkingMapstore( hikariDataSource );
@@ -301,17 +313,12 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<String, String> dbCredentialsMapstore() {
-        return new PostgresCredentialMapstore( hikariDataSource );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<DataKey, ByteBuffer> dataMapstore() throws SQLException {
-        return new PostgresDataMapstore( HazelcastMap.DATA.name(), hikariDataSource );
+        return new PostgresCredentialMapstore( hikariDataSource, pgUserApi() );
     }
 
     @Bean
     public SelfRegisteringMapStore<String, Auth0UserBasic> userMapstore() {
-        return new UserMapstore( auth0Configuration.getToken() );
+        return new UserMapstore( auth0TokenProvider() );
     }
 
     @Bean
@@ -339,13 +346,25 @@ public class MapstoresPod {
     public SelfRegisteringMapStore<AppConfigKey, AppTypeSetting> appConfigMapstore() {
         return new AppConfigMapstore( hikariDataSource );
     }
+//
+//    @Bean
+//    public SelfRegisteringMapStore<EntityDataKey, EntityDataValue> entityDataMapstore() {
+//        return new DataMapstoreProxy(
+//                ptMgr,
+//                hikariDataSource,
+//                propertyTypeMapstore(),
+//                entitySetMapstore(),
+//                entityTypeMapstore() );
+//    }
 
     @Bean
-    public SelfRegisteringMapStore<EntityDataKey, EntityDataValue> entityDataMapstore() {
-        return new DataMapstoreProxy( hikariDataSource,
-                propertyTypeMapstore(),
-                entitySetMapstore(),
-                entityTypeMapstore() );
+    public SelfRegisteringMapStore<Long, Range> idGenerationMapstore() {
+        return new IdGenerationMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public Auth0TokenProvider auth0TokenProvider() {
+        return new Auth0TokenProvider( auth0Configuration );
     }
 
 }

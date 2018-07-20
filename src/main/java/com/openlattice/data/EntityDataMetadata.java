@@ -20,6 +20,8 @@
 
 package com.openlattice.data;
 
+import static java.time.OffsetDateTime.MIN;
+
 import java.time.OffsetDateTime;
 
 /**
@@ -88,7 +90,11 @@ public class EntityDataMetadata {
                 '}';
     }
 
-    public void incrementVersion() {
-        ++version;
+    public long updateVersion() {
+        return ( version = System.currentTimeMillis() );
+    }
+
+    public static EntityDataMetadata newEntityDataMetadata( OffsetDateTime lastWrite ) {
+        return new EntityDataMetadata( lastWrite.toInstant().toEpochMilli(), lastWrite, MIN );
     }
 }

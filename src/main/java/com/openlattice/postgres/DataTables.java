@@ -20,6 +20,8 @@
 
 package com.openlattice.postgres;
 
+import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
+import static com.openlattice.postgres.PostgresColumn.HASH;
 import static com.openlattice.postgres.PostgresColumn.ID;
 import static com.openlattice.postgres.PostgresColumn.ID_VALUE;
 import static com.openlattice.postgres.PostgresColumn.LAST_INDEX_FIELD;
@@ -29,12 +31,18 @@ import static com.openlattice.postgres.PostgresColumn.VERSIONS;
 import static com.openlattice.postgres.PostgresDatatype.TIMESTAMPTZ;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.openlattice.authorization.Permission;
 import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.PostgresEdmTypeConverter;
 import com.openlattice.edm.type.PropertyType;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Base64.Encoder;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -56,14 +64,28 @@ public class DataTables {
     public static final  PostgresColumnDefinition           OWNERS      = new PostgresColumnDefinition(
             "owners",
             PostgresDatatype.UUID );
-    private static final Map<UUID, PostgresTableDefinition> ES_TABLES   = Maps.newConcurrentMap();
 
-    public static String propertyTableName( UUID entitySetId, UUID propertyTypeId ) {
-        return entitySetId.toString() + "_" + propertyTypeId.toString();
+    public static final FullQualifiedName COUNT_FQN = new FullQualifiedName( "openlattice", "@count" );
+    public static final FullQualifiedName ID_FQN = new FullQualifiedName( "openlattice", "@id" );
+    public static final FullQualifiedName LAST_WRITE_FQN = new FullQualifiedName( "openlattice", "@lastWrite" );
+    public static final FullQualifiedName LAST_INDEX_FQN = new FullQualifiedName( "openlattice", "@lastIndex" );
+
+    private static final Map<UUID, PostgresTableDefinition> ES_TABLES   = Maps.newConcurrentMap();
+    private static final Encoder                            encoder     = Base64.getEncoder();
+
+    private static Set<FullQualifiedName> unindexedProperties = Sets
+            .newConcurrentHashSet( Arrays
+                    .asList(
+                            new FullQualifiedName( "incident.narrative" ),
+                            new FullQualifiedName( "person.picture" ),
+                            new FullQualifiedName( "person.mugshot" ) ) );
+
+    public static String propertyTableName( UUID propertyTypeId ) {
+        return "pt_" + propertyTypeId.toString();
     }
 
     public static String entityTableName( UUID entitySetId ) {
-        return entitySetId.toString();
+        return "es_" + entitySetId.toString();
     }
 
     public static String quote( String s ) {
@@ -71,7 +93,9 @@ public class DataTables {
     }
 
     public static PostgresColumnDefinition value( PropertyType pt ) {
-        return new PostgresColumnDefinition( VALUE_FIELD, PostgresEdmTypeConverter.map( pt.getDatatype() ) );
+        //We name the column after the full qualified name of the property so that in joins it transfers cleanly
+        return new PostgresColumnDefinition( quote( pt.getType().getFullQualifiedNameAsString() ),
+                PostgresEdmTypeConverter.map( pt.getDatatype() ) );
 
     }
 
@@ -92,7 +116,7 @@ public class DataTables {
 
     public static PostgresTableDefinition doBuildEntitySetTableDefinition( UUID entitySetId ) {
         PostgresTableDefinition ptd = new PostgresTableDefinition( quote( entityTableName( entitySetId ) ) )
-                .addColumns( ID, VERSION, LAST_WRITE, LAST_INDEX, READERS, WRITERS, OWNERS );
+                .addColumns( ID, VERSION, VERSIONS, LAST_WRITE, LAST_INDEX, READERS, WRITERS, OWNERS );
 
         String idxPrefix = entityTableName( entitySetId );
 
@@ -123,23 +147,44 @@ public class DataTables {
     public static PostgresTableDefinition buildPropertyTableDefinition(
             EntitySet entitySet,
             PropertyType propertyType ) {
-        return buildPropertyTableDefinition( entitySet.getId(), propertyType );
+        return buildPropertyTableDefinition( propertyType );
     }
 
     public static PostgresTableDefinition buildPropertyTableDefinition(
-            UUID entitySetId,
             PropertyType propertyType ) {
+        final String idxPrefix = propertyTableName( propertyType.getId() );
+
         PostgresColumnDefinition valueColumn = value( propertyType );
         PostgresTableDefinition ptd = new PostgresTableDefinition(
-                quote( propertyTableName( entitySetId, propertyType.getId() ) ) )
-                .addColumns( ID_VALUE, valueColumn, VERSION, VERSIONS, LAST_WRITE, READERS, WRITERS, OWNERS )
-                .primaryKey( ID_VALUE, valueColumn )
-                .setUnique( valueColumn );
+                quote( idxPrefix ) )
+                .addColumns(
+                        ENTITY_SET_ID, 
+                        ID_VALUE,
+                        HASH,
+                        valueColumn,
+                        VERSION,
+                        VERSIONS,
+                        LAST_WRITE,
+                        READERS,
+                        WRITERS,
+                        OWNERS )
+                .primaryKey( ENTITY_SET_ID, ID_VALUE, HASH );
 
-        String idxPrefix = propertyTableName( entitySetId, propertyType.getId() );
+        PostgresIndexDefinition idIndex = new PostgresIndexDefinition( ptd, ID_VALUE )
+                .name( quote( idxPrefix + "_id_idx" ) )
+                .ifNotExists();
 
-        PostgresIndexDefinition valueIndex = new PostgresIndexDefinition( ptd, valueColumn )
-                .name( quote( idxPrefix + "_value_idx" ) )
+        //Byte arrays are generally too large to be indexed by postgres
+        if ( unindexedProperties.contains( propertyType.getDatatype().getFullQualifiedName() ) ) {
+            PostgresIndexDefinition valueIndex = new PostgresIndexDefinition( ptd, valueColumn )
+                    .name( quote( idxPrefix + "_value_idx" ) )
+                    .ifNotExists();
+
+            ptd.addIndexes( valueIndex );
+        }
+
+        PostgresIndexDefinition entitySetIdIndex = new PostgresIndexDefinition( ptd, ENTITY_SET_ID )
+                .name( quote( idxPrefix + "_entity_set_id_idx" ) )
                 .ifNotExists();
 
         PostgresIndexDefinition versionIndex = new PostgresIndexDefinition( ptd, LAST_WRITE )
@@ -147,11 +192,12 @@ public class DataTables {
                 .ifNotExists()
                 .desc();
 
-        PostgresIndexDefinition versionsIndex = new PostgresIndexDefinition( ptd, LAST_WRITE )
+        //TODO: Re-consider the value of having gin index on versions field. Checking if a value was written
+        //in a specific version seems like a rare operations
+        PostgresIndexDefinition versionsIndex = new PostgresIndexDefinition( ptd, VERSIONS )
                 .name( quote( idxPrefix + "_versions_idx" ) )
                 .method( IndexMethod.GIN )
-                .ifNotExists()
-                .desc();
+                .ifNotExists();
 
         PostgresIndexDefinition lastWriteIndex = new PostgresIndexDefinition( ptd, LAST_WRITE )
                 .name( quote( idxPrefix + "_last_write_idx" ) )
@@ -170,7 +216,15 @@ public class DataTables {
                 .name( quote( idxPrefix + "_owners_idx" ) )
                 .ifNotExists();
 
-        ptd.addIndexes( valueIndex, versionIndex, versionsIndex, readersIndex, writersIndex, ownersIndex );
+        ptd.addIndexes(
+                idIndex,
+                entitySetIdIndex,
+                versionIndex,
+                versionsIndex,
+                lastWriteIndex,
+                readersIndex,
+                writersIndex,
+                ownersIndex );
 
         return ptd;
     }

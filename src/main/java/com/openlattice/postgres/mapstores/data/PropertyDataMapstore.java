@@ -21,14 +21,17 @@
 package com.openlattice.postgres.mapstores.data;
 
 import static com.openlattice.postgres.DataTables.LAST_WRITE;
+import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
+import static com.openlattice.postgres.PostgresColumn.HASH;
 import static com.openlattice.postgres.PostgresColumn.ID_VALUE;
 import static com.openlattice.postgres.PostgresColumn.VERSION;
 import static com.openlattice.postgres.PostgresColumn.VERSIONS;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
+import com.openlattice.data.EntityDataKey;
 import com.openlattice.data.PropertyMetadata;
-import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.PostgresTableDefinition;
@@ -45,75 +48,82 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class PropertyDataMapstore extends AbstractBaseSplitKeyPostgresMapstore<UUID, Object, PropertyMetadata> {
-    private final PostgresColumnDefinition valueColumn;
+public class PropertyDataMapstore
+        extends AbstractBaseSplitKeyPostgresMapstore<EntityDataKey, Object, PropertyMetadata> {
+    private static final Map<String, PostgresColumnDefinition> valueColumns = Maps.newConcurrentMap();
+    private final String valueColumnName;
 
-    public PropertyDataMapstore( PostgresTableDefinition table, HikariDataSource hds ) {
-        //Table name doesn't matter as these aer used for configuring maps.
-        super( "pdms", table, hds );
-        for ( PostgresColumnDefinition pcd : table.getColumns() ) {
-            if ( pcd.getName().equals( DataTables.VALUE_FIELD ) ) {
-                valueColumn = pcd;
-                return;
-            }
-        }
-        throw new IllegalStateException( "Value column was not assigned." );
+    public PropertyDataMapstore(
+            PostgresColumnDefinition valueColumn,
+            PostgresTableDefinition table,
+            HikariDataSource hds ) {
+        //Table name doesn't matter as these are used for configuring maps.
+        super( "pdms", table, hds, valueColumns.putIfAbsent( table.getName(), valueColumn ) );
+        valueColumnName = valueColumn.getName().replace( "\"", "" );
     }
 
     @Override protected List<PostgresColumnDefinition> initKeyColumns() {
-        return ImmutableList.of( ID_VALUE );
+        return ImmutableList.of( ENTITY_SET_ID, ID_VALUE );
+    }
+
+    @Override protected String buildInsertQuery() {
+        return super.buildInsertQuery();
     }
 
     @Override protected Optional<String> buildOnConflictQuery() {
         return Optional.of( ( " ON CONFLICT ("
-                + keyColumns().stream()
-                .map( PostgresColumnDefinition::getName )
+                + Stream
+                .of( ENTITY_SET_ID.getName(), ID_VALUE.getName(), HASH.getName() )
                 .collect( Collectors.joining( ", " ) )
                 + ") DO "
-                + table.updateQuery( ImmutableList.of( ID_VALUE, valueColumn ),
-                ImmutableList.of( VERSION, VERSIONS, LAST_WRITE ),
+                + table.updateQuery( ImmutableList.of( ID_VALUE, HASH ),
+                ImmutableList.of( valCol(), VERSION, VERSIONS, LAST_WRITE ),
                 false ) ) );
     }
 
-    @Override protected List<PostgresColumnDefinition> initValueColumns() {
-        return ImmutableList.of( valueColumn, VERSION, VERSIONS, LAST_WRITE );
-        //        return ImmutableList.copyOf( Sets.difference( table.getColumns(), ImmutableSet.of( ID_VALUE ) ) );
+    private PostgresColumnDefinition valCol() {
+        return valueColumns.get( getTable() );
     }
 
-    @Override protected void bind( PreparedStatement ps, UUID key, Object subKey, PropertyMetadata value )
+    @Override protected List<PostgresColumnDefinition> initValueColumns() {
+        return ImmutableList.of( HASH, valCol(), VERSION, VERSIONS, LAST_WRITE );
+    }
+
+    @Override protected void bind( PreparedStatement ps, EntityDataKey key, Object subKey, PropertyMetadata value )
             throws SQLException {
         int parameterIndex = bind( ps, key, 1 );
-        ps.setObject( parameterIndex++, subKey );
+        ps.setBytes( parameterIndex++, value.getHash() );
 
+        ps.setObject( parameterIndex++, subKey );
         ps.setLong( parameterIndex++, value.getVersion() );
         ps.setArray( parameterIndex++, PostgresArrays.createLongArray( ps.getConnection(), value.getVersions() ) );
         ps.setObject( parameterIndex++, value.getLastWrite() );
 
         //Update Query parameters
+        ps.setObject( parameterIndex++, subKey );
         ps.setLong( parameterIndex++, value.getVersion() );
         ps.setArray( parameterIndex++, PostgresArrays.createLongArray( ps.getConnection(), value.getVersions() ) );
         ps.setObject( parameterIndex++, value.getLastWrite() );
     }
 
-    @Override protected int bind( PreparedStatement ps, UUID key, int offset ) throws SQLException {
-        ps.setObject( offset++, key );
+    @Override protected int bind( PreparedStatement ps, EntityDataKey key, int offset ) throws SQLException {
+        ps.setObject( offset++, key.getEntitySetId() );
+        ps.setObject( offset++, key.getEntityKeyId() );
         return offset;
     }
 
     @Override protected Map<Object, PropertyMetadata> mapToValue( ResultSet rs ) throws SQLException {
         final Map<Object, PropertyMetadata> value = new HashMap<>();
 
-        if ( !rs.next() ) {
-            return null;
-        }
-
         do {
-            Object key = ResultSetAdapters.propertyValue( rs );
+            Object key = ResultSetAdapters.propertyValue( valueColumnName, rs );
             PropertyMetadata metadata = ResultSetAdapters.propertyMetadata( rs );
             value.put( key, metadata );
         } while ( rs.next() );
@@ -121,17 +131,18 @@ class PropertyDataMapstore extends AbstractBaseSplitKeyPostgresMapstore<UUID, Ob
         return value;
     }
 
-    @Override protected UUID mapToKey( ResultSet rs ) throws SQLException {
-        return ResultSetAdapters.id( rs );
+    @Override protected EntityDataKey mapToKey( ResultSet rs ) throws SQLException {
+        return ResultSetAdapters.entityDataKey( rs );
     }
 
-    @Override public UUID generateTestKey() {
-        return UUID.randomUUID();
+    @Override public EntityDataKey generateTestKey() {
+        return new EntityDataKey( UUID.randomUUID(), UUID.randomUUID() );
     }
 
     @Override public Map<Object, PropertyMetadata> generateTestValue() {
         return ImmutableMap
-                .of( RandomStringUtils.randomAlphanumeric( 10 ), new PropertyMetadata( 5, ImmutableList.of( 1L, 2L ),
-                        OffsetDateTime.now() ) );
+                .of( RandomStringUtils.randomAlphanumeric( 10 ),
+                        new PropertyMetadata( RandomUtils.nextBytes( 16 ), 5, ImmutableList.of( 1L, 2L ),
+                                OffsetDateTime.now() ) );
     }
 }

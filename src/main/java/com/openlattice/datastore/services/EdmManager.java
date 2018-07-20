@@ -22,15 +22,8 @@
 
 package com.openlattice.datastore.services;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
-
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
+import com.codahale.metrics.annotation.Timed;
+import com.hazelcast.map.EntryProcessor;
 import com.openlattice.authorization.Principal;
 import com.openlattice.edm.EntityDataModel;
 import com.openlattice.edm.EntityDataModelDiff;
@@ -38,12 +31,18 @@ import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.requests.MetadataUpdate;
 import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.openlattice.edm.type.AssociationDetails;
+import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.ComplexType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.EnumType;
-import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.PropertyType;
-import com.hazelcast.map.EntryProcessor;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 public interface EdmManager {
     void clearTables();
@@ -66,6 +65,9 @@ public interface EdmManager {
 
     Iterable<PropertyType> getPropertyTypes();
 
+    @Timed
+    Map<UUID, PropertyType> getPropertyTypesForEntitySet( UUID entitySetId );
+
     void createEntitySet( Principal principal, EntitySet entitySet );
 
     // Warning: This method is used only in creating linked entity set, where entity set owner may not own all the
@@ -77,6 +79,14 @@ public interface EdmManager {
     Iterable<EntitySet> getEntitySets();
 
     void deleteEntitySet( UUID entitySetId );
+
+    int addLinkedEntitySets( UUID entitySetId, Set<UUID> linkedEntitySets );
+
+    int removeLinkedEntitySets( UUID entitySetId, Set<UUID> linkedEntitySets );
+
+    Set<EntitySet> getLinkedEntitySets( UUID entitySetId );
+
+    Set<UUID> getLinkedEntitySetIds( UUID entitySetId );
 
     void createEntityType( EntityType objectType );
 
@@ -141,6 +151,8 @@ public interface EdmManager {
 
     Set<UUID> getEntityTypeUuids( Set<FullQualifiedName> fqns );
 
+    UUID getPropertyTypeId( FullQualifiedName fqn );
+
     Set<UUID> getPropertyTypeUuids( Set<FullQualifiedName> fqns );
 
     EntityType getEntityType( FullQualifiedName type );
@@ -195,8 +207,6 @@ public interface EdmManager {
 
     Iterable<EntityType> getAvailableAssociationTypesForEntityType( UUID entityTypeId );
 
-    void setEntityDataModel( EntityDataModel edm );
-
     EntityDataModelDiff getEntityDataModelDiff( EntityDataModel edm );
 
     Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata(
@@ -207,4 +217,9 @@ public interface EdmManager {
 
     void updateEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId, MetadataUpdate update );
 
+    EntityDataModel getEntityDataModel();
+
+    void setEntityDataModel( EntityDataModel edm );
+
+    Collection<EntitySet> getEntitySetsOfType( UUID entityTypeId );
 }

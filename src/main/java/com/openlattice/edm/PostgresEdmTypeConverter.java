@@ -37,17 +37,20 @@ public final class PostgresEdmTypeConverter {
 
     public static PostgresDatatype map( EdmPrimitiveTypeKind edmType ) {
         switch ( edmType ) {
+            case GeographyPoint:
             case String:
                 return PostgresDatatype.TEXT;
             case Guid:
                 return PostgresDatatype.UUID;
             case Byte:
+            case SByte:
             case Binary:
                 return PostgresDatatype.BYTEA;
             case Int16:
                 return PostgresDatatype.SMALLINT;
             case Int32:
                 return PostgresDatatype.INTEGER;
+            case Duration:
             case Int64:
                 return PostgresDatatype.BIGINT;
             case Date:
@@ -61,7 +64,7 @@ public final class PostgresEdmTypeConverter {
             case TimeOfDay:
                 return PostgresDatatype.TIMETZ;
             default:
-                throw new NotImplementedException( "Don't know how to convert {}", edmType.name() );
+                throw new NotImplementedException( "Don't know how to convert " + edmType.name() );
         }
     }
 
@@ -77,6 +80,7 @@ public final class PostgresEdmTypeConverter {
                 return PostgresDatatype.SMALLINT_ARRAY;
             case Int32:
                 return PostgresDatatype.INTEGER_ARRAY;
+            case Duration:
             case Int64:
                 return PostgresDatatype.BIGINT_ARRAY;
             case Date:
@@ -88,9 +92,9 @@ public final class PostgresEdmTypeConverter {
             case Boolean:
                 return PostgresDatatype.BOOLEAN_ARRAY;
             case Binary:
-                //TODO: Find out of if there are arrays of byte arrays in Postgres.
+                return PostgresDatatype.BYTEA_ARRAY;
             default:
-                throw new NotImplementedException( "Don't know how to convert {} to array type", edmType.name() );
+                throw new NotImplementedException( "Don't know how to convert " + edmType.name() + " to array type" );
         }
     }
 }

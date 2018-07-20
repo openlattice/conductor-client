@@ -26,38 +26,49 @@ import org.slf4j.LoggerFactory;
 
 /**
  * TODO: Implement stream serializer if this is ever used for id generation
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class Range {
-    private static final Logger logger = LoggerFactory.getLogger( Range.class );
-
-    private long mask;
-    private long base;
+    private static final Logger logger  = LoggerFactory.getLogger( Range.class );
+    private static final long   MAX_MSB = 1L << 48;
+    private final long base;
 
     private long msb;
     private long lsb;
 
-    public Range( long mask, long base, long msb, long lsb ) {
-        this.mask = mask;
+    public Range( long base, long msb, long lsb ) {
         this.base = base;
         this.msb = msb;
         this.lsb = lsb;
     }
 
-    public UUID getNextId() {
-        lsb++;
+    public Range( long base ) {
+        this( base, 0, Long.MIN_VALUE );
+    }
 
-        if ( lsb == 0 ) {
-            msb++;
-        }
-
-        if ( ( msb & mask ) == 0 ) {
-            //We've exhausted ids in this range.
-            logger.error( "Uh-oh we ran out ids in a range. That's a lot of objects" );
+    /**
+     * Generates the next id by incrementing the least significant bit
+     */
+    public UUID nextId() {
+        //If we've run out of ids in given range.
+        if ( msb == MAX_MSB ) {
+            logger.error( "Exhausted id in range with base {} and msb {}", base, msb );
             return null;
         }
 
-        return new UUID( msb | base, lsb );
+        final UUID nextId =  new UUID( base | msb, lsb );
+
+        /*
+         * The java specification does not directly guarantee that behavior in case of primitive overflow.
+         */
+        if ( lsb == Long.MAX_VALUE ) {
+            lsb = Long.MIN_VALUE;
+            msb++;
+        } else {
+            lsb++;
+        }
+        return nextId;
     }
 
     public long getBase() {

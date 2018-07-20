@@ -4,8 +4,10 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Collection;
@@ -16,13 +18,12 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.geo.Geospatial.Dimension;
 import org.apache.olingo.commons.api.edm.geo.Geospatial.Type;
 import org.apache.olingo.commons.api.edm.geo.Point;
-import org.joda.time.LocalTime;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class JsonDeserializer {
-    private static final Base64.Decoder decoder = Base64.getDecoder();
+    private static final Base64.Decoder decoder             = Base64.getDecoder();
     private static final String         geographyPointRegex = "(\\-)?[0-9]+(\\.){1}[0-9]+(\\,){1}(\\-)?[0-9]+(\\.){1}[0-9]+";
 
     public static SetMultimap<UUID, Object> validateFormatAndNormalize(
@@ -42,6 +43,7 @@ public class JsonDeserializer {
         return normalizedPropertyValues;
     }
 
+    @SuppressFBWarnings( value = "SF_SWITCH_FALLTHROUGH", justification = "by design" )
     public static Object validateFormatAndNormalize(
             EdmPrimitiveTypeKind dataType,
             UUID propertyTypeId,
@@ -84,7 +86,7 @@ public class JsonDeserializer {
                         dataType,
                         propertyTypeId,
                         value.getClass() );
-                OffsetDateTime.parse( (String) value );
+                return OffsetDateTime.parse( (String) value );
             case Duration:
                 checkState( value instanceof String,
                         "Expected string for property type %s with data %s,  received %s",
@@ -123,6 +125,7 @@ public class JsonDeserializer {
             /**
              * Jackson binds to Integer, Long, or BigInteger
              */
+
             case Byte:
             case SByte:
                 return Byte.parseByte( value.toString() );

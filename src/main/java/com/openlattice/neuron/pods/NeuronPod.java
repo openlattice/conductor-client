@@ -36,8 +36,10 @@ import com.openlattice.data.DataGraphManager;
 import com.openlattice.data.DataGraphService;
 import com.openlattice.data.DatasourceManager;
 import com.openlattice.data.EntityKeyIdService;
-import com.openlattice.data.ids.HazelcastEntityKeyIdService;
+import com.openlattice.data.ids.PostgresEntityKeyIdService;
 import com.openlattice.data.storage.HazelcastEntityDatastore;
+import com.openlattice.data.storage.PostgresDataManager;
+import com.openlattice.data.storage.PostgresEntityDataQueryService;
 import com.openlattice.datastore.services.EdmManager;
 import com.openlattice.datastore.services.EdmService;
 import com.openlattice.datastore.services.PostgresEntitySetManager;
@@ -45,7 +47,9 @@ import com.openlattice.edm.properties.PostgresTypeManager;
 import com.openlattice.edm.schemas.SchemaQueryService;
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager;
 import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService;
-import com.openlattice.graph.core.Graph;
+import com.openlattice.graph.Graph;
+import com.openlattice.graph.core.GraphService;
+import com.openlattice.ids.HazelcastIdGenerationService;
 import com.openlattice.linking.HazelcastLinkingGraphs;
 import com.openlattice.neuron.Neuron;
 import com.zaxxer.hikari.HikariDataSource;
@@ -101,13 +105,24 @@ public class NeuronPod {
     }
 
     @Bean
-    public HazelcastEntityDatastore cassandraDataManager() {
+    public PostgresDataManager postgresDataManager() {
+        return new PostgresDataManager( hikariDataSource );
+    }
+
+    @Bean
+    public PostgresEntityDataQueryService dataQueryService() {
+        return new PostgresEntityDataQueryService( hikariDataSource );
+    }
+
+    @Bean
+    public HazelcastEntityDatastore entityDatastore() {
         return new HazelcastEntityDatastore(
                 hazelcastInstance,
                 executor,
                 defaultObjectMapper(),
                 idService(),
-                dataSourceManager()
+                postgresDataManager(),
+                dataQueryService()
         );
     }
 
@@ -125,11 +140,10 @@ public class NeuronPod {
     public DataGraphManager dataGraphService() {
         return new DataGraphService(
                 hazelcastInstance,
-                cassandraDataManager(),
-                loomGraph(),
+                eventBus,
+                graphApi(),
                 idService(),
-                executor,
-                eventBus
+                entityDatastore()
         );
     }
 
@@ -153,7 +167,12 @@ public class NeuronPod {
 
     @Bean
     public EntityKeyIdService idService() {
-        return new HazelcastEntityKeyIdService( hazelcastInstance, executor );
+        return new PostgresEntityKeyIdService( hazelcastInstance, hikariDataSource, idGenerationService() );
+    }
+
+    @Bean
+    public HazelcastIdGenerationService idGenerationService() {
+        return new HazelcastIdGenerationService( hazelcastInstance );
     }
 
     @Bean
@@ -174,8 +193,8 @@ public class NeuronPod {
     }
 
     @Bean
-    public Graph loomGraph() {
-        return new Graph( executor, hazelcastInstance );
+    public GraphService graphApi() {
+        return new Graph( hikariDataSource, dataModelService() );
     }
 
     @Bean

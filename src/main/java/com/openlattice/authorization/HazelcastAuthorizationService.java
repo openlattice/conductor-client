@@ -24,14 +24,10 @@ package com.openlattice.authorization;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Maps.transformValues;
 import static com.openlattice.authorization.mapstores.PermissionMapstore.ACL_KEY_INDEX;
 
 import com.codahale.metrics.annotation.Timed;
-import com.openlattice.authorization.paging.AuthorizedObjectsSearchResult;
-import com.openlattice.authorization.processors.PermissionMerger;
-import com.openlattice.authorization.processors.PermissionRemover;
-import com.openlattice.authorization.securable.SecurableObjectType;
-import com.openlattice.hazelcast.HazelcastMap;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
@@ -41,7 +37,12 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
 import com.openlattice.authorization.mapstores.PermissionMapstore;
+import com.openlattice.authorization.paging.AuthorizedObjectsSearchResult;
+import com.openlattice.authorization.processors.PermissionMerger;
+import com.openlattice.authorization.processors.PermissionRemover;
 import com.openlattice.authorization.processors.SecurableObjectTypeUpdater;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.hazelcast.HazelcastMap;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -171,6 +172,19 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
 
     @Timed
     @Override
+    public Map<AclKey, EnumMap<Permission, Boolean>> authorize(
+            Map<AclKey, EnumSet<Permission>> requests,
+            Set<Principal> principals ) {
+        AuthorizationAggregator agg = aces
+                .aggregate( new AuthorizationAggregator(
+                        transformValues( requests, HazelcastAuthorizationService::noAccess ) ),
+                        matches( requests.keySet(), principals ) );
+
+        return agg.getPermissions();
+    }
+
+    @Timed
+    @Override
     public Stream<Authorization> accessChecksForPrincipals(
             Set<AccessCheck> accessChecks,
             Set<Principal> principals ) {
@@ -263,7 +277,8 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                 .and( hasPrincipal( principal ), hasType( objectType ), hasExactPermissions( permissions ) );
         return this.aces.keySet( p )
                 .stream()
-                .map( AceKey::getAclKey );
+                .map( AceKey::getAclKey )
+                .distinct();
     }
 
     @Timed
@@ -276,7 +291,8 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                 .and( hasAnyPrincipals( principals ), hasType( objectType ), hasExactPermissions( permissions ) );
         return this.aces.keySet( p )
                 .stream()
-                .map( AceKey::getAclKey );
+                .map( AceKey::getAclKey )
+                .distinct();
     }
 
     @Timed
@@ -327,6 +343,14 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         return aces.getAll( aceKeys );
     }
 
+    private static EnumMap<Permission, Boolean> noAccess( EnumSet<Permission> permissions ) {
+        EnumMap<Permission, Boolean> pm = new EnumMap<Permission, Boolean>( Permission.class );
+        for ( Permission p : permissions ) {
+            pm.put( p, false );
+        }
+        return pm;
+    }
+
     private static Predicate matches( Collection<AclKey> aclKeys, Set<Principal> principals ) {
         return Predicates.and( hasAnyAclKeys( aclKeys ), hasAnyPrincipals( principals ) );
     }
@@ -367,11 +391,11 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     private static Predicate hasAnyAclKeys( Collection<AclKey> aclKeys ) {
-//        String[] values = new AclKey[ aclKeys.size() ];
-//        int i = 0;
-//        for ( AclKey aclKey : aclKeys ) {
-//            values[ i++ ] = aclKey.getIndex();
-//        }
+        //        String[] values = new AclKey[ aclKeys.size() ];
+        //        int i = 0;
+        //        for ( AclKey aclKey : aclKeys ) {
+        //            values[ i++ ] = aclKey.getIndex();
+        //        }
         return Predicates.in( ACL_KEY_INDEX, aclKeys.stream().map( AclKey::getIndex ).toArray( String[]::new ) );
     }
 

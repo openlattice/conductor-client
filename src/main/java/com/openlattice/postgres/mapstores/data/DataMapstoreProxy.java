@@ -20,7 +20,6 @@
 
 package com.openlattice.postgres.mapstores.data;
 
-import com.openlattice.hazelcast.HazelcastMap;
 import com.dataloom.streams.StreamUtil;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapIndexConfig;
@@ -34,36 +33,43 @@ import com.openlattice.data.PropertyMetadata;
 import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
+import com.openlattice.hazelcast.HazelcastMap;
 import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresTableDefinition;
+import com.openlattice.postgres.PostgresTableManager;
 import com.zaxxer.hikari.HikariDataSource;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<EntityDataKey, EntityDataValue> {
-    public static final String VERSION    = "version";
-    public static final String LAST_WRITE = "lastWrite";
-    public static final String LAST_INDEX = "lastIndex";
-    public static final String KEY_ENTITY_SET_ID = "key#entitySetId";
-
-    private final Map<UUID, EntityDataMapstore>              entitySetMapstores; //Entity Set ID -> Mapstore for Entity Set Table
-    private final Map<UUID, Map<UUID, PropertyDataMapstore>> propertyDataMapstores;
+    public static final  String VERSION           = "version";
+    public static final  String LAST_WRITE        = "lastWrite";
+    public static final  String LAST_INDEX        = "lastIndex";
+    public static final  String KEY_ENTITY_SET_ID = "__key#entitySetId";
+    public static final  String KEY_ENTITY_KEY_ID = "__key#entityKeyId";
+    private static final Logger logger            = LoggerFactory.getLogger( DataMapstoreProxy.class );
+    private final Map<UUID, EntityDataMapstore>   entitySetMapstores; //Entity Set ID -> Mapstore for Entity Set Table
+    private final Map<UUID, PropertyDataMapstore> propertyDataMapstores;
 
     private final HikariDataSource             hds;
+    private final PostgresTableManager         pgTableMgr;
     private final MapStore<UUID, PropertyType> propertyTypes;
     private final MapStore<UUID, EntitySet>    entitySets;
     private final MapStore<UUID, EntityType>   entityTypes;
 
     public DataMapstoreProxy(
-            // Map<UUID, EntityDataMapstore> entitySetMapstores,
-            //            Map<UUID, Map<UUID, PropertyDataMapstore>> propertyDataMapstores,
+            PostgresTableManager pgTableMgr,
             HikariDataSource hds,
             MapStore<UUID, PropertyType> propertyTypes,
             MapStore<UUID, EntitySet> entitySets,
@@ -74,14 +80,39 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
         this.propertyTypes = propertyTypes;
         this.entitySets = entitySets;
         this.entityTypes = entityTypes;
+        this.pgTableMgr = pgTableMgr;
     }
 
     public EntityDataMapstore getMapstore( UUID entitySetId ) {
         return entitySetMapstores.computeIfAbsent( entitySetId, this::newEntitySetMapStore );
     }
 
+    public PropertyDataMapstore getPropertyMapstore( UUID propertyTypeId ) {
+        return propertyDataMapstores
+                .computeIfAbsent( propertyTypeId, ptId -> newPropertyDataMapstore( ptId ) );
+    }
+
     protected EntityDataMapstore newEntitySetMapStore( UUID entitySetId ) {
+        //        logger.info( "Starting table creation for entity set: ", es.getName() );
+        //        EntityType et = etm.load( es.getEntityTypeId() );
+        //        final Collection<PropertyType> pTypes = propertyTypes.loadAll( entityTypes.getProperties() ).values();
+        //        try {
+        //            logger.info( "Deleting entity set tables for entity set {}.", entitySets.getName() );
+        //            pgEdmManager.deleteEntitySet( entitySets, propertyTypes );
+        //            logger.info( "Creating entity set tables for entity set {}.", entitySets.getName() );
+        //            pgEdmManager.createEntitySet( entitySets, propertyTypes );
+        //        } catch ( SQLException e ) {
+        //            logger.error( "Failed to create tables for entity set {}.", es, e );
+        //        }
+        //        logger.info( "Finished with table creation for entity set: {}", es.getName() );
         PostgresTableDefinition table = DataTables.buildEntitySetTableDefinition( entitySetId );
+        try {
+            synchronized ( pgTableMgr ) {
+                pgTableMgr.registerTables( table );
+            }
+        } catch ( SQLException e ) {
+            logger.error( "Unable to register entity set table {}", table, e );
+        }
         return new EntityDataMapstore( hds, table );
     }
 
@@ -104,6 +135,7 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
     @Override
     public MapStoreConfig getMapStoreConfig() {
         return new MapStoreConfig()
+                .setInitialLoadMode( MapStoreConfig.InitialLoadMode.EAGER )
                 .setImplementation( this )
                 .setEnabled( true )
                 .setWriteDelaySeconds( 5 );
@@ -113,14 +145,14 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
     public MapConfig getMapConfig() {
         return new MapConfig( getMapName() )
                 .setMapStoreConfig( getMapStoreConfig() )
-                .addMapIndexConfig( new MapIndexConfig( KEY_ENTITY_SET_ID,false ) )
+                .addMapIndexConfig( new MapIndexConfig( KEY_ENTITY_SET_ID, false ) )
+                .addMapIndexConfig( new MapIndexConfig( KEY_ENTITY_KEY_ID, false ) )
                 .addMapIndexConfig( new MapIndexConfig( VERSION, true ) )
                 .addMapIndexConfig( new MapIndexConfig( LAST_WRITE, true ) )
                 .addMapIndexConfig( new MapIndexConfig( LAST_INDEX, true ) );
     }
 
     @Override public void store( EntityDataKey key, EntityDataValue value ) {
-        final UUID entitySetId = key.getEntitySetId();
         final UUID entityKeyId = key.getEntityKeyId();
         final EntityDataMapstore edms = getMapstore( key.getEntitySetId() );
 
@@ -131,10 +163,8 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
         final Map<UUID, Map<Object, PropertyMetadata>> properties = value.getProperties();
         for ( Entry<UUID, Map<Object, PropertyMetadata>> propertyEntry : properties.entrySet() ) {
             final UUID propertyTypeId = propertyEntry.getKey();
-            final PropertyDataMapstore propertyDataMapstore = propertyDataMapstores
-                    .computeIfAbsent( entitySetId, esId -> new HashMap<>() )
-                    .computeIfAbsent( propertyTypeId, ptId -> newPropertyDataMapstore( entitySetId, ptId ) );
-            propertyDataMapstore.store( entityKeyId, propertyEntry.getValue() );
+            final PropertyDataMapstore propertyDataMapstore = getPropertyMapstore( propertyTypeId );
+            propertyDataMapstore.store( key, propertyEntry.getValue() );
         }
 
     }
@@ -175,18 +205,20 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
         final Set<UUID> propertyTypes = entityType.getProperties();
 
         final EntityDataMapstore edms = getMapstore( entitySetId );
-        final EntityDataMetadata metadata = edms.load( entityKeyId );
+        final EntityDataMetadata maybeMetadata = edms.load( entityKeyId );
+        final EntityDataMetadata metadata =
+                ( maybeMetadata == null
+                        ? EntityDataMetadata.newEntityDataMetadata( OffsetDateTime.now() )
+                        : maybeMetadata );
         final Map<UUID, Map<Object, PropertyMetadata>> properties = new HashMap<>();
         for ( UUID propertyTypeId : propertyTypes ) {
             final PropertyDataMapstore propertyDataMapstore = propertyDataMapstores
-                    .computeIfAbsent( entitySetId, esId -> new HashMap<>() )
-                    .computeIfAbsent( propertyTypeId, ptId -> newPropertyDataMapstore( entitySetId, ptId ) );
-            final Map<Object, PropertyMetadata> propertiesOfType = propertyDataMapstore.load( entityKeyId );
-            properties.put( propertyTypeId, propertiesOfType );
+                    .computeIfAbsent( propertyTypeId, ptId -> newPropertyDataMapstore( ptId ) );
+            final Map<Object, PropertyMetadata> propertiesOfType = propertyDataMapstore.load( key );
+            properties.put( propertyTypeId, propertiesOfType == null ? new HashMap<>() : propertiesOfType );
         }
 
         return new EntityDataValue( metadata, properties );
-
     }
 
     @Override public Map<EntityDataKey, EntityDataValue> loadAll( Collection<EntityDataKey> keys ) {
@@ -208,9 +240,17 @@ public class DataMapstoreProxy implements TestableSelfRegisteringMapStore<Entity
 
     }
 
-    protected PropertyDataMapstore newPropertyDataMapstore( UUID entitySetId, UUID propertyTypeId ) {
+    protected PropertyDataMapstore newPropertyDataMapstore( UUID propertyTypeId ) {
         PropertyType propertyType = propertyTypes.load( propertyTypeId );
-        PostgresTableDefinition table = DataTables.buildPropertyTableDefinition( entitySetId, propertyType );
-        return new PropertyDataMapstore( table, hds );
+        PostgresTableDefinition table = DataTables.buildPropertyTableDefinition( propertyType );
+        try {
+            synchronized ( pgTableMgr ) {
+                pgTableMgr.registerTables( table );
+            }
+        } catch ( SQLException e ) {
+            logger.error( "Unable to register property type table {}.", table, e );
+        }
+        ;
+        return new PropertyDataMapstore( DataTables.value( propertyType ), table, hds );
     }
 }

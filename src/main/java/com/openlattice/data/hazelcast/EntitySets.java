@@ -20,10 +20,10 @@
 
 package com.openlattice.data.hazelcast;
 
+import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.Row;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
-import com.openlattice.data.mapstores.DataMapstore;
 import com.openlattice.datastore.cassandra.RowAdapters;
 import java.util.Collection;
 import java.util.List;
@@ -50,14 +50,6 @@ public final class EntitySets {
         UUID entitySetId = pair.get( 0 );
         UUID syncId = pair.get( 1 );
         return filterByEntitySetIdAndSyncId( entitySetId, syncId );
-    }
-
-    public static Predicate getEntity( UUID entitySetId, UUID syncId, String entityId ) {
-        return Predicates.and(
-                Predicates.equal( DataMapstore.KEY_ENTITY_SET_ID, entitySetId ),
-                Predicates.equal( DataMapstore.KEY_SYNC_ID, syncId ),
-                Predicates.equal( "__key#entityId", entityId ) );
-
     }
 
     public static Predicate getEntities( Collection<UUID> ids ) {
@@ -102,4 +94,12 @@ public final class EntitySets {
         return Predicates.or( pairPredicates );
     }
 
+    public static Predicate filterByEntitySetId( UUID entitySetId ) {
+        return Predicates.equal( "__key#entitySetId", entitySetId );
+    }
+
+    public static Predicate filterByEntitySetIds( Iterable<UUID> entitySetIds ) {
+        return Predicates.or( StreamUtil.stream( entitySetIds ).map( EntitySets::filterByEntitySetId )
+                .collect( Collectors.toList() ).toArray( new Predicate[] {} ) );
+    }
 }
