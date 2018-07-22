@@ -122,7 +122,7 @@ class PrincipalTreesMapstore(val hds: HikariDataSource) : TestableSelfRegisterin
     override fun loadAll(keys: Collection<AclKey>): MutableMap<AclKey, AclKeySet> {
         val keyMap = keys.groupBy { it.size }
 
-        val data = PostgresIterable<Pair<AclKey, AclKey>>(
+        val data = PostgresIterable<Pair<AclKey, AclKeySet>>(
                 Supplier {
                     val connection = hds.connection
                     val ps = connection.prepareStatement(selectSql)
@@ -137,14 +137,14 @@ class PrincipalTreesMapstore(val hds: HikariDataSource) : TestableSelfRegisterin
                     StatementHolder(connection, ps, ps.executeQuery())
                 },
 
-                Function<ResultSet, Pair<AclKey, AclKey>> {
+                Function<ResultSet, Pair<AclKey, AclKeySet>> {
                     ResultSetAdapters.aclKey(it) to ResultSetAdapters.principalOfAclKey(
                             it
                     )
                 }
         )
         val map: MutableMap<AclKey, AclKeySet> = mutableMapOf()
-        data.forEach { map.getOrPut(it.first) { AclKeySet() }.add(it.second) }
+        data.forEach { map.getOrPut(it.first) { it.second } }
         return map
     }
 
