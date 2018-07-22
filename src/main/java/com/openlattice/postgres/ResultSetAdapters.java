@@ -251,8 +251,13 @@ public final class ResultSetAdapters {
         return new Range( base, msb, lsb );
     }
 
-    public static AclKey principalOfAclKey( ResultSet rs ) throws SQLException {
-          return new AclKey( PostgresArrays.getUuidArray( rs, PRINCIPAL_OF_ACL_KEY.getName() ) );
+    public static AclKeySet principalOfAclKey( ResultSet rs ) throws SQLException {
+        UUID[][] ids = PostgresArrays.getUuidArrayOfArrays( rs, PRINCIPAL_OF_ACL_KEY.getName() );
+        AclKeySet keySet = new AclKeySet( ids.length );
+        Stream.of( ids )
+                .map( AclKey::new )
+                .forEach( keySet::add );
+        return keySet;
     }
 
     public static AclKeySet aclKeySet( ResultSet rs ) throws SQLException {
