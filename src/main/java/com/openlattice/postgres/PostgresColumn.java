@@ -89,7 +89,6 @@ public final class PostgresColumn {
     public static final PostgresColumnDefinition CONFIG_TYPE_ID              =
             new PostgresColumnDefinition( CONFIG_TYPE_ID_FIELD, UUID );
     public static final String                   CONTACTS_FIELD              = "contacts";
-    public static final String                   COUNT                       = "count";
     public static final PostgresColumnDefinition CONTACTS                    =
             new PostgresColumnDefinition( CONTACTS_FIELD, TEXT_ARRAY );
     public static final String                   CREDENTIAL_FIELD            = "cred";
