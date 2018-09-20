@@ -194,7 +194,11 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
 
                                 selectEntitySetWithPropertyTypesAndVersionSql(
                                         mapOf(entitySetId to entityKeyIds),
-                                        authorizedPropertyTypes.map { it.key to quote(it.value.type.fullQualifiedNameAsString) }.toMap(),
+                                        authorizedPropertyTypes.map {
+                                            it.key to quote(
+                                                    it.value.type.fullQualifiedNameAsString
+                                            )
+                                        }.toMap(),
                                         authorizedPropertyTypes.keys,
                                         mapOf(entitySetId to authorizedPropertyTypes.keys),
                                         mapOf(),
@@ -206,7 +210,11 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
                             } else {
                                 selectEntitySetWithCurrentVersionOfPropertyTypes(
                                         mapOf(entitySetId to entityKeyIds),
-                                        authorizedPropertyTypes.map { it.key to quote(it.value.type.fullQualifiedNameAsString) }.toMap(),
+                                        authorizedPropertyTypes.map {
+                                            it.key to quote(
+                                                    it.value.type.fullQualifiedNameAsString
+                                            )
+                                        }.toMap(),
                                         authorizedPropertyTypes.keys,
                                         mapOf(entitySetId to authorizedPropertyTypes.keys),
                                         mapOf(),
@@ -222,7 +230,7 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
         )
     }
 
-    private fun streamableEntityDataKey(entitySetIds: Collection<UUID>):PostgresIterable<EntityDataKey> {
+    private fun streamableEntityDataKey(entitySetIds: Collection<UUID>): PostgresIterable<EntityDataKey> {
         return PostgresIterable(
                 Supplier<StatementHolder> {
                     val connection = hds.connection
@@ -645,13 +653,14 @@ fun upsertPropertyValues(entitySetId: UUID, propertyTypeId: UUID, propertyType: 
             quote(propertyType),
             VERSION.name,
             VERSIONS.name,
-            LAST_WRITE.name
+            LAST_WRITE.name,
+            LAST_PROPAGATE.name
     )
 
     //Insert new row or update version. We only perform update if we're the winning timestamp.
     return "INSERT INTO $propertyTable (${columns.joinToString(
             ","
-    )}) VALUES('$entitySetId'::uuid,?,?,?,$version,ARRAY[$version],now()) " +
+    )}) VALUES('$entitySetId'::uuid,?,?,?,$version,ARRAY[$version],now(),now()) " +
             "ON CONFLICT (${ENTITY_SET_ID.name},${ID_VALUE.name}, ${HASH.name}) " +
             "DO UPDATE SET versions = $propertyTable.${VERSIONS.name} || EXCLUDED.${VERSIONS.name}, " +
             "${VERSION.name} = EXCLUDED.${VERSION.name} " +
@@ -785,16 +794,15 @@ internal fun entityKeyIdsClause(entityKeyIds: Set<UUID>): String {
 }
 
 
-
-internal fun activeEntitiesById():String {
-    return  "SELECT  ${ENTITY_SET_ID.name}, ${ID_VALUE.name} " +
+internal fun activeEntitiesById(): String {
+    return "SELECT  ${ENTITY_SET_ID.name}, ${ID_VALUE.name} " +
             "FROM ${IDS.name} " +
             "WHERE ${LAST_PROPAGATE.name} < ${LAST_WRITE.name} AND " +
-                "${ENTITY_SET_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] )) "
+            "${ENTITY_SET_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] )) "
 }
 
-internal fun activeEntitiesCount():String {
-    return  "SELECT  COUNT(*) " +
+internal fun activeEntitiesCount(): String {
+    return "SELECT  COUNT(*) " +
             "FROM ${IDS.name} " +
             "WHERE ${LAST_PROPAGATE.name} < ${LAST_WRITE.name} "
 }

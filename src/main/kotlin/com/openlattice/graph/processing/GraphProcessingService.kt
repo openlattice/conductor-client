@@ -32,7 +32,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
-private const val EXPIRATION_MILLIS = 1000000L
+private const val EXPIRATION_MILLIS = 30000L
 
 class GraphProcessingService(
         private val edm: EdmManager,
@@ -354,13 +354,6 @@ internal fun buildGetBlockedPropertiesSql(
             propertyTypeIds.mapValues { it.value.datatype == EdmPrimitiveTypeKind.Binary },
             " AND last_propagate < last_write"
     )
-}
-
-
-internal fun buildActiveTable(propertiesSql: String, edgesSql: String): String {
-    return "SELECT * " +
-            "FROM $propertiesSql " +
-            "INNER JOIN $edgesSql USING($entityKeyIdColumns) "
 }
 
 internal fun buildFilteredEdgesSqlForEntities(entitySetIds: Collection<UUID>): List<String> {

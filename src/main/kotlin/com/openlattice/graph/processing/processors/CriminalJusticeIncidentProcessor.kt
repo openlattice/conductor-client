@@ -14,8 +14,22 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 @Component
-class CriminalJusticeIncidentProcessor(private val graphService: GraphService, edmManager: EdmManager, entityDataService: PostgresEntityDataQueryService):
+class CriminalJusticeIncidentProcessor(
+        private val graphService: GraphService, edmManager: EdmManager,
+        entityDataService: PostgresEntityDataQueryService
+) :
         BaseDurationProcessor(edmManager, entityDataService) {
+    override fun getInputs(): Map<FullQualifiedName, Set<FullQualifiedName>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getOutputs(): Pair<FullQualifiedName, FullQualifiedName> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getSql(): String {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     private val handledEntityType = "criminaljustice.incident"
 
@@ -34,31 +48,44 @@ class CriminalJusticeIncidentProcessor(private val graphService: GraphService, e
         updateSimpleAssociation(newEntities, arrestedInAssociation, arrestedInProperty)
     }
 
-    private fun updateSimpleAssociation(newEntities: Map<UUID, Any?>, edgeTypeName:String, propertyTypeName: String) {
-        val personEntitySetIds = edmManager.getEntitySetsOfType(edmManager.getEntityType(
-                FullQualifiedName(personEntityType)).id).map { it.id }
+    private fun updateSimpleAssociation(newEntities: Map<UUID, Any?>, edgeTypeName: String, propertyTypeName: String) {
+        val personEntitySetIds = edmManager.getEntitySetsOfType(
+                edmManager.getEntityType(
+                        FullQualifiedName(personEntityType)
+                ).id
+        ).map { it.id }
 
-        val edgeEntitySets = edmManager.getEntitySetsOfType(edmManager.getEntityType(
-                FullQualifiedName(edgeTypeName)).id).map { it.id }
+        val edgeEntitySets = edmManager.getEntitySetsOfType(
+                edmManager.getEntityType(
+                        FullQualifiedName(edgeTypeName)
+                ).id
+        ).map { it.id }
 
         // UUID of events (destination) with count of people
         val transformation = DurationTransformation(60)
-        val perEventAssociations = graphService.getEntitiesForDestination(personEntitySetIds, edgeEntitySets, newEntities.keys)
-                .groupBy {it.dst.entityKeyId}
+        val perEventAssociations = graphService.getEntitiesForDestination(
+                personEntitySetIds, edgeEntitySets, newEntities.keys
+        )
+                .groupBy { it.dst.entityKeyId }
 
         perEventAssociations.forEach {
             val sumVal = newEntities[it.key]
-            when(sumVal) {
+            when (sumVal) {
                 is Double -> {
                     val minuteSumValue = transformation.convertFrom(sumVal)
-                    val perPersonValue = minuteSumValue.toDouble()/it.value.size
+                    val perPersonValue = minuteSumValue.toDouble() / it.value.size
 
                     it.value.forEach {
-                        updateEntity(perPersonValue, it.edge.entitySetId, it.edge.entityKeyId, edmManager.getPropertyType(FullQualifiedName(propertyTypeName)))
+                        updateEntity(
+                                perPersonValue, it.edge.entitySetId, it.edge.entityKeyId,
+                                edmManager.getPropertyType(FullQualifiedName(propertyTypeName))
+                        )
                     }
                 }
                 else -> {
-                    logger.error("Can't propagate values to association $edgeTypeName: duration value, $sumVal is not valid.")
+                    logger.error(
+                            "Can't propagate values to association $edgeTypeName: duration value, $sumVal is not valid."
+                    )
                 }
             }
 
@@ -89,7 +116,7 @@ class CriminalJusticeIncidentProcessor(private val graphService: GraphService, e
         return MINUTES_TO_HOURS
     }
 
-    override fun handledEntityTypes(): Set<UUID> {
+    fun handledEntityTypes(): Set<UUID> {
         return setOf(getEntityTypeId(handledEntityType))
     }
 }
