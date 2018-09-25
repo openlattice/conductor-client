@@ -127,6 +127,7 @@ class GraphProcessingService(
             val outputEntitySetIds = getEntitySets(mapOf(processor.getOutputs()).mapValues { setOf(it.value) })
             val outputPropertyType = getPropertyTypes(mapOf(processor.getOutputs()).mapValues { setOf(it.value) })
             val associationType = edm.getAssociationTypeSafe(edm.getEntityType(processor.getOutputs().first).id) != null
+            val filters =
             hds.connection.use { conn ->
                 conn.use {
                     conn.createStatement().use { stmt ->

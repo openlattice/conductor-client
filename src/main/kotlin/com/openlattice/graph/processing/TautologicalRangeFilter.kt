@@ -21,13 +21,13 @@
 
 package com.openlattice.graph.processing
 
-import com.openlattice.analysis.requests.RangeFilter
+import com.openlattice.analysis.requests.Filter
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class TautologicalRangeFilter : RangeFilter<Int> {
+class TautologicalRangeFilter : Filter<Int> {
     override fun isLowerboundEqual(): Boolean {
         return false
     }
