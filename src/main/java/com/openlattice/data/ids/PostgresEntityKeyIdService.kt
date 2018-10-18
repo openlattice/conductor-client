@@ -26,8 +26,10 @@ import com.google.common.collect.HashMultimap
 import com.google.common.collect.Multimaps
 import com.google.common.collect.SetMultimap
 import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.core.IMap
 import com.openlattice.data.EntityKey
 import com.openlattice.data.EntityKeyIdService
+import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.postgres.PostgresArrays
 import com.openlattice.postgres.PostgresColumn.*
@@ -56,7 +58,7 @@ class PostgresEntityKeyIdService(
         private val hds: HikariDataSource,
         private val idGenerationService: HazelcastIdGenerationService
 ) : EntityKeyIdService {
-
+    val indexingLocks: IMap<UUID, Long> = hazelcastInstance.getMap(HazelcastMap.INDEXING_LOCKS.name)
     private fun genEntityKeyIds(entityIds: Set<EntityKey>): Map<EntityKey, UUID> {
         val ids = idGenerationService.getNextIds(entityIds.size)
         checkState(ids.size == entityIds.size, "Insufficient ids generated.")
@@ -66,19 +68,25 @@ class PostgresEntityKeyIdService(
     }
 
     private fun storeEntityKeyIds(entityKeyIds: Map<EntityKey, UUID>): Map<EntityKey, UUID> {
-        val connection = hds.connection
-        connection.use {
-            val ps = connection.prepareStatement(INSERT_SQL)
-            entityKeyIds.forEach {
-                ps.setObject(1, it.key.entitySetId)
-                ps.setString(2, it.key.entityId)
-                ps.setObject(3, it.value)
-                ps.addBatch()
+        val entitySets = entityKeyIds.map { it.key.entitySetId }.toSet()
+        try {
+            entitySets.forEach { indexingLocks.lock(it) }
+            val connection = hds.connection
+            connection.use {
+                val ps = connection.prepareStatement(INSERT_SQL)
+                entityKeyIds.forEach {
+                    ps.setObject(1, it.key.entitySetId)
+                    ps.setString(2, it.key.entityId)
+                    ps.setObject(3, it.value)
+                    ps.addBatch()
+                }
+                val totalWritten = ps.executeBatch().sum()
+                if (totalWritten != entityKeyIds.size) {
+                    logger.warn("Expected ${entityKeyIds.size} entity key writes. Only $totalWritten writes registered.")
+                }
             }
-            val totalWritten = ps.executeBatch().sum()
-            if (totalWritten != entityKeyIds.size) {
-                logger.warn("Expected ${entityKeyIds.size} entity key writes. Only $totalWritten writes registered.")
-            }
+        } finally {
+            entitySets.forEach { indexingLocks.unlock(it) }
         }
         return entityKeyIds
     }
