@@ -97,8 +97,7 @@ fun selectEntitySetWithCurrentVersionOfPropertyTypes(
                     }
                     .joinToString("\n")
 
-    val fullQuery = "SELECT DISTINCT $dataColumns FROM $entitiesSubquerySql $propertyTableJoins"
-    return fullQuery
+    return "SELECT DISTINCT $dataColumns FROM $entitiesSubquerySql $propertyTableJoins"
 }
 
 
