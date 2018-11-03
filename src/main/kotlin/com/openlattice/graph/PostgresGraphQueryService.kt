@@ -43,6 +43,21 @@ class PostgresGraphQueryService(
         private val authorizationManager: AuthorizationManager,
         private val mapper: ObjectMapper
 ) : GraphQueryService {
+    override fun submitQuery(query: SimpleGraphQuery) {
+        query.associationConstraints.groupBy({ query.entityConstraints[it.association.srcIndex] })
+                .mapValues{it.value.map { query.entityConstraints[it.association.dstIndex] to query.entityConstraints[it.association.dstIndex]  }
+            val association = assocQuery.association
+            query.entityConstraints[association.srcIndex] to ( query.entityConstraints[association.dstIndex] to query.entityConstraints[ association.edgeIndex ] )
+        })
+        query.associationConstraints.forEach {assocQuery ->
+            query.entityConstraints[assocQuery.association.srcIndex]
+        }
+    }
+
+    private fun submitQuery(query: SimpleGraphQuery ) {
+
+    }
+
     override fun getQuery(queryId: UUID): GraphQuery {
         val conn = hds.connection
         conn.use {

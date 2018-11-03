@@ -31,6 +31,7 @@ import java.util.*
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 interface GraphQueryService {
+    fun submitQuery( query: SimpleGraphQuery )
     fun submitQuery(query: GraphQuery): GraphQueryState
     fun getQuery(queryId: UUID): GraphQuery
     fun getQueryState(queryId: UUID, options: Set<Option> = setOf()): GraphQueryState

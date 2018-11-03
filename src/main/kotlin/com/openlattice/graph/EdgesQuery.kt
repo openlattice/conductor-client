@@ -93,5 +93,14 @@ data class EdgesQuery(
         )
     }
 
+    /*
+     * In order to extract custom index, we need subgraph and list of properties.
+     *
+     * So anchor joined into each src/dst, then edges inner joined on dst/src
+     *
+     * So target dataset looks like
+     *
+     * es_a | es_b | es_c
+     */
 
 }
