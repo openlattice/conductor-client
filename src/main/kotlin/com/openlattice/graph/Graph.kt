@@ -165,7 +165,9 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
         ).stream()
     }
 
-    override fun getEntitiesForDestination(srcEntitySetIds: List<UUID>, edgeEntitySetIds: List<UUID>, dstEntityKeyIds: Set<UUID>): PostgresIterable<EdgeKey> {
+    override fun getEntitiesForDestination(
+            srcEntitySetIds: List<UUID>, edgeEntitySetIds: List<UUID>, dstEntityKeyIds: Set<UUID>
+    ): PostgresIterable<EdgeKey> {
         val query = "SELECT ${SRC_ENTITY_SET_ID.name}, ${SRC_ENTITY_KEY_ID.name}, ${DST_ENTITY_SET_ID.name}, ${DST_ENTITY_KEY_ID.name}, ${EDGE_ENTITY_SET_ID.name}, ${EDGE_ENTITY_KEY_ID.name} " +
                 "FROM ${EDGES.name} WHERE " +
                 "${SRC_ENTITY_SET_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] )) AND " +
@@ -240,8 +242,8 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
     }
 
     override fun getEdgesAndNeighborsForVerticesBulk(entitySetIds: Set<UUID>, vertexIds: Set<UUID>): Stream<Edge> {
-        if(entitySetIds.size == 1) {
-            return getEdgesAndNeighborsForVertices( entitySetIds.first(), vertexIds)
+        if (entitySetIds.size == 1) {
+            return getEdgesAndNeighborsForVertices(entitySetIds.first(), vertexIds)
         }
         return PostgresIterable(
                 Supplier {
@@ -342,7 +344,7 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
                             authorizedFilteredRanking.filteredRanking.neighborTypeAggregations,
                             ENTITY
                     ).map { it.value to authorizedFilteredRanking.entitySetPropertyTypes[it.key]!!.datatype } +
-                    (associationCountColumnName(index) to EdmPrimitiveTypeKind.Int64 )+
+                    (associationCountColumnName(index) to EdmPrimitiveTypeKind.Int64) +
                     (entityCountColumnName(index) to EdmPrimitiveTypeKind.Int64)
         }.flatten().plus(idColumns).plus(SCORE.name to EdmPrimitiveTypeKind.Double).toMap()
 
@@ -421,7 +423,7 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
         ).stream()
     }
 
-    override fun getNeighborEntitySets(entitySetId: UUID): List<NeighborSets> {
+    override fun getNeighborEntitySets(entitySetIds: Set<UUID>): List<NeighborSets> {
         val neighbors: MutableList<NeighborSets> = ArrayList()
 
         val query = "SELECT DISTINCT ${SRC_ENTITY_SET_ID.name},${EDGE_ENTITY_SET_ID.name}, ${DST_ENTITY_SET_ID.name} " +
@@ -431,8 +433,9 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
         connection.use {
             val ps = connection.prepareStatement(query)
             ps.use {
-                ps.setObject(1, entitySetId)
-                ps.setObject(2, entitySetId)
+                val entitySetIdsArr = PostgresArrays.createUuidArray(connection, entitySetIds)
+                ps.setObject(1, entitySetIdsArr)
+                ps.setObject(2, entitySetIdsArr)
                 val rs = ps.executeQuery()
                 while (rs.next()) {
                     val srcEntitySetId = rs.getObject(SRC_ENTITY_SET_ID.name) as UUID
@@ -476,7 +479,7 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
                     "${EDGE_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${EDGE_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
         } else {
             "${DST_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${DST_ENTITY_KEY_ID.name} as $SELF_ENTITY_KEY_ID, " +
-            "${EDGE_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${EDGE_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
+                    "${EDGE_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${EDGE_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
         }
 
         val edgeClause = buildEdgeFilteringClause(selfEntitySetIds, authorizedFilteredRanking)
@@ -535,7 +538,7 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
                     "${DST_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${DST_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
         } else {
             "${DST_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${DST_ENTITY_KEY_ID.name} as $SELF_ENTITY_KEY_ID, " +
-            "${SRC_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${SRC_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
+                    "${SRC_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${SRC_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
         }
 
         val edgeClause = buildEdgeFilteringClause(selfEntitySetIds, authorizedFilteredRanking)
@@ -700,8 +703,8 @@ private fun buildEdgeFilteringClause(
     }
 
     val entitySetsClause =
-        "$entitySetColumn IN (${authorizedEntitySets.joinToString(",") { "'$it'" }}) " +
-                "AND $selfEntitySetColumn IN (${selfEntitySetIds.joinToString(",") { "'$it'" }})"
+            "$entitySetColumn IN (${authorizedEntitySets.joinToString(",") { "'$it'" }}) " +
+                    "AND $selfEntitySetColumn IN (${selfEntitySetIds.joinToString(",") { "'$it'" }})"
 
     return "($associationsClause AND $entitySetsClause)"
 }
