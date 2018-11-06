@@ -145,13 +145,6 @@ interface DataGraphManager {
             authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): IntegrationResults?
 
-    fun getTopUtilizers(
-            entitySetId: UUID,
-            topUtilizerDetails: List<FilteredRankingAggregation>,
-            numResults: Int,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Stream<SetMultimap<FullQualifiedName, Any>>
-
     fun getFilteredRankings(
             entitySetIds: Set<UUID>,
             numResults: Int,
