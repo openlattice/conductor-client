@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.sql.PreparedStatement
 import java.sql.ResultSet
+import java.sql.Statement
 import java.time.OffsetDateTime
 import java.util.*
 import java.util.function.Function
@@ -75,18 +76,20 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
             version: Optional<Long> = Optional.empty(),
             linking: Boolean = false
     ): PostgresIterable<SetMultimap<FullQualifiedName, Any>> {
-        return if(linking) {
+        return if (linking) {
             streamableLinkingEntitySet(
                     entitySetIds.map { it to Optional.empty<Set<UUID>>() }.toMap(),
                     authorizedPropertyTypes,
                     metadataOptions,
-                    version)
+                    version
+            )
         } else {
             streamableEntitySet(
                     entitySetIds.map { it to Optional.empty<Set<UUID>>() }.toMap(),
                     authorizedPropertyTypes,
                     metadataOptions,
-                    version)
+                    version
+            )
         }
     }
 
@@ -98,18 +101,20 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
             version: Optional<Long> = Optional.empty(),
             linking: Boolean = false
     ): PostgresIterable<SetMultimap<FullQualifiedName, Any>> {
-        return if(linking) {
+        return if (linking) {
             streamableLinkingEntitySet(
-                    mapOf( entitySetId to Optional.of(entityKeyIds) ),
+                    mapOf(entitySetId to Optional.of(entityKeyIds)),
                     authorizedPropertyTypes,
                     metadataOptions,
-                    version)
+                    version
+            )
         } else {
             streamableEntitySet(
-                    mapOf( entitySetId to Optional.of(entityKeyIds) ),
+                    mapOf(entitySetId to Optional.of(entityKeyIds)),
                     authorizedPropertyTypes,
                     metadataOptions,
-                    version)
+                    version
+            )
         }
     }
 
@@ -138,11 +143,13 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
         val adapter = Function<ResultSet, org.apache.commons.lang3.tuple.Pair<UUID, Map<FullQualifiedName, Set<Any>>>> {
             org.apache.commons.lang3.tuple.Pair.of(
                     ResultSetAdapters.id(it),
-                    ResultSetAdapters.implicitEntityValuesByFqn(it, authorizedPropertyTypes))
+                    ResultSetAdapters.implicitEntityValuesByFqn(it, authorizedPropertyTypes)
+            )
         }
         return streamableEntitySet(
                 mapOf(entitySetId to Optional.of(entityKeyIds)), mapOf(entitySetId to authorizedPropertyTypes),
-                EnumSet.noneOf(MetadataOption::class.java), Optional.empty<Long>(), adapter, false)
+                EnumSet.noneOf(MetadataOption::class.java), Optional.empty<Long>(), adapter, false
+        )
     }
 
     fun streamableEntitySet(
@@ -186,7 +193,11 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
                     val allPropertyTypes = authorizedPropertyTypes.values.flatMap { it.values }.toSet()
                     val binaryPropertyTypes = allPropertyTypes
                             .associate { it.id to (it.datatype == EdmPrimitiveTypeKind.Binary) }
-                    val propertyFqns = allPropertyTypes.map { it.id to quote(it.type.fullQualifiedNameAsString) }.toMap()
+                    val propertyFqns = allPropertyTypes.map {
+                        it.id to quote(
+                                it.type.fullQualifiedNameAsString
+                        )
+                    }.toMap()
 
                     val rs = statement.executeQuery(
                             if (version.isPresent) {
@@ -221,32 +232,32 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
         )
     }
 
-     fun getLinkingIds(entityKeyIds: Set<UUID>): PostgresIterable<org.apache.commons.lang3.tuple.Pair<UUID, UUID>> {
-         val adapter = Function<ResultSet, org.apache.commons.lang3.tuple.Pair<UUID, UUID>> {
-             org.apache.commons.lang3.tuple.Pair.of(ResultSetAdapters.id(it), ResultSetAdapters.linkingId(it))
-         }
-         return PostgresIterable( Supplier<StatementHolder> {
-             val connection = hds.connection
-             val statement = connection.createStatement()
-             statement.fetchSize = FETCH_SIZE
-
-             val rs = statement.executeQuery( selectLinkingIdsOfEntities( entityKeyIds ) )
-             StatementHolder(connection, statement, rs)
-         }, adapter)
-     }
-
-    fun getEntityKeyIdsOfLinkingIds(
-            linkingIds: Set<UUID>
-    ):PostgresIterable<org.apache.commons.lang3.tuple.Pair<UUID, Set<UUID>>> {
-        val adapter = Function<ResultSet, org.apache.commons.lang3.tuple.Pair<UUID, Set<UUID>>> {
-            org.apache.commons.lang3.tuple.Pair.of( ResultSetAdapters.linkingId(it), ResultSetAdapters.entityKeyIds(it) )
+    fun getLinkingIds(entityKeyIds: Set<UUID>): PostgresIterable<org.apache.commons.lang3.tuple.Pair<UUID, UUID>> {
+        val adapter = Function<ResultSet, org.apache.commons.lang3.tuple.Pair<UUID, UUID>> {
+            org.apache.commons.lang3.tuple.Pair.of(ResultSetAdapters.id(it), ResultSetAdapters.linkingId(it))
         }
-        return PostgresIterable( Supplier<StatementHolder> {
+        return PostgresIterable(Supplier<StatementHolder> {
             val connection = hds.connection
             val statement = connection.createStatement()
             statement.fetchSize = FETCH_SIZE
 
-            val rs = statement.executeQuery( selectEntityKeyIdsByLinkingIds( linkingIds ) )
+            val rs = statement.executeQuery(selectLinkingIdsOfEntities(entityKeyIds))
+            StatementHolder(connection, statement, rs)
+        }, adapter)
+    }
+
+    fun getEntityKeyIdsOfLinkingIds(
+            linkingIds: Set<UUID>
+    ): PostgresIterable<org.apache.commons.lang3.tuple.Pair<UUID, Set<UUID>>> {
+        val adapter = Function<ResultSet, org.apache.commons.lang3.tuple.Pair<UUID, Set<UUID>>> {
+            org.apache.commons.lang3.tuple.Pair.of(ResultSetAdapters.linkingId(it), ResultSetAdapters.entityKeyIds(it))
+        }
+        return PostgresIterable(Supplier<StatementHolder> {
+            val connection = hds.connection
+            val statement = connection.createStatement()
+            statement.fetchSize = FETCH_SIZE
+
+            val rs = statement.executeQuery(selectEntityKeyIdsByLinkingIds(linkingIds))
             StatementHolder(connection, statement, rs)
         }, adapter)
     }
@@ -788,7 +799,7 @@ internal fun subSelectFilteredVersionOfPropertyTypeInEntitySet(
 }
 
 internal fun entityKeyIdsClause(entityKeyIds: Set<UUID>): String {
-    return if( entityKeyIds.isEmpty() ) {
+    return if (entityKeyIds.isEmpty()) {
         " TRUE "
     } else {
         "${ID_VALUE.name} IN ('" + entityKeyIds.joinToString("','") + "')"
@@ -796,7 +807,7 @@ internal fun entityKeyIdsClause(entityKeyIds: Set<UUID>): String {
 }
 
 internal fun selectLinkingIdsOfEntities(entityKeyIds: Set<UUID>): String {
-    val entitiesClause = " AND ${entityKeyIdsClause( entityKeyIds )} "
+    val entitiesClause = " AND ${entityKeyIdsClause(entityKeyIds)} "
     return "SELECT ${ID_VALUE.name}, ${LINKING_ID.name} " +
             "FROM ${selectEntityKeyIdsWithCurrentVersionSubquerySql(entitiesClause, setOf(), true)} " +
             "WHERE ${LINKING_ID.name} IS NOT NULL  "

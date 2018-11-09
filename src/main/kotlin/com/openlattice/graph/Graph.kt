@@ -450,7 +450,6 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
         return neighbors
     }
 
-
     private fun buildAssociationTable(
             index: Int,
             selfEntitySetIds: Set<UUID>,

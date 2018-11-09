@@ -29,6 +29,7 @@ import com.hazelcast.core.HazelcastInstance
 import com.openlattice.data.EntityKey
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.ids.HazelcastIdGenerationService
+import com.openlattice.indexing.IndexingLockManager
 import com.openlattice.postgres.PostgresArrays
 import com.openlattice.postgres.PostgresColumn.*
 import com.openlattice.postgres.PostgresTable.IDS
@@ -66,8 +67,7 @@ class PostgresEntityKeyIdService(
     }
 
     private fun storeEntityKeyIds(entityKeyIds: Map<EntityKey, UUID>): Map<EntityKey, UUID> {
-        val connection = hds.connection
-        connection.use {
+        hds.connection.use { connection ->
             val ps = connection.prepareStatement(INSERT_SQL)
             entityKeyIds.forEach {
                 ps.setObject(1, it.key.entitySetId)
