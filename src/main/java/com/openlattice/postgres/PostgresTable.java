@@ -121,7 +121,7 @@ public final class PostgresTable {
                             CONTACTS,
                             LINKING,
                             PostgresColumn.LINKED_ENTITY_SETS,
-                            EXTERNAL);
+                            EXTERNAL );
     //.setUnique( NAME );
     public static final PostgresTableDefinition        ENTITY_SET_PROPERTY_METADATA =
             new PostgresTableDefinition( "entity_set_property_metadata" )
@@ -374,6 +374,15 @@ public final class PostgresTable {
                 new PostgresColumnsIndexDefinition( PROPAGATION_GRAPH, DST_ENTITY_SET_ID )
                         .name( "dst_entity_set_id_propagation_idx" )
                         .ifNotExists() );
+        MATCHED_ENTITIES.addIndexes(
+                new PostgresColumnsIndexDefinition( MATCHED_ENTITIES, SRC_ENTITY_SET_ID, SRC_ENTITY_KEY_ID )
+                        .name( "matched_entities_dst_entity_set_id_dst_entity_key_id_idx" )
+
+                        .ifNotExists(),
+                new PostgresColumnsIndexDefinition( MATCHED_ENTITIES, DST_ENTITY_SET_ID, DST_ENTITY_KEY_ID )
+                        .name( "matched_entities_dst_entity_set_id_dst_entity_key_id_idx" )
+                        .ifNotExists()
+        );
 
     }
 
