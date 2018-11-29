@@ -3,6 +3,7 @@ package com.openlattice.data
 import com.amazonaws.regions.Region
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.google.common.util.concurrent.MoreExecutors
 import com.kryptnostic.rhizome.configuration.amazon.AmazonLaunchConfiguration
@@ -109,6 +110,6 @@ class LocalAwsBlobDataServiceTest {
         urlGetter.getPresignedUrls(keys)
         val stop = System.currentTimeMillis()
         val duration = stop - start
-    }
 
+    }
 }
