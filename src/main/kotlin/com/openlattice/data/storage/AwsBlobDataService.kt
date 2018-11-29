@@ -25,7 +25,7 @@ private val logger = LoggerFactory.getLogger(AwsBlobDataService::class.java)
 class AwsBlobDataService(
         private val datastoreConfiguration: DatastoreConfiguration,
         private val executorService: ListeningExecutorService
-) : ByteBlobDataManager {
+) : ByteBlobDataManager, PresignedUrlManager {
 
     val s3Credentials = BasicAWSCredentials(datastoreConfiguration.accessKeyId, datastoreConfiguration.secretAccessKey)
 
@@ -57,7 +57,7 @@ class AwsBlobDataService(
         return getPresignedUrls(keys)
     }
 
-    fun getPresignedUrls(keys: List<Any>): List<URL> {
+    override fun getPresignedUrls(keys: List<Any>): List<URL> {
         var expirationTime = Date()
         var timeToLive = expirationTime.time + datastoreConfiguration.timeToLive
         expirationTime.time = timeToLive
@@ -67,7 +67,7 @@ class AwsBlobDataService(
                 .map { it.get() }
     }
 
-    fun getPresignedUrl(key: Any, expiration: Date): URL {
+    override fun getPresignedUrl(key: Any, expiration: Date): URL {
         val urlRequest = GeneratePresignedUrlRequest(datastoreConfiguration.bucketName, key.toString()).withMethod(
                 HttpMethod.GET
         ).withExpiration(expiration)

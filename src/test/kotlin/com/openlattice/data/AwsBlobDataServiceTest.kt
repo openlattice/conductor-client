@@ -10,6 +10,7 @@ import com.kryptnostic.rhizome.configuration.amazon.AwsLaunchConfiguration
 import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.data.storage.AwsBlobDataService
 import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.data.storage.PresignedUrlManager
 import com.openlattice.datastore.configuration.DatastoreConfiguration
 import org.junit.*
 import org.slf4j.Logger
@@ -104,7 +105,8 @@ class LocalAwsBlobDataServiceTest {
             keys.add(key)
         }
         val start = System.currentTimeMillis()
-        byteBlobDataManager.getPresignedUrls(keys)
+        val urlGetter = byteBlobDataManager as PresignedUrlManager
+        urlGetter.getPresignedUrls(keys)
         val stop = System.currentTimeMillis()
         val duration = stop - start
     }
