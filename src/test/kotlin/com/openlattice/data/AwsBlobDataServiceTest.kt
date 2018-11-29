@@ -36,11 +36,17 @@ class LocalAwsBlobDataServiceTest {
             val awsTestConfig = ResourceConfigurationLoader
                     .loadConfigurationFromResource("awstest.yaml", AwsLaunchConfiguration::class.java)
             val s3 = newS3Client(awsTestConfig)
-            val config = ResourceConfigurationLoader.loadConfigurationFromS3(s3,
+            val config = ResourceConfigurationLoader.loadConfigurationFromS3(
+                    s3,
                     awsTestConfig.bucket,
                     awsTestConfig.folder,
-                    DatastoreConfiguration::class.java)
-            val byteBlobDataManager = AwsBlobDataService(config, MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(2)))
+                    DatastoreConfiguration::class.java
+            )
+            val byteBlobDataManager = AwsBlobDataService(
+                    config, MoreExecutors.listeningDecorator(
+                    Executors.newFixedThreadPool(2)
+            ))
+
             this.byteBlobDataManager = byteBlobDataManager
         }
 
