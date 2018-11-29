@@ -17,7 +17,6 @@ import java.net.URL
 import java.util.*
 
 class LocalAwsBlobDataServiceTest {
-    private val logger: Logger = LoggerFactory.getLogger(LocalAwsBlobDataServiceTest::class.java)
 
     companion object {
         @JvmStatic
