@@ -26,6 +26,8 @@ class AwsBlobDataService(private val datastoreConfiguration: DatastoreConfigurat
 
     val s3 = newS3Client(datastoreConfiguration)
 
+    val encoder = Base64.getEncoder()!!
+
     fun newS3Client(datastoreConfiguration: DatastoreConfiguration): AmazonS3 {
         var builder = AmazonS3ClientBuilder.standard()
         builder.region = datastoreConfiguration.regionName
@@ -81,5 +83,9 @@ class AwsBlobDataService(private val datastoreConfiguration: DatastoreConfigurat
             logger.warn("Amazon S3 couldn't be contacted or the client couldn't parse the response from S3")
         }
         return url
+    }
+
+    override fun getBase64EncodedString(url: URL): String {
+        return encoder.encodeToString(url.readBytes())
     }
 }

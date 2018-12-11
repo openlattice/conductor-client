@@ -3,6 +3,7 @@ package com.openlattice.data.storage
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.net.URL
 
 private val logger = LoggerFactory.getLogger(LocalBlobDataService::class.java)
 
@@ -65,5 +66,9 @@ class LocalBlobDataService(private val hds: HikariDataSource) : ByteBlobDataMana
 
     fun selectEntitySql(s3Key: String): String {
         return "SELECT \"object\" FROM mock_s3_bucket WHERE key = '$s3Key'"
+    }
+
+    override fun getBase64EncodedString(url: URL): String {
+        throw UnsupportedOperationException()
     }
 }
