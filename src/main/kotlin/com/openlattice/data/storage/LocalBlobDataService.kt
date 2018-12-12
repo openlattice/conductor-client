@@ -68,11 +68,11 @@ class LocalBlobDataService(private val hds: HikariDataSource) : ByteBlobDataMana
         return "SELECT \"object\" FROM mock_s3_bucket WHERE key = '$s3Key'"
     }
 
-    override fun getBase64EncodedStrings(url: Set<URL>): Map<URL,String> {
+    override fun getBase64EncodedStrings(url: Set<String>): Map<String,String> {
         throw UnsupportedOperationException()
     }
 
-    override fun getBase64EncodedString(url: URL): String {
+    override fun getBase64EncodedString(url: String): String {
         throw UnsupportedOperationException()
     }
 }

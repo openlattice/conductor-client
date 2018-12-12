@@ -9,6 +9,6 @@ interface ByteBlobDataManager {
 
     fun getObjects(objects: List<Any>): List<Any>
 
-    fun getBase64EncodedString(url: URL): String
-    fun getBase64EncodedStrings(urls: Set<URL>): Map<URL, String>
+    fun getBase64EncodedString(url: String): String
+    fun getBase64EncodedStrings(urls: Set<String>): Map<String, String>
 }

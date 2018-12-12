@@ -85,11 +85,12 @@ class AwsBlobDataService(private val datastoreConfiguration: DatastoreConfigurat
         return url
     }
 
-    override fun getBase64EncodedStrings(urls: Set<URL>): Map<URL, String> {
+    override fun getBase64EncodedStrings(urls: Set<String>): Map<String, String> {
         return urls.map{it to getBase64EncodedString(it)}.toMap()
     }
 
-    override fun getBase64EncodedString(url: URL): String {
-        return encoder.encodeToString(url.readBytes())
+    override fun getBase64EncodedString(url: String): String {
+        val typedUrl = URL(url)
+        return encoder.encodeToString(typedUrl.readBytes())
     }
 }
