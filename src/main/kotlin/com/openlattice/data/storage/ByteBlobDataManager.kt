@@ -1,6 +1,6 @@
 package com.openlattice.data.storage
 
-import java.net.URL
+import com.amazonaws.services.s3.model.DeleteObjectsRequest
 
 interface ByteBlobDataManager {
     fun putObject(s3Key: String, data: ByteArray)
@@ -11,4 +11,7 @@ interface ByteBlobDataManager {
 
     fun getBase64EncodedString(url: String): String
     fun getBase64EncodedStrings(urls: Set<String>): Map<String, String>
+
+    fun deleteObjects(s3Keys: List<String>)
+
 }
