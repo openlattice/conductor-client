@@ -22,21 +22,17 @@
 
 package com.openlattice.authorization;
 
-import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
-import static com.openlattice.authorization.EdmAuthorizationHelper.WRITE_PERMISSION;
-
 import com.openlattice.authorization.securable.AbstractSecurableObject;
 import com.openlattice.authorization.securable.SecurableObjectType;
-import com.openlattice.edm.type.PropertyType;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
+import static com.openlattice.authorization.EdmAuthorizationHelper.WRITE_PERMISSION;
 
 public interface AuthorizingComponent {
     Logger logger = LoggerFactory.getLogger( AuthorizingComponent.class );
@@ -92,12 +88,12 @@ public interface AuthorizingComponent {
         return getAuthorizationManager().authorize( requiredPermissionsByAclKey, Principals.getCurrentPrincipals() );
     }
 
-    default void accessCheck( Map<UUID, PropertyType> authorizedPropertyTypes, Set<UUID> requiredPropertyTypes ) {
-        final boolean authorized = authorizedPropertyTypes.keySet().containsAll( requiredPropertyTypes );
+    default void accessCheck( Set<UUID> authorizedPropertyTypeIds, Set<UUID> requiredPropertyTypes ) {
+        final boolean authorized = authorizedPropertyTypeIds.containsAll( requiredPropertyTypes );
         if ( !authorized ) {
             logger.warn( "Authorization failed. Required {} but only found {}.",
                     requiredPropertyTypes,
-                    authorizedPropertyTypes.keySet() );
+                    authorizedPropertyTypeIds );
             throw new ForbiddenException( "Insufficient permissions to perform operation." );
         }
 
