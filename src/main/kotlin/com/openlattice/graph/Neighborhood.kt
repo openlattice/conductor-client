@@ -25,5 +25,5 @@ package com.openlattice.graph
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-data class Neighborhood {
+data class Neighborhood( val foo: Int) {
 }

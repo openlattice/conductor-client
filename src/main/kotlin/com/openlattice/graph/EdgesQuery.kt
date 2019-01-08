@@ -54,7 +54,7 @@ data class EdgesQuery(
             .toMap()
 
     fun sql(): String {
-
+        TODO("Implement this function.")
     }
 
     fun buildQuery(): String {
@@ -62,7 +62,7 @@ data class EdgesQuery(
         val dstQuery = dstFilters.map { this::buildGraphEntityQuery }.joinToString { " UNION " }
         val edgeQuery = edgeFilters.map { this::buildGraphEntityQuery }.joinToString { " UNION " }
 
-        "SELECT * FROM ($srcQuery) as srcQuery, "
+        return "SELECT * FROM ($srcQuery) as srcQuery, "
     }
 
     private fun buildGraphEntityQuery(constraint: GraphEntityConstraint): String {
@@ -72,25 +72,25 @@ data class EdgesQuery(
         //Since all property types have been authorized simply have to read the appropriate entity set
         //Gather up all the authorized property types.
         val etAuthorizedPropertyTypes = constraint.entitySetIds.map{ it to authorizedPropertyTypes[it]!!}.toMap()
-        constraint.
+//        constraint.
         val propertyTypes = etAuthorizedPropertyTypes.values
                 .flatMap { it.values }
                 .toSet()
                 .map { it.id to it.type.fullQualifiedNameAsString }
                 .toMap()
+        TODO( "Finish implementing")
+//        return selectEntitySetWithCurrentVersionOfPropertyTypes(
+//                entityKeyIds,
+//                propertyTypes,
+//                listOf(),
+//                etAuthorizedPropertyTypes.mapValues { it.value.keys },
+//                filters,
+//                setOf(MetadataOption.LINKING_ID),
+//                false,
+//                etAuthorizedPropertyTypes.associate { it.id to (it.datatype == EdmPrimitiveTypeKind.Binary) }
 
-        return selectEntitySetWithCurrentVersionOfPropertyTypes(
-                entityKeyIds,
-                propertyTypes,
-                listOf(),
-                etAuthorizedPropertyTypes.mapValues { it.value.keys },
-                filters,
-                setOf(MetadataOption.LINKING_ID),
-                false,
-                etAuthorizedPropertyTypes.associate { it.id to (it.datatype == EdmPrimitiveTypeKind.Binary) }
 
-
-        )
+//        )
     }
 
     /*

@@ -28,7 +28,7 @@ package com.openlattice.graph
 data class GraphJoin(
         val sql : String,
         val columns: MutableMap<String, Set<Int>>,
-        val something: MutableMap<Int,>
+        val something: MutableMap<Int,*>
 
 ) {
 

@@ -23,8 +23,8 @@ package com.openlattice.data
 
 import com.google.common.collect.ListMultimap
 import com.google.common.collect.SetMultimap
-import com.openlattice.analysis.AuthorizedFilteredRanking
-import com.openlattice.analysis.requests.FilteredRankingAggregation
+import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
+import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
 import com.openlattice.edm.type.PropertyType
@@ -52,9 +52,9 @@ interface DataGraphManager {
             linking: Boolean
     ): EntitySetData<FullQualifiedName>
 
-    fun getLinkingEntitySetSize( linkedEntitySetIds: Set<UUID> ): Long
+    fun getLinkingEntitySetSize(linkedEntitySetIds: Set<UUID>): Long
 
-    fun getEntitySetSize( entitySetId: UUID ): Long
+    fun getEntitySetSize(entitySetId: UUID): Long
 
     /*
      * CRUD methods for entity
@@ -92,6 +92,8 @@ interface DataGraphManager {
     /*
      * Bulk endpoints for entities/associations
      */
+
+    fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID>
 
     fun integrateEntities(
             entitySetId: UUID,
@@ -145,12 +147,20 @@ interface DataGraphManager {
             authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): IntegrationResults?
 
+    fun getTopUtilizers(
+            entitySetId: UUID,
+            topUtilizerDetails: List<FilteredNeighborsRankingAggregation>,
+            numResults: Int,
+            authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): Stream<SetMultimap<FullQualifiedName, Any>>
+
     fun getFilteredRankings(
             entitySetIds: Set<UUID>,
             numResults: Int,
-            filteredRankings: List<AuthorizedFilteredRanking>,
+            filteredRankings: List<AuthorizedFilteredNeighborsRanking>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            linked: Boolean
+            linked: Boolean,
+            linkingEntitySetId: Optional<UUID>
     ): Iterable<Map<String, Any>>
 
     fun getNeighborEntitySets(entitySetId: Set<UUID>): List<NeighborSets>
@@ -165,4 +175,6 @@ interface DataGraphManager {
 
     fun getEdgesAndNeighborsForVertex(entitySetId: UUID, entityKeyId: UUID): Stream<Edge>
 
+    fun createEdges(edges: Set<DataEdgeKey>): Int
+    fun createAssociations(associations: Set<DataEdgeKey>): Int
 }

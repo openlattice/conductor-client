@@ -21,19 +21,16 @@
 package com.openlattice.graph.core;
 
 import com.google.common.collect.SetMultimap;
-import com.openlattice.analysis.AuthorizedFilteredRanking;
+import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking;
+import com.openlattice.data.DataEdgeKey;
 import com.openlattice.data.analytics.IncrementableWeightId;
 import com.openlattice.edm.type.PropertyType;
 import com.openlattice.graph.edge.Edge;
 import com.openlattice.graph.edge.EdgeKey;
 import com.openlattice.postgres.streams.PostgresIterable;
-import kotlin.Pair;
+import com.openlattice.search.requests.EntityNeighborsFilter;
 
-import com.openlattice.postgres.streams.PostgresIterable;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -41,7 +38,7 @@ import java.util.stream.Stream;
  */
 public interface GraphService {
 
-    int createEdges( Set<EdgeKey> keys );
+    int createEdges( Set<DataEdgeKey> keys );
 
     int clearEdges( Set<EdgeKey> keys );
 
@@ -65,9 +62,9 @@ public interface GraphService {
 
     Stream<Edge> getEdgesAndNeighborsForVertex( UUID entitySetId, UUID vertexId );
 
-    Stream<Edge> getEdgesAndNeighborsForVertices( UUID entitySetId, Set<UUID> vertexIds );
+    Stream<Edge> getEdgesAndNeighborsForVertices( UUID entitySetId, EntityNeighborsFilter filter );
 
-    Stream<Edge> getEdgesAndNeighborsForVerticesBulk(Set<UUID> entitySetIds, Set<UUID> vertexIds);
+    Stream<Edge> getEdgesAndNeighborsForVerticesBulk(Set<UUID> entitySetIds, EntityNeighborsFilter filter);
 
     Stream<IncrementableWeightId> topEntitiesOld(
             int limit,
@@ -79,8 +76,9 @@ public interface GraphService {
             int limit,
             Set<UUID> entitySetIds,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes,
-            List<AuthorizedFilteredRanking> details,
-            boolean linked );
+            List<AuthorizedFilteredNeighborsRanking> details,
+            boolean linked,
+            Optional<UUID> linkingEntitySetId);
 
     /**
      * @param srcFilters Association type ids to neighbor entity set ids
