@@ -60,7 +60,7 @@ public class DbCredentialService {
 
     public String getOrganizationDbCredential( Organization organization ) {
         Principal organizationPrincipal = organization.getPrincipal();
-        String organizationAtlasUser = organizationPrincipal.getType() + organizationPrincipal.getId();
+        String organizationAtlasUser = organizationPrincipal.getType() + "|" + organizationPrincipal.getId();
         return Util.getSafely( dbcreds, organizationAtlasUser );
     }
 
@@ -109,7 +109,7 @@ public class DbCredentialService {
     public String setOrganizationDbCredential( Organization organization ) {
         String cred = generateCredential();
         Principal organizationPrincipal = organization.getPrincipal();
-        String organizationAtlasUser = organizationPrincipal.getType() + organizationPrincipal.getId();
+        String organizationAtlasUser = organizationPrincipal.getType() + "|" + organizationPrincipal.getId();
         dbcreds.set( organizationAtlasUser, cred );
         return cred;
     }
