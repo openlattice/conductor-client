@@ -25,6 +25,7 @@ import com.hazelcast.core.IMap;
 import com.openlattice.datastore.util.Util;
 import com.openlattice.hazelcast.HazelcastMap;
 import java.security.SecureRandom;
+import com.openlattice.organization.Organization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,12 @@ public class DbCredentialService {
 
     public String getDbCredential( String userId ) {
         return Util.getSafely( dbcreds, userId );
+    }
+
+    public String getOrganizationDbCredential( Organization organization ) {
+        Principal organizationPrincipal = organization.getPrincipal();
+        String organizationAtlasUser = organizationPrincipal.getType() + organizationPrincipal.getId();
+        return Util.getSafely( dbcreds, organizationAtlasUser );
     }
 
     public String createUserIfNotExists( String userId ) {
@@ -97,6 +104,14 @@ public class DbCredentialService {
             return cred;
         }
         throw new IllegalStateException( "Failed to set user credential." );
+    }
+
+    public String setOrganizationDbCredential( Organization organization ) {
+        String cred = generateCredential();
+        Principal organizationPrincipal = organization.getPrincipal();
+        String organizationAtlasUser = organizationPrincipal.getType() + organizationPrincipal.getId();
+        dbcreds.set( organizationAtlasUser, cred );
+        return cred;
     }
 
     private String generateCredential() {
