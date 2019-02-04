@@ -111,6 +111,9 @@ public class HazelcastOrganizationService {
     @Inject
     private EventBus eventBus;
 
+    @Inject
+    private DbCredentialService dbCredService;
+
     public HazelcastOrganizationService(
             HazelcastInstance hazelcastInstance,
             HazelcastAclKeyReservationService reservations,
@@ -194,6 +197,8 @@ public class HazelcastOrganizationService {
                 DelegatedStringSet.wrap( organization.getAutoApprovedEmails() ) );
         membersOf.set( organizationId, PrincipalSet.wrap( organization.getMembers() ) );
         apps.set( organizationId, DelegatedUUIDSet.wrap( organization.getApps() ) );
+
+        dbCredService.setOrganizationDbCredential( organization );
     }
 
     public Organization getOrganization( UUID organizationId ) {
