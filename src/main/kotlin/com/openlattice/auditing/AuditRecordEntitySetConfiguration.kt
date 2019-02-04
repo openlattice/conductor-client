@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2019. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,21 +16,20 @@
  *
  * You can contact the owner of the copyright at support@openlattice.com
  *
+ *
  */
 
-package com.openlattice.data.events;
+package com.openlattice.auditing
 
-import com.openlattice.data.EntityDataKey;
+import com.openlattice.authorization.AclKey
+import com.openlattice.hazelcast.StreamSerializerTypeIds
+import java.util.*
 
-public class EntityDataDeletedEvent {
-
-    private final EntityDataKey edk;
-
-    public EntityDataDeletedEvent( EntityDataKey edk ) {
-        this.edk = edk;
-    }
-
-    public EntityDataKey getEntityDataKey() {
-        return edk;
-    }
-}
+/**
+ *
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+data class AuditRecordEntitySetConfiguration(
+        var activeAuditRecordEntitySetId: UUID,
+        val auditRecordEntitySetIds: MutableSet<UUID> = mutableSetOf(activeAuditRecordEntitySetId)
+)

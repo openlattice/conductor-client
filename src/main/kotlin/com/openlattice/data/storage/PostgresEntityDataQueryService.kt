@@ -29,6 +29,7 @@ import com.openlattice.edm.type.PropertyType
 import com.openlattice.postgres.*
 import com.openlattice.postgres.DataTables.*
 import com.openlattice.postgres.PostgresColumn.*
+import com.openlattice.postgres.PostgresTable.ENTITY_SETS
 import com.openlattice.postgres.PostgresTable.IDS
 import com.openlattice.postgres.streams.PostgresIterable
 import com.openlattice.postgres.streams.StatementHolder
@@ -39,7 +40,6 @@ import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.sql.PreparedStatement
 import java.sql.ResultSet
-import java.time.OffsetDateTime
 import java.util.*
 import java.util.function.Function
 import java.util.function.Supplier
@@ -63,12 +63,34 @@ class PostgresEntityDataQueryService(
             entityKeyIds: Set<UUID>
     ): Map<UUID, Map<UUID, Set<Any>>> {
         val adapter = Function<ResultSet, Pair<UUID, Map<UUID, Set<Any>>>> {
-            ResultSetAdapters.id(it) to ResultSetAdapters.implicitEntityValuesById(it, authorizedPropertyTypes, byteBlobDataManager)
+            ResultSetAdapters.id(it) to
+                    ResultSetAdapters.implicitEntityValuesById(
+                            it, mapOf(entitySetId to authorizedPropertyTypes), byteBlobDataManager
+                    )
         }
         return streamableEntitySet(
                 mapOf(entitySetId to Optional.of(entityKeyIds)), mapOf(entitySetId to authorizedPropertyTypes),
                 EnumSet.noneOf(MetadataOption::class.java), Optional.empty(), adapter
         ).toMap()
+    }
+
+    /**
+     * Returns linked entity data for (entity_set_id, linking_id) pairs
+     */
+    fun getLinkedEntityData(
+            linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
+    ): PostgresIterable<Pair<Pair<UUID, UUID>, Map<UUID, Set<Any>>>> {
+        val adapter = Function<ResultSet, Pair<Pair<UUID, UUID>, Map<UUID, Set<Any>>>> {
+            Pair(ResultSetAdapters.linkingId(it), ResultSetAdapters.entitySetId(it)) to
+                    ResultSetAdapters.implicitEntityValuesById(
+                            it, authorizedPropertyTypesByEntitySetId, byteBlobDataManager
+                    )
+        }
+        return streamableEntitySet(
+                linkingIdsByEntitySetId, authorizedPropertyTypesByEntitySetId,
+                EnumSet.noneOf(MetadataOption::class.java), Optional.empty(), adapter, true
+        )
     }
 
     fun getEntitiesByIdWithLastWrite(
@@ -77,7 +99,9 @@ class PostgresEntityDataQueryService(
             entityKeyIds: Set<UUID>
     ): Map<UUID, Map<UUID, Set<Any>>> {
         val adapter = Function<ResultSet, Pair<UUID, Map<UUID, Set<Any>>>> {
-            ResultSetAdapters.id(it) to ResultSetAdapters.implicitEntityValuesByIdWithLastWrite(it, authorizedPropertyTypes, byteBlobDataManager)
+            ResultSetAdapters.id(it) to ResultSetAdapters.implicitEntityValuesByIdWithLastWrite(
+                    it, authorizedPropertyTypes, byteBlobDataManager
+            )
         }
         return streamableEntitySet(
                 mapOf(entitySetId to Optional.of(entityKeyIds)), mapOf(entitySetId to authorizedPropertyTypes),
@@ -97,16 +121,19 @@ class PostgresEntityDataQueryService(
                     entitySetIds.map { it to Optional.empty<Set<UUID>>() }.toMap(),
                     authorizedPropertyTypes,
                     metadataOptions,
-                    version)
+                    version
+            )
         } else {
             streamableEntitySet(
                     entitySetIds.map { it to Optional.empty<Set<UUID>>() }.toMap(),
                     authorizedPropertyTypes,
                     metadataOptions,
-                    version)
+                    version
+            )
         }
     }
 
+    @JvmOverloads
     fun streamableEntitySet(
             entitySetId: UUID,
             entityKeyIds: Set<UUID>,
@@ -120,14 +147,32 @@ class PostgresEntityDataQueryService(
                     mapOf(entitySetId to Optional.of(entityKeyIds)),
                     authorizedPropertyTypes,
                     metadataOptions,
-                    version)
+                    version
+            )
         } else {
             streamableEntitySet(
                     mapOf(entitySetId to Optional.of(entityKeyIds)),
                     authorizedPropertyTypes,
                     metadataOptions,
-                    version)
+                    version
+            )
         }
+    }
+
+    fun entitySetDataWithEntityKeyIdsAndPropertyTypeIds(
+            entitySetId: UUID,
+            entityKeyIds: Optional<Set<UUID>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            metadataOptions: Set<MetadataOption>,
+            version: Optional<Long> = Optional.empty()
+    ): Map<UUID, Map<UUID, Set<Any>>> {
+        return streamableEntitySetWithEntityKeyIdsAndPropertyTypeIds(
+                entitySetId,
+                entityKeyIds,
+                authorizedPropertyTypes,
+                metadataOptions,
+                version
+        ).toMap()
     }
 
     fun streamableEntitySetWithEntityKeyIdsAndPropertyTypeIds(
@@ -139,7 +184,9 @@ class PostgresEntityDataQueryService(
     ): PostgresIterable<Pair<UUID, Map<UUID, Set<Any>>>> {
         val adapter = Function<ResultSet, Pair<UUID, Map<UUID, Set<Any>>>> {
             ResultSetAdapters.id(it) to
-                    ResultSetAdapters.implicitEntityValuesById(it, authorizedPropertyTypes, byteBlobDataManager)
+                    ResultSetAdapters.implicitEntityValuesById(
+                            it, mapOf(entitySetId to authorizedPropertyTypes), byteBlobDataManager
+                    )
         }
         return streamableEntitySet(
                 mapOf(entitySetId to entityKeyIds), mapOf(entitySetId to authorizedPropertyTypes), metadataOptions,
@@ -155,11 +202,13 @@ class PostgresEntityDataQueryService(
         val adapter = Function<ResultSet, org.apache.commons.lang3.tuple.Pair<UUID, Map<FullQualifiedName, Set<Any>>>> {
             org.apache.commons.lang3.tuple.Pair.of(
                     ResultSetAdapters.id(it),
-                    ResultSetAdapters.implicitEntityValuesByFqn(it, authorizedPropertyTypes, byteBlobDataManager))
+                    ResultSetAdapters.implicitEntityValuesByFqn(it, authorizedPropertyTypes, byteBlobDataManager)
+            )
         }
         return streamableEntitySet(
                 mapOf(entitySetId to Optional.of(entityKeyIds)), mapOf(entitySetId to authorizedPropertyTypes),
-                EnumSet.noneOf(MetadataOption::class.java), Optional.empty<Long>(), adapter, false)
+                EnumSet.noneOf(MetadataOption::class.java), Optional.empty<Long>(), adapter
+        )
     }
 
     fun streamableEntitySet(
@@ -171,9 +220,12 @@ class PostgresEntityDataQueryService(
         val adapter = Function<ResultSet, SetMultimap<FullQualifiedName, Any>> {
             ResultSetAdapters.implicitNormalEntity(it, authorizedPropertyTypes, metadataOptions, byteBlobDataManager)
         }
-        return streamableEntitySet(entityKeyIds, authorizedPropertyTypes, metadataOptions, version, adapter, false)
+        return streamableEntitySet(entityKeyIds, authorizedPropertyTypes, metadataOptions, version, adapter)
     }
 
+    /**
+     * Returns linked entity data for each linking id, omitting entity set id from selected columns
+     */
     fun streamableLinkingEntitySet(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
@@ -183,16 +235,20 @@ class PostgresEntityDataQueryService(
         val adapter = Function<ResultSet, SetMultimap<FullQualifiedName, Any>> {
             ResultSetAdapters.implicitLinkedEntity(it, authorizedPropertyTypes, metadataOptions, byteBlobDataManager)
         }
-        return streamableEntitySet(entityKeyIds, authorizedPropertyTypes, metadataOptions, version, adapter, true)
+        return streamableEntitySet(entityKeyIds, authorizedPropertyTypes, metadataOptions, version, adapter, true, true)
     }
 
+    /*
+    Note: for linking queries, linking id and entity set id will be returned, thus data won't be merged by linking id
+     */
     private fun <T> streamableEntitySet(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: Set<MetadataOption>,
             version: Optional<Long>,
             adapter: Function<ResultSet, T>,
-            linking: Boolean = false
+            linking: Boolean = false,
+            omitEntitySetId: Boolean = false
     ): PostgresIterable<T> {
         return PostgresIterable(
                 Supplier<StatementHolder> {
@@ -203,7 +259,11 @@ class PostgresEntityDataQueryService(
                     val allPropertyTypes = authorizedPropertyTypes.values.flatMap { it.values }.toSet()
                     val binaryPropertyTypes = allPropertyTypes
                             .associate { it.id to (it.datatype == EdmPrimitiveTypeKind.Binary) }
-                    val propertyFqns = allPropertyTypes.map { it.id to quote(it.type.fullQualifiedNameAsString) }.toMap()
+                    val propertyFqns = allPropertyTypes.map {
+                        it.id to quote(
+                                it.type.fullQualifiedNameAsString
+                        )
+                    }.toMap()
 
                     val rs = statement.executeQuery(
                             if (version.isPresent) {
@@ -216,8 +276,10 @@ class PostgresEntityDataQueryService(
                                         mapOf(),
                                         metadataOptions,
                                         version.get(),
+                                        binaryPropertyTypes,
                                         linking,
-                                        binaryPropertyTypes
+                                        omitEntitySetId
+
                                 )
                             } else {
                                 selectEntitySetWithCurrentVersionOfPropertyTypes(
@@ -227,8 +289,9 @@ class PostgresEntityDataQueryService(
                                         authorizedPropertyTypes.mapValues { it.value.map { it.key }.toSet() },
                                         mapOf(),
                                         metadataOptions,
+                                        binaryPropertyTypes,
                                         linking,
-                                        binaryPropertyTypes
+                                        omitEntitySetId
                                 )
                             }
                     )
@@ -238,9 +301,12 @@ class PostgresEntityDataQueryService(
         )
     }
 
-    fun getLinkingIds(entityKeyIds: Set<UUID>): PostgresIterable<org.apache.commons.lang3.tuple.Pair<UUID, UUID>> {
-        val adapter = Function<ResultSet, org.apache.commons.lang3.tuple.Pair<UUID, UUID>> {
-            org.apache.commons.lang3.tuple.Pair.of(ResultSetAdapters.id(it), ResultSetAdapters.linkingId(it))
+    /**
+     * Selects linking ids by their entity set ids with filtering on entity key ids.
+     */
+    fun getLinkingIds(entityKeyIds: Map<UUID, Optional<Set<UUID>>>): Map<UUID, Set<UUID>> {
+        val adapter = Function<ResultSet, Pair<UUID, Set<UUID>>> {
+            Pair(ResultSetAdapters.entitySetId(it), ResultSetAdapters.linkingIds(it))
         }
         return PostgresIterable(Supplier<StatementHolder> {
             val connection = hds.connection
@@ -248,6 +314,18 @@ class PostgresEntityDataQueryService(
             statement.fetchSize = FETCH_SIZE
 
             val rs = statement.executeQuery(selectLinkingIdsOfEntities(entityKeyIds))
+            StatementHolder(connection, statement, rs)
+        }, adapter).toMap()
+    }
+
+    fun getLinkingIds(entitySetId: UUID): PostgresIterable<UUID> {
+        val adapter = Function<ResultSet, UUID> { ResultSetAdapters.linkingId(it) }
+        return PostgresIterable(Supplier<StatementHolder> {
+            val connection = hds.connection
+            val statement = connection.createStatement()
+            statement.fetchSize = FETCH_SIZE
+
+            val rs = statement.executeQuery(selectLinkingIdsOfEntitySet(entitySetId))
             StatementHolder(connection, statement, rs)
         }, adapter)
     }
@@ -268,77 +346,120 @@ class PostgresEntityDataQueryService(
         }, adapter)
     }
 
+    fun getLinkingEntitySetIds(linkingId: UUID): PostgresIterable<UUID> {
+        val adapter = Function<ResultSet, UUID> {
+            ResultSetAdapters.id(it)
+        }
+        return PostgresIterable(Supplier<StatementHolder> {
+            val connection = hds.connection
+            val statement = connection.createStatement()
+            val rs = statement.executeQuery(getLinkingEntitySetIdsOfLinkingIdQuery(linkingId))
+            StatementHolder(connection, statement, rs)
+        }, adapter)
+    }
+
+    fun getLinkingEntitySetIdsOfEntitySet(entitySetId: UUID): PostgresIterable<UUID> {
+        val adapter = Function<ResultSet, UUID> {
+            ResultSetAdapters.id(it)
+        }
+        return PostgresIterable(Supplier<StatementHolder> {
+            val connection = hds.connection
+            val statement = connection.createStatement()
+            val rs = statement.executeQuery(getLinkingEntitySetIdsOfEntitySetIdQuery(entitySetId))
+            StatementHolder(connection, statement, rs)
+        }, adapter)
+    }
+
     fun upsertEntities(
             entitySetId: UUID, entities: Map<UUID, Map<UUID, Set<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Int {
-        val connection = hds.connection
-        connection.use {
+        hds.connection.use { connection ->
             val version = System.currentTimeMillis()
             val entitySetPreparedStatement = connection.prepareStatement(upsertEntity(entitySetId, version))
-            val datatypes = authorizedPropertyTypes.map {
-                it.key to it.value.datatype
-            }.toMap()
+            val dataTypes = authorizedPropertyTypes.mapValues { (_, propertyType) ->
+                propertyType.datatype
+            }
+
             val preparedStatements = authorizedPropertyTypes
-                    .map {
-                        it.key to connection.prepareStatement(
+                    .mapValues {
+                        connection.prepareStatement(
                                 upsertPropertyValues(
                                         entitySetId, it.key, it.value.type.fullQualifiedNameAsString, version
                                 )
-                        )
+                        ) to connection.prepareStatement(updatePropertyVersionSql(it.key, version))
                     }
-                    .toMap()
 
-            entities.forEach {
-                entitySetPreparedStatement.setObject(1, it.key)
+
+
+            entities.forEach { entity ->
+                entitySetPreparedStatement.setObject(1, entity.key)
                 entitySetPreparedStatement.addBatch()
 
-                val entityKeyId = it.key
-                val entityData = JsonDeserializer.validateFormatAndNormalize(it.value, datatypes)
+                val entityKeyId = entity.key
+                val entityData = asMap(JsonDeserializer
+                                               .validateFormatAndNormalize(entity.value, dataTypes)
+                                               { "Entity set $entitySetId with entity key id $entityKeyId" })
 
-                asMap(entityData)
-                        .forEach {
-                            val propertyTypeId = it.key
-                            val properties = it.value
-                            properties.forEach {
-                                if (it == null) {
-                                    logger.error(
-                                            "Encountered null property value of type {} for entity set {} with entity key id {}",
-                                            propertyTypeId, entitySetId, entityKeyId
-                                    )
-                                } else {
-                                    val ps = preparedStatements[propertyTypeId]
-                                    ps?.setObject(1, entityKeyId)
-                                    //Binary data types get stored in S3 bucket
-                                    if (datatypes[propertyTypeId] == EdmPrimitiveTypeKind.Binary) {
+                entityData.forEach { (propertyTypeId, values) ->
+                    val upsertStatements = preparedStatements[propertyTypeId]
+
+                    if (upsertStatements == null) {
+                        logger.warn(
+                                "Not inserting unauthorized property in entity {} from entity set {}",
+                                entityKeyId,
+                                entitySetId
+                        )
+                    } else {
+                        values.forEach { value ->
+                            val (ps, ver) = upsertStatements!!
+
+                            //Binary data types get stored in S3 bucket
+                            val (propertyHash, insertValue) =
+                                    if (dataTypes[propertyTypeId] == EdmPrimitiveTypeKind.Binary) {
                                         //store data in S3 bucket
-                                        val pair = it as Pair<String, ByteArray>
-                                        val propertyHash = PostgresDataHasher.hashObjectToHex(pair.second, EdmPrimitiveTypeKind.Binary)
+                                        val pair = value as Pair<String, ByteArray>
 
-                                        //store entity set id/entity key id/property type id/property hash as key in S3
-                                        val s3Key = entitySetId.toString() + "/" + entityKeyId.toString() + "/" + propertyTypeId.toString() + "/" + propertyHash
-                                        byteBlobDataManager.putObject(s3Key, pair.second, pair.first)
-                                        ps?.setBytes(2, PostgresDataHasher.hashObject(s3Key, EdmPrimitiveTypeKind.String))
-                                        ps?.setObject(3, s3Key)
-                                    } else {
-                                        ps?.setBytes(2, PostgresDataHasher.hashObject(it, datatypes[propertyTypeId]))
-                                        ps?.setObject(3, it)
-                                    }
-                                    ps?.addBatch()
-                                    if (ps == null) {
-                                        logger.warn(
-                                                "Skipping unauthorized property in entity $entityKeyId from entity set $entitySetId"
+                                        val digest = PostgresDataHasher.hashObjectToHex(
+                                                pair.second, EdmPrimitiveTypeKind.Binary
                                         )
+                                        //store entity set id/entity key id/property type id/property hash as key in S3
+                                        val s3Key = "$entitySetId/$entityKeyId/$propertyTypeId/$digest"
+                                        byteBlobDataManager.putObject(s3Key, pair.second, pair.first)
+                                        PostgresDataHasher.hashObject(s3Key, EdmPrimitiveTypeKind.String) to s3Key
+                                    } else {
+                                        PostgresDataHasher.hashObject(value, dataTypes[propertyTypeId]) to value
                                     }
-                                }
-                            }
+
+                            ps.setObject(1, entityKeyId)
+                            ps.setBytes(2, propertyHash)
+                            ps.setObject(3, insertValue)
+
+                            ver.setObject(1, entitySetId)
+                            ver.setObject(2, entityKeyId)
+                            ver.setObject(3, propertyHash)
+
+                            ps.addBatch()
+                            ver.addBatch()
                         }
+                    }
+                }
             }
 
             //In case we want to do validation
-            val updatedPropertyCounts = preparedStatements.values.map { it.executeBatch() }.sumBy { it.sum() }
+            val updatedPropertyCounts = preparedStatements.values.map {
+                val updateCount = it.first.executeBatch()
+                it.second.executeBatch()
+                return@map updateCount
+            }.sumBy { it.sum() }
+
             val updatedEntityCount = entitySetPreparedStatement.executeBatch().sum()
-            preparedStatements.values.forEach(PreparedStatement::close)
+
+            preparedStatements.values.forEach {
+                it.first.close()
+                it.second.close()
+            }
+
             entitySetPreparedStatement.close()
             checkState(updatedEntityCount == entities.size, "Updated entity metadata count mismatch")
 
@@ -352,7 +473,7 @@ class PostgresEntityDataQueryService(
         return tombstone(entitySetId) + tombstone(entitySetId, authorizedPropertyTypes.values)
     }
 
-    /**int
+    /**
      * Tombstones (writes a negative version) for the provided entities.
      * @param entitySetId The entity set to operate on.
      * @param entityKeyIds The entity key ids to tombstone.
@@ -367,26 +488,39 @@ class PostgresEntityDataQueryService(
         return tombstone(entitySetId, entityKeyIds)
     }
 
-    fun deleteEntities(
+    /**int
+     * Tombstones (writes a negative version) for the provided entity properties.
+     * @param entitySetId The entity set to operate on.
+     * @param entityKeyIds The entity key ids to tombstone.
+     * @param authorizedPropertyTypes The property types the user is requested and is allowed to tombstone. We assume
+     * that authorization checks are enforced at a higher level and that this just streamlines issuing the necessary
+     * queries.
+     */
+    fun clearEntityData(
+            entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): Int {
+        return tombstone(entitySetId, entityKeyIds, authorizedPropertyTypes.values)
+    }
+
+    fun deleteEntityData(
             entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Int {
         val connection = hds.connection
         return connection.use {
-            return authorizedPropertyTypes
-                    .map {
-                        val ps = connection.prepareStatement(deletePropertiesOfEntities(entitySetId, it.key))
-                        var propertyEntry = it
-                        entityKeyIds.forEach {
-                            ps.setObject(1, it)
-                            ps.addBatch()
-                            if (propertyEntry.value.datatype == EdmPrimitiveTypeKind.Binary) {
-                                val propertyTable = quote(propertyTableName(propertyEntry.key))
-                                val fqn = propertyEntry.value.type.toString()
-                                val fqnColumn = quote(fqn)
-                                deletePropertyOfEntityFromS3(propertyTable, fqn, fqnColumn, entitySetId, it)
-                            }
+            authorizedPropertyTypes
+                    .map { property ->
+                        if (property.value.datatype == EdmPrimitiveTypeKind.Binary) {
+                            val propertyTable = quote(propertyTableName(property.key))
+                            val fqn = property.value.type.toString()
+                            val fqnColumn = quote(fqn)
+                            deletePropertyOfEntityFromS3(propertyTable, fqn, fqnColumn, entitySetId, entityKeyIds)
                         }
-                        val count: Int = ps.executeBatch().sum()
+
+                        val ps = it.prepareStatement(deletePropertiesOfEntities(entitySetId, property.key))
+                        val arr = PostgresArrays.createUuidArray(it, entityKeyIds)
+                        ps.setArray(1, arr)
+
+                        val count = ps.executeUpdate()
                         ps.close()
                         count
                     }
@@ -394,10 +528,10 @@ class PostgresEntityDataQueryService(
         }
     }
 
-    fun deleteEntitySet(entitySetId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>): Int {
+    fun deleteEntitySetData(entitySetId: UUID, propertyTypes: Map<UUID, PropertyType>): Int {
         val connection = hds.connection
         return connection.use {
-            authorizedPropertyTypes
+            propertyTypes
                     .map {
                         val s = connection.createStatement()
                         if (it.value.datatype == EdmPrimitiveTypeKind.Binary) {
@@ -413,10 +547,13 @@ class PostgresEntityDataQueryService(
         }
     }
 
-    fun deletePropertyOfEntityFromS3(propertyTable: String, fqn: String, fqnColumn: String, entitySetId: UUID, entityKeyId: UUID) {
+    fun deletePropertyOfEntityFromS3(
+            propertyTable: String, fqn: String, fqnColumn: String, entitySetId: UUID, entityKeyIds: Set<UUID>
+    ) {
         val connection = hds.connection
-        val ps = connection.prepareStatement(selectPropertyOfEntityInS3(propertyTable, fqn, fqnColumn, entitySetId, entityKeyId))
-        ps.setObject(1, entityKeyId)
+        val ps = connection.prepareStatement(selectPropertyOfEntityInS3(propertyTable, fqnColumn, entitySetId))
+        val arr = PostgresArrays.createUuidArray(connection, entityKeyIds)
+        ps.setObject(1, arr)
         val rs = ps.executeQuery()
         while (rs.next()) {
             byteBlobDataManager.deleteObject(rs.getString(fqn))
@@ -430,7 +567,9 @@ class PostgresEntityDataQueryService(
         PostgresIterable(
                 Supplier {
                     val connection = hds.connection
-                    val ps = connection.prepareStatement(selectPropertiesInEntitySetInS3(propertyTable, quote(fqn), entitySetId))
+                    val ps = connection.prepareStatement(
+                            selectPropertiesInEntitySetInS3(propertyTable, quote(fqn), entitySetId)
+                    )
                     ps.fetchSize = FETCH_SIZE
                     val rs = ps.executeQuery()
                     StatementHolder(connection, ps, rs)
@@ -440,9 +579,25 @@ class PostgresEntityDataQueryService(
                 }).asSequence().chunked(1000).forEach { byteBlobDataManager.deleteObjects(it) }
     }
 
+    fun deleteEntitySet(entitySetId: UUID): Int {
+        return hds.connection.use {
+            val s = it.prepareStatement(deleteEntitySetEntityKeys(entitySetId))
+            s.executeUpdate()
+        }
+    }
 
-    fun selectPropertyOfEntityInS3(propertyTable: String, fqn: String, fqnColumn: String, entitySetId: UUID, entityKeyId: UUID): String {
-        return "SELECT $fqnColumn FROM $propertyTable WHERE ${PostgresColumn.ENTITY_SET_ID.name} = '$entitySetId'::uuid WHERE id in (SELECT * FROM UNNEST( (?)::uuid[] )) "
+    fun deleteEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): Int {
+        return hds.connection.use {
+            val s = it.prepareStatement(deleteEntityKeys(entitySetId))
+            val arr = PostgresArrays.createUuidArray(it, entityKeyIds)
+            s.setArray(1, arr)
+            s.executeUpdate()
+        }
+    }
+
+
+    fun selectPropertyOfEntityInS3(propertyTable: String, fqnColumn: String, entitySetId: UUID): String {
+        return "SELECT $fqnColumn FROM $propertyTable WHERE ${PostgresColumn.ENTITY_SET_ID.name} = '$entitySetId'::uuid AND id in (SELECT * FROM UNNEST( (?)::uuid[] )) "
     }
 
     fun selectPropertiesInEntitySetInS3(propertyTable: String, fqnColumn: String, entitySetId: UUID): String {
@@ -578,7 +733,7 @@ class PostgresEntityDataQueryService(
                             }
                         }
             }
-            return propertyTypePreparedStatements.values.map(PreparedStatement::executeBatch).map(IntArray::sum).sum()
+            propertyTypePreparedStatements.values.map(PreparedStatement::executeBatch).map(IntArray::sum).sum()
         }
     }
 
@@ -586,7 +741,7 @@ class PostgresEntityDataQueryService(
         val connection = hds.connection
         return connection.use {
             val ps = it.prepareStatement(updateAllEntityVersions(entitySetId, -System.currentTimeMillis()))
-            return ps.executeUpdate()
+            ps.executeUpdate()
         }
     }
 
@@ -598,60 +753,9 @@ class PostgresEntityDataQueryService(
                 ps.setObject(1, it)
                 ps.addBatch()
             }
-            return ps.executeBatch().sum()
+            ps.executeBatch().sum()
         }
     }
-
-    fun markAsIndexed(entitySetId: UUID, batchToIndex: Set<UUID>): Int {
-        hds.connection.use {
-            it.prepareStatement(updateLastIndexSql(entitySetId)).use {
-                val arr = PostgresArrays.createUuidArray(it.connection, batchToIndex)
-                it.setObject(1, OffsetDateTime.now())
-                it.setArray(2, arr)
-                return it.executeUpdate()
-            }
-
-        }
-    }
-
-    fun markAsLinked(entitySetId: UUID, processedEntities: Set<UUID>): Int {
-        hds.connection.use {
-            it.prepareStatement(updateLastLinkSql(entitySetId)).use {
-                val arr = PostgresArrays.createUuidArray(it.connection, processedEntities)
-                it.setObject(1, OffsetDateTime.now())
-                it.setArray(2, arr)
-                return it.executeUpdate()
-            }
-
-        }
-    }
-
-    fun markAsProcessed(entitySetId: UUID, processedEntities: Set<UUID>, processedTime: OffsetDateTime): Int {
-        hds.connection.use {
-            it.prepareStatement(updateLastPropagateSql(entitySetId)).use {
-                val arr = PostgresArrays.createUuidArray(it.connection, processedEntities)
-                it.setObject(1, processedTime)
-                it.setArray(2, arr)
-                return it.executeUpdate()
-            }
-
-        }
-    }
-}
-
-fun updateLastIndexSql(entitySetId: UUID): String {
-    return "UPDATE ${IDS.name} SET ${LAST_INDEX.name} = ? " +
-            "WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND ${ID.name} IN (SELECT UNNEST( (?)::uuid[] ))"
-}
-
-fun updateLastLinkSql(entitySetId: UUID): String {
-    return "UPDATE ${IDS.name} SET ${LAST_LINK.name} = ? " +
-            "WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND ${ID.name} IN (SELECT UNNEST( (?)::uuid[] ))"
-}
-
-fun updateLastPropagateSql(entitySetId: UUID): String {
-    return "UPDATE ${IDS.name} SET ${LAST_PROPAGATE.name} = ? " +
-            "WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND ${ID.name} IN (SELECT UNNEST( (?)::uuid[] ))"
 }
 
 /**
@@ -696,34 +800,23 @@ fun updatePropertyValueVersion(entitySetId: UUID, propertyTypeId: UUID, version:
 
 fun deletePropertiesInEntitySet(entitySetId: UUID, propertyTypeId: UUID): String {
     val propertyTable = quote(propertyTableName(propertyTypeId))
-    return "DELETE FROM $propertyTable WHERE ${ENTITY_SET_ID.name} = '$entitySetId'::uuid "
+    return "DELETE FROM $propertyTable WHERE ${ENTITY_SET_ID.name} = '$entitySetId' "
 }
 
 fun deletePropertiesOfEntities(entitySetId: UUID, propertyTypeId: UUID): String {
-    return deletePropertiesInEntitySet(
-            entitySetId, propertyTypeId
-    ) + " WHERE id in (SELECT * FROM UNNEST( (?)::uuid[] )) "
+    return deletePropertiesInEntitySet(entitySetId, propertyTypeId) +
+            " AND id in (SELECT * FROM UNNEST( (?)::uuid[] )) "
 }
 
-fun deleteEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): String {
-    return deleteEntitySet(entitySetId) + "AND ${ID.name} in (SELECT * FROM UNNEST( (?)::uuid[] )) "
+fun deleteEntityKeys(entitySetId: UUID): String {
+    return deleteEntitySetEntityKeys(entitySetId) + "AND ${ID.name} in (SELECT * FROM UNNEST( (?)::uuid[] )) "
 }
 
-fun deleteEntitySet(entitySetId: UUID): String {
+fun deleteEntitySetEntityKeys(entitySetId: UUID): String {
     return "DELETE FROM ${IDS.name} WHERE ${ENTITY_SET_ID.name} = '$entitySetId' "
 }
 
 fun upsertEntity(entitySetId: UUID, version: Long): String {
-    val columns = setOf(
-            ENTITY_SET_ID.name,
-            ID_VALUE.name,
-            VERSION.name,
-            VERSIONS.name,
-            LAST_WRITE.name,
-            LAST_INDEX.name,
-            LAST_LINK.name,
-            LAST_PROPAGATE.name
-    )
     //Last writer wins for entities
     return "UPDATE ${IDS.name} SET versions = ${VERSIONS.name} || ARRAY[$version], " +
             "${VERSION.name} = GREATEST(${VERSION.name},$version), ${LAST_WRITE.name} = now() " +
@@ -748,9 +841,15 @@ fun upsertPropertyValues(entitySetId: UUID, propertyTypeId: UUID, propertyType: 
             ","
     )}) VALUES('$entitySetId'::uuid,?,?,?,$version,ARRAY[$version],now(), now()) " +
             "ON CONFLICT (${ENTITY_SET_ID.name},${ID_VALUE.name}, ${HASH.name}) " +
-            "DO UPDATE SET versions = $propertyTable.${VERSIONS.name} || EXCLUDED.${VERSIONS.name}, " +
-            "${VERSION.name} = EXCLUDED.${VERSION.name} " +
-            "WHERE EXCLUDED.${VERSION.name} > abs($propertyTable.version) "
+            "DO UPDATE SET versions = $propertyTable.${VERSIONS.name} || EXCLUDED.${VERSIONS.name} "
+
+}
+
+fun updatePropertyVersionSql(propertyTypeId: UUID, version: Long): String {
+    val propertyTable = quote(propertyTableName(propertyTypeId))
+    return "UPDATE $propertyTable SET ${VERSION.name} = $version " +
+            "WHERE ${ENTITY_SET_ID.name} = ? AND ${ID_VALUE.name} = ? AND ${HASH.name} = ? " +
+            "AND abs(${VERSION.name}) < $version "
 }
 
 fun selectEntitySetWithPropertyTypes(
@@ -765,7 +864,7 @@ fun selectEntitySetWithPropertyTypes(
     val entityKeyIdsClause = entityKeyIds.map { "AND ${entityKeyIdsClause(it)} " }.orElse(" ")
     //@formatter:off
     val columns = setOf(ID_VALUE.name) +
-            metadataOptions.map{ ResultSetAdapters.mapMetadataOptionToPostgresColumn(it).name } +
+            metadataOptions.map { ResultSetAdapters.mapMetadataOptionToPostgresColumn(it).name } +
             authorizedPropertyTypes.values.map(::quote)
 
     return "SELECT ${columns.filter(String::isNotBlank).joinToString(",")} FROM (SELECT * \n" +
@@ -790,7 +889,7 @@ fun selectEntitySetWithPropertyTypesAndVersion(
     val entityKeyIdsClause = entityKeyIds.map { "AND ${entityKeyIdsClause(it)} " }.orElse(" ")
     //@formatter:off
     val columns = setOf(ID_VALUE.name) +
-            metadataOptions.map{ ResultSetAdapters.mapMetadataOptionToPostgresColumn(it).name } +
+            metadataOptions.map { ResultSetAdapters.mapMetadataOptionToPostgresColumn(it).name } +
             authorizedPropertyTypes.values.map(::quote)
 
     return "SELECT ${columns.filter(String::isNotBlank).joinToString(",")} FROM ( SELECT * " +
@@ -870,10 +969,33 @@ internal fun entityKeyIdsClause(entityKeyIds: Set<UUID>): String {
     }
 }
 
-internal fun selectLinkingIdsOfEntities(entityKeyIds: Set<UUID>): String {
-    val entitiesClause = " AND ${entityKeyIdsClause(entityKeyIds)} "
-    return "SELECT ${ID_VALUE.name}, ${LINKING_ID.name} " +
-            "FROM ${selectEntityKeyIdsWithCurrentVersionSubquerySql(entitiesClause, setOf(), true)} " +
-            "WHERE ${LINKING_ID.name} IS NOT NULL  "
+internal fun selectLinkingIdsOfEntities(entityKeyIds: Map<UUID, Optional<Set<UUID>>>): String {
+    val entitiesClause = buildEntitiesClause(entityKeyIds, false)
+    return "SELECT ${ENTITY_SET_ID.name}, array_agg(${LINKING_ID.name}) as ${LINKING_ID.name} " +
+            "FROM ${IDS.name} " +
+            "WHERE ${LINKING_ID.name} IS NOT NULL $entitiesClause " +
+            "GROUP BY ${ENTITY_SET_ID.name} "
 }
 
+internal fun selectLinkingIdsOfEntitySet(entitySetId: UUID): String {
+    return "SELECT DISTINCT ${LINKING_ID.name} " +
+            "FROM ${IDS.name} " +
+            "WHERE ${VERSION.name} > 0 AND ${LINKING_ID.name} IS NOT NULL AND ${ENTITY_SET_ID.name} = '$entitySetId'"
+}
+
+internal fun getLinkingEntitySetIdsOfLinkingIdQuery(linkingId: UUID): String {
+    val selectEntitySetIdOfLinkingId =
+            "SELECT DISTINCT ${ENTITY_SET_ID.name} " +
+                    "FROM ${IDS.name} " +
+                    "WHERE ${LINKING_ID.name} = '$linkingId'"
+    return "SELECT ${ID.name} " +
+            "FROM ${ENTITY_SETS.name} " +
+            "INNER JOIN ( $selectEntitySetIdOfLinkingId ) as linked_es " +
+            "ON ( ${ENTITY_SET_ID.name}= ANY( ${LINKED_ENTITY_SETS.name} ) )"
+}
+
+internal fun getLinkingEntitySetIdsOfEntitySetIdQuery(entitySetId: UUID): String {
+    return "SELECT ${ID.name} " +
+            "FROM ${ENTITY_SETS.name} " +
+            "WHERE '$entitySetId' = ANY(${LINKED_ENTITY_SETS.name})"
+}
