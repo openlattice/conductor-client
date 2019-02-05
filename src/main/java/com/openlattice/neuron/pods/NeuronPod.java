@@ -27,6 +27,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.hazelcast.core.HazelcastInstance;
+import com.openlattice.auditing.AuditRecordEntitySetsManager;
+import com.openlattice.auditing.AuditingConfiguration;
+import com.openlattice.auditing.AuditingTypes;
+import com.openlattice.auditing.pods.AuditingConfigurationPod;
 import com.openlattice.authorization.AuthorizationManager;
 import com.openlattice.authorization.AuthorizationQueryService;
 import com.openlattice.authorization.HazelcastAclKeyReservationService;
@@ -50,6 +54,8 @@ import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService;
 import com.openlattice.graph.Graph;
 import com.openlattice.graph.core.GraphService;
 import com.openlattice.ids.HazelcastIdGenerationService;
+import com.openlattice.linking.LinkingQueryService;
+import com.openlattice.linking.graph.PostgresLinkingQueryService;
 import com.openlattice.neuron.Neuron;
 import com.openlattice.postgres.PostgresTableManager;
 import com.zaxxer.hikari.HikariDataSource;
@@ -61,7 +67,8 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @Import( {
         AuditEntitySetPod.class,
-        ByteBlobServicePod.class
+        ByteBlobServicePod.class,
+        AuditingConfigurationPod.class
 } )
 public class NeuronPod {
 
@@ -82,6 +89,9 @@ public class NeuronPod {
 
     @Inject
     private ByteBlobDataManager byteBlobDataManager;
+
+    @Inject
+    private AuditingConfiguration auditingConfiguration;
 
     /*
      *
@@ -123,9 +133,6 @@ public class NeuronPod {
     @Bean
     public HazelcastEntityDatastore entityDatastore() {
         return new HazelcastEntityDatastore(
-                hazelcastInstance,
-                executor,
-                defaultObjectMapper(),
                 idService(),
                 postgresDataManager(),
                 dataQueryService()
@@ -134,7 +141,7 @@ public class NeuronPod {
 
     @Bean
     public PostgresEdmManager edmManager() {
-        return new PostgresEdmManager( hikariDataSource, tableManager );
+        return new PostgresEdmManager( hikariDataSource, tableManager, hazelcastInstance );
     }
 
     @Bean
@@ -163,7 +170,8 @@ public class NeuronPod {
                 authorizationManager(),
                 edmManager(),
                 entityTypeManager(),
-                schemaManager() );
+                schemaManager(),
+                auditingConfiguration );
     }
 
     @Bean
@@ -201,5 +209,10 @@ public class NeuronPod {
     @Bean
     public SchemaQueryService schemaQueryService() {
         return new PostgresSchemaQueryService( hikariDataSource );
+    }
+
+    @Bean
+    public LinkingQueryService lqs() {
+        return new PostgresLinkingQueryService( hikariDataSource );
     }
 }

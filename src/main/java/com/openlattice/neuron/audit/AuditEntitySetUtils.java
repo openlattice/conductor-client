@@ -23,6 +23,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import com.openlattice.authorization.Principal;
@@ -36,6 +37,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,26 +49,30 @@ import org.slf4j.LoggerFactory;
 public class AuditEntitySetUtils {
 
     // TODO: where does this belong?
-    public static final Principal OPEN_LATTICE_PRINCIPAL = new Principal( PrincipalType.USER, "OpenLattice" );
-    private static final Logger logger = LoggerFactory.getLogger( AuditEntitySetUtils.class );
-    public static final String AUDIT_ENTITY_SET_NAME       = "OpenLattice Audit Entity Set";
-    private static final String OPENLATTICE_AUDIT_NAMESPACE = "OPENLATTICE_AUDIT";
-    public static final FullQualifiedName DETAILS_PT_FQN = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE,
+    public static final  Principal                OPEN_LATTICE_PRINCIPAL      = new Principal( PrincipalType.USER,
+            "OpenLattice" );
+    private static final Logger                   logger                      = LoggerFactory
+            .getLogger( AuditEntitySetUtils.class );
+    public static final  String                   AUDIT_ENTITY_SET_NAME       = "OpenLattice Audit Entity Set";
+    private static final String                   OPENLATTICE_AUDIT_NAMESPACE = "OPENLATTICE_AUDIT";
+    public static final  FullQualifiedName        DETAILS_PT_FQN              = new FullQualifiedName(
+            OPENLATTICE_AUDIT_NAMESPACE,
             "DETAILS" );
-    public static final FullQualifiedName TYPE_PT_FQN    = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE,
+    public static final  FullQualifiedName        TYPE_PT_FQN                 = new FullQualifiedName(
+            OPENLATTICE_AUDIT_NAMESPACE,
             "TYPE" );
-    public static final FullQualifiedName AUDIT_ET_FQN   = new FullQualifiedName( OPENLATTICE_AUDIT_NAMESPACE,
+    public static final  FullQualifiedName        AUDIT_ET_FQN                = new FullQualifiedName(
+            OPENLATTICE_AUDIT_NAMESPACE,
             "AUDIT" );
-    private static Collection<PropertyType> PROPERTIES;
-    private static PropertyType             TYPE_PROPERTY_TYPE;
-    private static PropertyType             DETAILS_PROPERTY_TYPE;
-    private static EntityType               AUDIT_ENTITY_TYPE;
-    private static EntitySet                AUDIT_ENTITY_SET;
-    private static UUID                     AUDIT_ENTITY_SET_SYNC_ID;
+    private static       Collection<PropertyType> PROPERTIES;
+    private static       PropertyType             TYPE_PROPERTY_TYPE;
+    private static       PropertyType             DETAILS_PROPERTY_TYPE;
+    private static       EntityType               AUDIT_ENTITY_TYPE;
+    private static       EntitySet                AUDIT_ENTITY_SET;
+    private static       UUID                     AUDIT_ENTITY_SET_SYNC_ID;
 
-    // @formatter:off
-    public AuditEntitySetUtils() {}
-    // @formatter:on
+    public AuditEntitySetUtils() {
+    }
 
     // PlasmaCoupling magic
     public static void initialize( EdmManager entityDataModelManager ) {
@@ -202,11 +208,11 @@ public class AuditEntitySetUtils {
                 );
     }
 
-    public static List<SetMultimap<UUID, Object>> prepareAuditEntityData( Signal signal, String entityId ) {
+    public static List<Map<UUID, Set<Object>>> prepareAuditEntityData( Signal signal, String entityId ) {
         SetMultimap<UUID, Object> propertyValuesMap = HashMultimap.create();
         propertyValuesMap.put( DETAILS_PROPERTY_TYPE.getId(), signal.getDetails() );
         propertyValuesMap.put( TYPE_PROPERTY_TYPE.getId(), signal.getType().name() );
 
-        return ImmutableList.of( propertyValuesMap );
+        return ImmutableList.of( Multimaps.asMap( propertyValuesMap ) );
     }
 }

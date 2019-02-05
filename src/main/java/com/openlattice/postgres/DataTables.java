@@ -77,7 +77,7 @@ public class DataTables {
             PostgresDatatype.UUID );
     private static final Encoder                            encoder        = Base64.getEncoder();
 
-    private static Set<FullQualifiedName> unindexedProperties = Sets
+    public static final Set<FullQualifiedName> unindexedProperties = Sets
             .newConcurrentHashSet( Arrays
                     .asList(
                             new FullQualifiedName( "incident.narrative" ),
@@ -138,7 +138,7 @@ public class DataTables {
                 .ifNotExists();
 
         //Byte arrays are generally too large to be indexed by postgres
-        if ( unindexedProperties.contains( propertyType.getDatatype().getFullQualifiedName() ) ) {
+        if ( !unindexedProperties.contains( propertyType.getDatatype().getFullQualifiedName() ) ) {
             PostgresIndexDefinition valueIndex = new PostgresColumnsIndexDefinition( ptd, valueColumn )
                     .name( quote( idxPrefix + "_value_idx" ) )
                     .ifNotExists();

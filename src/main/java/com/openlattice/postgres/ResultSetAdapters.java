@@ -28,6 +28,7 @@ import com.openlattice.apps.App;
 import com.openlattice.apps.AppConfigKey;
 import com.openlattice.apps.AppType;
 import com.openlattice.apps.AppTypeSetting;
+import com.openlattice.auditing.AuditRecordEntitySetConfiguration;
 import com.openlattice.authorization.*;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.conductor.rpc.ConductorElasticsearchApi;
@@ -155,8 +156,8 @@ public final class ResultSetAdapters {
         return new EntityDataMetadata( version, lastWrite, lastIndex );
     }
 
-    public static Set<UUID> entityTypeIds( ResultSet rs ) throws SQLException {
-        return ImmutableSet.copyOf( PostgresArrays.getUuidArray( rs, PostgresColumn.ENTITY_TYPE_IDS_FIELD ) );
+    public static Set<UUID> linkingIds( ResultSet rs ) throws SQLException {
+        return ImmutableSet.copyOf( PostgresArrays.getUuidArray( rs, LINKING_ID.getName() ) );
     }
 
     public static Edge edge( ResultSet rs ) throws SQLException {
@@ -357,6 +358,10 @@ public final class ResultSetAdapters {
 
     public static UUID entitySetId( ResultSet rs ) throws SQLException {
         return rs.getObject( ENTITY_SET_ID.getName(), UUID.class );
+    }
+
+    public static Set<UUID> entitySetIds( ResultSet rs ) throws SQLException {
+        return Sets.newHashSet( PostgresArrays.getUuidArray( rs, ENTITY_SET_ID.getName() ) );
     }
 
     public static UUID propertyTypeId( ResultSet rs ) throws SQLException {
@@ -736,11 +741,14 @@ public final class ResultSetAdapters {
 
     public static Map<UUID, Set<Object>> implicitEntityValuesById(
             ResultSet rs,
-            Map<UUID, PropertyType> authorizedPropertyTypes,
+            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes,
             ByteBlobDataManager byteBlobDataManager ) throws SQLException {
         final Map<UUID, Set<Object>> data = new HashMap<>();
 
-        for ( PropertyType propertyType : authorizedPropertyTypes.values() ) {
+        final Set<PropertyType> allPropertyTypes = authorizedPropertyTypes.values().stream()
+                .flatMap( propertyTypesOfEntitySet -> propertyTypesOfEntitySet.values().stream() )
+                .collect( Collectors.toSet() );
+        for ( PropertyType propertyType : allPropertyTypes ) {
             List<?> objects = propertyValue( rs, propertyType );
 
             if ( objects != null ) {
@@ -948,5 +956,15 @@ public final class ResultSetAdapters {
             default:
                 return null;
         }
+    }
+
+    public static UUID auditRecordEntitySetId( ResultSet rs ) throws SQLException {
+        return rs.getObject( AUDIT_RECORD_ENTITY_SET_ID_FIELD, UUID.class );
+    }
+
+    public static AuditRecordEntitySetConfiguration auditRecordEntitySetConfiguration( ResultSet rs )
+            throws SQLException {
+        return new AuditRecordEntitySetConfiguration( auditRecordEntitySetId( rs ),
+                Sets.newHashSet( PostgresArrays.getUuidArray( rs, AUDIT_RECORD_ENTITY_SET_IDS_FIELD ) ) );
     }
 }

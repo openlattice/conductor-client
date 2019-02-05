@@ -39,12 +39,15 @@ import com.openlattice.edm.type.EnumType;
 import com.openlattice.edm.type.PropertyType;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
+import javax.annotation.Nullable;
 
 public interface EdmManager {
     void clearTables();
@@ -141,9 +144,13 @@ public interface EdmManager {
     // Helper methods to check existence
     boolean checkPropertyTypesExist( Set<UUID> properties );
 
+    boolean checkPropertyTypeExists( FullQualifiedName fqn );
+
     boolean checkPropertyTypeExists( UUID propertyTypeId );
 
     boolean checkEntityTypesExist( Set<UUID> entityTypeIds );
+
+    boolean checkEntityTypeExists( FullQualifiedName fqn );
 
     boolean checkEntityTypeExists( UUID entityTypeId );
 
@@ -179,7 +186,11 @@ public interface EdmManager {
 
     <V> Map<UUID, V> fromPropertyTypes( Set<UUID> propertyTypeIds, EntryProcessor<UUID, PropertyType> ep );
 
-    Set<UUID> getPropertyTypeUuidsOfEntityTypeWithPIIField( UUID entityTypeId );
+    Set<UUID> getPropertyTypeIdsOfEntityType( UUID entityTypeId );
+
+    Map<UUID, PropertyType> getPropertyTypesOfEntityType( UUID entityTypeId );
+
+    Set<UUID> getPropertyTypeIdsOfEntityTypeWithPIIField( UUID entityTypeId );
 
     EntityType getEntityTypeByEntitySetId( UUID entitySetId );
 
