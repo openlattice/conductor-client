@@ -24,6 +24,7 @@ package com.openlattice.datastore.services;
 
 import com.codahale.metrics.annotation.Timed;
 import com.hazelcast.map.EntryProcessor;
+import com.openlattice.auditing.AuditRecordEntitySetsManager;
 import com.openlattice.authorization.Principal;
 import com.openlattice.data.PropertyUsageSummary;
 import com.openlattice.edm.EntityDataModel;
@@ -39,15 +40,12 @@ import com.openlattice.edm.type.EnumType;
 import com.openlattice.edm.type.PropertyType;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import javax.annotation.Nullable;
 
 public interface EdmManager {
     void clearTables();
@@ -230,6 +228,8 @@ public interface EdmManager {
 
     Map<UUID, EntitySetPropertyMetadata> getAllEntitySetPropertyMetadata( UUID entitySetId );
 
+    Map<UUID, Map<UUID, EntitySetPropertyMetadata>> getAllEntitySetPropertyMetadataForIds( Set<UUID> entitySetIds );
+
     EntitySetPropertyMetadata getEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId );
 
     void updateEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId, MetadataUpdate update );
@@ -239,4 +239,8 @@ public interface EdmManager {
     void setEntityDataModel( EntityDataModel edm );
 
     Collection<EntitySet> getEntitySetsOfType( UUID entityTypeId );
+
+    Set<UUID> getEntitySetsForOrganization( UUID organizationId );
+
+    AuditRecordEntitySetsManager getAuditRecordEntitySetsManager();
 }

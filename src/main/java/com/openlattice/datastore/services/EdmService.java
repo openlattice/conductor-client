@@ -107,25 +107,19 @@ import com.openlattice.hazelcast.processors.RemoveEntitySetsFromLinkingEntitySet
 import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresQuery;
 import com.openlattice.postgres.PostgresTablesPod;
+import com.openlattice.postgres.mapstores.EntitySetMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Inject;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -154,13 +148,12 @@ public class EdmService implements EdmManager {
     private final PostgresTypeManager               entityTypeManager;
     private final HazelcastSchemaManager            schemaManager;
 
-    private final HazelcastInstance hazelcastInstance;
-    private final HikariDataSource  hds;
+    private final HazelcastInstance            hazelcastInstance;
+    private final HikariDataSource             hds;
     private final AuditRecordEntitySetsManager aresManager;
 
     @Inject
     private EventBus eventBus;
-
 
     public EdmService(
             HikariDataSource hds,
@@ -1277,6 +1270,7 @@ public class EdmService implements EdmManager {
                     optionalPiiUpdate,
                     Optional.empty(),
                     Optional.empty(),
+                    Optional.empty(),
                     Optional.empty() ) );
         }
     }
@@ -1306,7 +1300,8 @@ public class EdmService implements EdmManager {
                     Optional.empty(),
                     Optional.empty(),
                     Optional.empty(),
-                    optionalPropertyTagsUpdate ) );
+                    optionalPropertyTagsUpdate,
+                    Optional.empty() ) );
             if ( !et.getProperties().equals( existing.getProperties() ) ) {
                 addPropertyTypesToEntityType( existing.getId(), et.getProperties() );
             }
@@ -1583,6 +1578,52 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public Map<UUID, Map<UUID, EntitySetPropertyMetadata>> getAllEntitySetPropertyMetadataForIds( Set<UUID> entitySetIds ) {
+        Map<UUID, EntitySet> entitySetsById = entitySets.getAll( entitySetIds );
+        Map<UUID, EntityType> entityTypesById = entityTypes
+                .getAll( entitySetsById.values().stream().map( EntitySet::getEntityTypeId ).collect(
+                        Collectors.toSet() ) );
+
+        Set<EntitySetPropertyKey> keys = entitySetIds.stream()
+                .flatMap( entitySetId -> entityTypesById.get( entitySetsById.get( entitySetId ).getEntityTypeId() )
+                        .getProperties().stream()
+                        .map( propertyTypeId -> new EntitySetPropertyKey( entitySetId, propertyTypeId ) ) )
+                .collect( Collectors.toSet() );
+
+        Map<EntitySetPropertyKey, EntitySetPropertyMetadata> metadataMap = entitySetPropertyMetadata.getAll( keys );
+
+        Set<EntitySetPropertyKey> missingKeys = ImmutableSet.copyOf( Sets.difference( keys, metadataMap.keySet() ) );
+        Map<UUID, PropertyType> missingPropertyTypesById = propertyTypes
+                .getAll( missingKeys.stream().map( EntitySetPropertyKey::getPropertyTypeId )
+                        .collect( Collectors.toSet() ) );
+
+        Map<EntitySetPropertyKey, EntitySetPropertyMetadata> defaultMetadataToCreate = new HashMap<>( missingKeys
+                .size() );
+        for ( EntitySetPropertyKey newKey : missingKeys ) {
+
+            PropertyType propertyType = missingPropertyTypesById.get( newKey.getPropertyTypeId() );
+            Set<String> propertyTags = entityTypesById
+                    .get( entitySetsById.get( newKey.getEntitySetId() ).getEntityTypeId() )
+                    .getPropertyTags().get( newKey.getPropertyTypeId() );
+
+            EntitySetPropertyMetadata defaultMetadata = new EntitySetPropertyMetadata(
+                    propertyType.getTitle(),
+                    propertyType.getDescription(),
+                    new LinkedHashSet<>( propertyTags ),
+                    true );
+
+            defaultMetadataToCreate.put( newKey, defaultMetadata );
+            metadataMap.put( newKey, defaultMetadata );
+        }
+
+        entitySetPropertyMetadata.putAll( defaultMetadataToCreate );
+
+        return metadataMap.entrySet().stream().collect( Collectors.groupingBy( entry -> entry.getKey().getEntitySetId(),
+                Collectors.toMap( entry -> entry.getKey().getPropertyTypeId(), entry -> entry.getValue() ) ) );
+
+    }
+
+    @Override
     public EntitySetPropertyMetadata getEntitySetPropertyMetadata( UUID entitySetId, UUID propertyTypeId ) {
         EntitySetPropertyKey key = new EntitySetPropertyKey( entitySetId, propertyTypeId );
         if ( !entitySetPropertyMetadata.containsKey( key ) ) {
@@ -1694,6 +1735,15 @@ public class EdmService implements EdmManager {
 
     @Override public Collection<EntitySet> getEntitySetsOfType( UUID entityTypeId ) {
         return entitySets.values( Predicates.equal( "entityTypeId", entityTypeId ) );
+    }
+
+    @Override public Set<UUID> getEntitySetsForOrganization( UUID organizationId ) {
+        return entitySets.keySet( Predicates.equal( EntitySetMapstore.ORGANIZATION_INDEX, organizationId ) );
+    }
+
+    @Override
+    public AuditRecordEntitySetsManager getAuditRecordEntitySetsManager() {
+        return aresManager;
     }
 
 }
