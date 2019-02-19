@@ -67,7 +67,6 @@ import com.openlattice.postgres.mapstores.AppTypeMapstore;
 import com.openlattice.postgres.mapstores.AssociationTypeMapstore;
 import com.openlattice.postgres.mapstores.AuditRecordEntitySetConfigurationMapstore;
 import com.openlattice.postgres.mapstores.ComplexTypeMapstore;
-import com.openlattice.postgres.mapstores.EdmVersionsMapstore;
 import com.openlattice.postgres.mapstores.EntitySetMapstore;
 import com.openlattice.postgres.mapstores.EntitySetPropertyMetadataMapstore;
 import com.openlattice.postgres.mapstores.EntityTypeMapstore;
@@ -186,11 +185,6 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<String, UUID> aclKeysMapstore() {
         return new AclKeysMapstore( hikariDataSource );
-    }
-
-    @Bean
-    public SelfRegisteringMapStore<String, UUID> edmVersionMapstore() {
-        return new EdmVersionsMapstore( hikariDataSource );
     }
 
     @Bean
