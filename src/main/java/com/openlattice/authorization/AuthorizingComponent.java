@@ -27,6 +27,7 @@ import static com.openlattice.authorization.EdmAuthorizationHelper.WRITE_PERMISS
 
 import com.openlattice.authorization.securable.AbstractSecurableObject;
 import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.controllers.exceptions.ForbiddenException;
 import com.openlattice.edm.type.PropertyType;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -88,8 +89,15 @@ public interface AuthorizingComponent {
         }
     }
 
-    default Map<AclKey, EnumMap<Permission, Boolean>> authorize( Map<AclKey, EnumSet<Permission>> requiredPermissionsByAclKey ) {
-        return getAuthorizationManager().authorize( requiredPermissionsByAclKey, Principals.getCurrentPrincipals() );
+    default Map<AclKey, EnumMap<Permission, Boolean>> authorize(
+            Map<AclKey, EnumSet<Permission>> requiredPermissionsByAclKey ) {
+        return authorize( requiredPermissionsByAclKey, Principals.getCurrentPrincipals() );
+    }
+
+    default Map<AclKey, EnumMap<Permission, Boolean>> authorize(
+            Map<AclKey, EnumSet<Permission>> requiredPermissionsByAclKey,
+            Set<Principal> principals ) {
+        return getAuthorizationManager().authorize( requiredPermissionsByAclKey, principals );
     }
 
     default void accessCheck( Map<UUID, PropertyType> authorizedPropertyTypes, Set<UUID> requiredPropertyTypes ) {

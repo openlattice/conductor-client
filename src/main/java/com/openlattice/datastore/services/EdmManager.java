@@ -50,8 +50,6 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 public interface EdmManager {
     void clearTables();
 
-    UUID getCurrentEntityDataModelVersion();
-
     PropertyType getPropertyType( FullQualifiedName propertyTypeFqn );
 
     PropertyType getPropertyType( UUID propertyTypeId );
@@ -155,6 +153,8 @@ public interface EdmManager {
     Collection<PropertyType> getPropertyTypes( Set<UUID> properties );
 
     Set<UUID> getAclKeys( Set<?> fqnsOrNames );
+
+    Map<String, UUID> getAclKeyIds( Set<String> aclNames );
 
     UUID getTypeAclKey( FullQualifiedName fqns );
 

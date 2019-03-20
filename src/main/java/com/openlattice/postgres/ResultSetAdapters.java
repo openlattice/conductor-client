@@ -27,91 +27,7 @@ import static com.openlattice.postgres.DataTables.LAST_LINK;
 import static com.openlattice.postgres.DataTables.LAST_WRITE;
 import static com.openlattice.postgres.DataTables.LAST_WRITE_FQN;
 import static com.openlattice.postgres.PostgresArrays.getTextArray;
-import static com.openlattice.postgres.PostgresColumn.ACL_KEY_FIELD;
-import static com.openlattice.postgres.PostgresColumn.ALERT_METADATA_FIELD;
-import static com.openlattice.postgres.PostgresColumn.ALERT_TYPE_FIELD;
-import static com.openlattice.postgres.PostgresColumn.ANALYZER;
-import static com.openlattice.postgres.PostgresColumn.APP_ID;
-import static com.openlattice.postgres.PostgresColumn.AUDIT_RECORD_ENTITY_SET_IDS_FIELD;
-import static com.openlattice.postgres.PostgresColumn.AUDIT_RECORD_ENTITY_SET_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.BASE_TYPE;
-import static com.openlattice.postgres.PostgresColumn.BIDIRECTIONAL;
-import static com.openlattice.postgres.PostgresColumn.CATEGORY;
-import static com.openlattice.postgres.PostgresColumn.CONFIG_TYPE_ID;
-import static com.openlattice.postgres.PostgresColumn.CONFIG_TYPE_IDS;
-import static com.openlattice.postgres.PostgresColumn.CONTACTS;
-import static com.openlattice.postgres.PostgresColumn.COUNT;
-import static com.openlattice.postgres.PostgresColumn.CURRENT_SYNC_ID;
-import static com.openlattice.postgres.PostgresColumn.DATATYPE;
-import static com.openlattice.postgres.PostgresColumn.DB_NAME;
-import static com.openlattice.postgres.PostgresColumn.DESCRIPTION;
-import static com.openlattice.postgres.PostgresColumn.DST;
-import static com.openlattice.postgres.PostgresColumn.DST_ENTITY_KEY_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.DST_ENTITY_SET_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.EDM_VERSION;
-import static com.openlattice.postgres.PostgresColumn.EDM_VERSION_NAME;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_KEY_IDS;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_IDS;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_SET_NAME_FIELD;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_ID;
-import static com.openlattice.postgres.PostgresColumn.ENTITY_TYPE_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.EXPIRATION_DATE_FIELD;
-import static com.openlattice.postgres.PostgresColumn.EXTERNAL;
-import static com.openlattice.postgres.PostgresColumn.FLAGS;
-import static com.openlattice.postgres.PostgresColumn.GRAPH_DIAMETER;
-import static com.openlattice.postgres.PostgresColumn.GRAPH_ID;
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.ID_VALUE;
-import static com.openlattice.postgres.PostgresColumn.INITIALIZED;
-import static com.openlattice.postgres.PostgresColumn.KEY;
-import static com.openlattice.postgres.PostgresColumn.LAST_READ_FIELD;
-import static com.openlattice.postgres.PostgresColumn.LINKED_ENTITY_SETS;
-import static com.openlattice.postgres.PostgresColumn.LINKING;
-import static com.openlattice.postgres.PostgresColumn.LINKING_ID;
-import static com.openlattice.postgres.PostgresColumn.LINKING_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.LSB_FIELD;
-import static com.openlattice.postgres.PostgresColumn.MEMBERS;
-import static com.openlattice.postgres.PostgresColumn.MSB_FIELD;
-import static com.openlattice.postgres.PostgresColumn.MULTI_VALUED;
-import static com.openlattice.postgres.PostgresColumn.NAME;
-import static com.openlattice.postgres.PostgresColumn.NAMESPACE;
-import static com.openlattice.postgres.PostgresColumn.NULLABLE_TITLE;
-import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_ID;
-import static com.openlattice.postgres.PostgresColumn.ORGANIZATION_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PARTITION_INDEX_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PERMISSIONS_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PII;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_IDS;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_OF_ACL_KEY;
-import static com.openlattice.postgres.PostgresColumn.PRINCIPAL_TYPE_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PROPERTIES;
-import static com.openlattice.postgres.PostgresColumn.PROPERTY_TAGS_FIELD;
-import static com.openlattice.postgres.PostgresColumn.PROPERTY_TYPE_ID;
-import static com.openlattice.postgres.PostgresColumn.QUERY_ID;
-import static com.openlattice.postgres.PostgresColumn.REASON;
-import static com.openlattice.postgres.PostgresColumn.ROLE_ID;
-import static com.openlattice.postgres.PostgresColumn.SCHEMAS;
-import static com.openlattice.postgres.PostgresColumn.SCORE_FIELD;
-import static com.openlattice.postgres.PostgresColumn.SEARCH_CONSTRAINTS_FIELD;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECT_TYPE;
-import static com.openlattice.postgres.PostgresColumn.SHOW;
-import static com.openlattice.postgres.PostgresColumn.SRC;
-import static com.openlattice.postgres.PostgresColumn.SRC_ENTITY_KEY_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.SRC_ENTITY_SET_ID_FIELD;
-import static com.openlattice.postgres.PostgresColumn.START_TIME;
-import static com.openlattice.postgres.PostgresColumn.STATE;
-import static com.openlattice.postgres.PostgresColumn.STATUS;
-import static com.openlattice.postgres.PostgresColumn.SYNC_ID;
-import static com.openlattice.postgres.PostgresColumn.TITLE;
-import static com.openlattice.postgres.PostgresColumn.URL;
-import static com.openlattice.postgres.PostgresColumn.VERSION;
-import static com.openlattice.postgres.PostgresColumn.VERSIONS;
-import static com.openlattice.postgres.PostgresColumn.VERTEX_ID;
+import static com.openlattice.postgres.PostgresColumn.*;
 
 import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -145,6 +61,7 @@ import com.openlattice.data.PropertyValueKey;
 import com.openlattice.data.storage.ByteBlobDataManager;
 import com.openlattice.data.storage.MetadataOption;
 import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.set.EntitySetFlag;
 import com.openlattice.edm.set.EntitySetPropertyKey;
 import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.openlattice.edm.type.Analyzer;
@@ -158,6 +75,8 @@ import com.openlattice.graph.edge.EdgeKey;
 import com.openlattice.graph.query.GraphQueryState;
 import com.openlattice.graph.query.GraphQueryState.State;
 import com.openlattice.ids.Range;
+import com.openlattice.linking.EntityKeyPair;
+import com.openlattice.linking.EntityLinkingFeedback;
 import com.openlattice.organization.roles.Role;
 import com.openlattice.organizations.PrincipalSet;
 import com.openlattice.requests.Request;
@@ -356,6 +275,22 @@ public final class ResultSetAdapters {
         return permissions;
     }
 
+    public static EnumSet<EntitySetFlag> entitySetFlags( ResultSet rs ) throws SQLException {
+        String[] pStrArray = getTextArray( rs, ENTITY_SET_FLAGS_FIELD );
+
+        EnumSet<EntitySetFlag> flags = EnumSet.noneOf( EntitySetFlag.class );
+
+        if ( pStrArray != null && pStrArray.length > 0 ) {
+
+            for ( String s : pStrArray ) {
+                flags.add( EntitySetFlag.valueOf( s ) );
+            }
+
+        }
+
+        return flags;
+    }
+
     public static UUID idValue( ResultSet rs ) throws SQLException {
         return rs.getObject( ID_VALUE.getName(), UUID.class );
     }
@@ -534,14 +469,6 @@ public final class ResultSetAdapters {
         return rs.getString( NULLABLE_TITLE.getName() );
     }
 
-    public static String edmVersionName( ResultSet rs ) throws SQLException {
-        return rs.getString( EDM_VERSION_NAME.getName() );
-    }
-
-    public static UUID edmVersion( ResultSet rs ) throws SQLException {
-        return rs.getObject( EDM_VERSION.getName(), UUID.class );
-    }
-
     public static UUID currentSyncId( ResultSet rs ) throws SQLException {
         return rs.getObject( CURRENT_SYNC_ID.getName(), UUID.class );
     }
@@ -618,21 +545,19 @@ public final class ResultSetAdapters {
         String title = title( rs );
         Optional<String> description = Optional.ofNullable( description( rs ) );
         Set<String> contacts = contacts( rs );
-        Optional<Boolean> linking = Optional.ofNullable( linking( rs ) );
         Optional<Set<UUID>> linkedEntitySets = Optional.of( linkedEntitySets( rs ) );
-        Optional<Boolean> external = Optional.ofNullable( external( rs ) );
         Optional<UUID> organization = Optional
                 .of( rs.getObject( ORGANIZATION_ID_FIELD, UUID.class ) );
+        Optional<EnumSet<EntitySetFlag>> flags = Optional.of( entitySetFlags( rs ) );
         return new EntitySet( id,
                 entityTypeId,
                 name,
                 title,
                 description,
                 contacts,
-                linking,
                 linkedEntitySets,
-                external,
-                organization );
+                organization,
+                flags );
     }
 
     public static AssociationType associationType( ResultSet rs ) throws SQLException {
@@ -1058,6 +983,23 @@ public final class ResultSetAdapters {
         return new PersistentSearch( id, lastRead, expiration, alertType, searchConstraints, alertMetadata );
     }
 
+    public static EntityLinkingFeedback entityLinkingFeedback( ResultSet rs ) throws SQLException {
+        boolean linked = linked( rs );
+
+        return new EntityLinkingFeedback( entityKeyPair( rs ), linked );
+    }
+
+    public static Boolean linked( ResultSet rs ) throws SQLException {
+        return rs.getBoolean( LINKED_FIELD );
+    }
+
+    public static EntityKeyPair entityKeyPair( ResultSet rs ) throws SQLException {
+        EntityDataKey srcEntityDataKey = srcEntityDataKey( rs );
+        EntityDataKey dstEntityDataKey = dstEntityDataKey( rs );
+
+        return new EntityKeyPair( srcEntityDataKey, dstEntityDataKey );
+    }
+
     public static PostgresColumnDefinition mapMetadataOptionToPostgresColumn( MetadataOption metadataOption ) {
         switch ( metadataOption ) {
             case LAST_WRITE:
@@ -1081,5 +1023,9 @@ public final class ResultSetAdapters {
             throws SQLException {
         return new AuditRecordEntitySetConfiguration( auditRecordEntitySetId( rs ),
                 Sets.newHashSet( PostgresArrays.getUuidArray( rs, AUDIT_RECORD_ENTITY_SET_IDS_FIELD ) ) );
+    }
+
+    public static Boolean exists( ResultSet rs) throws SQLException {
+        return rs.getBoolean( "exists" );
     }
 }
