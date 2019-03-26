@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2019. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,20 +19,18 @@
  *
  */
 
-package com.openlattice.data.ids
+package com.openlattice.ids.tasks
 
-import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor
-import java.util.*
+import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.core.IMap
+import com.openlattice.ids.Range
+import com.openlattice.tasks.HazelcastTaskDependencies
+import com.zaxxer.hikari.HikariDataSource
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class IdReservingEntryProcessor(private val count: Int) : AbstractRhizomeEntryProcessor<UUID, Long?, Long>() {
-    override fun process(entry: MutableMap.MutableEntry<UUID, Long?>): Long {
-        val base = entry.value ?: 0
-        entry.setValue(base + count)
-        return base
-    }
-
-}
+data class IdGenerationCatchupDependency(
+        val idGenerationMap: IMap<Long, Range>,
+        val hds: HikariDataSource) : HazelcastTaskDependencies
