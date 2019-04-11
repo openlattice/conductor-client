@@ -234,9 +234,9 @@ public class EdmService implements EdmManager {
 
     @Override
     public void forceDeletePropertyType( UUID propertyTypeId ) {
-        Stream<EntityType> entityTypes = entityTypeManager
+        List<EntityType> entityTypes = entityTypeManager
                 .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet
-                        .of( propertyTypeId ) );
+                        .of( propertyTypeId ) ).collect( Collectors.toList() );
         entityTypes.forEach( et -> Preconditions
                 .checkArgument( !et.getKey().contains( propertyTypeId ) || et.getKey().size() > 1,
                         "Property type {} cannot be deleted because entity type {} will be left without a primary key",
