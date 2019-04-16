@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright (C) 2018. OpenLattice, Inc.
  *
@@ -20,12 +18,26 @@
  *
  */
 
-package com.openlattice.hazelcast;
+package com.openlattice.data.events;
 
-import com.kryptnostic.rhizome.core.RhizomeApplicationServer;
+import java.util.Set;
+import java.util.UUID;
 
-public class TestServer extends RhizomeApplicationServer {
-    public TestServer( Class<?>... pods) {
-        super( pods );
+public class LinkedEntitiesDeletedEvent {
+
+    private final Set<UUID> linkedEntitySetIds;
+    private final Set<UUID> entityKeyIds;
+
+    public LinkedEntitiesDeletedEvent( Set<UUID> linkedEntitySetIds, Set<UUID> entityKeyIds ) {
+        this.linkedEntitySetIds = linkedEntitySetIds;
+        this.entityKeyIds = entityKeyIds;
+    }
+
+    public Set<UUID> getLinkedEntitySetIds() {
+        return linkedEntitySetIds;
+    }
+
+    public Set<UUID> getEntityKeyIds() {
+        return entityKeyIds;
     }
 }

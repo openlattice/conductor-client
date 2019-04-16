@@ -21,35 +21,27 @@
 
 package com.openlattice.data
 
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import com.google.common.collect.*
+
+import com.google.common.collect.ListMultimap
+import com.google.common.collect.Multimaps
+import com.google.common.collect.SetMultimap
 import com.google.common.eventbus.EventBus
 import com.google.common.util.concurrent.ListenableFuture
-import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.core.IMap
-
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.core.GraphService
 import com.openlattice.graph.core.NeighborSets
 import com.openlattice.graph.edge.Edge
-import com.openlattice.graph.edge.EdgeKey
-import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.postgres.streams.PostgresIterable
-import org.apache.commons.collections4.keyvalue.MultiKey
 import org.apache.commons.lang3.tuple.Pair
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
@@ -61,11 +53,11 @@ import kotlin.collections.HashSet
 private val logger = LoggerFactory.getLogger(DataGraphService::class.java)
 
 open class DataGraphService(
-        hazelcastInstance: HazelcastInstance,
         private val eventBus: EventBus,
         private val graphService: GraphService,
         private val idService: EntityKeyIdService,
         private val eds: EntityDatastore
+
 ) : DataGraphManager {
     override fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID> {
         return idService.reserveEntityKeyIds(entityKeys)
@@ -88,24 +80,6 @@ open class DataGraphService(
 
         const val ASSOCIATION_SIZE = 30000
     }
-
-    private val entitySets: IMap<UUID, EntitySet> = hazelcastInstance.getMap(HazelcastMap.ENTITY_SETS.name)
-
-    private val typeIds: LoadingCache<UUID, UUID> = CacheBuilder.newBuilder()
-            .maximumSize(100000) // 100K * 16 = 16000K = 16MB
-            .build(
-                    object : CacheLoader<UUID, UUID>() {
-
-                        @Throws(Exception::class)
-                        override fun load(key: UUID): UUID {
-                            return entitySets[key]!!.entityTypeId
-                        }
-                    }
-            )
-    private val queryCache = CacheBuilder.newBuilder()
-            .maximumSize(1000)
-            .expireAfterWrite(30, TimeUnit.SECONDS)
-            .build<MultiKey<*>, Map<String, Object>>()
 
 
     /* Select */
@@ -171,18 +145,19 @@ open class DataGraphService(
         return graphService.getEdgesAndNeighborsForVertex(entitySetId, entityKeyId)
     }
 
-    override fun getEdgeKeysOfEntitySet(entitySetId: UUID): PostgresIterable<EdgeKey> {
+    override fun getEdgeKeysOfEntitySet(entitySetId: UUID): PostgresIterable<DataEdgeKey> {
         return graphService.getEdgeKeysOfEntitySet(entitySetId)
     }
 
-    override fun getEdgesConnectedToEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): PostgresIterable<EdgeKey> {
+    override fun getEdgesConnectedToEntities(entitySetId: UUID, entityKeyIds: Set<UUID>)
+            : PostgresIterable<DataEdgeKey> {
         return graphService.getEdgeKeysContainingEntities(entitySetId, entityKeyIds)
     }
 
 
     /* Delete */
 
-    private val groupEdges: (List<EdgeKey>) -> Map<UUID, Set<UUID>> = { edges ->
+    private val groupEdges: (List<DataEdgeKey>) -> Map<UUID, Set<UUID>> = { edges ->
         edges.map { it.edge }.groupBy { it.entitySetId }.mapValues { it.value.map { it.entityKeyId }.toSet() }
     }
 
@@ -207,7 +182,7 @@ open class DataGraphService(
 
     override fun clearAssociationsBatch(
             entitySetId: UUID,
-            associationsEdgeKeys: PostgresIterable<EdgeKey>,
+            associationsEdgeKeys: PostgresIterable<DataEdgeKey>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): List<WriteEvent> {
         var associationDeleteCount = 0
@@ -246,6 +221,7 @@ open class DataGraphService(
         val propertyWriteEvent = eds.clearEntityData(entitySetId, entityKeyIds, authorizedPropertyTypes)
         logger.info("Cleared properties {} of {} entities.",
                 authorizedPropertyTypes.values.map(PropertyType::getType), propertyWriteEvent.numUpdates)
+
         return propertyWriteEvent
     }
 
@@ -285,7 +261,7 @@ open class DataGraphService(
 
     override fun deleteAssociationsBatch(
             entitySetId: UUID,
-            associationsEdgeKeys: PostgresIterable<EdgeKey>,
+            associationsEdgeKeys: PostgresIterable<DataEdgeKey>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>): List<WriteEvent> {
         var associationDeleteCount = 0
         val writeEvents = ArrayList<WriteEvent>()
@@ -310,6 +286,7 @@ open class DataGraphService(
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         val propertyCount = eds.deleteEntityProperties(entitySetId, entityKeyIds, authorizedPropertyTypes)
+
         logger.info("Deleted properties {} of {} entities.",
                 authorizedPropertyTypes.values.map(PropertyType::getType), propertyCount.numUpdates)
         return propertyCount
@@ -336,6 +313,7 @@ open class DataGraphService(
         val ids = idService.getEntityKeyIds(entities.keys.map { EntityKey(entitySetId, it) }.toSet())
         val identifiedEntities = ids.map { it.value to entities[it.key.entityId] }.toMap()
         eds.integrateEntities(entitySetId, identifiedEntities, authorizedPropertyTypes)
+
         return ids
     }
 
@@ -347,6 +325,7 @@ open class DataGraphService(
         val ids = idService.reserveIds(entitySetId, entities.size)
         val entityMap = ids.mapIndexed { i, id -> id to entities[i] }.toMap()
         val writeEvent = eds.createOrUpdateEntities(entitySetId, entityMap, authorizedPropertyTypes)
+
         return Pair.of(ids, writeEvent)
     }
 
@@ -430,7 +409,7 @@ open class DataGraphService(
                                 entityKeys.add(it.dst)
                                 it.key.entityId to it.details
                             }.toMap()
-                    val ids = doIntegrateEntities(entitySetId, entities, authorizedPropertiesByEntitySet[entitySetId]!!)
+                    val ids = doIntegrateEntities(entitySetId, entities, authorizedPropertiesByEntitySet.getValue(entitySetId))
                     entityKeyIds.putAll(ids)
                     entitySetId to ids.asSequence().map { it.key.entityId to it.value }.toMap()
                 }.toMap()
@@ -470,7 +449,6 @@ open class DataGraphService(
             if (entityDetails !== entity.details) {
                 entity.details.forEach { propertyTypeId, values ->
                     entityDetails.getOrPut(propertyTypeId) { mutableSetOf() }.addAll(values)
-
                 }
             }
         }
@@ -487,11 +465,6 @@ open class DataGraphService(
         integrateAssociations(associations, authorizedPropertiesByEntitySetId)
         return null
     }
-
-    override fun createEdges(edges: Set<DataEdgeKey>): WriteEvent {
-        return graphService.createEdges(edges)
-    }
-
 
     /* Top utilizers */
 

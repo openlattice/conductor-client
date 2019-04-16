@@ -31,6 +31,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.map.EntryProcessor;
 import com.hazelcast.query.Predicates;
+import com.openlattice.assembler.Assembler;
 import com.openlattice.auditing.AuditRecordEntitySetsManager;
 import com.openlattice.auditing.AuditingConfiguration;
 import com.openlattice.auditing.AuditingTypes;
@@ -55,6 +56,7 @@ import com.openlattice.hazelcast.HazelcastMap;
 import com.openlattice.hazelcast.HazelcastUtils;
 import com.openlattice.hazelcast.processors.AddEntitySetsToLinkingEntitySetProcessor;
 import com.openlattice.hazelcast.processors.RemoveEntitySetsFromLinkingEntitySetProcessor;
+import com.openlattice.organization.OrganizationEntitySetFlag;
 import com.openlattice.postgres.DataTables;
 import com.openlattice.postgres.PostgresQuery;
 import com.openlattice.postgres.PostgresTablesPod;
@@ -102,6 +104,7 @@ public class EdmService implements EdmManager {
     private final HazelcastInstance            hazelcastInstance;
     private final HikariDataSource             hds;
     private final AuditRecordEntitySetsManager aresManager;
+    private final Assembler                    assembler;
 
     @Inject
     private EventBus eventBus;
@@ -114,7 +117,8 @@ public class EdmService implements EdmManager {
             PostgresEdmManager edmManager,
             PostgresTypeManager entityTypeManager,
             HazelcastSchemaManager schemaManager,
-            AuditingConfiguration auditingConfiguration ) {
+            AuditingConfiguration auditingConfiguration,
+            Assembler assembler ) {
 
         this.authorizations = authorizations;
         this.edmManager = edmManager;
@@ -140,6 +144,7 @@ public class EdmService implements EdmManager {
                 this,
                 authorizations,
                 hazelcastInstance );
+        this.assembler = assembler;
     }
 
     @Override
@@ -237,6 +242,11 @@ public class EdmService implements EdmManager {
         Stream<EntityType> entityTypes = entityTypeManager
                 .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet
                         .of( propertyTypeId ) );
+        entityTypes.forEach( et -> Preconditions
+                .checkArgument( !et.getKey().contains( propertyTypeId ) || et.getKey().size() > 1,
+                        "Property type {} cannot be deleted because entity type {} will be left without a primary key",
+                        propertyTypeId,
+                        et.getId() ) );
         entityTypes.forEach( et -> {
             forceRemovePropertyTypesFromEntityType( et.getId(),
                     ImmutableSet.of( propertyTypeId ) );
@@ -267,7 +277,8 @@ public class EdmService implements EdmManager {
                 properties,
                 Optional.of( entityType.getPropertyTags() ),
                 entityType.getBaseType(),
-                Optional.ofNullable( entityType.getCategory() ) );
+                Optional.ofNullable( entityType.getCategory() ),
+                Optional.of( entityType.getShards() ) );
 
     }
 
@@ -352,7 +363,7 @@ public class EdmService implements EdmManager {
         Util.deleteSafely( entitySets, entitySetId );
         aclKeyReservations.release( entitySetId );
         syncIds.remove( entitySetId );
-        eventBus.post( new EntitySetDeletedEvent( entitySetId ) );
+        eventBus.post( new EntitySetDeletedEvent( entitySetId, entityType.getId() ) );
         logger.info( "Entity set {}({}) deleted successfully", entitySet.getName(), entitySetId );
     }
 
@@ -385,6 +396,7 @@ public class EdmService implements EdmManager {
         final int startSize = linkingEntitySet.getLinkedEntitySets().size();
         final EntitySet updatedLinkingEntitySet = (EntitySet) entitySets.executeOnKey(
                 linkingEntitySetId, new AddEntitySetsToLinkingEntitySetProcessor( newLinkedEntitySets ) );
+        markMaterializedEntitySetDirtyWithDataChanges( linkingEntitySet.getId() );
 
         eventBus.post( new LinkedEntitySetAddedEvent(
                 updatedLinkingEntitySet,
@@ -404,6 +416,7 @@ public class EdmService implements EdmManager {
                 .values().stream().flatMap( Set::stream ).collect( Collectors.toSet() );
         Map<UUID, Set<UUID>> remainingLinkingIdsByEntitySetId = edmManager
                 .getLinkingIdsByEntitySetIds( updatedLinkingEntitySet.getLinkedEntitySets() );
+        markMaterializedEntitySetDirtyWithDataChanges( linkingEntitySet.getId() );
 
         eventBus.post( new LinkedEntitySetRemovedEvent(
                 linkingEntitySetId,
@@ -739,6 +752,8 @@ public class EdmService implements EdmManager {
     @Override
     public void addPropertyTypesToEntityType( UUID entityTypeId, Set<UUID> propertyTypeIds ) {
         Preconditions.checkArgument( checkPropertyTypesExist( propertyTypeIds ), "Some properties do not exists." );
+
+        List<PropertyType> newPropertyTypes = Lists.newArrayList( propertyTypes.getAll( propertyTypeIds ).values() );
         Stream<UUID> childrenIds = entityTypeManager.getEntityTypeChildrenIdsDeep( entityTypeId );
         Map<UUID, Boolean> childrenIdsToLocks = childrenIds
                 .collect( Collectors.toMap( Functions.<UUID>identity()::apply, propertyTypes::tryLock ) );
@@ -786,15 +801,18 @@ public class EdmService implements EdmManager {
                             } );
                 }
 
-                eventBus.post( new PropertyTypesInEntitySetUpdatedEvent( entitySet.getId(), allPropertyTypes ) );
+                markMaterializedEntitySetDirtyWithEdmChanges( esId );  // add edm_unsync flag for materialized views
+
+                eventBus.post( new PropertyTypesInEntitySetUpdatedEvent( entitySet.getId(), allPropertyTypes, false ) );
                 eventBus.post( new PropertyTypesAddedToEntitySetEvent(
                         entitySet,
-                        Lists.newArrayList( propertyTypes.values() ),
+                        newPropertyTypes,
                         ( entitySet.isLinking() )
                                 ? Optional.of( entitySet.getLinkedEntitySets() ) : Optional.empty() ) );
             }
 
             EntityType entityType = getEntityType( id );
+            eventBus.post( new PropertyTypesAddedToEntityTypeEvent( entityType, newPropertyTypes ) );
             if ( !entityType.getCategory().equals( SecurableObjectType.AssociationType ) ) {
                 eventBus.post( new EntityTypeCreatedEvent( entityType ) );
             } else {
@@ -832,6 +850,10 @@ public class EdmService implements EdmManager {
             Preconditions.checkArgument( Sets.intersection( propertyTypeIds, baseType.getProperties() ).isEmpty(),
                     "Inherited property types cannot be removed." );
         }
+        Preconditions.checkArgument( !Sets.difference( entityType.getKey(), propertyTypeIds ).isEmpty(),
+                "Removing property types {} from entity type {} will leave it with no primary keys",
+                propertyTypeIds,
+                entityType.getId() );
 
         List<UUID> childrenIds = entityTypeManager
                 .getEntityTypeChildrenIdsDeep( entityTypeId )
@@ -944,8 +966,9 @@ public class EdmService implements EdmManager {
     @Override
     public void updatePropertyTypeMetadata( UUID propertyTypeId, MetadataUpdate update ) {
         PropertyType propertyType = getPropertyType( propertyTypeId );
+        boolean isFqnUpdated = update.getType().isPresent();
 
-        if ( update.getType().isPresent() ) {
+        if ( isFqnUpdated ) {
             aclKeyReservations.renameReservation( propertyTypeId, update.getType().get() );
             edmManager.updatePropertyTypeFqn( propertyType, update.getType().get() );
 
@@ -954,14 +977,17 @@ public class EdmService implements EdmManager {
         propertyTypes.executeOnKey( propertyTypeId, new UpdatePropertyTypeMetadataProcessor( update ) );
         // get all entity sets containing the property type, and re-index them.
         entityTypeManager
-                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) )
-                .forEach( et -> {
-                    List<PropertyType> properties = Lists
-                            .newArrayList( propertyTypes.getAll( et.getProperties() ).values() );
-                    edmManager.getAllEntitySetsForType( et.getId() )
-                            .forEach( es -> eventBus
-                                    .post( new PropertyTypesInEntitySetUpdatedEvent( es.getId(), properties ) ) );
-                } );
+                .getEntityTypesContainingPropertyTypesAsStream( ImmutableSet.of( propertyTypeId ) ).forEach( et -> {
+            List<PropertyType> properties = Lists
+                    .newArrayList( propertyTypes.getAll( et.getProperties() ).values() );
+            edmManager.getAllEntitySetsForType( et.getId() ).forEach( entitySet -> {
+                if ( isFqnUpdated ) {
+                    // add edm_unsync flag for materialized views
+                    markMaterializedEntitySetDirtyWithEdmChanges( entitySet.getId() );
+                }
+                eventBus.post( new PropertyTypesInEntitySetUpdatedEvent( entitySet.getId(), properties, isFqnUpdated ) );
+            } );
+        } );
 
         eventBus.post( new PropertyTypeMetaDataUpdatedEvent( propertyType,
                 update ) ); // currently not picked up by anything
@@ -987,6 +1013,18 @@ public class EdmService implements EdmManager {
         }
         entitySets.executeOnKey( entitySetId, new UpdateEntitySetMetadataProcessor( update ) );
         eventBus.post( new EntitySetMetadataUpdatedEvent( getEntitySet( entitySetId ) ) );
+    }
+
+    private void markMaterializedEntitySetDirtyWithEdmChanges( UUID entitySetId ) {
+        markMaterializedEntitySetDirty( entitySetId, OrganizationEntitySetFlag.EDM_UNSYNCHRONIZED );
+    }
+
+    private void markMaterializedEntitySetDirtyWithDataChanges( UUID entitySetId ) {
+        markMaterializedEntitySetDirty( entitySetId, OrganizationEntitySetFlag.DATA_UNSYNCHRONIZED );
+    }
+
+    private void markMaterializedEntitySetDirty( UUID entitySetId, OrganizationEntitySetFlag flag ) {
+        assembler.flagMaterializedEntitySet( entitySetId,  flag );
     }
 
     /**************
@@ -1667,16 +1705,23 @@ public class EdmService implements EdmManager {
         } );
 
         diff.getDiff().getPropertyTypes().forEach( pt -> {
-            if ( !updatedIds.contains( pt.getId() ) ) { createOrUpdatePropertyType( pt ); }
+            if ( !updatedIds.contains( pt.getId() ) ) {
+                createOrUpdatePropertyType( pt );
+                eventBus.post( new PropertyTypeCreatedEvent( pt ) );
+            }
         } );
 
         diff.getDiff().getEntityTypes().forEach( et -> {
-            if ( !updatedIds.contains( et.getId() ) ) { createOrUpdateEntityType( et ); }
+            if ( !updatedIds.contains( et.getId() ) ) {
+                createOrUpdateEntityType( et );
+                eventBus.post( new EntityTypeCreatedEvent( et ) );
+            }
         } );
 
         diff.getDiff().getAssociationTypes().forEach( at -> {
             if ( !updatedIds.contains( at.getAssociationEntityType().getId() ) ) {
                 createOrUpdateAssociationType( at );
+                eventBus.post( new AssociationTypeCreatedEvent( at ) );
             }
         } );
     }

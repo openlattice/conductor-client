@@ -27,13 +27,18 @@ import java.util.UUID;
 public class EntitySetDeletedEvent {
 	
 	private UUID entitySetId;
+	private UUID entityTypeId;
 	
-	public EntitySetDeletedEvent( UUID entitySetId ) {
+	public EntitySetDeletedEvent( UUID entitySetId, UUID entityTypeId ) {
 		this.entitySetId = entitySetId;
+		this.entityTypeId = entityTypeId;
 	}
 	
 	public UUID getEntitySetId() {
 		return entitySetId;
 	}
 
+	public UUID getEntityTypeId() {
+		return entityTypeId;
+	}
 }
