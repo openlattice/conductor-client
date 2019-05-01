@@ -20,14 +20,13 @@
 
 package com.openlattice.edm.types.processors;
 
-import java.util.Map.Entry;
-import java.util.UUID;
-
+import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 import com.openlattice.edm.requests.MetadataUpdate;
 import com.openlattice.edm.type.PropertyType;
-import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
+import java.util.Map.Entry;
+import java.util.UUID;
 
 public class UpdatePropertyTypeMetadataProcessor extends AbstractRhizomeEntryProcessor<UUID, PropertyType, Object> {
     private static final long    serialVersionUID = -1970049507051915211L;
@@ -55,6 +54,9 @@ public class UpdatePropertyTypeMetadataProcessor extends AbstractRhizomeEntryPro
             }
             if ( update.getPii().isPresent() ) {
                 pt.setPii( update.getPii().get() );
+            }
+            if ( update.getIndexType().isPresent() ) {
+                pt.setPostgresIndexType( update.getIndexType().get() );
             }
             entry.setValue( pt );
         }
