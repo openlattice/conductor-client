@@ -146,7 +146,8 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( ENTITY_KEY_IDS_FIELD, UUID_ARRAY );
     public static final String                   ENTITY_SET_FLAGS_FIELD            = "flags";
     public static final PostgresColumnDefinition ENTITY_SET_FLAGS                  =
-            new PostgresColumnDefinition( ENTITY_SET_FLAGS_FIELD, TEXT_ARRAY );
+            new PostgresColumnDefinition( ENTITY_SET_FLAGS_FIELD, TEXT_ARRAY )
+            .withDefault( "'{}'" );
     public static final String                   ENTITY_SET_ID_FIELD               = "entity_set_id";
     public static final PostgresColumnDefinition ENTITY_SET_ID                     =
             new PostgresColumnDefinition( ENTITY_SET_ID_FIELD, UUID ).notNull();
@@ -159,6 +160,11 @@ public final class PostgresColumn {
     public static final String                   ENTITY_TYPE_ID_FIELD              = "entity_type_id";
     public static final PostgresColumnDefinition ENTITY_TYPE_ID                    =
             new PostgresColumnDefinition( ENTITY_TYPE_ID_FIELD, UUID ).notNull();
+    public static final String                   ENUM_VALUES_FIELD                 = "enum_values";
+    public static final PostgresColumnDefinition ENUM_VALUES                       =
+            new PostgresColumnDefinition( ENUM_VALUES_FIELD, TEXT_ARRAY )
+                    .withDefault( "'{}'" )
+                    .notNull();
     public static final String                   EVENT_TYPE_FIELD                  = "event_type";
     public static final PostgresColumnDefinition EVENT_TYPE                        =
             new PostgresColumnDefinition( EVENT_TYPE_FIELD, TEXT );
@@ -187,9 +193,9 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( ID_FIELD, UUID ).primaryKey();
     public static final PostgresColumnDefinition ID_VALUE                          =
             new PostgresColumnDefinition( ID_FIELD, UUID );
-    public static final String                   INDEXED_FIELD                     = "indexed";
-    public static final PostgresColumnDefinition INDEXED                           = new PostgresColumnDefinition(
-            INDEXED_FIELD,
+    public static final String                   INDEX_TYPE_FIELD                  = "index_type";
+    public static final PostgresColumnDefinition INDEX_TYPE                        = new PostgresColumnDefinition(
+            INDEX_TYPE_FIELD,
             TEXT );
     public static final String                   INITIALIZED_FIELD                 = "initialized";
     public static final PostgresColumnDefinition INITIALIZED                       =
@@ -218,12 +224,12 @@ public final class PostgresColumn {
             .withDefault( "'-infinity'" )
             .notNull();
     public static final String                   LAST_WRITE_FIELD                  = "last_write";
-    public static final String                   LINKED_FIELD                      = "linked";
-    public static final PostgresColumnDefinition LINKED                            =
-            new PostgresColumnDefinition( LINKED_FIELD, BOOLEAN ).notNull();
     public static final String                   LINKED_ENTITY_SETS_FIELD          = "linked_entity_sets";
     public static final PostgresColumnDefinition LINKED_ENTITY_SETS                =
             new PostgresColumnDefinition( LINKED_ENTITY_SETS_FIELD, UUID_ARRAY );
+    public static final String                   LINKED_FIELD                      = "linked";
+    public static final PostgresColumnDefinition LINKED                            =
+            new PostgresColumnDefinition( LINKED_FIELD, BOOLEAN ).notNull();
     public static final String                   LINKING_FIELD                     = "linking";
     public static final PostgresColumnDefinition LINKING                           =
             new PostgresColumnDefinition( LINKING_FIELD, BOOLEAN );

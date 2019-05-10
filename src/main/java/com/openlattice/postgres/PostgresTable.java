@@ -66,19 +66,6 @@ public final class PostgresTable {
             new PostgresTableDefinition( "audit_record_entity_set_ids" )
                     .addColumns( ACL_KEY, AUDIT_RECORD_ENTITY_SET_ID, PostgresColumn.AUDIT_RECORD_ENTITY_SET_IDS )
                     .primaryKey( ACL_KEY );
-    public static final PostgresTableDefinition COMPLEX_TYPES               =
-            new PostgresTableDefinition( "complex_types" )
-                    .addColumns( ID,
-                            NAMESPACE,
-                            NAME,
-                            TITLE,
-                            DESCRIPTION,
-                            PROPERTIES,
-                            PROPERTY_TAGS,
-                            BASE_TYPE,
-                            SCHEMAS,
-                            CATEGORY );
-    //.setUnique( NAMESPACE, NAME ); //Not allowed by postgres xl
 
     public static final PostgresTableDefinition DB_CREDS = new PostgresTableDefinition( "db_creds" )
             .addColumns( PRINCIPAL_ID, CREDENTIAL )
@@ -151,7 +138,7 @@ public final class PostgresTable {
                             PII,
                             ANALYZER,
                             MULTI_VALUED,
-                            INDEXED );
+                            INDEX_TYPE );
     public static final PostgresTableDefinition        GRAPH_QUERIES                =
             new PostgresTableDefinition( "graph_queries" )
                     .addColumns( QUERY_ID, QUERY, STATE, START_TIME )
@@ -276,11 +263,12 @@ public final class PostgresTable {
                             DATATYPE,
                             TITLE,
                             DESCRIPTION,
+                            ENUM_VALUES,
                             SCHEMAS,
                             PII,
                             ANALYZER,
                             MULTI_VALUED,
-                            INDEXED );
+                            INDEX_TYPE );
     public static final PostgresTableDefinition REQUESTS                 =
             new PostgresTableDefinition( "requests" )
                     .addColumns( ACL_KEY, PRINCIPAL_TYPE, PRINCIPAL_ID, PostgresColumn.PERMISSIONS, REASON, STATUS )
@@ -306,7 +294,7 @@ public final class PostgresTable {
     static {
         PRINCIPAL_TREES.addIndexes(
                 new PostgresColumnsIndexDefinition( PRINCIPAL_TREES, ACL_KEY )
-                        .method( IndexMethod.GIN )
+                        .method( IndexType.GIN )
                         .name( "principal_trees_acl_key_idx" )
                         .ifNotExists()
         );
@@ -334,7 +322,6 @@ public final class PostgresTable {
                         .name( "entity_key_ids_entity_set_id_idx" )
                         .ifNotExists(),
                 new PostgresColumnsIndexDefinition( IDS, ENTITY_SET_ID, ENTITY_ID )
-                        .unique()
                         .name( "entity_key_ids_entity_set_id_entity_id_idx" )
                         .ifNotExists(),
                 new PostgresColumnsIndexDefinition( IDS, VERSION )
@@ -342,7 +329,7 @@ public final class PostgresTable {
                         .ifNotExists(),
                 new PostgresColumnsIndexDefinition( IDS, VERSIONS )
                         .name( "entity_key_ids_versions_idx" )
-                        .method( IndexMethod.GIN )
+                        .method( IndexType.GIN )
                         .ifNotExists(),
                 new PostgresColumnsIndexDefinition( IDS, LINKING_ID )
                         .name( "entity_key_ids_linking_id_idx" )
@@ -405,12 +392,7 @@ public final class PostgresTable {
                 new PostgresColumnsIndexDefinition( APPS, ID )
                         .name( "apps_id_idx" )
                         .ifNotExists() );
-        ENTITY_QUERIES.addIndexes(
-                new PostgresColumnsIndexDefinition( ENTITY_QUERIES, ID_VALUE )
-                        .name( "entity_queries_id_idx" )
-                        .ifNotExists(),
-                new PostgresColumnsIndexDefinition( ENTITY_QUERIES, CLAUSES )
-                        .name( "" ) );
+        
         GRAPH_QUERIES.addIndexes(
                 new PostgresColumnsIndexDefinition( GRAPH_QUERIES, START_TIME )
                         .name( "graph_queries_expiry_idx" )
@@ -444,7 +426,7 @@ public final class PostgresTable {
 
         ENTITY_SETS.addIndexes(
                 new PostgresColumnsIndexDefinition( ENTITY_SETS, LINKED_ENTITY_SETS )
-                        .method( IndexMethod.GIN )
+                        .method( IndexType.GIN )
                         .ifNotExists() );
         MATERIALIZED_ENTITY_SETS.addIndexes(
                 new PostgresColumnsIndexDefinition( MATERIALIZED_ENTITY_SETS, ORGANIZATION_ID )

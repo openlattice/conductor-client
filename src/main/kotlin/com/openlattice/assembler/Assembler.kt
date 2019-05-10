@@ -40,10 +40,7 @@ import com.openlattice.data.storage.MetadataOption
 import com.openlattice.data.storage.selectEntitySetWithCurrentVersionOfPropertyTypes
 import com.openlattice.datastore.util.Util
 import com.openlattice.edm.EntitySet
-import com.openlattice.edm.events.EntitySetCreatedEvent
-import com.openlattice.edm.events.EntitySetDeletedEvent
-import com.openlattice.edm.events.PropertyTypesAddedToEntitySetEvent
-import com.openlattice.edm.events.PropertyTypesInEntitySetUpdatedEvent
+import com.openlattice.edm.events.*
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap.*
@@ -179,6 +176,24 @@ class Assembler(
         }
     }
 
+    @Subscribe
+    fun handleLinkedEntitySetAdded(linkedEntitySetAddedEvent: LinkedEntitySetAddedEvent) {
+        // when normal entity set is added to linking entity set, we need to update (re-create) the production view
+        // (olviews) of the entity set in openlattice db
+        if (isEntitySetMaterialized(linkedEntitySetAddedEvent.linkingEntitySetId)) {
+            createOrUpdateProductionViewOfEntitySet(linkedEntitySetAddedEvent.linkingEntitySetId)
+        }
+    }
+
+    @Subscribe
+    fun handleLinkedEntitySetRemoved(linkedEntitySetRemovedEvent: LinkedEntitySetRemovedEvent) {
+        // when normal entity set is removed from linking entity set, we need to update (re-create) the production view
+        // (olviews) of the entity set in openlattice db
+        if (isEntitySetMaterialized(linkedEntitySetRemovedEvent.linkingEntitySetId)) {
+            createOrUpdateProductionViewOfEntitySet(linkedEntitySetRemovedEvent.linkingEntitySetId)
+        }
+    }
+
 
     fun createOrganization(organization: Organization) {
         createOrganization(organization.id, organization.principal.id)
@@ -224,9 +239,11 @@ class Assembler(
         authorizedPropertyTypesByEntitySet.forEach { entitySetId, authorizedPropertyTypes ->
             // even if we re-materialize, we would clear all flags
             val materializedEntitySetKey = EntitySetAssemblyKey(entitySetId, organizationId)
+            val entitySet = entitySets.getValue(entitySetId)
+
             materializedEntitySets.set(materializedEntitySetKey, MaterializedEntitySet(materializedEntitySetKey))
             materializedEntitySets.executeOnKey(materializedEntitySetKey,
-                    MaterializeEntitySetProcessor(authorizedPropertyTypes).init(acm)
+                    MaterializeEntitySetProcessor(entitySet, authorizedPropertyTypes).init(acm)
             )
         }
 
@@ -255,9 +272,10 @@ class Assembler(
                         .contains(OrganizationEntitySetFlag.EDM_UNSYNCHRONIZED)) {
             logger.info("Synchronizing materialized entity set $entitySetId")
 
+            val entitySet = entitySets.getValue(entitySetId)
             materializedEntitySets.executeOnKey(
                     EntitySetAssemblyKey(entitySetId, organizationId),
-                    SynchronizeMaterializedEntitySetProcessor(authorizedPropertyTypes))
+                    SynchronizeMaterializedEntitySetProcessor(entitySet, authorizedPropertyTypes))
 
             // remove flag also from organization entity sets
             assemblies.executeOnKey(organizationId,
@@ -282,9 +300,10 @@ class Assembler(
                 && materializedEntitySets[entitySetAssemblyKey]!!.flags.contains(OrganizationEntitySetFlag.DATA_UNSYNCHRONIZED)) {
             logger.info("Refreshing materialized entity set $entitySetId")
 
+            val entitySet = entitySets.getValue(entitySetId)
             materializedEntitySets.executeOnKey(
                     entitySetAssemblyKey,
-                    RefreshMaterializedEntitySetProcessor(authorizedPropertyTypes))
+                    RefreshMaterializedEntitySetProcessor(entitySet, authorizedPropertyTypes))
             // remove flag also from organization entity sets
             assemblies.executeOnKey(organizationId,
                     RemoveFlagsFromOrganizationMaterializedEntitySetProcessor(
@@ -372,7 +391,7 @@ class Assembler(
                 as Predicate<EntitySetAssemblyKey, MaterializedEntitySet>
     }
 
-    private fun entitySetIdInOrganizationPredicate(entitySetId: UUID): Predicate<*,*> {
+    private fun entitySetIdInOrganizationPredicate(entitySetId: UUID): Predicate<*, *> {
         return Predicates.equal(OrganizationAssemblyMapstore.MATERIALIZED_ENTITY_SETS_ID_INDEX, entitySetId)
     }
 
