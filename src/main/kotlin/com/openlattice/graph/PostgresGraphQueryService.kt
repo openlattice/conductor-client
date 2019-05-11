@@ -24,14 +24,19 @@ package com.openlattice.graph
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.openlattice.authorization.AuthorizationManager
 import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.data.storage.MetadataOption
+import com.openlattice.data.storage.selectCurrentVersionOfPropertyTypeSql
+import com.openlattice.data.storage.selectEntitySetWithCurrentVersionOfPropertyTypes
 import com.openlattice.datastore.services.EdmManager
 import com.openlattice.graph.query.GraphQuery
 import com.openlattice.graph.query.GraphQueryState
 import com.openlattice.graph.query.ResultSummary
+import com.openlattice.postgres.DataTables.quote
 import com.openlattice.postgres.PostgresColumn.*
 import com.openlattice.postgres.PostgresTable.GRAPH_QUERIES
 import com.openlattice.postgres.ResultSetAdapters
 import com.zaxxer.hikari.HikariDataSource
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import java.util.*
 
 /**
@@ -41,7 +46,6 @@ import java.util.*
 class PostgresGraphQueryService(
         private val hds: HikariDataSource,
         private val edm: EdmManager,
-        private val authorizationManager: AuthorizationManager,
         private val byteBlobDataManager: ByteBlobDataManager,
         private val mapper: ObjectMapper
 ) : GraphQueryService {
@@ -54,19 +58,37 @@ class PostgresGraphQueryService(
 
         var graphStep = digraphIter.initialNeighborhood()
 
-
-
+        query.associationConstraints.forEach { }
 
 
     }
 
+    private fun buildWithClause(query: SimpleGraphQuery, authorizedPropertyTypes: Map<UUID, Set<UUID>>): String {
+        query.entityConstraints.forEach { entityConstraint ->
+
+            val propertyTypeIds = entityConstraint.properties
+                    .orElseGet { edm.getEntityType(entityConstraint.entityTypeId).properties }
+
+            val propertyTypes = edm.getPropertyTypesAsMap(propertyTypeIds)
+
+            selectEntitySetWithCurrentVersionOfPropertyTypes(
+                    entityConstraint.entitySetIds.map { it to Optional.empty<Set<UUID>>() }.toMap(),
+                    propertyTypes.mapValues { quote(it.value.type.fullQualifiedNameAsString) },
+                    propertyTypeIds,
+                    authorizedPropertyTypes,
+                    entityConstraint.filters,
+                    entityConstraint.metadataOptions,
+                    propertyTypes.mapValues { it.value.datatype==EdmPrimitiveTypeKind.Binary },
 
 
-    private fun pickInitial(query: SimpleGraphQuery ) {
 
+                    )
+        }
     }
 
+    private fun pickInitial(query: SimpleGraphQuery) {
 
+    }
 
     override fun getQuery(queryId: UUID): GraphQuery {
         val conn = hds.connection
@@ -95,12 +117,13 @@ class PostgresGraphQueryService(
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-
     override fun submitQuery(query: GraphQuery): GraphQueryState {
         val queryId = UUID.randomUUID()
         val startTime = saveQuery(queryId, query)
         //TODO: Consider stronger of enforcement of uniqueness for mission critical
-        val visitor = EntityQueryExecutingVisitor(hds, edm,authorizationManager, byteBlobDataManager, queryId)
+        val visitor = EntityQueryExecutingVisitor(
+                hds, edm, authorizationManager, byteBlobDataManager, queryId
+        )
         query.entityQueries.forEach(visitor)
         val queryMap = visitor.queryMap
         discard(visitor.queryId, query.entityQueries.map { visitor.queryMap[it]!! })
@@ -130,7 +153,6 @@ class PostgresGraphQueryService(
         return startTime
     }
 
-
     private fun getQueryState(queryId: UUID): GraphQueryState {
         val conn = hds.connection
         conn.use {
@@ -140,7 +162,6 @@ class PostgresGraphQueryService(
             return ResultSetAdapters.graphQueryState(rs)
         }
     }
-
 
     private fun getResultSummary(queryId: UUID): Optional<ResultSummary> {
         //Retrieve the query so we can compute the result summary
