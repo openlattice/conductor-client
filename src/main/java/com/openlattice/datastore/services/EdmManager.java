@@ -36,11 +36,8 @@ import com.openlattice.edm.type.AssociationDetails;
 import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.stream.Stream;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
@@ -187,6 +184,8 @@ public interface EdmManager {
 
     EntityType getEntityTypeByEntitySetId( UUID entitySetId );
 
+    Map<UUID, UUID> getEntityTypeIdsByEntitySetIds( Set<UUID> entitySetIds );
+
     Set<EntityType> getEntityTypeHierarchy( UUID entityTypeId );
 
     UUID createAssociationType( AssociationType associationType, UUID entityTypeId );
@@ -194,6 +193,10 @@ public interface EdmManager {
     AssociationType getAssociationType( UUID associationTypeId );
 
     AssociationType getAssociationTypeSafe( UUID associationTypeId );
+
+    AssociationType getAssociationTypeByEntitySetId( UUID entitySetId );
+
+    Map<UUID, AssociationType> getAssociationTypeDetailsByEntitySetIds( Set<UUID> entitySetIds );
 
     void deleteAssociationType( UUID associationTypeId );
 

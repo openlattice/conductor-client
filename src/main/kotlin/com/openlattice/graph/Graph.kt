@@ -23,6 +23,7 @@ package com.openlattice.graph
 
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.collect.ImmutableList
+import com.google.common.collect.MoreCollectors
 import com.google.common.collect.Multimaps
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
@@ -50,6 +51,7 @@ import com.openlattice.search.requests.EntityNeighborsFilter
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
+import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.util.*
 import java.util.function.Function
@@ -72,147 +74,297 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
     /* Create */
 
     override fun createEdges(keys: MutableSet<DataEdgeKey>): WriteEvent {
-        hds.connection.use {
-            val ps = it.prepareStatement(UPSERT_SQL)
+        hds.connection.use { connection ->
+            val ps = connection.prepareStatement(UPSERT_SQL)
             val version = System.currentTimeMillis()
-            val versions = PostgresArrays.createLongArray(it, ImmutableList.of(version))
+            val versions = PostgresArrays.createLongArray(connection, ImmutableList.of(version))
             ps.use {
-                keys.forEach {
-                    ps.setObject(1, it.src.entitySetId)
-                    ps.setObject(2, it.src.entityKeyId)
-                    ps.setObject(3, it.dst.entitySetId)
-                    ps.setObject(4, it.dst.entityKeyId)
-                    ps.setObject(5, it.edge.entitySetId)
-                    ps.setObject(6, it.edge.entityKeyId)
-                    ps.setLong(7, version)
-                    ps.setArray(8, versions)
-                    ps.addBatch()
+                keys.forEach { dataEdgeKey ->
+                    createAddSrcRowToBatch(ps, version, versions, dataEdgeKey)
+                    createAddDstRowToBatch(ps, version, versions, dataEdgeKey)
+                    createAddEdgeRowToBatch(ps, version, versions, dataEdgeKey)
                 }
                 return WriteEvent(version, ps.executeBatch().sum())
             }
         }
     }
 
+    /*
+     * src,dst,edge = 1
+     * dst,edge,src = 2
+     * edge,src,dst = 3
+     */
+
+    private fun createAddSrcRowToBatch(
+            ps: PreparedStatement,
+            version: Long,
+            versions: java.sql.Array,
+            dataEdgeKey: DataEdgeKey
+    ) {
+        addSrcKeyIds(ps, dataEdgeKey)
+        ps.setObject(5, dataEdgeKey.src.entitySetId)
+        ps.setObject(6, dataEdgeKey.dst.entitySetId)
+        ps.setObject(7, dataEdgeKey.edge.entitySetId)
+        ps.setLong(8, version)
+        ps.setArray(9, versions)
+        ps.addBatch()
+    }
+
+    private fun createAddDstRowToBatch(
+            ps: PreparedStatement, version: Long, versions: java.sql.Array, dataEdgeKey: DataEdgeKey
+    ) {
+        addDstKeyIds(ps, dataEdgeKey)
+        ps.setObject(5, dataEdgeKey.src.entitySetId)
+        ps.setObject(6, dataEdgeKey.dst.entitySetId)
+        ps.setObject(7, dataEdgeKey.edge.entitySetId)
+        ps.setLong(8, version)
+        ps.setArray(9, versions)
+        ps.addBatch()
+    }
+
+    private fun createAddEdgeRowToBatch(
+            ps: PreparedStatement, version: Long, versions: java.sql.Array, dataEdgeKey: DataEdgeKey
+    ) {
+        addEdgeKeyIds(ps, dataEdgeKey)
+        ps.setObject(5, dataEdgeKey.src.entitySetId)
+        ps.setObject(6, dataEdgeKey.dst.entitySetId)
+        ps.setObject(7, dataEdgeKey.edge.entitySetId)
+        ps.setLong(8, version)
+        ps.setArray(9, versions)
+        ps.addBatch()
+    }
+
+    private fun addSrcKeyIds(ps: PreparedStatement, dataEdgeKey: DataEdgeKey, startIndex: Int = 1) {
+        ps.setObject(startIndex, dataEdgeKey.src.entityKeyId)
+        ps.setObject(startIndex + 1, dataEdgeKey.dst.entityKeyId)
+        ps.setObject(startIndex + 2, dataEdgeKey.edge.entityKeyId)
+        ps.setObject(startIndex + 3, ComponentType.SRC.ordinal)
+    }
+
+    private fun addDstKeyIds(ps: PreparedStatement, dataEdgeKey: DataEdgeKey, startIndex: Int = 1) {
+        ps.setObject(startIndex, dataEdgeKey.dst.entityKeyId)
+        ps.setObject(startIndex + 1, dataEdgeKey.edge.entityKeyId)
+        ps.setObject(startIndex + 2, dataEdgeKey.src.entityKeyId)
+        ps.setObject(startIndex + 3, ComponentType.DST.ordinal)
+    }
+
+    private fun addEdgeKeyIds(ps: PreparedStatement, dataEdgeKey: DataEdgeKey, startIndex: Int = 1) {
+        ps.setObject(startIndex, dataEdgeKey.edge.entityKeyId)
+        ps.setObject(startIndex + 1, dataEdgeKey.src.entityKeyId)
+        ps.setObject(startIndex + 2, dataEdgeKey.dst.entityKeyId)
+        ps.setObject(startIndex + 3, ComponentType.EDGE.ordinal)
+    }
+
+
     /* Delete  */
 
-    override fun clearEdges(keys: MutableSet<DataEdgeKey>): Int {
-        val connection = hds.connection
-        connection.use {
-            val ps = connection.prepareStatement(CLEAR_SQL)
+    override fun clearEdges(keys: Iterable<DataEdgeKey>): Int {
+        hds.connection.use { connection ->
+            connection.autoCommit = false
+
+            val psLocks = connection.prepareStatement(LOCK_BY_VERTEX_SQL)
+            val psClear = connection.prepareStatement(CLEAR_BY_VERTEX_SQL)
             val version = -System.currentTimeMillis()
-            keys.forEach {
-                ps.setLong(1, version)
-                ps.setLong(2, version)
-                ps.setObject(3, it.src.entitySetId)
-                ps.setObject(4, it.src.entityKeyId)
-                ps.setObject(5, it.dst.entitySetId)
-                ps.setObject(6, it.dst.entityKeyId)
-                ps.setObject(7, it.edge.entitySetId)
-                ps.setObject(8, it.edge.entityKeyId)
-                ps.addBatch()
+            keys.forEach { dataEdgeKey ->
+                addSrcKeyIds(psLocks, dataEdgeKey)
+                psLocks.addBatch()
+                addDstKeyIds(psLocks, dataEdgeKey)
+                psLocks.addBatch()
+                addEdgeKeyIds(psLocks, dataEdgeKey)
+                psLocks.addBatch()
+
+                clearEdgesAddVersion(psClear, version)
+                addSrcKeyIds(psClear, dataEdgeKey, 3)
+                psClear.addBatch()
+                clearEdgesAddVersion(psClear, version)
+                addDstKeyIds(psClear, dataEdgeKey, 3)
+                psClear.addBatch()
+                clearEdgesAddVersion(psClear, version)
+                addEdgeKeyIds(psClear, dataEdgeKey, 3)
+                psClear.addBatch()
             }
-            return ps.executeBatch().sum()
+            psLocks.executeBatch()
+            val clearCount = psClear.executeBatch().sum()
+            connection.commit()
+
+            connection.autoCommit = true
+
+            return clearCount
         }
     }
 
-    override fun clearVerticesInEntitySet(entitySetId: UUID?): Int {
-        val connection = hds.connection
-        connection.use {
-            val ps = connection.prepareStatement(CLEAR_BY_SET_SQL)
+    override fun clearVerticesInEntitySetWithoutLocking(entitySetId: UUID): Int {
+        hds.connection.use { connection ->
+            connection.autoCommit = false
+
+            val psClear = connection.prepareStatement(CLEAR_BY_SET_SQL)
             val version = -System.currentTimeMillis()
-            ps.setLong(1, version)
-            ps.setLong(2, version)
-            ps.setObject(3, entitySetId)
-            ps.setObject(4, entitySetId)
-            ps.setObject(5, entitySetId)
-            return ps.executeUpdate()
+            clearEdgesAddVersion(psClear, version)
+            psClear.setObject(3, entitySetId)
+            psClear.setObject(4, entitySetId)
+            psClear.setObject(5, entitySetId)
+
+            val clearCount = psClear.executeUpdate()
+            connection.commit()
+
+            connection.autoCommit = true
+
+            return clearCount
         }
     }
 
-    override fun clearVertices(entitySetId: UUID?, vertices: Set<UUID>?): Int {
-        val connection = hds.connection
-        connection.use {
-            val ps = connection.prepareStatement(CLEAR_BY_VERTICES_SQL)
-            val arr = PostgresArrays.createUuidArray(it, vertices)
+    override fun clearVerticesWithoutLocking(entitySetId: UUID, vertices: Set<UUID>): Int {
+        hds.connection.use { connection ->
+            connection.autoCommit = false
+
+            val arr = PostgresArrays.createUuidArray(connection, vertices)
             val version = -System.currentTimeMillis()
-            ps.setLong(1, version)
-            ps.setLong(2, version)
-            ps.setObject(3, entitySetId)
-            ps.setObject(4, arr)
-            ps.setObject(5, entitySetId)
-            ps.setObject(6, arr)
-            ps.setObject(7, entitySetId)
-            ps.setObject(8, arr)
-            return ps.executeUpdate()
+            val psClear = connection.prepareStatement(CLEAR_BY_VERTICES_SQL)
+            clearEdgesAddVersion(psClear, version)
+            psClear.setObject(3, arr)
+            psClear.setObject(4, arr)
+            psClear.setObject(5, arr)
+
+            val clearCount = psClear.executeUpdate()
+            connection.commit()
+
+            connection.autoCommit = true
+
+            return clearCount
         }
     }
 
-    override fun deleteEdges(keys: Set<DataEdgeKey>): WriteEvent {
+    override fun clearVerticesOfAssociationsWithoutLocking(entitySetId: UUID, vertices: Set<UUID>): Int {
+        hds.connection.use { connection ->
+            connection.autoCommit = false
+
+            val ids = PostgresArrays.createUuidArray(connection, vertices)
+            val version = -System.currentTimeMillis()
+            val psClear = connection.prepareStatement(CLEAR_BY_ASSOCIATIONS_SQL)
+            clearEdgesAddVersion(psClear, version)
+            psClear.setArray(3, ids)
+            psClear.setObject(4, entitySetId)
+            psClear.setArray(5, ids)
+            psClear.setObject(6, entitySetId)
+            psClear.setArray(7, ids)
+            psClear.setObject(8, entitySetId)
+
+            val clearCount = psClear.executeUpdate()
+            connection.commit()
+
+            connection.autoCommit = true
+
+            return clearCount
+        }
+    }
+
+    private fun clearEdgesAddVersion(ps: PreparedStatement, version: Long) {
+        ps.setLong(1, version)
+        ps.setLong(2, version)
+    }
+
+    override fun deleteEdges(keys: Iterable<DataEdgeKey>): WriteEvent {
         val connection = hds.connection
+
         connection.use {
-            val ps = connection.prepareStatement(deleteEdgesSql(keys))
-            val numUpdated = ps.executeUpdate()
-            return WriteEvent(System.currentTimeMillis(), numUpdated)
+            connection.autoCommit = false
+
+            val psLocks = connection.prepareStatement(LOCK_BY_VERTEX_SQL)
+            val psDelete = connection.prepareStatement(DELETE_BY_VERTEX_SQL)
+            keys.forEach { dataEdgeKey ->
+                addSrcKeyIds(psLocks, dataEdgeKey)
+                psLocks.addBatch()
+                addDstKeyIds(psLocks, dataEdgeKey)
+                psLocks.addBatch()
+                addEdgeKeyIds(psLocks, dataEdgeKey)
+                psLocks.addBatch()
+
+                addSrcKeyIds(psDelete, dataEdgeKey)
+                psDelete.addBatch()
+                addDstKeyIds(psDelete, dataEdgeKey)
+                psDelete.addBatch()
+                addEdgeKeyIds(psDelete, dataEdgeKey)
+                psDelete.addBatch()
+            }
+            psLocks.executeBatch()
+            val updates = psDelete.executeBatch()
+            connection.commit()
+
+            connection.autoCommit = true
+
+            return WriteEvent(System.currentTimeMillis(), updates.sum())
         }
     }
 
-    override fun deleteVerticesInEntitySet(entitySetId: UUID?): Int {
-        val connection = hds.connection
-        connection.use {
-            val ps = connection.prepareStatement(DELETE_BY_SET_SQL)
-            ps.setObject(1, entitySetId)
-            ps.setObject(2, entitySetId)
-            ps.setObject(3, entitySetId)
-            return ps.executeUpdate()
+    override fun deleteVerticesInEntitySetWithoutLocking(entitySetId: UUID?): Int {
+        hds.connection.use { connection ->
+            connection.autoCommit = false
+
+            val psDelete = connection.prepareStatement(DELETE_BY_SET_SQL)
+            psDelete.setObject(1, entitySetId)
+            psDelete.setObject(2, entitySetId)
+            psDelete.setObject(3, entitySetId)
+
+            val deleteCount = psDelete.executeUpdate()
+            connection.commit()
+
+            connection.autoCommit = true
+
+            return deleteCount
         }
     }
 
-    override fun deleteVertices(entitySetId: UUID, vertices: Set<UUID>): Int {
-        val connection = hds.connection
-        connection.use {
-            val ps = connection.prepareStatement(DELETE_BY_VERTICES_SQL)
-            val arr = PostgresArrays.createUuidArray(it, vertices)
-            ps.setObject(1, entitySetId)
-            ps.setObject(2, arr)
-            ps.setObject(3, entitySetId)
-            ps.setObject(4, arr)
-            ps.setObject(5, entitySetId)
-            ps.setObject(6, arr)
-            return ps.executeUpdate()
+    override fun deleteVerticesWithoutLocking(entitySetId: UUID, vertices: Set<UUID>): Int {
+        hds.connection.use { connection ->
+            connection.autoCommit = false
+
+            val arr = PostgresArrays.createUuidArray(connection, vertices)
+            val psDelete = connection.prepareStatement(DELETE_BY_VERTICES_SQL)
+            psDelete.setObject(1, arr)
+            psDelete.setObject(2, arr)
+            psDelete.setObject(3, arr)
+
+            val deleteCount = psDelete.executeUpdate()
+            connection.commit()
+
+            connection.autoCommit = true
+
+            return deleteCount
         }
     }
 
-    private fun deleteEdgesSql(keys: Set<DataEdgeKey>): String {
-        val sql = "DELETE FROM ${EDGES.name} WHERE " +
-                (keys.joinToString(" OR ") {
-                    " ( ${SRC_ENTITY_SET_ID.name} = '${it.src.entitySetId}' AND ${SRC_ENTITY_KEY_ID.name} = '${it.src.entityKeyId}' " +
-                            "${DST_ENTITY_SET_ID.name} = '${it.dst.entitySetId}' AND ${DST_ENTITY_KEY_ID.name} = '${it.dst.entityKeyId}' " +
-                            "${EDGE_ENTITY_SET_ID.name} = '${it.edge.entitySetId}' AND ${EDGE_ENTITY_KEY_ID.name} = '${it.edge.entityKeyId}' ) "
-                })
+    override fun deleteVerticesOfAssociationsWithoutLocking(entitySetId: UUID, vertices: Set<UUID>): Int {
+        hds.connection.use { connection ->
+            connection.autoCommit = false
 
-        return sql
+            val ids = PostgresArrays.createUuidArray(connection, vertices)
+            val psDelete = connection.prepareStatement(DELETE_BY_ASSOCIATIONS_SQL)
+            psDelete.setArray(1, ids)
+            psDelete.setObject(2, entitySetId)
+            psDelete.setArray(3, ids)
+            psDelete.setObject(4, entitySetId)
+            psDelete.setArray(5, ids)
+            psDelete.setObject(6, entitySetId)
+
+            val deleteCount = psDelete.executeUpdate()
+            connection.commit()
+            connection.autoCommit = true
+
+            return deleteCount
+        }
     }
 
 
     /* Select */
 
-    override fun getEdgesAsMap(keys: MutableSet<DataEdgeKey>?): MutableMap<DataEdgeKey, Edge> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun getEdge(key: DataEdgeKey): Edge? {
-        val iter = getEdges(setOf(key)).iterator()
-        return if (iter.hasNext()) {
-            iter.next()
-        } else {
-            null
-        }
+    override fun getEdge(key: DataEdgeKey): Edge {
+        return getEdges(setOf(key)).collect(MoreCollectors.onlyElement())
     }
 
     override fun getEdges(keys: Set<DataEdgeKey>): Stream<Edge> {
         return PostgresIterable(
                 Supplier {
-                    val connection = hds.getConnection()
+                    val connection = hds.connection
                     val stmt = connection.createStatement()
                     val rs = stmt.executeQuery(selectEdges(keys))
                     StatementHolder(connection, stmt, rs)
@@ -221,46 +373,7 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
         ).stream()
     }
 
-    fun executeEdgesQuery(query: String): Stream<Edge> {
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.getConnection()
-                    val stmt = connection.createStatement()
-                    val rs = stmt.executeQuery(query)
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, Edge> { ResultSetAdapters.edge(it) }
-        ).stream()
-    }
-
-    override fun getEntitiesForDestination(
-            srcEntitySetIds: List<UUID>, edgeEntitySetIds: List<UUID>, dstEntityKeyIds: Set<UUID>
-    ): PostgresIterable<DataEdgeKey> {
-        val query = "SELECT ${SRC_ENTITY_SET_ID.name}, ${SRC_ENTITY_KEY_ID.name}, ${DST_ENTITY_SET_ID.name}, ${DST_ENTITY_KEY_ID.name}, ${EDGE_ENTITY_SET_ID.name}, ${EDGE_ENTITY_KEY_ID.name} " +
-                "FROM ${EDGES.name} WHERE " +
-                "${SRC_ENTITY_SET_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] )) AND " +
-                "${EDGE_ENTITY_SET_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] )) AND " +
-                "${DST_ENTITY_KEY_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] )) " +
-                "ORDER BY ${DST_ENTITY_KEY_ID.name} "
-
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    connection.autoCommit = false
-                    val stmt = connection.prepareStatement(query)
-                    stmt.fetchSize = BATCH_SIZE
-                    stmt.setArray(1, PostgresArrays.createUuidArray(connection, srcEntitySetIds.stream()))
-                    stmt.setArray(2, PostgresArrays.createUuidArray(connection, edgeEntitySetIds.stream()))
-                    stmt.setArray(3, PostgresArrays.createUuidArray(connection, dstEntityKeyIds.stream()))
-                    val rs = stmt.executeQuery()
-                    logger.info(stmt.toString())
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, DataEdgeKey> { ResultSetAdapters.edgeKey(it) }
-        )
-    }
-
-    override fun getEdgeKeysContainingEntities( entitySetId: UUID, entityKeyIds: Set<UUID> )
+    override fun getEdgeKeysContainingEntities(entitySetId: UUID, entityKeyIds: Set<UUID>)
             : PostgresIterable<DataEdgeKey> {
         return PostgresIterable(
                 Supplier {
@@ -268,12 +381,10 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
                     connection.autoCommit = false
                     val idArr = PostgresArrays.createUuidArray(connection, entityKeyIds)
                     val stmt = connection.prepareStatement(BULK_NEIGHBORHOOD_SQL)
-                    stmt.setObject(1, entitySetId)
-                    stmt.setObject(2, idArr)
+                    stmt.setObject(1, idArr)
+                    stmt.setObject(2, entitySetId)
                     stmt.setObject(3, entitySetId)
-                    stmt.setObject(4, idArr)
-                    stmt.setObject(5, entitySetId)
-                    stmt.setObject(6, idArr)
+                    stmt.setObject(4, entitySetId)
                     stmt.fetchSize = BATCH_SIZE
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
@@ -298,32 +409,15 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
         )
     }
 
-    override fun getEdgeKeysContainingEntity(entitySetId: UUID, entityKeyId: UUID): Iterable<DataEdgeKey> {
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    val stmt = connection.prepareStatement(NEIGHBORHOOD_SQL)
-                    stmt.setObject(1, entitySetId)
-                    stmt.setObject(2, entityKeyId)
-                    stmt.setObject(3, entitySetId)
-                    stmt.setObject(4, entityKeyId)
-                    val rs = stmt.executeQuery()
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, DataEdgeKey> { ResultSetAdapters.edgeKey(it) }
-        )
-    }
-
     override fun getEdgesAndNeighborsForVertex(entitySetId: UUID, vertexId: UUID): Stream<Edge> {
 
         return PostgresIterable(
                 Supplier {
-                    val connection = hds.getConnection()
+                    val connection = hds.connection
                     val stmt = connection.prepareStatement(NEIGHBORHOOD_SQL)
-                    stmt.setObject(1, entitySetId)
-                    stmt.setObject(2, vertexId)
+                    stmt.setObject(1, vertexId)
+                    stmt.setObject(2, entitySetId)
                     stmt.setObject(3, entitySetId)
-                    stmt.setObject(4, vertexId)
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },
@@ -334,13 +428,12 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
     override fun getEdgesAndNeighborsForVertices(entitySetId: UUID, filter: EntityNeighborsFilter): Stream<Edge> {
         return PostgresIterable(
                 Supplier {
-                    val connection = hds.getConnection()
+                    val connection = hds.connection
                     val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.stream())
                     val stmt = connection.prepareStatement(getFilteredNeighborhoodSql(filter, false))
-                    stmt.setObject(1, entitySetId)
-                    stmt.setArray(2, ids)
+                    stmt.setArray(1, ids)
+                    stmt.setObject(2, entitySetId)
                     stmt.setObject(3, entitySetId)
-                    stmt.setArray(4, ids)
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },
@@ -349,7 +442,8 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
     }
 
     override fun getEdgesAndNeighborsForVerticesBulk(
-            entitySetIds: Set<UUID>, filter: EntityNeighborsFilter
+            entitySetIds: Set<UUID>,
+            filter: EntityNeighborsFilter
     ): Stream<Edge> {
         if (entitySetIds.size == 1) {
             return getEdgesAndNeighborsForVertices(entitySetIds.first(), filter)
@@ -360,10 +454,9 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
                     val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.stream())
                     val entitySetIdsArr = PostgresArrays.createUuidArray(connection, entitySetIds.stream())
                     val stmt = connection.prepareStatement(getFilteredNeighborhoodSql(filter, true))
-                    stmt.setArray(1, entitySetIdsArr)
-                    stmt.setArray(2, ids)
+                    stmt.setArray(1, ids)
+                    stmt.setArray(2, entitySetIdsArr)
                     stmt.setArray(3, entitySetIdsArr)
-                    stmt.setArray(4, ids)
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },
@@ -425,13 +518,13 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
                     authorizedFilteredRanking.associationPropertyTypes,
                     authorizedFilteredRanking.filteredNeighborsRanking.associationAggregations,
                     ASSOC
-            ).map { it.value to authorizedFilteredRanking.associationPropertyTypes[it.key]!!.datatype } +
+            ).map { it.value to authorizedFilteredRanking.associationPropertyTypes.getValue(it.key).datatype } +
                     buildAggregationColumnMap(
                             index,
                             authorizedFilteredRanking.entitySetPropertyTypes,
                             authorizedFilteredRanking.filteredNeighborsRanking.neighborTypeAggregations,
                             ENTITY
-                    ).map { it.value to authorizedFilteredRanking.entitySetPropertyTypes[it.key]!!.datatype } +
+                    ).map { it.value to authorizedFilteredRanking.entitySetPropertyTypes.getValue(it.key).datatype } +
                     (associationCountColumnName(index) to EdmPrimitiveTypeKind.Int64) +
                     (entityCountColumnName(index) to EdmPrimitiveTypeKind.Int64)
         }.flatten().plus(idColumns).plus(SCORE.name to EdmPrimitiveTypeKind.Double).toMap()
@@ -524,12 +617,14 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
     }
 
 
+    @Deprecated("Edges table queries need update")
     override fun computeGraphAggregation(
             limit: Int, entitySetId: UUID, srcFilters: SetMultimap<UUID, UUID>, dstFilters: SetMultimap<UUID, UUID>
     ): Array<IncrementableWeightId> {
         return topEntitiesOld(limit, entitySetId, srcFilters, dstFilters).toList().toTypedArray()
     }
 
+    @Deprecated("Edges table queries need update")
     override fun topEntitiesOld(
             limit: Int, entitySetId: UUID, srcFilters: SetMultimap<UUID, UUID>, dstFilters: SetMultimap<UUID, UUID>
     ): Stream<IncrementableWeightId> {
@@ -540,6 +635,7 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
         }
     }
 
+    @Deprecated("Edges table queries need update")
     private fun topEntitiesWorker(
             limit: Int, entitySetId: UUID, srcFilters: SetMultimap<UUID, UUID>, dstFilters: SetMultimap<UUID, UUID>
     ): Stream<Pair<EntityDataKey, Long>> {
@@ -610,29 +706,15 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
                 false
         )
 
-        val baseEntityColumnsSql = if (authorizedFilteredRanking.filteredNeighborsRanking.dst) {
-            "${SRC_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${SRC_ENTITY_KEY_ID.name} as $SELF_ENTITY_KEY_ID, " +
-                    "${EDGE_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${EDGE_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
-        } else {
-            "${DST_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${DST_ENTITY_KEY_ID.name} as $SELF_ENTITY_KEY_ID, " +
-                    "${EDGE_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${EDGE_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
-        }
-
-        val edgeClause = buildEdgeFilteringClause(selfEntitySetIds, authorizedFilteredRanking)
         val joinColumns = entityKeyIdColumns
         val groupingColumns = if (linked) LINKING_ID.name else "$SELF_ENTITY_SET_ID, $SELF_ENTITY_KEY_ID"
-        val idSql = "SELECT ${ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${ID.name} as $SELF_ENTITY_KEY_ID, ${LINKING_ID.name} FROM ${IDS.name}"
-        val spineSql = if (linked) {
-            "SELECT edges.*,${LINKING_ID.name} FROM (SELECT DISTINCT $baseEntityColumnsSql FROM edges WHERE $edgeClause) as edges " +
-                    "LEFT JOIN ($idSql) as ${IDS.name} USING ($SELF_ENTITY_SET_ID,$SELF_ENTITY_KEY_ID)"
-        } else {
-            "SELECT DISTINCT $baseEntityColumnsSql FROM edges WHERE $edgeClause"
-        }
+
+        val spineSql = buildSpineSql(selfEntitySetIds, authorizedFilteredRanking, linked, true)
 
         val aggregationColumns =
                 authorizedFilteredRanking.filteredNeighborsRanking.associationAggregations
                         .mapValues {
-                            val fqn = quote(associationPropertyTypes[it.key]!!.type.fullQualifiedNameAsString)
+                            val fqn = quote(associationPropertyTypes.getValue(it.key).type.fullQualifiedNameAsString)
                             val alias = aggregationAssociationColumnName(index, it.key)
                             "${it.value.type.name}(COALESCE($fqn[1],0)) as $alias"
                         }.values.joinToString(",")
@@ -668,33 +750,20 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
                 authorizedFilteredRanking.filteredNeighborsRanking.neighborFilters,
                 setOf(),
                 entitySetPropertyTypes.mapValues { it.value.datatype == EdmPrimitiveTypeKind.Binary },
-                false,
-                false
+                linking = false,
+                omitEntitySetId = false
         )
 
-        val baseEntityColumnsSql = if (authorizedFilteredRanking.filteredNeighborsRanking.dst) {
-            "${SRC_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${SRC_ENTITY_KEY_ID.name} as $SELF_ENTITY_KEY_ID, " +
-                    "${DST_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${DST_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
-        } else {
-            "${DST_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${DST_ENTITY_KEY_ID.name} as $SELF_ENTITY_KEY_ID, " +
-                    "${SRC_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${SRC_ENTITY_KEY_ID.name} as ${ID_VALUE.name}"
-        }
 
-        val edgeClause = buildEdgeFilteringClause(selfEntitySetIds, authorizedFilteredRanking)
         val joinColumns = entityKeyIdColumns
         val groupingColumns = if (linked) LINKING_ID.name else "$SELF_ENTITY_SET_ID, $SELF_ENTITY_KEY_ID"
-        val idSql = "SELECT ${ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${ID.name} as $SELF_ENTITY_KEY_ID, ${LINKING_ID.name} FROM ${IDS.name}"
-        val spineSql = if (linked) {
-            "SELECT edges.*,${LINKING_ID.name} FROM (SELECT DISTINCT $baseEntityColumnsSql FROM edges WHERE $edgeClause) as edges " +
-                    "LEFT JOIN ($idSql) as ${IDS.name} USING ($SELF_ENTITY_SET_ID,$SELF_ENTITY_KEY_ID)"
-        } else {
-            "SELECT DISTINCT $baseEntityColumnsSql FROM edges WHERE $edgeClause"
-        }
+
+        val spineSql = buildSpineSql(selfEntitySetIds, authorizedFilteredRanking, linked, false)
 
         val aggregationColumns =
                 authorizedFilteredRanking.filteredNeighborsRanking.neighborTypeAggregations
                         .mapValues {
-                            val fqn = quote(entitySetPropertyTypes[it.key]!!.type.fullQualifiedNameAsString)
+                            val fqn = quote(entitySetPropertyTypes.getValue(it.key).type.fullQualifiedNameAsString)
                             val alias = aggregationEntityColumnName(index, it.key)
                             "${it.value.type.name}(COALESCE($fqn[1],0)) as $alias"
                         }.values.joinToString(",")
@@ -710,28 +779,27 @@ class Graph(private val hds: HikariDataSource, private val edm: EdmManager) : Gr
     }
 }
 
-
-//TODO: Extract string constants.
-private fun caseExpression(entitySetId: UUID): String {
-    return " CASE WHEN ${SRC_ENTITY_SET_ID.name}=$entitySetId THEN ${SRC_ENTITY_KEY_ID.name} ELSE ${DST_ENTITY_KEY_ID.name} END "
+enum class ComponentType {
+    SRC,
+    DST,
+    EDGE
 }
 
 private val KEY_COLUMNS = setOf(
-        SRC_ENTITY_SET_ID,
-        SRC_ENTITY_KEY_ID,
-        DST_ENTITY_SET_ID,
-        DST_ENTITY_KEY_ID,
-        EDGE_ENTITY_SET_ID,
-        EDGE_ENTITY_KEY_ID
+        ID_VALUE,
+        EDGE_COMP_1,
+        EDGE_COMP_2,
+        COMPONENT_TYPES
 ).map { it.name }.toSet()
 
 private val INSERT_COLUMNS = setOf(
+        ID_VALUE,
+        EDGE_COMP_1,
+        EDGE_COMP_2,
+        COMPONENT_TYPES,
         SRC_ENTITY_SET_ID,
-        SRC_ENTITY_KEY_ID,
         DST_ENTITY_SET_ID,
-        DST_ENTITY_KEY_ID,
         EDGE_ENTITY_SET_ID,
-        EDGE_ENTITY_KEY_ID,
         VERSION,
         VERSIONS
 ).map { it.name }.toSet()
@@ -753,6 +821,7 @@ private val SET_ID_COLUMNS = setOf(
  *
  * That is for each
  */
+@Deprecated("Edges table queries need update")
 internal fun getTopUtilizersSql(
         entitySetId: UUID,
         srcFilters: SetMultimap<UUID, UUID>,
@@ -770,68 +839,82 @@ internal fun getTopUtilizersSql(
 
 }
 
+@Deprecated("Edges table queries need update")
 internal fun getTopUtilizersFromSrc(entitySetId: UUID, filters: SetMultimap<UUID, UUID>): String {
     val countColumn = "src_count"
     return "SELECT ${SRC_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${SRC_ENTITY_KEY_ID.name} as ${ID_VALUE.name}, count(*) as $countColumn " +
-            "FROM EDGES WHERE ${srcClauses(entitySetId, filters)} " +
+            "FROM ${EDGES.name} WHERE ${srcClauses(entitySetId, filters)} " +
             "GROUP BY (${ENTITY_SET_ID.name}, ${ID_VALUE.name}) "
 }
 
+@Deprecated("Edges table queries need update")
 internal fun getTopUtilizersFromDst(entitySetId: UUID, filters: SetMultimap<UUID, UUID>): String {
     val countColumn = "dst_count"
     return "SELECT ${DST_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${DST_ENTITY_KEY_ID.name} as ${ID_VALUE.name}, count(*) as $countColumn " +
-            "FROM EDGES WHERE ${dstClauses(entitySetId, filters)} " +
+            "FROM ${EDGES.name} WHERE ${dstClauses(entitySetId, filters)} " +
             "GROUP BY (${ENTITY_SET_ID.name}, ${ID_VALUE.name}) "
 }
 
-private val SELECT_SQL = "SELECT * FROM ${EDGES.name} " +
-        "WHERE (${KEY_COLUMNS.joinToString(",")}) IN "
-private val UPSERT_SQL = "INSERT INTO ${EDGES.name} (${INSERT_COLUMNS.joinToString(",")}) VALUES (?,?,?,?,?,?,?,?) " +
+
+private val UPSERT_SQL = "INSERT INTO ${EDGES.name} (${INSERT_COLUMNS.joinToString(",")}) VALUES (?,?,?,?,?,?,?,?,?) " +
         "ON CONFLICT (${KEY_COLUMNS.joinToString(",")}) " +
         "DO UPDATE SET version = EXCLUDED.version, versions = ${EDGES.name}.versions || EXCLUDED.version"
 
-private val CLEAR_SQL = "UPDATE ${EDGES.name} SET version = ?, versions = versions || ? " +
-        "WHERE ${KEY_COLUMNS.joinToString(" = ? AND ")} = ? "
-private val CLEAR_BY_SET_SQL = "UPDATE ${EDGES.name} SET version = ?, versions = versions || ? " +
-        "WHERE ${SET_ID_COLUMNS.joinToString(" = ? OR ")} = ? "
-private val CLEAR_BY_VERTICES_SQL = "UPDATE ${EDGES.name} SET version = ?, versions = versions || ? WHERE " +
-        "(${SRC_ENTITY_SET_ID.name} = ? AND ${SRC_ENTITY_KEY_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] ))) OR " +
-        "(${DST_ENTITY_SET_ID.name} = ? AND ${DST_ENTITY_KEY_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] ))) OR " +
-        "(${EDGE_ENTITY_SET_ID.name} = ? AND ${EDGE_ENTITY_KEY_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] )))"
 
-private val DELETE_SQL = "DELETE FROM ${EDGES.name} WHERE ${KEY_COLUMNS.joinToString(" = ? AND ")} = ? "
+private val CLEAR_SQL = "UPDATE ${EDGES.name} SET version = ?, versions = versions || ? WHERE "
+private val DELETE_SQL = "DELETE FROM ${EDGES.name} WHERE "
+private val LOCK_SQL1 = "SELECT 1 FROM ${EDGES.name} WHERE "
+private const val LOCK_SQL2 = " FOR UPDATE"
 
-private val DELETE_BY_SET_SQL = "DELETE FROM ${EDGES.name} WHERE ${SET_ID_COLUMNS.joinToString(" = ? OR ")} = ? "
+private val VERTEX_FILTER_SQL = "${KEY_COLUMNS.joinToString(" = ? AND ")} = ? "
 
-private val DELETE_BY_VERTICES_SQL = "DELETE FROM ${EDGES.name} WHERE " +
-        "(${SRC_ENTITY_SET_ID.name} = ? AND ${SRC_ENTITY_KEY_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] ))) OR " +
-        "(${DST_ENTITY_SET_ID.name} = ? AND ${DST_ENTITY_KEY_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] ))) OR " +
-        "(${EDGE_ENTITY_SET_ID.name} = ? AND ${EDGE_ENTITY_KEY_ID.name} IN (SELECT * FROM UNNEST( (?)::uuid[] )))"
+private val CLEAR_BY_VERTEX_SQL = "$CLEAR_SQL $VERTEX_FILTER_SQL"
+private val DELETE_BY_VERTEX_SQL = "$DELETE_SQL $VERTEX_FILTER_SQL"
+private val LOCK_BY_VERTEX_SQL = "$LOCK_SQL1 $VERTEX_FILTER_SQL $LOCK_SQL2"
+
+private val SET_FILTER_SQL = "${SET_ID_COLUMNS.joinToString(" = ? OR ")} = ? "
+
+private val CLEAR_BY_SET_SQL = "$CLEAR_SQL $SET_FILTER_SQL "
+private val DELETE_BY_SET_SQL = "$DELETE_SQL $SET_FILTER_SQL"
+
+private val VERTICES_FILTER_SQL = "${ID_VALUE.name} = ANY(?) OR ${EDGE_COMP_1.name} = ANY(?) OR ${EDGE_COMP_2.name} = ANY(?) "
+
+private val DELETE_BY_VERTICES_SQL = "$DELETE_SQL $VERTICES_FILTER_SQL"
+private val CLEAR_BY_VERTICES_SQL = "$CLEAR_SQL $VERTICES_FILTER_SQL"
+
+private val ASSOCIATIONS_FILTER_SQL = "(${ID_VALUE.name} = ANY(?) AND ${EDGE_ENTITY_SET_ID.name} = ? AND ${COMPONENT_TYPES.name} = ${ComponentType.EDGE.ordinal}) OR" +
+        "(${EDGE_COMP_2.name} = ANY(?) AND ${EDGE_ENTITY_SET_ID.name} = ? AND ${COMPONENT_TYPES.name} = ${ComponentType.SRC.ordinal}) OR" +
+        "(${EDGE_COMP_1.name} = ANY(?) AND ${EDGE_ENTITY_SET_ID.name} = ? AND ${COMPONENT_TYPES.name} = ${ComponentType.DST.ordinal}) "
+
+private val CLEAR_BY_ASSOCIATIONS_SQL = "$CLEAR_SQL $ASSOCIATIONS_FILTER_SQL"
+private val DELETE_BY_ASSOCIATIONS_SQL = "$DELETE_SQL $ASSOCIATIONS_FILTER_SQL"
+
 
 private val NEIGHBORHOOD_OF_ENTITY_SET_SQL = "SELECT * FROM ${EDGES.name} WHERE " +
         "(${SRC_ENTITY_SET_ID.name} = ?) OR (${DST_ENTITY_SET_ID.name} = ? )"
 
 private val NEIGHBORHOOD_SQL = "SELECT * FROM ${EDGES.name} WHERE " +
-        "(${SRC_ENTITY_SET_ID.name} = ? AND ${SRC_ENTITY_KEY_ID.name} = ?) OR " +
-        "(${DST_ENTITY_SET_ID.name} = ? AND ${DST_ENTITY_KEY_ID.name} = ?)"
+        "${ID_VALUE.name} = ? AND " +
+        "( ${SRC_ENTITY_SET_ID.name} = ? AND ${COMPONENT_TYPES.name} = ${ComponentType.SRC.ordinal} ) OR " +
+        "( ${DST_ENTITY_SET_ID.name} = ? AND ${COMPONENT_TYPES.name} = ${ComponentType.DST.ordinal} )"
 
 private val BULK_NEIGHBORHOOD_SQL = "SELECT * FROM ${EDGES.name} WHERE " +
-        "(${SRC_ENTITY_SET_ID.name} = ? AND ${SRC_ENTITY_KEY_ID.name} = ANY( (?)::uuid[] )) OR " +
-        "(${DST_ENTITY_SET_ID.name} = ? AND ${DST_ENTITY_KEY_ID.name} = ANY( (?)::uuid[] )) OR " +
-        "(${EDGE_ENTITY_SET_ID.name} = ? AND ${EDGE_ENTITY_KEY_ID.name} = ANY( (?)::uuid[] ))"
+        "${ID_VALUE.name} = ANY(?) AND " +
+        "(${SRC_ENTITY_SET_ID.name} = ? AND ${COMPONENT_TYPES.name} = ${ComponentType.SRC.ordinal}) OR " +
+        "(${DST_ENTITY_SET_ID.name} = ? AND ${COMPONENT_TYPES.name} = ${ComponentType.DST.ordinal}) OR " +
+        "(${EDGE_ENTITY_SET_ID.name} = ? AND ${COMPONENT_TYPES.name} = ${ComponentType.EDGE.ordinal})"
 
-private val BULK_BULK_NEIGHBORHOOD_SQL = "SELECT * FROM ${EDGES.name} WHERE " +
-        "( ${SRC_ENTITY_SET_ID.name} IN ( SELECT * FROM UNNEST( (?)::uuid[] ) ) AND ${SRC_ENTITY_KEY_ID.name} IN ( SELECT * FROM UNNEST( (?)::uuid[] ) ) ) OR " +
-        "( ${DST_ENTITY_SET_ID.name} IN ( SELECT * FROM UNNEST( (?)::uuid[] ) ) AND ${DST_ENTITY_KEY_ID.name} IN ( SELECT * FROM UNNEST( (?)::uuid[] )) )"
 
 internal fun getFilteredNeighborhoodSql(filter: EntityNeighborsFilter, multipleEntitySetIds: Boolean): String {
+    val idsClause = "${ID_VALUE.name} = ANY(?)"
+
     val (srcEntitySetSql, dstEntitySetSql) = if (multipleEntitySetIds) {
         "${SRC_ENTITY_SET_ID.name} = ANY( ? )" to "${DST_ENTITY_SET_ID.name} = ANY( ? )"
     } else {
         "${SRC_ENTITY_SET_ID.name} = ?" to "${DST_ENTITY_SET_ID.name} = ?"
     }
 
-    var srcSql = "$srcEntitySetSql AND ${SRC_ENTITY_KEY_ID.name} = ANY(?) "
+    var srcSql = "$srcEntitySetSql AND ${COMPONENT_TYPES.name} = ${ComponentType.SRC.ordinal}"
     if (filter.dstEntitySetIds.isPresent) {
         if (filter.dstEntitySetIds.get().size > 0) {
             srcSql += " AND ( ${DST_ENTITY_SET_ID.name} IN (${filter.dstEntitySetIds.get().joinToString(
@@ -842,7 +925,7 @@ internal fun getFilteredNeighborhoodSql(filter: EntityNeighborsFilter, multipleE
         }
     }
 
-    var dstSql = "$dstEntitySetSql AND ${DST_ENTITY_KEY_ID.name} = ANY(?)"
+    var dstSql = "$dstEntitySetSql AND ${COMPONENT_TYPES.name} = ${ComponentType.DST.ordinal}"
     if (filter.srcEntitySetIds.isPresent) {
         if (filter.srcEntitySetIds.get().size > 0) {
             dstSql += " AND ( ${SRC_ENTITY_SET_ID.name} IN (${filter.srcEntitySetIds.get().joinToString(
@@ -862,16 +945,18 @@ internal fun getFilteredNeighborhoodSql(filter: EntityNeighborsFilter, multipleE
         ) { "'$it'" }}))"
     }
 
-    return "SELECT * FROM ${EDGES.name} WHERE ( " + srcSql + " ) OR ( " + dstSql + " )"
+    return "SELECT * FROM ${EDGES.name} WHERE $idsClause AND ( ( $srcSql ) OR ( $dstSql ) )"
 }
 
 
 private fun selectEdges(keys: Set<DataEdgeKey>): String {
-    return "$SELECT_SQL(" +
-            keys
-                    .asSequence()
-                    .map { "(${it.src.entitySetId},${it.src.entityKeyId},${it.dst.entitySetId},${it.dst.entityKeyId},${it.edge.entitySetId},${it.edge.entityKeyId})" }
-                    .joinToString(",") + ")"
+    check(keys.isNotEmpty()) { "Cannot select an empty set of edges." }
+    return "SELECT * from ${EDGES.name} WHERE " +
+            keys.joinToString(" OR ") {
+                "( ${ID_VALUE.name} = ${it.src.entityKeyId} AND " +
+                        "$EDGE_COMP_1 = ${it.dst.entityKeyId} AND " +
+                        "$EDGE_COMP_2 = ${it.edge.entityKeyId} )"
+            }
 }
 
 private fun srcClauses(entitySetId: UUID, associationFilters: SetMultimap<UUID, UUID>): String {
@@ -888,7 +973,9 @@ private fun dstClauses(entitySetId: UUID, associationFilters: SetMultimap<UUID, 
 
 private fun buildEdgeFilteringClause(
         selfEntitySetIds: Set<UUID>,
-        authorizedFilteredRanking: AuthorizedFilteredNeighborsRanking
+        authorizedFilteredRanking: AuthorizedFilteredNeighborsRanking,
+        association: Boolean,
+        isDst: Boolean
 ): String {
     val authorizedAssociationEntitySets = authorizedFilteredRanking.associationSets.keys
     val authorizedEntitySets = authorizedFilteredRanking.entitySets.keys
@@ -896,13 +983,13 @@ private fun buildEdgeFilteringClause(
     val associationsClause =
             "${EDGE_ENTITY_SET_ID.name} IN (${authorizedAssociationEntitySets.joinToString(",") { "'$it'" }})"
 
-    val entitySetColumn = if (authorizedFilteredRanking.filteredNeighborsRanking.dst) {
+    val entitySetColumn = if (isDst) {
         DST_ENTITY_SET_ID.name
     } else {
         SRC_ENTITY_SET_ID.name
     }
 
-    val selfEntitySetColumn = if (authorizedFilteredRanking.filteredNeighborsRanking.dst) {
+    val selfEntitySetColumn = if (isDst) {
         SRC_ENTITY_SET_ID.name
     } else {
         DST_ENTITY_SET_ID.name
@@ -912,7 +999,59 @@ private fun buildEdgeFilteringClause(
             "$entitySetColumn IN (${authorizedEntitySets.joinToString(",") { "'$it'" }}) " +
                     "AND $selfEntitySetColumn IN (${selfEntitySetIds.joinToString(",") { "'$it'" }})"
 
-    return "($associationsClause AND $entitySetsClause)"
+    val componentTypeClause = if (association) {
+        "${COMPONENT_TYPES.name} = ${ComponentType.EDGE.ordinal}"
+    } else {
+        if (isDst) {
+            "${COMPONENT_TYPES.name} = ${ComponentType.DST.ordinal}"
+        } else {
+            "${COMPONENT_TYPES.name} = ${ComponentType.SRC.ordinal}"
+        }
+    }
+
+    return "($associationsClause AND $entitySetsClause AND $componentTypeClause)"
+}
+
+private fun buildSpineSql(
+        selfEntitySetIds: Set<UUID>,
+        authorizedFilteredRanking: AuthorizedFilteredNeighborsRanking,
+        linked: Boolean,
+        association: Boolean
+): String {
+    val isDst = authorizedFilteredRanking.filteredNeighborsRanking.dst
+
+
+    val baseEntityColumnsSql = if (association) {
+        // Order on which we select is {edge, src, dst}, EDGE ComponentType
+        if (isDst) { // select src and edge
+            "${SRC_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${EDGE_COMP_1.name} as $SELF_ENTITY_KEY_ID, " +
+                    "${EDGE_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${ID_VALUE.name} as ${ID_VALUE.name}"
+        } else { // select dst and edge
+            "${DST_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${EDGE_COMP_2.name} as $SELF_ENTITY_KEY_ID, " +
+                    "${EDGE_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${ID_VALUE.name} as ${ID_VALUE.name}"
+        }
+    } else {
+        // Order on which we select is {src, dst, edge}, DST ComponentType
+        if (isDst) { // select src and dst
+            "${SRC_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${EDGE_COMP_2.name} as $SELF_ENTITY_KEY_ID, " +
+                    "${DST_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${ID_VALUE.name} as ${ID_VALUE.name}"
+        } else { // Order on which we select is {src, dst, edge}, SRC ComponentType
+            // select dst and src
+            "${DST_ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${EDGE_COMP_1.name} as $SELF_ENTITY_KEY_ID, " +
+                    "${SRC_ENTITY_SET_ID.name} as ${ENTITY_SET_ID.name}, ${ID_VALUE.name} as ${ID_VALUE.name}"
+        }
+    }
+
+    val edgeClause = buildEdgeFilteringClause(selfEntitySetIds, authorizedFilteredRanking, association, isDst)
+    val idSql = "SELECT ${ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${ID.name} as $SELF_ENTITY_KEY_ID, ${LINKING_ID.name} FROM ${IDS.name}"
+    val spineSql = if (linked) {
+        "SELECT edges.*, ${LINKING_ID.name} FROM (SELECT DISTINCT $baseEntityColumnsSql FROM edges WHERE $edgeClause) as edges " +
+                "LEFT JOIN ($idSql) as ${IDS.name} USING ($SELF_ENTITY_SET_ID,$SELF_ENTITY_KEY_ID)"
+    } else {
+        "SELECT DISTINCT $baseEntityColumnsSql FROM edges WHERE $edgeClause"
+    }
+
+    return spineSql
 }
 
 /**

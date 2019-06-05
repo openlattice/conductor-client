@@ -30,8 +30,7 @@ import com.openlattice.edm.type.PropertyType
 import com.openlattice.postgres.*
 import com.openlattice.postgres.DataTables.*
 import com.openlattice.postgres.PostgresColumn.*
-import com.openlattice.postgres.PostgresTable.ENTITY_SETS
-import com.openlattice.postgres.PostgresTable.IDS
+import com.openlattice.postgres.PostgresTable.*
 import com.openlattice.postgres.streams.PostgresIterable
 import com.openlattice.postgres.streams.StatementHolder
 import com.zaxxer.hikari.HikariDataSource
@@ -53,6 +52,7 @@ import java.util.function.Supplier
 const val MAX_PREV_VERSION = "max_prev_version"
 const val EXPANDED_VERSIONS = "expanded_versions"
 const val FETCH_SIZE = 100000
+
 private val logger = LoggerFactory.getLogger(PostgresEntityDataQueryService::class.java)
 
 class PostgresEntityDataQueryService(
@@ -86,7 +86,8 @@ class PostgresEntityDataQueryService(
         return getLinkedEntityDataWithMetadata(
                 linkingIdsByEntitySetId,
                 authorizedPropertyTypesByEntitySetId,
-                EnumSet.noneOf(MetadataOption::class.java))
+                EnumSet.noneOf(MetadataOption::class.java)
+        )
     }
 
     fun getLinkedEntityDataWithMetadata(
@@ -103,7 +104,8 @@ class PostgresEntityDataQueryService(
                         )
                     } else {
                         ResultSetAdapters.implicitEntityValuesByIdWithLastWrite(
-                                it, authorizedPropertyTypesByEntitySetId.values.firstOrNull() ?: mapOf(), byteBlobDataManager
+                                it, authorizedPropertyTypesByEntitySetId.values.firstOrNull() ?: mapOf(),
+                                byteBlobDataManager
                         )
                     }
         }
@@ -236,12 +238,13 @@ class PostgresEntityDataQueryService(
             linking: Boolean = false,
             omitEntitySetId: Boolean = false
     ): PostgresIterable<T> {
-
         return PostgresIterable(
                 Supplier<StatementHolder> {
                     val connection = hds.connection
+
                     connection.autoCommit = false
                     val statement = connection.createStatement()
+
                     statement.fetchSize = FETCH_SIZE
 
                     val allPropertyTypes = authorizedPropertyTypes.values.flatMap { it.values }.toSet()
@@ -282,25 +285,11 @@ class PostgresEntityDataQueryService(
                                 )
                             }
                     )
+
                     StatementHolder(connection, statement, rs)
                 },
                 adapter
         )
-    }
-
-    fun getEntitySetSize(entitySetId: UUID): Long {
-        val connection = hds.connection
-
-        return connection.use {
-            return@use connection.createStatement().use { statement ->
-                val rs = statement.executeQuery(buildGetEntitySetSizeQuery(entitySetId))
-                return@use if (rs.next()) {
-                    rs.getLong(1)
-                } else {
-                    0
-                }
-            }
-        }
     }
 
     fun getEntityKeyIdsInEntitySet(entitySetId: UUID): PostgresIterable<UUID> {
@@ -407,15 +396,16 @@ class PostgresEntityDataQueryService(
     ): WriteEvent {
         val version = System.currentTimeMillis()
         val idsClause = buildEntityKeyIdsClause(entities.keys) // we assume that entities is not empty
+        val citusIdsClause = entities.keys.joinToString(" OR ") { " id = '$it' " }
 
         //Update the versions of all entities.
         val updatedEntityCount = hds.connection.use { connection ->
-            connection.autoCommit = false
+            //            connection.autoCommit = false
             return@use connection.createStatement().use { updateEntities ->
-                updateEntities.execute(lockEntities(entitySetId, idsClause, version))
+                //                updateEntities.execute(lockEntities(entitySetId, citusIdsClause, version))
                 val updateCount = updateEntities.executeUpdate(upsertEntities(entitySetId, idsClause, version))
-                connection.commit()
-                connection.autoCommit = true
+//                connection.commit()
+//                connection.autoCommit = true
                 return@use updateCount
             }
         }
@@ -513,7 +503,10 @@ class PostgresEntityDataQueryService(
             }
         }.sum()
 
-        checkState(updatedEntityCount == entities.size, "Updated entity metadata count mismatch")
+        if( updatedEntityCount != entities.size ) {
+            logger.warn("Update $updatedEntityCount entities. Expect to update ${entities.size} for entity set $entitySetId.")
+            logger.debug("Entity key ids: {}", entities.keys)
+        }
 
         logger.debug("Updated $updatedEntityCount entities and $updatedPropertyCounts properties")
 
@@ -745,7 +738,7 @@ class PostgresEntityDataQueryService(
                         }
                         ps.executeBatch().sum()
                     }
-                    .sum();
+                    .sum()
 
             return WriteEvent(tombstoneVersion, numUpdated)
         }
@@ -916,12 +909,12 @@ internal fun buildLockPropertiesStatement(entitySetId: UUID, propertyTypeId: UUI
 
 internal fun lockEntities(entitySetId: UUID, idsClause: String, version: Long): String {
     return "SELECT 1 FROM ${IDS.name} " +
-            "WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND ${ID_VALUE.name} IN ($idsClause) " +
+            "WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND ($idsClause) " +
             "FOR UPDATE"
 }
 
 fun upsertEntities(entitySetId: UUID, idsClause: String, version: Long): String {
-    return "UPDATE ${IDS.name} SET versions = ${VERSIONS.name} || ARRAY[$version], ${LAST_WRITE.name} = now(), " +
+    return "UPDATE ${IDS.name} SET ${VERSIONS.name} = ${VERSIONS.name} || ARRAY[$version], ${LAST_WRITE.name} = now(), " +
             "${VERSION.name} = CASE WHEN abs(${IDS.name}.${VERSION.name}) < $version THEN $version " +
             "ELSE ${IDS.name}.${VERSION.name} END " +
             "WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND ${ID_VALUE.name} IN ($idsClause)"
@@ -983,12 +976,12 @@ fun selectEntitySetWithPropertyTypes(
         metadataOptions: Set<MetadataOption>,
         binaryPropertyTypes: Map<UUID, Boolean>
 ): String {
-    val esTableName = DataTables.quote(DataTables.entityTableName(entitySetId))
+    val esTableName = quote(entityTableName(entitySetId))
 
     val entityKeyIdsClause = entityKeyIds.map { "AND ${entityKeyIdsClause(it)} " }.orElse(" ")
     //@formatter:off
     val columns = setOf(ID_VALUE.name) +
-            metadataOptions.map { ResultSetAdapters.mapMetadataOptionToPostgresColumn(it).name } +
+            metadataOptions.map { ResultSetAdapters.mapMetadataOptionToPostgresColumn(it) } +
             authorizedPropertyTypes.values.map(::quote)
 
     return "SELECT ${columns.filter(String::isNotBlank).joinToString(",")} FROM (SELECT * \n" +
@@ -997,31 +990,6 @@ fun selectEntitySetWithPropertyTypes(
             ") as $esTableName" +
             authorizedPropertyTypes
                     .map { "LEFT JOIN ${subSelectLatestVersionOfPropertyTypeInEntitySet(entitySetId, entityKeyIdsClause, it.key, it.value, binaryPropertyTypes[it.key]!!)} USING (${ID.name} )" }
-                    .joinToString("\n")
-    //@formatter:on
-}
-
-fun selectEntitySetWithPropertyTypesAndVersion(
-        entitySetId: UUID,
-        entityKeyIds: Optional<Set<UUID>>,
-        authorizedPropertyTypes: Map<UUID, String>,
-        metadataOptions: Set<MetadataOption>,
-        version: Long,
-        binaryPropertyTypes: Map<UUID, Boolean>
-): String {
-    val esTableName = DataTables.quote(DataTables.entityTableName(entitySetId))
-    val entityKeyIdsClause = entityKeyIds.map { "AND ${entityKeyIdsClause(it)} " }.orElse(" ")
-    //@formatter:off
-    val columns = setOf(ID_VALUE.name) +
-            metadataOptions.map { ResultSetAdapters.mapMetadataOptionToPostgresColumn(it).name } +
-            authorizedPropertyTypes.values.map(::quote)
-
-    return "SELECT ${columns.filter(String::isNotBlank).joinToString(",")} FROM ( SELECT * " +
-            "FROM $esTableName " +
-            "WHERE version > 0 $entityKeyIdsClause" +
-            ") as $esTableName" +
-            authorizedPropertyTypes
-                    .map { "LEFT JOIN ${selectVersionOfPropertyTypeInEntitySet(entitySetId, entityKeyIdsClause, it.key, it.value, version, binaryPropertyTypes[it.key]!!)} USING (${ID.name} )" }
                     .joinToString("\n")
     //@formatter:on
 }
@@ -1035,7 +1003,7 @@ internal fun selectVersionOfPropertyTypeInEntitySet(
         binary: Boolean
 ): String {
     val propertyTable = quote(propertyTableName(propertyTypeId))
-    val arrayAgg = " array_agg(${DataTables.quote(fqn)}) as ${DataTables.quote(fqn)} "
+    val arrayAgg = " array_agg(${quote(fqn)}) as ${quote(fqn)} "
 
 
     return "(SELECT ${ENTITY_SET_ID.name}, " +
@@ -1057,7 +1025,7 @@ internal fun subSelectLatestVersionOfPropertyTypeInEntitySet(
         binary: Boolean
 ): String {
     val propertyTable = quote(propertyTableName(propertyTypeId))
-    val arrayAgg = " array_agg(${DataTables.quote(fqn)}) as ${DataTables.quote(fqn)} "
+    val arrayAgg = " array_agg(${quote(fqn)}) as ${quote(fqn)} "
 
     return "(SELECT ${ENTITY_SET_ID.name}," +
             " ${ID_VALUE.name}," +
@@ -1095,9 +1063,13 @@ internal fun entityKeyIdsClause(entityKeyIds: Set<UUID>): String {
 
 internal fun selectLinkingIdsOfEntities(entityKeyIds: Map<UUID, Optional<Set<UUID>>>): String {
     val entitiesClause = buildEntitiesClause(entityKeyIds, false)
-    return "SELECT ${ENTITY_SET_ID.name}, array_agg(${LINKING_ID.name}) as ${LINKING_ID.name} " +
-            "FROM ${IDS.name} " +
-            "WHERE ${LINKING_ID.name} IS NOT NULL $entitiesClause " +
+    val filterLinkingIds = " AND ${LINKING_ID.name} IS NOT NULL "
+    val withClause = buildWithClause(true, entitiesClause + filterLinkingIds)
+    val joinColumnsSql = (entityKeyIdColumnsList + LINKING_ID.name).joinToString(",")
+
+    return "$withClause SELECT ${ENTITY_SET_ID.name}, array_agg(${LINKING_ID.name}) as ${LINKING_ID.name} " +
+            "FROM $FILTERED_ENTITY_KEY_IDS " +
+            "INNER JOIN ${IDS.name} USING($joinColumnsSql) " +
             "GROUP BY ${ENTITY_SET_ID.name} "
 }
 
@@ -1112,8 +1084,9 @@ internal fun getLinkingEntitySetIdsOfLinkingIdQuery(linkingId: UUID): String {
             "SELECT DISTINCT ${ENTITY_SET_ID.name} " +
                     "FROM ${IDS.name} " +
                     "WHERE ${LINKING_ID.name} = '$linkingId'"
+    val wrapLocalTable = "SELECT ${ID.name}, ${LINKED_ENTITY_SETS.name} from ${ENTITY_SETS.name}"
     return "SELECT ${ID.name} " +
-            "FROM ${ENTITY_SETS.name} " +
+            "FROM ( $wrapLocalTable ) as entity_set_ids " +
             "INNER JOIN ( $selectEntitySetIdOfLinkingId ) as linked_es " +
             "ON ( ${ENTITY_SET_ID.name}= ANY( ${LINKED_ENTITY_SETS.name} ) )"
 }
@@ -1127,3 +1100,4 @@ internal fun getLinkingEntitySetIdsOfEntitySetIdQuery(entitySetId: UUID): String
 internal fun getEntityKeyIdsOfEntitySetQuery(): String {
     return "SELECT ${ID.name} FROM ${IDS.name} WHERE ${ENTITY_SET_ID.name} = ? "
 }
+

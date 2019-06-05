@@ -122,7 +122,6 @@ public class EdmService implements EdmManager {
     private final IMap<String, UUID>                                    aclKeys;
     private final IMap<UUID, String>                                    names;
     private final IMap<UUID, AssociationType>                           associationTypes;
-    private final IMap<UUID, UUID>                                      syncIds;
     private final IMap<EntitySetPropertyKey, EntitySetPropertyMetadata> entitySetPropertyMetadata;
     private final IMap<AclKey, SecurableObjectType>                     securableObjectTypes;
 
@@ -163,7 +162,6 @@ public class EdmService implements EdmManager {
         this.names = hazelcastInstance.getMap( HazelcastMap.NAMES.name() );
         this.aclKeys = hazelcastInstance.getMap( HazelcastMap.ACL_KEYS.name() );
         this.associationTypes = hazelcastInstance.getMap( HazelcastMap.ASSOCIATION_TYPES.name() );
-        this.syncIds = hazelcastInstance.getMap( HazelcastMap.SYNC_IDS.name() );
         this.entitySetPropertyMetadata = hazelcastInstance.getMap( HazelcastMap.ENTITY_SET_PROPERTY_METADATA.name() );
         this.securableObjectTypes = hazelcastInstance.getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
         this.aclKeyReservations = aclKeyReservations;
@@ -388,7 +386,6 @@ public class EdmService implements EdmManager {
 
         Util.deleteSafely( entitySets, entitySetId );
         aclKeyReservations.release( entitySetId );
-        syncIds.remove( entitySetId );
         eventBus.post( new EntitySetDeletedEvent( entitySetId, entityType.getId() ) );
         logger.info( "Entity set {}({}) deleted successfully", entitySet.getName(), entitySetId );
     }
@@ -420,7 +417,7 @@ public class EdmService implements EdmManager {
     public int addLinkedEntitySets( UUID linkingEntitySetId, Set<UUID> newLinkedEntitySets ) {
         final EntitySet linkingEntitySet = Util.getSafely( entitySets, linkingEntitySetId );
         final int startSize = linkingEntitySet.getLinkedEntitySets().size();
-        final EntitySet updatedLinkingEntitySet = ( EntitySet ) entitySets.executeOnKey(
+        final EntitySet updatedLinkingEntitySet = (EntitySet) entitySets.executeOnKey(
                 linkingEntitySetId, new AddEntitySetsToLinkingEntitySetProcessor( newLinkedEntitySets ) );
         markMaterializedEntitySetDirtyWithDataChanges( linkingEntitySet.getId() );
 
@@ -433,7 +430,7 @@ public class EdmService implements EdmManager {
     public int removeLinkedEntitySets( UUID linkingEntitySetId, Set<UUID> linkedEntitySets ) {
         final EntitySet linkingEntitySet = Util.getSafely( entitySets, linkingEntitySetId );
         final int startSize = linkingEntitySet.getLinkedEntitySets().size();
-        final EntitySet updatedLinkingEntitySet = ( EntitySet ) entitySets.executeOnKey(
+        final EntitySet updatedLinkingEntitySet = (EntitySet) entitySets.executeOnKey(
                 linkingEntitySetId, new RemoveEntitySetsFromLinkingEntitySetProcessor( linkedEntitySets ) );
 
         Set<UUID> removedLinkingIds = edmManager.getLinkingIdsByEntitySetIds( linkedEntitySets )
@@ -1140,6 +1137,12 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public Map<UUID, UUID> getEntityTypeIdsByEntitySetIds( Set<UUID> entitySetIds ) {
+        return entitySets.getAll( entitySetIds ).entrySet().stream()
+                .collect( Collectors.toMap( Map.Entry::getKey, entry -> entry.getValue().getEntityTypeId() ) );
+    }
+
+    @Override
     public UUID createAssociationType( AssociationType associationType, UUID entityTypeId ) {
         final AssociationType existing = associationTypes.putIfAbsent( entityTypeId, associationType );
 
@@ -1154,10 +1157,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public AssociationType getAssociationType( UUID associationTypeId ) {
-        AssociationType associationDetails = checkNotNull(
-                Util.getSafely( associationTypes, associationTypeId ),
-                "Association type of id %s does not exists.",
-                associationTypeId.toString() );
+        AssociationType associationDetails = getAssociationTypeDetails( associationTypeId );
         Optional<EntityType> entityType = Optional.ofNullable(
                 Util.getSafely( entityTypes, associationTypeId ) );
         return new AssociationType(
@@ -1165,6 +1165,13 @@ public class EdmService implements EdmManager {
                 associationDetails.getSrc(),
                 associationDetails.getDst(),
                 associationDetails.isBidirectional() );
+    }
+
+    private AssociationType getAssociationTypeDetails( UUID associationTypeId ) {
+        return checkNotNull(
+                Util.getSafely( associationTypes, associationTypeId ),
+                "Association type of id %s does not exists.",
+                associationTypeId.toString() );
     }
 
     @Override
@@ -1182,6 +1189,23 @@ public class EdmService implements EdmManager {
     }
 
     @Override
+    public AssociationType getAssociationTypeByEntitySetId( UUID entitySetId ) {
+        final var entityTypeId = getEntitySet( entitySetId ).getEntityTypeId();
+        return getAssociationType( entityTypeId );
+    }
+
+    @Override
+    public Map<UUID, AssociationType> getAssociationTypeDetailsByEntitySetIds( Set<UUID> entitySetIds ) {
+        final var entityTypeIdsByEntitySetId = getEntityTypeIdsByEntitySetIds( entitySetIds );
+
+        Map<UUID, AssociationType> associationTypesByEntityTypeId = associationTypes
+                .getAll( Sets.newHashSet( entityTypeIdsByEntitySetId.values() ) );
+
+        return entitySetIds.stream().collect( Collectors.toMap( Function.identity(),
+                entitySetId -> associationTypesByEntityTypeId.get( entityTypeIdsByEntitySetId.get( entitySetId ) ) ) );
+    }
+
+    @Override
     public void deleteAssociationType( UUID associationTypeId ) {
         AssociationType associationType = getAssociationType( associationTypeId );
         if ( associationType.getAssociationEntityType() == null ) {
@@ -1196,7 +1220,7 @@ public class EdmService implements EdmManager {
 
     @Override
     public AssociationDetails getAssociationDetails( UUID associationTypeId ) {
-        AssociationType associationType = getAssociationType( associationTypeId );
+        AssociationType associationType = getAssociationTypeDetails( associationTypeId );
         LinkedHashSet<EntityType> srcEntityTypes = associationType.getSrc()
                 .stream()
                 .map( entityTypeId -> getEntityType( entityTypeId ) )

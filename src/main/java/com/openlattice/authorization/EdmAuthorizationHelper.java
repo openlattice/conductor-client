@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 public class EdmAuthorizationHelper implements AuthorizingComponent {
     public static final EnumSet<Permission> WRITE_PERMISSION = EnumSet.of( Permission.WRITE );
-    public static final EnumSet<Permission> READ_PERMISSION = EnumSet.of( Permission.READ );
+    public static final EnumSet<Permission> READ_PERMISSION  = EnumSet.of( Permission.READ );
 
     private final EdmManager           edm;
     private final AuthorizationManager authz;
@@ -144,7 +144,6 @@ public class EdmAuthorizationHelper implements AuthorizingComponent {
                                 edm.getPropertyTypesAsMap( selectedProperties ),
                                 principals ) ) );
     }
-
 
     /**
      * @see EdmAuthorizationHelper#getAuthorizedPropertiesByNormalEntitySets(EntitySet, EnumSet, Set)
@@ -327,14 +326,17 @@ public class EdmAuthorizationHelper implements AuthorizingComponent {
                     // authorized properties should be the same within 1 linking entity set for each normal entity set
                     authorizedPropertyTypesByEntitySet.put(
                             linkingEntitySetId,
-                            getAuthorizedPropertyTypes( linkingEntitySetId, requiredPermissions ) );
+                            getAuthorizedPropertyTypes( linkingEntitySetId, requiredPermissions, principals ) );
                 }
         );
 
         return authorizedPropertyTypesByEntitySet;
     }
 
-    public Set<UUID> getAuthorizedEntitySets( Set<UUID> entitySetIds, EnumSet<Permission> requiredPermissions ) {
+    public Set<UUID> getAuthorizedEntitySetsForPrincipals(
+            Set<UUID> entitySetIds,
+            EnumSet<Permission> requiredPermissions,
+            Set<Principal> principals ) {
         return entitySetIds.stream()
                 .filter( entitySetId -> {
                     var entitySet = edm.getEntitySet( entitySetId );
@@ -345,20 +347,26 @@ public class EdmAuthorizationHelper implements AuthorizingComponent {
 
                     return entitySetIdsToCheck.stream().allMatch( esId -> authz.checkIfHasPermissions(
                             new AclKey( esId ),
-                            Principals.getCurrentPrincipals(),
+                            principals,
                             requiredPermissions ) );
                 } )
                 .collect( Collectors.toSet() );
     }
 
+    public Set<UUID> getAuthorizedEntitySets( Set<UUID> entitySetIds, EnumSet<Permission> requiredPermissions ) {
+        return getAuthorizedEntitySetsForPrincipals( entitySetIds,
+                requiredPermissions,
+                Principals.getCurrentPrincipals() );
+    }
+
     /**
      * Get all property types of an entity set
+     *
      * @param entitySetId the id of the entity set
      * @return all the property type ids on the entity type of the entity set
      */
     public Set<UUID> getAllPropertiesOnEntitySet( UUID entitySetId ) {
-        EntitySet es = edm.getEntitySet( entitySetId );
-        EntityType et = edm.getEntityType( es.getEntityTypeId() );
+        EntityType et = edm.getEntityTypeByEntitySetId( entitySetId );
         return et.getProperties();
     }
 

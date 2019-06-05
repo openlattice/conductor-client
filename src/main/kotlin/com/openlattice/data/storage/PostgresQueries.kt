@@ -21,13 +21,11 @@
 
 package com.openlattice.data.storage
 
-import com.google.common.collect.Sets
 import com.openlattice.analysis.requests.Filter
 import com.openlattice.postgres.DataTables.*
 import com.openlattice.postgres.PostgresColumn.*
 import com.openlattice.postgres.PostgresTable.IDS
 import com.openlattice.postgres.ResultSetAdapters
-import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -38,11 +36,22 @@ private val logger = LoggerFactory.getLogger(PostgresQueries::class.java)
 const val ENTITIES_TABLE_ALIAS = "entity_key_ids"
 const val LEFT_JOIN = "LEFT JOIN"
 const val INNER_JOIN = "INNER JOIN"
+const val FILTERED_ENTITY_KEY_IDS = "filtered_entity_key_ids"
 val entityKeyIdColumnsList = listOf(ENTITY_SET_ID.name, ID_VALUE.name)
 val linkingEntityKeyIdColumnsList = listOf(ENTITY_SET_ID.name, LINKING_ID.name)
 val entityKeyIdColumns = entityKeyIdColumnsList.joinToString(",")
 
-private val ALLOWED_LINKING_METADATA_OPTIONS = EnumSet.of(MetadataOption.LAST_WRITE)
+private val ALLOWED_LINKING_METADATA_OPTIONS = EnumSet.of(
+        MetadataOption.LAST_WRITE,
+        MetadataOption.ENTITY_KEY_IDS,
+        MetadataOption.ENTITY_SET_IDS
+)
+
+private val ALLOWED_NON_LINKING_METADATA_OPTIONS = EnumSet.allOf(MetadataOption::class.java).minus(
+        listOf(
+                MetadataOption.ENTITY_SET_IDS
+        )
+)
 
 internal class PostgresQueries
 
@@ -61,15 +70,20 @@ fun selectEntitySetWithCurrentVersionOfPropertyTypes(
         omitEntitySetId: Boolean,
         metadataFilters: String = ""
 ): String {
-    val joinColumns = getJoinColumns(linking, omitEntitySetId)
     val entitiesClause = buildEntitiesClause(entityKeyIds, linking)
+    val withClause = buildWithClause(linking, entitiesClause)
+    val joinColumns = getJoinColumns(linking, omitEntitySetId)
+
     val entitiesSubquerySql = selectEntityKeyIdsWithCurrentVersionSubquerySql(
-            entitiesClause, metadataOptions, linking, joinColumns
+            metadataOptions,
+            linking,
+            omitEntitySetId,
+            joinColumns
     )
 
     val dataColumns = joinColumns
-            .union(getMetadataOptions(metadataOptions, linking)) // omit metadataoptions from linking
-            .union(returnedPropertyTypes.map { propertyTypes[it]!! })
+            .union(getMetadataOptions(metadataOptions, linking))
+            .union(returnedPropertyTypes.map { propertyTypes.getValue(it) })
             .joinToString(",")
 
     // for performance, we place inner joins of filtered property tables at the end
@@ -84,16 +98,13 @@ fun selectEntitySetWithCurrentVersionOfPropertyTypes(
                         val propertyTypeEntitiesClause = buildPropertyTypeEntitiesClause(
                                 entityKeyIds,
                                 it.key,
-                                authorizedPropertyTypes,
-                                linking
+                                authorizedPropertyTypes
                         )
                         val subQuerySql = selectCurrentVersionOfPropertyTypeSql(
                                 propertyTypeEntitiesClause,
                                 it.key,
                                 propertyTypeFilters[it.key] ?: setOf(),
                                 it.value,
-                                linking,
-                                binaryPropertyTypes[it.key]!!,
                                 joinColumns,
                                 metadataFilters
                         )
@@ -101,9 +112,22 @@ fun selectEntitySetWithCurrentVersionOfPropertyTypes(
                     }
                     .joinToString("\n")
 
+    val fullQuery = "$withClause SELECT $dataColumns FROM $entitiesSubquerySql $propertyTableJoins"
 
-    val fullQuery = "SELECT $dataColumns FROM $entitiesSubquerySql $propertyTableJoins"
     return fullQuery
+}
+
+internal fun buildWithClause(linking: Boolean, entitiesClause: String): String {
+    val joinColumns = if (linking) {
+        listOf(ENTITY_SET_ID.name, ID_VALUE.name, LINKING_ID.name)
+    } else {
+        listOf(ENTITY_SET_ID.name, ID_VALUE.name)
+    }
+    val selectColumns = joinColumns.joinToString(",") { "${IDS.name}.$it AS $it" }
+
+    val queriesSql = "SELECT $selectColumns FROM ${IDS.name} WHERE ${VERSION.name} > 0 $entitiesClause"
+
+    return "WITH $FILTERED_ENTITY_KEY_IDS AS ( $queriesSql ) "
 }
 
 
@@ -132,8 +156,8 @@ fun selectEntitySetWithPropertyTypesAndVersionSql(
     }
 
     val dataColumns = joinColumns
-            .union(getMetadataOptions(metadataOptions, linking)) // omit metadataoptions from linking
-            .union(returnedPropertyTypes.map { propertyTypes[it]!! })
+            .union(getMetadataOptions(metadataOptions, linking))
+            .union(returnedPropertyTypes.map { propertyTypes.getValue(it) })
             .filter(String::isNotBlank)
             .joinToString(",")
 
@@ -149,8 +173,7 @@ fun selectEntitySetWithPropertyTypesAndVersionSql(
                         val propertyTypeEntitiesClause = buildPropertyTypeEntitiesClause(
                                 entityKeyIds,
                                 it.key,
-                                authorizedPropertyTypes,
-                                linking
+                                authorizedPropertyTypes
                         )
                         val subQuerySql = selectVersionOfPropertyTypeInEntitySetSql(
                                 propertyTypeEntitiesClause,
@@ -228,31 +251,18 @@ internal fun selectCurrentVersionOfPropertyTypeSql(
         propertyTypeId: UUID,
         filters: Set<Filter>,
         fqn: String,
-        linking: Boolean,
-        binary: Boolean,
         joinColumns: List<String>,
         metadataFilters: String = ""
 ): String {
     val propertyTable = quote(propertyTableName(propertyTypeId))
-
-    val selectColumns = joinColumns.joinToString(",")
-
+    val groupByColumns = joinColumns.joinToString(",")
     val arrayAgg = arrayAggSql(fqn)
-
     val filtersClause = buildFilterClause(fqn, filters)
 
-    val linkingIdSubquerySql =
-            if (linking) {
-                "INNER JOIN (SELECT $entityKeyIdColumns,${LINKING_ID.name} FROM ${IDS.name}) as linking_ids USING($entityKeyIdColumns)"
-            } else {
-                ""
-            }
-
-    return "(SELECT $selectColumns, $arrayAgg " +
-            "FROM $propertyTable " +
-            linkingIdSubquerySql +
+    return "(SELECT $groupByColumns, $arrayAgg " +
+            "FROM $propertyTable INNER JOIN $FILTERED_ENTITY_KEY_IDS USING (${ENTITY_SET_ID.name},${ID_VALUE.name}) " +
             "WHERE ${VERSION.name} > 0 $entitiesClause $filtersClause $metadataFilters" +
-            "GROUP BY ($selectColumns)) as $propertyTable "
+            "GROUP BY ($groupByColumns)) as $propertyTable "
 }
 
 /**
@@ -328,9 +338,9 @@ internal fun selectEntityKeyIdsFilteredByVersionSubquerySql(
                 "WHERE max_abs=abs_max ) "
     } else {
         //TODO: needs fix with aliases
-        val metadataColumns = metadataOptions.map(ResultSetAdapters::mapMetadataOptionToPostgresColumn).joinToString(
-                ","
-        ) { it.name }
+        val metadataColumns = metadataOptions.joinToString(",") {
+            ResultSetAdapters.mapMetadataOptionToPostgresColumn(it)
+        }
         return "(SELECT $selectedColumns,$metadataColumns FROM ${IDS.name} INNER JOIN (SELECT $selectedColumns " +
                 "FROM ( SELECT $selectedColumns, max(versions) as abs_max, max(abs(versions)) as max_abs " +
                 "       FROM (  SELECT $selectedColumns, unnest(versions) as versions " +
@@ -372,39 +382,61 @@ internal fun selectLinkingIdsFilteredByVersionSubquerySql(
  * ids table.
  */
 internal fun selectEntityKeyIdsWithCurrentVersionSubquerySql(
-        entitiesClause: String,
         metadataOptions: Set<MetadataOption>,
         linking: Boolean,
+        omitEntitySetId: Boolean,
         joinColumns: List<String>
 ): String {
-    val metadataColumns = getMetadataOptions(metadataOptions, linking).joinToString(",")
-
-
-    var selectColumns = joinColumns.joinToString(",")
-
-    if (metadataColumns.isNotEmpty()) {
-
-        if (linking) {
-            if (metadataOptions.contains(MetadataOption.LAST_WRITE)) {
-                selectColumns += ", max(${LAST_WRITE.name}) AS ${LAST_WRITE.name}"
+    val metadataColumns = getMetadataOptions(metadataOptions.minus(MetadataOption.ENTITY_KEY_IDS), linking)
+            .joinToString(",")
+    val joinColumnsSql = joinColumns.joinToString(",")
+    val selectColumns = joinColumnsSql +
+            // used in materialized entitysets for both linking and non-linking entity sets to join on edges
+            if (metadataOptions.contains(MetadataOption.ENTITY_KEY_IDS)) {
+                ", array_agg(${IDS.name}.${ID.name}) AS " +
+                        ResultSetAdapters.mapMetadataOptionToPostgresColumn(MetadataOption.ENTITY_KEY_IDS)
+            } else {
+                ""
+            } +
+            if (metadataColumns.isNotEmpty()) {
+                if (linking) {
+                    if (metadataOptions.contains(MetadataOption.LAST_WRITE)) {
+                        ", max(${LAST_WRITE.name}) AS " +
+                                ResultSetAdapters.mapMetadataOptionToPostgresColumn(MetadataOption.LAST_WRITE)
+                    } else {
+                        ""
+                    } + if (metadataOptions.contains(MetadataOption.ENTITY_SET_IDS)) {
+                        ", array_agg(${IDS.name}.${ENTITY_SET_ID.name}) AS " +
+                                ResultSetAdapters.mapMetadataOptionToPostgresColumn(MetadataOption.ENTITY_SET_IDS)
+                    } else {
+                        ""
+                    }
+                } else {
+                    ", $metadataColumns"
+                }
+            } else {
+                ""
             }
+
+    val groupBy = if (linking) {
+        if (omitEntitySetId) {
+            "GROUP BY ${LINKING_ID.name}"
         } else {
-            selectColumns += ", $metadataColumns"
+            "GROUP BY (${ENTITY_SET_ID.name},${LINKING_ID.name})"
+        }
+    } else {
+        if (metadataOptions.contains(MetadataOption.ENTITY_KEY_IDS)) {
+            "GROUP BY (${ENTITY_SET_ID.name}, ${ID.name})"
+        } else {
+            ""
         }
     }
 
-    val groupBy = if (linking) "GROUP BY ${LINKING_ID.name}" else ""
-
-    return "(SELECT $selectColumns FROM ${IDS.name} WHERE ${VERSION.name} > 0 $entitiesClause $groupBy ) as $ENTITIES_TABLE_ALIAS"
-
+    return "( SELECT $selectColumns FROM ${IDS.name} INNER JOIN $FILTERED_ENTITY_KEY_IDS USING($joinColumnsSql) $groupBy ) as $ENTITIES_TABLE_ALIAS"
 }
 
 internal fun arrayAggSql(fqn: String): String {
     return " array_agg($fqn) as $fqn "
-}
-
-internal fun buildGetEntitySetSizeQuery(entitySetId: UUID): String {
-    return "SELECT COUNT(*) FROM ${ENTITY_KEY_IDS.name} WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND ${VERSION.name} > 0"
 }
 
 internal fun buildEntitiesClause(entityKeyIds: Map<UUID, Optional<Set<UUID>>>, linking: Boolean): String {
@@ -414,29 +446,29 @@ internal fun buildEntitiesClause(entityKeyIds: Map<UUID, Optional<Set<UUID>>>, l
 
     val idsColumn = if (linking) LINKING_ID.name else ID_VALUE.name
     return "$filterLinkingIds AND (" + entityKeyIds.entries.joinToString(" OR ") {
-        val idsClause = it.value.filter { ids -> ids.isNotEmpty() }.map { ids ->
-            " AND $idsColumn IN (" + ids.joinToString(",") { id -> "'$id'" } + ")"
-        }.orElse("")
-        " (${ENTITY_SET_ID.name} = '${it.key}' $idsClause)"
+        val idsClause = it.value
+                .filter { ids -> ids.isNotEmpty() }
+                .map { ids -> " $idsColumn IN (" + ids.joinToString(",") { id -> "'$id'" } + ") AND" }
+                .orElse("")
+        " ($idsClause ${ENTITY_SET_ID.name} = '${it.key}' )"
     } + ")"
 }
 
 internal fun buildPropertyTypeEntitiesClause(
         entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
         propertyTypeId: UUID,
-        authorizedPropertyTypes: Map<UUID, Set<UUID>>,
-        linking: Boolean
+        authorizedPropertyTypes: Map<UUID, Set<UUID>>
 ): String {
     /*
      * Filter out any entity sets for which you aren't authorized to read this property.
      * There should always be at least one entity set as this isn't invoked for any properties
      * with not readable entity sets.
      */
-    val authorizedEntityKeyIds = entityKeyIds.filter {
+    val authorizedEntitySetIds = entityKeyIds.asSequence().filter {
         authorizedPropertyTypes[it.key]?.contains(propertyTypeId) ?: false
-    }
+    }.joinToString(",") { "'${it.key}'" }
 
-    return buildEntitiesClause(authorizedEntityKeyIds, linking)
+    return if (authorizedEntitySetIds.isNotEmpty()) "AND ${ENTITY_SET_ID.name} IN ($authorizedEntitySetIds)" else ""
 }
 
 
@@ -470,11 +502,18 @@ private fun getJoinColumns(linking: Boolean, omitEntitySetId: Boolean): List<Str
 }
 
 private fun getMetadataOptions(metadataOptions: Set<MetadataOption>, linking: Boolean): List<String> {
-    val allowedMetadataOptions = if (linking) { // we omit some metadataOptions from linking queries
-        Sets.intersection(metadataOptions, ALLOWED_LINKING_METADATA_OPTIONS)
-    } else {
-        metadataOptions
+    val allowedMetadataOptions = if (linking)
+        metadataOptions.intersect(ALLOWED_LINKING_METADATA_OPTIONS)
+    else
+        metadataOptions.intersect(ALLOWED_NON_LINKING_METADATA_OPTIONS)
+
+
+    //TODO: Make this an error and fix cases by providing static method for getting all allowed metadata options
+    //as opposed to just EnumSet.allOf(...)
+    val invalidMetadataOptions = metadataOptions - allowedMetadataOptions
+    if (invalidMetadataOptions.isNotEmpty()) {
+        logger.warn("Invalid metadata options requested: {}", invalidMetadataOptions)
     }
 
-    return allowedMetadataOptions.map { ResultSetAdapters.mapMetadataOptionToPostgresColumn(it).name }
+    return allowedMetadataOptions.map { ResultSetAdapters.mapMetadataOptionToPostgresColumn(it) }
 }
