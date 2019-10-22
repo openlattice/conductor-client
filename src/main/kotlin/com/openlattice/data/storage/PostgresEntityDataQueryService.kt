@@ -250,16 +250,14 @@ class PostgresEntityDataQueryService(
             partitionsInfo: PartitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
     ): WriteEvent {
         val version = System.currentTimeMillis()
-        val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(entities.keys)
 
         // NO-OP
-        val tombstoneFn = { _: Connection, _: Long, _: Map<UUID, Map<UUID, Set<Any>>> -> }
+        val tombstoneFn = { _: Connection, _: Long, _: Map<UUID, UUID>, _: Map<UUID, Map<UUID, Set<Any>>> -> }
 
         return upsertEntities(
                 entitySetId,
                 tombstoneFn,
                 entities,
-                entityKeyIdsToLinkingIds,
                 authorizedPropertyTypes,
                 version,
                 partitionsInfo,
@@ -283,9 +281,8 @@ class PostgresEntityDataQueryService(
      */
     private fun upsertEntities(
             entitySetId: UUID,
-            tombstoneFn: (conn: Connection, version: Long, entityBatch: Map<UUID, Map<UUID, Set<Any>>>) -> Unit,
+            tombstoneFn: (conn: Connection, version: Long, entityKeyIdsToLinkingIds: Map<UUID, UUID>, entityBatch: Map<UUID, Map<UUID, Set<Any>>>) -> Unit,
             entities: Map<UUID, Map<UUID, Set<Any>>>, // ekids ->
-            entityKeyIdsToLinkingIds: Map<UUID, UUID>,
             authorizedPropertyTypes: Map<UUID, PropertyType>,
             version: Long,
             partitionsInfo: PartitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId),
@@ -300,6 +297,7 @@ class PostgresEntityDataQueryService(
                 .mapValues { it.value.toMap() }
                 .asSequence().asStream().parallel()
                 .forEach { (partition, rawEntityBatch) ->
+                    val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(rawEntityBatch.keys, partition)
 
                     val entityBatch = rawEntityBatch.mapValues { (entityKeyId, rawValue) ->
                         return@mapValues if (awsPassthrough) {
@@ -317,7 +315,7 @@ class PostgresEntityDataQueryService(
                         val idsArr = PostgresArrays.createUuidArray(connection, entityBatch.keys)
                         lockEntitiesForUpdate(connection, idsArr, partition, partitionsInfo.partitionsVersion)
 
-                        tombstoneFn(connection, version, entityBatch)
+                        tombstoneFn(connection, version, entityKeyIdsToLinkingIds, entityBatch)
 
                         val (uec, upc) = upsertEntities(
                                 connection,
@@ -493,19 +491,18 @@ class PostgresEntityDataQueryService(
             authorizedPropertyTypes: Map<UUID, PropertyType>,
             partitionsInfo: PartitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
     ): WriteEvent {
-        val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(entities.keys)
-
         val propertyTypes = authorizedPropertyTypes.values
 
-        val tombstoneFn: (Connection, Long, Map<UUID, Map<UUID, Set<Any>>>) ->
+        val tombstoneFn: (Connection, Long, Map<UUID, UUID>, Map<UUID, Map<UUID, Set<Any>>>) ->
         Unit = { conn: Connection,
                  version: Long,
+                 ekidsToLinkingIds: Map<UUID, UUID>,
                  entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
             tombstone(
                     conn,
                     entitySetId,
                     entityBatch.keys,
-                    entityKeyIdsToLinkingIds,
+                    ekidsToLinkingIds,
                     propertyTypes,
                     version,
                     partitionsInfo
@@ -516,7 +513,6 @@ class PostgresEntityDataQueryService(
                 entitySetId,
                 tombstoneFn,
                 entities,
-                entityKeyIdsToLinkingIds,
                 authorizedPropertyTypes,
                 System.currentTimeMillis(),
                 partitionsInfo
@@ -529,12 +525,12 @@ class PostgresEntityDataQueryService(
             authorizedPropertyTypes: Map<UUID, PropertyType>,
             partitionsInfo: PartitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
     ): WriteEvent {
-        val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(entities.keys)
 
         // Is the overhead from including irrelevant property types in a bulk delete really worse than performing individual queries? :thinking-face:
         val tombstoneFn =
                 { conn: Connection,
                   version: Long,
+                  ekidsToLinkingIds: Map<UUID, UUID>,
                   entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
                     entityBatch.forEach { (entityKeyId, entity) ->
                         //Implied access enforcement as it will raise exception if lacking permission
@@ -542,7 +538,7 @@ class PostgresEntityDataQueryService(
                                 conn,
                                 entitySetId,
                                 setOf(entityKeyId),
-                                entityKeyIdsToLinkingIds,
+                                ekidsToLinkingIds,
                                 entity.keys.map { authorizedPropertyTypes.getValue(it) }.toSet(),
                                 version,
                                 partitionsInfo
@@ -554,7 +550,6 @@ class PostgresEntityDataQueryService(
                 entitySetId,
                 tombstoneFn,
                 entities,
-                entityKeyIdsToLinkingIds,
                 authorizedPropertyTypes,
                 System.currentTimeMillis(),
                 partitionsInfo
@@ -567,18 +562,19 @@ class PostgresEntityDataQueryService(
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         //We expect controller to have performed access control checks upstream.
-        val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(replacementProperties.keys)
         val partitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
 
-        val tombstoneFn: (Connection, Long, Map<UUID, Map<UUID, Set<Any>>>) -> Unit =
+        val tombstoneFn: (Connection, Long, Map<UUID, UUID>, Map<UUID, Map<UUID, Set<Any>>>) -> Unit =
                 { conn: Connection,
-                  version: Long, entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
+                  version: Long,
+                  ekidsToLinkingIds: Map<UUID, UUID>,
+                  entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
                     val ids = entityBatch.keys
                     tombstone(
                             conn,
                             entitySetId,
                             replacementProperties.filter { ids.contains(it.key) },
-                            entityKeyIdsToLinkingIds,
+                            ekidsToLinkingIds,
                             version,
                             partitionsInfo
                     )
@@ -595,7 +591,6 @@ class PostgresEntityDataQueryService(
                 entitySetId,
                 tombstoneFn,
                 replacementValues,
-                entityKeyIdsToLinkingIds,
                 authorizedPropertyTypes,
                 System.currentTimeMillis(),
                 partitionsInfo
@@ -663,22 +658,28 @@ class PostgresEntityDataQueryService(
             authorizedPropertyTypes: Map<UUID, PropertyType>,
             partitionsInfo: PartitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
     ): WriteEvent {
-        val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(entityKeyIds)
-
         val version = System.currentTimeMillis()
 
-        return hds.connection.use { conn ->
-            tombstone(
-                    conn,
-                    entitySetId,
-                    entityKeyIds,
-                    entityKeyIdsToLinkingIds,
-                    authorizedPropertyTypes.values,
-                    version,
-                    partitionsInfo
-            )
-            tombstoneIdsTable(conn, entitySetId, entityKeyIds, version, partitionsInfo)
-        }
+        val updated = entityKeyIds.groupingBy {
+            getPartition(it, partitionsInfo.partitions.toList())
+        }.fold( mutableSetOf(), { ret: MutableSet<UUID>, ekid ->
+            ret.add( ekid )
+            ret
+        } ).map { ( partition, ekids ) ->
+            hds.connection.use { conn ->
+                tombstone(
+                        conn,
+                        entitySetId,
+                        ekids,
+                        getLinkingIdsOfEntityKeyIds(ekids, partition),
+                        authorizedPropertyTypes.values,
+                        version,
+                        partitionsInfo
+                )
+                tombstoneIdsTable(conn, entitySetId, entityKeyIds, version, partitionsInfo)
+            }
+        }.sum()
+        return WriteEvent(version, updated)
     }
 
     /**
@@ -697,23 +698,30 @@ class PostgresEntityDataQueryService(
             partitionsInfo: PartitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
     ): WriteEvent {
         val version = System.currentTimeMillis()
-        val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(entityKeyIds)
 
-        return hds.connection.use { conn ->
-            val writeEvent = tombstone(
-                    conn,
-                    entitySetId,
-                    entityKeyIds,
-                    entityKeyIdsToLinkingIds,
-                    authorizedPropertyTypes.values,
-                    version,
-                    partitionsInfo
-            )
-            if (writeEvent.numUpdates > 0) {
-                updateLastWrite(conn, entitySetId, entityKeyIds, partitionsInfo)
-            }
-            return@use writeEvent
-        }
+        val updated = entityKeyIds.groupingBy {
+            getPartition(it, partitionsInfo.partitions.toList())
+        }.fold( mutableSetOf(), { ret: MutableSet<UUID>, ekid ->
+            ret.add( ekid )
+            ret
+        } ).map { (partition, ekids) ->
+            hds.connection.use { conn ->
+                val writeEvent = tombstone(
+                        conn,
+                        entitySetId,
+                        entityKeyIds,
+                        getLinkingIdsOfEntityKeyIds(ekids, partition),
+                        authorizedPropertyTypes.values,
+                        version,
+                        partitionsInfo
+                )
+                if (writeEvent.numUpdates > 0) {
+                    updateLastWrite(conn, entitySetId, entityKeyIds, partitionsInfo)
+                }
+                return@use writeEvent
+            }.numUpdates
+        }.sum()
+        return WriteEvent(version, updated)
     }
 
     fun deleteEntityData(
@@ -1001,7 +1009,7 @@ class PostgresEntityDataQueryService(
             entityKeyIds: Set<UUID>,
             version: Long,
             partitionsInfo: PartitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
-    ): WriteEvent {
+    ): Int {
         val partitions = partitionsInfo.partitions.toList()
         val entityKeyIdsArr = PostgresArrays.createUuidArray(conn, entityKeyIds)
 
@@ -1019,7 +1027,7 @@ class PostgresEntityDataQueryService(
             ps.executeUpdate()
         }
 
-        return WriteEvent(version, numUpdated)
+        return numUpdated
     }
 
     /**
@@ -1161,15 +1169,14 @@ class PostgresEntityDataQueryService(
         return WriteEvent(version, numUpdated + linksUpdated)
     }
 
-    fun getLinkingIdsOfEntityKeyIds(entityKeyIds: Set<UUID>): Map<UUID, UUID> {
-        val sql = "SELECT ${ID.name}, ${LINKING_ID.name} FROM ${IDS.name} WHERE ${ID.name} = ANY(?) AND ${LINKING_ID.name} IS NOT NULL"
-
+    fun getLinkingIdsOfEntityKeyIds(entityKeyIds: Set<UUID>, partition: Int): Map<UUID, UUID> {
         return PostgresIterable(
                 Supplier {
                     val connection = hds.connection
-                    val stmt = connection.prepareStatement(sql)
+                    val stmt = connection.prepareStatement(getLinkingIdsOfEkidsSql)
 
                     stmt.setArray(1, PostgresArrays.createUuidArray(connection, entityKeyIds))
+//                    stmt.setArray(2, )
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },

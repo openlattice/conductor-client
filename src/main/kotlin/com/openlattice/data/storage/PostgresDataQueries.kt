@@ -300,6 +300,16 @@ internal val upsertEntitiesSql = "UPDATE ${IDS.name} " +
         "WHERE ${ENTITY_SET_ID.name} = ? AND ${ID_VALUE.name} = ANY(?) AND ${PARTITION.name} = ?"
 // @formatter:on
 
+
+/**
+ * Preparable sql to get linking ids of entity key ids
+ * 1. entity key ids
+ */
+internal val getLinkingIdsOfEkidsSql = "SELECT ${ID.name}, ${LINKING_ID.name} " +
+        "FROM ${IDS.name} " +
+        "WHERE ${ID.name} = ANY(?) " +
+        "AND ${LINKING_ID.name} IS NOT NULL"
+
 /**
  * Preparable sql to lock entities with the following bind order:
  * 1. entity key ids
