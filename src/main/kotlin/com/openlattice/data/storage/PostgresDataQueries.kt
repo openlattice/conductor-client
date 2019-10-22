@@ -303,12 +303,13 @@ internal val upsertEntitiesSql = "UPDATE ${IDS.name} " +
 
 /**
  * Preparable sql to get linking ids of entity key ids
- * 1. entity key ids
+ * 1. partition id
+ * 2. entity key ids
  */
 internal val getLinkingIdsOfEkidsSql = "SELECT ${ID.name}, ${LINKING_ID.name} " +
         "FROM ${IDS.name} " +
-        "WHERE ${ID.name} = ANY(?) " +
-        "AND ${PARTITION.name} = ? " +
+        "WHERE ${PARTITION.name} = ? " +
+        "AND ${ID.name} = ANY(?) " +
         "AND ${LINKING_ID.name} IS NOT NULL"
 
 /**
