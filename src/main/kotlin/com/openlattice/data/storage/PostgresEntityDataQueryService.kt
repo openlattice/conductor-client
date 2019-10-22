@@ -252,6 +252,7 @@ class PostgresEntityDataQueryService(
         val version = System.currentTimeMillis()
         val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(entities.keys)
 
+        // NO-OP
         val tombstoneFn = { _: Connection, _: Long, _: Map<UUID, Map<UUID, Set<Any>>> -> }
 
         return upsertEntities(
@@ -430,10 +431,13 @@ class PostgresEntityDataQueryService(
 
                     val maybeLinkingId = entityKeyIdsToLinkingIds[entityKeyId]
                     if (maybeLinkingId != null) {
+                        val linkPart = getPartition(maybeLinkingId, allPartitions)
                         // update for linked rows
                         upsertPropertyValue.second.setObject(1, entitySetId)
                         upsertPropertyValue.second.setObject(2, maybeLinkingId)
-                        upsertPropertyValue.second.setInt(3, getPartition(maybeLinkingId, allPartitions))
+                        upsertPropertyValue.second.setInt(3, linkPart )
+                        logger.info("LinkingId exists $maybeLinkingId on partition $linkPart for ekid $entityKeyId " +
+                                "which resides on partition $partition")
                         upsertPropertyValue.second.setObject(4, propertyTypeId)
                         upsertPropertyValue.second.setObject(5, propertyHash)
                         upsertPropertyValue.second.setObject(6, version)
