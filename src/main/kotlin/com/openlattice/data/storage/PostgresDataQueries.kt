@@ -309,6 +309,7 @@ internal val upsertEntitiesSql = "UPDATE ${IDS.name} " +
 internal val getLinkingIdsOfEkidsSql = "SELECT ${ID.name}, ${LINKING_ID.name} " +
         "FROM ${IDS.name} " +
         "WHERE ${PARTITION.name} = ? " +
+        "AND ${PARTITIONS_VERSION.name} = ? " +
         "AND ${ID.name} = ANY(?) " +
         "AND ${LINKING_ID.name} IS NOT NULL"
 

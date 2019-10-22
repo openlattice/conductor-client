@@ -297,7 +297,7 @@ class PostgresEntityDataQueryService(
                 .mapValues { it.value.toMap() }
                 .asSequence().asStream().parallel()
                 .forEach { (partition, rawEntityBatch) ->
-                    val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(rawEntityBatch.keys, partition)
+                    val entityKeyIdsToLinkingIds = getLinkingIdsOfEntityKeyIds(rawEntityBatch.keys, partition, partitionsInfo.partitionsVersion)
 
                     val entityBatch = rawEntityBatch.mapValues { (entityKeyId, rawValue) ->
                         return@mapValues if (awsPassthrough) {
@@ -671,7 +671,7 @@ class PostgresEntityDataQueryService(
                         conn,
                         entitySetId,
                         ekids,
-                        getLinkingIdsOfEntityKeyIds(ekids, partition),
+                        getLinkingIdsOfEntityKeyIds(ekids, partition, partitionsInfo.partitionsVersion),
                         authorizedPropertyTypes.values,
                         version,
                         partitionsInfo
@@ -710,7 +710,7 @@ class PostgresEntityDataQueryService(
                         conn,
                         entitySetId,
                         entityKeyIds,
-                        getLinkingIdsOfEntityKeyIds(ekids, partition),
+                        getLinkingIdsOfEntityKeyIds(ekids, partition, partitionsInfo.partitionsVersion),
                         authorizedPropertyTypes.values,
                         version,
                         partitionsInfo
@@ -1169,14 +1169,15 @@ class PostgresEntityDataQueryService(
         return WriteEvent(version, numUpdated + linksUpdated)
     }
 
-    fun getLinkingIdsOfEntityKeyIds(entityKeyIds: Set<UUID>, partition: Int): Map<UUID, UUID> {
+    fun getLinkingIdsOfEntityKeyIds(entityKeyIds: Set<UUID>, partition: Int, partitionsVersion: Int): Map<UUID, UUID> {
         return PostgresIterable(
                 Supplier {
                     val connection = hds.connection
                     val stmt = connection.prepareStatement(getLinkingIdsOfEkidsSql)
 
                     stmt.setInt(1, partition)
-                    stmt.setArray(2, PostgresArrays.createUuidArray(connection, entityKeyIds))
+                    stmt.setInt(2, partitionsVersion)
+                    stmt.setArray(3, PostgresArrays.createUuidArray(connection, entityKeyIds))
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },
