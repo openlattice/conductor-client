@@ -496,13 +496,13 @@ class PostgresEntityDataQueryService(
         val tombstoneFn: (Connection, Long, Map<UUID, UUID>, Map<UUID, Map<UUID, Set<Any>>>) ->
         Unit = { conn: Connection,
                  version: Long,
-                 ekidsToLinkingIds: Map<UUID, UUID>,
+                 entityKeyIdsToLinkingIds: Map<UUID, UUID>,
                  entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
             tombstone(
                     conn,
                     entitySetId,
                     entityBatch.keys,
-                    ekidsToLinkingIds,
+                    entityKeyIdsToLinkingIds,
                     propertyTypes,
                     version,
                     partitionsInfo
@@ -530,7 +530,7 @@ class PostgresEntityDataQueryService(
         val tombstoneFn =
                 { conn: Connection,
                   version: Long,
-                  ekidsToLinkingIds: Map<UUID, UUID>,
+                  entityKeyIdsToLinkingIds: Map<UUID, UUID>,
                   entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
                     entityBatch.forEach { (entityKeyId, entity) ->
                         //Implied access enforcement as it will raise exception if lacking permission
@@ -538,7 +538,7 @@ class PostgresEntityDataQueryService(
                                 conn,
                                 entitySetId,
                                 setOf(entityKeyId),
-                                ekidsToLinkingIds,
+                                entityKeyIdsToLinkingIds,
                                 entity.keys.map { authorizedPropertyTypes.getValue(it) }.toSet(),
                                 version,
                                 partitionsInfo
@@ -567,14 +567,14 @@ class PostgresEntityDataQueryService(
         val tombstoneFn: (Connection, Long, Map<UUID, UUID>, Map<UUID, Map<UUID, Set<Any>>>) -> Unit =
                 { conn: Connection,
                   version: Long,
-                  ekidsToLinkingIds: Map<UUID, UUID>,
+                  entityKeyIdsToLinkingIds: Map<UUID, UUID>,
                   entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
                     val ids = entityBatch.keys
                     tombstone(
                             conn,
                             entitySetId,
                             replacementProperties.filter { ids.contains(it.key) },
-                            ekidsToLinkingIds,
+                            entityKeyIdsToLinkingIds,
                             version,
                             partitionsInfo
                     )
