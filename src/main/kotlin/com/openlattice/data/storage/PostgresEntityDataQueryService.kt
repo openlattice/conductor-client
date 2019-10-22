@@ -1176,7 +1176,7 @@ class PostgresEntityDataQueryService(
                     val stmt = connection.prepareStatement(getLinkingIdsOfEkidsSql)
 
                     stmt.setArray(1, PostgresArrays.createUuidArray(connection, entityKeyIds))
-//                    stmt.setArray(2, )
+                    stmt.setInt(2, partition)
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },
