@@ -245,7 +245,7 @@ public final class PostgresTable {
                             LAST_MIGRATE,
                             LAST_LINK_INDEX,
                             PARTITIONS_VERSION )
-                    .primaryKey( ID_VALUE, PARTITION )
+                    .primaryKey( ID_VALUE, PARTITION, PARTITIONS_VERSION )
                     .distributionColumn( PARTITION );
     public static final PostgresTableDefinition        ID_GENERATION                =
             new PostgresTableDefinition( "id_gen" )
