@@ -56,12 +56,22 @@ class PostgresEntityDataQueryService(
             throw NotImplementedException("BLAME MTR. Not yet implemented.")
         }
 
+        val partitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
+
         return BasePostgresIterable(
                 PreparedStatementHolderSupplier(
                         hds,
-                        "SELECT ${ID_VALUE.name} FROM ${IDS.name} WHERE ${ENTITY_SET_ID.name} = ? AND ${VERSION.name} > 0",
+                        "SELECT ${ID_VALUE.name} FROM ${IDS.name} " +
+                                "WHERE ${ENTITY_SET_ID.name} = ? " +
+                                "AND ${PARTITION.name} = ANY(?) " +
+                                "AND ${PARTITIONS_VERSION.name} = ? " +
+                                "AND ${VERSION.name} > 0",
                         FETCH_SIZE
-                ) { ps -> ps.setObject(1, entitySetId) }
+                ) { ps ->
+                    ps.setObject(1, entitySetId)
+                    ps.setArray(2, PostgresArrays.createIntArray(ps.connection, partitionsInfo.partitions))
+                    ps.setInt(3, partitionsInfo.partitionsVersion)
+                }
         ) { rs -> ResultSetAdapters.id(rs) }
     }
 
@@ -339,8 +349,8 @@ class PostgresEntityDataQueryService(
                             entityKeyId to rawValue
                         } else {
                             entityKeyId to Multimaps.asMap(JsonDeserializer
-                                                    .validateFormatAndNormalize(rawValue, authorizedPropertyTypes)
-                                                    { "Entity set $entitySetId with entity key id $entityKeyId" })
+                                    .validateFormatAndNormalize(rawValue, authorizedPropertyTypes)
+                                    { "Entity set $entitySetId with entity key id $entityKeyId" })
                         }
                     }.toMap()
 
@@ -349,7 +359,7 @@ class PostgresEntityDataQueryService(
                             entitySetId,
                             entityBatch,
                             authorizedPropertyTypes,
-                            version+1,
+                            version + 1,
                             partitionsInfo.partitionsVersion,
                             partition,
                             awsPassthrough
@@ -429,8 +439,9 @@ class PostgresEntityDataQueryService(
             upsertEntities.setObject(4, entitySetId)
             upsertEntities.setArray(5, entityKeyIdsArr)
             upsertEntities.setInt(6, partition)
-            upsertEntities.setInt(7, partition)
-            upsertEntities.setLong(8, version)
+            upsertEntities.setInt(7, partitionsVersion)
+            upsertEntities.setInt(8, partition)
+            upsertEntities.setLong(9, version)
 
 
             val updatedLinkedEntities = upsertEntities.executeUpdate()
@@ -959,7 +970,7 @@ class PostgresEntityDataQueryService(
     }
 
     /**
-     * Tombstones the provided set of property types for each provided entity key.
+     * Tombstones the provided set of property types for all entities in the provided entity set.
      *
      * This version of tombstone only operates on the [DATA] table and does not change the version of
      * entities in the [IDS] table

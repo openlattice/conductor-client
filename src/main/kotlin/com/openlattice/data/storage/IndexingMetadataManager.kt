@@ -118,20 +118,27 @@ class IndexingMetadataManager(private val hds: HikariDataSource, private val par
 
 
     fun markEntitySetsAsNeedsToBeIndexed(entitySetIds: Set<UUID>, linking: Boolean): Int {
-        val entitySetPartitions = partitionManager.getEntitySetsPartitionsInfo(entitySetIds).values
-                .flatMap { it.partitions }
-                .toSet()
+        val partitionsInfo = partitionManager.getEntitySetsPartitionsInfo(entitySetIds)
+        val entitySetPartitionsByPartitionsVersion = partitionsInfo.values
+                .groupBy { it.partitionsVersion }
+                .mapValues { it.value.flatMap { partitionsInfo -> partitionsInfo.partitions }.toSet() }
 
         return hds.connection.use { connection ->
             val updateSql = markEntitySetsAsNeedsToBeIndexedSql(linking)
             connection.prepareStatement(updateSql).use { stmt ->
-                val entitySetIdsArray = PostgresArrays.createUuidArray(connection, entitySetIds)
-                val partitionsArray = PostgresArrays.createIntArray(connection, entitySetPartitions)
-                stmt.setArray(1, entitySetIdsArray)
-                stmt.setArray(2, partitionsArray)
 
-                stmt.executeUpdate()
-            }
+                entitySetPartitionsByPartitionsVersion.forEach { (partitionsVersion, entitySetPartitions) ->
+                    val entitySetIdsArray = PostgresArrays.createUuidArray(connection, entitySetIds)
+                    val partitionsArray = PostgresArrays.createIntArray(connection, entitySetPartitions)
+                    stmt.setArray(1, entitySetIdsArray)
+                    stmt.setArray(2, partitionsArray)
+                    stmt.setInt(3, partitionsVersion)
+
+                    stmt.addBatch()
+                }
+
+                stmt.executeBatch()
+            }.sum()
         }
     }
 
@@ -259,12 +266,13 @@ private val markEntitySetLastIndexSql = "UPDATE ${IDS.name} SET ${LAST_INDEX.nam
  * Arguments of preparable sql in order:
  * 1. entity set ids (uuid array)
  * 2. partitions (int array)
+ * 3. partitions version
  */
 fun markEntitySetsAsNeedsToBeIndexedSql(linking: Boolean): String {
     val updateColumn = if (linking) LAST_LINK_INDEX.name else LAST_INDEX.name
 
     return "UPDATE ${IDS.name} SET $updateColumn = '-infinity()' " +
-            "WHERE ${ENTITY_SET_ID.name} = ANY(?) AND ${PARTITION.name} = ANY(?)"
+            "WHERE ${ENTITY_SET_ID.name} = ANY(?) AND ${PARTITION.name} = ANY(?) AND ${PARTITIONS_VERSION.name} = ?"
 }
 
 /**

@@ -292,9 +292,11 @@ fun optionalWhereClausesSingleEdk(
  *
  * 6 - partition
  *
- * 7 - partition
+ * 7 - partitions version
  *
- * 8 - version
+ * 8 - partition
+ *
+ * 9 - version
  */
 fun buildUpsertEntitiesAndLinkedData(): String {
     val insertColumns = dataTableValueColumns.joinToString(",") { it.name }
@@ -357,6 +359,8 @@ fun buildUpsertEntitiesAndLinkedData(): String {
  * 5 - entity key ids
  *
  * 6 - partition
+ *
+ * 7 - partitions version
  */
 // @formatter:off
 val upsertEntitiesSql = "UPDATE ${IDS.name} " +
@@ -366,7 +370,7 @@ val upsertEntitiesSql = "UPDATE ${IDS.name} " +
                 "WHEN abs(${IDS.name}.${VERSION.name}) <= abs(?) THEN ? " +
                 "ELSE ${IDS.name}.${VERSION.name} " +
             "END " +
-        "WHERE ${ENTITY_SET_ID.name} = ? AND ${ID_VALUE.name} = ANY(?) AND ${PARTITION.name} = ? " +
+        "WHERE ${ENTITY_SET_ID.name} = ? AND ${ID_VALUE.name} = ANY(?) AND ${PARTITION.name} = ? AND ${PARTITIONS_VERSION.name} = ? " +
         "RETURNING ${ENTITY_SET_ID.name},${ID.name},${PARTITION.name},${LINKING_ID.name} "
 // @formatter:on
 
