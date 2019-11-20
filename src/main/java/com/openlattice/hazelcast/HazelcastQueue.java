@@ -32,7 +32,7 @@ public enum HazelcastQueue {
     INDEXING,
     LINKING_CANDIDATES,
     LINKING_INDEXING,
+    LINKING_UNINDEXING,
     TWILIO,
-    SIGNAL,
-    LINKING_UNINDEXING
+    SIGNAL
 }
