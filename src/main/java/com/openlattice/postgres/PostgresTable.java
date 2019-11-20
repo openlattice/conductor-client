@@ -20,10 +20,6 @@
 
 package com.openlattice.postgres;
 
-import com.google.common.collect.ImmutableList;
-
-import java.util.List;
-
 import static com.openlattice.postgres.DataTables.*;
 import static com.openlattice.postgres.PostgresColumn.*;
 
@@ -216,20 +212,6 @@ public final class PostgresTable {
             new PostgresTableDefinition( "graph_queries" )
                     .addColumns( QUERY_ID, QUERY, STATE, START_TIME )
                     .primaryKey( QUERY_ID );
-    public static final List<PostgresColumnDefinition> HASH_ON                      =
-            ImmutableList.of(
-                    ID,
-                    ID_VALUE,
-                    SECURABLE_OBJECTID,
-                    APP_ID,
-                    VERTEX_ID,
-                    SRC_LINKING_VERTEX_ID,
-                    SRC_ENTITY_KEY_ID,
-                    PARTITION_INDEX,
-                    NAME,
-                    ENTITY_SET_ID,
-                    PRINCIPAL_ID
-            );
     public static final PostgresTableDefinition        IDS                          =
             new CitusDistributedTableDefinition( "ids" )
                     .addColumns( PARTITION,
@@ -251,6 +233,12 @@ public final class PostgresTable {
             new PostgresTableDefinition( "id_gen" )
                     .primaryKey( PARTITION_INDEX )
                     .addColumns( PARTITION_INDEX, MSB, LSB );
+
+    public static final PostgresTableDefinition        LINKING_ENTITY_SET_SECRET_KEYS =
+            new PostgresTableDefinition( "linking_entity_set_secret_key" )
+                    .addColumns( ENTITY_SET_ID, ALGORITHM, SECRET_KEY )
+                    .primaryKey( ENTITY_SET_ID );
+
     public static final PostgresTableDefinition        LINKING_FEEDBACK             =
             new PostgresTableDefinition( "linking_feedback" )
                     .addColumns(
@@ -463,7 +451,7 @@ public final class PostgresTable {
                                 + ",(" + VERSION.getName() + " <= 0)" )
                         .name( "ids_needing_delete_index_idx" )
                         .ifNotExists(),
-                new PostgresExpressionIndexDefinition( ENTITY_KEY_IDS,
+                new PostgresExpressionIndexDefinition( IDS,
                         ENTITY_SET_ID.getName()
                                 + ",(" + LAST_LINK.getName() + " < " + LAST_WRITE.getName() + ")"
                                 + ",(" + LAST_INDEX.getName() + " >= " + LAST_WRITE.getName() + ")"

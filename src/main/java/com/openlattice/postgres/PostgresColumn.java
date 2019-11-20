@@ -32,6 +32,9 @@ public final class PostgresColumn {
     public static final String                   ACL_KEY_FIELD                     = "acl_key";
     public static final PostgresColumnDefinition ACL_KEY                           =
             new PostgresColumnDefinition( ACL_KEY_FIELD, UUID_ARRAY );
+    public static final String                   ALGORITHM_FIELD                   = "algorithm";
+    public static final PostgresColumnDefinition ALGORITHM                         =
+            new PostgresColumnDefinition( ALGORITHM_FIELD, TEXT ).notNull();
     public static final String                   ALERT_METADATA_FIELD              = "alert_metadata";
     public static final PostgresColumnDefinition ALERT_METADATA                    =
             new PostgresColumnDefinition( ALERT_METADATA_FIELD, JSONB ).notNull();
@@ -128,9 +131,6 @@ public final class PostgresColumn {
     public static final String                   DST_FIELD                         = "dst";
     public static final PostgresColumnDefinition DST                               =
             new PostgresColumnDefinition( DST_FIELD, UUID_ARRAY );
-    public static final String                   DST_LINKING_VERTEX_ID_FIELD       = "dst_linking_vertex_id";
-    public static final PostgresColumnDefinition DST_LINKING_VERTEX_ID             =
-            new PostgresColumnDefinition( DST_LINKING_VERTEX_ID_FIELD, UUID );
     // filters applied to outgoing edges
     public static final String                   DST_SELECTS_FIELD                 = "dst_selections";
     public static final PostgresColumnDefinition DST_SELECTS                       = new PostgresColumnDefinition(
@@ -305,9 +305,6 @@ public final class PostgresColumn {
     public static final String                   NAME_SET_FIELD                  = "name_set";
     public static final PostgresColumnDefinition NAME_SET                        =
             new PostgresColumnDefinition( NAME_SET_FIELD, TEXT_ARRAY ).notNull();
-    public static final String                   NEW_VERTEX_ID_FIELD             = "new_vertex_id";
-    public static final PostgresColumnDefinition NEW_VERTEX_ID                   =
-            new PostgresColumnDefinition( NEW_VERTEX_ID_FIELD, UUID ).notNull();
     public static final String                   NULLABLE_TITLE_FIELD            = "title";
     public static final PostgresColumnDefinition NULLABLE_TITLE                  =
             new PostgresColumnDefinition( NULLABLE_TITLE_FIELD, TEXT );
@@ -394,6 +391,9 @@ public final class PostgresColumn {
     public static final PostgresColumnDefinition SEARCH_CONSTRAINTS              = new PostgresColumnDefinition(
             SEARCH_CONSTRAINTS_FIELD,
             PostgresDatatype.JSONB ).notNull();
+    public static final String                   SECRET_KEY_FIELD                = "secret_key";
+    public static final PostgresColumnDefinition SECRET_KEY                      =
+            new PostgresColumnDefinition( SECRET_KEY_FIELD, BYTEA ).notNull();
     public static final String                   SECURABLE_OBJECTID_FIELD        = "securable_objectid";
     public static final PostgresColumnDefinition SECURABLE_OBJECTID              =
             new PostgresColumnDefinition( SECURABLE_OBJECTID_FIELD, UUID ).notNull();
@@ -416,9 +416,6 @@ public final class PostgresColumn {
     public static final String                   SRC_FIELD                       = "src";
     public static final PostgresColumnDefinition SRC                             =
             new PostgresColumnDefinition( SRC_FIELD, UUID_ARRAY );
-    public static final String                   SRC_LINKING_VERTEX_ID_FIELD     = "src_linking_vertex_id";
-    public static final PostgresColumnDefinition SRC_LINKING_VERTEX_ID           =
-            new PostgresColumnDefinition( SRC_LINKING_VERTEX_ID_FIELD, UUID );
     public static final PostgresColumnDefinition SRC_PROPERTY_TYPE_ID            =
             new PostgresColumnDefinition( PROPERTY_TYPE_ID_FIELD, UUID ).notNull();
     // filters applied to incoming edges
@@ -463,9 +460,6 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( VERSION_FIELD, BIGINT )
                     .withDefault( -1 )
                     .notNull();
-    public static final String                   VERTEX_ID_FIELD                 = "vertex_id";
-    public static final PostgresColumnDefinition VERTEX_ID                       =
-            new PostgresColumnDefinition( VERTEX_ID_FIELD, UUID );
 
     private PostgresColumn() {
     }
