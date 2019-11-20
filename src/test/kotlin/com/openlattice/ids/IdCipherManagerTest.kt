@@ -1,4 +1,4 @@
-package com.openlattice.data.ids
+package com.openlattice.ids
 
 import com.openlattice.TestServer
 import org.junit.Assert
