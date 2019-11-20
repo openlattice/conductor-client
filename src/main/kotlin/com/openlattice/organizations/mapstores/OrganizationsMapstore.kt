@@ -9,6 +9,7 @@ import com.hazelcast.config.MapStoreConfig
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.mapstores.TestDataFactory
 import com.openlattice.organizations.Organization
+import com.openlattice.postgres.PostgresColumn.ID
 import com.openlattice.postgres.PostgresColumn.ORGANIZATION
 import com.openlattice.postgres.PostgresColumnDefinition
 import com.openlattice.postgres.PostgresTable.ORGANIZATIONS
@@ -20,7 +21,7 @@ import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.util.*
 
-const val AUTO_ENROLL = "autoEnroll[any]"
+const val AUTO_ENROLL = "enrollments[any]"
 
 /**
  *
@@ -54,8 +55,9 @@ class OrganizationsMapstore(val hds: HikariDataSource) : AbstractBasePostgresMap
     }
 
     override fun bind(ps: PreparedStatement, key: UUID, offset: Int): Int {
-        ps.setObject(1, key)
-        return 1
+        var index = offset
+        ps.setObject(index++, key)
+        return index
     }
 
     override fun mapToValue(rs: ResultSet): Organization {
@@ -72,4 +74,13 @@ class OrganizationsMapstore(val hds: HikariDataSource) : AbstractBasePostgresMap
         return super.getMapStoreConfig()
                 .setImplementation(this)
     }
+
+    override fun getInsertQuery(): String {
+        return "INSERT INTO ${ORGANIZATIONS.name} " +
+                "(${ID.name}, ${ORGANIZATION.name}) VALUES (?, ?::jsonb) " +
+                "ON CONFLICT (${ID.name}) DO UPDATE " +
+                "SET ${ORGANIZATION.name} = ?::jsonb"
+    }
+
+
 }
