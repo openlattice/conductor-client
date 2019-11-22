@@ -65,6 +65,7 @@ import com.openlattice.hazelcast.HazelcastQueue;
 import com.openlattice.ids.HazelcastIdGenerationService;
 import com.openlattice.ids.IdGenerationMapstore;
 import com.openlattice.ids.Range;
+import com.openlattice.ids.mapstores.LinkingEntitySetSecretKeyMapstore;
 import com.openlattice.linking.mapstores.LinkingFeedbackMapstore;
 import com.openlattice.notifications.sms.SmsInformationMapstore;
 import com.openlattice.organizations.Organization;
@@ -101,6 +102,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.UUID;
+import javax.crypto.spec.SecretKeySpec;
 import javax.inject.Inject;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
@@ -331,6 +333,11 @@ public class MapstoresPod {
     @Bean
     public SmsInformationMapstore smsInformationMapstore() {
         return new SmsInformationMapstore( hikariDataSource );
+    }
+    
+    @Bean
+    public SelfRegisteringMapStore<UUID, SecretKeySpec> linkingEntitySetSecretKeyMapstore() {
+        return new LinkingEntitySetSecretKeyMapstore( hikariDataSource );
     }
 
 }
