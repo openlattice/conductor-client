@@ -21,19 +21,20 @@
 
 package com.openlattice.organizations.tasks
 
-import com.google.common.base.Preconditions.checkState
 import com.google.common.base.Stopwatch
-import com.google.common.collect.ImmutableSet
+import com.openlattice.IdConstants.GLOBAL_ORGANIZATION_ID
+import com.openlattice.assembler.tasks.ProductionViewSchemaInitializationTask
+import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
+import com.openlattice.authorization.SystemRole
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask.Companion.GLOBAL_ADMIN_ROLE
-import com.openlattice.authorization.initializers.AuthorizationInitializationTask.Companion.OPENLATTICE_ROLE
-import com.openlattice.organization.Organization
-import com.openlattice.organization.OrganizationConstants.Companion.GLOBAL_ORGANIZATION_ID
+import com.openlattice.authorization.initializers.AuthorizationInitializationTask.Companion.GLOBAL_USER_ROLE
 import com.openlattice.organization.OrganizationConstants.Companion.GLOBAL_ORG_PRINCIPAL
-import com.openlattice.organization.OrganizationConstants.Companion.OPENLATTICE_ORGANIZATION_ID
-import com.openlattice.organization.OrganizationConstants.Companion.OPENLATTICE_ORG_PRINCIPAL
+import com.openlattice.organizations.Grant
+import com.openlattice.organizations.GrantType
+import com.openlattice.organizations.Organization
 import com.openlattice.tasks.HazelcastInitializationTask
-import com.openlattice.tasks.PostConstructInitializerTaskDependencies.*
+import com.openlattice.tasks.PostConstructInitializerTaskDependencies.PostConstructInitializerTask
 import com.openlattice.tasks.Task
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -45,41 +46,60 @@ private val logger = LoggerFactory.getLogger(OrganizationsInitializationTask::cl
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class OrganizationsInitializationTask() : HazelcastInitializationTask<OrganizationsInitializationDependencies> {
+class OrganizationsInitializationTask : HazelcastInitializationTask<OrganizationsInitializationDependencies> {
     override fun initialize(dependencies: OrganizationsInitializationDependencies) {
         logger.info("Running bootstrap process for organizations.")
         val sw = Stopwatch.createStarted()
         val organizationService = dependencies.organizationService
         val globalOrg = organizationService.maybeGetOrganization(GLOBAL_ORG_PRINCIPAL)
-        val olOrg = organizationService.maybeGetOrganization(OPENLATTICE_ORG_PRINCIPAL)
+        val defaultPartitions = organizationService.allocateDefaultPartitions(organizationService.numberOfPartitions)
+
         if (globalOrg.isPresent) {
+            val orgPrincipal = globalOrg.get()
+            val org = organizationService.getOrganization(orgPrincipal.id)!!
+            mergeGrants(org)
+            org.grants.forEach {
+                (roleId, grantMap) -> grantMap.values.forEach {
+                    grant -> organizationService.updateRoleGrant(orgPrincipal.id, roleId, grant)
+                }
+            }
             logger.info(
                     "Expected id = {}, Actual id = {}",
-                    GLOBAL_ORGANIZATION_ID,
-                    globalOrg.get().id
+                    GLOBAL_ORGANIZATION_ID.id,
+                    orgPrincipal.id
             )
-            checkState(GLOBAL_ORGANIZATION_ID == globalOrg.get().id)
+            require(GLOBAL_ORGANIZATION_ID.id == orgPrincipal.id) {
+                "Mistmatch in expected global org id and read global org id"
+            }
         } else {
+            val org = createGlobalOrg(defaultPartitions)
+            mergeGrants(org)
             organizationService.createOrganization(
-                    GLOBAL_ADMIN_ROLE.getPrincipal(),
-                    createGlobalOrg()
+                    GLOBAL_ADMIN_ROLE.principal,
+                    createGlobalOrg(defaultPartitions)
             )
         }
 
-        if (olOrg.isPresent) {
-            logger.info(
-                    "Expected id = {}, Actual id = {}",
-                    OPENLATTICE_ORGANIZATION_ID,
-                    olOrg.get().id
-            )
-            checkState(OPENLATTICE_ORGANIZATION_ID == olOrg.get().id)
-        } else {
-            organizationService.createOrganization(
-                    OPENLATTICE_ROLE.getPrincipal(),
-                    createOpenLatticeOrg()
-            )
-        }
         logger.info("Bootstrapping for organizations took {} ms", sw.elapsed(TimeUnit.MILLISECONDS))
+    }
+
+    private fun mergeGrants(org: Organization) {
+        globalGrants().forEach { (roleId, grantMap) ->
+            grantMap.forEach { (grantType, grant) ->
+                org.grants.getOrPut(roleId) { grantMap }[grantType] = grant
+            }
+        }
+    }
+
+    private fun globalGrants(): MutableMap<UUID, MutableMap<GrantType, Grant>> {
+        val userPrincipal = getDependency().spm.lookupRole(GLOBAL_USER_ROLE.principal)
+        val adminPrincipal = getDependency().spm.lookupRole(GLOBAL_ADMIN_ROLE.principal)
+        return mutableMapOf(
+                userPrincipal.id to mutableMapOf(GrantType.Automatic to Grant(GrantType.Automatic, setOf())),
+                adminPrincipal.id to mutableMapOf(
+                        GrantType.Roles to Grant(GrantType.Roles, setOf(SystemRole.ADMIN.principal.id))
+                )
+        )
     }
 
     override fun getInitialDelay(): Long {
@@ -91,7 +111,12 @@ class OrganizationsInitializationTask() : HazelcastInitializationTask<Organizati
     }
 
     override fun after(): Set<Class<out HazelcastInitializationTask<*>>> {
-        return setOf(AuthorizationInitializationTask::class.java, PostConstructInitializerTask::class.java)
+        return setOf(
+                AuthorizationInitializationTask::class.java,
+                UsersAndRolesInitializationTask::class.java,
+                PostConstructInitializerTask::class.java,
+                ProductionViewSchemaInitializationTask::class.java
+        )
     }
 
     override fun getName(): String {
@@ -103,32 +128,23 @@ class OrganizationsInitializationTask() : HazelcastInitializationTask<Organizati
     }
 
     companion object {
-        private fun createGlobalOrg(): Organization {
-            val id = GLOBAL_ORGANIZATION_ID
+        private fun createGlobalOrg(partitions: List<Int>): Organization {
+            val id = GLOBAL_ORGANIZATION_ID.id
             val title = "Global Organization"
             return Organization(
                     Optional.of(id),
                     GLOBAL_ORG_PRINCIPAL,
                     title,
                     Optional.empty(),
-                    ImmutableSet.of(),
-                    ImmutableSet.of(),
-                    ImmutableSet.of()
+                    mutableSetOf(),
+                    mutableSetOf(),
+                    mutableSetOf(),
+                    mutableSetOf(),
+                    Optional.of(mutableSetOf()),
+                    Optional.of(partitions.toMutableList())
             )
         }
 
-        private fun createOpenLatticeOrg(): Organization {
-            val id = OPENLATTICE_ORGANIZATION_ID
-            val title = "OpenLattice, Inc."
-            return Organization(
-                    Optional.of(id),
-                    OPENLATTICE_ORG_PRINCIPAL,
-                    title,
-                    Optional.empty(),
-                    ImmutableSet.of(),
-                    ImmutableSet.of(),
-                    ImmutableSet.of()
-            )
-        }
+
     }
 }

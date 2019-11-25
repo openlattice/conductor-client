@@ -9,7 +9,7 @@ import com.openlattice.analysis.requests.ValueFilter
 import com.openlattice.data.storage.entityKeyIdColumns
 import com.openlattice.data.storage.selectEntitySetWithCurrentVersionOfPropertyTypes
 import com.openlattice.datastore.services.EdmManager
-import com.openlattice.edm.EntitySet
+import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.processing.processors.AssociationProcessor
@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock
 
 class GraphProcessingService(
         private val edm: EdmManager,
+        private val entitySetManager: EntitySetManager,
         private val hds: HikariDataSource,
         hazelcastInstance: HazelcastInstance,
         processorsToRegister: Set<GraphProcessor>
@@ -80,7 +81,7 @@ class GraphProcessingService(
     }
 
     private fun markPropagated(rootProp: Propagation): Int {
-        val entitySetIds = edm.getEntitySetsOfType(rootProp.entityTypeId).map { it.id }
+        val entitySetIds = entitySetManager.getEntitySetIdsOfType(rootProp.entityTypeId)
         val propertyTypes = this.propertyTypes.getAll(setOf(rootProp.propertyTypeId))
 
         try {
@@ -125,9 +126,9 @@ class GraphProcessingService(
     }
 
     private fun markIfNeedsPropagation(input: Propagation, outputs: Set<Propagation>, isSelf: Boolean): Int {
-        val entitySetIds = edm.getEntitySetsOfType(input.entityTypeId).map { it.id }
+        val entitySetIds = entitySetManager.getEntitySetIdsOfType(input.entityTypeId)
         val propertyTypes = this.propertyTypes.getAll(setOf(input.propertyTypeId))
-        val outputEntitySetIds = outputs.flatMap { edm.getEntitySetsOfType(it.entityTypeId) }.map { it.id }
+        val outputEntitySetIds = outputs.flatMap { entitySetManager.getEntitySetIdsOfType(it.entityTypeId) }
         val outputPropertyType = outputs.map { it.propertyTypeId }.toSet()
         val associationType = edm.getAssociationTypeSafe(input.entityTypeId) != null
 
@@ -254,8 +255,7 @@ class GraphProcessingService(
         return inputs.keys
                 .map(edm::getEntityType)
                 .map(EntityType::getId)
-                .flatMap(edm::getEntitySetsOfType)
-                .map(EntitySet::getId)
+                .flatMap(entitySetManager::getEntitySetIdsOfType)
                 .toSet()
     }
 
@@ -475,7 +475,7 @@ internal fun buildGetActivePropertiesSql(
         listOf(ENTITY_SET_ID.name, ID_VALUE.name)
                 .union(propertyTypes.map {
                     val alias = propertyAliases[it.value.type] ?: it.value.type.fullQualifiedNameAsString
-                    "${DataTables.quote(it.value.type.fullQualifiedNameAsString)} AS ${DataTables.quote(alias)}"
+                    "${quote(it.value.type.fullQualifiedNameAsString)} AS ${DataTables.quote(alias)}"
                 })
                 .joinToString(separator = ", ")
     }
@@ -490,7 +490,7 @@ internal fun buildGetActivePropertiesSql(
             propertyTypes.mapValues{ it.value.datatype == EdmPrimitiveTypeKind.Binary }.toMap(),
             false,
             false,
-            " AND last_propagate >= last_write ")
+            " AND ${LAST_PROPAGATE.name} >= ${LAST_WRITE.name} ")
 
     return " SELECT $columns FROM ($selectEntities) as entities "
 }
@@ -517,7 +517,7 @@ internal fun buildGetBlockedPropertiesSql(
             propertyTypeIds.mapValues { it.value.datatype == EdmPrimitiveTypeKind.Binary },
             false,
             false,
-            " AND last_propagate < last_write "
+            " AND ${LAST_PROPAGATE.name} < ${LAST_WRITE.name} "
     )
 }
 

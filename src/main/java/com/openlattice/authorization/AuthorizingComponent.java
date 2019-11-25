@@ -25,21 +25,26 @@ package com.openlattice.authorization;
 import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
 import static com.openlattice.authorization.EdmAuthorizationHelper.WRITE_PERMISSION;
 
+import com.openlattice.IdConstants;
 import com.openlattice.authorization.securable.AbstractSecurableObject;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.controllers.exceptions.ForbiddenException;
 import com.openlattice.edm.type.PropertyType;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface AuthorizingComponent {
+    Set<UUID> internalIds = Arrays.stream( IdConstants.values() ).map( IdConstants::getId )
+            .collect( Collectors.toSet() );
     Logger logger = LoggerFactory.getLogger( AuthorizingComponent.class );
 
     AuthorizationManager getAuthorizationManager();
@@ -83,8 +88,12 @@ public interface AuthorizingComponent {
         accessCheck( aclKey, EnumSet.of( Permission.LINK ) );
     }
 
+    default boolean isAdmin() {
+        return Principals.getCurrentPrincipals().contains( Principals.getAdminRole() );
+    }
+
     default void ensureAdminAccess() {
-        if ( !Principals.getCurrentPrincipals().contains( Principals.getAdminRole() ) ) {
+        if ( !isAdmin() ) {
             throw new ForbiddenException( "Only admins are allowed to perform this action." );
         }
     }
@@ -138,5 +147,23 @@ public interface AuthorizingComponent {
                 Principals.getCurrentPrincipals(),
                 securableObjectType,
                 requiredPermissions );
+    }
+
+    default Stream<AclKey> getAccessibleObjects(
+            SecurableObjectType securableObjectType,
+            EnumSet<Permission> requiredPermissions,
+            com.hazelcast.query.Predicate additionalFilters ) {
+        return getAuthorizationManager().getAuthorizedObjectsOfType(
+                Principals.getCurrentPrincipals(),
+                securableObjectType,
+                requiredPermissions,
+                additionalFilters );
+    }
+
+    default void ensureObjectCanBeDeleted( UUID objectId ) {
+        if ( internalIds.contains( objectId ) ) {
+            throw new ForbiddenException(
+                    "Object " + objectId.toString() + " cannot be deleted because this id is reserved." );
+        }
     }
 }

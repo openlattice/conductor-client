@@ -23,6 +23,7 @@ package com.openlattice.ids.tasks
 
 import com.openlattice.ids.IdCatchupEntryProcessor
 import com.openlattice.tasks.HazelcastInitializationTask
+import com.openlattice.tasks.Task
 
 /**
  *
@@ -35,7 +36,7 @@ class IdGenerationCatchUpTask : HazelcastInitializationTask<IdGenerationCatchupD
     }
 
     override fun initialize(dependencies: IdGenerationCatchupDependency) {
-        dependencies.idGenerationMap.executeOnEntries(IdCatchupEntryProcessor(dependencies.hds))
+//        dependencies.idGenerationMap.executeOnEntries(IdCatchupEntryProcessor(dependencies.hds))
     }
 
     override fun after(): Set<Class<out HazelcastInitializationTask<*>>> {
@@ -43,7 +44,7 @@ class IdGenerationCatchUpTask : HazelcastInitializationTask<IdGenerationCatchupD
     }
 
     override fun getName(): String {
-        return "idgen_catch_up"
+        return Task.ID_GEN_CATCH_UP.name
     }
 
     override fun getDependenciesClass(): Class<out IdGenerationCatchupDependency> {

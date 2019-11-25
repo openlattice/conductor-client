@@ -6,15 +6,6 @@
 enable-persistence:  false
 session-clustering-enabled: false
 
-cassandra:
-    random-ports: true
-    embedded: true
-    ssl-enabled: false
-    keyspace: "sparks"
-    replication-factor: 1
-    seed-nodes:
-        - "localhost"
-
 hazelcast:
     server: true
     group: "local"
@@ -27,5 +18,5 @@ postgres:
         jdbcUrl: jdbc:postgresql://localhost:5432/openlattice
         username: "oltest"
         password: "test"
-        maximumPoolSize: 50
+        maximumPoolSize: 10
         connectionTimeout: 12000000 #20 minutes

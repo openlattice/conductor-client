@@ -22,9 +22,7 @@
 package com.openlattice.authorization.initializers
 
 import com.openlattice.authorization.SystemRole
-import com.openlattice.organization.OrganizationConstants.Companion.GLOBAL_ORGANIZATION_ID
-import com.openlattice.organization.OrganizationConstants.Companion.OPENLATTICE_ORGANIZATION_ID
-import com.openlattice.organization.OrganizationConstants.Companion.ROOT_PRINCIPAL_ID
+import com.openlattice.IdConstants.GLOBAL_ORGANIZATION_ID
 import com.openlattice.organization.roles.Role
 import com.openlattice.tasks.HazelcastInitializationTask
 import com.openlattice.tasks.Task
@@ -38,11 +36,10 @@ import java.util.concurrent.TimeUnit
 class AuthorizationInitializationTask : HazelcastInitializationTask<AuthorizationInitializationDependencies> {
     override fun initialize(dependencies: AuthorizationInitializationDependencies) {
         val spm = dependencies.securePrincipalsManager
-        spm.createSecurablePrincipalIfNotExists(SystemRole.OPENLATTICE.principal, OPENLATTICE_ROLE)
         spm.createSecurablePrincipalIfNotExists(SystemRole.AUTHENTICATED_USER.principal, GLOBAL_USER_ROLE)
         spm.createSecurablePrincipalIfNotExists(SystemRole.ADMIN.principal, GLOBAL_ADMIN_ROLE)
         val source = spm.lookup(SystemRole.AUTHENTICATED_USER.principal)
-        val target = spm.lookup(SystemRole.AUTHENTICATED_USER.principal)
+        val target = spm.lookup(SystemRole.ADMIN.principal)
         spm.addPrincipalToPrincipal(source, target)
     }
 
@@ -69,18 +66,9 @@ class AuthorizationInitializationTask : HazelcastInitializationTask<Authorizatio
     companion object {
 
         @JvmField
-        val OPENLATTICE_ROLE = Role(
-                Optional.of(ROOT_PRINCIPAL_ID),
-                OPENLATTICE_ORGANIZATION_ID,
-                SystemRole.OPENLATTICE.principal,
-                "OpenLattice Root Group",
-                Optional.of("Initial account granting access to everything.")
-        )
-
-        @JvmField
         val GLOBAL_USER_ROLE = Role(
                 Optional.empty(),
-                GLOBAL_ORGANIZATION_ID,
+                GLOBAL_ORGANIZATION_ID.id,
                 SystemRole.AUTHENTICATED_USER.principal,
                 "OpenLattice User Role",
                 Optional.of("The default user role granted to all authenticated users of the system.")
@@ -89,7 +77,7 @@ class AuthorizationInitializationTask : HazelcastInitializationTask<Authorizatio
         @JvmField
         val GLOBAL_ADMIN_ROLE = Role(
                 Optional.empty(),
-                GLOBAL_ORGANIZATION_ID,
+                GLOBAL_ORGANIZATION_ID.id,
                 SystemRole.ADMIN.principal,
                 "Global Admin Role",
                 Optional.of("The global administrative role that allows management of entity data model.")

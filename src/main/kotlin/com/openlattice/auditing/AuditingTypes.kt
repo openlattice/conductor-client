@@ -2,6 +2,7 @@ package com.openlattice.auditing
 
 import com.openlattice.controllers.exceptions.ResourceNotFoundException
 import com.openlattice.datastore.services.EdmManager
+import com.openlattice.edm.type.AssociationType
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -14,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock
  *
  */
 class AuditingTypes(
-        val edm: EdmManager,
+        private val edm: EdmManager,
         private val auditingConfiguration: AuditingConfiguration
 ) {
     companion object {
@@ -22,7 +23,10 @@ class AuditingTypes(
     }
 
     lateinit var entityType: EntityType
+    lateinit var edgeEntityType: AssociationType
     lateinit var auditingEntityTypeId: UUID
+    lateinit var auditingEdgeEntityTypeId: UUID
+
     val propertyTypes: MutableMap<UUID, PropertyType> = mutableMapOf()
     val propertyTypeIds: MutableMap<AuditProperty, UUID> = mutableMapOf()
     private val lock = ReentrantLock()
@@ -33,9 +37,13 @@ class AuditingTypes(
             if (lock.tryLock()) {
                 try {
                     val entityTypeFqn = FullQualifiedName(auditingConfiguration.entityTypeFqn)
+                    val edgeEntityTypeFqn = FullQualifiedName(auditingConfiguration.edgeEntityTypeFqn)
+
                     entityType = edm.getEntityType(entityTypeFqn)
+                    edgeEntityType = edm.getAssociationType(edgeEntityTypeFqn)
 
                     auditingEntityTypeId = entityType.id
+                    auditingEdgeEntityTypeId = edgeEntityType.associationEntityType.id
 
                     auditingConfiguration.fqns.forEach {
                         val propertyType = edm.getPropertyType(
@@ -66,7 +74,7 @@ class AuditingTypes(
     }
 
     fun getPropertyTypeId(auditProperty: AuditProperty): UUID {
-        return if (auditingConfiguration.fqns.keys.contains(auditProperty)) {
+        if (auditingConfiguration.fqns.keys.contains(auditProperty)) {
             return propertyTypeIds[auditProperty]!!
         } else {
             throw ResourceNotFoundException("Audit property $auditProperty is not configured.")

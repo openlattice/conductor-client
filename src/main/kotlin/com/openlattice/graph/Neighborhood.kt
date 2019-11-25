@@ -21,9 +21,17 @@
 
 package com.openlattice.graph
 
+import java.util.*
+
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-data class Neighborhood( val foo: Int) {
-}
+
+data class Neighborhood (
+        // entity set id -> entity key id -> property, only issue is that this doesn't reflect the fact that property values are unique
+        // issue that property values may not all be valid keys in json map (in particular location data)
+        val entities: Map<UUID, Map<UUID, Map<UUID,Set<Any>>>>,
+        //self -> association entity set id -> neighbor entity setid -> Pair(association ek id, neighbor ek id)
+        val associations: Map<UUID, Map<UUID, Map<UUID, NeighborIds>>>
+)
