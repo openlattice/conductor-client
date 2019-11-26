@@ -924,8 +924,9 @@ public class SearchService {
     }
 
     private PostgresIterable<Pair<UUID, Set<UUID>>> getEntityKeyIdsByLinkingIds(
-            Set<UUID> linkingIds ) {
-        return dataManager.getEntityKeyIdsOfLinkingIds( linkingIds );
+            Set<UUID> linkingIds,
+            Set<UUID> normalEntitySetIds ) {
+        return dataManager.getEntityKeyIdsOfLinkingIds( linkingIds, normalEntitySetIds );
     }
 
     public static UUID getEntityKeyId( Map<FullQualifiedName, Set<Object>> entity ) {

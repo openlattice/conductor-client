@@ -79,7 +79,7 @@ interface LinkingQueryService {
 
     fun lockClustersForUpdates(clusters: Set<UUID>): Connection
 
-    fun getEntityKeyIdsOfLinkingIds(linkingIds: Set<UUID>): PostgresIterable<Pair<UUID, Set<UUID>>>
+    fun getEntityKeyIdsOfLinkingIds(linkingIds: Set<UUID>, normalEntitySetIds: Set<UUID>): PostgresIterable<Pair<UUID, Set<UUID>>>
 
     fun createOrUpdateLink(linkingId: UUID, cluster: Map<UUID, LinkedHashSet<UUID>>)
 }

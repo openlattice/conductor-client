@@ -103,17 +103,20 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
     }
 
     override fun getEntitiesNotLinked(entitySetIds: Set<UUID>, limit: Int): PostgresIterable<Pair<UUID, UUID>> {
-        val partitionsInfo = partitionManager.getEntitySetPartitionsInfo(entitySetId)
+        val partitionsInfoByPartitionsVersion = getEntitySetIdsByPartition(entitySetIds)
 
         return PostgresIterable(Supplier {
             val connection = hds.connection
             val ps = connection.prepareStatement(ENTITY_KEY_IDS_NOT_LINKED)
-            val arr = PostgresArrays.createUuidArray(connection, entitySetIds)
-            val partitions = getPartitionsAsPGArray(connection, partitionsInfo)
-            ps.setArray(1, partitions)
-            ps.setArray(2, arr)
-            ps.setInt(3, partitionsInfo.partitionsVersion)
-            ps.setInt(4, limit)
+            partitionsInfoByPartitionsVersion.forEach { (partitionsVersion, partitionsByEntitySet) ->
+                val entitySetIdsArr = PostgresArrays.createUuidArray(connection, partitionsByEntitySet.first)
+                val partitions = PostgresArrays.createIntArray(connection, partitionsByEntitySet.second)
+                ps.setArray(1, partitions)
+                ps.setArray(2, entitySetIdsArr)
+                ps.setInt(3, partitionsVersion)
+                ps.setInt(4, limit)
+                ps.addBatch()
+            }
             val rs = ps.executeQuery()
             StatementHolder(connection, ps, rs)
         }, Function { ResultSetAdapters.entitySetId(it) to ResultSetAdapters.id(it) })
@@ -300,16 +303,24 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
         }
     }
 
-    override fun getEntityKeyIdsOfLinkingIds(linkingIds: Set<UUID>): PostgresIterable<Pair<UUID, Set<UUID>>> {
+    override fun getEntityKeyIdsOfLinkingIds(linkingIds: Set<UUID>, normalEntitySetIds: Set<UUID>): PostgresIterable<Pair<UUID, Set<UUID>>> {
+        val partitionsInfoByPartitionsVersion = getEntitySetIdsByPartition(normalEntitySetIds)
+
         return PostgresIterable(
                 Supplier {
                     val connection = hds.connection
                     val ps = connection.prepareStatement(ENTITY_KEY_IDS_OF_LINKING_IDS_SQL)
                     val linkingIdsArray = PostgresArrays.createUuidArray(connection, linkingIds)
 
-                    val partitions = PostgresArrays.createIntArray( connection, getPartitionsInfo( linkingIds, partitionManager.getAllPartitions() ))
-                    ps.setArray(1, partitions)
-                    ps.setArray(2, linkingIdsArray)
+                    partitionsInfoByPartitionsVersion.forEach { (partitionsVersion, partitionsByEntitySet) ->
+
+                        val entitySetIdsArr = PostgresArrays.createUuidArray(connection, partitionsByEntitySet.first)
+                        val partitions = PostgresArrays.createIntArray(connection, partitionsByEntitySet.second)
+                        ps.setArray(1, partitions)
+                        ps.setArray(2, entitySetIdsArr)
+                        ps.setInt(3, partitionsVersion)
+                        ps.setArray(4, linkingIdsArray)
+                    }
                     val rs = ps.executeQuery()
                     StatementHolder(connection, ps, rs)
                 },
@@ -334,6 +345,12 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
                 .flatMap { it.partitions }
                 .toSet()
         return PostgresArrays.createIntArray(connection, partitions)
+    }
+
+    private fun getEntitySetIdsByPartition(entitySetIds: Set<UUID>): Map<Int, Pair<Set<UUID>, Set<Int>>> {
+        return partitionManager
+                .getEntitySetsPartitionsInfo(entitySetIds).entries.groupBy { it.value.partitionsVersion }
+                .mapValues { it.value.map { entry -> entry.key }.toSet() to it.value.flatMap { entry -> entry.value.partitions }.toSet() }
     }
 }
 
@@ -426,5 +443,10 @@ private val LINKABLE_ENTITY_SET_IDS = "SELECT ${ID.name} " +
 
 private val ENTITY_KEY_IDS_OF_LINKING_IDS_SQL = "SELECT ${LINKING_ID.name}, array_agg(${ID.name}) AS ${ENTITY_KEY_IDS_COL.name} " +
         "FROM ${IDS.name} " +
-        "WHERE ${PARTITION.name} = ANY(?) AND ${VERSION.name} > 0 AND ${LINKING_ID.name} IS NOT NULL AND ${LINKING_ID.name} = ANY( ? ) " +
+            "WHERE ${PARTITION.name} = ANY(?) " +
+            "AND ${ENTITY_SET_ID.name} = ANY(?) " +
+            "AND ${PARTITIONS_VERSION.name} = ? " +
+            "AND ${VERSION.name} > 0 " +
+            "AND ${LINKING_ID.name} IS NOT NULL " +
+            "AND ${LINKING_ID.name} = ANY( ? ) " +
         "GROUP BY ${LINKING_ID.name}"
