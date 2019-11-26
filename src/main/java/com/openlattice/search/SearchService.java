@@ -104,6 +104,7 @@ import com.openlattice.search.requests.EntityNeighborsFilter;
 import com.openlattice.search.requests.SearchConstraints;
 import com.openlattice.search.requests.SearchResult;
 import com.openlattice.search.requests.SearchTerm;
+
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -119,6 +120,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+
 import kotlin.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -391,7 +393,7 @@ public class SearchService {
                             event.getEntities().entrySet().stream().collect( Collectors.toMap(
                                     Map.Entry::getKey,
                                     entity ->
-                                            ( OffsetDateTime ) entity.getValue()
+                                            (OffsetDateTime) entity.getValue()
                                                     .get( IdConstants.LAST_WRITE_ID.getId() ).iterator().next()
                             ) )
                     ),
@@ -589,7 +591,7 @@ public class SearchService {
         Set<UUID> allBaseEntitySetIds = Sets.newHashSet( entitySetIds );
 
         if ( linkingEntitySets.size() > 0 ) {
-            entityKeyIdsByLinkingId = getEntityKeyIdsByLinkingIds( entityKeyIds ).stream()
+            entityKeyIdsByLinkingId = getEntityKeyIdsByLinkingIds( entityKeyIds, allBaseEntitySetIds ).stream()
                     .collect( Collectors.toMap( Pair::getFirst, Pair::getSecond ) );
             entityKeyIdsByLinkingId.values().forEach( entityKeyIds::addAll );
             entityKeyIds.removeAll( entityKeyIdsByLinkingId.keySet() ); // remove linking ids
@@ -787,7 +789,10 @@ public class SearchService {
 
         Set<UUID> linkingIds = filter.getEntityKeyIds();
 
-        PostgresIterable<Pair<UUID, Set<UUID>>> entityKeyIdsByLinkingIds = getEntityKeyIdsByLinkingIds( linkingIds );
+        Set<UUID> normalEntitySetIds = entitySetService.getEntitySetsAsMap( linkedEntitySetIds ).values().stream()
+                .flatMap( es -> es.getLinkedEntitySets().stream() ).collect( Collectors.toSet() );
+
+        PostgresIterable<Pair<UUID, Set<UUID>>> entityKeyIdsByLinkingIds = getEntityKeyIdsByLinkingIds( linkingIds, normalEntitySetIds );
 
         Set<UUID> entityKeyIds = entityKeyIdsByLinkingIds.stream()
                 .flatMap( entityKeyIdsOfLinkingId -> entityKeyIdsOfLinkingId.getSecond().stream() )
