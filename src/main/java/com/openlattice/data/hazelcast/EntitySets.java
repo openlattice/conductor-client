@@ -23,6 +23,8 @@ package com.openlattice.data.hazelcast;
 import com.dataloom.streams.StreamUtil;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
+import com.openlattice.util.SingletonArrays;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +48,7 @@ public final class EntitySets {
     }
 
     public static Predicate getEntities( Collection<UUID> ids ) {
-        return getEntities( ids.toArray( new UUID[] {} ) );
+        return getEntities( ids.toArray( SingletonArrays.EMPTY_UUIDS ) );
     }
 
     public static Predicate getEntities( UUID[] ids ) {
@@ -60,7 +62,7 @@ public final class EntitySets {
     public static Predicate getEntity( UUID[] ids, Set<UUID> propertyTypeIds ) {
         return Predicates.and(
                 getEntities( ids ),
-                Predicates.in( "__key#propertyTypeId", propertyTypeIds.toArray( new UUID[] {} ) ) );
+                Predicates.in( "__key#propertyTypeId", propertyTypeIds.toArray( SingletonArrays.EMPTY_UUIDS ) ) );
     }
 
     public static Predicate getEntity( UUID entitySetId, UUID syncId, String entityId, Set<UUID> propertyTypeIds ) {
@@ -68,7 +70,7 @@ public final class EntitySets {
                 Predicates.equal( "__key#entitySetId", entitySetId ),
                 Predicates.equal( "__key#syncId", syncId ),
                 Predicates.equal( "__key#entityId", entityId ),
-                Predicates.in( "__key#propertyTypeId", propertyTypeIds.toArray( new UUID[] {} ) ) );
+                Predicates.in( "__key#propertyTypeId", propertyTypeIds.toArray( SingletonArrays.EMPTY_UUIDS ) ) );
     }
 
     public static Predicate filterByEntitySetIdAndSyncId( UUID entitySetId, UUID syncId ) {

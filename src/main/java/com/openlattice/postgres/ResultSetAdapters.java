@@ -72,6 +72,7 @@ import com.openlattice.search.requests.PersistentSearch;
 import com.openlattice.search.requests.SearchConstraints;
 import com.openlattice.subscriptions.Subscription;
 import com.openlattice.subscriptions.SubscriptionContactType;
+import com.openlattice.util.SingletonArrays;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.jetbrains.annotations.NotNull;
@@ -836,7 +837,7 @@ public final class ResultSetAdapters {
     }
 
     private static UUID[] readNullableUuidArray( UUID[] nullable ) {
-        return Objects.requireNonNullElseGet( nullable, () -> new UUID[ 0 ] );
+        return Objects.requireNonNullElseGet( nullable, () -> SingletonArrays.EMPTY_UUIDS );
     }
 
     public static UUID auditEdgeEntitySetId( ResultSet rs ) throws SQLException {

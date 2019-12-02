@@ -2,6 +2,7 @@ package com.openlattice.linking.mapstores;
 
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.Predicates;
+import com.openlattice.util.SingletonArrays;
 
 import java.util.Set;
 import java.util.UUID;
@@ -12,7 +13,7 @@ import java.util.UUID;
  */
 public class LinkingFeedbackPredicateBuilder {
     public static Predicate inUuidArray( Set<UUID> values, String attribute) {
-        return Predicates.in(attribute, values.toArray( new UUID[0] ));
+        return Predicates.in(attribute, values.toArray( SingletonArrays.EMPTY_UUIDS ));
     }
 
 }
