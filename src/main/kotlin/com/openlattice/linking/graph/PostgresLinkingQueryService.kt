@@ -303,13 +303,7 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
 
                     ps.setArray(1, linkingIdsArray)
                     if (normalEntitySetIds != null) {
-
-                        /* Note: this inclusion may or may not speed up the function, depending how many partitions are
-                           covered by all the normal entity sets requested */
-                        val allPartitionsOfNormalEntitySets = partitionManager.getPartitionsByEntitySetId(normalEntitySetIds).values.flatten()
-
                         ps.setArray(2, PostgresArrays.createUuidArray(connection, normalEntitySetIds))
-                        ps.setArray(3, PostgresArrays.createIntArray(connection, allPartitionsOfNormalEntitySets))
                     }
                     val rs = ps.executeQuery()
                     StatementHolder(connection, ps, rs)
@@ -376,7 +370,7 @@ internal fun buildFilterEntityKeyPairs(entityKeyPairs: Collection<EntityKeyPair>
  */
 internal fun buildEntityKeyIdsOfLinkingIdsSql(filterEntitySetIds: Boolean): String {
     val maybeEntitySetIdsClause = if (filterEntitySetIds)
-        "AND ${ENTITY_SET_ID.name} = ANY(?) AND ${PARTITIONS.name} = ANY(?) "
+        "AND ${ENTITY_SET_ID.name} = ANY(?) "
     else ""
 
     return "SELECT ${LINKING_ID.name}, array_agg(${ID.name}) AS ${ENTITY_KEY_IDS_COL.name} " +
