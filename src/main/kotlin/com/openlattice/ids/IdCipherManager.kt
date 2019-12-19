@@ -26,7 +26,6 @@ import com.openlattice.hazelcast.HazelcastMap
 import java.nio.ByteBuffer
 import java.util.*
 import javax.crypto.Cipher
-import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec

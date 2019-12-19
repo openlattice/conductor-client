@@ -72,6 +72,10 @@ interface DataGraphManager {
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): Map<FullQualifiedName, Set<Any>>
 
+    /**
+     * Returns linked entity set data detailed in a Map, mapped by linking id, (normal) entity set id, origin id,
+     * property type full qualified name and values respectively.
+     */
     fun getLinkedEntitySetBreakDown(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>

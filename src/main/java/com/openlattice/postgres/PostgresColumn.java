@@ -45,7 +45,9 @@ public final class PostgresColumn {
             new PostgresColumnDefinition( ACL_KEY_FIELD, UUID_ARRAY );
     public static final String                   ALGORITHM_FIELD                   = "algorithm";
     public static final PostgresColumnDefinition ALGORITHM                         =
-            new PostgresColumnDefinition( ALGORITHM_FIELD, TEXT ).notNull();
+            new PostgresColumnDefinition( ALGORITHM_FIELD, TEXT )
+                    .withDefault( "AES" )
+                    .notNull();
     public static final String                   ALERT_METADATA_FIELD              = "alert_metadata";
     public static final PostgresColumnDefinition ALERT_METADATA                    =
             new PostgresColumnDefinition( ALERT_METADATA_FIELD, JSONB ).notNull();
