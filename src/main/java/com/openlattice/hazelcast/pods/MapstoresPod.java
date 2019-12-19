@@ -47,6 +47,8 @@ import com.openlattice.authorization.mapstores.PermissionMapstore;
 import com.openlattice.authorization.mapstores.PostgresCredentialMapstore;
 import com.openlattice.authorization.mapstores.PrincipalMapstore;
 import com.openlattice.authorization.mapstores.PrincipalTreesMapstore;
+import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader;
+import com.openlattice.authorization.mapstores.SecurablePrincipalsMapLoader;
 import com.openlattice.authorization.mapstores.UserMapstore;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.collections.CollectionTemplateKey;
@@ -68,34 +70,17 @@ import com.openlattice.ids.Range;
 import com.openlattice.ids.mapstores.LinkingEntitySetSecretKeyMapstore;
 import com.openlattice.linking.mapstores.LinkingFeedbackMapstore;
 import com.openlattice.notifications.sms.SmsInformationMapstore;
+import com.openlattice.organization.OrganizationExternalDatabaseColumn;
+import com.openlattice.organization.OrganizationExternalDatabaseTable;
 import com.openlattice.organizations.Organization;
-import com.openlattice.organizations.PrincipalSet;
+import com.openlattice.organizations.mapstores.OrganizationExternalDatabaseColumnMapstore;
+import com.openlattice.organizations.mapstores.OrganizationExternalDatabaseTableMapstore;
 import com.openlattice.organizations.mapstores.OrganizationsMapstore;
 import com.openlattice.postgres.PostgresPod;
 import com.openlattice.postgres.PostgresTableManager;
-import com.openlattice.postgres.mapstores.AclKeysMapstore;
-import com.openlattice.postgres.mapstores.AppConfigMapstore;
-import com.openlattice.postgres.mapstores.AppMapstore;
-import com.openlattice.postgres.mapstores.AppTypeMapstore;
-import com.openlattice.postgres.mapstores.AssociationTypeMapstore;
-import com.openlattice.postgres.mapstores.AuditRecordEntitySetConfigurationMapstore;
-import com.openlattice.postgres.mapstores.EntitySetMapstore;
-import com.openlattice.postgres.mapstores.EntitySetPropertyMetadataMapstore;
-import com.openlattice.postgres.mapstores.EntityTypeMapstore;
-import com.openlattice.postgres.mapstores.MaterializedEntitySetMapStore;
-import com.openlattice.postgres.mapstores.NamesMapstore;
-import com.openlattice.postgres.mapstores.OrganizationAppsMapstore;
-import com.openlattice.postgres.mapstores.OrganizationAssemblyMapstore;
-import com.openlattice.postgres.mapstores.OrganizationDescriptionsMapstore;
-import com.openlattice.postgres.mapstores.OrganizationEmailDomainsMapstore;
-import com.openlattice.postgres.mapstores.OrganizationMembersMapstore;
-import com.openlattice.postgres.mapstores.OrganizationTitlesMapstore;
-import com.openlattice.postgres.mapstores.RequestsMapstore;
-import com.openlattice.postgres.mapstores.SchemasMapstore;
-import com.openlattice.postgres.mapstores.SecurableObjectTypeMapstore;
+import com.openlattice.postgres.mapstores.*;
 import com.openlattice.requests.Status;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
-import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
 import java.sql.Connection;
@@ -110,6 +95,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+
 
 @Configuration
 @Import( { PostgresPod.class, Auth0Pod.class } )
@@ -268,7 +254,7 @@ public class MapstoresPod {
     public QueueConfigurer linkingIndexingQueueConfigurer() {
         return config -> config
                 .setName( HazelcastQueue.LINKING_INDEXING.name() )
-                .setMaxSize( 128_000 )
+                .setMaxSize( 10_000 )
                 .setBackupCount( 1 );
     }
 
@@ -276,7 +262,7 @@ public class MapstoresPod {
     public QueueConfigurer linkingUnIndexingQueueConfigurer() {
         return config -> config
                 .setName( HazelcastQueue.LINKING_UNINDEXING.name() )
-                .setMaxSize( 128_000 )
+                .setMaxSize( 10_000 )
                 .setBackupCount( 1 );
     }
 
@@ -316,6 +302,16 @@ public class MapstoresPod {
     }
 
     @Bean
+    public SelfRegisteringMapStore<UUID, OrganizationExternalDatabaseTable> organizationExternalDatabaseTableMapstore() {
+        return new OrganizationExternalDatabaseTableMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, OrganizationExternalDatabaseColumn> organizationExternalDatabaseColumnMapstore() {
+        return new OrganizationExternalDatabaseColumnMapstore( hikariDataSource );
+    }
+
+    @Bean
     public Auth0TokenProvider auth0TokenProvider() {
         return new Auth0TokenProvider( auth0Configuration );
     }
@@ -334,10 +330,18 @@ public class MapstoresPod {
     public SmsInformationMapstore smsInformationMapstore() {
         return new SmsInformationMapstore( hikariDataSource );
     }
-    
+
     @Bean
     public SelfRegisteringMapStore<UUID, SecretKeySpec> linkingEntitySetSecretKeyMapstore() {
         return new LinkingEntitySetSecretKeyMapstore( hikariDataSource );
     }
 
+    @Bean
+    public SecurablePrincipalsMapLoader securablePrincipalsMapLoader() {
+        return new SecurablePrincipalsMapLoader( );
+    }
+    @Bean
+    public ResolvedPrincipalTreesMapLoader resolvedPrincipalTreesMapLoader() {
+        return new ResolvedPrincipalTreesMapLoader();
+    }
 }

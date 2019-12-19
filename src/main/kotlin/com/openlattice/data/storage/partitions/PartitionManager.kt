@@ -20,7 +20,6 @@ import com.zaxxer.hikari.HikariDataSource
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.util.*
-import java.util.function.Consumer
 
 const val DEFAULT_PARTITION_COUNT = 2
 
@@ -80,20 +79,20 @@ class PartitionManager @JvmOverloads constructor(
         return organizations.executeOnKey(organizationId, OrganizationReadEntryProcessor { it.partitions }) as List<Int>
     }
 
-    fun getEntitySetPartitionsInfo(entitySetId: UUID): PartitionsInfo {
+    fun getEntitySetPartitions(entitySetId: UUID): Set<Int> {
         //TODO: Consider doing this using an entry processor
         val entitySet = entitySets.getValue(entitySetId)
-        return PartitionsInfo(entitySet.partitions, entitySet.partitionsVersion)
+        return entitySet.partitions
     }
 
-    fun getEntitySetsPartitionsInfo(entitySetIds: Set<UUID>): Map<UUID, PartitionsInfo> {
+    fun getPartitionsByEntitySetId(entitySetIds: Set<UUID>): Map<UUID, Set<Int>> {
         val entitySets = entitySets.getAll(entitySetIds).values
-        return entitySets.map { it.id to PartitionsInfo(it.partitions, it.partitionsVersion) }.toMap()
+        return entitySets.map { it.id to it.partitions }.toMap()
     }
 
     /**
      * Performs the initial allocation of partitions for an entity set based on default partitions for the organization
-     * it belongs to or all partitions if an audit entity set
+     * it belongs to
      * entity sets.
      *
      * @param entitySet The entity set to allocate partitions for.
@@ -101,7 +100,8 @@ class PartitionManager @JvmOverloads constructor(
      *
      * @return Returns the entity set that was passed which has been modified with its partition allocation.
      */
-    fun allocatePartitions(entitySet: EntitySet, partitionCount: Int): EntitySet {
+    @JvmOverloads
+    fun allocatePartitions(entitySet: EntitySet, partitionCount: Int = 0): EntitySet {
         isValidAllocation(partitionCount)
         val allocatedPartitions = computePartitions(entitySet, partitionCount)
         entitySet.setPartitions(allocatedPartitions)
@@ -110,7 +110,7 @@ class PartitionManager @JvmOverloads constructor(
 
     /**
      * Performs the initial allocation of partitions for an entity set based on default partitions for the organization
-     * it belongs to or all partitions if an audit entity set
+     * it belongs to
      * entity sets.
      *
      * @param entitySetId The entity set to allocate partitions for.
@@ -125,13 +125,11 @@ class PartitionManager @JvmOverloads constructor(
 
     private fun computePartitions(entitySet: EntitySet, partitionCount: Int): List<Int> {
         val defaults = getDefaultPartitions(entitySet.organizationId)
-        return when {
-            entitySet.flags.contains(EntitySetFlag.AUDIT) -> Collections.unmodifiableList(partitionList)
-            else -> if (defaults.size < partitionCount) {
-                defaults + partitionList.toList().shuffled().take(partitionCount - defaults.size)
-            } else {
-                defaults
-            }
+
+        return if (defaults.size < partitionCount) {
+            defaults + partitionList.toList().shuffled().take(partitionCount - defaults.size)
+        } else {
+            defaults
         }
     }
 

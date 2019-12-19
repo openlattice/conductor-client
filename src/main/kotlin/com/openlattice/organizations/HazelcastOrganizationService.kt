@@ -196,7 +196,7 @@ class HazelcastOrganizationService(
         organizations.executeOnKey(organizationId, OrganizationEntryProcessor {
             it.securablePrincipal.title = title
         })
-        eventBus!!.post(OrganizationUpdatedEvent(organizationId, Optional.of(title), Optional.empty()))
+        eventBus.post(OrganizationUpdatedEvent(organizationId, Optional.of(title), Optional.empty()))
     }
 
     fun updateDescription(organizationId: UUID, description: String) {
@@ -205,7 +205,7 @@ class HazelcastOrganizationService(
         organizations.executeOnKey(organizationId, OrganizationEntryProcessor {
             it.securablePrincipal.description = description
         })
-        eventBus!!.post(OrganizationUpdatedEvent(organizationId, Optional.empty(), Optional.of(description)))
+        eventBus.post(OrganizationUpdatedEvent(organizationId, Optional.empty(), Optional.of(description)))
     }
 
     fun getEmailDomains(organizationId: UUID): Set<String> {
@@ -240,14 +240,15 @@ class HazelcastOrganizationService(
 
     @JvmOverloads
     fun addMembers(
-            organizationId: UUID, members: Set<Principal>,
+            organizationId: UUID,
+            members: Set<Principal>,
             profiles: Map<Principal, Map<String, Set<String>>> = members
                     .associateWith { getAppMetadata(users.getValue(it.id)) }
     ) {
         addMembers(AclKey(organizationId), members, profiles)
         val securablePrincipals = securePrincipalsManager.getSecurablePrincipals(members)
-        eventBus!!.post(
-                MembersAddedToOrganizationEvent(organizationId, SecurablePrincipalList(securablePrincipals))
+        eventBus.post(
+                MembersAddedToOrganizationEvent(organizationId, SecurablePrincipalList(securablePrincipals.toMutableList()))
         )
     }
 
@@ -332,7 +333,7 @@ class HazelcastOrganizationService(
         eventBus.post(
                 MembersRemovedFromOrganizationEvent(
                         organizationId,
-                        SecurablePrincipalList(securablePrincipals)
+                        SecurablePrincipalList(securablePrincipals.toMutableList())
                 )
         )
     }
@@ -536,18 +537,21 @@ class HazelcastOrganizationService(
         return organizations.keySet(
                 Predicates.and(
                         Predicates.`in`(CONNECTIONS_INDEX, *connections.toTypedArray()),
-                        Predicates.`in`(MEMBERS_INDEX, principal)
+                        Predicates.not(Predicates.`in`(MEMBERS_INDEX, principal) )
                 )
         )
     }
 
     fun getOrganizationsWithoutUserAndWithConnectionsAndDomains(
-            connections: Collection<String>, emailDomain: String
+            principal: Principal,
+            connections: Collection<String>,
+            emailDomain: String
     ): Set<UUID> {
         return organizations.keySet(
                 Predicates.and(
                         Predicates.`in`(CONNECTIONS_INDEX, *connections.toTypedArray()),
-                        Predicates.`in`(DOMAINS_INDEX, emailDomain)
+                        Predicates.`in`(DOMAINS_INDEX, emailDomain),
+                        Predicates.not(Predicates.`in`(MEMBERS_INDEX, principal) )
                 )
         )
     }

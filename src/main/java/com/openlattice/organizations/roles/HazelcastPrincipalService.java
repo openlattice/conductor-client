@@ -22,6 +22,7 @@ package com.openlattice.organizations.roles;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.openlattice.authorization.mapstores.PrincipalMapstore.PRINCIPAL_ID_INDEX;
 
 import com.auth0.json.mgmt.users.User;
 import com.google.common.base.MoreObjects;
@@ -66,6 +67,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,8 +200,7 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     @Override
     public SetMultimap<SecurablePrincipal, SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId ) {
-        //  new PagingPredicate<>();
-        return null;
+        throw new NotImplementedException( "This hasn't been implemented yet." );
     }
 
     @Override
@@ -384,6 +385,12 @@ public class HazelcastPrincipalService implements SecurePrincipalsManager, Autho
 
     private static Predicate hasSecurablePrincipal( AclKey principalAclKey ) {
         return Predicates.and( Predicates.equal( "this.index[any]", principalAclKey.getIndex() ) );
+    }
+
+    @Override
+    public SecurablePrincipal getSecurablePrincipalById( UUID id ) {
+        return principals.values( Predicates.equal( PRINCIPAL_ID_INDEX, id ) )
+                .stream().findFirst().get();
     }
 
 }

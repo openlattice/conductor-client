@@ -31,6 +31,7 @@ import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
 import com.hazelcast.query.QueryConstants
 import com.openlattice.assembler.events.MaterializedEntitySetEdmChangeEvent
+import com.openlattice.assembler.processors.EntitySetContainsFlagEntryProcessor
 import com.openlattice.auditing.AuditRecordEntitySetsManager
 import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.auditing.AuditingTypes
@@ -102,7 +103,7 @@ open class EntitySetService(
         ensureValidEntitySet(entitySet)
 
         if (entitySet.partitions.isEmpty()) {
-            partitionManager.allocatePartitions(entitySet, partitionManager.getPartitionCount())
+            partitionManager.allocatePartitions(entitySet)
         }
 
         if (entityType.category == SecurableObjectType.AssociationType) {
@@ -300,8 +301,15 @@ open class EntitySetService(
     }
 
     override fun isAssociationEntitySet(entitySetId: UUID): Boolean {
-        val entityTypeId = getEntitySet(entitySetId)!!.entityTypeId
-        return associationTypes.containsKey(entityTypeId)
+        return containsFlag(entitySetId, EntitySetFlag.ASSOCIATION)
+    }
+
+    override fun containsFlag(entitySetId: UUID, flag: EntitySetFlag): Boolean {
+        return entitySets.executeOnKey(entitySetId, EntitySetContainsFlagEntryProcessor(flag)) as Boolean
+    }
+
+    override fun entitySetsContainFlag(entitySetIds: Set<UUID>, flag: EntitySetFlag): Boolean {
+        return entitySets.executeOnKeys(entitySetIds, EntitySetContainsFlagEntryProcessor(flag)).values.any { it as Boolean }
     }
 
     @Timed
