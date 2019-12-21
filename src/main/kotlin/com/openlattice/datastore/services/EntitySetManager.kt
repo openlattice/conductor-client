@@ -96,5 +96,9 @@ interface EntitySetManager {
     fun getAuditRecordEntitySetsManager(): AuditRecordEntitySetsManager
 
     fun containsFlag(entitySetId: UUID, flag: EntitySetFlag): Boolean
+
+    /**
+     * Returns true, if any of the entity sets contain the flag.
+     */
     fun entitySetsContainFlag(entitySetIds: Set<UUID>, flag: EntitySetFlag): Boolean
 }
