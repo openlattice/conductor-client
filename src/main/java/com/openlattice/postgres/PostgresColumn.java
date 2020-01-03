@@ -35,6 +35,7 @@ import static com.openlattice.postgres.PostgresDatatype.UUID_ARRAY;
 
 import com.openlattice.IdConstants;
 import com.openlattice.edm.type.Analyzer;
+import com.openlattice.ids.IdCipherManager;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -46,7 +47,7 @@ public final class PostgresColumn {
     public static final String                   ALGORITHM_FIELD                   = "algorithm";
     public static final PostgresColumnDefinition ALGORITHM                         =
             new PostgresColumnDefinition( ALGORITHM_FIELD, TEXT )
-                    .withDefault( "AES" )
+                    .withDefault( "'" + IdCipherManager.keySpecAlgorithm + "'" )
                     .notNull();
     public static final String                   ALERT_METADATA_FIELD              = "alert_metadata";
     public static final PostgresColumnDefinition ALERT_METADATA                    =

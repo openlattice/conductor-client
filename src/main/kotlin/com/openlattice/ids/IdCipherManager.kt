@@ -36,7 +36,7 @@ class IdCipherManager(
 ) {
     companion object {
         private const val keyAlgorithm = "PBKDF2WithHmacSHA1"
-        private const val keySpecAlgorithm = "AES"
+        const val keySpecAlgorithm = "AES"
         private const val cipherAlgorithm = "AES/ECB/NoPadding"
     }
 
