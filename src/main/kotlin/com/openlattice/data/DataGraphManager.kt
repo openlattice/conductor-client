@@ -21,7 +21,6 @@
 
 package com.openlattice.data
 
-import com.google.common.collect.ListMultimap
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
@@ -138,7 +137,7 @@ interface DataGraphManager {
     fun createAssociations(associations: Set<DataEdgeKey>): WriteEvent
 
     fun createAssociations(
-            associations: ListMultimap<UUID, DataEdge>,
+            associations: Map<UUID, List<DataEdge>>,
             authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, CreateAssociationEvent>
 

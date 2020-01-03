@@ -1,7 +1,6 @@
 package com.openlattice.auditing
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.common.collect.ArrayListMultimap
 import com.google.common.collect.ImmutableMap
 import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
@@ -65,25 +64,24 @@ class AuditingIntegrationService(
                         if (auditEntitySetConfiguration.auditEdgeEntitySet != null) {
                             val auditEdgeEntitySet = auditEntitySetConfiguration.auditEdgeEntitySet
 
-                            val lm = ArrayListMultimap.create<UUID, DataEdge>()
+                            val dataEdges = mutableListOf<DataEdge>()
                             entityKeyIds.asSequence().zip(entities.asSequence())
                                     .filter { it.second.entities.isPresent }
                                     .forEach { (auditEntityKeyId, ae) ->
                                         val aeEntitySetId = ae.aclKey[0]
                                         val aeEntityKeyIds = ae.entities.get()
                                         aeEntityKeyIds.forEach { id ->
-                                            lm.put(
-                                                    auditEdgeEntitySet,
+                                            dataEdges.add(
                                                     DataEdge(
                                                             EntityDataKey(aeEntitySetId, id),
                                                             EntityDataKey(auditEntitySet, auditEntityKeyId),
                                                             ImmutableMap.of()
                                                     )
                                             )
-                                            return@forEach
                                         }
                                     }
-                            dgm.createAssociations(lm, ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
+                            val associations = mutableMapOf(auditEdgeEntitySet to dataEdges)
+                            dgm.createAssociations(associations, ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
 
                         }
                         entityKeyIds.size

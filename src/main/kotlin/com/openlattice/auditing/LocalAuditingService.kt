@@ -1,7 +1,6 @@
 package com.openlattice.auditing
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.common.collect.ArrayListMultimap
 import com.google.common.collect.ImmutableMap
 import com.openlattice.data.DataEdge
 import com.openlattice.data.DataGraphManager
@@ -45,26 +44,25 @@ class LocalAuditingService(
                     if (auditEntitySetConfiguration.auditEdgeEntitySet != null) {
                         val auditEdgeEntitySet = auditEntitySetConfiguration.auditEdgeEntitySet
 
-                        val lm = ArrayListMultimap.create<UUID, DataEdge>()
+                        val dataEdges = mutableListOf<DataEdge>()
                         entityKeyIds.asSequence().zip(auditableEvents.asSequence())
                                 .filter { it.second.entities.isPresent }
                                 .forEach { (auditEntityKeyId, ae) ->
                                     val aeEntitySetId = ae.aclKey[0]
                                     val aeEntityKeyIds = ae.entities.get()
                                     aeEntityKeyIds.forEach { id ->
-                                        lm.put(
-                                                auditEdgeEntitySet,
+                                        dataEdges.add(
                                                 DataEdge(
                                                         EntityDataKey(aeEntitySetId, id),
                                                         EntityDataKey(auditEntitySet, auditEntityKeyId),
                                                         ImmutableMap.of()
                                                 )
                                         )
-                                        return@forEach
                                     }
                                 }
+                        val associations = mutableMapOf(auditEdgeEntitySet to dataEdges)
                         dataGraphService
-                                .createAssociations(lm, ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
+                                .createAssociations(associations, ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
 
                     }
                     entityKeyIds.size

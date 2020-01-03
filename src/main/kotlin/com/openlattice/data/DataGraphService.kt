@@ -22,8 +22,6 @@
 package com.openlattice.data
 
 import com.google.common.base.Stopwatch
-import com.google.common.collect.ListMultimap
-import com.google.common.collect.Multimaps
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
@@ -320,14 +318,13 @@ open class DataGraphService(
     }
 
     override fun createAssociations(
-            associations: ListMultimap<UUID, DataEdge>,
+            associations: Map<UUID, List<DataEdge>>,
             authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, CreateAssociationEvent> {
 
         val associationCreateEvents: MutableMap<UUID, CreateAssociationEvent> = mutableMapOf()
 
-        Multimaps
-                .asMap(associations)
+        associations
                 .forEach {
                     val entitySetId = it.key
 

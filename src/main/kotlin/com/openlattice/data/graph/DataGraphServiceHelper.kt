@@ -20,7 +20,6 @@
  */
 package com.openlattice.data.graph
 
-import com.google.common.collect.ListMultimap
 import com.openlattice.data.DataEdge
 import com.openlattice.data.DataEdgeKey
 import com.openlattice.data.integration.Association
@@ -80,7 +79,7 @@ class DataGraphServiceHelper(private val entitySetManager: EntitySetManager) {
      * Checks whether the entity type of the src and dst entity sets in each association are part of allowed src and dst
      * entity types of the association entity type.
      */
-    fun checkAssociationEntityTypes(associations: ListMultimap<UUID, DataEdge>) {
+    fun checkAssociationEntityTypes(associations: Map<UUID, List<DataEdge>>) {
         //Create graph structure and check entity types
         val srcAssociationEntitySetIds = mutableMapOf<UUID, MutableSet<UUID>>() // edge-src
         val dstAssociationEntitySetIds = mutableMapOf<UUID, MutableSet<UUID>>() // edge-dst
@@ -88,7 +87,7 @@ class DataGraphServiceHelper(private val entitySetManager: EntitySetManager) {
         val srcEsIdFqn = { association: Any -> (association as DataEdge).src.entitySetId }
         val dstEsIdFqn = { association: Any -> (association as DataEdge).dst.entitySetId }
 
-        associations.asMap().forEach { (edgeEsId, edges) ->
+        associations.forEach { (edgeEsId, edges) ->
             val edgeEsIdFqn = { _: Any -> edgeEsId }
 
             collectEntitySetIds(
