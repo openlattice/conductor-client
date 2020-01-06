@@ -58,6 +58,7 @@ import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.hazelcast.processors.AddEntitySetsToLinkingEntitySetProcessor
 import com.openlattice.hazelcast.processors.RemoveDataExpirationPolicyProcessor
 import com.openlattice.hazelcast.processors.RemoveEntitySetsFromLinkingEntitySetProcessor
+import com.openlattice.ids.IdCipherManager
 import com.openlattice.postgres.mapstores.EntitySetMapstore
 import edu.umd.cs.findbugs.classfile.ResourceNotFoundException
 import org.slf4j.LoggerFactory
@@ -71,6 +72,7 @@ open class EntitySetService(
         private val authorizations: AuthorizationManager,
         private val partitionManager: PartitionManager,
         private val edm: EdmManager,
+        private val idCipherManager: IdCipherManager,
         auditingConfiguration: AuditingConfiguration
 ) : EntitySetManager {
 
@@ -121,30 +123,15 @@ open class EntitySetService(
 
         try {
             setupDefaultEntitySetPropertyMetadata(entitySet.id, entitySet.entityTypeId)
-
-            authorizations.setSecurableObjectType(AclKey(entitySet.id), SecurableObjectType.EntitySet)
-
-            authorizations.addPermission(
-                    AclKey(entitySet.id),
-                    principal,
-                    EnumSet.allOf(Permission::class.java)
-            )
-
-            ownablePropertyTypeIds
-                    .map { propertyTypeId -> AclKey(entitySet.id, propertyTypeId) }
-                    .onEach { aclKey ->
-                        authorizations.setSecurableObjectType(aclKey, SecurableObjectType.PropertyTypeInEntitySet)
-                    }
-                    .forEach { aclKey ->
-                        authorizations.addPermission(aclKey, principal, EnumSet.allOf(Permission::class.java))
-                    }
-
-            val ownablePropertyTypes = propertyTypes.getAll(ownablePropertyTypeIds).values.toList()
-
+            val ownablePropertyTypes = setupEntitySetAuthorizations(principal, entitySet, ownablePropertyTypeIds)
             eventBus.post(EntitySetCreatedEvent(entitySet, ownablePropertyTypes))
 
             if (!entitySet.flags.contains(EntitySetFlag.AUDIT)) {
                 aresManager.createAuditEntitySetForEntitySet(entitySet)
+            }
+
+            if (entitySet.isLinking) { // create secret key for linking entity set
+                idCipherManager.assignSecretKey(entitySet.id)
             }
 
         } catch (e: Exception) {
@@ -177,6 +164,29 @@ open class EntitySetService(
                     true)
             entitySetPropertyMetadata[key] = metadata
         }
+    }
+
+    private fun setupEntitySetAuthorizations(
+            principal: Principal, entitySet: EntitySet, ownablePropertyTypeIds: Set<UUID>
+    ): List<PropertyType> {
+        authorizations.setSecurableObjectType(AclKey(entitySet.id), SecurableObjectType.EntitySet)
+
+        authorizations.addPermission(
+                AclKey(entitySet.id),
+                principal,
+                EnumSet.allOf(Permission::class.java)
+        )
+
+        ownablePropertyTypeIds
+                .map { propertyTypeId -> AclKey(entitySet.id, propertyTypeId) }
+                .onEach { aclKey ->
+                    authorizations.setSecurableObjectType(aclKey, SecurableObjectType.PropertyTypeInEntitySet)
+                }
+                .forEach { aclKey ->
+                    authorizations.addPermission(aclKey, principal, EnumSet.allOf(Permission::class.java))
+                }
+
+        return propertyTypes.getAll(ownablePropertyTypeIds).values.toList()
     }
 
     private fun createEntitySet(entitySet: EntitySet) {

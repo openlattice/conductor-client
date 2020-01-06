@@ -30,6 +30,7 @@ import com.openlattice.edm.PostgresEdmManager
 import com.openlattice.edm.properties.PostgresTypeManager
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
 import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
+import com.openlattice.ids.IdCipherManager
 import com.openlattice.mapstores.TestDataFactory
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.junit.Assert
@@ -60,6 +61,7 @@ class EdmAuthorizationHelperTest : HzAuthzTest() {
                 hzAuthz,
                 PartitionManager(hazelcastInstance, hds),
                 edmManager,
+                IdCipherManager(hazelcastInstance),
                 auditingConfig
         )
 
