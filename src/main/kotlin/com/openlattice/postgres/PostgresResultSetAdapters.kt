@@ -2,6 +2,7 @@ package com.openlattice.postgres
 
 import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.openlattice.IdConstants
 import com.openlattice.IdConstants.LAST_WRITE_ID
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.MetadataOption
@@ -13,18 +14,13 @@ import com.openlattice.edm.type.PropertyType
 import com.openlattice.postgres.ResultSetAdapters.*
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
-import org.slf4j.LoggerFactory
 import java.sql.*
-import java.sql.Date
-import java.time.Instant
 import java.time.OffsetDateTime
-import java.time.ZoneId
 import java.util.*
 
 
 internal class PostgresResultSetAdapters
 
-private val logger = LoggerFactory.getLogger(PostgresResultSetAdapters::class.java)
 private val mapper = ObjectMappers.newJsonMapper()
 
 @Throws(SQLException::class)
@@ -76,7 +72,7 @@ fun getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeId(
         Optional.empty()
     }
 
-    val entities = readJsonDataColumnsWithId(rs, propertyTypes, byteBlobDataManager, lastWrite)
+    val entities = readJsonDataColumnsWithOriginId(rs, propertyTypes, byteBlobDataManager, lastWrite)
 
     return id to (entitySetId to entities)
 }
@@ -102,7 +98,7 @@ fun getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeFqn(
         Optional.empty()
     }
 
-    val entities = readJsonDataColumnsWithId(rs, propertyTypes, byteBlobDataManager, lastWrite)
+    val entities = readJsonDataColumnsWithOriginId(rs, propertyTypes, byteBlobDataManager, lastWrite)
 
     val entityByFqn = entities.mapValues { (_, propertyValues) ->
         propertyValues.mapKeys {
@@ -165,7 +161,7 @@ fun readJsonDataColumns(
 }
 
 @Throws(SQLException::class)
-fun readJsonDataColumnsWithId(
+fun readJsonDataColumnsWithOriginId(
         rs: ResultSet,
         propertyTypes: Map<UUID, PropertyType>,
         byteBlobDataManager: ByteBlobDataManager,
@@ -209,42 +205,4 @@ fun readJsonDataColumnsWithId(
     }
 
     return entities
-}
-
-
-//TODO: If we are getting NPEs on read we may have to do better filtering here.
-@Throws(SQLException::class)
-private fun propertyValue(rs: ResultSet, propertyType: PropertyType): List<*>? {
-    val fqn = propertyType.type.fullQualifiedNameAsString
-
-    val arr = rs.getArray(fqn)
-    return if (arr != null) {
-        when (propertyType.datatype) {
-            EdmPrimitiveTypeKind.String, EdmPrimitiveTypeKind.GeographyPoint -> (arr.array as Array<String>).toList()
-            EdmPrimitiveTypeKind.Guid -> (arr.array as Array<UUID>).toList()
-            EdmPrimitiveTypeKind.Byte -> rs.getBytes(fqn)?.toList()
-            EdmPrimitiveTypeKind.Int16 -> (arr.array as Array<Short>).toList()
-            EdmPrimitiveTypeKind.Int32 -> (arr.array as Array<Int>).toList()
-            EdmPrimitiveTypeKind.Duration, EdmPrimitiveTypeKind.Int64 -> (arr.array as Array<Long>).toList()
-            EdmPrimitiveTypeKind.Date -> (arr.array as Array<Date>).map { it.toLocalDate() }
-            EdmPrimitiveTypeKind.TimeOfDay -> (arr.array as Array<Time>).map { it.toLocalTime() }
-            EdmPrimitiveTypeKind.DateTimeOffset -> (arr.array as Array<Timestamp>)
-                    .map { ts ->
-                        OffsetDateTime
-                                .ofInstant(Instant.ofEpochMilli(ts.time), ZoneId.of("UTC"))
-                    }
-            EdmPrimitiveTypeKind.Double -> (arr.array as Array<Double>).toList()
-            EdmPrimitiveTypeKind.Boolean -> (arr.array as Array<Boolean>).toList()
-            EdmPrimitiveTypeKind.Binary -> (arr.array as Array<String>).toList()
-            else -> {
-                logger.error(
-                        "Unable to read property type {}.",
-                        propertyType.id
-                )
-                null
-            }
-        }
-    } else {
-        null
-    }
 }
