@@ -270,6 +270,7 @@ open class EntitySetService(
         return entitySets.keySet(Predicates.equal(EntitySetMapstore.ENTITY_TYPE_ID_INDEX, entityTypeId))
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun getEntitySetsWithFlags(
             entitySetIds: Set<UUID>, filteringFlags: Set<EntitySetFlag>
     ): Map<UUID, EntitySet> {
@@ -325,6 +326,7 @@ open class EntitySetService(
     }
 
     @Timed
+    @Suppress("UNCHECKED_CAST")
     override fun getPropertyTypesForEntitySet(entitySetId: UUID): Map<UUID, PropertyType> {
         val maybeEtId = entitySets.executeOnKey(entitySetId, GetEntityTypeFromEntitySetEntryProcessor())
                 as? UUID
