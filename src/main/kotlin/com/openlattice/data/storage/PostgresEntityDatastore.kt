@@ -18,7 +18,6 @@ import com.openlattice.edm.type.PropertyType
 import com.openlattice.linking.LinkingQueryService
 import com.openlattice.linking.PostgresLinkingFeedbackService
 import com.openlattice.postgres.streams.BasePostgresIterable
-import com.openlattice.postgres.streams.PostgresIterable
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
@@ -384,32 +383,32 @@ class PostgresEntityDatastore(
      *
      * @param entitySetIdsToEntityKeyIds map of entity sets to entity keys for which the data should be loaded
      * @param authorizedPropertyTypesByEntitySet map of entity sets and the property types for which the user is authorized
-     * @return map of entity set ids to list of entity data
+     * @return list of entity data
      */
     @Timed
     override fun getEntitiesAcrossEntitySets(
-            entitySetIdsToEntityKeyIds: SetMultimap<UUID, UUID>,
+            entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
-    ): ListMultimap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        val entities = Lists.newArrayListWithExpectedSize<MutableMap<FullQualifiedName, MutableSet<Any>>>(
+                entitySetIdsToEntityKeyIds.values.sumBy { it.size }
+        )
+        val entitySetMap = entitySetManager.getEntitySetsAsMap(entitySetIdsToEntityKeyIds.keys)
 
-        val keyCount = entitySetIdsToEntityKeyIds.keySet().size
-        val avgValuesPerKey = if (entitySetIdsToEntityKeyIds.size() == 0) 0 else entitySetIdsToEntityKeyIds.size() / keyCount
-        val entities =
-                ArrayListMultimap
-                        .create<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>(keyCount, avgValuesPerKey)
-
-        Multimaps
-                .asMap(entitySetIdsToEntityKeyIds)
+        entitySetIdsToEntityKeyIds
                 .entries
-                .parallelStream()
-                .forEach { (entitySetId, entityKeyIds) ->
+                .groupBy { entitySetMap.getValue(it.key).entityTypeId }
+                .forEach { (_, groupedEntityKeyIds) ->
+                    val entityKeyIds = groupedEntityKeyIds.map { it.key to Optional.of(it.value) }.toMap()
+                    val authorizedPropertyTypes = groupedEntityKeyIds
+                            .map { it.key to authorizedPropertyTypesByEntitySet.getValue(it.key) }.toMap()
                     val data = dataQueryService.getEntitiesWithPropertyTypeFqns(
-                            mapOf(entitySetId to Optional.of(entityKeyIds)),
-                            mapOf(entitySetId to authorizedPropertyTypesByEntitySet.getValue(entitySetId)),
+                            entityKeyIds,
+                            authorizedPropertyTypes,
                             emptyMap(),
                             EnumSet.noneOf(MetadataOption::class.java)
                     )
-                    entities.putAll(entitySetId, data.values)
+                    entities.addAll(data.values)
                 }
 
         return entities
