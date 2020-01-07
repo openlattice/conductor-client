@@ -270,7 +270,9 @@ open class EntitySetService(
         return entitySets.keySet(Predicates.equal(EntitySetMapstore.ENTITY_TYPE_ID_INDEX, entityTypeId))
     }
 
-    override fun getEntitySetIdsWithFlags(entitySetIds: Set<UUID>, filteringFlags: Set<EntitySetFlag>): Set<UUID> {
+    override fun getEntitySetsWithFlags(
+            entitySetIds: Set<UUID>, filteringFlags: Set<EntitySetFlag>
+    ): Map<UUID, EntitySet> {
         return entitySets.aggregate(
                 EntitySetsFlagFilteringAggregator(filteringFlags),
                 Predicates.`in`(QueryConstants.KEY_ATTRIBUTE_NAME.value(), *entitySetIds.toTypedArray()) as Predicate<UUID, EntitySet>

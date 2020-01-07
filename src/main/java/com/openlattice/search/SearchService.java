@@ -84,6 +84,7 @@ import com.openlattice.edm.events.PropertyTypeCreatedEvent;
 import com.openlattice.edm.events.PropertyTypeDeletedEvent;
 import com.openlattice.edm.events.PropertyTypesAddedToEntityTypeEvent;
 import com.openlattice.edm.events.PropertyTypesInEntitySetUpdatedEvent;
+import com.openlattice.edm.set.EntitySetFlag;
 import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
@@ -580,8 +581,8 @@ public class SearchService {
             return ImmutableMap.of();
         }
 
-        Collection<EntitySet> linkingEntitySets = entitySetService.getEntitySetsAsMap( entitySetIds ).values();
-        linkingEntitySets.removeIf( entitySet -> !entitySet.isLinking() );
+        Collection<EntitySet> linkingEntitySets = entitySetService
+                .getEntitySetsWithFlags( entitySetIds, EnumSet.of( EntitySetFlag.LINKING ) ).values();
         Map<UUID, Set<UUID>> entityKeyIdsByLinkingId = ImmutableMap.of();
 
         Set<UUID> entityKeyIds = Sets.newHashSet( filter.getEntityKeyIds() );
