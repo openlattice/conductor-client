@@ -26,6 +26,7 @@ import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
+import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.core.NeighborSets
 import com.openlattice.graph.edge.Edge
@@ -65,18 +66,30 @@ interface DataGraphManager {
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Map<FullQualifiedName, Set<Any>>
 
+    /**
+     * Returns all the values of the requested [linkingId] for the [authorizedPropertyTypes] in the [linkingEntitySet].
+     * Note: this function handles linking id decryption and encryption.
+     * @param linkingEntitySet The linking entity set.
+     * @param linkingId The encrypted linking id.
+     * @param authorizedPropertyTypes Map of authorized property types by their normal entity set ids.
+     */
     fun getLinkingEntity(
-            entitySetIds: Set<UUID>,
-            entityKeyId: UUID,
+            linkingEntitySet: EntitySet,
+            linkingId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): Map<FullQualifiedName, Set<Any>>
 
     /**
-     * Returns linked entity set data detailed in a Map, mapped by linking id, (normal) entity set id, origin id,
-     * property type full qualified name and values respectively.
+     * Returns linked entity set data detailed in a Map, mapped by (encrypted) linking id, (normal) entity set id,
+     * origin id, property type full qualified name and values respectively.
+     * Note: this function handles linking id decryption and encryption.
+     * @param linkingEntitySet The linking entity set to get the data for.
+     * @param linkingIds The encrypted linking ids to restrict the selection to.
+     * @param authorizedPropertyTypesByEntitySetId Map of authorized property types by their normal entity set ids.
      */
     fun getLinkedEntitySetBreakDown(
-            linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
+            linkingEntitySet: EntitySet,
+            linkingIds: Optional<Set<UUID>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
 

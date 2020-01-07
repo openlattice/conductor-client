@@ -29,14 +29,17 @@ import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.EntityDatastore
 import com.openlattice.data.storage.PostgresEntitySetSizesTask
+import com.openlattice.edm.EntitySet
 import com.openlattice.edm.set.ExpirationBase
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.core.GraphService
 import com.openlattice.graph.core.NeighborSets
 import com.openlattice.graph.edge.Edge
+import com.openlattice.ids.IdCipherManager
 import com.openlattice.postgres.DataTables
 import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresDataTables
+import com.openlattice.postgres.PostgresMetaDataProperties
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.PostgresIterable
 import org.apache.commons.lang3.tuple.Pair
@@ -63,7 +66,8 @@ open class DataGraphService(
         private val graphService: GraphService,
         private val idService: EntityKeyIdService,
         private val eds: EntityDatastore,
-        private val entitySetSizesTask: PostgresEntitySetSizesTask
+        private val entitySetSizesTask: PostgresEntitySetSizesTask,
+        private val idCipherManager: IdCipherManager
 
 ) : DataGraphManager {
     override fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID> {
@@ -83,6 +87,7 @@ open class DataGraphService(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linking: Boolean
     ): EntitySetData<FullQualifiedName> {
+        // TODO decrypt/encrypt linking id
         return eds.getEntities(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking)
     }
 
@@ -103,21 +108,40 @@ open class DataGraphService(
     }
 
     override fun getLinkingEntity(
-            entitySetIds: Set<UUID>,
-            entityKeyId: UUID,
+            linkingEntitySet: EntitySet,
+            linkingId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): Map<FullQualifiedName, Set<Any>> {
+        val decryptedLinkingId = idCipherManager.decryptId(linkingEntitySet.id, linkingId)
+
         return eds.getLinkingEntities(
-                entitySetIds.map { it to Optional.of(setOf(entityKeyId)) }.toMap(),
+                linkingEntitySet.linkedEntitySets.map { it to Optional.of(setOf(decryptedLinkingId)) }.toMap(),
                 authorizedPropertyTypes
         ).iterator().next()
+                .mapValues {
+                    if (it.key == PostgresMetaDataProperties.ID.propertyType.type) {
+                        setOf(idCipherManager.encryptId(linkingEntitySet.id, it.value.first() as UUID))
+                    } else {
+                        it.value
+                    }
+                }
     }
 
     override fun getLinkedEntitySetBreakDown(
-            linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
+            linkingEntitySet: EntitySet,
+            linkingIds: Optional<Set<UUID>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
-        return eds.getLinkedEntitySetBreakDown(linkingIdsByEntitySetId, authorizedPropertyTypesByEntitySetId)
+        val decryptedLinkingIds = Optional.of(
+                idCipherManager.decryptIds(linkingEntitySet.id, linkingIds.orElse(setOf()))
+        )
+
+        return eds.getLinkedEntitySetBreakDown(
+                linkingEntitySet.linkedEntitySets.map { it to decryptedLinkingIds }.toMap(),
+                authorizedPropertyTypesByEntitySetId
+        ).mapKeys {
+            idCipherManager.encryptId(linkingEntitySet.id, it.key)
+        }
     }
 
     override fun getNeighborEntitySets(entitySetIds: Set<UUID>): List<NeighborSets> {
