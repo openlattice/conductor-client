@@ -20,18 +20,21 @@
  */
 package com.openlattice.hazelcast.serializers
 
+import com.google.common.collect.Maps
 import com.hazelcast.nio.ObjectDataInput
 import com.hazelcast.nio.ObjectDataOutput
-import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers
-import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer
+import com.openlattice.edm.EntitySet
 import com.openlattice.edm.processors.EntitySetsFlagFilteringAggregator
 import com.openlattice.edm.set.EntitySetFlag
 import com.openlattice.hazelcast.StreamSerializerTypeIds
+import com.openlattice.mapstores.TestDataFactory
 import org.springframework.stereotype.Component
+import java.util.*
+import kotlin.random.Random
 
 @Component
 class EntitySetsFlagFilteringAggregatorStreamSerializer
-    : SelfRegisteringStreamSerializer<EntitySetsFlagFilteringAggregator> {
+    : TestableSelfRegisteringStreamSerializer<EntitySetsFlagFilteringAggregator> {
     private val entitySetFlags = EntitySetFlag.values()
 
     override fun getTypeId(): Int {
@@ -48,7 +51,11 @@ class EntitySetsFlagFilteringAggregatorStreamSerializer
             output.writeInt(it.ordinal)
         }
 
-        SetStreamSerializers.fastUUIDSetSerialize(output, obj.filteredEntitySetIds)
+        output.writeInt(obj.filteredEntitySetIds.size)
+        obj.filteredEntitySetIds.forEach { (entitySetId, entitySet) ->
+            UUIDStreamSerializer.serialize(output, entitySetId)
+            EntitySetStreamSerializer.serialize(output, entitySet)
+        }
     }
 
     override fun read(input: ObjectDataInput): EntitySetsFlagFilteringAggregator {
@@ -57,8 +64,29 @@ class EntitySetsFlagFilteringAggregatorStreamSerializer
             filteringFlags.add(entitySetFlags[input.readInt()])
         }
 
-        val filteredEntitySetIds = SetStreamSerializers.fastUUIDSetDeserialize(input)
+        val filteredEntitySetSize = input.readInt()
+        val filteredEntitySetIds = Maps.newHashMapWithExpectedSize<UUID, EntitySet>(filteredEntitySetSize)
+        (0 until filteredEntitySetSize).forEach { _ ->
+            filteredEntitySetIds[UUIDStreamSerializer.deserialize(input)] = EntitySetStreamSerializer.deserialize(input)
+        }
 
         return EntitySetsFlagFilteringAggregator(filteringFlags, filteredEntitySetIds)
+    }
+
+    override fun generateTestValue(): EntitySetsFlagFilteringAggregator {
+        val entitySetFlags = EntitySetFlag.values()
+        val filteringFlags = mutableSetOf<EntitySetFlag>()
+        if (Random.nextBoolean()) {
+            (0 until Random.nextInt(2, entitySetFlags.size)).forEach {
+                filteringFlags.add(entitySetFlags[it])
+            }
+        }
+        val filteredEntitySets = (0 until Random.nextInt(0, 5))
+                .map { TestDataFactory.entitySet() }
+
+        return EntitySetsFlagFilteringAggregator(
+                filteringFlags,
+                filteredEntitySets.map { it.id to it }.toMap().toMutableMap()
+        )
     }
 }
