@@ -64,6 +64,9 @@ class EdmAuthorizationHelper(
         return entitySetManager.getEntityTypeByEntitySetId(entitySetId).properties
     }
 
+    /**
+     * @see [getAuthorizedEntitySetsForPrincipals]
+     */
     @Timed
     fun getAuthorizedEntitySets(entitySetIds: Set<UUID>, requiredPermissions: EnumSet<Permission>): Set<UUID> {
         return getAuthorizedEntitySetsForPrincipals(
@@ -71,6 +74,9 @@ class EdmAuthorizationHelper(
         )
     }
 
+    /**
+     * Returns the sub-set of the requested entity set ids, which are authorized.
+     */
     @Timed
     fun getAuthorizedEntitySetsForPrincipals(
             entitySetIds: Set<UUID>, requiredPermissions: EnumSet<Permission>, principals: Set<Principal>
