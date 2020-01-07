@@ -51,8 +51,8 @@ open class LinkingEntitySetSecretKeyMapstore(hds: HikariDataSource) : AbstractBa
     }
 
     override fun bind(ps: PreparedStatement, key: UUID, offset: Int): Int {
-        ps.setObject(1, key)
-        return 2
+        ps.setObject(offset, key)
+        return offset + 1
     }
 
     override fun mapToKey(rs: ResultSet): UUID {
