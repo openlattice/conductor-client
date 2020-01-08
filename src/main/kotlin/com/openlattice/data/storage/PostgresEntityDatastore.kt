@@ -376,8 +376,6 @@ class PostgresEntityDatastore(
         return linkedDataMap
     }
 
-
-    //TODO: Can be made more efficient if we are getting across same type.
     /**
      * Loads data from multiple entity sets. Note: not implemented for linking entity sets!
      *
