@@ -51,9 +51,29 @@ interface DataGraphManager {
     fun getEntitySetData(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             orderedPropertyNames: LinkedHashSet<String>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            linking: Boolean
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): EntitySetData<FullQualifiedName>
+
+    fun getLinkedEntitySetData(
+            linkedEntitySet: EntitySet,
+            linkingIds: Optional<Set<UUID>>,
+            orderedPropertyNames: LinkedHashSet<String>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
+    ): EntitySetData<FullQualifiedName>
+
+    /**
+     * Returns linked entity set data detailed in a Map, mapped by (encrypted) linking id, (normal) entity set id,
+     * origin id, property type full qualified name and values respectively.
+     * Note: this function handles linking id decryption and encryption.
+     * @param linkedEntitySet The linking entity set to get the data for.
+     * @param linkingIds The encrypted linking ids to restrict the selection to.
+     * @param authorizedPropertyTypesByEntitySetId Map of authorized property types by their normal entity set ids.
+     */
+    fun getLinkedEntitySetBreakDown(
+            linkedEntitySet: EntitySet,
+            linkingIds: Optional<Set<UUID>>,
+            authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
+    ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
 
     fun getEntitySetSize(entitySetId: UUID): Long
 
@@ -67,31 +87,17 @@ interface DataGraphManager {
     ): Map<FullQualifiedName, Set<Any>>
 
     /**
-     * Returns all the values of the requested [linkingId] for the [authorizedPropertyTypes] in the [linkingEntitySet].
+     * Returns all the values of the requested [linkingId] for the [authorizedPropertyTypes] in the [linkedEntitySet].
      * Note: this function handles linking id decryption and encryption.
-     * @param linkingEntitySet The linking entity set.
+     * @param linkedEntitySet The linking entity set.
      * @param linkingId The encrypted linking id.
      * @param authorizedPropertyTypes Map of authorized property types by their normal entity set ids.
      */
     fun getLinkingEntity(
-            linkingEntitySet: EntitySet,
+            linkedEntitySet: EntitySet,
             linkingId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): Map<FullQualifiedName, Set<Any>>
-
-    /**
-     * Returns linked entity set data detailed in a Map, mapped by (encrypted) linking id, (normal) entity set id,
-     * origin id, property type full qualified name and values respectively.
-     * Note: this function handles linking id decryption and encryption.
-     * @param linkingEntitySet The linking entity set to get the data for.
-     * @param linkingIds The encrypted linking ids to restrict the selection to.
-     * @param authorizedPropertyTypesByEntitySetId Map of authorized property types by their normal entity set ids.
-     */
-    fun getLinkedEntitySetBreakDown(
-            linkingEntitySet: EntitySet,
-            linkingIds: Optional<Set<UUID>>,
-            authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
 
     /**
      * Deletes property data, id, edges of association entities in batches.

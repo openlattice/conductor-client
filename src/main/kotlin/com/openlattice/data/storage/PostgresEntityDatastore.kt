@@ -2,11 +2,10 @@ package com.openlattice.data.storage
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.annotation.Timed
-import com.google.common.collect.*
+import com.google.common.collect.Lists
 import com.google.common.eventbus.EventBus
 import com.openlattice.assembler.events.MaterializedEntitySetDataChangeEvent
 import com.openlattice.data.DeleteType
-import com.openlattice.data.EntitySetData
 import com.openlattice.data.WriteEvent
 import com.openlattice.data.events.EntitiesDeletedEvent
 import com.openlattice.data.events.EntitiesUpsertedEvent
@@ -71,8 +70,6 @@ class PostgresEntityDatastore(
             entities: Map<UUID, Map<UUID, Set<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-        // need to collect linking ids before writes to the entities
-
         val writeEvent = dataQueryService.upsertEntities(entitySetId, entities, authorizedPropertyTypes)
         signalCreatedEntities(entitySetId, entities.keys)
 
@@ -85,8 +82,6 @@ class PostgresEntityDatastore(
             entities: Map<UUID, Map<UUID, Set<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-        // need to collect linking ids before writes to the entities
-
         val writeEvent = dataQueryService.upsertEntities(entitySetId, entities, authorizedPropertyTypes)
         signalCreatedEntities(entitySetId, entities.keys)
 
@@ -99,8 +94,6 @@ class PostgresEntityDatastore(
             entities: Map<UUID, Map<UUID, Set<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-        // need to collect linking ids before writes to the entities
-
         val writeEvent = dataQueryService.replaceEntities(entitySetId, entities, authorizedPropertyTypes)
         signalCreatedEntities(entitySetId, entities.keys)
 
@@ -113,10 +106,7 @@ class PostgresEntityDatastore(
             entities: Map<UUID, Map<UUID, Set<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-        // need to collect linking ids before writes to the entities
-        val writeEvent = dataQueryService
-                .partialReplaceEntities(entitySetId, entities, authorizedPropertyTypes)
-
+        val writeEvent = dataQueryService.partialReplaceEntities(entitySetId, entities, authorizedPropertyTypes)
         signalCreatedEntities(entitySetId, entities.keys)
 
         return writeEvent
@@ -126,8 +116,8 @@ class PostgresEntityDatastore(
         if (shouldIndexDirectly(entitySetId, entityKeyIds)) {
             val entities = dataQueryService
                     .getEntitiesWithPropertyTypeIds(
-                            ImmutableMap.of(entitySetId, Optional.of(entityKeyIds)),
-                            ImmutableMap.of(entitySetId, entitySetManager.getPropertyTypesForEntitySet(entitySetId)),
+                            mapOf(entitySetId to Optional.of(entityKeyIds)),
+                            mapOf(entitySetId to entitySetManager.getPropertyTypesForEntitySet(entitySetId)),
                             mapOf(),
                             EnumSet.of(MetadataOption.LAST_WRITE)
                     )
@@ -222,26 +212,22 @@ class PostgresEntityDatastore(
             orderedPropertyTypes: LinkedHashSet<String>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linking: Boolean
-    ): EntitySetData<FullQualifiedName> {
+    ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>> {
         val context = if (linking) {
             getLinkedEntitiesTimer.time()
         } else {
             getEntitiesTimer.time()
         }
+
         //If the query generated exceed 33.5M UUIDs good chance that it exceed Postgres's 1 GB max query buffer size
-
-        val entitySetData = EntitySetData(
-                orderedPropertyTypes,
-                dataQueryService.getEntitiesWithPropertyTypeFqns(
-                        entityKeyIds,
-                        authorizedPropertyTypes,
-                        emptyMap(),
-                        EnumSet.noneOf(MetadataOption::class.java),
-                        Optional.empty(),
-                        linking
-                ).values.asIterable()
-
-        )
+        val entitySetData = dataQueryService.getEntitiesWithPropertyTypeFqns(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                emptyMap(),
+                EnumSet.noneOf(MetadataOption::class.java),
+                Optional.empty(),
+                linking
+        ).values
 
         context.stop()
 
@@ -271,9 +257,8 @@ class PostgresEntityDatastore(
             metadataOptions: EnumSet<MetadataOption>
     ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
         //If the query generated exceeds 33.5M UUIDs good chance that it exceeds Postgres's 1 GB max query buffer size
-
         return dataQueryService.getEntitiesWithPropertyTypeFqns(
-                ImmutableMap.of(entitySetId, Optional.of(ids)),
+                mapOf(entitySetId to Optional.of(ids)),
                 authorizedPropertyTypes,
                 emptyMap(),
                 metadataOptions

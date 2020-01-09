@@ -1,7 +1,6 @@
 package com.openlattice.data.storage
 
 import com.openlattice.data.DeleteType
-import com.openlattice.data.EntitySetData
 import com.openlattice.data.WriteEvent
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.postgres.streams.BasePostgresIterable
@@ -56,7 +55,7 @@ interface EntityDatastore {
             orderedPropertyTypes: LinkedHashSet<String>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linking: Boolean
-    ): EntitySetData<FullQualifiedName>
+    ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
     fun getEntitiesAcrossEntitySets(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
