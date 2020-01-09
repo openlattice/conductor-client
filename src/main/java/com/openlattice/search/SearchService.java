@@ -177,6 +177,13 @@ public class SearchService {
                 maxHits );
     }
 
+    /**
+     * Executes a search on the requested entity sets.
+     * @param searchConstraints The constraints to apply on the search (e.g. maximum number of hits, sorting...)
+     * @param authorizedPropertyTypesByEntitySet The authorized property types mapped by the requested entity set ids.
+     * @return A {@link DataSearchResult} containing a list of entity data hits along with the number of possible
+     * total hits.
+     */
     @Timed
     public DataSearchResult executeSearch(
             SearchConstraints searchConstraints,
