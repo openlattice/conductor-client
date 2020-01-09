@@ -69,11 +69,7 @@ class IdCipherManager(
     }
 
     fun encryptIds(linkingEntitySetId: UUID, ids: Set<UUID>): Set<UUID> {
-        val cipher = Cipher.getInstance(cipherAlgorithm)
-        val key = secretKeys.getValue(linkingEntitySetId)
-        cipher.init(Cipher.ENCRYPT_MODE, key)
-
-        return ids.map { asUuid(cipher.doFinal(asBytes(it))) }.toSet()
+        return doCipher(Cipher.ENCRYPT_MODE, linkingEntitySetId, ids)
     }
 
     fun decryptId(linkingEntitySetId: UUID, id: UUID): UUID {
@@ -81,9 +77,13 @@ class IdCipherManager(
     }
 
     fun decryptIds(linkingEntitySetId: UUID, ids: Set<UUID>): Set<UUID> {
+        return doCipher(Cipher.DECRYPT_MODE, linkingEntitySetId, ids)
+    }
+
+    private fun doCipher(mode: Int, linkingEntitySetId: UUID, ids: Set<UUID>): Set<UUID> {
         val cipher = Cipher.getInstance(cipherAlgorithm)
         val key = secretKeys.getValue(linkingEntitySetId)
-        cipher.init(Cipher.DECRYPT_MODE, key)
+        cipher.init(mode, key)
 
         return ids.map { asUuid(cipher.doFinal(asBytes(it))) }.toSet()
     }
