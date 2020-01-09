@@ -26,6 +26,7 @@ import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
+import com.openlattice.data.storage.MetadataOption
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.core.NeighborSets
@@ -78,13 +79,20 @@ interface DataGraphManager {
     fun getEntitySetSize(entitySetId: UUID): Long
 
     /*
-     * CRUD methods for entity
+     * CRUD methods for entities
      */
     fun getEntity(
             entitySetId: UUID,
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Map<FullQualifiedName, Set<Any>>
+
+    fun getEntities(
+            entitySetId: UUID,
+            entityKeyIds: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
     /**
      * Returns all the values of the requested [linkingId] for the [authorizedPropertyTypes] in the [linkedEntitySet].
@@ -98,6 +106,21 @@ interface DataGraphManager {
             linkingId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): Map<FullQualifiedName, Set<Any>>
+
+    /**
+     * Returns all the values and [metadataOptions] of the requested [linkingIds] for the [authorizedPropertyTypes] in the [linkedEntitySet].
+     * Note: this function handles linking id decryption and encryption.
+     * @param linkedEntitySet The linking entity set.
+     * @param linkingIds The encrypted linking ids.
+     * @param authorizedPropertyTypes Map of authorized property types by their normal entity set ids.
+     * @param metadataOptions The set of metadata options to include in the result.
+     */
+    fun getLinkingEntities(
+            linkedEntitySet: EntitySet,
+            linkingIds: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Collection<Map<FullQualifiedName, Set<Any>>>
 
     /**
      * Deletes property data, id, edges of association entities in batches.

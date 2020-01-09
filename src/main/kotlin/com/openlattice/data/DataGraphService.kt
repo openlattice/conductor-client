@@ -28,6 +28,7 @@ import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.EntityDatastore
+import com.openlattice.data.storage.MetadataOption
 import com.openlattice.data.storage.PostgresEntitySetSizesTask
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.set.ExpirationBase
@@ -101,14 +102,14 @@ open class DataGraphService(
         val decryptedLinkingIds = Optional.of(
                 idCipherManager.decryptIds(linkedEntitySet.id, linkingIds.orElse(setOf()))
         )
-        val entityData = eds.getEntities(
+        val entities = eds.getEntities(
                 linkedEntitySet.linkedEntitySets.map { it to decryptedLinkingIds }.toMap(),
                 orderedPropertyNames,
                 authorizedPropertyTypes,
                 true
-        ).map { entity -> entity.mapValues { encryptLinkingEntries(linkedEntitySet.id, it) } }
+        ).map { entityData -> entityData.mapValues { encryptLinkingEntries(linkedEntitySet.id, it) } }
 
-        return EntitySetData(orderedPropertyNames, entityData)
+        return EntitySetData(orderedPropertyNames, entities)
     }
 
     override fun getLinkedEntitySetBreakDown(
@@ -137,11 +138,26 @@ open class DataGraphService(
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Map<FullQualifiedName, Set<Any>> {
-        return eds.getEntities(
+        return getEntities(
                 entitySetId,
                 setOf(entityKeyId),
-                mapOf(entitySetId to authorizedPropertyTypes)
+                authorizedPropertyTypes,
+                EnumSet.noneOf(MetadataOption::class.java)
         ).iterator().next()
+    }
+
+    override fun getEntities(
+            entitySetId: UUID,
+            entityKeyIds: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        return eds.getEntitiesWithMetadata(
+                entitySetId,
+                entityKeyIds,
+                mapOf(entitySetId to authorizedPropertyTypes),
+                metadataOptions
+        )
     }
 
     override fun getLinkingEntity(
@@ -149,12 +165,31 @@ open class DataGraphService(
             linkingId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): Map<FullQualifiedName, Set<Any>> {
-        val decryptedLinkingId = idCipherManager.decryptId(linkedEntitySet.id, linkingId)
+        return getLinkingEntities(
+                linkedEntitySet,
+                setOf(linkingId),
+                authorizedPropertyTypes,
+                EnumSet.noneOf(MetadataOption::class.java)
+        ).iterator().next()
+    }
 
-        return eds.getLinkingEntities(
-                linkedEntitySet.linkedEntitySets.map { it to Optional.of(setOf(decryptedLinkingId)) }.toMap(),
-                authorizedPropertyTypes
-        ).iterator().next().mapValues { encryptLinkingEntries(linkedEntitySet.id, it) }
+    override fun getLinkingEntities(
+            linkedEntitySet: EntitySet,
+            linkingIds: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Collection<Map<FullQualifiedName, Set<Any>>> {
+        val decryptedLinkingIds = idCipherManager.decryptIds(linkedEntitySet.id, linkingIds)
+
+        return eds.getLinkingEntitiesWithMetadata(
+                linkedEntitySet.linkedEntitySets.map { it to Optional.of(decryptedLinkingIds) }.toMap(),
+                authorizedPropertyTypes,
+                metadataOptions
+        ).map { entityData ->
+            entityData.mapValues {
+                encryptLinkingEntries(linkedEntitySet.id, it)
+            }
+        }
     }
 
     private fun encryptLinkingEntries(

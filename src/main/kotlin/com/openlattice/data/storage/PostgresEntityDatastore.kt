@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.ByteBuffer
 import java.util.*
-import java.util.stream.Stream
 import javax.inject.Inject
 
 /**
@@ -235,47 +234,19 @@ class PostgresEntityDatastore(
     }
 
     @Timed
-    override fun getEntities(
-            entitySetId: UUID,
-            ids: Set<UUID>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
-        //If the query generated exceeds 33.5M UUIDs good chance that it exceeds Postgres's 1 GB max query buffer size
-        return getEntitiesWithMetadata(
-                entitySetId,
-                ids,
-                authorizedPropertyTypes,
-                EnumSet.noneOf(MetadataOption::class.java)
-        )
-    }
-
-    @Timed
     override fun getEntitiesWithMetadata(
             entitySetId: UUID,
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>> {
         //If the query generated exceeds 33.5M UUIDs good chance that it exceeds Postgres's 1 GB max query buffer size
         return dataQueryService.getEntitiesWithPropertyTypeFqns(
                 mapOf(entitySetId to Optional.of(ids)),
                 authorizedPropertyTypes,
                 emptyMap(),
                 metadataOptions
-        ).values.stream()
-    }
-
-    @Timed
-    override fun getLinkingEntities(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
-        //If the query generated exceed 33.5M UUIDs good chance that it exceed Postgres's 1 GB max query buffer size
-        return getLinkingEntitiesWithMetadata(
-                entityKeyIds,
-                authorizedPropertyTypes,
-                EnumSet.noneOf(MetadataOption::class.java)
-        )
+        ).values
     }
 
     @Timed
@@ -283,7 +254,7 @@ class PostgresEntityDatastore(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>> {
         //If the query generated exceed 33.5M UUIDs good chance that it exceed Postgres's 1 GB max query buffer size
         return dataQueryService.getEntitiesWithPropertyTypeFqns(
                 entityKeyIds,
@@ -292,7 +263,7 @@ class PostgresEntityDatastore(
                 metadataOptions,
                 Optional.empty(),
                 true
-        ).values.stream()
+        ).values
     }
 
     /**

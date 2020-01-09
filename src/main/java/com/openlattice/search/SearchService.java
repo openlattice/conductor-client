@@ -20,38 +20,25 @@
 
 package com.openlattice.search;
 
-import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
-
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.openlattice.IdConstants;
 import com.openlattice.apps.App;
 import com.openlattice.apps.AppType;
-import com.openlattice.authorization.AccessCheck;
-import com.openlattice.authorization.AclKey;
-import com.openlattice.authorization.AuthorizationManager;
-import com.openlattice.authorization.Permission;
-import com.openlattice.authorization.Principal;
-import com.openlattice.authorization.Principals;
-import com.openlattice.authorization.SecurableObjectResolveTypeService;
+import com.openlattice.authorization.*;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.collections.EntitySetCollection;
 import com.openlattice.collections.EntityTypeCollection;
 import com.openlattice.conductor.rpc.ConductorElasticsearchApi;
+import com.openlattice.data.DataGraphManager;
 import com.openlattice.data.DeleteType;
 import com.openlattice.data.EntityDataKey;
-import com.openlattice.data.EntityKeyIdService;
 import com.openlattice.data.events.EntitiesDeletedEvent;
 import com.openlattice.data.events.EntitiesUpsertedEvent;
 import com.openlattice.data.requests.NeighborEntityDetails;
@@ -63,27 +50,7 @@ import com.openlattice.datastore.services.EdmManager;
 import com.openlattice.datastore.services.EntitySetManager;
 import com.openlattice.edm.EdmConstants;
 import com.openlattice.edm.EntitySet;
-import com.openlattice.edm.events.AppCreatedEvent;
-import com.openlattice.edm.events.AppDeletedEvent;
-import com.openlattice.edm.events.AppTypeCreatedEvent;
-import com.openlattice.edm.events.AppTypeDeletedEvent;
-import com.openlattice.edm.events.AssociationTypeCreatedEvent;
-import com.openlattice.edm.events.AssociationTypeDeletedEvent;
-import com.openlattice.edm.events.ClearAllDataEvent;
-import com.openlattice.edm.events.EntitySetCollectionCreatedEvent;
-import com.openlattice.edm.events.EntitySetCollectionDeletedEvent;
-import com.openlattice.edm.events.EntitySetCreatedEvent;
-import com.openlattice.edm.events.EntitySetDataDeletedEvent;
-import com.openlattice.edm.events.EntitySetDeletedEvent;
-import com.openlattice.edm.events.EntitySetMetadataUpdatedEvent;
-import com.openlattice.edm.events.EntityTypeCollectionCreatedEvent;
-import com.openlattice.edm.events.EntityTypeCollectionDeletedEvent;
-import com.openlattice.edm.events.EntityTypeCreatedEvent;
-import com.openlattice.edm.events.EntityTypeDeletedEvent;
-import com.openlattice.edm.events.PropertyTypeCreatedEvent;
-import com.openlattice.edm.events.PropertyTypeDeletedEvent;
-import com.openlattice.edm.events.PropertyTypesAddedToEntityTypeEvent;
-import com.openlattice.edm.events.PropertyTypesInEntitySetUpdatedEvent;
+import com.openlattice.edm.events.*;
 import com.openlattice.edm.set.EntitySetFlag;
 import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.EntityType;
@@ -95,33 +62,20 @@ import com.openlattice.organizations.events.OrganizationCreatedEvent;
 import com.openlattice.organizations.events.OrganizationDeletedEvent;
 import com.openlattice.organizations.events.OrganizationUpdatedEvent;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
-import com.openlattice.search.requests.DataSearchResult;
-import com.openlattice.search.requests.EntityDataKeySearchResult;
-import com.openlattice.search.requests.EntityNeighborsFilter;
-import com.openlattice.search.requests.SearchConstraints;
-import com.openlattice.search.requests.SearchResult;
-import com.openlattice.search.requests.SearchTerm;
-
-import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.inject.Inject;
-
+import com.openlattice.search.requests.*;
 import kotlin.Pair;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
 
 public class SearchService {
     private static final Logger logger = LoggerFactory.getLogger( SearchService.class );
@@ -131,9 +85,6 @@ public class SearchService {
 
     @Inject
     private AuthorizationManager authorizations;
-
-    @Inject
-    private SecurableObjectResolveTypeService securableObjectTypes;
 
     @Inject
     private ConductorElasticsearchApi elasticsearchApi;
@@ -151,7 +102,7 @@ public class SearchService {
     private EntityDatastore dataManager;
 
     @Inject
-    private EntityKeyIdService entityKeyService;
+    private DataGraphManager dgm;
 
     @Inject
     private IndexingMetadataManager indexingMetadataManager;
@@ -271,8 +222,9 @@ public class SearchService {
                         entitySetsById.get( entitySetId ),
                         entityKeyIdsByEntitySetId.get( entitySetId ),
                         authorizedPropertyTypesByEntitySet,
-                        entitySetsById.get( entitySetId ).isLinking() ) ).flatMap( List::stream ).collect( Collectors
-                        .toMap( SearchService::getEntityKeyId, Function.identity() ) );
+                        entitySetsById.get( entitySetId ).isLinking() ) )
+                .flatMap( Collection::stream )
+                .collect( Collectors.toMap( SearchService::getEntityKeyId, Function.identity() ) );
 
         List<Map<FullQualifiedName, Set<Object>>> results = result.getEntityDataKeys().stream()
                 .map( edk -> entitiesById.get( edk.getEntityKeyId() ) ).filter( Objects::nonNull )
@@ -889,32 +841,35 @@ public class SearchService {
         return neighbors;
     }
 
-    private List<Map<FullQualifiedName, Set<Object>>> getResults(
+    private Collection<Map<FullQualifiedName, Set<Object>>> getResults(
             EntitySet entitySet,
             Set<UUID> entityKeyIds,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes,
-            boolean linking ) {
+            boolean linking
+    ) {
         if ( entityKeyIds.size() == 0 ) { return ImmutableList.of(); }
         if ( linking ) {
-            // todo encrypt
-            final var linkingIdsByEntitySetIds = entitySet.getLinkedEntitySets().stream().collect(
-                    Collectors.toMap( Function.identity(), normalEntitySetId -> Optional.of( entityKeyIds ) ) );
-            final var authorizedPropertiesOfNormalEntitySets = entitySet.getLinkedEntitySets().stream().collect(
-                    Collectors.toMap(
-                            Function.identity(),
-                            normalEntitySetId -> authorizedPropertyTypes.get( entitySet.getId() ) ) );
+            final var authorizedPropertiesOfNormalEntitySets = entitySet.getLinkedEntitySets().stream()
+                    .collect(
+                            Collectors.toMap(
+                                    Function.identity(),
+                                    normalEntitySetId -> authorizedPropertyTypes.get( entitySet.getId() )
+                            )
+                    );
 
-            return dataManager.getLinkingEntitiesWithMetadata( linkingIdsByEntitySetIds,
+            return dgm.getLinkingEntities(
+                    entitySet,
+                    entityKeyIds,
                     authorizedPropertiesOfNormalEntitySets,
-                    EnumSet.of( MetadataOption.LAST_WRITE ) )
-                    .collect( Collectors.toList() );
+                    EnumSet.of( MetadataOption.LAST_WRITE )
+            );
         } else {
-            return dataManager
-                    .getEntitiesWithMetadata( entitySet.getId(),
-                            ImmutableSet.copyOf( entityKeyIds ),
-                            authorizedPropertyTypes,
-                            EnumSet.of( MetadataOption.LAST_WRITE ) )
-                    .collect( Collectors.toList() );
+            return dgm.getEntities(
+                    entitySet.getId(),
+                    ImmutableSet.copyOf( entityKeyIds ),
+                    authorizedPropertyTypes.get( entitySet.getId() ),
+                    EnumSet.of( MetadataOption.LAST_WRITE )
+            );
         }
     }
 
