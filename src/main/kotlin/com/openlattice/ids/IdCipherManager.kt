@@ -21,7 +21,6 @@
 package com.openlattice.ids
 
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.core.IMap
 import com.openlattice.hazelcast.HazelcastMap
 import java.nio.ByteBuffer
 import java.util.*
@@ -31,9 +30,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
 
-class IdCipherManager(
-        hazelCastInstance: HazelcastInstance
-) {
+class IdCipherManager(hazelCastInstance: HazelcastInstance) {
     companion object {
         private const val keyAlgorithm = "PBKDF2WithHmacSHA1"
         const val keySpecAlgorithm = "AES"
@@ -41,9 +38,7 @@ class IdCipherManager(
     }
 
     private val factory = SecretKeyFactory.getInstance(keyAlgorithm)
-    private val secretKeys: IMap<UUID, SecretKeySpec> = hazelCastInstance.getMap(
-            HazelcastMap.LINKING_ENTITY_SET_SECRET_KEYS.name
-    )
+    private val secretKeys = HazelcastMap.LINKING_ENTITY_SET_SECRET_KEYS.getMap(hazelCastInstance)
 
     fun assignSecretKey(linkingEntitySetId: UUID) {
         require(!secretKeys.containsKey(linkingEntitySetId)) {
