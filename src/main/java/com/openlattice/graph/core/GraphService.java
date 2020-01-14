@@ -51,9 +51,9 @@ public interface GraphService {
 
     Stream<Edge> getEdgesAndNeighborsForVertex( UUID entitySetId, UUID vertexId );
 
-    Stream<Edge> getEdgesAndNeighborsForVertices( UUID entitySetId, EntityNeighborsFilter filter );
+    Stream<Edge> getEdgesAndNeighborsForVertices( EntityNeighborsFilter filter );
 
-    Stream<Edge> getEdgesAndNeighborsForVerticesBulk( Set<UUID> entitySetIds, EntityNeighborsFilter filter );
+    Stream<Edge> getEdgesAndNeighborsForVerticesBulk( EntityNeighborsFilter filter );
 
     Set<UUID> getEdgeEntitySetsConnectedToEntities( UUID entitySetId, Set<UUID> entityKeyIds );
 

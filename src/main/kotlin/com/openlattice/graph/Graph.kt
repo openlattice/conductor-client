@@ -97,7 +97,6 @@ class Graph(
     }
 
 
-
     private fun addKeyIds(ps: PreparedStatement, dataEdgeKey: DataEdgeKey, startIndex: Int = 1) {
         val edk = dataEdgeKey.src
         val partitions = partitionManager.getEntitySetPartitions(edk.entitySetId)
@@ -222,11 +221,12 @@ class Graph(
         ).stream()
     }
 
-    override fun getEdgesAndNeighborsForVertices(entitySetId: UUID, filter: EntityNeighborsFilter): Stream<Edge> {
+    override fun getEdgesAndNeighborsForVertices(filter: EntityNeighborsFilter): Stream<Edge> {
+        val entitySetId = filter.entityKeyIds.keys.first()
         return PostgresIterable(
                 Supplier {
                     val connection = hds.connection
-                    val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds)
+                    val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.getValue(entitySetId))
                     val stmt = connection.prepareStatement(getFilteredNeighborhoodSql(filter, false))
                     stmt.setArray(1, ids)
                     stmt.setObject(2, entitySetId)
@@ -240,18 +240,15 @@ class Graph(
     }
 
 
-    override fun getEdgesAndNeighborsForVerticesBulk(
-            entitySetIds: Set<UUID>,
-            filter: EntityNeighborsFilter
-    ): Stream<Edge> {
-        if (entitySetIds.size == 1) {
-            return getEdgesAndNeighborsForVertices(entitySetIds.first(), filter)
+    override fun getEdgesAndNeighborsForVerticesBulk(filter: EntityNeighborsFilter): Stream<Edge> {
+        if (filter.entityKeyIds.size == 1) {
+            return getEdgesAndNeighborsForVertices(filter)
         }
         return PostgresIterable(
                 Supplier {
                     val connection = hds.connection
-                    val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.stream())
-                    val entitySetIdsArr = PostgresArrays.createUuidArray(connection, entitySetIds.stream())
+                    val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.values.flatten())
+                    val entitySetIdsArr = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.keys)
                     val stmt = connection.prepareStatement(getFilteredNeighborhoodSql(filter, true))
                     stmt.setArray(1, ids)
                     stmt.setArray(2, entitySetIdsArr)

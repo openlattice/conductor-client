@@ -39,7 +39,7 @@ class GraphProcessorQueryTest {
     fun testGetFilteredNeighborhoodSql() {
         val entityKeyIds = (0 until 10).map { UUID.randomUUID() }.toSet()
         val filter = EntityNeighborsFilter(
-                entityKeyIds,
+                mapOf(UUID.randomUUID() to entityKeyIds),
                 Optional.of(setOf(UUID.randomUUID())),
                 Optional.of(setOf(UUID.randomUUID())),
                 Optional.of(setOf(UUID.randomUUID())))
