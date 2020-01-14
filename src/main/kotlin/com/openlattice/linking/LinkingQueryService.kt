@@ -80,7 +80,10 @@ interface LinkingQueryService {
 
     fun lockClustersForUpdates(clusters: Set<UUID>): Connection
 
-    fun getEntityKeyIdsOfLinkingIds(
+    /**
+     * Returns entity key ids mapped by their linking ids belonging to the requested linking ids.
+     */
+    fun getEntityKeyIdsByLinkingIds(
             linkingIds: Set<UUID>,
             normalEntitySetIds: Set<UUID>
     ): BasePostgresIterable<Pair<UUID, Set<UUID>>>

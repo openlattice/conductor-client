@@ -262,12 +262,11 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
         }
     }
 
-    override fun getEntityKeyIdsOfLinkingIds(
+    override fun getEntityKeyIdsByLinkingIds(
             linkingIds: Set<UUID>,
             normalEntitySetIds: Set<UUID>
     ): BasePostgresIterable<Pair<UUID, Set<UUID>>> {
-        return BasePostgresIterable(PreparedStatementHolderSupplier(hds, ENTITY_KEY_IDS_OF_LINKING_IDS_SQL) { ps ->
-
+        return BasePostgresIterable(PreparedStatementHolderSupplier(hds, ENTITY_KEY_IDS_BY_LINKING_IDS_SQL) { ps ->
             val linkingIdsArray = PostgresArrays.createUuidArray(ps.connection, linkingIds)
             /* Note: this inclusion may or may not speed up the function, depending how many partitions are
                covered by all the normal entity sets requested */
@@ -338,14 +337,14 @@ internal fun buildFilterEntityKeyPairs(entityKeyPairs: Collection<EntityKeyPair>
  * 2. normalEntitySetIds
  * 3. partitions
  */
-private val ENTITY_KEY_IDS_OF_LINKING_IDS_SQL =
+private val ENTITY_KEY_IDS_BY_LINKING_IDS_SQL =
         "SELECT ${LINKING_ID.name}, array_agg(${ID.name}) AS ${ENTITY_KEY_IDS_COL.name} " +
         "FROM ${IDS.name} " +
         "WHERE ${VERSION.name} > 0 " +
             "AND ${LINKING_ID.name} IS NOT NULL " +
             "AND ${LINKING_ID.name} = ANY( ? ) " +
-            "AND ${ENTITY_SET_ID.name} = ANY(?) " +
-            "AND ${PARTITION.name} = ANY(?) " +
+            "AND ${ENTITY_SET_ID.name} = ANY( ? ) " +
+            "AND ${PARTITION.name} = ANY( ? ) " +
         "GROUP BY ${LINKING_ID.name}"
 
 

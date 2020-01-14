@@ -7,7 +7,6 @@ import com.openlattice.postgres.streams.BasePostgresIterable
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import java.nio.ByteBuffer
 import java.util.*
-import java.util.stream.Stream
 
 /**
  *
@@ -51,7 +50,10 @@ interface EntityDatastore {
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
-    fun getEntityKeyIdsOfLinkingIds(
+    /**
+     * Returns entity key ids mapped by their linking ids.
+     */
+    fun getEntityKeyIdsByLinkingIds(
             linkingIds: Set<UUID>,
             normalEntitySetIds: Set<UUID>
     ): BasePostgresIterable<Pair<UUID, Set<UUID>>>
