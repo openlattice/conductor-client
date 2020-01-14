@@ -67,6 +67,10 @@ class IdCipherManager(hazelCastInstance: HazelcastInstance) {
         return doCipher(Cipher.ENCRYPT_MODE, linkingEntitySetId, ids)
     }
 
+    fun encryptIdsAsMap(linkingEntitySetId: UUID, ids: Set<UUID>): Map<UUID, UUID> {
+        return doCipherAsMap(Cipher.ENCRYPT_MODE, linkingEntitySetId, ids)
+    }
+
     fun decryptId(linkingEntitySetId: UUID, id: UUID): UUID {
         return decryptIds(linkingEntitySetId, setOf(id)).first()
     }
@@ -81,6 +85,14 @@ class IdCipherManager(hazelCastInstance: HazelcastInstance) {
         cipher.init(mode, key)
 
         return ids.map { asUuid(cipher.doFinal(asBytes(it))) }.toSet()
+    }
+
+    private fun doCipherAsMap(mode: Int, linkingEntitySetId: UUID, ids: Set<UUID>): Map<UUID, UUID> {
+        val cipher = Cipher.getInstance(cipherAlgorithm)
+        val key = secretKeys.getValue(linkingEntitySetId)
+        cipher.init(mode, key)
+
+        return ids.map { it to asUuid(cipher.doFinal(asBytes(it))) }.toMap()
     }
 
     private fun asUuid(bytes: ByteArray): UUID {
