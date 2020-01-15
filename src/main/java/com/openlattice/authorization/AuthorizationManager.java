@@ -126,7 +126,7 @@ public interface AuthorizationManager {
             Set<Principal> principals,
             EnumSet<Permission> requiredPermissions );
 
-    boolean checkIfUserIsOwner( AclKey aclkeys, Principal principal );
+
     // Utility functions for retrieving permissions
 
     /**
@@ -175,7 +175,6 @@ public interface AuthorizationManager {
             String offset,
             int pageSize );
 
-    Stream<AclKey> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions );
 
     Stream<AclKey> getAuthorizedObjects( Set<Principal> principal, EnumSet<Permission> permissions );
 

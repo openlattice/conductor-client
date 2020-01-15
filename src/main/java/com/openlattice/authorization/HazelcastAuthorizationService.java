@@ -22,7 +22,6 @@
 
 package com.openlattice.authorization;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Maps.transformValues;
 import static com.openlattice.authorization.mapstores.PermissionMapstore.ACL_KEY_INDEX;
@@ -520,12 +519,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         }
     }
 
-    @Override
-    public boolean checkIfUserIsOwner( AclKey aclKey, Principal principal ) {
-        checkArgument( principal.getType().equals( PrincipalType.USER ), "A role cannot be the owner of an object" );
-        return checkIfHasPermissions( aclKey, ImmutableSet.of( principal ), EnumSet.of( Permission.OWNER ) );
-    }
-
     @Timed
     @Override
     public Map<Set<AclKey>, EnumSet<Permission>> getSecurableObjectSetsPermissions(
@@ -645,12 +638,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
                 new PrincipalAggregator( ( principalMap ) ), matches( key, permissions ) );
 
         return agg.getResult().get( key );
-    }
-
-    @Timed
-    @Override
-    public Stream<AclKey> getAuthorizedObjects( Principal principal, EnumSet<Permission> permissions ) {
-        return aqs.getAuthorizedAclKeys( principal, permissions );
     }
 
     @Timed
