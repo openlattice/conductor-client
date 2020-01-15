@@ -459,9 +459,9 @@ open class DataGraphService(
         val edges = associations
                 .asSequence()
                 .map { association ->
-                    val srcId = entityKeyIds[association.src]
-                    val dstId = entityKeyIds[association.dst]
-                    val edgeId = entityKeyIds[association.key]
+                    val srcId = entityKeyIds.getValue(association.src)
+                    val dstId = entityKeyIds.getValue(association.dst)
+                    val edgeId = entityKeyIds.getValue(association.key)
 
                     val srcEsId = association.src.entitySetId
                     val dstEsId = association.dst.entitySetId
