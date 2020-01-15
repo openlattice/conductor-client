@@ -10,6 +10,7 @@ import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.mail.MailServiceClient
 import com.openlattice.organizations.roles.SecurePrincipalsManager
+import com.openlattice.search.graph.SearchGraphService
 import com.openlattice.tasks.HazelcastTaskDependencies
 import com.zaxxer.hikari.HikariDataSource
 import java.util.*
@@ -41,6 +42,7 @@ data class PersistentSearchMessengerTaskDependencies(
         val authorizationManager: AuthorizationManager,
         val authorizationHelper: EdmAuthorizationHelper,
         val searchService: SearchService,
+        val searchGraphService: SearchGraphService,
         val mailServiceClient: MailServiceClient,
         val mapboxToken: String,
         val entitySets: IMap<UUID, EntitySet>,
@@ -55,6 +57,7 @@ data class PersistentSearchMessengerTaskDependencies(
             authorizationManager: AuthorizationManager,
             authorizationHelper: EdmAuthorizationHelper,
             searchService: SearchService,
+            searchGraphService: SearchGraphService,
             mailServiceClient: MailServiceClient,
             mapboxToken: String
     ) : this(
@@ -63,6 +66,7 @@ data class PersistentSearchMessengerTaskDependencies(
             authorizationManager,
             authorizationHelper,
             searchService,
+            searchGraphService,
             mailServiceClient,
             mapboxToken,
             HazelcastMap.ENTITY_SETS.getMap( hazelcastInstance ),

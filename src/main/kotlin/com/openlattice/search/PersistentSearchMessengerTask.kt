@@ -137,7 +137,7 @@ class PersistentSearchMessengerTask : HazelcastFixedRateTask<PersistentSearchMes
             if (results.hits.isNotEmpty()) {
                 val entityKeyIds = getHitEntityKeyIds(results.hits)
                 neighborsById.putAll(
-                        dependencies.searchService.executeEntityNeighborSearch(
+                        dependencies.searchGraphService.executeEntityNeighborSearch(
                                 EntityNeighborsFilter(
                                         entitySets.getOrDefault(false, listOf())
                                                 .map { it.id to entityKeyIds }.toMap(),

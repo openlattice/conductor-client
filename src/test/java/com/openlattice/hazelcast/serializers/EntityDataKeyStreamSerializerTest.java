@@ -23,9 +23,7 @@
 package com.openlattice.hazelcast.serializers;
 
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest;
-import com.openlattice.data.EntityDataKey;
-import com.openlattice.edm.EntitySet;
-import com.openlattice.mapstores.TestDataFactory;
+
 import java.io.Serializable;
 import java.util.UUID;
 
