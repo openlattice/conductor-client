@@ -58,8 +58,6 @@ class SearchGraphService(
         private val logger = LoggerFactory.getLogger(SearchGraphService::class.java)
     }
 
-    // todo: refactor for re-use
-
     @Timed
     fun executeEntityNeighborSearch(
             filter: EntityNeighborsFilter,
