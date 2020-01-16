@@ -38,7 +38,7 @@ class EntitySetData<T>(
 
     @JsonValue
     fun getEntities(): Iterable<Map<T, Set<Any>>> {
-        return Iterable(entities::iterator)
+        return entities
     }
 
     override fun iterator(): Iterator<Map<T, Set<Any>>> {
