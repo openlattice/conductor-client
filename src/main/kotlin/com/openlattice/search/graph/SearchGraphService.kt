@@ -39,10 +39,12 @@ import com.openlattice.search.SearchService
 import com.openlattice.search.requests.EntityNeighborsFilter
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
 
+@Service
 class SearchGraphService(
         private val dataManager: EntityDatastore,
         private val graphService: GraphService,
