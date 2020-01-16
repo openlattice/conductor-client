@@ -29,7 +29,7 @@ import java.util.*
 data class EntitySetsFlagFilteringAggregator @JvmOverloads constructor(
         val filteringFlags: Set<EntitySetFlag>,
         val filteredEntitySetIds: MutableMap<UUID, EntitySet> = mutableMapOf()
-) : Aggregator<Map.Entry<UUID, EntitySet>, Map<UUID, EntitySet>>() {
+) : Aggregator<Map.Entry<UUID, EntitySet>, EntitySetsFlagFilteringAggregator>() {
 
     override fun accumulate(input: Map.Entry<UUID, EntitySet>) {
         if (input.value.flags.containsAll(filteringFlags)) {
@@ -43,7 +43,7 @@ data class EntitySetsFlagFilteringAggregator @JvmOverloads constructor(
         }
     }
 
-    override fun aggregate(): Map<UUID, EntitySet> {
-        return filteredEntitySetIds
+    override fun aggregate(): EntitySetsFlagFilteringAggregator {
+        return this
     }
 }

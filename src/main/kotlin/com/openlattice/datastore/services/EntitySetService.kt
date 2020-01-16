@@ -274,10 +274,13 @@ open class EntitySetService(
     override fun getEntitySetsWithFlags(
             entitySetIds: Set<UUID>, filteringFlags: Set<EntitySetFlag>
     ): Map<UUID, EntitySet> {
-        return entitySets.aggregate(
+        val aggregator = entitySets.aggregate(
                 EntitySetsFlagFilteringAggregator(filteringFlags),
-                Predicates.`in`(QueryConstants.KEY_ATTRIBUTE_NAME.value(), *entitySetIds.toTypedArray()) as Predicate<UUID, EntitySet>
+                Predicates.`in`(QueryConstants.KEY_ATTRIBUTE_NAME.value(), *entitySetIds.toTypedArray())
+                        as Predicate<UUID, EntitySet>
         )
+
+        return aggregator.filteredEntitySetIds
     }
 
     override fun getEntitySetsForOrganization(organizationId: UUID): Set<UUID> {
