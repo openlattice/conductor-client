@@ -56,6 +56,7 @@ import com.openlattice.postgres.mapstores.TypedMapIdentifier
 import com.openlattice.requests.Status
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet
+import com.openlattice.rhizome.service.QueueState
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
 
@@ -106,14 +107,14 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmField val ID_REF_COUNTS = HazelcastMap<EntityKey, Long>("ID_REF_COUNTS")
         @JvmField val INDEXING_GRAPH_PROCESSING = HazelcastMap<UUID, Long>("INDEXING_GRAPH_PROCESSING")
         @JvmField val INDEXING_JOBS = HazelcastMap<UUID, DelegatedUUIDSet>("INDEXING_JOBS")
-        @JvmField val INDEXING_LOCKS = HazelcastMap<UUID, Long>("INDEXING_LOCKS")
+        @JvmField val INDEXING_LOCKS = HazelcastMap<UUID, QueueState>("INDEXING_LOCKS")
         @JvmField val INDEXING_PROGRESS = HazelcastMap<UUID, UUID>("INDEXING_PROGRESS")
         @JvmField val INDEXING_PARTITION_PROGRESS = HazelcastMap<UUID, Int>("INDEXING_PARTITION_PROGRESS")
         @JvmField val INDEXING_PARTITION_LIST = HazelcastMap<UUID, DelegatedIntList>("INDEXING_PARTITION_LIST")
         @JvmField val LINKING_ENTITY_SET_SECRET_KEYS = HazelcastMap<UUID, SecretKeySpec>("LINKING_ENTITY_SET_SECRET_KEYS")
         @JvmField val LINKING_FEEDBACK = HazelcastMap<EntityKeyPair, Boolean>("LINKING_FEEDBACK")
         @JvmField val LINKING_INDEXING_LOCKS = HazelcastMap<UUID, Long>("LINKING_INDEXING_LOCKS")
-        @JvmField val LINKING_LOCKS = HazelcastMap<EntityDataKey, Long>("LINKING_LOCKS")
+        @JvmField val LINKING_LOCKS = HazelcastMap<EntityDataKey, QueueState>("LINKING_LOCKS")
         @JvmField val LONG_IDS = HazelcastMap<String, Long>("LONG_IDS")
         @JvmField val MATERIALIZED_ENTITY_SETS = HazelcastMap<EntitySetAssemblyKey, MaterializedEntitySet>("MATERIALIZED_ENTITY_SETS")
         @JvmField val NAMES = HazelcastMap<UUID, String>("NAMES")
