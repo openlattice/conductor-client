@@ -344,8 +344,10 @@ class PostgresEntityDatastore(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>> {
-        val entities = Lists.newArrayListWithExpectedSize<MutableMap<FullQualifiedName, MutableSet<Any>>>(
-                entitySetIdsToEntityKeyIds.values.sumBy { it.size }
+        val entities = Collections.synchronizedList(
+                Lists.newArrayListWithExpectedSize<MutableMap<FullQualifiedName, MutableSet<Any>>>(
+                        entitySetIdsToEntityKeyIds.values.sumBy { it.size }
+                )
         )
         val entitySetMap = entitySetManager.getEntitySetsAsMap(entitySetIdsToEntityKeyIds.keys)
 
