@@ -489,10 +489,6 @@ public class SearchService {
         return elasticsearchApi.executeSecurableObjectSearch( SecurableObjectType.App, searchTerm, start, maxHits );
     }
 
-    public SearchResult executeAppTypeSearch( String searchTerm, int start, int maxHits ) {
-        return elasticsearchApi.executeSecurableObjectSearch( SecurableObjectType.AppType, searchTerm, start, maxHits );
-    }
-
     public SearchResult executeEntityTypeCollectionSearch( String searchTerm, int start, int maxHits ) {
         return elasticsearchApi.executeSecurableObjectSearch( SecurableObjectType.EntityTypeCollection,
                 searchTerm,
