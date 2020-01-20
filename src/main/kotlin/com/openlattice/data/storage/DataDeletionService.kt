@@ -411,7 +411,7 @@ class DataDeletionService(
 
         if (unauthorizedAclKeys.isNotEmpty()) {
             throw ForbiddenException("Unable to delete from entity set $entitySetId: missing required permissions " +
-                    "on associations for AclKeys $unauthorizedAclKeys")
+                    "$requiredPermissions on associations for AclKeys $unauthorizedAclKeys")
         }
 
     }
@@ -453,7 +453,7 @@ class DataDeletionService(
 
         if (unauthorizedAclKeys.isNotEmpty()) {
             throw ForbiddenException("Unable to delete from entity sets $entitySetIds: missing required permissions " +
-                    "on associations for AclKeys $unauthorizedAclKeys")
+                    "$requiredPermissions for AclKeys $unauthorizedAclKeys")
         }
 
         val allPropertyTypeIds = properties.orElse(entityTypesById.values.flatMap { it.properties }.toSet())
