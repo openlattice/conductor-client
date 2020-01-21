@@ -140,7 +140,7 @@ class PostgresEntityDataQueryService(
             metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
             version: Optional<Long> = Optional.empty(),
             linking: Boolean = false
-    ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Iterable<Pair<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>> {
         return getEntitySetIterable(
                 entityKeyIds,
                 authorizedPropertyTypes,
@@ -155,7 +155,7 @@ class PostgresEntityDataQueryService(
                     metadataOptions,
                     byteBlobDataManager
             )
-        }.toMap()
+        }
     }
 
     /**

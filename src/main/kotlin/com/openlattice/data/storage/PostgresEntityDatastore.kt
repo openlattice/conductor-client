@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.ByteBuffer
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 
 /**
@@ -226,7 +227,7 @@ class PostgresEntityDatastore(
                 EnumSet.noneOf(MetadataOption::class.java),
                 Optional.empty(),
                 linking
-        ).values
+        ).toMap().values
 
         context.stop()
 
@@ -246,9 +247,14 @@ class PostgresEntityDatastore(
                 authorizedPropertyTypes,
                 emptyMap(),
                 metadataOptions
-        ).values
+        ).toMap().values
     }
 
+    /**
+     * Returns linking entity data merged by linking id.
+     * @param entityKeyIds Map of normal entity set ids to decrypted linking ids.
+     * @param authorizedPropertyTypes Map of authorized property types by normal entity set ids.
+     */
     @Timed
     override fun getLinkingEntitiesWithMetadata(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
@@ -256,14 +262,34 @@ class PostgresEntityDatastore(
             metadataOptions: EnumSet<MetadataOption>
     ): Collection<MutableMap<FullQualifiedName, MutableSet<Any>>> {
         //If the query generated exceed 33.5M UUIDs good chance that it exceed Postgres's 1 GB max query buffer size
-        return dataQueryService.getEntitiesWithPropertyTypeFqns(
+        val linkedEntityDataRows = dataQueryService.getEntitiesWithPropertyTypeFqns(
                 entityKeyIds,
                 authorizedPropertyTypes,
                 emptyMap(),
                 metadataOptions,
                 Optional.empty(),
                 true
-        ).values
+        )
+
+        // Note: currently only used 1 linked entity set and with linking ids always specified, so their size can be
+        // used as init capacity
+        val groupedLinkedDataMap = ConcurrentHashMap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>(
+                entityKeyIds.values.first().get().size
+        )
+
+        linkedEntityDataRows.forEach { (linkingId, entityData) ->
+            groupedLinkedDataMap.compute(linkingId) { _, data ->
+                data?.map {
+                    val fqn = it.key
+                    val mergedValue = it.value
+                    mergedValue.addAll(entityData.getValue(fqn))
+
+                    fqn to mergedValue
+                }?.toMap(HashMap(entityData.size)) ?: entityData
+            }
+        }
+
+        return groupedLinkedDataMap.values
     }
 
     /**
@@ -363,7 +389,7 @@ class PostgresEntityDatastore(
                             authorizedPropertyTypes,
                             emptyMap(),
                             EnumSet.noneOf(MetadataOption::class.java)
-                    )
+                    ).toMap()
                     entities.addAll(data.values)
                 }
 
