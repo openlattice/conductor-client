@@ -30,6 +30,7 @@ import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.EntityDatastore
 import com.openlattice.data.storage.MetadataOption
 import com.openlattice.data.storage.PostgresEntitySetSizesTask
+import com.openlattice.edm.EdmConstants
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.set.ExpirationBase
 import com.openlattice.edm.type.PropertyType
@@ -40,7 +41,6 @@ import com.openlattice.ids.IdCipherManager
 import com.openlattice.postgres.DataTables
 import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresDataTables
-import com.openlattice.postgres.PostgresMetaDataProperties
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.PostgresIterable
 import org.apache.commons.lang3.tuple.Pair
@@ -195,7 +195,7 @@ open class DataGraphService(
     private fun encryptLinkingEntries(
             linkedEntitySetId: UUID, entry: Map.Entry<FullQualifiedName, Set<Any>>
     ): Set<Any> {
-        return if (entry.key == PostgresMetaDataProperties.ID.propertyType.type) {
+        return if (entry.key == EdmConstants.ID_FQN) {
             setOf(idCipherManager.encryptId(linkedEntitySetId, entry.value.first() as UUID))
         } else {
             entry.value
