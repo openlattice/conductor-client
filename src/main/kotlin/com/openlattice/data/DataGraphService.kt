@@ -196,7 +196,7 @@ open class DataGraphService(
             linkedEntitySetId: UUID, entry: Map.Entry<FullQualifiedName, Set<Any>>
     ): Set<Any> {
         return if (entry.key == EdmConstants.ID_FQN) {
-            setOf(idCipherManager.encryptId(linkedEntitySetId, entry.value.first() as UUID))
+            setOf(idCipherManager.encryptId(linkedEntitySetId, UUID.fromString(entry.value.first() as String)))
         } else {
             entry.value
         }
