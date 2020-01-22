@@ -211,7 +211,7 @@ public class SearchService {
                     entityKeyIdsByEntitySetId.get( edk.getEntitySetId() ).add( edk.getEntityKeyId() );
                 } );
 
-        Map<UUID, Map<FullQualifiedName, Set<Object>>> entitiesById = entityKeyIdsByEntitySetId.keySet()
+        List<Map<FullQualifiedName, Set<Object>>> results = entityKeyIdsByEntitySetId.keySet()
                 .parallelStream()
                 .map( entitySetId -> getResults(
                         entitySetsById.get( entitySetId ),
@@ -219,10 +219,7 @@ public class SearchService {
                         authorizedPropertyTypesByEntitySet,
                         entitySetsById.get( entitySetId ).isLinking() ) )
                 .flatMap( Collection::stream )
-                .collect( Collectors.toMap( SearchService::getEntityKeyId, Function.identity() ) );
-
-        List<Map<FullQualifiedName, Set<Object>>> results = result.getEntityDataKeys().stream()
-                .map( edk -> entitiesById.get( edk.getEntityKeyId() ) ).filter( Objects::nonNull )
+                .filter( Objects::nonNull )
                 .collect( Collectors.toList() );
 
         return new DataSearchResult( result.getNumHits(), results );
