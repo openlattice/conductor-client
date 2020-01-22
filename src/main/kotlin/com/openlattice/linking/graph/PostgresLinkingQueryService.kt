@@ -283,29 +283,6 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
         }
     }
 
-    override fun getLinkedEntitySetIdsOfLinkingIds(
-            linkingIds: Set<UUID>,
-            normalEntitySetIds: Set<UUID>
-    ): Map<UUID, Set<UUID>> {
-        return BasePostgresIterable(PreparedStatementHolderSupplier(
-                hds, LINKED_ENTITY_SET_IDS_BY_LINKING_IDS_SQL
-        ) { ps ->
-            val linkingIdsArray = PostgresArrays.createUuidArray(ps.connection, linkingIds)
-            /* Note: this inclusion may or may not speed up the function, depending how many partitions are
-               covered by all the normal entity sets requested */
-            val allPartitionsOfNormalEntitySets = partitionManager
-                    .getPartitionsByEntitySetId(normalEntitySetIds).values.flatten()
-
-            ps.setArray(1, linkingIdsArray)
-            ps.setArray(2, PostgresArrays.createUuidArray(ps.connection, normalEntitySetIds))
-            ps.setArray(3, PostgresArrays.createIntArray(ps.connection, allPartitionsOfNormalEntitySets))
-        }) { rs ->
-            val linkingId = ResultSetAdapters.linkingId(rs)
-            val linkedEntitySetIds = ResultSetAdapters.entitySetIds(rs)
-            linkingId to linkedEntitySetIds
-        }.toMap()
-    }
-
     private fun getPartitionsAsPGArray(connection: Connection, entitySetId: UUID): Array? {
         val partitions = partitionManager.getEntitySetPartitions(entitySetId)
         return PostgresArrays.createIntArray(connection, partitions)
@@ -370,27 +347,6 @@ private val ENTITY_KEY_IDS_BY_LINKING_IDS_SQL =
             "AND ${PARTITION.name} = ANY( ? ) " +
         "GROUP BY ${LINKING_ID.name}"
 
-/**
- * SQL to select linked entity set ids of linking ids. Bind order is as folows:
- *
- * 1. linkingIds
- * 2. normalEntitySetIds
- * 3. partitions
- */
-private val LINKED_ENTITY_SET_IDS_BY_LINKING_IDS_SQL =
-        "WITH linked_entities AS " +
-            "( " +
-                "SELECT ${LINKING_ID.name}, ${ENTITY_SET_ID.name} " +
-                "FROM ${IDS.name} " +
-                "WHERE ${LINKING_ID.name} = ANY( ? ) " +
-                    "AND ${ENTITY_SET_ID.name} = ANY( ? ) " +
-                    "AND ${PARTITION.name} = ANY( ? ) " +
-            ") " +
-        "SELECT linked_entities.${LINKING_ID.name}, " +
-                "array_agg(DISTINCT ${ENTITY_SETS.name}.${ID.name}) as ${ENTITY_SET_IDS.name} " +
-        "FROM ${ENTITY_SETS.name} "+
-        "INNER JOIN linked_entities ON ( linked_entities.${ENTITY_SET_ID.name} = ANY( ${LINKED_ENTITY_SETS.name} ) ) " +
-        "GROUP BY ${LINKING_ID.name}"
 
 private val LOCK_CLUSTERS_SQL = "SELECT 1 FROM ${MATCHED_ENTITIES.name} WHERE ${LINKING_ID.name} = ? FOR UPDATE"
 

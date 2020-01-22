@@ -89,10 +89,6 @@ interface LinkingQueryService {
 
     fun createOrUpdateLink(linkingId: UUID, cluster: Map<UUID, LinkedHashSet<UUID>>)
 
-    fun getLinkedEntitySetIdsOfLinkingIds(
-            linkingIds: Set<UUID>,
-            normalEntitySetIds: Set<UUID>
-    ): Map<UUID, Set<UUID>>
 }
 
 
