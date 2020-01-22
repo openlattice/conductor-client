@@ -23,7 +23,6 @@ package com.openlattice.linking
 
 import com.openlattice.data.EntityDataKey
 import com.openlattice.postgres.streams.BasePostgresIterable
-import com.openlattice.postgres.streams.PostgresIterable
 import java.sql.Connection
 import java.util.*
 
@@ -89,6 +88,11 @@ interface LinkingQueryService {
     ): BasePostgresIterable<Pair<UUID, Set<UUID>>>
 
     fun createOrUpdateLink(linkingId: UUID, cluster: Map<UUID, LinkedHashSet<UUID>>)
+
+    fun getLinkedEntitySetIdsOfLinkingIds(
+            linkingIds: Set<UUID>,
+            normalEntitySetIds: Set<UUID>
+    ): Map<UUID, Set<UUID>>
 }
 
 
