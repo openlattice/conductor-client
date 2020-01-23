@@ -16,6 +16,7 @@ import com.openlattice.postgres.PostgresTable.DATA
 import com.openlattice.postgres.PostgresTable.IDS
 import java.sql.PreparedStatement
 import java.util.*
+import kotlin.math.abs
 
 /**
  * This class is responsible for generating all the SQL for creating, reading, upated, and deleting entities.
@@ -646,7 +647,7 @@ internal val selectEntitySetTextProperties = "SELECT COALESCE(${getSourceDataCol
 internal val selectEntitiesTextProperties = "$selectEntitySetTextProperties AND ${ID_VALUE.name} = ANY(?)"
 
 fun partitionSelectorFromId(entityKeyId: UUID): Int {
-    return entityKeyId.leastSignificantBits.toInt()
+    return abs(entityKeyId.leastSignificantBits.toInt())
 }
 
 fun getPartition(entityKeyId: UUID, partitions: List<Int>): Int {
