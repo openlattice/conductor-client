@@ -165,9 +165,10 @@ open class DataGraphService(
             linkingId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): Map<FullQualifiedName, Set<Any>> {
+        val decryptedLinkingIds = setOf(idCipherManager.decryptId(linkedEntitySet.id, linkingId))
         return getLinkingEntities(
                 linkedEntitySet,
-                setOf(linkingId),
+                decryptedLinkingIds,
                 authorizedPropertyTypes,
                 EnumSet.noneOf(MetadataOption::class.java)
         ).iterator().next()
@@ -179,10 +180,9 @@ open class DataGraphService(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
     ): Collection<Map<FullQualifiedName, Set<Any>>> {
-        val decryptedLinkingIds = idCipherManager.decryptIds(linkedEntitySet.id, linkingIds)
 
         return eds.getLinkingEntitiesWithMetadata(
-                linkedEntitySet.linkedEntitySets.map { it to Optional.of(decryptedLinkingIds) }.toMap(),
+                linkedEntitySet.linkedEntitySets.map { it to Optional.of(linkingIds) }.toMap(),
                 authorizedPropertyTypes,
                 metadataOptions
         ).map { entityData ->

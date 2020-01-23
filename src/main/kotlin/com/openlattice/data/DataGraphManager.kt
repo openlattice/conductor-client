@@ -55,6 +55,16 @@ interface DataGraphManager {
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): EntitySetData<FullQualifiedName>
 
+    /**
+     * Loads linked entity set data of the requested linked entity set and optionally filtered by the requested
+     * (encrypted) linking ids.
+     * Note: this function handles linking id decryption and encryption.
+     * @param linkedEntitySet The linking entity set to get the data for.
+     * @param linkingIds The encrypted linking ids to restrict the selection to.
+     * @param authorizedPropertyTypes Map of authorized property types by their normal entity set ids.
+     * @return An [EntitySetData] object, which contains an iterable of the linked entities. Each linked entity has a
+     * map of values mapped by the authorized property type fqns.
+     */
     fun getLinkedEntitySetData(
             linkedEntitySet: EntitySet,
             linkingIds: Optional<Set<UUID>>,
@@ -109,9 +119,9 @@ interface DataGraphManager {
 
     /**
      * Returns all the values and [metadataOptions] of the requested [linkingIds] for the [authorizedPropertyTypes] in the [linkedEntitySet].
-     * Note: this function handles linking id decryption and encryption.
+     * Note: this function assumes, that linking ids are already decrypted, but handles linking id encryption.
      * @param linkedEntitySet The linking entity set.
-     * @param linkingIds The encrypted linking ids.
+     * @param linkingIds The linking ids.
      * @param authorizedPropertyTypes Map of authorized property types by their normal entity set ids.
      * @param metadataOptions The set of metadata options to include in the result.
      */
@@ -185,7 +195,7 @@ interface DataGraphManager {
 
     /**
      * Integrates association data into the system.
-     * @param associations The assosciations to integrate
+     * @param associations The associations to integrate
      * @param authorizedPropertiesByEntitySet The authorized properties by entity set id.
      * @return A map of entity sets to mappings of entity ids to entity key ids.
      */

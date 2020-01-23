@@ -58,8 +58,6 @@ import com.openlattice.organizations.events.OrganizationUpdatedEvent;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
 import com.openlattice.search.requests.*;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.time.OffsetDateTime;
@@ -70,7 +68,6 @@ import java.util.stream.Collectors;
 import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
 
 public class SearchService {
-    private static final Logger logger = LoggerFactory.getLogger( SearchService.class );
 
     @Inject
     private EventBus eventBus;
@@ -213,11 +210,13 @@ public class SearchService {
 
         List<Map<FullQualifiedName, Set<Object>>> results = entityKeyIdsByEntitySetId.keySet()
                 .parallelStream()
-                .map( entitySetId -> getResults(
-                        entitySetsById.get( entitySetId ),
-                        entityKeyIdsByEntitySetId.get( entitySetId ),
-                        authorizedPropertyTypesByEntitySet,
-                        entitySetsById.get( entitySetId ).isLinking() ) )
+                .map( entitySetId ->
+                        getResults(
+                                entitySetsById.get( entitySetId ),
+                                entityKeyIdsByEntitySetId.get( entitySetId ),
+                                authorizedPropertyTypesByEntitySet,
+                                entitySetsById.get( entitySetId ).isLinking()
+                        ) )
                 .flatMap( Collection::stream )
                 .filter( Objects::nonNull )
                 .collect( Collectors.toList() );
