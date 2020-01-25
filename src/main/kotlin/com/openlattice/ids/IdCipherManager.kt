@@ -38,7 +38,7 @@ class IdCipherManager(hazelCastInstance: HazelcastInstance) {
     }
 
     private val factory = SecretKeyFactory.getInstance(keyAlgorithm)
-    private val secretKeys = HazelcastMap.LINKING_ENTITY_SET_SECRET_KEYS.getMap(hazelCastInstance)
+    private val secretKeys = HazelcastMap.LINKED_ENTITY_SET_SECRET_KEYS.getMap(hazelCastInstance)
 
     fun assignSecretKey(linkingEntitySetId: UUID) {
         require(!secretKeys.containsKey(linkingEntitySetId)) {
