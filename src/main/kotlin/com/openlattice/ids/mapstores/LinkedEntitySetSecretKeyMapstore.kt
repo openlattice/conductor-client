@@ -35,7 +35,7 @@ import javax.crypto.spec.SecretKeySpec
 import kotlin.random.Random
 
 
-open class LinkingEntitySetSecretKeyMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore<UUID, SecretKeySpec>(
+open class LinkedEntitySetSecretKeyMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore<UUID, SecretKeySpec>(
         HazelcastMap.LINKED_ENTITY_SET_SECRET_KEYS.name,
         PostgresTable.LINKED_ENTITY_SET_SECRET_KEYS,
         hds
