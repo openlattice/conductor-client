@@ -111,7 +111,7 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmField val INDEXING_PROGRESS = HazelcastMap<UUID, UUID>("INDEXING_PROGRESS")
         @JvmField val INDEXING_PARTITION_PROGRESS = HazelcastMap<UUID, Int>("INDEXING_PARTITION_PROGRESS")
         @JvmField val INDEXING_PARTITION_LIST = HazelcastMap<UUID, DelegatedIntList>("INDEXING_PARTITION_LIST")
-        @JvmField val LINKING_ENTITY_SET_SECRET_KEYS = HazelcastMap<UUID, SecretKeySpec>("LINKING_ENTITY_SET_SECRET_KEYS")
+        @JvmField val LINKED_ENTITY_SET_SECRET_KEYS = HazelcastMap<UUID, SecretKeySpec>("LINKED_ENTITY_SET_SECRET_KEYS")
         @JvmField val LINKING_FEEDBACK = HazelcastMap<EntityKeyPair, Boolean>("LINKING_FEEDBACK")
         @JvmField val LINKING_INDEXING_LOCKS = HazelcastMap<UUID, Long>("LINKING_INDEXING_LOCKS")
         @JvmField val LINKING_LOCKS = HazelcastMap<EntityDataKey, Long>("LINKING_LOCKS")

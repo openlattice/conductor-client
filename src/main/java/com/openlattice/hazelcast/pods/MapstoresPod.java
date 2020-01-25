@@ -65,7 +65,7 @@ import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
 import com.openlattice.ids.IdGenerationMapstore;
 import com.openlattice.ids.Range;
-import com.openlattice.ids.mapstores.LinkingEntitySetSecretKeyMapstore;
+import com.openlattice.ids.mapstores.LinkedEntitySetSecretKeyMapstore;
 import com.openlattice.linking.mapstores.LinkingFeedbackMapstore;
 import com.openlattice.notifications.sms.SmsInformationMapstore;
 import com.openlattice.organization.OrganizationExternalDatabaseColumn;
@@ -284,8 +284,8 @@ public class MapstoresPod {
     }
 
     @Bean
-    public SelfRegisteringMapStore<UUID, SecretKeySpec> linkingEntitySetSecretKeyMapstore() {
-        return new LinkingEntitySetSecretKeyMapstore( hikariDataSource );
+    public SelfRegisteringMapStore<UUID, SecretKeySpec> linkedEntitySetSecretKeyMapstore() {
+        return new LinkedEntitySetSecretKeyMapstore( hikariDataSource );
     }
 
     @Bean

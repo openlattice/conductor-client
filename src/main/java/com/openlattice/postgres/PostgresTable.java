@@ -247,8 +247,8 @@ public final class PostgresTable {
                     .primaryKey( PARTITION_INDEX )
                     .addColumns( PARTITION_INDEX, MSB, LSB );
 
-    public static final PostgresTableDefinition        LINKING_ENTITY_SET_SECRET_KEYS =
-            new PostgresTableDefinition( "linking_entity_set_secret_key" )
+    public static final PostgresTableDefinition        LINKED_ENTITY_SET_SECRET_KEYS=
+            new PostgresTableDefinition( "linked_entity_set_secret_key" )
                     .addColumns( ENTITY_SET_ID, ALGORITHM, SECRET_KEY )
                     .primaryKey( ENTITY_SET_ID );
 
