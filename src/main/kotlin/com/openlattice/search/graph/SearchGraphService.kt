@@ -79,7 +79,7 @@ class SearchGraphService(
 
         var entityNeighbors: MutableMap<UUID, MutableList<NeighborEntityDetails>> = Maps.newConcurrentMap()
 
-        if (linkingEntitySets.isNotEmpty()) {
+        if (groupedEntityKeyIds.containsKey(true)) {
             entityNeighbors = executeLinkingEntityNeighborSearch(
                     linkingEntitySets,
                     EntityNeighborsFilter(
@@ -89,11 +89,11 @@ class SearchGraphService(
                             filter.associationEntitySetIds),
                     principals
             )
+        } else if (groupedEntityKeyIds.containsKey(false)) {
+            val normalEntityKeyIds = groupedEntityKeyIds.getValue(false).map { it.key to it.value }.toMap()
+            val entityKeyIds = normalEntityKeyIds.values.flatten().toSet()
+            collectEntityNeighborDetails(filter, entityNeighbors, normalEntityKeyIds, entityKeyIds, principals)
         }
-
-        val normalEntityKeyIds = groupedEntityKeyIds.getValue(false).map { it.key to it.value }.toMap()
-        val entityKeyIds = normalEntityKeyIds.values.flatten().toSet()
-        collectEntityNeighborDetails(filter, entityNeighbors, normalEntityKeyIds, entityKeyIds, principals)
 
         logger.info("Finished entity neighbor search in {} ms", sw.elapsed(TimeUnit.MILLISECONDS))
         return entityNeighbors
@@ -125,7 +125,7 @@ class SearchGraphService(
 
 
             /* Map linkingIds to the collection of neighbors for all entityKeyIds in the cluster */
-            val encryptedLinkingIds = idCipher.encryptIdsAsMap(linkedEntitySetId, linkingIds)
+            val encryptedLinkingIds = idCipher.encryptIdsAsMap(linkedEntitySetId, entityKeyIdsByLinkingId.keys)
             entityKeyIdsByLinkingId.forEach { (linkingId, normalEntityKeyIds) ->
                 linkingEntityNeighbors[encryptedLinkingIds.getValue(linkingId)] = normalEntityKeyIds
                         .flatMap { entityKeyId -> entityNeighbors.getOrDefault(entityKeyId, mutableListOf()) }
