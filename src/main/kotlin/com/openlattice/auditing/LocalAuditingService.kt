@@ -1,7 +1,6 @@
 package com.openlattice.auditing
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.common.collect.ImmutableMap
 import com.openlattice.data.DataEdge
 import com.openlattice.data.DataGraphManager
 import com.openlattice.data.EntityDataKey
@@ -12,10 +11,6 @@ class LocalAuditingService(
         private val ares: AuditRecordEntitySetsManager,
         private val mapper: ObjectMapper
 ) : AuditingManager {
-
-    fun recordEvent(event: AuditableEvent): Int {
-        return recordEvents(listOf(event))
-    }
 
     override fun recordEvents(events: List<AuditableEvent>): Int {
 
@@ -55,14 +50,13 @@ class LocalAuditingService(
                                                 DataEdge(
                                                         EntityDataKey(aeEntitySetId, id),
                                                         EntityDataKey(auditEntitySet, auditEntityKeyId),
-                                                        ImmutableMap.of()
+                                                        mapOf()
                                                 )
                                         )
                                     }
                                 }
-                        val associations = mutableMapOf(auditEdgeEntitySet to dataEdges)
-                        dataGraphService
-                                .createAssociations(associations, ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
+                        val associations = mapOf(auditEdgeEntitySet to dataEdges)
+                        dataGraphService.createAssociations(associations, mapOf(auditEdgeEntitySet to emptyMap()))
 
                     }
                     entityKeyIds.size

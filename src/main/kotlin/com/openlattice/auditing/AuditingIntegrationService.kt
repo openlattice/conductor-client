@@ -1,7 +1,6 @@
 package com.openlattice.auditing
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.common.collect.ImmutableMap
 import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.data.DataEdge
@@ -75,13 +74,13 @@ class AuditingIntegrationService(
                                                     DataEdge(
                                                             EntityDataKey(aeEntitySetId, id),
                                                             EntityDataKey(auditEntitySet, auditEntityKeyId),
-                                                            ImmutableMap.of()
+                                                            mapOf()
                                                     )
                                             )
                                         }
                                     }
-                            val associations = mutableMapOf(auditEdgeEntitySet to dataEdges)
-                            dgm.createAssociations(associations, ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
+                            val associations = mapOf(auditEdgeEntitySet to dataEdges)
+                            dgm.createAssociations(associations, mapOf(auditEdgeEntitySet to emptyMap()))
 
                         }
                         entityKeyIds.size
