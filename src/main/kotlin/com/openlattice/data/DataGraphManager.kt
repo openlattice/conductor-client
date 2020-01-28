@@ -61,6 +61,7 @@ interface DataGraphManager {
      * Note: this function handles linking id decryption and encryption.
      * @param linkedEntitySet The linking entity set to get the data for.
      * @param linkingIds The encrypted linking ids to restrict the selection to.
+     * @param orderedPropertyNames Ordered list of [FullQualifiedName]s of authorized property types.
      * @param authorizedPropertyTypes Map of authorized property types by their normal entity set ids.
      * @return An [EntitySetData] object, which contains an iterable of the linked entities. Each linked entity has a
      * map of values mapped by the authorized property type fqns.
