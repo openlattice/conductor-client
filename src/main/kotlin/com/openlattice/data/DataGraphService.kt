@@ -403,11 +403,8 @@ open class DataGraphService(
             associations: Map<UUID, List<DataEdge>>,
             authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, CreateAssociationEvent> {
-
-        val associationCreateEvents: MutableMap<UUID, CreateAssociationEvent> = mutableMapOf()
-
-        associations
-                .forEach {
+        return associations
+                .mapValues {
                     val entitySetId = it.key
 
                     val entities = it.value.map(DataEdge::getData)
@@ -422,10 +419,8 @@ open class DataGraphService(
                     val edgeWrite = graphService.createEdges(edgeKeys)
                     logger.info("graphService.createEdges (for {} edgeKeys) took {}", edgeKeys.size, sw.elapsed(TimeUnit.MILLISECONDS))
 
-                    associationCreateEvents[entitySetId] = CreateAssociationEvent(ids, entityWrite, edgeWrite)
+                    CreateAssociationEvent(ids, entityWrite, edgeWrite)
                 }
-
-        return associationCreateEvents
     }
 
     override fun integrateAssociations(
