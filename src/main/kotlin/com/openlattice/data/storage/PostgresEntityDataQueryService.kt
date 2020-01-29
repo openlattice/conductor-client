@@ -129,8 +129,8 @@ class PostgresEntityDataQueryService(
     }
 
     /**
-     * Returns a map of requested entity key ids to their data, where their data is represented as a map of property
-     * type fullqualified names to their set of values.
+     * Returns an iterable with pairs of requested entity key ids to their data, where their data is represented as a
+     * map of property type fullqualified names to their set of values.
      */
     @JvmOverloads
     fun getEntitiesWithPropertyTypeFqns(
