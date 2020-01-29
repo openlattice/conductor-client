@@ -48,7 +48,7 @@ import com.openlattice.postgres.ResultSetAdapters
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.PostgresIterable
 import com.openlattice.postgres.streams.StatementHolder
-import com.openlattice.search.requests.EntityNeighborsFilter
+import com.openlattice.search.requests.EntityNeighborsFilterBulk
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
@@ -221,7 +221,7 @@ class Graph(
         ).stream()
     }
 
-    override fun getEdgesAndNeighborsForVertices(filter: EntityNeighborsFilter): Stream<Edge> {
+    override fun getEdgesAndNeighborsForVertices(filter: EntityNeighborsFilterBulk): Stream<Edge> {
         val entitySetId = filter.entityKeyIds.keys.first()
         return PostgresIterable(
                 Supplier {
@@ -240,7 +240,7 @@ class Graph(
     }
 
 
-    override fun getEdgesAndNeighborsForVerticesBulk(filter: EntityNeighborsFilter): Stream<Edge> {
+    override fun getEdgesAndNeighborsForVerticesBulk(filter: EntityNeighborsFilterBulk): Stream<Edge> {
         if (filter.entityKeyIds.size == 1) {
             return getEdgesAndNeighborsForVertices(filter)
         }
@@ -705,7 +705,7 @@ private val BULK_NON_TOMBSTONED_NEIGHBORHOOD_SQL = "$BULK_NEIGHBORHOOD_SQL AND $
  */
 private val NEIGHBORHOOD_SQL = "SELECT * FROM ${E.name} WHERE ($SRC_ID_SQL) OR ($DST_ID_SQL)"
 
-internal fun getFilteredNeighborhoodSql(filter: EntityNeighborsFilter, multipleEntitySetIds: Boolean): String {
+internal fun getFilteredNeighborhoodSql(filter: EntityNeighborsFilterBulk, multipleEntitySetIds: Boolean): String {
 
     var (srcSql, dstSql) = if (multipleEntitySetIds) {
         SRC_IDS_AND_ENTITY_SETS_SQL to DST_IDS_AND_ENTITY_SETS_SQL

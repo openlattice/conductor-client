@@ -36,7 +36,7 @@ import com.openlattice.graph.core.GraphService
 import com.openlattice.graph.edge.Edge
 import com.openlattice.ids.IdCipherManager
 import com.openlattice.search.SearchService
-import com.openlattice.search.requests.EntityNeighborsFilter
+import com.openlattice.search.requests.EntityNeighborsFilterBulk
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -60,7 +60,7 @@ class SearchGraphService(
 
     @Timed
     fun executeEntityNeighborSearch(
-            filter: EntityNeighborsFilter,
+            filter: EntityNeighborsFilterBulk,
             principals: Set<Principal>
     ): Map<UUID, List<NeighborEntityDetails>> {
         val sw = Stopwatch.createStarted()
@@ -82,7 +82,7 @@ class SearchGraphService(
         if (groupedEntityKeyIds.containsKey(true)) {
             entityNeighbors = executeLinkingEntityNeighborSearch(
                     linkingEntitySets,
-                    EntityNeighborsFilter(
+                    EntityNeighborsFilterBulk(
                             groupedEntityKeyIds.getValue(true).map { it.key to it.value }.toMap(),
                             filter.srcEntitySetIds,
                             filter.dstEntitySetIds,
@@ -102,7 +102,7 @@ class SearchGraphService(
     @Timed
     private fun executeLinkingEntityNeighborSearch(
             linkedEntitySets: Map<UUID, EntitySet>,
-            filter: EntityNeighborsFilter,
+            filter: EntityNeighborsFilterBulk,
             principals: Set<Principal>
     ): MutableMap<UUID, MutableList<NeighborEntityDetails>> {
         val sw1 = Stopwatch.createStarted()
@@ -145,7 +145,7 @@ class SearchGraphService(
     }
 
     private fun collectEntityNeighborDetails(
-            filter: EntityNeighborsFilter,
+            filter: EntityNeighborsFilterBulk,
             entityNeighbors: MutableMap<UUID, MutableList<NeighborEntityDetails>>,
             normalEntityKeyIds: Map<UUID, Set<UUID>>,
             entityKeyIds: Set<UUID>,
@@ -158,7 +158,7 @@ class SearchGraphService(
 
         graphService
                 .getEdgesAndNeighborsForVerticesBulk(
-                        EntityNeighborsFilter(
+                        EntityNeighborsFilterBulk(
                                 normalEntityKeyIds,
                                 filter.srcEntitySetIds,
                                 filter.dstEntitySetIds,
@@ -311,7 +311,7 @@ class SearchGraphService(
 
     @Timed
     fun executeEntityNeighborIdsSearch(
-            filter: EntityNeighborsFilter, principals: Set<Principal>
+            filter: EntityNeighborsFilterBulk, principals: Set<Principal>
     ): Map<UUID, Map<UUID, Map<UUID, Set<NeighborEntityIds>>>> {
         val sw = Stopwatch.createStarted()
 
@@ -368,7 +368,7 @@ class SearchGraphService(
     @Timed
     fun executeLinkingEntityNeighborIdsSearch(
             linkedEntitySets: Map<UUID, EntitySet>,
-            filter: EntityNeighborsFilter,
+            filter: EntityNeighborsFilterBulk,
             principals: Set<Principal>
     ): Map<UUID, Map<UUID, Map<UUID, Set<NeighborEntityIds>>>> {
         if (checkAssociationFilterMissing(filter)) {
@@ -384,7 +384,7 @@ class SearchGraphService(
 
             // Will return only entries, where there is at least 1 neighbor
             val entityNeighbors = executeEntityNeighborIdsSearch(
-                    EntityNeighborsFilter(
+                    EntityNeighborsFilterBulk(
                             linkedEntitySets.getValue(linkedEntitySetId).linkedEntitySets
                                     .map { it to entityKeyIds }.toMap(),
                             filter.srcEntitySetIds,
@@ -429,7 +429,7 @@ class SearchGraphService(
         return dataManager.getEntityKeyIdsByLinkingIds(decryptedLinkingIds, linkedEntitySet.linkedEntitySets).toMap()
     }
 
-    private fun checkAssociationFilterMissing(filter: EntityNeighborsFilter): Boolean {
+    private fun checkAssociationFilterMissing(filter: EntityNeighborsFilterBulk): Boolean {
         return filter.associationEntitySetIds.isPresent && filter.associationEntitySetIds.get().isEmpty()
     }
 

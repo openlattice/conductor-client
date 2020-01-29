@@ -26,7 +26,7 @@ import com.openlattice.data.WriteEvent;
 import com.openlattice.edm.type.PropertyType;
 import com.openlattice.graph.edge.Edge;
 import com.openlattice.postgres.streams.PostgresIterable;
-import com.openlattice.search.requests.EntityNeighborsFilter;
+import com.openlattice.search.requests.EntityNeighborsFilterBulk;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -51,9 +51,9 @@ public interface GraphService {
 
     Stream<Edge> getEdgesAndNeighborsForVertex( UUID entitySetId, UUID vertexId );
 
-    Stream<Edge> getEdgesAndNeighborsForVertices( EntityNeighborsFilter filter );
+    Stream<Edge> getEdgesAndNeighborsForVertices( EntityNeighborsFilterBulk filter );
 
-    Stream<Edge> getEdgesAndNeighborsForVerticesBulk( EntityNeighborsFilter filter );
+    Stream<Edge> getEdgesAndNeighborsForVerticesBulk( EntityNeighborsFilterBulk filter );
 
     Set<UUID> getEdgeEntitySetsConnectedToEntities( UUID entitySetId, Set<UUID> entityKeyIds );
 

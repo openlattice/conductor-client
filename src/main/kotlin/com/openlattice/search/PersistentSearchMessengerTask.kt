@@ -14,7 +14,7 @@ import com.openlattice.postgres.mapstores.EntitySetMapstore
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.StatementHolderSupplier
 import com.openlattice.search.requests.DataSearchResult
-import com.openlattice.search.requests.EntityNeighborsFilter
+import com.openlattice.search.requests.EntityNeighborsFilterBulk
 import com.openlattice.search.requests.PersistentSearch
 import com.openlattice.search.requests.SearchConstraints
 import com.openlattice.tasks.HazelcastFixedRateTask
@@ -138,7 +138,7 @@ class PersistentSearchMessengerTask : HazelcastFixedRateTask<PersistentSearchMes
                 val entityKeyIds = getHitEntityKeyIds(results.hits)
                 neighborsById.putAll(
                         dependencies.searchGraphService.executeEntityNeighborSearch(
-                                EntityNeighborsFilter(
+                                EntityNeighborsFilterBulk(
                                         entitySets.getOrDefault(false, listOf())
                                                 .map { it.id to entityKeyIds }.toMap(),
                                         Optional.empty(),
