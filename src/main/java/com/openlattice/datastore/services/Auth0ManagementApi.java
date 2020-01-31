@@ -40,15 +40,15 @@ public interface Auth0ManagementApi {
     String USERS = "users";
 
     String USER_ID      = "userId";
-    String USER_ID_PATH = "{" + USER_ID + "}";
+    String USER_ID_PATH = "/{" + USER_ID + "}";
 
     @GET( USERS + BASIC_REQUEST_FIELDS )
     Set<Auth0UserBasic> getAllUsers( @Query( PAGE ) int page , @Query( PER_PAGE ) int perPage ) ;
 
-    @GET( USERS + "/" + USER_ID_PATH + BASIC_REQUEST_FIELDS )
+    @GET( USERS + USER_ID_PATH + BASIC_REQUEST_FIELDS )
     Auth0UserBasic getUser( @Path( USER_ID ) String userId );
 
-    @PATCH( USERS + "/" + USER_ID_PATH )
+    @PATCH( USERS + USER_ID_PATH )
     Void resetRolesOfUser( @Path( USER_ID ) String userId, @Body Map<String,Object> app_metadata );
 
     @GET( USERS )
