@@ -100,7 +100,7 @@ open class EntitySetService(
     private val aclKeys = HazelcastMap.ACL_KEYS.getMap( hazelcastInstance )
 
 
-    override fun createEntitySet(principal: Principal, entitySet: EntitySet) {
+    override fun createEntitySet(principal: Principal, entitySet: EntitySet): UUID {
         val entityType = Util.getSafely(entityTypes, entitySet.entityTypeId)
         ensureValidEntitySet(entitySet)
 
@@ -114,12 +114,12 @@ open class EntitySetService(
             entitySet.removeFlag(EntitySetFlag.ASSOCIATION)
         }
 
-        createEntitySet(principal, entitySet, entityType.properties)
+        return createEntitySet(principal, entitySet, entityType.properties)
     }
 
-    override fun createEntitySet(principal: Principal, entitySet: EntitySet, ownablePropertyTypeIds: Set<UUID>) {
+    override fun createEntitySet(principal: Principal, entitySet: EntitySet, ownablePropertyTypeIds: Set<UUID>): UUID {
         Principals.ensureUser(principal)
-        createEntitySet(entitySet)
+        val esid = createEntitySet(entitySet)
 
         try {
             setupDefaultEntitySetPropertyMetadata(entitySet.id, entitySet.entityTypeId)
@@ -140,6 +140,7 @@ open class EntitySetService(
             aclKeyReservations.release(entitySet.id)
             throw IllegalStateException("Unable to create entity set: ${entitySet.id}")
         }
+        return esid
     }
 
     private fun ensureValidEntitySet(entitySet: EntitySet) {
@@ -189,10 +190,11 @@ open class EntitySetService(
         return propertyTypes.getAll(ownablePropertyTypeIds).values.toList()
     }
 
-    private fun createEntitySet(entitySet: EntitySet) {
+    private fun createEntitySet(entitySet: EntitySet): UUID {
         aclKeyReservations.reserveIdAndValidateType(entitySet)
 
         checkState(entitySets.putIfAbsent(entitySet.id, entitySet) == null, "Entity set already exists.")
+        return entitySet.id
     }
 
     override fun deleteEntitySet(entitySetId: UUID) {

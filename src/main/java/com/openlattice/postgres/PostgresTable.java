@@ -211,11 +211,21 @@ public final class PostgresTable {
                             ANALYZER,
                             MULTI_VALUED,
                             INDEX_TYPE );
-    public static final PostgresTableDefinition        GRAPH_QUERIES                =
+
+    public static final PostgresTableDefinition        INTEGRATIONS =
+            new PostgresTableDefinition( "integrations" )
+                    .addColumns( NAME,
+                            INTEGRATION )
+                    .primaryKey( NAME );
+
+    public static final PostgresTableDefinition        INTEGRATION_JOBS =
+            new PostgresTableDefinition( "integration_jobs" )
+                    .addColumns( ID, NAME, STATUS );
+
+    public static final PostgresTableDefinition        GRAPH_QUERIES    =
             new PostgresTableDefinition( "graph_queries" )
                     .addColumns( QUERY_ID, QUERY, STATE, START_TIME )
                     .primaryKey( QUERY_ID );
-
     public static final PostgresTableDefinition HBA_AUTHENTICATION_RECORDS          =
             new PostgresTableDefinition( "hba_authentication_records" )
                     .addColumns(
@@ -242,7 +252,7 @@ public final class PostgresTable {
                             LAST_LINK_INDEX )
                     .primaryKey( ID_VALUE, PARTITION )
                     .distributionColumn( PARTITION );
-    public static final PostgresTableDefinition        ID_GENERATION                =
+    public static final PostgresTableDefinition        ID_GENERATION    =
             new PostgresTableDefinition( "id_gen" )
                     .primaryKey( PARTITION_INDEX )
                     .addColumns( PARTITION_INDEX, MSB, LSB );

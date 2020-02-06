@@ -55,6 +55,9 @@ import com.openlattice.postgres.mapstores.TypedMapIdentifier
 import com.openlattice.requests.Status
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet
+import com.openlattice.shuttle.Integration
+import com.openlattice.shuttle.IntegrationJob
+import com.openlattice.rhizome.service.QueueState
 import java.util.*
 import javax.crypto.spec.SecretKeySpec
 
@@ -108,6 +111,8 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmField val INDEXING_PROGRESS = HazelcastMap<UUID, UUID>("INDEXING_PROGRESS")
         @JvmField val INDEXING_PARTITION_PROGRESS = HazelcastMap<UUID, Int>("INDEXING_PARTITION_PROGRESS")
         @JvmField val INDEXING_PARTITION_LIST = HazelcastMap<UUID, DelegatedIntList>("INDEXING_PARTITION_LIST")
+        @JvmField val INTEGRATIONS = HazelcastMap<String, Integration>("INTEGRATIONS")
+        @JvmField val INTEGRATION_JOBS = HazelcastMap<UUID, IntegrationJob>("INTEGRATION_JOBS")
         @JvmField val LINKED_ENTITY_SET_SECRET_KEYS = HazelcastMap<UUID, SecretKeySpec>("LINKED_ENTITY_SET_SECRET_KEYS")
         @JvmField val LINKING_FEEDBACK = HazelcastMap<EntityKeyPair, Boolean>("LINKING_FEEDBACK")
         @JvmField val LINKING_INDEXING_LOCKS = HazelcastMap<UUID, Long>("LINKING_INDEXING_LOCKS")
