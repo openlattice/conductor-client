@@ -3,6 +3,7 @@ package com.openlattice.auditing
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.ArrayListMultimap
 import com.google.common.collect.ImmutableMap
+import com.google.common.collect.Multimaps
 import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.data.DataEdge
@@ -83,7 +84,7 @@ class AuditingIntegrationService(
                                             return@forEach
                                         }
                                     }
-                            dgm.createAssociations(lm, ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
+                            dgm.createAssociations(Multimaps.asMap(lm), ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
 
                         }
                         entityKeyIds.size

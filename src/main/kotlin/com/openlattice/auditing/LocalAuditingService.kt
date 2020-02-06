@@ -3,6 +3,7 @@ package com.openlattice.auditing
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.collect.ArrayListMultimap
 import com.google.common.collect.ImmutableMap
+import com.google.common.collect.Multimaps
 import com.openlattice.data.DataEdge
 import com.openlattice.data.DataGraphManager
 import com.openlattice.data.EntityDataKey
@@ -64,7 +65,7 @@ class LocalAuditingService(
                                     }
                                 }
                         dataGraphService
-                                .createAssociations(lm, ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
+                                .createAssociations(Multimaps.asMap(lm), ImmutableMap.of(auditEdgeEntitySet, emptyMap()))
 
                     }
                     entityKeyIds.size
