@@ -64,6 +64,12 @@ import javax.crypto.spec.SecretKeySpec
 class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdentifier<K, V> {
     private val checker = instanceChecker.checkInstance(name)
 
+    init {
+        if (checker.ok()) {
+            valuesCache.add(this)
+        }
+    }
+
     override fun name(): String {
         this.checker.check()
         return name
@@ -147,7 +153,7 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
                     return e
                 }
             }
-            throw IllegalArgumentException(name)
+            throw IllegalArgumentException("Map with name \"$name\" not found")
         }
     }
 }
