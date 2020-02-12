@@ -19,7 +19,7 @@
  *
  */
 
-package com.openlattice.assembler
+package com.openlattice.materializer
 
 import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
 import java.util.*
@@ -29,15 +29,14 @@ import java.util.*
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @ReloadableConfiguration(uri = "assembler.yaml")
-data class AssemblerConfiguration(
+data class MaterializerConfiguration(
         val server: Properties,
         val foreignHost: String,
-        val foreignDbName: String,
         val foreignPort: Short,
         val foreignUsername: String,
         val foreignPassword: String,
         val ssl: Boolean = true,
-        val production: Optional<Properties> = Optional.empty()
+        val production: Properties
 ) {
     override fun toString(): String {
         return "AssemblerConfiguration(server=$server, foreignHost='$foreignHost', foreignDbName='$foreignDbName', " +
