@@ -63,6 +63,8 @@ import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore;
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore;
 import com.openlattice.ids.IdGenerationMapstore;
 import com.openlattice.ids.Range;
 import com.openlattice.ids.mapstores.LinkedEntitySetSecretKeyMapstore;
@@ -79,6 +81,8 @@ import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.*;
 import com.openlattice.requests.Status;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import com.openlattice.shuttle.Integration;
+import com.openlattice.shuttle.IntegrationJob;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
 import java.sql.Connection;
@@ -261,6 +265,16 @@ public class MapstoresPod {
     @Bean
     public SelfRegisteringMapStore<UUID, OrganizationExternalDatabaseColumn> organizationExternalDatabaseColumnMapstore() {
         return new OrganizationExternalDatabaseColumnMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<String, Integration> integrationsMapstore() {
+        return new IntegrationsMapstore( hikariDataSource );
+    }
+
+    @Bean
+    public SelfRegisteringMapStore<UUID, IntegrationJob> integrationJobsMapstore() {
+        return new IntegrationJobsMapstore( hikariDataSource );
     }
 
     @Bean
