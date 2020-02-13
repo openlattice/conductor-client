@@ -349,6 +349,8 @@ class AssemblerConnectionManager(
 //                    .map { it.key.id to EnumSet.of(OrganizationEntitySetFlag.MATERIALIZED) }
 //                    .toMap()
 //        }
+
+        return mapOf()
     }
 
 
