@@ -162,19 +162,20 @@ class AssemblerConnectionManager(
      * provided.
      */
     fun createOrganizationDatabase(organizationId: UUID) {
-        logger.info("Creating organization database for organization with id $organizationId")
-        val organization = organizations.getOrganization(organizationId)!!
-        val dbName = buildOrganizationDatabaseName(organizationId)
-        createOrganizationDatabase(organizationId, dbName)
-
-        connect(dbName).let { dataSource ->
-            configureRolesInDatabase(dataSource)
-            createOpenlatticeSchema(dataSource)
-            createIntegrationsSchema(dataSource)
-            configureOrganizationUser(organizationId, dataSource)
-            addMembersToOrganization(dbName, dataSource, organization.members)
-            configureServerUser(dataSource)
-        }
+        // TODO: commented out to avoid problems on aurora
+//        logger.info("Creating organization database for organization with id $organizationId")
+//        val organization = organizations.getOrganization(organizationId)!!
+//        val dbName = buildOrganizationDatabaseName(organizationId)
+//        createOrganizationDatabase(organizationId, dbName)
+//
+//        connect(dbName).let { dataSource ->
+//            configureRolesInDatabase(dataSource)
+//            createOpenlatticeSchema(dataSource)
+//            createIntegrationsSchema(dataSource)
+//            configureOrganizationUser(organizationId, dataSource)
+//            addMembersToOrganization(dbName, dataSource, organization.members)
+//            configureServerUser(dataSource)
+//        }
     }
 
     private fun createOpenlatticeSchema(dataSource: HikariDataSource) {
@@ -238,15 +239,16 @@ class AssemblerConnectionManager(
             dataSource: HikariDataSource,
             authorizedPropertyTypesOfEntitySetsByPrincipal: Map<SecurablePrincipal, Map<EntitySet, Collection<PropertyType>>>
     ) {
-        if (authorizedPropertyTypesOfEntitySetsByPrincipal.isNotEmpty()) {
-            val authorizedPropertyTypesOfEntitySetsByPostgresUser = authorizedPropertyTypesOfEntitySetsByPrincipal
-                    .mapKeys { quote(buildPostgresUsername(it.key)) }
-            val userNames = authorizedPropertyTypesOfEntitySetsByPostgresUser.keys
-            configureUsersInDatabase(dataSource, dbName, userNames)
-            dataSource.connection.use { connection ->
-                grantSelectForNewMembers(connection, authorizedPropertyTypesOfEntitySetsByPostgresUser)
-            }
-        }
+        // TODO: commented out to avoid problems on aurora
+//        if (authorizedPropertyTypesOfEntitySetsByPrincipal.isNotEmpty()) {
+//            val authorizedPropertyTypesOfEntitySetsByPostgresUser = authorizedPropertyTypesOfEntitySetsByPrincipal
+//                    .mapKeys { quote(buildPostgresUsername(it.key)) }
+//            val userNames = authorizedPropertyTypesOfEntitySetsByPostgresUser.keys
+//            configureUsersInDatabase(dataSource, dbName, userNames)
+//            dataSource.connection.use { connection ->
+//                grantSelectForNewMembers(connection, authorizedPropertyTypesOfEntitySetsByPostgresUser)
+//            }
+//        }
     }
 
     fun removeMembersFromOrganization(
@@ -254,10 +256,11 @@ class AssemblerConnectionManager(
             dataSource: HikariDataSource,
             principals: Collection<SecurablePrincipal>
     ) {
-        if (principals.isNotEmpty()) {
-            val userNames = principals.map { quote(buildPostgresUsername(it)) }
-            revokeConnectAndSchemaUsage(dataSource, dbName, userNames)
-        }
+        // TODO: commented out to avoid problems on aurora
+//        if (principals.isNotEmpty()) {
+//            val userNames = principals.map { quote(buildPostgresUsername(it)) }
+//            revokeConnectAndSchemaUsage(dataSource, dbName, userNames)
+//        }
     }
 
     private fun createOrganizationDatabase(organizationId: UUID, dbName: String) {
@@ -299,27 +302,28 @@ class AssemblerConnectionManager(
     }
 
     fun dropOrganizationDatabase(organizationId: UUID, dbName: String) {
-        val db = quote(dbName)
-        val dbRole = quote(buildOrganizationRoleName(dbName))
-        val unquotedDbAdminUser = buildOrganizationUserId(organizationId)
-        val dbAdminUser = quote(unquotedDbAdminUser)
-
-        val dropDb = " DROP DATABASE $db"
-        val dropDbUser = "DROP ROLE $dbAdminUser"
-        //TODO: If we grant this role to other users, we need to make sure we drop it
-        val dropDbRole = "DROP ROLE $dbRole"
-
-
-        //We connect to default db in order to do initial db setup
-
-        target.connection.use { connection ->
-            connection.createStatement().use { statement ->
-                statement.execute(dropDb)
-                statement.execute(dropDbUser)
-                statement.execute(dropDbRole)
-                return@use
-            }
-        }
+        // TODO: commented out to avoid problems on aurora
+//        val db = quote(dbName)
+//        val dbRole = quote(buildOrganizationRoleName(dbName))
+//        val unquotedDbAdminUser = buildOrganizationUserId(organizationId)
+//        val dbAdminUser = quote(unquotedDbAdminUser)
+//
+//        val dropDb = " DROP DATABASE $db"
+//        val dropDbUser = "DROP ROLE $dbAdminUser"
+//        //TODO: If we grant this role to other users, we need to make sure we drop it
+//        val dropDbRole = "DROP ROLE $dbRole"
+//
+//
+//        //We connect to default db in order to do initial db setup
+//
+//        target.connection.use { connection ->
+//            connection.createStatement().use { statement ->
+//                statement.execute(dropDb)
+//                statement.execute(dropDbUser)
+//                statement.execute(dropDbRole)
+//                return@use
+//            }
+//        }
     }
 
     fun materializeEntitySets(
@@ -327,23 +331,24 @@ class AssemblerConnectionManager(
             authorizedPropertyTypesByEntitySet: Map<EntitySet, Map<UUID, PropertyType>>,
             authorizedPropertyTypesOfPrincipalsByEntitySetId: Map<UUID, Map<Principal, Set<PropertyType>>>
     ): Map<UUID, Set<OrganizationEntitySetFlag>> {
-        logger.info(
-                "Materializing entity sets ${authorizedPropertyTypesByEntitySet.keys.map { it.id }} in " +
-                        "organization $organizationId database."
-        )
-
-        materializeAllTimer.time().use {
-            connect(buildOrganizationDatabaseName(organizationId)).let { datasource ->
-                materializeEntitySets(
-                        datasource,
-                        authorizedPropertyTypesByEntitySet,
-                        authorizedPropertyTypesOfPrincipalsByEntitySetId
-                )
-            }
-            return authorizedPropertyTypesByEntitySet
-                    .map { it.key.id to EnumSet.of(OrganizationEntitySetFlag.MATERIALIZED) }
-                    .toMap()
-        }
+        // TODO: commented out to avoid problems on aurora
+//        logger.info(
+//                "Materializing entity sets ${authorizedPropertyTypesByEntitySet.keys.map { it.id }} in " +
+//                        "organization $organizationId database."
+//        )
+//
+//        materializeAllTimer.time().use {
+//            connect(buildOrganizationDatabaseName(organizationId)).let { datasource ->
+//                materializeEntitySets(
+//                        datasource,
+//                        authorizedPropertyTypesByEntitySet,
+//                        authorizedPropertyTypesOfPrincipalsByEntitySetId
+//                )
+//            }
+//            return authorizedPropertyTypesByEntitySet
+//                    .map { it.key.id to EnumSet.of(OrganizationEntitySetFlag.MATERIALIZED) }
+//                    .toMap()
+//        }
     }
 
 
@@ -510,16 +515,17 @@ class AssemblerConnectionManager(
      * Synchronize data changes in entity set materialized view in organization database.
      */
     fun refreshEntitySet(organizationId: UUID, entitySet: EntitySet) {
-        logger.info("Refreshing entity set ${entitySet.id} in organization $organizationId database")
-        val tableName = entitySetNameTableName(entitySet.name)
-
-        connect(buildOrganizationDatabaseName(organizationId)).let { dataSource ->
-            dataSource.connection.use { connection ->
-                connection.createStatement().use {
-                    it.execute("REFRESH MATERIALIZED VIEW $tableName")
-                }
-            }
-        }
+        // TODO: commented out to avoid problems on aurora
+//        logger.info("Refreshing entity set ${entitySet.id} in organization $organizationId database")
+//        val tableName = entitySetNameTableName(entitySet.name)
+//
+//        connect(buildOrganizationDatabaseName(organizationId)).let { dataSource ->
+//            dataSource.connection.use { connection ->
+//                connection.createStatement().use {
+//                    it.execute("REFRESH MATERIALIZED VIEW $tableName")
+//                }
+//            }
+//        }
     }
 
     /**
@@ -529,29 +535,31 @@ class AssemblerConnectionManager(
      * @param oldName The old name of the entity set.
      */
     fun renameMaterializedEntitySet(organizationId: UUID, newName: String, oldName: String) {
-        connect(buildOrganizationDatabaseName(organizationId)).let { dataSource ->
-            dataSource.connection.createStatement().use { stmt ->
-                val newTableName = quote(newName)
-                val oldTableName = entitySetNameTableName(oldName)
-
-                stmt.executeUpdate("ALTER MATERIALIZED VIEW IF EXISTS $oldTableName RENAME TO $newTableName")
-            }
-        }
-        logger.info(
-                "Renamed materialized view of entity set with old name $oldName to new name $newName in " +
-                        "organization $organizationId"
-        )
+        // TODO: commented out to avoid problems on aurora
+//        connect(buildOrganizationDatabaseName(organizationId)).let { dataSource ->
+//            dataSource.connection.createStatement().use { stmt ->
+//                val newTableName = quote(newName)
+//                val oldTableName = entitySetNameTableName(oldName)
+//
+//                stmt.executeUpdate("ALTER MATERIALIZED VIEW IF EXISTS $oldTableName RENAME TO $newTableName")
+//            }
+//        }
+//        logger.info(
+//                "Renamed materialized view of entity set with old name $oldName to new name $newName in " +
+//                        "organization $organizationId"
+//        )
     }
 
     /**
      * Removes a materialized entity set from atlas.
      */
     fun dematerializeEntitySets(organizationId: UUID, entitySetIds: Set<UUID>) {
-        val dbName = buildOrganizationDatabaseName(organizationId)
-        connect(dbName).let { dataSource ->
-            //TODO: Implement de-materialization code here.
-        }
-        logger.info("Removed materialized entity sets $entitySetIds from organization $organizationId")
+        // TODO: commented out to avoid problems on aurora
+//        val dbName = buildOrganizationDatabaseName(organizationId)
+//        connect(dbName).let { dataSource ->
+//            //TODO: Implement de-materialization code here.
+//        }
+//        logger.info("Removed materialized entity sets $entitySetIds from organization $organizationId")
     }
 
     internal fun exists(dbName: String): Boolean {
@@ -622,42 +630,44 @@ class AssemblerConnectionManager(
     }
 
     fun createRole(role: Role) {
-        val dbRole = buildPostgresRoleName(role)
-
-        target.connection.use { connection ->
-            connection.createStatement().use { statement ->
-                statement.execute(createRoleIfNotExistsSql(dbRole))
-                //Don't allow users to access public schema which will contain foreign data wrapper tables.
-                logger.info("Revoking $PUBLIC_SCHEMA schema right from role: {}", role)
-                statement.execute("REVOKE USAGE ON SCHEMA $PUBLIC_SCHEMA FROM ${quote(dbRole)}")
-
-                return@use
-            }
-        }
+        // TODO: commented out to avoid problems on aurora
+//        val dbRole = buildPostgresRoleName(role)
+//
+//        target.connection.use { connection ->
+//            connection.createStatement().use { statement ->
+//                statement.execute(createRoleIfNotExistsSql(dbRole))
+//                //Don't allow users to access public schema which will contain foreign data wrapper tables.
+//                logger.info("Revoking $PUBLIC_SCHEMA schema right from role: {}", role)
+//                statement.execute("REVOKE USAGE ON SCHEMA $PUBLIC_SCHEMA FROM ${quote(dbRole)}")
+//
+//                return@use
+//            }
+//        }
     }
 
     fun createUnprivilegedUser(user: SecurablePrincipal) {
-        val dbUser = buildPostgresUsername(user)
-        //user.name
-        val dbUserPassword = dbCredentialService.getOrCreateUserCredentials(dbUser)
-
-        target.connection.use { connection ->
-            connection.createStatement().use { statement ->
-                //TODO: Go through every database and for old users clean them out.
-//                    logger.info("Attempting to drop owned by old name {}", user.name)
-//                    statement.execute(dropOwnedIfExistsSql(user.name))
-//                    logger.info("Attempting to drop user {}", user.name)
-//                    statement.execute(dropUserIfExistsSql(user.name)) //Clean out the old users.
-//                    logger.info("Creating new user {}", dbUser)
-                logger.info("Creating user if not exists {}", dbUser)
-                statement.execute(createUserIfNotExistsSql(dbUser, dbUserPassword))
-                //Don't allow users to access public schema which will contain foreign data wrapper tables.
-                logger.info("Revoking $PUBLIC_SCHEMA schema right from user {}", user)
-                statement.execute("REVOKE USAGE ON SCHEMA $PUBLIC_SCHEMA FROM ${quote(dbUser)}")
-
-                return@use
-            }
-        }
+        // TODO: commented out to avoid problems on aurora
+//        val dbUser = buildPostgresUsername(user)
+//        //user.name
+//        val dbUserPassword = dbCredentialService.getOrCreateUserCredentials(dbUser)
+//
+//        target.connection.use { connection ->
+//            connection.createStatement().use { statement ->
+//                //TODO: Go through every database and for old users clean them out.
+////                    logger.info("Attempting to drop owned by old name {}", user.name)
+////                    statement.execute(dropOwnedIfExistsSql(user.name))
+////                    logger.info("Attempting to drop user {}", user.name)
+////                    statement.execute(dropUserIfExistsSql(user.name)) //Clean out the old users.
+////                    logger.info("Creating new user {}", dbUser)
+//                logger.info("Creating user if not exists {}", dbUser)
+//                statement.execute(createUserIfNotExistsSql(dbUser, dbUserPassword))
+//                //Don't allow users to access public schema which will contain foreign data wrapper tables.
+//                logger.info("Revoking $PUBLIC_SCHEMA schema right from user {}", user)
+//                statement.execute("REVOKE USAGE ON SCHEMA $PUBLIC_SCHEMA FROM ${quote(dbUser)}")
+//
+//                return@use
+//            }
+//        }
     }
 
     private fun configureUsersInDatabase(dataSource: HikariDataSource, dbName: String, userIds: Collection<String>) {
