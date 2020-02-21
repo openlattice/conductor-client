@@ -50,6 +50,11 @@ interface LinkingQueryService {
 
     fun tombstoneLinks(linkingId: UUID, toRemove: Set<EntityDataKey>): Int
 
+    /**
+     * Retrieve all matched entity pairs, that have the requested linking id assigned to them along with their matching
+     * score.
+     * @return Entity pairs and scores mapped by the src entity.
+     */
     fun getClusterFromLinkingId(linkingId: UUID): Map<EntityDataKey, Map<EntityDataKey, Double>>
 
     fun deleteNeighborhood(entity: EntityDataKey, positiveFeedbacks: Collection<EntityKeyPair>): Int
