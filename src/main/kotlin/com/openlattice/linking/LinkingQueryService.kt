@@ -74,7 +74,11 @@ interface LinkingQueryService {
 
     fun getEntitiesNeedingLinking(entitySetId: UUID, limit: Int = 10_000): BasePostgresIterable<EntityDataKey>
 
-    fun getEntitiesNotLinked(entitySetIds: Set<UUID>, limit: Int = 10_000): BasePostgresIterable<Pair<UUID, UUID>>
+    /**
+     * Retrieves those entity data keys where linking hasn't finished yet within the requested entity sets.
+     */
+    // 2 x 1 mil UUIDs should be fine (32 MB)
+    fun getEntitiesNotLinked(entitySetIds: Set<UUID>, limit: Int = 1_000_000): BasePostgresIterable<EntityDataKey>
 
     fun getLinkableEntitySets(
             linkableEntityTypeIds: Set<UUID>,

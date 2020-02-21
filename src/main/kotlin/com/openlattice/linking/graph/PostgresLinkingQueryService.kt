@@ -83,7 +83,7 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
         }) { EntityDataKey(ResultSetAdapters.entitySetId(it), ResultSetAdapters.id(it)) }
     }
 
-    override fun getEntitiesNotLinked(entitySetIds: Set<UUID>, limit: Int): BasePostgresIterable<Pair<UUID, UUID>> {
+    override fun getEntitiesNotLinked(entitySetIds: Set<UUID>, limit: Int): BasePostgresIterable<EntityDataKey> {
         return BasePostgresIterable(PreparedStatementHolderSupplier(hds, ENTITY_KEY_IDS_NOT_LINKED) { ps ->
             val arr = PostgresArrays.createUuidArray(ps.connection, entitySetIds)
             val partitions = getPartitionsAsPGArray(ps.connection, entitySetIds)
@@ -92,7 +92,7 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
             ps.setInt(3, limit)
             val rs = ps.executeQuery()
             StatementHolder(ps.connection, ps, rs)
-        }) { ResultSetAdapters.entitySetId(it) to ResultSetAdapters.id(it) }
+        }) { EntityDataKey(ResultSetAdapters.entitySetId(it), ResultSetAdapters.id(it)) }
     }
 
     override fun updateIdsTable(clusterId: UUID, newMember: EntityDataKey): Int {
