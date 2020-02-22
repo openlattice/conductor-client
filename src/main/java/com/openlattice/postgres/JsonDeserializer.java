@@ -12,10 +12,7 @@ import org.apache.olingo.commons.api.edm.geo.Point;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -42,6 +39,14 @@ public class JsonDeserializer {
         return validateFormatAndNormalize( propertyValues,
                 authorizedPropertiesWithDataType,
                 () -> "No additional info." );
+    }
+
+    private static OffsetDateTime convertToUTC( OffsetDateTime odt ) {
+        if ( odt.getOffset().equals( ZoneOffset.UTC ) ) {
+            return odt;
+        }
+
+        return OffsetDateTime.ofInstant( odt.toInstant(), ZoneOffset.UTC );
     }
 
     public static SetMultimap<UUID, Object> validateFormatAndNormalize(
@@ -158,14 +163,14 @@ public class JsonDeserializer {
                 return LocalDate.parse( (String) value );
             case DateTimeOffset:
                 if ( value instanceof OffsetDateTime ) {
-                    return value;
+                    return convertToUTC( (OffsetDateTime) value );
                 }
                 checkState( value instanceof String,
                         "Expected string for property type %s with data %s,  received %s",
                         dataType,
                         propertyTypeId,
                         value.getClass() );
-                return OffsetDateTime.parse( (String) value );
+                return convertToUTC( OffsetDateTime.parse( (String) value ) );
             case Duration:
                 checkState( value instanceof String,
                         "Expected string for property type %s with data %s,  received %s",
