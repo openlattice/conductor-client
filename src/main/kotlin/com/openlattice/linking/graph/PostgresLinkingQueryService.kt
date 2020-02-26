@@ -21,6 +21,7 @@
 
 package com.openlattice.linking.graph
 
+import com.google.common.collect.Maps
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.storage.*
 import com.openlattice.data.storage.partitions.PartitionManager
@@ -72,6 +73,7 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
             ps.setArray(2, blackListArr)
             ps.setArray(3, whitelistArr)
         }) { ResultSetAdapters.id(it) }
+
     }
 
     override fun getEntitiesNeedingLinking(entitySetId: UUID, limit: Int): BasePostgresIterable<EntityDataKey> {
@@ -93,6 +95,20 @@ class PostgresLinkingQueryService(private val hds: HikariDataSource, private val
             val rs = ps.executeQuery()
             StatementHolder(ps.connection, ps, rs)
         }) { ResultSetAdapters.entitySetId(it) to ResultSetAdapters.id(it) }
+    }
+
+    override fun getEntitySetLinkingCount(entitySetIds: Set<UUID>): BasePostgresIterable<Pair<UUID, Long>> {
+        return BasePostgresIterable(PreparedStatementHolderSupplier(hds, ENTITY_COUNT_NOT_LINKED) { ps ->
+                val arr = PostgresArrays.createUuidArray(ps.connection, entitySetIds)
+                val partitions = getPartitionsAsPGArray(ps.connection, entitySetIds)
+                ps.setArray( 1, partitions)
+                ps.setArray(2, arr)
+                val rs = ps.executeQuery()
+                StatementHolder(ps.connection, ps, rs)
+            }) {
+            ResultSetAdapters.entitySetId(it) to ResultSetAdapters.count(it)
+        }
+
     }
 
     override fun updateIdsTable(clusterId: UUID, newMember: EntityDataKey): Int {
@@ -395,4 +411,12 @@ private val ENTITY_KEY_IDS_NOT_LINKED = "SELECT ${ENTITY_SET_ID.name},${ID.name}
 private val LINKABLE_ENTITY_SET_IDS = "SELECT ${ID.name} " +
         "FROM ${ENTITY_SETS.name} " +
         "WHERE ${ENTITY_TYPE_ID.name} = ANY(?) AND NOT ${ID.name} = ANY(?) AND ${ID.name} = ANY(?) "
-// @formatter:on
+
+private val ENTITY_COUNT_NOT_LINKED = "SELECT ${ENTITY_SET_ID.name},COUNT(${ID.name}) " +
+        "FROM ${IDS.name} " +
+        "WHERE ${PARTITION.name} = ANY(?) " +
+            "AND ${ENTITY_SET_ID.name} = ANY(?) " +
+            "AND ${LAST_LINK.name} < ${LAST_WRITE.name} " +
+            "AND ${VERSION.name} > 0" +
+            "GROUP BY " + ENTITY_SET_ID.name
+

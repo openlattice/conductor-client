@@ -72,6 +72,8 @@ interface LinkingQueryService {
 
     fun getEntitiesNotLinked(entitySetIds: Set<UUID>, limit: Int = 10_000): BasePostgresIterable<Pair<UUID, UUID>>
 
+    fun getEntitySetLinkingCount(entitySetIds: Set<UUID>): BasePostgresIterable<Pair<UUID, Long>>
+
     fun getLinkableEntitySets(
             linkableEntityTypeIds: Set<UUID>,
             entitySetBlacklist: Set<UUID>,
