@@ -43,6 +43,9 @@ class EdmAuthorizationHelper(
         @JvmField
         val WRITE_PERMISSION: EnumSet<Permission> = EnumSet.of(Permission.WRITE)
 
+        @JvmField
+        val OWNER_PERMISSION: EnumSet<Permission> = EnumSet.of(Permission.OWNER)
+
         @JvmStatic
         fun aclKeysForAccessCheck(
                 rawAclKeys: Map<UUID, Set<UUID>>, requiredPermission: EnumSet<Permission>

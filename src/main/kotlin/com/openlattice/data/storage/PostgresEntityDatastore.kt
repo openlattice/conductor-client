@@ -193,7 +193,7 @@ class PostgresEntityDatastore(
     }
 
     @Timed
-    override fun clearEntityData(
+    override fun clearEntityProperties(
             entitySetId: UUID,
             entityKeyIds: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
