@@ -158,7 +158,7 @@ public class HzAuthzTest extends TestServer {
 
         Stream<AclKey> p1Owned = hzAuthz.getAuthorizedObjectsOfType( ImmutableSet.of( p1 ),
                 SecurableObjectType.EntitySet,
-                EnumSet.of( Permission.OWNER ) );
+                EdmAuthorizationHelper.OWNER_PERMISSION );
 
         Set<List<UUID>> p1s = p1Owned.collect( Collectors.toSet() );
 
@@ -166,12 +166,12 @@ public class HzAuthzTest extends TestServer {
             Set<Permission> permissions = hzAuthz.getSecurableObjectPermissions( key, ImmutableSet.of( p1 ) );
             Assert.assertTrue( permissions.contains( Permission.OWNER ) );
             Assert.assertTrue(
-                    hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), EnumSet.of( Permission.OWNER ) ) );
+                    hzAuthz.checkIfHasPermissions( key, ImmutableSet.of( p1 ), EdmAuthorizationHelper.OWNER_PERMISSION ) );
         }
 
         Stream<AclKey> p2Owned = hzAuthz.getAuthorizedObjectsOfType( ImmutableSet.of( p2 ),
                 SecurableObjectType.EntitySet,
-                EnumSet.of( Permission.OWNER ) );
+                EdmAuthorizationHelper.OWNER_PERMISSION );
 
         Set<List<UUID>> p2s = p2Owned.collect( Collectors.toSet() );
         Assert.assertTrue( p1s.isEmpty() );
@@ -284,9 +284,9 @@ public class HzAuthzTest extends TestServer {
 
 
         Principal principal = TestDataFactory.userPrincipal();
-        EnumSet<Permission> read = EnumSet.of( Permission.READ );
-        EnumSet<Permission> write = EnumSet.of( Permission.WRITE );
-        EnumSet<Permission> owner = EnumSet.of( Permission.OWNER );
+        EnumSet<Permission> read = EdmAuthorizationHelper.READ_PERMISSION;
+        EnumSet<Permission> write = EdmAuthorizationHelper.WRITE_PERMISSION;
+        EnumSet<Permission> owner = EdmAuthorizationHelper.OWNER_PERMISSION;
         EnumSet<Permission> materialize = EnumSet.of( Permission.MATERIALIZE );
         EnumSet<Permission> discover = EnumSet.of( Permission.DISCOVER );
 

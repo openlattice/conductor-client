@@ -81,7 +81,7 @@ public interface AuthorizingComponent {
     }
 
     default void ensureOwnerAccess( AclKey aclKey ) {
-        accessCheck( aclKey, EnumSet.of( Permission.OWNER ) );
+        accessCheck( aclKey, EdmAuthorizationHelper.OWNER_PERMISSION );
     }
 
     default void ensureLinkAccess( AclKey aclKey ) {

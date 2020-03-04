@@ -273,7 +273,7 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         if ( userPrincipals.size() > 0 ) {
 
             Predicate allOtherUserOwnersPredicate = Predicates.and( hasAnyAclKeys( aclKeys ),
-                    hasExactPermissions( EnumSet.of( Permission.OWNER ) ),
+                    hasExactPermissions( EdmAuthorizationHelper.OWNER_PERMISSION ),
                     Predicates.not( hasAnyPrincipals( userPrincipals ) ),
                     hasPrincipalType( PrincipalType.USER ) );
 

@@ -568,9 +568,9 @@ class DataDeletionService(
 
     private fun getRequiredPermissions(deleteType: DeleteType): EnumSet<Permission> {
         return if (deleteType === DeleteType.Hard) {
-            EnumSet.of(Permission.OWNER)
+            EdmAuthorizationHelper.OWNER_PERMISSION
         } else {
-            EnumSet.of(Permission.WRITE)
+            EdmAuthorizationHelper.WRITE_PERMISSION
         }
     }
 

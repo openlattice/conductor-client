@@ -55,7 +55,7 @@ class AuditRecordEntitySetsManager(
         private val entitySetManager: EntitySetManager,
         private val partitionManager: PartitionManager,
         private val authorizationManager: AuthorizationManager,
-        private val hazelcastInstance: HazelcastInstance
+        hazelcastInstance: HazelcastInstance
 
 ) {
     private val securableObjectTypes = HazelcastMap.SECURABLE_OBJECT_TYPES.getMap( hazelcastInstance )
@@ -122,7 +122,7 @@ class AuditRecordEntitySetsManager(
     fun createAuditEntitySet(aclKey: AclKey, entitySet: EntitySet, edgeEntitySet: EntitySet) {
 
         val ownerPrincipals = authorizationManager.getAuthorizedPrincipalsOnSecurableObject(
-                aclKey, EnumSet.of(Permission.OWNER)
+                aclKey, EdmAuthorizationHelper.OWNER_PERMISSION
         )
 
         val firstUserPrincipal: Principal
@@ -178,7 +178,7 @@ class AuditRecordEntitySetsManager(
             auditRecordEntitySetConfigurations
                     .executeOnKey(aclKey, UpdateAuditEdgeEntitySetIdProcessor(newAuditEdgeEntitySet.id))
             val ownerPrincipals = authorizationManager.getAuthorizedPrincipalsOnSecurableObject(
-                    aclKey, EnumSet.of(Permission.OWNER)
+                    aclKey, EdmAuthorizationHelper.OWNER_PERMISSION
             )
 
             val firstUserPrincipal: Principal
