@@ -42,7 +42,7 @@ interface EntitySetManager {
 
     fun deleteEntitySet(entitySetId: UUID)
 
-    fun getEntitySet(entitySetId: UUID): EntitySet?
+    fun getEntitySet(entitySetId: UUID): EntitySet
 
     fun getEntitySet(entitySetName: String): EntitySet?
 

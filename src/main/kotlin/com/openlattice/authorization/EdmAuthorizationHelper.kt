@@ -86,7 +86,7 @@ class EdmAuthorizationHelper(
     ): Set<UUID> {
         return entitySetIds
                 .filter { entitySetId ->
-                    val entitySet = entitySetManager.getEntitySet(entitySetId)!!
+                    val entitySet = entitySetManager.getEntitySet(entitySetId)
                     val entitySetIdsToCheck = mutableSetOf(entitySetId)
                     if (entitySet.isLinking) {
                         entitySetIdsToCheck.addAll(entitySet.linkedEntitySets)
@@ -183,7 +183,7 @@ class EdmAuthorizationHelper(
             propertyTypes: Map<UUID, PropertyType>,
             principals: Set<Principal>
     ): Map<UUID, PropertyType> {
-        val entitySet = entitySetManager.getEntitySet(entitySetId)!!
+        val entitySet = entitySetManager.getEntitySet(entitySetId)
 
         return if (entitySet.isLinking) {
             getAuthorizedPropertyTypesOfLinkingEntitySet(entitySet, propertyTypes.keys, requiredPermissions, principals)
@@ -269,7 +269,7 @@ class EdmAuthorizationHelper(
     fun getAuthorizedPropertyTypeIds(
             entitySetId: UUID, requiredPermissions: EnumSet<Permission>
     ): Set<UUID> {
-        val entitySet = entitySetManager.getEntitySet(entitySetId)!!
+        val entitySet = entitySetManager.getEntitySet(entitySetId)
         val properties = getAllPropertiesOnEntitySet(entitySetId)
 
         return if (entitySet.isLinking) {

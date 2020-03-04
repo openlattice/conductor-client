@@ -239,7 +239,7 @@ open class EntitySetService(
         }
     }
 
-    override fun getEntitySet(entitySetId: UUID): EntitySet? {
+    override fun getEntitySet(entitySetId: UUID): EntitySet {
         return Util.getSafely(entitySets, entitySetId)
     }
 
@@ -290,7 +290,7 @@ open class EntitySetService(
     }
 
     override fun getEntityTypeByEntitySetId(entitySetId: UUID): EntityType {
-        val entityTypeId = getEntitySet(entitySetId)!!.entityTypeId
+        val entityTypeId = getEntitySet(entitySetId).entityTypeId
         return edm.getEntityType(entityTypeId)
     }
 
@@ -299,7 +299,7 @@ open class EntitySetService(
     }
 
     override fun getAssociationTypeByEntitySetId(entitySetId: UUID): AssociationType {
-        val entityTypeId = getEntitySet(entitySetId)!!.entityTypeId
+        val entityTypeId = getEntitySet(entitySetId).entityTypeId
         return edm.getAssociationType(entityTypeId)
     }
 
@@ -344,7 +344,7 @@ open class EntitySetService(
     override fun getEntitySetPropertyMetadata(entitySetId: UUID, propertyTypeId: UUID): EntitySetPropertyMetadata {
         val key = EntitySetPropertyKey(entitySetId, propertyTypeId)
         if (!entitySetPropertyMetadata.containsKey(key)) {
-            val entityTypeId = getEntitySet(entitySetId)!!.entityTypeId
+            val entityTypeId = getEntitySet(entitySetId).entityTypeId
             setupDefaultEntitySetPropertyMetadata(entitySetId, entityTypeId)
         }
         return entitySetPropertyMetadata.getValue(key)
@@ -405,7 +405,7 @@ open class EntitySetService(
 
     override fun updateEntitySetMetadata(entitySetId: UUID, update: MetadataUpdate) {
         if (update.name.isPresent || update.organizationId.isPresent) {
-            val oldEntitySet = getEntitySet(entitySetId)!!
+            val oldEntitySet = getEntitySet(entitySetId)
 
             if (update.name.isPresent) {
                 aclKeyReservations.renameReservation(entitySetId, update.name.get())
@@ -486,12 +486,12 @@ open class EntitySetService(
     }
 
     override fun getLinkedEntitySets(entitySetId: UUID): Set<EntitySet> {
-        val linkedEntitySetIds = getEntitySet(entitySetId)!!.linkedEntitySets ?: setOf()
+        val linkedEntitySetIds = getEntitySet(entitySetId).linkedEntitySets ?: setOf()
         return entitySets.getAll(linkedEntitySetIds).values.toSet()
     }
 
     override fun getLinkedEntitySetIds(entitySetId: UUID): Set<UUID> {
-        return getEntitySet(entitySetId)!!.linkedEntitySets ?: setOf()
+        return getEntitySet(entitySetId).linkedEntitySets ?: setOf()
     }
 
     override fun removeDataExpirationPolicy(entitySetId: UUID) {

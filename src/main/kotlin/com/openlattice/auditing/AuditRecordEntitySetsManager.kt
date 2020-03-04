@@ -26,7 +26,6 @@ import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
 import com.openlattice.authorization.*
-import com.openlattice.authorization.securable.SecurableObjectType
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.edm.EntitySet
@@ -34,7 +33,6 @@ import com.openlattice.edm.processors.CreateOrUpdateAuditRecordEntitySetsProcess
 import com.openlattice.edm.processors.UpdateAuditEdgeEntitySetIdProcessor
 import com.openlattice.edm.set.EntitySetFlag
 import com.openlattice.hazelcast.HazelcastMap
-import com.openlattice.organizations.Organization
 import com.openlattice.postgres.mapstores.AuditRecordEntitySetConfigurationMapstore.ANY_AUDITING_ENTITY_SETS
 import com.openlattice.postgres.mapstores.AuditRecordEntitySetConfigurationMapstore.ANY_EDGE_AUDITING_ENTITY_SETS
 import org.slf4j.LoggerFactory
@@ -127,7 +125,7 @@ class AuditRecordEntitySetsManager(
                 aclKey, EnumSet.of(Permission.OWNER)
         )
 
-        var firstUserPrincipal: Principal
+        val firstUserPrincipal: Principal
 
         try {
             firstUserPrincipal = ownerPrincipals.first { it.type == PrincipalType.USER }
@@ -165,7 +163,7 @@ class AuditRecordEntitySetsManager(
         if (auditRecordEntitySetConfigurations.keySet(isAnAuditEntitySetPredicate(aclKeyRoot)).isEmpty()) {
 
             val auditEntitySetId = auditRecordEntitySetConfigurations.getValue(aclKey).activeAuditRecordEntitySetId
-            val auditEntitySet = entitySetManager.getEntitySet(auditEntitySetId)!!
+            val auditEntitySet = entitySetManager.getEntitySet(auditEntitySetId)
             val currentAuditEntitySetAclKey = AclKey(auditEntitySetId)
 
             val newAuditEdgeEntitySet = buildAuditEdgeEntitySet(
@@ -183,7 +181,7 @@ class AuditRecordEntitySetsManager(
                     aclKey, EnumSet.of(Permission.OWNER)
             )
 
-            var firstUserPrincipal: Principal
+            val firstUserPrincipal: Principal
 
             try {
                 firstUserPrincipal = ownerPrincipals.first { it.type == PrincipalType.USER }
@@ -278,7 +276,7 @@ class AuditRecordEntitySetsManager(
         val auditEntitySetId = auditRecordEntitySetConfigurations.getValue(aclKey).activeAuditRecordEntitySetId
         val auditEdgeEntitySetId = auditRecordEntitySetConfigurations.getValue(aclKey).activeAuditEdgeEntitySetId
 
-        val auditEntitySet = entitySetManager.getEntitySet(auditEntitySetId)!!
+        val auditEntitySet = entitySetManager.getEntitySet(auditEntitySetId)
         val auditEdgeEntitySet = entitySetManager.getEntitySet(auditEdgeEntitySetId!!)
 
         val currentAuditEntitySetAclKey = AclKey(auditEntitySetId)
