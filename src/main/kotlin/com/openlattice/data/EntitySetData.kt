@@ -28,17 +28,12 @@ import java.util.LinkedHashSet
 /*
  * Note: T must have a good .toString() method, as this will be used for serialization
  */
-class EntitySetData<T>(
+data class EntitySetData<T>(
         val columnTitles: LinkedHashSet<String>,
-        private val entities: Iterable<Map<T, Set<Any>>>
+        @JsonValue val entities: Iterable<Map<T, Set<Any>>>
 ) : Iterable<Map<T, Set<Any>>> {
     init {
         this.columnTitles.add(EdmConstants.ID_FQN.fullQualifiedNameAsString)
-    }
-
-    @JsonValue
-    fun getEntities(): Iterable<Map<T, Set<Any>>> {
-        return entities
     }
 
     override fun iterator(): Iterator<Map<T, Set<Any>>> {
