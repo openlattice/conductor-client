@@ -379,20 +379,38 @@ class ExternalDatabaseManagementService(
         }
     }
 
-    fun getRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String) {
+    fun getRowSecurityPolicyByName(orgId: UUID, tableName: String, policyName: String): Map<String, RowSecurityPolicy> {
         val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-        val getRowPolicySql = "SELECT * FROM pg_policies where policyname = $policyName"
-        BasePostgresIterable(
+        val getRowPolicySql = "SELECT * FROM pg_policies WHERE policyname = $policyName"
+        return BasePostgresIterable(
                 StatementHolderSupplier(assemblerConnectionManager.connect(dbName), getRowPolicySql)
         ) { rs ->
-            RowSecurityPolicy(
+            policyName to RowSecurityPolicy(
                     rs.getString("permissive"),
                     PostgresArrays.getTextArray(rs, "roles").toList(),
                     PostgresPrivileges.valueOf(rs.getString("cmd")),
                     rs.getString("qual"),
                     rs.getString("with_check")
             )
-        }
+        }.toMap()
+    }
+
+    fun getRowSecurityPolicyByUser(orgId: UUID, tableName: String, userId: String): Map<String, RowSecurityPolicy> {
+        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+        val userName = getDBUser(userId)
+        val getRowPolicySql = "SELECT * FROM pg_policies WHERE $userName = ANY(roles)"
+        return BasePostgresIterable(
+                StatementHolderSupplier(assemblerConnectionManager.connect(dbName), getRowPolicySql)
+        ) { rs ->
+            userName to RowSecurityPolicy(
+                    rs.getString("permissive"),
+                    PostgresArrays.getTextArray(rs, "roles").toList(),
+                    PostgresPrivileges.valueOf(rs.getString("cmd")),
+                    rs.getString("qual"),
+                    rs.getString("with_check")
+            )
+        }.toMap()
+
     }
 
     fun addRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String, rowSecurityPolicy: RowSecurityPolicy) {
