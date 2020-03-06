@@ -381,7 +381,7 @@ class ExternalDatabaseManagementService(
 
     fun getRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String) {
         val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-        val getRowPolicySql = ""
+        val getRowPolicySql = "SELECT * FROM pg_policies where policyname = $policyName"
         BasePostgresIterable(
                 StatementHolderSupplier(assemblerConnectionManager.connect(dbName), getRowPolicySql)
         ) { rs ->
@@ -411,6 +411,12 @@ class ExternalDatabaseManagementService(
 
     fun deleteRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String) {
         val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+        assemblerConnectionManager.connect(dbName).let {
+            it.connection.createStatement().use { stmt ->
+                stmt.execute("DROP POLICY $policyName ON $tableName")
+            }
+        }
+
     }
 
 
