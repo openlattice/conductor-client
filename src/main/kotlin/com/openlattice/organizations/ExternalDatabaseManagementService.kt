@@ -53,11 +53,11 @@ class ExternalDatabaseManagementService(
         private val hds: HikariDataSource
 ) {
 
-    private val organizationExternalDatabaseColumns = HazelcastMap.ORGANIZATION_EXTERNAL_DATABASE_COLUMN.getMap( hazelcastInstance )
-    private val organizationExternalDatabaseTables = HazelcastMap.ORGANIZATION_EXTERNAL_DATABASE_TABLE.getMap( hazelcastInstance )
-    private val securableObjectTypes = HazelcastMap.SECURABLE_OBJECT_TYPES.getMap( hazelcastInstance )
-    private val organizations = HazelcastMap.ORGANIZATIONS.getMap( hazelcastInstance )
-    private val aces = HazelcastMap.PERMISSIONS.getMap( hazelcastInstance )
+    private val organizationExternalDatabaseColumns = HazelcastMap.ORGANIZATION_EXTERNAL_DATABASE_COLUMN.getMap(hazelcastInstance)
+    private val organizationExternalDatabaseTables = HazelcastMap.ORGANIZATION_EXTERNAL_DATABASE_TABLE.getMap(hazelcastInstance)
+    private val securableObjectTypes = HazelcastMap.SECURABLE_OBJECT_TYPES.getMap(hazelcastInstance)
+    private val organizations = HazelcastMap.ORGANIZATIONS.getMap(hazelcastInstance)
+    private val aces = HazelcastMap.PERMISSIONS.getMap(hazelcastInstance)
     private val logger = LoggerFactory.getLogger(ExternalDatabaseManagementService::class.java)
     private val primaryKeyConstraint = "PRIMARY KEY"
     private val FETCH_SIZE = 100_000
@@ -240,7 +240,7 @@ class ExternalDatabaseManagementService(
                 username,
                 ipAddress,
                 organizationExternalDatabaseConfiguration.authMethod)
-        hds.connection.use {connection ->
+        hds.connection.use { connection ->
             connection.createStatement().use { stmt ->
                 val hbaTable = PostgresTable.HBA_AUTHENTICATION_RECORDS
                 val columns = hbaTable.columns.joinToString(", ", "(", ")") { it.name }
@@ -378,6 +378,41 @@ class ExternalDatabaseManagementService(
             aces.executeOnKey(aceKey, PermissionMerger(permissions, objectType, OffsetDateTime.MAX))
         }
     }
+
+    fun getRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String) {
+        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+        val getRowPolicySql = ""
+        BasePostgresIterable(
+                StatementHolderSupplier(assemblerConnectionManager.connect(dbName), getRowPolicySql)
+        ) { rs ->
+            RowSecurityPolicy(
+                    rs.getString("permissive"),
+                    PostgresArrays.getTextArray(rs, "roles").toList(),
+                    PostgresPrivileges.valueOf(rs.getString("cmd")),
+                    rs.getString("qual"),
+                    rs.getString("with_check")
+            )
+        }
+    }
+
+    fun addRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String, rowSecurityPolicy: RowSecurityPolicy) {
+        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+        val userNames = rowSecurityPolicy.userIds.map { getDBUser(it) }
+        assemblerConnectionManager.connect(dbName).let {
+            it.connection.createStatement().use { stmt ->
+                stmt.execute("CREATE POLICY $policyName ON $tableName " +
+                        "FOR ${rowSecurityPolicy.privilege} " +
+                        "TO ${userNames.joinToString(", ")} " +
+                        "USING ${rowSecurityPolicy.readFilter} " +
+                        "WITH CHECK ${rowSecurityPolicy.writeFilter}")
+            }
+        }
+    }
+
+    fun deleteRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String) {
+        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+    }
+
 
     /*PRIVATE FUNCTIONS*/
     private fun createPrivilegesUpdateSql(action: Action, privileges: List<String>, tableName: String, columnName: Optional<String>, dbUser: String): String {
