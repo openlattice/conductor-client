@@ -415,8 +415,8 @@ class ExternalDatabaseManagementService(
                     rs.getString(PERMISSIVE_COLUMN),
                     PostgresArrays.getTextArray(rs, ROLES_COLUMN).toList(),
                     PostgresPrivileges.valueOf(rs.getString(COMMAND_COLUMN)),
-                    Optional.of(rs.getString(QUAL_COLUMN)),
-                    Optional.of(rs.getString(CHECK_COLUMN))
+                    Optional.ofNullable(rs.getString(QUAL_COLUMN)),
+                    Optional.ofNullable(rs.getString(CHECK_COLUMN))
             )
         }.toSet()
     }
@@ -613,18 +613,18 @@ class ExternalDatabaseManagementService(
 
     private fun generateGetRowPoliciesSql(tableName: String, rowPolicyRequest: RowSecurityPolicyRequest): String {
         val whereClauses = mutableListOf<String>()
-        var getRowPolicySql = "SELECT * FROM pg_policies WHERE $TABLE_NAME_COLUMN = $tableName AND "
-        rowPolicyRequest.policyName.ifPresent { whereClauses.add("$POLICY_NAME_COLUMN = $it") }
-        rowPolicyRequest.permissiveness.ifPresent { whereClauses.add("$PERMISSIVE_COLUMN = $it") }
+        var getRowPolicySql = "SELECT * FROM pg_policies WHERE $TABLE_NAME_COLUMN = '$tableName' AND "
+        rowPolicyRequest.policyName.ifPresent { whereClauses.add("$POLICY_NAME_COLUMN = '$it'") }
+        rowPolicyRequest.permissiveness.ifPresent { whereClauses.add("$PERMISSIVE_COLUMN = '$it'") }
         rowPolicyRequest.userIds.ifPresent {
             it.forEach { userId ->
                 val userName = getDBUser(userId)
-                whereClauses.add("$userName = ANY($ROLES_COLUMN)")
+                whereClauses.add("${userName.replace("\"", "'")} = ANY($ROLES_COLUMN)")
             }
         }
-        rowPolicyRequest.privilege.ifPresent { whereClauses.add("$COMMAND_COLUMN = $it") }
-        rowPolicyRequest.readFilter.ifPresent { whereClauses.add("$QUAL_COLUMN = $it") }
-        rowPolicyRequest.writeFilter.ifPresent { whereClauses.add("$CHECK_COLUMN = $it") }
+        rowPolicyRequest.privilege.ifPresent { whereClauses.add("$COMMAND_COLUMN = '$it'") }
+        rowPolicyRequest.readFilter.ifPresent { whereClauses.add("$QUAL_COLUMN = '$it'") }
+        rowPolicyRequest.writeFilter.ifPresent { whereClauses.add("$CHECK_COLUMN = '$it'") }
         getRowPolicySql += whereClauses.joinToString(" AND ")
         return getRowPolicySql
     }
