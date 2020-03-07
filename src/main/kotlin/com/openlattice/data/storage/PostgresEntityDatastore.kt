@@ -77,18 +77,6 @@ class PostgresEntityDatastore(
     }
 
     @Timed
-    override fun integrateEntities(
-            entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): WriteEvent {
-        val writeEvent = dataQueryService.upsertEntities(entitySetId, entities, authorizedPropertyTypes)
-        signalCreatedEntities(entitySetId, entities.keys)
-
-        return writeEvent
-    }
-
-    @Timed
     override fun replaceEntities(
             entitySetId: UUID,
             entities: Map<UUID, Map<UUID, Set<Any>>>,
