@@ -42,6 +42,14 @@ import java.nio.file.StandardOpenOption
 import java.time.OffsetDateTime
 import java.util.*
 
+const val TABLE_NAME_COLUMN = "tablename"
+const val POLICY_NAME_COLUMN = "policyname"
+const val PERMISSIVE_COLUMN = "permissive"
+const val ROLES_COLUMN = "roles"
+const val COMMAND_COLUMN = "cmd"
+const val QUAL_COLUMN = "qual"
+const val CHECK_COLUMN = "with_check"
+
 @Service
 class ExternalDatabaseManagementService(
         private val hazelcastInstance: HazelcastInstance,
@@ -379,52 +387,38 @@ class ExternalDatabaseManagementService(
         }
     }
 
-    fun getRowSecurityPolicyByName(orgId: UUID, tableName: String, policyName: String): Map<String, RowSecurityPolicy> {
-        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-        val getRowPolicySql = "SELECT * FROM pg_policies WHERE policyname = $policyName"
-        return BasePostgresIterable(
-                StatementHolderSupplier(assemblerConnectionManager.connect(dbName), getRowPolicySql)
-        ) { rs ->
-            policyName to RowSecurityPolicy(
-                    rs.getString("permissive"),
-                    PostgresArrays.getTextArray(rs, "roles").toList(),
-                    PostgresPrivileges.valueOf(rs.getString("cmd")),
-                    rs.getString("qual"),
-                    rs.getString("with_check")
-            )
-        }.toMap()
-    }
-
-    fun getRowSecurityPolicyByUser(orgId: UUID, tableName: String, userId: String): Map<String, RowSecurityPolicy> {
-        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-        val userName = getDBUser(userId)
-        val getRowPolicySql = "SELECT * FROM pg_policies WHERE $userName = ANY(roles)"
-        return BasePostgresIterable(
-                StatementHolderSupplier(assemblerConnectionManager.connect(dbName), getRowPolicySql)
-        ) { rs ->
-            userName to RowSecurityPolicy(
-                    rs.getString("permissive"),
-                    PostgresArrays.getTextArray(rs, "roles").toList(),
-                    PostgresPrivileges.valueOf(rs.getString("cmd")),
-                    rs.getString("qual"),
-                    rs.getString("with_check")
-            )
-        }.toMap()
-
-    }
-
     fun addRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String, rowSecurityPolicy: RowSecurityPolicy) {
         val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
         val userNames = rowSecurityPolicy.userIds.map { getDBUser(it) }
+        var createRowPolicySql = "CREATE POLICY $policyName ON $tableName " +
+                "FOR ${rowSecurityPolicy.privilege} " +
+                "TO ${userNames.joinToString(", ")} "
+        rowSecurityPolicy.readFilter.ifPresent { createRowPolicySql += "USING $it " }
+        rowSecurityPolicy.writeFilter.ifPresent { createRowPolicySql += "WITH CHECK $it" }
         assemblerConnectionManager.connect(dbName).let {
             it.connection.createStatement().use { stmt ->
-                stmt.execute("CREATE POLICY $policyName ON $tableName " +
-                        "FOR ${rowSecurityPolicy.privilege} " +
-                        "TO ${userNames.joinToString(", ")} " +
-                        "USING ${rowSecurityPolicy.readFilter} " +
-                        "WITH CHECK ${rowSecurityPolicy.writeFilter}")
+                stmt.execute(createRowPolicySql)
             }
         }
+    }
+
+    //TODO RowSecurityPolicy ResultSetAdapter
+
+    fun getRowSecurityPolicies(orgId: UUID, tableName: String, rowPolicyRequest: RowSecurityPolicyRequest): Set<RowSecurityPolicy> {
+        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+        val getRowPolicySql = generateGetRowPoliciesSql(tableName, rowPolicyRequest)
+        return BasePostgresIterable(
+                StatementHolderSupplier(assemblerConnectionManager.connect(dbName), getRowPolicySql)
+        ) { rs ->
+            RowSecurityPolicy(
+                    rs.getString(POLICY_NAME_COLUMN),
+                    rs.getString(PERMISSIVE_COLUMN),
+                    PostgresArrays.getTextArray(rs, ROLES_COLUMN).toList(),
+                    PostgresPrivileges.valueOf(rs.getString(COMMAND_COLUMN)),
+                    Optional.of(rs.getString(QUAL_COLUMN)),
+                    Optional.of(rs.getString(CHECK_COLUMN))
+            )
+        }.toSet()
     }
 
     fun deleteRowSecurityPolicy(orgId: UUID, tableName: String, policyName: String) {
@@ -436,7 +430,6 @@ class ExternalDatabaseManagementService(
         }
 
     }
-
 
     /*PRIVATE FUNCTIONS*/
     private fun createPrivilegesUpdateSql(action: Action, privileges: List<String>, tableName: String, columnName: Optional<String>, dbUser: String): String {
@@ -617,6 +610,24 @@ class ExternalDatabaseManagementService(
     private val fromExpression = "FROM information_schema.tables "
 
     private val leftJoinColumnsExpression = "LEFT JOIN information_schema.columns ON information_schema.tables.table_name = information_schema.columns.table_name "
+
+    private fun generateGetRowPoliciesSql(tableName: String, rowPolicyRequest: RowSecurityPolicyRequest): String {
+        val whereClauses = mutableListOf<String>()
+        var getRowPolicySql = "SELECT * FROM pg_policies WHERE $TABLE_NAME_COLUMN = $tableName AND "
+        rowPolicyRequest.policyName.ifPresent { whereClauses.add("$POLICY_NAME_COLUMN = $it") }
+        rowPolicyRequest.permissiveness.ifPresent { whereClauses.add("$PERMISSIVE_COLUMN = $it") }
+        rowPolicyRequest.userIds.ifPresent {
+            it.forEach { userId ->
+                val userName = getDBUser(userId)
+                whereClauses.add("$userName = ANY($ROLES_COLUMN)")
+            }
+        }
+        rowPolicyRequest.privilege.ifPresent { whereClauses.add("$COMMAND_COLUMN = $it") }
+        rowPolicyRequest.readFilter.ifPresent { whereClauses.add("$QUAL_COLUMN = $it") }
+        rowPolicyRequest.writeFilter.ifPresent { whereClauses.add("$CHECK_COLUMN = $it") }
+        getRowPolicySql += whereClauses.joinToString(" AND ")
+        return getRowPolicySql
+    }
 
     private fun getInsertRecordSql(table: PostgresTableDefinition, columns: String, pkey: String, record: PostgresAuthenticationRecord): String {
         return "INSERT INTO ${table.name} $columns VALUES(${record.buildPostgresRecord()}) " +
