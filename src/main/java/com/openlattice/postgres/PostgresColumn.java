@@ -186,6 +186,7 @@ public final class PostgresColumn {
     public static final PostgresColumnDefinition ENTITY_SET_FLAGS                  =
             new PostgresColumnDefinition( ENTITY_SET_FLAGS_FIELD, TEXT_ARRAY )
                     .withDefault( "'{}'" );
+    // This is only used by SmsEntitySetInformation and was renamed to support the column name in postgres
     public static final String                   ENTITY_SET_IDS_FIELD              = "entity_set_id";
     public static final PostgresColumnDefinition ENTITY_SET_IDS                    =
             new PostgresColumnDefinition( ENTITY_SET_IDS_FIELD, UUID_ARRAY ).notNull();
