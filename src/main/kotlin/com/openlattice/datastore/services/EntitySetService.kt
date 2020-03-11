@@ -142,9 +142,7 @@ open class EntitySetService(
                         authorizations.addPermission(aclKey, principal, EnumSet.allOf(Permission::class.java))
                     }
 
-            if (!entitySet.flags.contains(EntitySetFlag.AUDIT)) {
-                aresManager.createAuditEntitySetForEntitySet(entitySet)
-            }
+            aresManager.createAuditEntitySetForEntitySet(entitySet)
 
             if (entitySet.isLinking) { // create secret key for linking entity set
                 idCipherManager.assignSecretKey(entitySet.id)
@@ -197,7 +195,7 @@ open class EntitySetService(
                         "Entity type of linked entity sets must be the same as of the linking entity set."
                 )
                 checkArgument(
-                        !getEntitySet(linkedEntitySetId)!!.isLinking,
+                        !getEntitySet(linkedEntitySetId).isLinking,
                         "Cannot add linking entity set as linked entity set."
                 )
             }
@@ -229,6 +227,10 @@ open class EntitySetService(
                     authorizations.deletePermissions(aclKey)
                     entitySetPropertyMetadata.delete(EntitySetPropertyKey(aclKey[0], aclKey[1]))
                 }
+
+        if (entitySet.isLinking) { // delete secret key for linking entity set
+            idCipherManager.deleteSecretKey(entitySet.id)
+        }
 
         aclKeyReservations.release(entitySet.id)
         Util.deleteSafely(entitySets, entitySet.id)

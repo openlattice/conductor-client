@@ -59,6 +59,10 @@ class IdCipherManager(hazelCastInstance: HazelcastInstance) {
         return SecretKeySpec(tmp.encoded, keySpecAlgorithm)
     }
 
+    fun deleteSecretKey(entitySetId: UUID) {
+        secretKeys.delete(entitySetId)
+    }
+
     fun encryptId(linkingEntitySetId: UUID, id: UUID): UUID {
         return encryptIds(linkingEntitySetId, setOf(id)).first()
     }
