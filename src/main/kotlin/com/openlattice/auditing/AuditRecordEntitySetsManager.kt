@@ -33,6 +33,7 @@ import com.openlattice.edm.processors.CreateOrUpdateAuditRecordEntitySetsProcess
 import com.openlattice.edm.processors.UpdateAuditEdgeEntitySetIdProcessor
 import com.openlattice.edm.set.EntitySetFlag
 import com.openlattice.hazelcast.HazelcastMap
+import com.openlattice.organization.OrganizationExternalDatabaseTable
 import com.openlattice.postgres.mapstores.AuditRecordEntitySetConfigurationMapstore.ANY_AUDITING_ENTITY_SETS
 import com.openlattice.postgres.mapstores.AuditRecordEntitySetConfigurationMapstore.ANY_EDGE_AUDITING_ENTITY_SETS
 import org.slf4j.LoggerFactory
@@ -103,6 +104,13 @@ class AuditRecordEntitySetsManager(
         if (auditingTypes.isAuditingInitialized()) {
             val name = organizations[organizationId]!!.title
             createAuditEntitySet(name, AclKey(organizationId), ImmutableSet.of(), organizationId)
+        }
+    }
+
+    fun createAuditEntitySetForExternalDBTable(table: OrganizationExternalDatabaseTable) {
+        if (auditingTypes.isAuditingInitialized()) {
+            val name = table.name
+            createAuditEntitySet(name, AclKey(table.id), setOf(), table.organizationId)
         }
     }
 
