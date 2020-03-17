@@ -21,6 +21,6 @@
 package com.openlattice.edm.events
 
 import com.openlattice.data.DeleteType
-import java.util.*
+import com.openlattice.edm.EntitySet
 
-data class EntitySetDataDeletedEvent(val entitySetId: UUID, val deleteType: DeleteType)
+data class EntitySetDataDeletedEvent(val entitySet: EntitySet, val deleteType: DeleteType)

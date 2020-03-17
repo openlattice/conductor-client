@@ -130,7 +130,7 @@ class PostgresEntityDatastore(
     }
 
     private fun signalEntitySetDataDeleted(entitySetId: UUID, deleteType: DeleteType) {
-        eventBus.post(EntitySetDataDeletedEvent(entitySetId, deleteType))
+        eventBus.post(EntitySetDataDeletedEvent(entitySetManager.getEntitySet(entitySetId)!!, deleteType))
         markMaterializedEntitySetDirty(entitySetId) // mark entityset as unsync with data
 
         // mark all involved linking entitysets as unsync with data

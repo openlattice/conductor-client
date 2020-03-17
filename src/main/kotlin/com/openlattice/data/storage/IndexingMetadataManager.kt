@@ -2,6 +2,7 @@ package com.openlattice.data.storage
 
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.storage.partitions.PartitionManager
+import com.openlattice.edm.EntitySet
 import com.openlattice.postgres.DataTables.LAST_INDEX
 import com.openlattice.postgres.DataTables.LAST_LINK
 import com.openlattice.postgres.PostgresArrays
@@ -152,15 +153,13 @@ class IndexingMetadataManager(private val hds: HikariDataSource, private val par
     /**
      * Sets the last_write of provided entity set to current datetime. Used when un-indexing entities after entity set
      * data deletion.
-     * @param entitySetId The id of the (normal) entity set id.
+     * @param entitySet The (normal) entity set.
      */
-    fun markAsUnIndexed(entitySetId: UUID): Int {
-        val partitions = partitionManager.getEntitySetPartitions(entitySetId)
-
+    fun markAsUnIndexed(entitySet: EntitySet): Int {
         return hds.connection.use { connection ->
             connection.prepareStatement(markEntitySetLastIndexSql).use { stmt ->
-                val partitionsArray = PostgresArrays.createIntArray(connection, partitions)
-                stmt.setObject(1, entitySetId)
+                val partitionsArray = PostgresArrays.createIntArray(connection, entitySet.partitions)
+                stmt.setObject(1, entitySet.id)
                 stmt.setArray(2, partitionsArray)
 
                 stmt.executeUpdate()

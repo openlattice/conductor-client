@@ -265,10 +265,10 @@ public class SearchService {
     }
 
     @Subscribe
-    public void entitySetDataCleared( EntitySetDataDeletedEvent event ) {
+    public void entitySetDataDeleted( EntitySetDataDeletedEvent event ) {
         final var deleteEntitySetDataContext = deleteEntitySetDataTimer.time();
-        UUID entityTypeId = entitySetService.getEntityTypeByEntitySetId( event.getEntitySetId() ).getId();
-        final var entitySetDataDeleted = elasticsearchApi.clearEntitySetData( event.getEntitySetId(), entityTypeId );
+        final var entitySetDataDeleted = elasticsearchApi
+                .clearEntitySetData( event.getEntitySet().getId(), event.getEntitySet().getEntityTypeId() );
         deleteEntitySetDataContext.stop();
 
         if ( entitySetDataDeleted ) {
@@ -278,7 +278,7 @@ public class SearchService {
             // - let background task take soft deletes (would be too much overhead for clear calls)
             if ( event.getDeleteType() == DeleteType.Hard ) {
                 final var markAsIndexedContext = markAsIndexedTimer.time();
-                indexingMetadataManager.markAsUnIndexed( event.getEntitySetId() );
+                indexingMetadataManager.markAsUnIndexed( event.getEntitySet() );
                 markAsIndexedContext.stop();
             }
         }
