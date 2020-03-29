@@ -82,6 +82,10 @@ interface DataGraphManager {
             metadataOptions: EnumSet<MetadataOption>
     ): Iterable<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
+    fun getEntitiesAcrossEntitySets(
+            entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
+            authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
+    ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>>
     /**
      * Clears property data, id, edges of association entities of the provided DataEdgeKeys in batches.
      * Note: it only clears edge, not src or dst entities.

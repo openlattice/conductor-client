@@ -34,23 +34,8 @@ class AwsBlobDataService(
         private val datastoreConfiguration: DatastoreConfiguration,
         private val executorService: ListeningExecutorService
 ) : ByteBlobDataManager {
-
-    private val s3Credentials = BasicAWSCredentials(datastoreConfiguration.accessKeyId, datastoreConfiguration.secretAccessKey)
     private val s3 = newS3Client(datastoreConfiguration)
 
-    private final fun newS3Client(datastoreConfiguration: DatastoreConfiguration): AmazonS3 {
-        val builder = AmazonS3ClientBuilder.standard()
-        builder.region = datastoreConfiguration.regionName
-        builder.credentials = AWSStaticCredentialsProvider(s3Credentials)
-        val retryPolicy = RetryPolicy(
-                PredefinedRetryPolicies.DEFAULT_RETRY_CONDITION,
-                PredefinedBackoffStrategies.SDKDefaultBackoffStrategy(), //TODO try jitter
-                MAX_ERROR_RETRIES,
-                false)
-        builder.clientConfiguration = ClientConfiguration().withRetryPolicy(retryPolicy)
-        return builder.build()
-    }
-    
     override fun putObject(s3Key: String, data: ByteArray, contentType: String) {
         val metadata = ObjectMetadata()
         val dataInputStream = data.inputStream()

@@ -1,5 +1,6 @@
 package com.openlattice.datastore.configuration
 
+import com.amazonaws.services.s3.model.StorageClass
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.kryptnostic.rhizome.configuration.Configuration
 import com.kryptnostic.rhizome.configuration.ConfigurationKey
@@ -18,7 +19,8 @@ data class DatastoreConfiguration(
         @JsonProperty(REGION_NAME) val regionName: String,
         @JsonProperty(TIME_TO_LIVE) val timeToLive: Long,
         @JsonProperty(ACCESS_KEY_ID) val accessKeyId: String,
-        @JsonProperty(SECRET_ACCESS_KEY) val secretAccessKey: String
+        @JsonProperty(SECRET_ACCESS_KEY) val secretAccessKey: String,
+        val stores: Map<StorageClass,List<S3StorageConfiguration>>
 ) : Configuration {
 
     companion object {

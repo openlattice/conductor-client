@@ -2,7 +2,6 @@ package com.openlattice.search
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.annotation.Timed
-import com.dataloom.streams.StreamUtil
 import com.google.common.base.Stopwatch
 import com.google.common.collect.*
 import com.google.common.eventbus.EventBus
@@ -14,6 +13,7 @@ import com.openlattice.authorization.*
 import com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION
 import com.openlattice.authorization.securable.SecurableObjectType
 import com.openlattice.conductor.rpc.ConductorElasticsearchApi
+import com.openlattice.data.DataGraphManager
 import com.openlattice.data.DeleteType
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.events.EntitiesDeletedEvent
@@ -87,7 +87,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     private lateinit var graphService: GraphService
 
     @Inject
-    private lateinit var dataManager: EntityDatastore
+    private lateinit var dataManager: DataGraphManager
 
     @Inject
     private lateinit var entityKeyService: EntityKeyIdService
@@ -174,7 +174,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): DataSearchResult {
 
-        val entitySetIds = Sets.newHashSet(Arrays.asList(*searchConstraints.entitySetIds))
+        val entitySetIds = searchConstraints.entitySetIds.toSet()
         val entitySetsById = entitySetService!!.getEntitySetsAsMap(entitySetIds)
         val linkingEntitySets = entitySetsById.values
                 .filter { it.isLinking }
@@ -672,7 +672,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
         sw1.reset().start()
 
         val entitiesByEntitySetId = dataManager!!
-                .getEntitiesAcrossEntitySets(entitySetIdToEntityKeyId, entitySetsIdsToAuthorizedProps)
+                .getEntitiesAcrossEntitySets(Multimaps.asMap(entitySetIdToEntityKeyId), entitySetsIdsToAuthorizedProps)
         logger.info("Get entities across entity sets query finished in {} ms", sw1.elapsed(TimeUnit.MILLISECONDS))
         sw1.reset().start()
 
@@ -689,11 +689,11 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
 
         // create a NeighborEntityDetails object for each edge based on authorizations
         edges.parallelStream().forEach { edge ->
-            val vertexIsSrc = entityKeyIds.contains(edge.getKey().getSrc().getEntityKeyId())
+            val vertexIsSrc = entityKeyIds.contains(edge.key.src.entityKeyId)
             val entityId = if ((vertexIsSrc))
-                edge.getKey().getSrc().getEntityKeyId()
+                edge.key.src.entityKeyId
             else
-                edge.getKey().getDst().getEntityKeyId()
+                edge.key.dst.entityKeyId
             if (!entityNeighbors.containsKey(entityId)) {
                 entityNeighbors.put(
                         entityId, Collections.synchronizedList(
