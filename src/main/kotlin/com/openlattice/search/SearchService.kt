@@ -921,13 +921,13 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
                     .linkedEntitySets
                     .associateWith { authorizedPropertyTypes.getValue(entitySet.id) }
 
-            return dataManager!!.getLinkingEntitiesWithMetadata(
+            return dataManager.getLinkingEntitiesWithMetadata(
                     linkingIdsByEntitySetIds,
                     authorizedPropertiesOfNormalEntitySets,
                     EnumSet.of(MetadataOption.LAST_WRITE)
             ).toList()
         } else {
-            return dataManager!!
+            return dataManager
                     .getEntitiesWithMetadata(
                             entitySet.id,
                             ImmutableSet.copyOf(entityKeyIds),
