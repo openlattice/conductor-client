@@ -67,6 +67,8 @@ import com.openlattice.requests.Status;
 import com.openlattice.search.PersistentSearchNotificationType;
 import com.openlattice.search.requests.PersistentSearch;
 import com.openlattice.search.requests.SearchConstraints;
+import com.openlattice.shuttle.IntegrationJob;
+import com.openlattice.shuttle.IntegrationStatus;
 import com.openlattice.subscriptions.Subscription;
 import com.openlattice.subscriptions.SubscriptionContactType;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
@@ -87,6 +89,7 @@ import java.util.stream.Stream;
 import static com.openlattice.postgres.DataTables.*;
 import static com.openlattice.postgres.PostgresArrays.getTextArray;
 import static com.openlattice.postgres.PostgresColumn.*;
+import static com.openlattice.postgres.PostgresDatatype.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -599,6 +602,10 @@ public final class ResultSetAdapters {
         return PostgresArrays.getIntArray( rs, PARTITIONS_FIELD );
     }
 
+    public static Integer partition( ResultSet rs ) throws SQLException {
+        return rs.getInt( PARTITION.getName() );
+    }
+
     public static DataExpiration dataExpiration( ResultSet rs ) throws SQLException {
         final var expirationBase = expirationBase( rs );
         if ( expirationBase == null ) {
@@ -975,7 +982,8 @@ public final class ResultSetAdapters {
 
     public static PostgresDatatype sqlDataType( ResultSet rs ) throws SQLException {
         String dataType =  rs.getString( DATATYPE.getName() ).toUpperCase();
-        return PostgresDatatype.valueOf( dataType );
+        return PostgresDatatype.getEnum( dataType );
+
     }
 
     public static Integer ordinalPosition( ResultSet rs ) throws SQLException {
@@ -1018,6 +1026,12 @@ public final class ResultSetAdapters {
     public static PostgresConnectionType connectionType(ResultSet rs) throws SQLException {
         String connectionType = rs.getString( CONNECTION_TYPE.getName() );
         return PostgresConnectionType.valueOf(connectionType);
+    }
+
+    public static IntegrationJob integrationJob(ResultSet rs) throws SQLException {
+        String name = name( rs );
+        IntegrationStatus status = IntegrationStatus.valueOf( rs.getString( STATUS.getName() ).toUpperCase() );
+        return new IntegrationJob( name, status );
     }
 
 }

@@ -57,11 +57,18 @@ import com.openlattice.postgres.mapstores.TypedMapIdentifier
 import com.openlattice.requests.Status
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet
-import org.slf4j.LoggerFactory
+import com.openlattice.shuttle.Integration
+import com.openlattice.shuttle.IntegrationJob
 import java.util.*
 
 class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdentifier<K, V> {
     private val checker = instanceChecker.checkInstance(name)
+
+    init {
+        if (checker.ok()) {
+            valuesCache.add(this)
+        }
+    }
 
     override fun name(): String {
         this.checker.check()
@@ -111,6 +118,8 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmField val INDEXING_PARTITION_PROGRESS = HazelcastMap<UUID, Int>("INDEXING_PARTITION_PROGRESS")
         @JvmField val INDEXING_PARTITION_LIST = HazelcastMap<UUID, DelegatedIntList>("INDEXING_PARTITION_LIST")
         @JvmField val INDEXING_GRAPH_PROCESSING = HazelcastMap<UUID, Long>("INDEXING_GRAPH_PROCESSING")
+        @JvmField val INTEGRATIONS = HazelcastMap<String, Integration>("INTEGRATIONS")
+        @JvmField val INTEGRATION_JOBS = HazelcastMap<UUID, IntegrationJob>("INTEGRATION_JOBS")
         @JvmField val LINKING_FEEDBACK = HazelcastMap<EntityKeyPair, Boolean>("LINKING_FEEDBACK")
         @JvmField val LINKING_INDEXING_LOCKS = HazelcastMap<UUID, Long>("LINKING_INDEXING_LOCKS")
         @JvmField val LINKING_LOCKS = HazelcastMap<EntityDataKey, Long>("LINKING_LOCKS")
@@ -144,11 +153,11 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmStatic
         fun valueOf(name: String): HazelcastMap<*, *> {
             for (e in valuesCache) {
-                if (e.name === name) {
+                if (e.name == name) {
                     return e
                 }
             }
-            throw IllegalArgumentException(name)
+            throw IllegalArgumentException("Map with name \"$name\" not found")
         }
     }
 }
