@@ -37,6 +37,7 @@ public class Flight implements Serializable {
 
     private static final long serialVersionUID = 2207339044078175121L;
     private static final String anon = "Anon";
+    private static transient Flight SINGLETON_EMPTY_FLIGHT = newFlight(anon).done();
 
     private final Map<String, EntityDefinition>                entityDefinitions;
     private final Map<String, AssociationDefinition>           associationDefinitions;
@@ -82,6 +83,10 @@ public class Flight implements Serializable {
 
     public static Builder newFlight() {
         return new Builder();
+    }
+
+    public static Flight emptyFlight() {
+        return SINGLETON_EMPTY_FLIGHT;
     }
 
     public static Builder newFlight( String name ) {
