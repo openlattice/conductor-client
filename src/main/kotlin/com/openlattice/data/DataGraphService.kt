@@ -68,6 +68,13 @@ class DataGraphService(
         private val entitySetSizesTask: PostgresEntitySetSizesTask
 
 ) : DataGraphManager {
+    override fun getEntitiesAcrossEntitySets(
+            entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
+            authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
+    ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun getEntitiesWithMetadata(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
@@ -82,7 +89,7 @@ class DataGraphService(
     companion object {
         const val ASSOCIATION_SIZE = 30_000
     }
-
+z
 
     /* Select */
 
@@ -143,7 +150,9 @@ class DataGraphService(
         return graphService.getEdgesAndNeighborsForVertex(entitySetId, entityKeyId)
     }
 
-    override fun getEdgeKeysOfEntitySet(entitySetId: UUID, includeClearedEdges: Boolean): PostgresIterable<DataEdgeKey> {
+    override fun getEdgeKeysOfEntitySet(
+            entitySetId: UUID, includeClearedEdges: Boolean
+    ): PostgresIterable<DataEdgeKey> {
         return graphService.getEdgeKeysOfEntitySet(entitySetId, includeClearedEdges)
     }
 
@@ -255,10 +264,12 @@ class DataGraphService(
     }
 
     /* Create */
-
+    /**
+     *
+     */
     override fun createEntities(
             entitySetId: UUID,
-            entities: List<Map<UUID, Set<Any>>>,
+            entities: List<MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Pair<List<UUID>, WriteEvent> {
         val ids = idService.reserveIds(entitySetId, entities.size)
@@ -270,7 +281,7 @@ class DataGraphService(
 
     override fun mergeEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         return eds.createOrUpdateEntities(entitySetId, entities, authorizedPropertyTypes)
@@ -326,7 +337,10 @@ class DataGraphService(
                     }.toSet()
                     val sw = Stopwatch.createStarted()
                     val edgeWrite = graphService.createEdges(edgeKeys)
-                    logger.info("graphService.createEdges (for {} edgeKeys) took {}", edgeKeys.size, sw.elapsed(TimeUnit.MILLISECONDS))
+                    logger.info(
+                            "graphService.createEdges (for {} edgeKeys) took {}", edgeKeys.size,
+                            sw.elapsed(TimeUnit.MILLISECONDS)
+                    )
 
                     associationCreateEvents[entitySetId] = CreateAssociationEvent(ids, entityWrite, edgeWrite)
                 }
@@ -436,18 +450,24 @@ class DataGraphService(
         return Stream.empty()
     }
 
-    override fun getExpiringEntitiesFromEntitySet(entitySetId: UUID, expirationPolicy: DataExpiration,
-                                                  dateTime: OffsetDateTime, deleteType: DeleteType,
-                                                  expirationPropertyType: Optional<PropertyType>): BasePostgresIterable<UUID> {
+    override fun getExpiringEntitiesFromEntitySet(
+            entitySetId: UUID, expirationPolicy: DataExpiration,
+            dateTime: OffsetDateTime, deleteType: DeleteType,
+            expirationPropertyType: Optional<PropertyType>
+    ): BasePostgresIterable<UUID> {
         val sqlParams = getSqlParameters(expirationPolicy, dateTime, expirationPropertyType)
         val expirationBaseColumn = sqlParams.first
         val formattedDateMinusTTE = sqlParams.second
         val sqlFormat = sqlParams.third
-        return eds.getExpiringEntitiesFromEntitySet(entitySetId, expirationBaseColumn, formattedDateMinusTTE,
-                sqlFormat, deleteType)
+        return eds.getExpiringEntitiesFromEntitySet(
+                entitySetId, expirationBaseColumn, formattedDateMinusTTE,
+                sqlFormat, deleteType
+        )
     }
 
-    private fun getSqlParameters(expirationPolicy: DataExpiration, dateTime: OffsetDateTime, expirationPT: Optional<PropertyType>): Triple<String, Any, Int> {
+    private fun getSqlParameters(
+            expirationPolicy: DataExpiration, dateTime: OffsetDateTime, expirationPT: Optional<PropertyType>
+    ): Triple<String, Any, Int> {
         val expirationBaseColumn: String
         val formattedDateMinusTTE: Any
         val sqlFormat: Int
@@ -455,11 +475,15 @@ class DataGraphService(
         when (expirationPolicy.expirationBase) {
             ExpirationBase.DATE_PROPERTY -> {
                 val expirationPropertyType = expirationPT.get()
-                val columnData = Pair(expirationPropertyType.postgresIndexType,
-                        expirationPropertyType.datatype)
+                val columnData = Pair(
+                        expirationPropertyType.postgresIndexType,
+                        expirationPropertyType.datatype
+                )
                 expirationBaseColumn = PostgresDataTables.getColumnDefinition(columnData.first, columnData.second).name
                 if (columnData.second == EdmPrimitiveTypeKind.Date) {
-                    formattedDateMinusTTE = OffsetDateTime.ofInstant(dateMinusTTEAsInstant, ZoneId.systemDefault()).toLocalDate()
+                    formattedDateMinusTTE = OffsetDateTime.ofInstant(
+                            dateMinusTTEAsInstant, ZoneId.systemDefault()
+                    ).toLocalDate()
                     sqlFormat = Types.DATE
                 } else { //only other TypeKind for date property type is OffsetDateTime
                     formattedDateMinusTTE = OffsetDateTime.ofInstant(dateMinusTTEAsInstant, ZoneId.systemDefault())

@@ -21,10 +21,13 @@
 package com.openlattice.postgres
 
 import com.openlattice.IdConstants
+import com.openlattice.data.storage.MetadataOption
 import com.openlattice.edm.EdmConstants
 import com.openlattice.edm.type.PropertyType
+import com.openlattice.postgres.PostgresMetaDataProperties.*
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
+import java.lang.IllegalArgumentException
 import java.util.UUID
 import java.util.Optional
 

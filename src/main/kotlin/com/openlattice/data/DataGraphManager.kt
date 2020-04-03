@@ -114,7 +114,7 @@ interface DataGraphManager {
 
     fun createEntities(
             entitySetId: UUID,
-            entities: List<Map<UUID, Set<Any>>>,
+            entities: List<MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Pair<List<UUID>, WriteEvent>
 
@@ -161,9 +161,12 @@ interface DataGraphManager {
 
     fun getNeighborEntitySets(entitySetIds: Set<UUID>): List<NeighborSets>
 
+    /**
+     * The values here are mutable because some entity stores need to decorate entities with additional metadata.
+     */
     fun mergeEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent
 

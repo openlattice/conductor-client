@@ -7,6 +7,7 @@ import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.MetadataOption
 import com.openlattice.data.storage.PROPERTIES
 import com.openlattice.data.storage.VALUE
+import com.openlattice.data.util.readJsonEntity
 import com.openlattice.edm.EdmConstants.Companion.ID_FQN
 import com.openlattice.edm.EdmConstants.Companion.LAST_WRITE_FQN
 import com.openlattice.edm.type.PropertyType
@@ -146,23 +147,9 @@ fun readJsonDataColumns(
         propertyTypes: Map<UUID, PropertyType>,
         byteBlobDataManager: ByteBlobDataManager
 ): MutableMap<UUID, MutableSet<Any>> {
-    val entity = mapper.readValue<MutableMap<UUID, MutableSet<Any>>>(rs.getString(PROPERTIES))
-
-    // Note: this call deletes all entries from result, which is not in propertyTypes (ID for example)
-    (entity.keys - propertyTypes.keys).forEach { entity.remove(it) }
-
-    propertyTypes.forEach { (_, propertyType) ->
-
-        if (propertyType.datatype == EdmPrimitiveTypeKind.Binary) {
-            val urls = entity.getOrElse(propertyType.id) { mutableSetOf() }
-            if (urls.isNotEmpty()) {
-                entity[propertyType.id] = byteBlobDataManager.getObjects(urls).toMutableSet()
-            }
-        }
-    }
-
-    return entity
+    return readJsonEntity(mapper, rs.getString(PROPERTIES), propertyTypes, byteBlobDataManager)
 }
+
 
 @Throws(SQLException::class)
 fun readJsonDataColumnsWithId(
@@ -173,7 +160,9 @@ fun readJsonDataColumnsWithId(
 ): MutableMap<UUID, MutableMap<UUID, MutableSet<Any>>> {
     val lastWriteIncluded = lastWrite.isPresent
 
-    val detailedEntity = mapper.readValue<MutableMap<UUID, MutableSet<MutableMap<String, Any>>>>(rs.getString(PROPERTIES))
+    val detailedEntity = mapper.readValue<MutableMap<UUID, MutableSet<MutableMap<String, Any>>>>(
+            rs.getString(PROPERTIES)
+    )
 
     val entities = mutableMapOf<UUID, MutableMap<UUID, MutableSet<Any>>>() // origin id -> property type id -> values
     detailedEntity.forEach { (propertyTypeId, details) ->
