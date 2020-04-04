@@ -71,7 +71,7 @@ class PostgresEntityDatastore(
     @Timed
     override fun createOrUpdateEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         // need to collect linking ids before writes to the entities
