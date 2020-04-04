@@ -68,6 +68,26 @@ class DataGraphService(
         private val entitySetSizesTask: PostgresEntitySetSizesTask
 
 ) : DataGraphManager {
+    override fun getEntitiesWithMetadata(
+            entitySetId: UUID, ids: Set<UUID>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getLinkingEntitiesWithMetadata(
+            linkingIdsByEntitySetIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertiesOfNormalEntitySets: Map<UUID, Map<UUID, PropertyType>>, of: EnumSet<MetadataOption>?
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntityKeyIdsOfLinkingIds(
+            linkingIds: Set<UUID>, normalEntitySetIds: Set<UUID>
+    ): BasePostgresIterable<kotlin.Pair<UUID, Set<UUID>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun getEntitiesAcrossEntitySets(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
@@ -89,7 +109,7 @@ class DataGraphService(
     companion object {
         const val ASSOCIATION_SIZE = 30_000
     }
-z
+
 
     /* Select */
 

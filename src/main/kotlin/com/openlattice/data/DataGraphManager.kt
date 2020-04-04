@@ -82,10 +82,18 @@ interface DataGraphManager {
             metadataOptions: EnumSet<MetadataOption>
     ): Iterable<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
+    fun getEntitiesWithMetadata(
+            entitySetId: UUID,
+            ids: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>>
+
     fun getEntitiesAcrossEntitySets(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>>
+
     /**
      * Clears property data, id, edges of association entities of the provided DataEdgeKeys in batches.
      * Note: it only clears edge, not src or dst entities.
@@ -188,13 +196,25 @@ interface DataGraphManager {
     fun getEdgesConnectedToEntities(
             entitySetId: UUID, entityKeyIds: Set<UUID>, includeClearedEdges: Boolean
     ): PostgresIterable<DataEdgeKey>
-    fun getExpiringEntitiesFromEntitySet(entitySetId: UUID,
-                                         expirationPolicy: DataExpiration,
-                                         dateTime: OffsetDateTime,
-                                         deleteType: DeleteType,
-                                         expirationPropertyType: Optional<PropertyType>
+
+    fun getExpiringEntitiesFromEntitySet(
+            entitySetId: UUID,
+            expirationPolicy: DataExpiration,
+            dateTime: OffsetDateTime,
+            deleteType: DeleteType,
+            expirationPropertyType: Optional<PropertyType>
     ): BasePostgresIterable<UUID>
 
     fun getEdgeEntitySetsConnectedToEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): Set<UUID>
     fun getEdgeEntitySetsConnectedToEntitySet(entitySetId: UUID): Set<UUID>
+
+    fun getLinkingEntitiesWithMetadata(
+            linkingIdsByEntitySetIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertiesOfNormalEntitySets: Map<UUID, Map<UUID, PropertyType>>,
+            of: EnumSet<MetadataOption>?
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>>
+
+    fun getEntityKeyIdsOfLinkingIds(
+            linkingIds: Set<UUID>, normalEntitySetIds: Set<UUID>
+    ): BasePostgresIterable<kotlin.Pair<UUID, Set<UUID>>>
 }

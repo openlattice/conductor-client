@@ -1011,4 +1011,3 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     }
 
 }
-

@@ -12,6 +12,7 @@ const val REGION_NAME = "regionName"
 const val TIME_TO_LIVE = "timeToLive"
 const val ACCESS_KEY_ID = "accessKeyId"
 const val SECRET_ACCESS_KEY = "secretAccessKey"
+const val STORES = "stores"
 
 @ReloadableConfiguration(uri = "datastore.yaml")
 data class DatastoreConfiguration(
@@ -20,7 +21,7 @@ data class DatastoreConfiguration(
         @JsonProperty(TIME_TO_LIVE) val timeToLive: Long,
         @JsonProperty(ACCESS_KEY_ID) val accessKeyId: String,
         @JsonProperty(SECRET_ACCESS_KEY) val secretAccessKey: String,
-        val stores: Map<StorageClass,List<S3StorageConfiguration>>
+        @JsonProperty(STORES) val stores: Map<StorageClass,List<S3StorageConfiguration>> = mapOf()
 ) : Configuration {
 
     companion object {

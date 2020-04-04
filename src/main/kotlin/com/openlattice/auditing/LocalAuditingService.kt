@@ -71,35 +71,41 @@ class LocalAuditingService(
                 }.sum()
     }
 
-    private fun mapAuditableEventsToEntities(events: List<AuditableEvent>): List<Map<UUID, Set<Any>>> {
+    private fun mapAuditableEventsToEntities(events: List<AuditableEvent>): List<MutableMap<UUID, MutableSet<Any>>> {
         val auditingConfiguration = ares.auditingTypes
         return events.map { event ->
-            val eventEntity = mutableMapOf<UUID, Set<Any>>()
+            val eventEntity = mutableMapOf<UUID, MutableSet<Any>>()
 
             eventEntity[auditingConfiguration.getPropertyTypeId(
                     AuditProperty.ACL_KEY
-            )] = setOf(event.aclKey.index)
+            )] = mutableSetOf<Any>(event.aclKey.index)
 
             event.entities.ifPresent {
-                eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.ENTITIES)] = it
+                eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.ENTITIES)] = it as MutableSet<Any>
             }
 
             event.operationId.ifPresent {
-                eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.OPERATION_ID)] = setOf(it)
+                eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.OPERATION_ID)] = mutableSetOf<Any>(it)
             }
 
-            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.ID)] = setOf(
+            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.ID)] = mutableSetOf<Any>(
                     event.aclKey.last().toString()
             ) //ID of securable object
-            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.PRINCIPAL)] = setOf(
+            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.PRINCIPAL)] = mutableSetOf<Any>(
                     event.principal.toString()
             )
-            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.EVENT_TYPE)] = setOf(event.eventType.name)
-            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.DESCRIPTION)] = setOf(event.description)
-            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.DATA)] = setOf(
+            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.EVENT_TYPE)] = mutableSetOf<Any>(
+                    event.eventType.name
+            )
+            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.DESCRIPTION)] = mutableSetOf<Any>(
+                    event.description
+            )
+            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.DATA)] = mutableSetOf<Any>(
                     mapper.writeValueAsString(event.data)
             )
-            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.TIMESTAMP)] = setOf(event.timestamp)
+            eventEntity[auditingConfiguration.getPropertyTypeId(AuditProperty.TIMESTAMP)] = mutableSetOf<Any>(
+                    event.timestamp
+            )
 
             return@map eventEntity
         }
