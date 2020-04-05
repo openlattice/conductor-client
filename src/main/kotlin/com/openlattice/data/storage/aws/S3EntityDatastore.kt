@@ -1,0 +1,266 @@
+package com.openlattice.data.storage.aws
+
+import com.amazonaws.services.s3.model.ObjectMetadata
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder
+import com.dataloom.mappers.ObjectMappers
+import com.geekbeast.rhizome.aws.newS3Client
+import com.geekbeast.util.LinearBackoff
+import com.geekbeast.util.attempt
+import com.google.common.collect.SetMultimap
+import com.openlattice.IdConstants
+import com.openlattice.data.DeleteType
+import com.openlattice.data.EntitySetData
+import com.openlattice.data.WriteEvent
+import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.data.storage.EntityDatastore
+import com.openlattice.data.storage.MetadataOption
+import com.openlattice.data.util.mapEntityKeyIdsToFqns
+import com.openlattice.data.util.readJsonEntity
+import com.openlattice.datastore.configuration.S3StorageConfiguration
+import com.openlattice.edm.EdmConstants
+import com.openlattice.edm.type.PropertyType
+import com.openlattice.postgres.PostgresMetaDataProperties
+import com.openlattice.postgres.streams.BasePostgresIterable
+import org.apache.olingo.commons.api.edm.FullQualifiedName
+import org.springframework.stereotype.Service
+import java.io.ByteArrayInputStream
+import java.nio.ByteBuffer
+import java.time.OffsetDateTime
+import java.util.*
+import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
+import java.util.stream.Stream
+
+
+/**
+ *
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+@Service
+class S3EntityDatastore(
+        private val s3StorageConfiguration: S3StorageConfiguration,
+        private val byteBlobDataManager: ByteBlobDataManager
+) : EntityDatastore {
+    private val s3 = newS3Client(
+            s3StorageConfiguration.accessKeyId,
+            s3StorageConfiguration.secretAccessKey,
+            s3StorageConfiguration.region
+    )
+
+    private val executor = Executors.newFixedThreadPool(s3StorageConfiguration.threads)
+    private val semaphore = Semaphore(10000)
+    private val transferManager = TransferManagerBuilder.standard().withS3Client(s3)
+    private val mapper = ObjectMappers.newJsonMapper()
+
+    override fun getEntities(
+            entitySetId: UUID,
+            ids: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        val propertyTypes = authorizedPropertyTypes.getValue(entitySetId)
+        return ids
+                .parallelStream()
+                .map { id ->
+                    id to attempt(LinearBackoff(5000, 100), 10) {
+                        s3
+                                .getObject(s3StorageConfiguration.bucket, getS3Key(entitySetId, id))
+                                .objectContent
+                                .readAllBytes()
+
+                    }
+                }.map { (id, data) ->
+                    val entityByFqn = mapEntityKeyIdsToFqns(
+                            readJsonEntity(mapper, data, propertyTypes, byteBlobDataManager),
+                            propertyTypes
+                    )
+                    entityByFqn[EdmConstants.ID_FQN] = mutableSetOf<Any>(id.toString())
+                    return@map entityByFqn
+                }
+
+    }
+
+
+    private fun getS3Key(entitySetId: UUID, id: UUID): String {
+        return "$entitySetId/$id/data"
+    }
+
+    override fun getEntitiesWithMetadata(
+            entitySetId: UUID,
+            ids: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        val propertyTypes =
+                authorizedPropertyTypes.getValue(entitySetId) + mapMetadataOptionsToPropertyTypes(metadataOptions)
+
+        return ids
+                .parallelStream()
+                .map { id ->
+                    id to attempt(LinearBackoff(5000, 100), 10) {
+                        s3
+                                .getObject(s3StorageConfiguration.bucket, getS3Key(entitySetId, id))
+                                .objectContent
+                                .readAllBytes()
+
+                    }
+                }.map { (id, data) ->
+                    val entityByFqn = mapEntityKeyIdsToFqns(
+                            readJsonEntity(mapper, data, propertyTypes, byteBlobDataManager),
+                            propertyTypes
+                    )
+                    entityByFqn[EdmConstants.ID_FQN] = mutableSetOf<Any>(id.toString())
+                    return@map entityByFqn
+                }
+
+    }
+
+    override fun getLinkingEntities(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getLinkingEntitiesWithMetadata(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getLinkedEntityDataByLinkingIdWithMetadata(
+            linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>,
+            extraMetadataOptions: EnumSet<MetadataOption>
+    ): Map<UUID, Map<UUID, Map<UUID, Map<UUID, Set<Any>>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getLinkedEntitySetBreakDown(
+            linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
+    ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntities(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            orderedPropertyTypes: LinkedHashSet<String>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            linking: Boolean
+    ): EntitySetData<FullQualifiedName> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntitiesAcrossEntitySets(
+            entitySetIdsToEntityKeyIds: SetMultimap<UUID, UUID>,
+            authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
+    ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntityKeyIdsOfLinkingIds(
+            linkingIds: Set<UUID>, normalEntitySetIds: Set<UUID>
+    ): BasePostgresIterable<Pair<UUID, Set<UUID>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun createOrUpdateEntities(
+            entitySetId: UUID,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        val version = System.currentTimeMillis()
+        entities.entries.parallelStream().forEach { (id, data) ->
+            attempt(LinearBackoff(5000, 100), 10) {
+                //Consider getting version directly from OffsetDateTime so they are perfectly synchronized
+                //Don't think it should matter much and computing version like it's computed elsewhere for consistency
+                val lastWrite = OffsetDateTime.now()
+                val version = System.currentTimeMillis()
+
+                data.getOrPut(IdConstants.LAST_WRITE_ID.id) { mutableSetOf() } += lastWrite
+                data.getOrPut(IdConstants.VERSION_ID.id) { mutableSetOf() } += version
+                val json = mapper.writeValueAsBytes(data)
+                val metadata = ObjectMetadata()
+                metadata.contentLength = json.size.toLong()
+
+                s3.putObject(
+                        s3StorageConfiguration.bucket,
+                        getS3Key(entitySetId, id),
+                        ByteArrayInputStream(json),
+                        metadata
+                )
+            }
+        }
+        return WriteEvent(version, entities.size)
+    }
+
+    override fun replaceEntities(
+            entitySetId: UUID, entities: Map<UUID, Map<UUID, Set<Any>>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun partialReplaceEntities(
+            entitySetId: UUID, entities: Map<UUID, Map<UUID, Set<Any>>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun replacePropertiesInEntities(
+            entitySetId: UUID, replacementProperties: Map<UUID, Map<UUID, Set<Map<ByteBuffer, Any>>>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun clearEntitySet(entitySetId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun clearEntities(
+            entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun clearEntityProperties(
+            entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun deleteEntitySetData(entitySetId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun deleteEntities(
+            entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun deleteEntityProperties(
+            entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getExpiringEntitiesFromEntitySet(
+            entitySetId: UUID, expirationBaseColumn: String, formattedDateMinusTTE: Any, sqlFormat: Int,
+            deleteType: DeleteType
+    ): BasePostgresIterable<UUID> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+}
+
+internal fun mapMetadataOptionsToPropertyTypes(metadataOptions: Set<MetadataOption>): Map<UUID, PropertyType> {
+    return metadataOptions.map {
+        when (it) {
+            MetadataOption.LAST_WRITE -> PostgresMetaDataProperties.LAST_WRITE.propertyType.id to PostgresMetaDataProperties.LAST_WRITE.propertyType
+            MetadataOption.VERSION -> PostgresMetaDataProperties.VERSION.propertyType.id to PostgresMetaDataProperties.VERSION.propertyType
+            else -> throw IllegalArgumentException("Unsupported metadata for s3.")
+        }
+    }.toMap()
+}
