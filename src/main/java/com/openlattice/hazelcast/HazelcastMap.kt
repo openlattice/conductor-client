@@ -36,6 +36,7 @@ import com.openlattice.authorization.securable.SecurableObjectType
 import com.openlattice.collections.CollectionTemplateKey
 import com.openlattice.collections.EntitySetCollection
 import com.openlattice.collections.EntityTypeCollection
+import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.EntityKey
 import com.openlattice.data.TicketKey
@@ -143,6 +144,7 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmField val ORGANIZATION_EXTERNAL_DATABASE_COLUMN = HazelcastMap<UUID, OrganizationExternalDatabaseColumn>("ORGANIZATION_EXTERNAL_DATABASE_COLUMN")
         @JvmField val ORGANIZATION_EXTERNAL_DATABASE_TABLE = HazelcastMap<UUID, OrganizationExternalDatabaseTable>("ORGANIZATION_EXTERNAL_DATABASE_TABLE")
         @JvmField val SECURABLE_PRINCIPALS = HazelcastMap<String, SecurablePrincipal>("SECURABLE_PRINCIPALS")
+        @JvmField val S3_OBJECT_STORE = HazelcastMap<EntityDataKey, Entity> ("S3_OBJECT_STORE")
         @JvmField val RESOLVED_PRINCIPAL_TREES = HazelcastMap<String, SortedPrincipalSet>("RESOLVED_PRINCIPAL_TREES")
 
         @JvmStatic
