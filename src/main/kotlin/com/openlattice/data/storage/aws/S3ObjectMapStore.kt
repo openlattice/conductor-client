@@ -42,7 +42,6 @@ class S3ObjectMapStore(
 
     private val mapper = ObjectMappers.newJsonMapper()
 
-
     override fun storeAll(entities: Map<EntityDataKey, Entity>) {
         val lastWrite = OffsetDateTime.now()
         val version = lastWrite.toInstant().toEpochMilli()
