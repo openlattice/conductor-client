@@ -12,6 +12,7 @@ import com.openlattice.data.storage.EntityDatastore
 import com.openlattice.data.storage.MetadataOption
 import com.openlattice.data.util.mapEntityKeyIdsToFqns
 import com.openlattice.data.util.mapMetadataOptionsToPropertyTypes
+import com.openlattice.data.util.readEntity
 import com.openlattice.datastore.configuration.S3StorageConfiguration
 import com.openlattice.edm.EdmConstants
 import com.openlattice.edm.type.PropertyType
@@ -60,7 +61,10 @@ class S3EntityDatastore(
                 .getAll(ids.map { EntityDataKey(entitySetId, it) }.toSet())
                 .asSequence()
                 .map { (edk, entity) ->
-                    val entityByFqn = mapEntityKeyIdsToFqns(entity, propertyTypes)
+                    val entityByFqn = mapEntityKeyIdsToFqns(
+                            readEntity(entity, propertyTypes, byteBlobDataManager),
+                            propertyTypes
+                    )
                     entityByFqn[EdmConstants.ID_FQN] = mutableSetOf<Any>(edk.entitySetId)
                     return@map entityByFqn
                 }
@@ -85,7 +89,10 @@ class S3EntityDatastore(
                 .getAll(ids.map { EntityDataKey(entitySetId, it) }.toSet())
                 .asSequence()
                 .map { (edk, entity) ->
-                    val entityByFqn = mapEntityKeyIdsToFqns(entity, propertyTypes)
+                    val entityByFqn = mapEntityKeyIdsToFqns(
+                            readEntity(entity, propertyTypes, byteBlobDataManager),
+                            propertyTypes
+                    )
                     entityByFqn[EdmConstants.ID_FQN] = mutableSetOf<Any>(edk.entitySetId)
                     return@map entityByFqn
                 }
@@ -126,6 +133,7 @@ class S3EntityDatastore(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linking: Boolean
     ): EntitySetData<FullQualifiedName> {
+        return EntitySetData(orderedPropertyTypes,entityKeyIds.as)
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -164,7 +172,7 @@ class S3EntityDatastore(
             entities: Map<UUID, Map<UUID, Set<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun partialReplaceEntities(

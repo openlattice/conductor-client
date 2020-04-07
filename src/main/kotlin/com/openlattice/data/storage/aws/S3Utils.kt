@@ -4,9 +4,8 @@ import com.amazonaws.retry.PredefinedBackoffStrategies
 import com.amazonaws.retry.PredefinedRetryPolicies
 import com.amazonaws.retry.RetryPolicy
 import com.amazonaws.services.s3.AmazonS3
-import com.geekbeast.rhizome.aws.newS3Client
 import com.openlattice.datastore.configuration.DatastoreConfiguration
-
+import com.geekbeast.rhizome.aws.newS3Client
 
 /**
  * Creates a new S3 client from a datastore configuration
