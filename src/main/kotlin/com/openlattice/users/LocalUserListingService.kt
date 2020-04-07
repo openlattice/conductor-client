@@ -44,8 +44,7 @@ class LocalUserListingService(auth0Configuration: Auth0Configuration) : UserList
 
     init {
         logger.info("************************* BEGIN JWT TOKENS *************************")
-        auth0Configuration.clients.forEach { aac ->
-
+        auth0Configuration.clients.filter { it.signingAlgorithm != "RS256" }.forEach { aac ->
             auth0Configuration.users.forEach { user ->
                 val jwt = JWT.create()
                         .withSubject(user.id)
