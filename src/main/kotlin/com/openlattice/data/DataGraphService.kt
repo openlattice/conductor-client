@@ -119,7 +119,8 @@ class DataGraphService(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linking: Boolean
     ): EntitySetData<FullQualifiedName> {
-        return eds.getEntities(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking)
+        return eds.getEntitySetsData(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking = linking)
+//        return eds.getEntities(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking)
     }
 
     override fun getEntitySetSize(entitySetId: UUID): Long {
@@ -131,11 +132,9 @@ class DataGraphService(
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Map<FullQualifiedName, Set<Any>> {
-        return eds.getEntities(
-                entitySetId,
-                setOf(entityKeyId),
-                mapOf(entitySetId to authorizedPropertyTypes)
-        ).iterator().next()
+        return eds
+                .getEntitiesWithMetadata(entitySetId, setOf(entityKeyId), mapOf(entitySetId to authorizedPropertyTypes))
+                .iterator().next()
     }
 
     override fun getLinkingEntity(

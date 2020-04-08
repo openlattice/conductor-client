@@ -56,8 +56,10 @@ class S3EntityDatastoreTest {
         val entitySetId = UUID.randomUUID()
 
         val writeEvent = s3EntityDatastore.createOrUpdateEntities(entitySetId, entities, propertyTypes)
-        val loaded = s3EntityLoader.getEntities(
-                entitySetId, entities.keys, mutableMapOf(entitySetId to propertyTypes)
+        val loaded = s3EntityLoader.getEntitiesWithMetadata(
+                entitySetId,
+                entities.keys,
+                mutableMapOf(entitySetId to propertyTypes)
         ).toList()
 
         Assert.assertEquals(entities.size, loaded.size)

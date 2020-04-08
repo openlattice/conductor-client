@@ -42,6 +42,7 @@ class S3EntityDatastore(
         private val s3ObjectStore: IMap<EntityDataKey, Entity>,
         metricRegistry: MetricRegistry
 ) : EntityDatastore {
+
     private val s3 = newS3Client(
             s3StorageConfiguration.accessKeyId,
             s3StorageConfiguration.secretAccessKey,
@@ -64,7 +65,21 @@ class S3EntityDatastore(
             )
     )
 
-    override fun getEntities(
+    override fun getAllEntitiesWithMetadata(
+            entitySetId: UUID, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntitiesAcrossEntitySets(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>, linking: Boolean
+    ): Iterable<Pair<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    fun getEntities(
             entitySetId: UUID,
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>

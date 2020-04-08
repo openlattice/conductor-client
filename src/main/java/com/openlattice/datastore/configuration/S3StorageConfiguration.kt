@@ -1,5 +1,6 @@
 package com.openlattice.datastore.configuration
 
+import com.codahale.metrics.MetricRegistry
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.core.IMap
 import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
@@ -27,6 +28,9 @@ data class S3StorageConfiguration(
     @Inject
     lateinit var hazelcastInstance: HazelcastInstance
 
+    @Inject
+    private lateinit var metricRegistry: MetricRegistry
+
     override fun getLoader(byteBlobDataManager: ByteBlobDataManager): EntityLoader {
         return getS3EntityDatastore(byteBlobDataManager)
     }
@@ -38,6 +42,10 @@ data class S3StorageConfiguration(
     private fun getS3EntityDatastore(
             byteBlobDataManager: ByteBlobDataManager
     ): S3EntityDatastore {
-        return S3EntityDatastore(this, byteBlobDataManager, HazelcastMap.S3_OBJECT_STORE.getMap(hazelcastInstance))
+        return S3EntityDatastore(
+                this, byteBlobDataManager,
+                HazelcastMap.S3_OBJECT_STORE.getMap(hazelcastInstance),
+                metricRegistry
+        )
     }
 }
