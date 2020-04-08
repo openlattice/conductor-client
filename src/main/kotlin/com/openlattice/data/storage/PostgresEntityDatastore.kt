@@ -204,56 +204,30 @@ class PostgresEntityDatastore(
         return writeEvent
     }
 
-
     @Timed
-    override fun getEntities(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
-            orderedPropertyTypes: LinkedHashSet<String>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            linking: Boolean
-    ): EntitySetData<FullQualifiedName> {
-        val context = if (linking) {
-            getLinkedEntitiesTimer.time()
-        } else {
-            getEntitiesTimer.time()
-        }
-        //If the query generated exceed 33.5M UUIDs good chance that it exceed Postgres's 1 GB max query buffer size
-
-        val entitySetData = EntitySetData(
-                orderedPropertyTypes,
-                dataQueryService.getEntitiesWithPropertyTypeFqns(
-                        entityKeyIds,
-                        authorizedPropertyTypes,
-                        emptyMap(),
-                        EnumSet.noneOf(MetadataOption::class.java),
-                        Optional.empty(),
-                        linking
-                ).values.asIterable()
-
-        )
-
-        context.stop()
-
-        return entitySetData
-    }
-
-    @Timed
-    override fun getEntities(
+    override fun getAllEntitiesWithMetadata(
             entitySetId: UUID,
-            ids: Set<UUID>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
     ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
-        //If the query generated exceeds 33.5M UUIDs good chance that it exceeds Postgres's 1 GB max query buffer size
-        return getEntitiesWithMetadata(
-                entitySetId,
-                ids,
-                authorizedPropertyTypes,
-                EnumSet.noneOf(MetadataOption::class.java)
-        )
+        return getEntitiesWithMetadataInternal(entitySetId, emptySet(), authorizedPropertyTypes, metadataOptions)
     }
 
     @Timed
     override fun getEntitiesWithMetadata(
+            entitySetId: UUID,
+            ids: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        return if (ids.isEmpty()) {
+            Stream.of()
+        } else {
+            getEntitiesWithMetadataInternal(entitySetId, ids, authorizedPropertyTypes, metadataOptions)
+        }
+    }
+
+    private fun getEntitiesWithMetadataInternal(
             entitySetId: UUID,
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
@@ -340,7 +314,8 @@ class PostgresEntityDatastore(
     @Timed
     override fun getLinkedEntitySetBreakDown(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
-            authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>)
+            authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
+    )
             : Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
         // pair<linking_id to pair<entity_set_id to pair<origin_id to property_data>>>
         val linkedEntityDataStream = dataQueryService.getLinkedEntitySetBreakDown(
@@ -364,7 +339,6 @@ class PostgresEntityDatastore(
 
         return linkedDataMap
     }
-
 
     //TODO: Can be made more efficient if we are getting across same type.
     /**
@@ -394,6 +368,76 @@ class PostgresEntityDatastore(
                 }.asSequence().toMap()
     }
 
+    override fun getEntitiesAcrossEntitySets(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>,
+            linking: Boolean
+    ): Iterable<Pair<UUID, Map<FullQualifiedName, Set<Any>>>> {
+        val context = if (linking) {
+            getLinkedEntitiesTimer.time()
+        } else {
+            getEntitiesTimer.time()
+        }
+
+        try {
+            //If the query generated exceed 33.5M UUIDs good chance that it exceed Postgres's 1 GB max query buffer size
+            return dataQueryService.getEntitiesWithPropertyTypeFqnsIterable(
+                    entityKeyIds,
+                    authorizedPropertyTypes,
+                    emptyMap(),
+                    metadataOptions,
+                    Optional.empty(),
+                    linking
+            )
+
+        } finally {
+            context.stop()
+        }
+    }
+
+
+    override fun getEntitySetData(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, orderedPropertyTypes: LinkedHashSet<String>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>, metadataOptions: EnumSet<MetadataOption>,
+            linking: Boolean
+    ): EntitySetData<FullQualifiedName> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+
+    @Timed
+    override fun getEntities(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            orderedPropertyTypes: LinkedHashSet<String>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>,
+            linking: Boolean
+    ): EntitySetData<FullQualifiedName> {
+        val context = if (linking) {
+            getLinkedEntitiesTimer.time()
+        } else {
+            getEntitiesTimer.time()
+        }
+        //If the query generated exceed 33.5M UUIDs good chance that it exceed Postgres's 1 GB max query buffer size
+
+        val entitySetData = EntitySetData(
+                orderedPropertyTypes,
+                dataQueryService.getEntitiesWithPropertyTypeFqns(
+                        entityKeyIds,
+                        authorizedPropertyTypes,
+                        emptyMap(),
+                        metadataOptions,
+                        Optional.empty(),
+                        linking
+                ).values.asIterable()
+        )
+
+        context.stop()
+
+        return entitySetData
+    }
+
     @Timed
     override fun getEntityKeyIdsOfLinkingIds(
             linkingIds: Set<UUID>,
@@ -409,7 +453,9 @@ class PostgresEntityDatastore(
             value = ["UC_USELESS_OBJECT"],
             justification = "results Object is used to execute deletes in batches"
     )
-    override fun deleteEntitySetData(entitySetId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>): WriteEvent {
+    override fun deleteEntitySetData(
+            entitySetId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
         logger.info("Deleting data of entity set: {}", entitySetId)
 
         val (_, numUpdates) = dataQueryService.deleteEntitySetData(entitySetId, authorizedPropertyTypes)

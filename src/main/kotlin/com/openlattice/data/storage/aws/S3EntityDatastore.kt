@@ -133,7 +133,12 @@ class S3EntityDatastore(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linking: Boolean
     ): EntitySetData<FullQualifiedName> {
-        return EntitySetData(orderedPropertyTypes,entityKeyIds.as)
+
+        val entities = entityKeyIds.asSequence()
+                .map{(entitySetId, maybeIds) ->
+            getEntitiesWithMetadata(entitySetId, maybeIds.orElse(), authorizedPropertyTypes.getValue(entitySetId), )
+        }
+        return EntitySetData(orderedPropertyTypes,getEntitiesWithMetadata(en))
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

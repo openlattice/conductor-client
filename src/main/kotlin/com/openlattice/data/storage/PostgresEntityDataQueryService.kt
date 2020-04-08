@@ -145,6 +145,24 @@ class PostgresEntityDataQueryService(
             version: Optional<Long> = Optional.empty(),
             linking: Boolean = false
     ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        return getEntitiesWithPropertyTypeFqnsIterable(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                propertyTypeFilters,
+                metadataOptions,
+                version,
+                linking
+        ).toMap()
+    }
+
+    fun getEntitiesWithPropertyTypeFqnsIterable(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            propertyTypeFilters: Map<UUID, Set<Filter>> ,
+            metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            version: Optional<Long>,
+            linking: Boolean = false
+    ): BasePostgresIterable<Pair<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>> {
         return getEntitySetIterable(
                 entityKeyIds,
                 authorizedPropertyTypes,
@@ -159,7 +177,7 @@ class PostgresEntityDataQueryService(
                     metadataOptions,
                     byteBlobDataManager
             )
-        }.toMap()
+        }
     }
 
     /**
@@ -310,8 +328,9 @@ class PostgresEntityDataQueryService(
 
                     if (!awsPassthrough) {
                         entityBatch = entityBatch.mapValues {
-                            Multimaps.asMap(JsonDeserializer.validateFormatAndNormalize(it.value, authorizedPropertyTypes)
-                            { "Entity set $entitySetId with entity key id ${it.key}" })
+                            Multimaps.asMap(
+                                    JsonDeserializer.validateFormatAndNormalize(it.value, authorizedPropertyTypes)
+                                    { "Entity set $entitySetId with entity key id ${it.key}" })
                         }
                     }
 
@@ -1089,7 +1108,9 @@ class PostgresEntityDataQueryService(
             sqlFormat: Int,
             deleteType: DeleteType
     ): BasePostgresIterable<UUID> {
-        val partitions = PostgresArrays.createIntArray(hds.connection, partitionManager.getEntitySetPartitions(entitySetId))
+        val partitions = PostgresArrays.createIntArray(
+                hds.connection, partitionManager.getEntitySetPartitions(entitySetId)
+        )
         return BasePostgresIterable(
                 PreparedStatementHolderSupplier(
                         hds,

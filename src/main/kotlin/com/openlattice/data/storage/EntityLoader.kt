@@ -14,17 +14,35 @@ import java.util.stream.Stream
  */
 interface EntityLoader {
 
-    fun getEntities(
+    /**
+     * Loads all of the entities in an entity set.
+     *
+     * @param entitySetId The entity set id for which to load data
+     * @param authorizedPropertyTypes The property types for which to load data.
+     *
+     * @return All of entities with given property types and metadata
+     */
+    fun getAllEntitiesWithMetadata(
             entitySetId: UUID,
-            ids: Set<UUID>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
     ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
+    /**
+     * Loads specific entities and associated metadata.
+     *
+     * @param entitySetId The entity set id for which to load data
+     * @param ids The entity key ids for which to load data and metadata
+     * @param authorizedPropertyTypes The property types for which to load data.
+     * @param metadataOptions The metadata which to read.
+     *
+     * @return A stream of entities with corresponding property types and metadata.
+     */
     fun getEntitiesWithMetadata(
             entitySetId: UUID,
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            metadataOptions: EnumSet<MetadataOption>
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
     ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
     fun getLinkingEntities(
@@ -49,17 +67,41 @@ interface EntityLoader {
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
 
-    fun getEntities(
+
+    /**
+     * Loads specific entities and associated metadata.
+     *
+     * @param entitySetId The entity set id for which to load data
+     * @param ids The entity key ids for which to load data and metadata
+     * @param authorizedPropertyTypes The property types for which to load data.
+     * @param metadataOptions The metadata which to read.
+     *
+     * @return A stream of entities with corresponding property types and metadata.
+     */
+    fun getEntitiesAcrossEntitySets(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            linking: Boolean = false
+    ): Iterable<Pair<UUID,Map<FullQualifiedName,Set<Any>>>>
+
+    fun getEntitySetData(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             orderedPropertyTypes: LinkedHashSet<String>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            linking: Boolean
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            linking: Boolean = false
     ): EntitySetData<FullQualifiedName>
 
     fun getEntitiesAcrossEntitySets(
-            entitySetIdsToEntityKeyIds: SetMultimap<UUID, UUID>,
+            entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>>
+//    {
+//        return getEntitiesAcrossEntitySets(
+//                en
+//        )
+//    }
 
     fun getEntityKeyIdsOfLinkingIds(
             linkingIds: Set<UUID>,
