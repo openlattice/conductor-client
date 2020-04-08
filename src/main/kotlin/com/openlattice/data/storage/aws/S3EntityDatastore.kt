@@ -1,6 +1,8 @@
 package com.openlattice.data.storage.aws
 
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
+import com.codahale.metrics.MetricRegistry
+import com.codahale.metrics.Timer
 import com.dataloom.mappers.ObjectMappers
 import com.geekbeast.rhizome.aws.newS3Client
 import com.google.common.collect.SetMultimap
@@ -10,6 +12,7 @@ import com.openlattice.data.*
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.EntityDatastore
 import com.openlattice.data.storage.MetadataOption
+import com.openlattice.data.storage.PostgresEntityDatastore
 import com.openlattice.data.util.mapEntityKeyIdsToFqns
 import com.openlattice.data.util.mapMetadataOptionsToPropertyTypes
 import com.openlattice.data.util.readEntity
@@ -36,7 +39,8 @@ import kotlin.streams.asStream
 class S3EntityDatastore(
         private val s3StorageConfiguration: S3StorageConfiguration,
         private val byteBlobDataManager: ByteBlobDataManager,
-        private val s3ObjectStore: IMap<EntityDataKey, Entity>
+        private val s3ObjectStore: IMap<EntityDataKey, Entity>,
+        metricRegistry: MetricRegistry
 ) : EntityDatastore {
     private val s3 = newS3Client(
             s3StorageConfiguration.accessKeyId,
@@ -48,6 +52,17 @@ class S3EntityDatastore(
     private val semaphore = Semaphore(10000)
     private val transferManager = TransferManagerBuilder.standard().withS3Client(s3)
     private val mapper = ObjectMappers.newJsonMapper()
+
+    override val entitiesTimer: Timer = metricRegistry.timer(
+            MetricRegistry.name(
+                    PostgresEntityDatastore::class.java, "getEntities"
+            )
+    )
+    override val linkedEntitiesTimer: Timer = metricRegistry.timer(
+            MetricRegistry.name(
+                    PostgresEntityDatastore::class.java, "getEntities(linked)"
+            )
+    )
 
     override fun getEntities(
             entitySetId: UUID,
@@ -124,28 +139,6 @@ class S3EntityDatastore(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun getEntities(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
-            orderedPropertyTypes: LinkedHashSet<String>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            linking: Boolean
-    ): EntitySetData<FullQualifiedName> {
-
-        val entities = entityKeyIds.asSequence()
-                .map{(entitySetId, maybeIds) ->
-            getEntitiesWithMetadata(entitySetId, maybeIds.orElse(), authorizedPropertyTypes.getValue(entitySetId), )
-        }
-        return EntitySetData(orderedPropertyTypes,getEntitiesWithMetadata(en))
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun getEntitiesAcrossEntitySets(
-            entitySetIdsToEntityKeyIds: SetMultimap<UUID, UUID>,
-            authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

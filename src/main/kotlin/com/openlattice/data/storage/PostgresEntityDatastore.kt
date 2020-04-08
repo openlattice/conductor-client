@@ -1,14 +1,12 @@
 package com.openlattice.data.storage
 
 import com.codahale.metrics.MetricRegistry
+import com.codahale.metrics.Timer
 import com.codahale.metrics.annotation.Timed
 import com.google.common.collect.ImmutableMap
-import com.google.common.collect.Multimaps
-import com.google.common.collect.SetMultimap
 import com.google.common.eventbus.EventBus
 import com.openlattice.assembler.events.MaterializedEntitySetDataChangeEvent
 import com.openlattice.data.DeleteType
-import com.openlattice.data.EntitySetData
 import com.openlattice.data.WriteEvent
 import com.openlattice.data.events.EntitiesDeletedEvent
 import com.openlattice.data.events.EntitiesUpsertedEvent
@@ -28,7 +26,6 @@ import java.nio.ByteBuffer
 import java.util.*
 import java.util.stream.Stream
 import javax.inject.Inject
-import kotlin.streams.asSequence
 
 /**
  *
@@ -56,12 +53,12 @@ class PostgresEntityDatastore(
     @Inject
     private lateinit var linkingQueryService: LinkingQueryService
 
-    private val getEntitiesTimer = metricRegistry.timer(
+    override val entitiesTimer: Timer = metricRegistry.timer(
             MetricRegistry.name(
                     PostgresEntityDatastore::class.java, "getEntities"
             )
     )
-    private val getLinkedEntitiesTimer = metricRegistry.timer(
+    override val linkedEntitiesTimer: Timer = metricRegistry.timer(
             MetricRegistry.name(
                     PostgresEntityDatastore::class.java, "getEntities(linked)"
             )
@@ -340,44 +337,16 @@ class PostgresEntityDatastore(
         return linkedDataMap
     }
 
-    //TODO: Can be made more efficient if we are getting across same type.
-    /**
-     * Loads data from multiple entity sets. Note: not implemented for linking entity sets!
-     *
-     * @param entitySetIdsToEntityKeyIds map of entity sets to entity keys for which the data should be loaded
-     * @param authorizedPropertyTypesByEntitySet map of entity sets and the property types for which the user is authorized
-     * @return map of entity set ids to list of entity data
-     */
-    @Timed
-    override fun getEntitiesAcrossEntitySets(
-            entitySetIdsToEntityKeyIds: SetMultimap<UUID, UUID>,
-            authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>> {
-        return Multimaps
-                .asMap(entitySetIdsToEntityKeyIds)
-                .entries
-                .parallelStream()
-                .map { (entitySetId, entityKeyIds) ->
-                    val data = dataQueryService.getEntitiesWithPropertyTypeFqns(
-                            mapOf(entitySetId to Optional.of(entityKeyIds)),
-                            mapOf(entitySetId to authorizedPropertyTypesByEntitySet.getValue(entitySetId)),
-                            emptyMap(),
-                            EnumSet.noneOf(MetadataOption::class.java)
-                    )
-                    entitySetId to data.values
-                }.asSequence().toMap()
-    }
-
     override fun getEntitiesAcrossEntitySets(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>,
             linking: Boolean
-    ): Iterable<Pair<UUID, Map<FullQualifiedName, Set<Any>>>> {
+    ): Iterable<Pair<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>> {
         val context = if (linking) {
-            getLinkedEntitiesTimer.time()
+            linkedEntitiesTimer.time()
         } else {
-            getEntitiesTimer.time()
+            entitiesTimer.time()
         }
 
         try {
@@ -394,48 +363,6 @@ class PostgresEntityDatastore(
         } finally {
             context.stop()
         }
-    }
-
-
-    override fun getEntitySetData(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, orderedPropertyTypes: LinkedHashSet<String>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>, metadataOptions: EnumSet<MetadataOption>,
-            linking: Boolean
-    ): EntitySetData<FullQualifiedName> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-
-    @Timed
-    override fun getEntities(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
-            orderedPropertyTypes: LinkedHashSet<String>,
-            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            metadataOptions: EnumSet<MetadataOption>,
-            linking: Boolean
-    ): EntitySetData<FullQualifiedName> {
-        val context = if (linking) {
-            getLinkedEntitiesTimer.time()
-        } else {
-            getEntitiesTimer.time()
-        }
-        //If the query generated exceed 33.5M UUIDs good chance that it exceed Postgres's 1 GB max query buffer size
-
-        val entitySetData = EntitySetData(
-                orderedPropertyTypes,
-                dataQueryService.getEntitiesWithPropertyTypeFqns(
-                        entityKeyIds,
-                        authorizedPropertyTypes,
-                        emptyMap(),
-                        metadataOptions,
-                        Optional.empty(),
-                        linking
-                ).values.asIterable()
-        )
-
-        context.stop()
-
-        return entitySetData
     }
 
     @Timed
