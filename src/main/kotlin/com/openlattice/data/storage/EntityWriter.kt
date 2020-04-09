@@ -12,11 +12,16 @@ import java.util.*
 interface EntityWriter {
     /**
      * Creates entities if they do not exist and then adds the provided properties to specified entities.
+     *
+     * @param entitySetId The entity set in which to upsert the entities.
+     * @param entities The entities to upsert.
+     * @param authorizedPropertyTypes The property types to write.
      */
     fun createOrUpdateEntities(
             entitySetId: UUID,
             entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            versioned: Boolean = true
     ): WriteEvent
 
     /**
@@ -25,7 +30,7 @@ interface EntityWriter {
      */
     fun replaceEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent
 
@@ -34,7 +39,7 @@ interface EntityWriter {
      */
     fun partialReplaceEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent
 

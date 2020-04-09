@@ -120,7 +120,6 @@ class DataGraphService(
             linking: Boolean
     ): EntitySetData<FullQualifiedName> {
         return eds.getEntitySetsData(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking = linking)
-//        return eds.getEntities(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking)
     }
 
     override fun getEntitySetSize(entitySetId: UUID): Long {
@@ -308,7 +307,7 @@ class DataGraphService(
 
     override fun replaceEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         return eds.replaceEntities(entitySetId, entities, authorizedPropertyTypes)
@@ -316,7 +315,7 @@ class DataGraphService(
 
     override fun partialReplaceEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         return eds.partialReplaceEntities(entitySetId, entities, authorizedPropertyTypes)

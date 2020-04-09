@@ -29,7 +29,7 @@ data class S3StorageConfiguration(
     lateinit var hazelcastInstance: HazelcastInstance
 
     @Inject
-    private lateinit var metricRegistry: MetricRegistry
+    lateinit var metricRegistry: MetricRegistry
 
     override fun getLoader(byteBlobDataManager: ByteBlobDataManager): EntityLoader {
         return getS3EntityDatastore(byteBlobDataManager)

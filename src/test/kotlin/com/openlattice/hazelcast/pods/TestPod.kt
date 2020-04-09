@@ -21,6 +21,8 @@
 
 package com.openlattice.hazelcast.pods
 
+import com.dataloom.mappers.ObjectMappers
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.openlattice.assembler.AssemblerConnectionManager
 import com.openlattice.datastore.services.EdmService
 import org.mockito.Mockito
@@ -33,6 +35,9 @@ import org.springframework.context.annotation.Configuration
  */
 @Configuration
 class TestPod {
+
+    @Bean
+    fun mapper() : ObjectMapper = ObjectMappers.getJsonMapper()
 
     @Bean
     fun assemblerConnectionManager() : AssemblerConnectionManager {

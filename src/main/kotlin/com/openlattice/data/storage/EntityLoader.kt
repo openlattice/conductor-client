@@ -1,5 +1,6 @@
 package com.openlattice.data.storage
 
+import com.codahale.metrics.Timer
 import com.codahale.metrics.annotation.Timed
 import com.openlattice.data.EntitySetData
 import com.openlattice.edm.type.PropertyType
@@ -13,8 +14,9 @@ import java.util.stream.Stream
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 interface EntityLoader {
-    val entitiesTimer: com.codahale.metrics.Timer
-    val linkedEntitiesTimer: com.codahale.metrics.Timer
+    val entitiesTimer: Timer
+    val linkedEntitiesTimer: Timer
+
     /**
      * Loads all of the entities in an entity set.
      *

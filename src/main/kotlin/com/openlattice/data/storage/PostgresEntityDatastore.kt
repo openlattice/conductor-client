@@ -69,7 +69,8 @@ class PostgresEntityDatastore(
     override fun createOrUpdateEntities(
             entitySetId: UUID,
             entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            versioned: Boolean
     ): WriteEvent {
         // need to collect linking ids before writes to the entities
 
@@ -82,7 +83,7 @@ class PostgresEntityDatastore(
     @Timed
     override fun replaceEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         // need to collect linking ids before writes to the entities
@@ -96,7 +97,7 @@ class PostgresEntityDatastore(
     @Timed
     override fun partialReplaceEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         // need to collect linking ids before writes to the entities

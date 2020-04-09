@@ -94,6 +94,7 @@ interface DataGraphManager {
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>>
 
+
     /**
      * Clears property data, id, edges of association entities of the provided DataEdgeKeys in batches.
      * Note: it only clears edge, not src or dst entities.
@@ -128,13 +129,13 @@ interface DataGraphManager {
 
     fun replaceEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent
 
     fun partialReplaceEntities(
             entitySetId: UUID,
-            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent
 
