@@ -222,7 +222,7 @@ class Graph(
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },
-                Function<ResultSet, Edge> { ResultSetAdapters.edge(it) }
+                Function { ResultSetAdapters.edge(it) }
         ).stream()
     }
 
@@ -239,7 +239,7 @@ class Graph(
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },
-                Function<ResultSet, Edge> { ResultSetAdapters.edge(it) }
+                Function { ResultSetAdapters.edge(it) }
         ).stream()
     }
 
@@ -264,7 +264,7 @@ class Graph(
                     val rs = stmt.executeQuery()
                     StatementHolder(connection, stmt, rs)
                 },
-                Function<ResultSet, Edge> { ResultSetAdapters.edge(it) }
+                Function { ResultSetAdapters.edge(it) }
         ).stream()
     }
 

@@ -566,7 +566,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
         val entitySetIdToEntityKeyId = HashMultimap.create<UUID, UUID>()
         val entitySetsIdsToAuthorizedProps = mutableMapOf<UUID, MutableMap<UUID, PropertyType>>()
 
-        graphService!!.getEdgesAndNeighborsForVerticesBulk(
+        graphService.getEdgesAndNeighborsForVerticesBulk(
                 allBaseEntitySetIds,
                 EntityNeighborsFilter(
                         entityKeyIds,
