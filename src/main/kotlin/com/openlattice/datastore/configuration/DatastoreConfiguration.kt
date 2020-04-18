@@ -7,6 +7,7 @@ import com.kryptnostic.rhizome.configuration.ConfigurationKey
 import com.kryptnostic.rhizome.configuration.SimpleConfigurationKey
 import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
 import com.openlattice.conductor.rpc.SearchConfiguration
+import java.util.*
 
 const val BUCKET_NAME = "bucketName"
 const val REGION_NAME = "regionName"
@@ -23,7 +24,8 @@ data class DatastoreConfiguration(
         @JsonProperty(TIME_TO_LIVE) val timeToLive: Long,
         @JsonProperty(ACCESS_KEY_ID) val accessKeyId: String,
         @JsonProperty(SECRET_ACCESS_KEY) val secretAccessKey: String,
-        @JsonProperty(STORES) val stores: Map<StorageClass,List<S3StorageConfiguration>> = mapOf(),
+        @JsonProperty(STORES) val stores: Map<StorageClass,List<StorageConfiguration>> = mapOf(),
+        @JsonProperty("readOnlyReplica") val readOnlyReplica: Properties = Properties(),
         @JsonProperty("googleMapsApiKey") val googleMapsApiKey: String = "",
         @JsonProperty(SEARCH_CONFIGURATION ) val searchConfiguration: SearchConfiguration
 ) : Configuration {
