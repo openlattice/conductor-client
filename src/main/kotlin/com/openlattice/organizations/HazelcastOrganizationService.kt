@@ -581,7 +581,6 @@ class HazelcastOrganizationService(
         )
     }
 
-
     companion object {
 
         private val logger = LoggerFactory.getLogger(HazelcastOrganizationService::class.java)
@@ -590,7 +589,7 @@ class HazelcastOrganizationService(
             return organization.name + " - ADMIN"
         }
 
-        private fun constructOrganizationAdminRolePrincipalId(organization: SecurablePrincipal): String {
+        fun constructOrganizationAdminRolePrincipalId(organization: SecurablePrincipal): String {
             return organization.id.toString() + "|" + constructOrganizationAdminRolePrincipalTitle(organization)
         }
 
