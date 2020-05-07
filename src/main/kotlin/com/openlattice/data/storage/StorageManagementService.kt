@@ -65,9 +65,8 @@ class StorageManagementService(
     /*
      * When migrating all reads from both source and destination datastores
      *
-     * All create / overwite calls write to destination datastore
+     * All writes migrate the element if it is not migrated then write to destination datastore
      *
-     * All replace calls, determine whether
      *
      * All delete calls propagate to both datastores
      */
