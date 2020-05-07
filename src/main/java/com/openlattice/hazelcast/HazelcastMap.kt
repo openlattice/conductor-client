@@ -23,6 +23,9 @@ import com.auth0.json.mgmt.users.User
 import com.geekbeast.rhizome.hazelcast.DelegatedIntList
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.core.IMap
+import com.openlattice.admin.ServiceDescription
+import com.openlattice.admin.InvocationRequest
+import com.openlattice.admin.InvocationResultKey
 import com.openlattice.apps.App
 import com.openlattice.apps.AppConfigKey
 import com.openlattice.apps.AppType
@@ -41,6 +44,7 @@ import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.EntityKey
 import com.openlattice.data.TicketKey
+import com.openlattice.datastore.configuration.StorageConfiguration
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.set.EntitySetPropertyKey
 import com.openlattice.edm.set.EntitySetPropertyMetadata
@@ -148,6 +152,10 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmField val SECURABLE_PRINCIPALS = HazelcastMap<String, SecurablePrincipal>("SECURABLE_PRINCIPALS")
         @JvmField val S3_OBJECT_STORE = HazelcastMap<EntityDataKey, Entity> ("S3_OBJECT_STORE")
         @JvmField val RESOLVED_PRINCIPAL_TREES = HazelcastMap<String, SortedPrincipalSet>("RESOLVED_PRINCIPAL_TREES")
+        @JvmField val STORAGE_CONFIGURATIONS = HazelcastMap<String, StorageConfiguration>("STORAGE_CONFIGURATIONS")
+        @JvmField val SERVICES = HazelcastMap<UUID, ServiceDescription>("SERVICES")
+        @JvmField val OPERATIONS = HazelcastMap<UUID, InvocationRequest>("OPERATIONS")
+        @JvmField val RESULTS = HazelcastMap<InvocationResultKey, Any>("RESULTS")
 
         @JvmStatic
         fun values(): Array<HazelcastMap<*, *>> {

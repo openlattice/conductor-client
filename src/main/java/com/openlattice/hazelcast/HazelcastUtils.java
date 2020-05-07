@@ -27,6 +27,7 @@ import com.openlattice.datastore.util.Util;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -38,6 +39,14 @@ public class HazelcastUtils {
     public static <K, V> K insertIntoUnusedKey( IMap<K, V> m, V value, Supplier<K> keyFactory ) {
         K key = keyFactory.get();
         while ( m.putIfAbsent( key, value ) != null ) {
+            key = keyFactory.get();
+        }
+        return key;
+    }
+
+    public static <K, V> K insertIntoUnusedKey( IMap<K, V> m, V value, Supplier<K> keyFactory, long maxIdleSeconds ) {
+        K key = keyFactory.get();
+        while ( m.putIfAbsent( key, value, 0, TimeUnit.SECONDS, maxIdleSeconds, TimeUnit.SECONDS ) != null ) {
             key = keyFactory.get();
         }
         return key;

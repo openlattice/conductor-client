@@ -21,6 +21,7 @@
 package com.openlattice.hazelcast.pods
 
 import com.kryptnostic.rhizome.pods.hazelcast.BaseHazelcastInstanceConfigurationPod
+import com.openlattice.admin.OPERATION_QUEUES_PREFIX
 import com.openlattice.hazelcast.HazelcastQueue
 import com.openlattice.ids.HazelcastIdGenerationService
 import org.springframework.context.annotation.Bean
@@ -89,5 +90,4 @@ class HazelcastQueuePod {
             config.setMaxSize(1_000).backupCount = 1
         }
     }
-
 }
