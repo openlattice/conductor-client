@@ -5,7 +5,6 @@ import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
 import com.openlattice.datastore.configuration.StorageConfiguration
 import com.openlattice.hazelcast.HazelcastMap
-import com.twilio.rest.authy.v1.service.EntityReader
 import com.zaxxer.hikari.HikariDataSource
 import java.util.*
 
@@ -13,7 +12,9 @@ import java.util.*
  * This class manages storage configurations for the system. For performance reasons, it builds up a static map
  * of readers and writers for each entity set. This class assumes that storage classes for an entity set will not
  * change without a separate synchronization and migration mechanism that quiesces reads, migrates data, and invalidates
- * the storage configuration on each datasseparate mechanism
+ * the storage configuration on each data
+ *
+ * This assumes that the migration service migrats
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
@@ -21,52 +22,29 @@ class StorageManagementService(
         hazelcastInstance: HazelcastInstance,
         val metastore: HikariDataSource
 ) {
-    val entitySets = HazelcastMap.ENTITY_SETS.getMap(hazelcastInstance)
-    val writers = Maps.newConcurrentMap<UUID, EntityWriter>() // entity set id ->  entity writer
-    val readers = Maps.newConcurrentMap<UUID, EntityReader>() // entity set id -> entity reader
-    val migrationReader = Maps.newConcurrentMap<UUID,EntityReader>() // entity set id -> entity reader
+    private val entitySets = HazelcastMap.ENTITY_SETS.getMap(hazelcastInstance)
+    private val writers = Maps.newConcurrentMap<String, EntityWriter>() // datastore name ->  entity writer
+    private val readers = Maps.newConcurrentMap<String, EntityLoader>() // datastore name -> entity reader
+
     private val storageConfigurations = HazelcastMap.STORAGE_CONFIGURATIONS.getMap(hazelcastInstance)
 
-    fun getWriter(entitySetId: UUID): EntityWriter {
-        return writers.getOrPut(entitySetId) {
-            getStorageConfiguration(entitySetId).getWriter()
+    init {
+        storageConfigurations.forEach { (name, storageConfiguration) ->
+            writers[name] = storageConfiguration.getWriter()
+            readers[name] = storageConfiguration.getLoader()
         }
     }
+
+    fun getWriter(entitySetId: UUID): EntityWriter = writers.getValue(getStorage(entitySetId))
+    fun getWriter(name: String): EntityWriter = writers.getValue(name)
 
     //Push it to the reader
+    fun getReader(entitySetId: UUID): EntityLoader = readers.getValue(getStorage(entitySetId))
+    fun getReader(name: String): EntityLoader = readers.getValue(name)
 
-    fun getReader(entitySetId: UUID): EntityReader {
-        return readers.getOrPut(entitySetId) {
-            getStorageConfiguration(entitySetId).getLoader()
-        }
-    }
-
-    /**
-     * Retrieves a reader that allows
-     */
-    fun getMigrationReader(entitySetId: UUID) : EntityReader {
-
-    }
-
-    fun startMigrate( entitySetId: UUID, sourceDatastore: String, destinationDatastore : String ) {
-
-    }
-    /**
-     * Returns whether an entity set is migrating or not.
-     */
-    fun isMigrating(entitySetId: UUID) : Boolean {
-
-    }
-
-    fun isMigrated( entitySetId: UUID, entityKeyIds: Set<UUID> ) : Map<UUID, Boolean> {
-
-    }
 
     /*
-     * When migrating all reads from both source and destination datastores
-     *
-     * All writes migrate the element if it is not migrated then write to destination datastore
-     *
+     * For all operations trigger a migration for data. Process all operations against new data store.
      *
      * All delete calls propagate to both datastores
      */
@@ -74,14 +52,7 @@ class StorageManagementService(
     /**
      *
      */
-    fun getStorage( entitySetId: UUID ) : String {
-
-    }
-
-    fun invalidateStorageConfiguration(entitySetId: UUID) {
-        writers.remove(entitySetId)
-        readers.remove(entitySetId)
-    }
+    fun getStorage(entitySetId: UUID): String = entitySets.getValue(entitySetId).storageType.name
 
     fun getStorageConfiguration(entitySetId: UUID): StorageConfiguration = getStorageConfiguration(
             entitySets.getValue(entitySetId).storageType.name
@@ -91,15 +62,9 @@ class StorageManagementService(
 
     fun setStorageConfiguration(name: String, storageConfiguration: StorageConfiguration) {
         storageConfigurations.set(name, storageConfiguration)
-
-        //TODO: Make this an indexed field and define as constant
-        entitySets.values(Predicates.equal("storageName", name)).forEach { entitySet ->
-            invalidateStorageConfiguration(entitySet.id)
-        }
     }
 
     fun removeStorageConfiguration(name: String) = storageConfigurations.delete(name)
-
 }
 
 private fun

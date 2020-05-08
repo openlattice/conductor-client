@@ -44,6 +44,7 @@ import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.EntityKey
 import com.openlattice.data.TicketKey
+import com.openlattice.data.storage.MigrationStatus
 import com.openlattice.datastore.configuration.StorageConfiguration
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.set.EntitySetPropertyKey
@@ -156,6 +157,7 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmField val SERVICES = HazelcastMap<UUID, ServiceDescription>("SERVICES")
         @JvmField val OPERATIONS = HazelcastMap<UUID, InvocationRequest>("OPERATIONS")
         @JvmField val RESULTS = HazelcastMap<InvocationResultKey, Any>("RESULTS")
+        @JvmField val MIGRATION_STATUS = HazelcastMap<UUID, MigrationStatus> ("MIGRATION_STATUS")
 
         @JvmStatic
         fun values(): Array<HazelcastMap<*, *>> {
