@@ -2,6 +2,7 @@ package com.openlattice.data.storage
 
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.controllers.exceptions.ResourceNotFoundException
+import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
 import java.util.*
 
@@ -38,17 +39,22 @@ class StorageMigrationService(
     /**
      * Automatically loads
      */
-    fun migrateIfNeeded( entityDataKeys: Map<UUID, Set<UUID>>) {
+    fun migrateIfNeeded(entityKeyIds: Map<UUID, Optional<Set<UUID>>>) {
         //Retrieve the migration status corresponding to entity sets
-        val migrating = migrationStatus.getAll( entityDataKeys.keys )
+        val migrating = migrationStatus.getAll(entityKeyIds.keys)
 
         //For entity sets that are migrating
         migrating.forEach { entitySetId, migrationStatus ->
             val oldReader = storageManagementService.getReader(migrationStatus.oldDatastore)
             val newWriter = storageManagementService.getWriter(migrationStatus.newDatastore)
 
-            oldReader.getEn
+            val entity = oldReader.getHistoricalEntitiesById(entityKeyIds, getPropertyTypesForEntitySet(entitySetId))
+
         }
+
+    }
+
+    fun getPropertyTypesForEntitySet(entitySetId: UUID): Map<UUID, PropertyType> {
 
     }
 }

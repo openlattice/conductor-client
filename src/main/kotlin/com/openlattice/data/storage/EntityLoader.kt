@@ -3,9 +3,11 @@ package com.openlattice.data.storage
 import com.codahale.metrics.Timer
 import com.codahale.metrics.annotation.Timed
 import com.openlattice.data.EntitySetData
+import com.openlattice.data.Property
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.postgres.streams.BasePostgresIterable
 import org.apache.olingo.commons.api.edm.FullQualifiedName
+import java.nio.ByteBuffer
 import java.util.*
 import java.util.stream.Stream
 
@@ -70,6 +72,14 @@ interface EntityLoader {
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
 
+    /**
+     *
+     */
+    fun getHistoricalEntitiesById(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.allOf(MetadataOption::class.java)
+    ): Map<UUID, MutableMap<UUID,MutableMap<ByteBuffer, Property>>>
 
     /**
      * Loads specific entities and associated metadata.
@@ -137,7 +147,8 @@ interface EntityLoader {
     ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>> {
         return getEntitiesAcrossEntitySets(
                 entitySetIdsToEntityKeyIds.mapValues { Optional.of(it.value) },
-                authorizedPropertyTypesByEntitySet
+                authorizedPropertyTypesByEntitySet,
+                linking = false
         ).groupBy({ it.first }, { it.second })
     }
 
