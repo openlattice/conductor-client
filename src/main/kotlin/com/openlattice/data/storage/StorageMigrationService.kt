@@ -2,9 +2,12 @@ package com.openlattice.data.storage
 
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.controllers.exceptions.ResourceNotFoundException
+import com.openlattice.data.Property
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
+import java.nio.ByteBuffer
 import java.util.*
+import kotlin.math.abs
 
 /**
  *
@@ -48,8 +51,8 @@ class StorageMigrationService(
             val oldReader = storageManagementService.getReader(migrationStatus.oldDatastore)
             val newWriter = storageManagementService.getWriter(migrationStatus.newDatastore)
 
-            val entity = oldReader.getHistoricalEntitiesById(entityKeyIds, getPropertyTypesForEntitySet(entitySetId))
-
+            val entities = oldReader.getHistoricalEntitiesById(entityKeyIds, getPropertyTypesForEntitySet(entitySetId))
+            val allVersions = getAllVersionsOfEntities(entities)
         }
 
     }
@@ -57,6 +60,44 @@ class StorageMigrationService(
     fun getPropertyTypesForEntitySet(entitySetId: UUID): Map<UUID, PropertyType> {
 
     }
+
+    /**
+     * This function takes the entire history of an entity and generates every version of an object.
+     */
+    fun getAllVersionsOfEntities(
+            entities: Map<UUID, MutableMap<UUID, MutableMap<ByteBuffer, Property>>>
+    ): Map<UUID, Map<UUID, MutableMap<Long, MutableMap<UUID, MutableSet<Any>>>>> {
+        return entities.mapValues { (entitySetId, entities) ->
+            entities.mapValues { (entityKeyId, properties) ->
+                getAllVersionsOfEntity(properties)
+            }
+        }
+    }
+
+    fun getAllVersionsOfEntity(
+            properties: MutableMap<ByteBuffer, Property>
+    ): MutableMap<Long, MutableMap<UUID, MutableSet<Any>>> {
+        //Build the list of unique versions for this object
+        val allVersions = properties.values.flatMap { it.versions.get().asIterable() }.toSet()
+
+        allVersions.associateBy { version ->
+            toEntity(properties, version)
+        }
+        return mutableMapOf()
+    }
+
+    private fun toEntity(properties: MutableMap<ByteBuffer, Property>, version: Long) {
+        val entity = mutableMapOf<UUID, MutableSet<Any>>()
+        properties.values.filter { property ->
+            property.versions.get().filter { propertyVersion ->
+                abs(
+                        propertyVersion
+                ) < version
+            }.maxBy { propertyVersion -> abs(propertyVersion) }!! > 0
+        }
+    }
+
+
 }
 
 data class MigrationStatus(
