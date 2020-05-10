@@ -6,6 +6,9 @@ import com.openlattice.data.Property
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
+import com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID
+import com.openlattice.postgres.PostgresColumn.ID
+import com.openlattice.postgres.PostgresTable.IDS
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.math.abs
@@ -38,7 +41,7 @@ class StorageMigrationService(
     fun isMigrating(entitySetId: UUID): Boolean = migrationStatus.containsKey(entitySetId)
 
     fun getEntitiesNeedingMigration(entityKeyIds: Map<UUID, Optional<Set<UUID>>>): Map<UUID, Set<UUID>> {
-        //Query postgres to see where 
+        //Query postgres to see where
     }
 
     /**
@@ -89,9 +92,9 @@ class StorageMigrationService(
         }
     }
 
-
 }
 
+private val migratedSql = "SELECT ${ENTITY_SET_ID.name},${ID.name} FROM ${IDS.name} WHERE storage != ?"
 data class MigrationStatus(
         val entitySetId: UUID,
         val oldDatastore: String,
