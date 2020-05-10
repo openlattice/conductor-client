@@ -76,10 +76,10 @@ interface EntityLoader {
      *
      */
     fun getHistoricalEntitiesById(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            entitySetIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption> = EnumSet.allOf(MetadataOption::class.java)
-    ): Map<UUID, MutableMap<UUID,MutableMap<ByteBuffer, Property>>>
+    ): Map<UUID, MutableMap<UUID,MutableSet<Property>>>
 
     /**
      * Loads specific entities and associated metadata.

@@ -1,5 +1,6 @@
 package com.openlattice.data.storage
 
+import com.openlattice.data.Property
 import com.openlattice.data.WriteEvent
 import com.openlattice.edm.type.PropertyType
 import java.nio.ByteBuffer
@@ -123,4 +124,10 @@ interface EntityWriter {
     fun deleteEntityProperties(
             entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent
+
+    /**
+     * Writes entities along with their history. Useful for migrating data from one entity store to another.
+     *
+     */
+    fun writeEntitiesWithHistory(entities: Map<UUID, MutableMap<UUID, MutableSet<Property>>>)
 }

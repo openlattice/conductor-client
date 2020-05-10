@@ -18,6 +18,8 @@ class StorageMigrationService(
         val storageManagementService: StorageManagementService
 ) {
     private val migrationStatus = HazelcastMap.MIGRATION_STATUS.getMap(hazelcastInstance)
+    private val
+    private var migratingEntitySets = migrationStatus.keys
 
     /**
      * Start a migration to a new datastore.
@@ -34,56 +36,47 @@ class StorageMigrationService(
 
     fun isMigrating(entitySetId: UUID): Boolean = migrationStatus.containsKey(entitySetId)
 
-    fun getMigrationState(entityDataKeys: Map<UUID, Set<UUID>>) {
+    fun getEntitiesNeedingMigration(entityKeyIds: Map<UUID, Optional<Set<UUID>>>): Map<UUID, Set<UUID>> {
         //Figure out which keys need to be migrated and migrate them.
         //Avoid checking
     }
 
     /**
-     * Automatically loads
+     * Migrates data to new datastore so read can proceed as intended.
      */
     fun migrateIfNeeded(entityKeyIds: Map<UUID, Optional<Set<UUID>>>) {
-        //Retrieve the migration status corresponding to entity sets
-        val migrating = migrationStatus.getAll(entityKeyIds.keys)
+        val entitySetNeedingMigration = entityKeyIds.keys.intersect(migratingEntitySets)
+        //Exit quickly if no entity sets need migration.
+        if (entitySetNeedingMigration.isEmpty()) {
+            return
+        }
 
-        //For entity sets that are migrating
-        migrating.forEach { entitySetId, migrationStatus ->
+        //Retrieve the list of entities in the read that still need migration.
+        val entitiesNeedingMigration = getEntitiesNeedingMigration(entityKeyIds)
+
+        //Retrieve the migration status corresponding to entity sets
+        val migrating = migrationStatus.getAll(entitiesNeedingMigration.keys)
+
+        //Migrate entities that are needed to successfully complete the write.
+        //We have to go entity set, by entity set, because each one might be doing a potentially different migration
+        migrating.forEach { (entitySetId, migrationStatus) ->
             val oldReader = storageManagementService.getReader(migrationStatus.oldDatastore)
             val newWriter = storageManagementService.getWriter(migrationStatus.newDatastore)
 
-            val entities = oldReader.getHistoricalEntitiesById(entityKeyIds, getPropertyTypesForEntitySet(entitySetId))
-            val allVersions = getAllVersionsOfEntities(entities)
-        }
-
-    }
-
-    fun getPropertyTypesForEntitySet(entitySetId: UUID): Map<UUID, PropertyType> {
-
-    }
-
-    /**
-     * This function takes the entire history of an entity and generates every version of an object.
-     */
-    fun getAllVersionsOfEntities(
-            entities: Map<UUID, MutableMap<UUID, MutableMap<ByteBuffer, Property>>>
-    ): Map<UUID, Map<UUID, MutableMap<Long, MutableMap<UUID, MutableSet<Any>>>>> {
-        return entities.mapValues { (entitySetId, entities) ->
-            entities.mapValues { (entityKeyId, properties) ->
-                getAllVersionsOfEntity(properties)
-            }
+            val entities = oldReader.getHistoricalEntitiesById(
+                    mapOf(entitySetId to Optional.of(entitiesNeedingMigration.getValue(entitySetId))),
+                    getPropertyTypesForEntitySets(entityKeyIds.keys)
+            )
+            newWriter.writeEntitiesWithHistory(entities)
         }
     }
 
-    fun getAllVersionsOfEntity(
-            properties: MutableMap<ByteBuffer, Property>
-    ): MutableMap<Long, MutableMap<UUID, MutableSet<Any>>> {
-        //Build the list of unique versions for this object
-        val allVersions = properties.values.flatMap { it.versions.get().asIterable() }.toSet()
+    fun getPropertyTypesForEntitySets(entitySetIds: Set<UUID>): Map<UUID, Map<UUID, PropertyType>> {
 
-        allVersions.associateBy { version ->
-            toEntity(properties, version)
-        }
-        return mutableMapOf()
+    }
+
+    fun updateMigratingEntitySets() {
+        migratingEntitySets = migrationStatus.keys
     }
 
     private fun toEntity(properties: MutableMap<ByteBuffer, Property>, version: Long) {
