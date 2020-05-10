@@ -67,4 +67,3 @@ class StorageManagementService(
     fun removeStorageConfiguration(name: String) = storageConfigurations.delete(name)
 }
 
-private fun

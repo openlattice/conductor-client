@@ -3,6 +3,7 @@ package com.openlattice.data.storage
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.controllers.exceptions.ResourceNotFoundException
 import com.openlattice.data.Property
+import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
 import java.nio.ByteBuffer
@@ -15,10 +16,10 @@ import kotlin.math.abs
  */
 class StorageMigrationService(
         hazelcastInstance: HazelcastInstance,
-        val storageManagementService: StorageManagementService
+        val storageManagementService: StorageManagementService,
+        val entitySetService: EntitySetService
 ) {
     private val migrationStatus = HazelcastMap.MIGRATION_STATUS.getMap(hazelcastInstance)
-    private val
     private var migratingEntitySets = migrationStatus.keys
 
     /**
@@ -37,22 +38,23 @@ class StorageMigrationService(
     fun isMigrating(entitySetId: UUID): Boolean = migrationStatus.containsKey(entitySetId)
 
     fun getEntitiesNeedingMigration(entityKeyIds: Map<UUID, Optional<Set<UUID>>>): Map<UUID, Set<UUID>> {
-        //Figure out which keys need to be migrated and migrate them.
-        //Avoid checking
+        //Query postgres to see where 
     }
 
     /**
      * Migrates data to new datastore so read can proceed as intended.
      */
     fun migrateIfNeeded(entityKeyIds: Map<UUID, Optional<Set<UUID>>>) {
-        val entitySetNeedingMigration = entityKeyIds.keys.intersect(migratingEntitySets)
+        val entitySetsNeedingMigration = entityKeyIds.keys.intersect(migratingEntitySets)
+
         //Exit quickly if no entity sets need migration.
-        if (entitySetNeedingMigration.isEmpty()) {
+        if (entitySetsNeedingMigration.isEmpty()) {
             return
         }
 
         //Retrieve the list of entities in the read that still need migration.
         val entitiesNeedingMigration = getEntitiesNeedingMigration(entityKeyIds)
+        val propertyTypes = entitySetService.getPropertyTypesOfEntitySets(entitySetsNeedingMigration)
 
         //Retrieve the migration status corresponding to entity sets
         val migrating = migrationStatus.getAll(entitiesNeedingMigration.keys)
@@ -65,15 +67,12 @@ class StorageMigrationService(
 
             val entities = oldReader.getHistoricalEntitiesById(
                     mapOf(entitySetId to Optional.of(entitiesNeedingMigration.getValue(entitySetId))),
-                    getPropertyTypesForEntitySets(entityKeyIds.keys)
+                    propertyTypes
             )
             newWriter.writeEntitiesWithHistory(entities)
         }
     }
 
-    fun getPropertyTypesForEntitySets(entitySetIds: Set<UUID>): Map<UUID, Map<UUID, PropertyType>> {
-
-    }
 
     fun updateMigratingEntitySets() {
         migratingEntitySets = migrationStatus.keys
