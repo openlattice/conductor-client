@@ -9,6 +9,7 @@ import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.postgres.PostgresColumn.ENTITY_SET_ID
 import com.openlattice.postgres.PostgresColumn.ID
 import com.openlattice.postgres.PostgresTable.IDS
+import com.zaxxer.hikari.HikariDataSource
 import java.nio.ByteBuffer
 import java.util.*
 import kotlin.math.abs
@@ -20,7 +21,8 @@ import kotlin.math.abs
 class StorageMigrationService(
         hazelcastInstance: HazelcastInstance,
         val storageManagementService: StorageManagementService,
-        val entitySetService: EntitySetService
+        val entitySetService: EntitySetService,
+        val metastore: HikariDataSource
 ) {
     private val migrationStatus = HazelcastMap.MIGRATION_STATUS.getMap(hazelcastInstance)
     private var migratingEntitySets = migrationStatus.keys
@@ -40,8 +42,11 @@ class StorageMigrationService(
 
     fun isMigrating(entitySetId: UUID): Boolean = migrationStatus.containsKey(entitySetId)
 
+    /**
+     * Retrieves the entities that still need to be migrated.
+     */
     fun getEntitiesNeedingMigration(entityKeyIds: Map<UUID, Optional<Set<UUID>>>): Map<UUID, Set<UUID>> {
-        //Query postgres to see where
+
     }
 
     /**

@@ -46,7 +46,7 @@ import com.openlattice.edm.set.EntitySetPropertyKey;
 import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.openlattice.edm.set.ExpirationBase;
 import com.openlattice.edm.type.*;
-import com.openlattice.entitysets.StorageType;
+import com.openlattice.data.storage.StorageType;
 import com.openlattice.graph.NeighborhoodQuery;
 import com.openlattice.graph.NeighborhoodSelection;
 import com.openlattice.graph.edge.Edge;
@@ -90,7 +90,6 @@ import java.util.stream.Stream;
 import static com.openlattice.postgres.DataTables.*;
 import static com.openlattice.postgres.PostgresArrays.getTextArray;
 import static com.openlattice.postgres.PostgresColumn.*;
-import static com.openlattice.postgres.PostgresDatatype.*;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
