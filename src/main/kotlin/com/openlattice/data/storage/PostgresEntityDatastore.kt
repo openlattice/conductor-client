@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap
 import com.google.common.eventbus.EventBus
 import com.openlattice.assembler.events.MaterializedEntitySetDataChangeEvent
 import com.openlattice.data.DeleteType
+import com.openlattice.data.Property
 import com.openlattice.data.WriteEvent
 import com.openlattice.data.events.EntitiesDeletedEvent
 import com.openlattice.data.events.EntitiesUpsertedEvent
@@ -27,6 +28,7 @@ import java.util.*
 import java.util.stream.Stream
 import javax.inject.Inject
 
+
 /**
  *
  * Manages CRUD for entities and entity sets in the system.
@@ -36,22 +38,16 @@ class PostgresEntityDatastore(
         private val dataQueryService: PostgresEntityDataQueryService,
         private val postgresEdmManager: PostgresEdmManager,
         private val entitySetManager: EntitySetManager,
-        metricRegistry: MetricRegistry
+        private val metricRegistry: MetricRegistry,
+        private val eventBus: EventBus,
+        private val feedbackQueryService: PostgresLinkingFeedbackService,
+        private val linkingQueryService: LinkingQueryService
 ) : EntityDatastore {
 
     companion object {
         private val logger = LoggerFactory.getLogger(PostgresEntityDatastore::class.java)
         const val BATCH_INDEX_THRESHOLD = 256
     }
-
-    @Inject
-    private lateinit var eventBus: EventBus
-
-    @Inject
-    private lateinit var feedbackQueryService: PostgresLinkingFeedbackService
-
-    @Inject
-    private lateinit var linkingQueryService: LinkingQueryService
 
     override val entitiesTimer: Timer = metricRegistry.timer(
             MetricRegistry.name(
@@ -63,7 +59,6 @@ class PostgresEntityDatastore(
                     PostgresEntityDatastore::class.java, "getEntities(linked)"
             )
     )
-
 
     @Timed
     override fun createOrUpdateEntities(
@@ -338,6 +333,13 @@ class PostgresEntityDatastore(
         return linkedDataMap
     }
 
+    override fun getHistoricalEntitiesById(
+            entitySetIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Map<UUID, MutableMap<UUID, MutableSet<Property>>> {
+        TODO("Not yet implemented")
+    }
+
     override fun getEntitiesAcrossEntitySets(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
@@ -458,6 +460,10 @@ class PostgresEntityDatastore(
         )
 
         return propertyWriteEvent
+    }
+
+    override fun writeEntitiesWithHistory(entities: Map<UUID, MutableMap<UUID, MutableSet<Property>>>) {
+        TODO("Not yet implemented")
     }
 
     override fun getExpiringEntitiesFromEntitySet(

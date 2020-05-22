@@ -64,6 +64,7 @@ import com.openlattice.postgres.mapstores.TypedMapIdentifier
 import com.openlattice.requests.Status
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet
+import com.openlattice.scheduling.ScheduledTask
 import com.openlattice.shuttle.Integration
 import com.openlattice.shuttle.IntegrationJob
 import java.util.*
@@ -158,6 +159,8 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         @JvmField val OPERATIONS = HazelcastMap<UUID, InvocationRequest>("OPERATIONS")
         @JvmField val RESULTS = HazelcastMap<InvocationResultKey, Any>("RESULTS")
         @JvmField val MIGRATION_STATUS = HazelcastMap<UUID, MigrationStatus> ("MIGRATION_STATUS")
+        @JvmField val SCHEDULED_TASKS = HazelcastMap<UUID, ScheduledTask>("SCHEDULED_TASKS")
+        @JvmField val SCHEDULED_TASK_LOCKS = HazelcastMap<UUID, Long>("SCHEDULED_TASK_LOCKS")
 
         @JvmStatic
         fun values(): Array<HazelcastMap<*, *>> {

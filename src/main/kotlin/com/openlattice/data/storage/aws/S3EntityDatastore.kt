@@ -148,6 +148,13 @@ class S3EntityDatastore(
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun getHistoricalEntitiesById(
+            entitySetIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Map<UUID, MutableMap<UUID, MutableSet<Property>>> {
+        TODO("Not yet implemented")
+    }
+
     override fun getEntityKeyIdsOfLinkingIds(
             linkingIds: Set<UUID>, normalEntitySetIds: Set<UUID>
     ): BasePostgresIterable<Pair<UUID, Set<UUID>>> {
@@ -295,6 +302,10 @@ class S3EntityDatastore(
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun writeEntitiesWithHistory(entities: Map<UUID, MutableMap<UUID, MutableSet<Property>>>) {
+        TODO("Not yet implemented")
     }
 
     override fun getExpiringEntitiesFromEntitySet(
