@@ -96,6 +96,9 @@ class BridgeService(
         }
     }
 
+    /**
+     * Assigns and registers the current service with a unique id.
+     */
     fun register(service: ServiceDescription): UUID = HazelcastUtils.insertIntoUnusedKey(
             services,
             service,
@@ -131,7 +134,9 @@ class BridgeService(
         val serviceIds = services.keySet(serviceTypeFilter)
         return invoke(serviceIds, operation, timeout, timeoutUnit)
     }
-
+    fun isStarted() {
+        hazelcastInstance.cpSubsystem.get
+    }
     private fun invoke(
             serviceIds: Set<UUID>,
             operation: (BridgeAwareServices) -> Any?,
