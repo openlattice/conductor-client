@@ -349,7 +349,7 @@ open class EntitySetService(
         val entityTypesAsMap = edm.getEntityTypesAsMap(entityTypesOfEntitySets.values.toSet())
         val propertyTypesAsMap = edm.getPropertyTypesAsMap(entityTypesAsMap.values.map { it.properties }.flatten().toSet())
 
-        return entitySetIds.associateWith {
+        return entitySetIds.filter { entityTypesOfEntitySets.containsKey(it) }.associateWith {
             entityTypesAsMap.getValue(entityTypesOfEntitySets.getValue(it))
                     .properties
                     .associateWith { ptId -> propertyTypesAsMap.getValue(ptId) }
