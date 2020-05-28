@@ -30,9 +30,7 @@ import com.google.common.collect.Multimaps
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.*
 import com.openlattice.analysis.requests.*
-import com.openlattice.data.DataEdgeKey
-import com.openlattice.data.EntityDataKey
-import com.openlattice.data.WriteEvent
+import com.openlattice.data.*
 import com.openlattice.data.storage.PostgresEntityDataQueryService
 import com.openlattice.data.storage.entityKeyIdColumns
 import com.openlattice.data.storage.getPartition
@@ -87,6 +85,7 @@ class Graph(
         private val entitySetManager: EntitySetManager,
         private val partitionManager: PartitionManager,
         private val pgDataQueryService: PostgresEntityDataQueryService,
+        private val entityKeyIdService: EntityKeyIdService,
         private val metricRegistry: MetricRegistry
 ) : GraphService {
 
@@ -327,14 +326,23 @@ class Graph(
             ).toMap()
         }
 
+        logger.info("Source entities: {}", srcEntities.size)
+        val linkedEntities = if (linked) {
+            entityKeyIdService.getLinkingEntityKeyIds(entityKeyIds.keys)
+        } else {
+            mapOf()
+        }
+
+        val reverseLinkedEntities = linkedEntities.entries.groupBy({ it.value }, { it.key })
 
         val ascRankings = sortedSetOf<NeighborhoodRankingAggregationResult>()
-        val neighbors = mutableMapOf<UUID, Map<UUID, Set<Any>>>()
-        val associations = mutableMapOf<UUID, Map<UUID, Set<Any>>>()
+//        val neighbors = mutableMapOf<UUID, Map<UUID, Set<Any>>>()
+//        val associations = mutableMapOf<UUID, Map<UUID, Set<Any>>>()
         val edgePairs = mutableMapOf<UUID, List<Pair<UUID, UUID>>>()
 
         val neighborhoods = metricRegistry.time(Graph::class.java, "aggregate-neighborhood") { log, context ->
             filteredRankings.parallelStream().flatMap { authorizedFilteredNeighborsRanking ->
+                logger.info("Filtered ranking: {}", authorizedFilteredNeighborsRanking)
                 val assocEntitySetIds = authorizedFilteredNeighborsRanking.associationSets.keys
                 val dstEntitySetIds = authorizedFilteredNeighborsRanking.entitySets.keys
 
@@ -352,17 +360,38 @@ class Graph(
                 val edges = getEdgesAndNeighborsForVerticesBulk(entitySetIds, neighborsFilter)
                         .toList()
 
-                val groupedEdges = edges
-                        .groupBy({ it.src.entityKeyId }, { it.edge.entityKeyId to it.dst.entityKeyId })
+                logger.info("Edges: {}", edges.size)
+                //Purposefully verbose for clarity.
+                val groupedEdges = if (dst) {
+                    edges.groupBy(
+                            { if (linked) getLinkingId(linkedEntities, it.dst.entityKeyId) else it.dst.entityKeyId },
+                            { it.edge.entityKeyId to it.src.entityKeyId })
+                } else {
+                    edges.groupBy(
+                            { if (linked) getLinkingId(linkedEntities, it.src.entityKeyId) else it.src.entityKeyId },
+                            { it.edge.entityKeyId to it.dst.entityKeyId })
+                }
+
+                logger.info("Grouped edges: {}", groupedEdges.size)
 
                 val associationEntityKeyIds = edges
                         .groupBy({ it.edge.entitySetId }, { it.edge.entityKeyId })
                         .mapValues { Optional.of(it.value.toSet()) }
 
-                val neighborEntityKeyIds = edges
-                        .groupBy({ it.dst.entitySetId }, { it.dst.entityKeyId })
-                        .mapValues { Optional.of(it.value.toSet()) }
+                logger.info("Association entity key ids: {}", associationEntityKeyIds.size)
 
+                //Purposefully verbose for clarity.
+                val neighborEntityKeyIds = if (dst) {
+                    edges
+                            .groupBy({ it.src.entitySetId }, { it.src.entityKeyId })
+                            .mapValues { Optional.of(it.value.toSet()) }
+                } else {
+                    edges
+                            .groupBy({ it.dst.entitySetId }, { it.dst.entityKeyId })
+                            .mapValues { Optional.of(it.value.toSet()) }
+                }
+
+                logger.info("Neighbor entity key ids: {}", neighborEntityKeyIds.size)
 
                 val associationEntities = pgDataQueryService.getEntitiesWithPropertyTypeIds(
                         associationEntityKeyIds,
@@ -377,8 +406,8 @@ class Graph(
                 ).toMap()
 
 
-                associations.putAll(associationEntities)
-                neighbors.putAll(neighborEntities)
+//                associations.putAll(associationEntities)
+//                neighbors.putAll(neighborEntities)
                 edgePairs.putAll(groupedEdges)
 
                 try {
@@ -390,6 +419,9 @@ class Graph(
                             groupedEdges,
                             propertyTypes
                     ).stream()
+                } catch (e: Exception) {
+                    log.error("wat", e)
+                    Stream.of<FilteredNeighborsRankingAggregationResult>()
                 } finally {
                     val neighborTypeId = authorizedFilteredNeighborsRanking.filteredNeighborsRanking.neighborTypeId
                     val associationTypeId = authorizedFilteredNeighborsRanking.filteredNeighborsRanking.associationTypeId
@@ -397,6 +429,8 @@ class Graph(
                 }
             }.asSequence().groupBy { it.entityKeyId }
         }
+
+        logger.info("Neighborhoods: {}", neighborhoods.size)
 
         metricRegistry.time(Graph::class.java, "select-top-n") { log, context ->
             neighborhoods.forEach { (entityKeyId, results) ->
@@ -421,21 +455,52 @@ class Graph(
 
         return metricRegistry.time(Graph::class.java, "prepare-results") { log, context ->
             val rankings = ascRankings.descendingSet()
-            val resultEdges = rankings.associate { it.entityKeyId to edgePairs.getValue(it.entityKeyId).toMap() }
+            val ekids = if (linked) {
+                rankings.flatMap { reverseLinkedEntities.getValue(it.entityKeyId) }.toSet()
+            } else {
+                rankings.map { it.entityKeyId }.toSet()
+            }
+            val allNeighborsFilter = EntityNeighborsFilter(
+                    ekids,
+                    Optional.of(authorizedPropertyTypes.keys),
+                    Optional.of(authorizedPropertyTypes.keys),
+                    Optional.of(authorizedPropertyTypes.keys)
+            )
+            val allNeighborEdges = getEdgesAndNeighborsForVerticesBulk(entitySetIds, allNeighborsFilter)
+            val associationEntityKeyIds = mutableMapOf<UUID, Optional<MutableSet<UUID>>>()
+            val neighborEntityKeyIds = mutableMapOf<UUID, Optional<MutableSet<UUID>>>()
+            val edges = mutableMapOf<UUID, MutableMap<UUID, UUID>>()
+            allNeighborEdges.forEach {
+                associationEntityKeyIds
+                        .getOrPut(it.edge.entitySetId) { Optional.of(mutableSetOf()) }
+                        .get()
+                        .add(it.edge.entityKeyId)
+
+                neighborEntityKeyIds
+                        .getOrPut(it.dst.entitySetId) { Optional.of(mutableSetOf()) }
+                        .get()
+                        .add(it.dst.entityKeyId)
+                edges.getOrPut(it.src.entityKeyId) { mutableMapOf() }[it.edge.entityKeyId] = it.dst.entityKeyId
+            }
+            val associations = pgDataQueryService.getEntitiesWithPropertyTypeIds(
+                    associationEntityKeyIds as Map<UUID, Optional<Set<UUID>>>,
+                    authorizedPropertyTypes
+            ).toMap()
+            var neighbors = pgDataQueryService.getEntitiesWithPropertyTypeIds(
+                    neighborEntityKeyIds as Map<UUID, Optional<Set<UUID>>>,
+                    authorizedPropertyTypes
+            ).toMap()
+            val allEntities = (srcEntities + associations + neighbors).mapValues { entityPair ->
+                entityPair.value.mapKeys { propertyTypes.getValue(it.key).type }
+            }
             try {
                 AggregationResult(
                         rankings,
-                        rankings.associate { it.entityKeyId to srcEntities.getValue(it.entityKeyId) },
-                        resultEdges.values.flatMap { it.keys }.associateWith { associationEntityKeyId ->
-                            associations.getValue(associationEntityKeyId)
-                        },
-                        resultEdges.values.flatMap { it.values }.associateWith { neighborEntityKeyId ->
-                            neighbors.getValue(neighborEntityKeyId)
-                        },
-                        resultEdges
+                        allEntities,
+                        edges
                 )
             } finally {
-                logger.info("Preparing results took ${context.stop()/1000} ms")
+                log.info("Preparing results took ${context.stop() / 1000} ms")
             }
 
         }
@@ -460,13 +525,19 @@ class Graph(
             propertyTypes: Map<UUID, PropertyType>
     ): List<FilteredNeighborsRankingAggregationResult> {
         //For each entity compute the association and neighbor aggregations.
-        return srcEntities.map { (entityKeyId, _) ->
-            val neighbors = edges[entityKeyId] ?: return listOf()
+        return srcEntities.mapNotNull { (entityKeyId, _) ->
+            val neighbors = edges[entityKeyId] ?: return@mapNotNull FilteredNeighborsRankingAggregationResult(
+                    entityKeyId,
+                    0.0,
+                    authorizedFilteredNeighborsRanking.filteredNeighborsRanking.associationTypeId,
+                    authorizedFilteredNeighborsRanking.filteredNeighborsRanking.neighborTypeId,
+                    EntityAggregationResult(mapOf(), mapOf()),
+                    EntityAggregationResult(mapOf(), mapOf())
+            )
 
             val (associationsEntityKeyIds, neighborEntityKeyIds) = neighbors.unzip()
 
             val associationAggregationResult = computeAggregationSlice(
-                    entityKeyId,
                     authorizedFilteredNeighborsRanking,
                     associationsEntityKeyIds,
                     associationEntities,
@@ -475,15 +546,18 @@ class Graph(
             )
 
             val neighborAggregationResult = computeAggregationSlice(
-                    entityKeyId,
                     authorizedFilteredNeighborsRanking,
                     neighborEntityKeyIds,
                     neighborEntities,
                     propertyTypes
             )
 
-            var score = authorizedFilteredNeighborsRanking.filteredNeighborsRanking.countWeight.orElse(1.0)
-            score *= (associationAggregationResult.scorable.values.sum() + neighborAggregationResult.scorable.values.sum())
+
+            var weight = authorizedFilteredNeighborsRanking.filteredNeighborsRanking.countWeight.orElse(1.0)
+
+            //TODO: Consider properly count edges.
+            var score = weight * neighborEntityKeyIds.size
+            score += (associationAggregationResult.scorable.values.sum() + neighborAggregationResult.scorable.values.sum())
 
             FilteredNeighborsRankingAggregationResult(
                     entityKeyId,
@@ -497,7 +571,6 @@ class Graph(
     }
 
     private fun computeAggregationSlice(
-            entityKeyId: UUID,
             authorizedFilteredNeighborsRanking: AuthorizedFilteredNeighborsRanking,
             entityKeyIds: Collection<UUID>,
             entities: Map<UUID, Map<UUID, Set<Any>>>,
@@ -525,7 +598,7 @@ class Graph(
                     }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
                         else -> throw InvalidParameterException(
                                 "Unrecognized aggregation type for GeographyPoint."
                         )
@@ -535,11 +608,11 @@ class Graph(
                     val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Long? }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.AVG -> scorable[entityKeyId] = values.average() * weight
-                        AggregationType.MIN -> scorable[entityKeyId] = values.min()!!.toDouble() * weight
-                        AggregationType.MAX -> scorable[entityKeyId] = values.max()!!.toDouble() * weight
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
-                        AggregationType.SUM -> scorable[entityKeyId] = values.sum().toDouble() * weight
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Long.")
                     }
                 }
@@ -552,21 +625,21 @@ class Graph(
                             .map { UUID.fromString(it) }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.MIN -> passthrough[entityKeyId] = values.min()!!
-                        AggregationType.MAX -> passthrough[entityKeyId] = values.max()!!
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Guid")
                     }
                 }
                 EdmPrimitiveTypeKind.SByte, EdmPrimitiveTypeKind.Byte -> {
-                    val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Byte }
+                    val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Byte? }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.AVG -> scorable[entityKeyId] = values.average() * weight
-                        AggregationType.MIN -> scorable[entityKeyId] = values.min()!!.toDouble() * weight
-                        AggregationType.MAX -> scorable[entityKeyId] = values.max()!!.toDouble() * weight
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
-                        AggregationType.SUM -> scorable[entityKeyId] = values.sum().toDouble() * weight
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for (S)Byte.")
                     }
                 }
@@ -578,11 +651,11 @@ class Graph(
                     }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.AVG -> scorable[entityKeyId] = values.average() * weight
-                        AggregationType.MIN -> scorable[entityKeyId] = values.min()!!.toDouble() * weight
-                        AggregationType.MAX -> scorable[entityKeyId] = values.max()!!.toDouble() * weight
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
-                        AggregationType.SUM -> scorable[entityKeyId] = values.sum().toDouble() * weight
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Int16.")
                     }
                 }
@@ -590,11 +663,11 @@ class Graph(
                     val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Int? }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.AVG -> scorable[entityKeyId] = values.average() * weight
-                        AggregationType.MIN -> scorable[entityKeyId] = values.min()!!.toDouble() * weight
-                        AggregationType.MAX -> scorable[entityKeyId] = values.max()!!.toDouble() * weight
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
-                        AggregationType.SUM -> scorable[entityKeyId] = values.sum().toDouble() * weight
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Int32.")
                     }
 
@@ -602,11 +675,11 @@ class Graph(
                 EdmPrimitiveTypeKind.Duration -> {
                     val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Long? }
                     when (weightedRankingAggregation.type) {
-                        AggregationType.AVG -> scorable[entityKeyId] = values.average() * weight
-                        AggregationType.MIN -> scorable[entityKeyId] = values.min()!!.toDouble() * weight
-                        AggregationType.MAX -> scorable[entityKeyId] = values.max()!!.toDouble() * weight
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
-                        AggregationType.SUM -> scorable[entityKeyId] = values.sum().toDouble() * weight
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Duration.")
                     }
                 }
@@ -616,9 +689,9 @@ class Graph(
                             .map(LocalDate::parse)
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.MIN -> passthrough[entityKeyId] = values.min()!!
-                        AggregationType.MAX -> passthrough[entityKeyId] = values.max()!!
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Date.")
                     }
                 }
@@ -628,9 +701,9 @@ class Graph(
                             .map(LocalTime::parse)
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.MIN -> passthrough[entityKeyId] = values.min()!!
-                        AggregationType.MAX -> passthrough[entityKeyId] = values.max()!!
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for TimeOfDay.")
                     }
                 }
@@ -640,9 +713,9 @@ class Graph(
                             .map(OffsetDateTime::parse)
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.MIN -> passthrough[entityKeyId] = values.min()!!
-                        AggregationType.MAX -> passthrough[entityKeyId] = values.max()!!
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
                         else -> throw InvalidParameterException(
                                 "Unrecognized aggregation type for DateTimeOffset."
                         )
@@ -650,17 +723,23 @@ class Graph(
                 }
                 EdmPrimitiveTypeKind.Double -> {
                     val values = entityKeyIds.mapNotNull {
-                        entities[it]?.get(
+                        val v = entities[it]?.get(
                                 propertyTypeId
-                        )?.first() as Double?
+                        )?.first()
+                        //TODO: Address jackson serialization causing unexpected data types here.
+                        if( v!=null && v is Int){
+                            v.toDouble() as Double?
+                        } else {
+                            v as Double?
+                        }
                     }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.AVG -> scorable[entityKeyId] = values.average() * weight
-                        AggregationType.MIN -> scorable[entityKeyId] = values.min()!! * weight
-                        AggregationType.MAX -> scorable[entityKeyId] = values.max()!! * weight
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
-                        AggregationType.SUM -> scorable[entityKeyId] = values.sum()
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!! * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!! * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum()
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Double.")
                     }
                 }
@@ -672,7 +751,7 @@ class Graph(
                     }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Binary.")
                     }
                 }
@@ -680,7 +759,7 @@ class Graph(
                     val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Long? }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for Boolean.")
                     }
                 }
@@ -692,9 +771,9 @@ class Graph(
                     }
                     if (values.isEmpty()) return@forEach
                     when (weightedRankingAggregation.type) {
-                        AggregationType.MIN -> passthrough[entityKeyId] = values.min()!!
-                        AggregationType.MAX -> passthrough[entityKeyId] = values.max()!!
-                        AggregationType.COUNT -> scorable[entityKeyId] = values.count().toDouble() * weight
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
                         else -> throw InvalidParameterException("Unrecognized aggregation type for String.")
                     }
                 }
@@ -806,7 +885,8 @@ class Graph(
 
         val query = "SELECT DISTINCT ${SRC_ENTITY_SET_ID.name},${EDGE_ENTITY_SET_ID.name}, ${DST_ENTITY_SET_ID.name} " +
                 "FROM ${E.name} " +
-                "WHERE ${SRC_ENTITY_SET_ID.name} = ANY(?) OR ${DST_ENTITY_SET_ID.name} = ANY(?)"
+                "WHERE ( ${SRC_ENTITY_SET_ID.name} = ANY(?) OR ${DST_ENTITY_SET_ID.name} = ANY(?) ) " +
+                "AND ${VERSION.name} > 0"
         val connection = reader.connection
         connection.use {
             val ps = connection.prepareStatement(query)
@@ -1002,6 +1082,8 @@ class Graph(
                 "GROUP BY ($groupingColumns)"
     }
 }
+
+internal fun getLinkingId(linkingIds: Map<UUID, UUID>, entityKeyId: UUID): UUID = linkingIds.getValue(entityKeyId)
 
 private val KEY_COLUMNS = E.primaryKey.map { col -> col.name }.toSet()
 
