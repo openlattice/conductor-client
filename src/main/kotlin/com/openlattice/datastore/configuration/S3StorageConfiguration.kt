@@ -2,13 +2,11 @@ package com.openlattice.datastore.configuration
 
 import com.codahale.metrics.MetricRegistry
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.core.IMap
 import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
-import com.openlattice.data.EntityDataKey
-import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.EntityLoader
 import com.openlattice.data.storage.EntityWriter
+import com.openlattice.data.storage.StorageConfiguration
 import com.openlattice.data.storage.aws.S3EntityDatastore
 import com.openlattice.hazelcast.HazelcastMap
 import javax.inject.Inject

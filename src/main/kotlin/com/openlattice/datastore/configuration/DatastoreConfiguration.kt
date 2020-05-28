@@ -7,6 +7,7 @@ import com.kryptnostic.rhizome.configuration.ConfigurationKey
 import com.kryptnostic.rhizome.configuration.SimpleConfigurationKey
 import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
 import com.openlattice.conductor.rpc.SearchConfiguration
+import com.openlattice.data.storage.StorageConfiguration
 import java.util.*
 
 const val BUCKET_NAME = "bucketName"

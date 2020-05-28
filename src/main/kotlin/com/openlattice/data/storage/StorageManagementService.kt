@@ -2,8 +2,6 @@ package com.openlattice.data.storage
 
 import com.google.common.collect.Maps
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.query.Predicates
-import com.openlattice.datastore.configuration.StorageConfiguration
 import com.openlattice.hazelcast.HazelcastMap
 import com.zaxxer.hikari.HikariDataSource
 import java.util.*
