@@ -1,6 +1,5 @@
 package com.openlattice.data.storage
 
-import com.google.common.collect.Maps
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.hazelcast.HazelcastMap
 import com.zaxxer.hikari.HikariDataSource
@@ -12,7 +11,7 @@ import java.util.*
  * change without a separate synchronization and migration mechanism that quiesces reads, migrates data, and invalidates
  * the storage configuration on each data
  *
- * This assumes that the migration service migrats
+ * This assumes that the migration service migrates data
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
@@ -21,24 +20,14 @@ class StorageManagementService(
         val metastore: HikariDataSource
 ) {
     private val entitySets = HazelcastMap.ENTITY_SETS.getMap(hazelcastInstance)
-    private val writers = Maps.newConcurrentMap<String, EntityWriter>() // datastore name ->  entity writer
-    private val readers = Maps.newConcurrentMap<String, EntityLoader>() // datastore name -> entity reader
+    private val storageProviders = HazelcastMap.STORAGE_PROVIDERS.getMap(hazelcastInstance)
 
-    private val storageConfigurations = HazelcastMap.STORAGE_CONFIGURATIONS.getMap(hazelcastInstance)
-
-    init {
-        storageConfigurations.forEach { (name, storageConfiguration) ->
-            writers[name] = storageConfiguration.getWriter()
-            readers[name] = storageConfiguration.getLoader()
-        }
-    }
-
-    fun getWriter(entitySetId: UUID): EntityWriter = writers.getValue(getStorage(entitySetId))
-    fun getWriter(name: String): EntityWriter = writers.getValue(name)
+    fun getWriter(entitySetId: UUID): EntityWriter = getWriter(getStorage(entitySetId))
+    fun getWriter(name: String): EntityWriter = storageProviders.getValue(name).entityWriter
 
     //Push it to the reader
-    fun getReader(entitySetId: UUID): EntityLoader = readers.getValue(getStorage(entitySetId))
-    fun getReader(name: String): EntityLoader = readers.getValue(name)
+    fun getReader(entitySetId: UUID): EntityLoader = getReader(getStorage(entitySetId))
+    fun getReader(name: String): EntityLoader = storageProviders.getValue(name).entityLoader
 
 
     /*
@@ -56,12 +45,12 @@ class StorageManagementService(
             entitySets.getValue(entitySetId).storageType.name
     )
 
-    fun getStorageConfiguration(name: String): StorageConfiguration = storageConfigurations.getValue(name)
+    fun getStorageConfiguration(name: String): StorageConfiguration = storageProviders.getValue(name)
 
     fun setStorageConfiguration(name: String, storageConfiguration: StorageConfiguration) {
-        storageConfigurations.set(name, storageConfiguration)
+        storageProviders.set(name, storageConfiguration)
     }
 
-    fun removeStorageConfiguration(name: String) = storageConfigurations.delete(name)
+    fun removeStorageConfiguration(name: String) = storageProviders.delete(name)
 }
 

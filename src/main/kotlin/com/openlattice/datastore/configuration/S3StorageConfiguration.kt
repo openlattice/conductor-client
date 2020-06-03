@@ -15,25 +15,19 @@ import javax.inject.Inject
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-@ReloadableConfiguration(uri = "s3storage.yaml")
-data class S3StorageConfiguration(
-        val bucket: String,
-        val region: String,
-        val accessKeyId: String,
-        val secretAccessKey: String,
-        val threads: Int = 8
-) : StorageConfiguration {
-    @Inject
-    lateinit var hazelcastInstance: HazelcastInstance
+data class S3StorageProvider(
+        private val hazelcastInstance: HazelcastInstance,
+        private val byteBlobDataManager: ByteBlobDataManager,
+        private val metricRegistry: MetricRegistry
+) : StorageProvider {
+    override val entityLoader = getLoader()
+    override val entityWriter = getWriter()
 
-    @Inject
-    lateinit var metricRegistry: MetricRegistry
-
-    override fun getLoader(byteBlobDataManager: ByteBlobDataManager): EntityLoader {
+    private fun getLoader(): EntityLoader {
         return getS3EntityDatastore(byteBlobDataManager)
     }
 
-    override fun getWriter(byteBlobDataManager: ByteBlobDataManager): EntityWriter {
+    private fun getWriter(): EntityWriter {
         return getS3EntityDatastore(byteBlobDataManager)
     }
 

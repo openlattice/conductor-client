@@ -1,10 +1,13 @@
 package com.openlattice.admin
 
+import com.geekbeast.rhizome.services.ServiceState
+import com.google.common.eventbus.Subscribe
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.core.IQueue
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
 import com.openlattice.data.storage.StorageManagementService
+import com.openlattice.data.storage.StorageType
 import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.hazelcast.HazelcastMap
@@ -19,6 +22,7 @@ import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 const val OPERATION_QUEUES_PREFIX = "operations_"
 const val RESULT_QUEUES_PREFIX = "results_"
@@ -47,24 +51,28 @@ class BridgeService(
     }
 
     val serviceId = register(serviceDescription)
-    val services = HazelcastMap.SERVICES.getMap(hazelcastInstance)
-    val operations = HazelcastMap.OPERATIONS.getMap(hazelcastInstance)
-    val results = HazelcastMap.RESULTS.getMap(hazelcastInstance)
 
-    val operationQueueName = buildOperationQueueName(serviceId)
-    val resultQueueName = buildResultQueueName(serviceId)
+    private var started = false
 
-    val operationQueue = hazelcastInstance.getQueue<UUID>(operationQueueName)
-    val resultQueue = hazelcastInstance.getQueue<InvocationResultKey>(resultQueueName)
+    private val services = HazelcastMap.SERVICES.getMap(hazelcastInstance)
+    private val operations = HazelcastMap.OPERATIONS.getMap(hazelcastInstance)
+    private val results = HazelcastMap.RESULTS.getMap(hazelcastInstance)
 
-    val operationQueues = mutableMapOf<UUID, IQueue<UUID>>() //service id -> operations queue
-    val resultQueues = mutableMapOf<UUID, IQueue<UUID>>() //service id -> results queue
-    val resultLocks = mutableMapOf<UUID, CountDownLatch>() //(service id ) -> count down latch
-    val resultResponses = mutableMapOf<UUID, MutableSet<UUID>>() // (operation id ) -> set of service ids
+    private val operationQueueName = buildOperationQueueName(serviceId)
+    private val resultQueueName = buildResultQueueName(serviceId)
+
+    private val operationQueue = hazelcastInstance.getQueue<UUID>(operationQueueName)
+    private val resultQueue = hazelcastInstance.getQueue<InvocationResultKey>(resultQueueName)
+
+    private val operationQueues = mutableMapOf<UUID, IQueue<UUID>>() //service id -> operations queue
+    private val resultQueues = mutableMapOf<UUID, IQueue<UUID>>() //service id -> results queue
+    private val resultLocks = mutableMapOf<UUID, CountDownLatch>() //(service id ) -> count down latch
+    private val resultResponses = mutableMapOf<UUID, MutableSet<UUID>>() // (operation id ) -> set of service ids
 
     private final val pingingExecutor = Executors.newSingleThreadExecutor()
     private final val operationExecutor = Executors.newSingleThreadExecutor()
     private final val resultsExecutor = Executors.newSingleThreadExecutor()
+
 
     val pinger = pingingExecutor.execute {
         while (true) {
@@ -134,9 +142,16 @@ class BridgeService(
         val serviceIds = services.keySet(serviceTypeFilter)
         return invoke(serviceIds, operation, timeout, timeoutUnit)
     }
-    fun isStarted() {
-        hazelcastInstance.cpSubsystem.get
+
+    fun isStarted(): Boolean {
+        return started
     }
+
+    @Subscribe
+    fun notifyOfStateChange(serviceState: ServiceState) {
+        started = (serviceState == ServiceState.RUNNING)
+    }
+
     private fun invoke(
             serviceIds: Set<UUID>,
             operation: (BridgeAwareServices) -> Any?,
@@ -185,8 +200,46 @@ class BridgeService(
             serviceType.name
     )
 
+    fun getServiceTypesPredicate(vararg serviceTypes: ServiceType): Predicate<*, *> = Predicates.`in`(
+            "serviceType",
+            *serviceTypes.map { it.name }.toTypedArray()
+    )
+
+    /**
+     * Waits until the required services have been registered in Hazelcast.
+     * @param desiredCluster The desired number of services of each type.
+     * @param timeout An optional amount of time to wait for the cluster to reach this state
+     * @param timeunit The time unit for the [timeout] parameter.
+     */
+    fun awaitCluster(
+            desiredCluster: Map<ServiceType, Int>,
+            timeout: Long = 0,
+            timeunit: TimeUnit = TimeUnit.MILLISECONDS
+    ): Map<ServiceType, Map<UUID, ServiceDescription>> {
+        val start = System.nanoTime()
+        var currentCluster: Map<ServiceType, Map<UUID, ServiceDescription>>
+        var desiredClusterStateReached: Boolean
+        do {
+            currentCluster =
+                    services
+                            .entrySet(getServiceTypesPredicate(*desiredCluster.keys.toTypedArray()))
+                            .groupBy({ it.value.serviceType }, { it.key to it.value })
+                            .mapValues { it.value.toMap() }
+            desiredClusterStateReached =
+                    desiredCluster.all { (serviceType, count) -> (currentCluster[serviceType] ?: 0) == count }
+            Thread.sleep(100)
+        } while (!desiredClusterStateReached &&
+                (timeout == 0L || ((System.nanoTime() - start) < timeunit.toNanos(timeout))))
+
+        if (!desiredClusterStateReached) {
+            throw TimeoutException("Unable to reach desired cluster state in $timeout $timeunit")
+        }
+
+        return currentCluster
+    }
+
     fun ping() {
-        //Being lazy.
+        //Being lazy, should do this via an entry processor.
         serviceDescription.lastPing = System.currentTimeMillis()
         services.set(serviceId, serviceDescription)
     }
@@ -200,10 +253,10 @@ private fun buildOperationQueueName(serviceId: UUID) = "$OPERATION_QUEUES_PREFIX
 
 private fun buildResultQueueName(serviceId: UUID) = "$RESULT_QUEUES_PREFIX${serviceId.toString().replace("-", "")}"
 
-class ServiceDescription(
+data class ServiceDescription @JvmOverloads constructor(
         val serviceType: ServiceType,
-        val tags: MutableList<String>,
-        val operations: Map<UUID, InvocationRequest>,
+        val tags: MutableList<String> = mutableListOf(),
+        val operations: Map<UUID, InvocationRequest> = mutableMapOf(),
         var lastPing: Long = System.currentTimeMillis()
 )
 
