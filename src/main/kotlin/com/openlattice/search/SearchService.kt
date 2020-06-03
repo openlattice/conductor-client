@@ -54,7 +54,8 @@ import kotlin.streams.toList
 @Service
 class SearchService(
         val eventBus: EventBus,
-        val metricRegistry: MetricRegistry) {
+        val metricRegistry: MetricRegistry
+) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(SearchService::class.java)
@@ -683,18 +684,16 @@ class SearchService(
         val entityNeighbors = Maps.newConcurrentMap<UUID, MutableList<NeighborEntityDetails>>()
 
         // create a NeighborEntityDetails object for each edge based on authorizations
+
         edges.parallelStream().forEach { edge ->
+
             val vertexIsSrc = entityKeyIds.contains(edge.key.src.entityKeyId)
             val entityId = if ((vertexIsSrc))
                 edge.key.src.entityKeyId
             else
                 edge.key.dst.entityKeyId
             if (!entityNeighbors.containsKey(entityId)) {
-                entityNeighbors.put(
-                        entityId, Collections.synchronizedList(
-                        Lists.newArrayList()
-                )
-                )
+                entityNeighbors.put(entityId, Collections.synchronizedList(Lists.newArrayList()))
             }
             val neighbor = getNeighborEntityDetails(
                     edge,
