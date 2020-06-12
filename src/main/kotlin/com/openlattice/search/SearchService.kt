@@ -171,7 +171,7 @@ class SearchService(
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): DataSearchResult {
         val entitySetIds = searchConstraints.entitySetIds.toSet()
-        val entitySetsById = entitySetService!!.getEntitySetsAsMap(entitySetIds)
+        val entitySetsById = entitySetService.getEntitySetsAsMap(entitySetIds)
 
         val linkingEntitySets = entitySetsById.values
                 .filter { it.isLinking }
