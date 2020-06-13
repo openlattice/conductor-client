@@ -56,7 +56,7 @@ import kotlin.streams.asSequence
  * but principals with that role will have the relevant level of access to that role. In addition, roles that create an
  * organization will not inherit the organization role (as they are not members).
  */
-@Service
+//@Service
 class HazelcastOrganizationService(
         hazelcastInstance: HazelcastInstance,
         private val reservations: HazelcastAclKeyReservationService,
