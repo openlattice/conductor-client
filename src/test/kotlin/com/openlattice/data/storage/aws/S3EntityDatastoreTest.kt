@@ -12,8 +12,10 @@ import com.kryptnostic.rhizome.pods.AwsConfigurationLoader
 import com.openlattice.aws.*
 import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
+import com.openlattice.data.storage.EntityLoader
 import com.openlattice.data.storage.S3StorageConfiguration
 import com.openlattice.datastore.configuration.DatastoreConfiguration
+import com.openlattice.datastore.configuration.S3StorageProvider
 import com.openlattice.mapstores.TestDataFactory
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.junit.Assert
@@ -43,21 +45,26 @@ class S3EntityDatastoreTest {
         )
         private val s3StorageConfiguration = awsConfigurationLoader.load(S3StorageConfiguration::class.java)
         private val datastoreConfiguration = awsConfigurationLoader.load(DatastoreConfiguration::class.java)
-
-        init {
-            val s3Objects = mockHazelcastMap(EntityDataKey::class.java, Entity::class.java)
-            s3StorageConfiguration.hazelcastInstance = Mockito.mock(HazelcastInstance::class.java)
-            Mockito.`when`(s3StorageConfiguration.hazelcastInstance.getMap<EntityDataKey, Entity>("S3_OBJECT_STORE"))
-                    .thenReturn(s3Objects)
-            s3StorageConfiguration.metricRegistry = MetricRegistry()
-        }
+        private val hazelcastInstance = Mockito.mock(HazelcastInstance::class.java)
+        private val metricRegistry = MetricRegistry()
+        private val s3StorageProvider: S3StorageProvider
 
         private val byteBlobDataManager = AwsBlobDataService(
                 datastoreConfiguration,
                 MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(2))
         )
-        private val s3EntityDatastore = s3StorageConfiguration.getWriter(byteBlobDataManager) as S3EntityDatastore
-        private val s3EntityLoader = s3StorageConfiguration.getLoader(byteBlobDataManager)
+
+        init {
+            val s3Objects = mockHazelcastMap(EntityDataKey::class.java, Entity::class.java)
+            s3StorageProvider = S3StorageProvider(hazelcastInstance, byteBlobDataManager, metricRegistry, s3StorageConfiguration)
+
+            Mockito.`when`(hazelcastInstance.getMap<EntityDataKey, Entity>("S3_OBJECT_STORE")).thenReturn(s3Objects)
+
+        }
+
+
+        private val s3EntityDatastore = s3StorageProvider.entityWriter as S3EntityDatastore
+        private val s3EntityLoader = s3StorageProvider.entityLoader as EntityLoader
         private val logger: Logger = LoggerFactory.getLogger(S3EntityDatastoreTest::class.java)
     }
 
