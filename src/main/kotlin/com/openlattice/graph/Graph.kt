@@ -225,8 +225,7 @@ class Graph(
     }
 
     override fun getEdgesAndNeighborsForVertex(entitySetId: UUID, vertexId: UUID): Stream<Edge> {
-
-        return PostgresIterable(
+        return PostgresIterable<Edge>(
                 Supplier {
                     val connection = hds.connection
                     val stmt = connection.prepareStatement(NEIGHBORHOOD_SQL)
@@ -244,7 +243,7 @@ class Graph(
     }
 
     override fun getEdgesAndNeighborsForVertices(entitySetId: UUID, filter: EntityNeighborsFilter): Stream<Edge> {
-        return PostgresIterable(
+        return PostgresIterable<Edge>(
                 Supplier {
                     val connection = reader.connection
                     val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds)
@@ -268,7 +267,7 @@ class Graph(
         if (entitySetIds.size == 1) {
             return getEdgesAndNeighborsForVertices(entitySetIds.first(), filter)
         }
-        return PostgresIterable(
+        return PostgresIterable<Edge>(
                 Supplier {
                     val connection = reader.connection
                     val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.stream())

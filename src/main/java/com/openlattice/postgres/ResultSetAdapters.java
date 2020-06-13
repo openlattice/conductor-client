@@ -46,7 +46,6 @@ import com.openlattice.edm.set.EntitySetPropertyKey;
 import com.openlattice.edm.set.EntitySetPropertyMetadata;
 import com.openlattice.edm.set.ExpirationBase;
 import com.openlattice.edm.type.*;
-import com.openlattice.data.storage.StorageType;
 import com.openlattice.graph.NeighborhoodQuery;
 import com.openlattice.graph.NeighborhoodSelection;
 import com.openlattice.graph.edge.Edge;
@@ -587,7 +586,7 @@ public final class ResultSetAdapters {
         final var flags = entitySetFlags( rs );
         final var partitions = partitions( rs );
         final var expirationData = dataExpiration( rs );
-        final var storageType = storageType( rs );
+        final var storageType = datastore( rs );
         return new EntitySet( id,
                 entityTypeId,
                 name,
@@ -602,8 +601,8 @@ public final class ResultSetAdapters {
                 storageType );
     }
 
-    public static StorageType storageType( ResultSet rs ) throws SQLException {
-        return StorageType.valueOf( rs.getString( STORAGE_TYPE_FIELD ) );
+    public static String datastore( ResultSet rs ) throws SQLException {
+        return rs.getString( DATASTORE_FIELD );
     }
 
     public static Integer[] partitions( ResultSet rs ) throws SQLException {

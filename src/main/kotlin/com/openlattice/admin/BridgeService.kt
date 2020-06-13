@@ -7,7 +7,6 @@ import com.hazelcast.core.IQueue
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
 import com.openlattice.data.storage.StorageManagementService
-import com.openlattice.data.storage.StorageType
 import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.hazelcast.HazelcastMap

@@ -12,14 +12,10 @@ import com.geekbeast.rhizome.aws.newS3Client
 import com.hazelcast.core.IMap
 import com.openlattice.IdConstants
 import com.openlattice.data.*
-import com.openlattice.data.storage.ByteBlobDataManager
-import com.openlattice.data.storage.EntityDatastore
-import com.openlattice.data.storage.MetadataOption
-import com.openlattice.data.storage.PostgresEntityDatastore
+import com.openlattice.data.storage.*
 import com.openlattice.data.util.mapEntityKeyIdsToFqns
 import com.openlattice.data.util.mapMetadataOptionsToPropertyTypes
 import com.openlattice.data.util.readEntity
-import com.openlattice.datastore.configuration.S3StorageConfiguration
 import com.openlattice.edm.EdmConstants
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.postgres.streams.BasePostgresIterable

@@ -18,17 +18,18 @@ import java.util.*
  */
 class StorageManagementService(
         hazelcastInstance: HazelcastInstance,
+        private val storageProviderFactory: StorageProviderFactory,
         val metastore: HikariDataSource
 ) {
     private val entitySets = HazelcastMap.ENTITY_SETS.getMap(hazelcastInstance)
     private val storageProviders = HazelcastMap.STORAGE_PROVIDERS.getMap(hazelcastInstance)
 
     fun getWriter(entitySetId: UUID): EntityWriter = getWriter(getStorage(entitySetId))
-    fun getWriter(name: String): EntityWriter = storageProviders.getValue(name).entityWriter
+    fun getWriter(name: String): EntityWriter = storageProviders.getValue(name).entityWriter.get()
 
     //Push it to the reader
     fun getReader(entitySetId: UUID): EntityLoader = getReader(getStorage(entitySetId))
-    fun getReader(name: String): EntityLoader = storageProviders.getValue(name).entityLoader
+    fun getReader(name: String): EntityLoader = storageProviders.getValue(name).entityLoader.get()
 
 
     /*
@@ -40,18 +41,19 @@ class StorageManagementService(
     /**
      *
      */
-    fun getStorage(entitySetId: UUID): String = entitySets.getValue(entitySetId).storageType.name
+    fun getStorage(entitySetId: UUID): String = entitySets.getValue(entitySetId).datastore
 
     fun getStorageConfiguration(entitySetId: UUID): StorageProvider = getStorageConfiguration(
-            entitySets.getValue(entitySetId).storageType.name
+            entitySets.getValue(entitySetId).datastore
     )
 
     fun getStorageConfiguration(name: String): StorageProvider = storageProviders.getValue(name)
 
     fun setStorageConfiguration(name: String, storageConfiguration: StorageConfiguration) {
-        storageProviders.set(name, storageConfiguration)
+        storageProviders.set(name, storageProviderFactory.buildStorageProvider(storageConfiguration) )
     }
 
     fun removeStorageConfiguration(name: String) = storageProviders.delete(name)
+
 }
 

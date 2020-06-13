@@ -14,7 +14,7 @@ import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore
 import com.openlattice.IdConstants
 import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
-import com.openlattice.datastore.configuration.S3StorageConfiguration
+import com.openlattice.data.storage.S3StorageConfiguration
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.mapstores.TestDataFactory
 import com.openlattice.postgres.mapstores.TypedMapIdentifier

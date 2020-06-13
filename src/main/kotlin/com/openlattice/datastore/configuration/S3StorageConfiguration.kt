@@ -1,15 +1,12 @@
 package com.openlattice.datastore.configuration
 
 import com.codahale.metrics.MetricRegistry
+import com.google.common.base.Suppliers
 import com.hazelcast.core.HazelcastInstance
-import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
-import com.openlattice.data.storage.ByteBlobDataManager
-import com.openlattice.data.storage.EntityLoader
-import com.openlattice.data.storage.EntityWriter
-import com.openlattice.data.storage.StorageConfiguration
+import com.openlattice.data.storage.*
 import com.openlattice.data.storage.aws.S3EntityDatastore
 import com.openlattice.hazelcast.HazelcastMap
-import javax.inject.Inject
+import java.util.function.Supplier
 
 /**
  *
@@ -18,10 +15,11 @@ import javax.inject.Inject
 data class S3StorageProvider(
         private val hazelcastInstance: HazelcastInstance,
         private val byteBlobDataManager: ByteBlobDataManager,
-        private val metricRegistry: MetricRegistry
+        private val metricRegistry: MetricRegistry,
+        override val storageConfiguration: S3StorageConfiguration
 ) : StorageProvider {
-    override val entityLoader = getLoader()
-    override val entityWriter = getWriter()
+    override val entityLoader: Supplier<EntityLoader> = Suppliers.memoize(::getLoader )
+    override val entityWriter: Supplier<EntityWriter> = Suppliers.memoize(::getWriter )
 
     private fun getLoader(): EntityLoader {
         return getS3EntityDatastore(byteBlobDataManager)
@@ -35,7 +33,8 @@ data class S3StorageProvider(
             byteBlobDataManager: ByteBlobDataManager
     ): S3EntityDatastore {
         return S3EntityDatastore(
-                this, byteBlobDataManager,
+                storageConfiguration,
+                byteBlobDataManager,
                 HazelcastMap.S3_OBJECT_STORE.getMap(hazelcastInstance),
                 metricRegistry
         )

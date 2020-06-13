@@ -12,8 +12,8 @@ import com.kryptnostic.rhizome.pods.AwsConfigurationLoader
 import com.openlattice.aws.*
 import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
+import com.openlattice.data.storage.S3StorageConfiguration
 import com.openlattice.datastore.configuration.DatastoreConfiguration
-import com.openlattice.datastore.configuration.S3StorageConfiguration
 import com.openlattice.mapstores.TestDataFactory
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.junit.Assert

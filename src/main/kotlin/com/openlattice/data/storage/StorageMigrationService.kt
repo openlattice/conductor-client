@@ -46,7 +46,7 @@ class StorageMigrationService(
      * Retrieves the entities that still need to be migrated.
      */
     fun getEntitiesNeedingMigration(entityKeyIds: Map<UUID, Optional<Set<UUID>>>): Map<UUID, Set<UUID>> {
-
+        return mapOf()
     }
 
     /**
