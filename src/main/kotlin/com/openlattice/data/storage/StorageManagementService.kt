@@ -1,6 +1,7 @@
 package com.openlattice.data.storage
 
 import com.hazelcast.core.HazelcastInstance
+import com.openlattice.datastore.configuration.StorageProvider
 import com.openlattice.hazelcast.HazelcastMap
 import com.zaxxer.hikari.HikariDataSource
 import java.util.*
@@ -41,11 +42,11 @@ class StorageManagementService(
      */
     fun getStorage(entitySetId: UUID): String = entitySets.getValue(entitySetId).storageType.name
 
-    fun getStorageConfiguration(entitySetId: UUID): StorageConfiguration = getStorageConfiguration(
+    fun getStorageConfiguration(entitySetId: UUID): StorageProvider = getStorageConfiguration(
             entitySets.getValue(entitySetId).storageType.name
     )
 
-    fun getStorageConfiguration(name: String): StorageConfiguration = storageProviders.getValue(name)
+    fun getStorageConfiguration(name: String): StorageProvider = storageProviders.getValue(name)
 
     fun setStorageConfiguration(name: String, storageConfiguration: StorageConfiguration) {
         storageProviders.set(name, storageConfiguration)

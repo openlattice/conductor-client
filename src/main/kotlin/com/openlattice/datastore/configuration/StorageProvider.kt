@@ -2,6 +2,7 @@ package com.openlattice.datastore.configuration
 
 import com.openlattice.data.storage.EntityLoader
 import com.openlattice.data.storage.EntityWriter
+import com.openlattice.data.storage.StorageConfiguration
 
 /**
  *
@@ -10,5 +11,5 @@ import com.openlattice.data.storage.EntityWriter
 interface StorageProvider {
     val entityLoader: EntityLoader
     val entityWriter: EntityWriter
-    
+    val storageConfiguration: StorageConfiguration
 }
