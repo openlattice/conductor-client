@@ -26,6 +26,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Maps.transformValues;
 import static com.openlattice.authorization.mapstores.PermissionMapstore.ACL_KEY_INDEX;
+import static com.openlattice.authorization.util.AuthorizationUtilsKt.toAceKeys;
 
 import com.codahale.metrics.annotation.Timed;
 import com.dataloom.streams.StreamUtil;
@@ -94,6 +95,12 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
     }
 
     @Override
+    public void setSecurableObjectTypes( Set<AclKey> aclKeys, SecurableObjectType objectType ) {
+        securableObjectTypes.putAll( Maps.asMap( aclKeys, k -> objectType ) );
+        aces.executeOnEntries( new SecurableObjectTypeUpdater( objectType ), hasAnyAclKeys( aclKeys ) );
+    }
+
+    @Override
     public void setSecurableObjectType( AclKey aclKey, SecurableObjectType objectType ) {
         securableObjectTypes.set( aclKey, objectType );
         aces.executeOnEntries( new SecurableObjectTypeUpdater( objectType ), hasAclKey( aclKey ) );
@@ -117,43 +124,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         }
     }
 
-    private void signalMaterializationPermissionChangeBulk( SetMultimap<AceValue, AceKey> updates ) {
-        // if there is a change in materialization permission for a property type or an entity set for an organization
-        // principal, we need to flag it
-
-        // filter entries relevant for materialize permission changes
-        updates.entries().stream()
-                .filter(
-                        aceEntry -> ( aceEntry.getKey().getSecurableObjectType().equals( SecurableObjectType.EntitySet )
-                                || aceEntry.getKey().getSecurableObjectType()
-                                .equals( SecurableObjectType.PropertyTypeInEntitySet ) )
-                                && ( aceEntry.getKey().getPermissions().contains( Permission.MATERIALIZE )
-                                && ( aceEntry.getValue().getPrincipal().getType()
-                                .equals( PrincipalType.ORGANIZATION ) ) )
-                )
-                // group by organization (principal)
-                .collect( Collectors.groupingBy( aceEntry -> aceEntry.getValue().getPrincipal() ) )
-                .forEach( ( principal, aceEntries ) ->
-                        aceEntries.stream()
-                                // group by object type
-                                .collect( Collectors
-                                        .groupingBy( aceEnrty -> aceEnrty.getKey().getSecurableObjectType() ) )
-                                .forEach( ( securableObjectType, aceEntriesOfType ) -> {
-                                            final var entitySetIds = aceEntriesOfType.stream()
-                                                    .map( aceEntryOfType -> aceEntryOfType.getValue().getAclKey().get( 0 ) )
-                                                    .collect( Collectors.toSet() );
-                                            eventBus.post(
-                                                    new MaterializePermissionChangeEvent(
-                                                            principal,
-                                                            entitySetIds,
-                                                            securableObjectType )
-                                            );
-                                        }
-                                )
-                );
-
-    }
-
     @Override
     public void addPermission(
             AclKey key,
@@ -173,9 +143,29 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
         if ( securableObjectType == SecurableObjectType.Unknown ) {
             logger.warn( "Unrecognized object type for acl key {} key ", key );
         }
-        signalMaterializationPermissionChange( key, principal, permissions, securableObjectType );
         aces.executeOnKey( new AceKey( key, principal ),
                 new PermissionMerger( permissions, securableObjectType, expirationDate ) );
+        signalMaterializationPermissionChange( key, principal, permissions, securableObjectType );
+    }
+
+    @Override
+    public void addPermissions(
+            Set<AclKey> keys,
+            Principal principal,
+            EnumSet<Permission> permissions,
+            SecurableObjectType securableObjectType ) {
+        addPermissions( keys, principal, permissions, securableObjectType, OffsetDateTime.MAX );
+    }
+
+    @Override
+    public void addPermissions(
+            Set<AclKey> keys,
+            Principal principal,
+            EnumSet<Permission> permissions,
+            SecurableObjectType securableObjectType,
+            OffsetDateTime expirationDate ) {
+        final var aceKeys = toAceKeys( keys, principal );
+        aces.executeOnKeys( aceKeys, new PermissionMerger( permissions, securableObjectType, expirationDate ) );
     }
 
     @Override
@@ -190,13 +180,10 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Set<AceKey> aceKeys = updates.get( aceValue );
             aces.executeOnKeys( aceKeys, new PermissionMerger( permissions, securableObjectType, expirationDate ) );
         } );
-
-        signalMaterializationPermissionChangeBulk( updates );
     }
 
     @Override
     public void removePermissions( List<Acl> acls ) {
-
         acls.stream().map( acl -> Pair.of( new AclKey( acl.getAclKey() ),
                 StreamUtil.stream( acl.getAces() ).filter( ace -> ace.getPermissions().contains( Permission.OWNER ) )
                         .map( Ace::getPrincipal ).collect( Collectors.toSet() ) ) )
@@ -213,7 +200,6 @@ public class HazelcastAuthorizationService implements AuthorizationManager {
             Set<AceKey> aceKeys = updates.get( aceValue );
             aces.executeOnKeys( aceKeys, new PermissionRemover( permissions ) );
         } );
-        signalMaterializationPermissionChangeBulk( updates );
     }
 
     private SetMultimap<AceValue, AceKey> getAceValueToAceKeyMap( List<Acl> acls ) {
