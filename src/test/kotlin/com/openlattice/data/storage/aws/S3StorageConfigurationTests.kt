@@ -1,6 +1,6 @@
 package com.openlattice.data.storage.aws
 
-import com.openlattice.datastore.configuration.S3StorageConfiguration
+import com.openlattice.data.storage.S3StorageConfiguration
 import com.openlattice.serializer.AbstractJacksonSerializationTest
 import com.openlattice.serializer.AbstractJacksonYamlSerializationTest
 import org.junit.Test
