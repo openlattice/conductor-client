@@ -3,9 +3,11 @@ package com.openlattice.admin
 import com.geekbeast.rhizome.hazelcast.mockHazelcastMap
 import com.geekbeast.rhizome.hazelcast.mockHazelcastQueue
 import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.core.IQueue
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.hazelcast.HazelcastUtils
 import org.junit.Assert
+import org.junit.Before
 import org.junit.Test
 import org.mockito.Matchers.any
 import org.mockito.Mockito
@@ -19,17 +21,18 @@ import java.util.concurrent.TimeoutException
  */
 class BridgeServiceTest {
     companion object {
-        val hazelcastInstance = Mockito.mock(HazelcastInstance::class.java)
-        val services = mockHazelcastMap(UUID::class.java, ServiceDescription::class.java)
-        val operations = mockHazelcastMap(UUID::class.java, InvocationRequest::class.java)
-        val results = mockHazelcastMap(InvocationResultKey::class.java, Any::class.java)
+        private val hazelcastInstance = Mockito.mock(HazelcastInstance::class.java)
 
-        val operationsQueue = mockHazelcastQueue(UUID::class.java)
-        val resultsQueue = mockHazelcastQueue(InvocationResultKey::class.java)
+        private val services = mockHazelcastMap(UUID::class.java, ServiceDescription::class.java)
+        private val operations = mockHazelcastMap(UUID::class.java, InvocationRequest::class.java)
+        private val results = mockHazelcastMap(InvocationResultKey::class.java, Any::class.java)
 
-        val bridgeAwareServices = BridgeAwareServices()
-        val bridgeService: BridgeService
-        val executor = Executors.newFixedThreadPool(2)
+        private val operationsQueues = mutableMapOf<String, IQueue<UUID>>()
+        private val resultsQueues = mutableMapOf<String, IQueue<InvocationResultKey>>()
+
+        private var bridgeAwareServices = BridgeAwareServices()
+        private lateinit var bridgeService: BridgeService
+        private val executor = Executors.newFixedThreadPool(2)
 
         init {
             Mockito.`when`(hazelcastInstance.getMap<UUID, ServiceDescription>(HazelcastMap.SERVICES.name))
@@ -42,19 +45,44 @@ class BridgeServiceTest {
                     .thenAnswer {
                         val name = it.arguments[0] as String
                         if (name.startsWith(OPERATION_QUEUES_PREFIX)) {
-                            operationsQueue
+                            operationsQueues.getOrPut(name) { mockHazelcastQueue(UUID::class.java) }
                         } else {
-                            resultsQueue
+                            resultsQueues.getOrPut(name) { mockHazelcastQueue(InvocationResultKey::class.java) }
                         }
                     }
-            bridgeService = BridgeService(
-                    ServiceDescription(ServiceType.REHEARSAL, mutableListOf(), mutableMapOf()),
-                    bridgeAwareServices,
-                    hazelcastInstance
-            )
         }
 
+        private fun initializeRehearsalBridgeService() {
+            bridgeService = initializeBridgeService(ServiceType.REHEARSAL, bridgeAwareServices)
+        }
 
+        private fun clearMaps() {
+            services.clear()
+            operations.clear()
+            results.clear()
+        }
+
+        private fun clearQueues() {
+            operationsQueues.clear()
+            resultsQueues.clear()
+        }
+
+        private fun initializeBridgeService(
+                serviceType: ServiceType,
+                bridgeAwareServices: BridgeAwareServices = BridgeAwareServices()
+        ): BridgeService = BridgeService(
+                ServiceDescription(serviceType),
+                bridgeAwareServices,
+                hazelcastInstance
+        )
+
+    }
+
+    @Before
+    fun clearState() {
+        clearMaps()
+        clearQueues()
+        initializeRehearsalBridgeService()
     }
 
     @Test
@@ -65,19 +93,19 @@ class BridgeServiceTest {
                     desiredCluster
             )
         }
-        registerService(ServiceType.CONDUCTOR)
-        registerService(ServiceType.CONDUCTOR)
-        registerService(ServiceType.CONDUCTOR)
+        initializeBridgeService(ServiceType.CONDUCTOR)
+        initializeBridgeService(ServiceType.CONDUCTOR)
+        initializeBridgeService(ServiceType.CONDUCTOR)
         Assert.assertFalse("Desired cluster should not be complete", futureCluster.isDone)
-        registerService(ServiceType.DATASTORE)
-        registerService(ServiceType.DATASTORE)
+        initializeBridgeService(ServiceType.DATASTORE)
+        initializeBridgeService(ServiceType.DATASTORE)
 
 
         val cluster = futureCluster.get()
 
         Assert.assertTrue("Desired cluster should be complete", futureCluster.isDone)
-        Assert.assertEquals( 3, cluster.getValue( ServiceType.CONDUCTOR).size )
-        Assert.assertEquals( 3, cluster.getValue( ServiceType.DATASTORE).size )
+        Assert.assertEquals(3, cluster.getValue(ServiceType.CONDUCTOR).size)
+        Assert.assertEquals(2, cluster.getValue(ServiceType.DATASTORE).size)
     }
 
     @Test(expected = TimeoutException::class)
@@ -85,13 +113,6 @@ class BridgeServiceTest {
         val desiredCluster = mapOf(ServiceType.CONDUCTOR to 3, ServiceType.DATASTORE to 2)
         val cluster = bridgeService.awaitCluster(desiredCluster, 250)
     }
-
-    private fun registerService(serviceType: ServiceType) = HazelcastUtils.insertIntoUnusedKey(
-            services,
-            ServiceDescription(serviceType),
-            UUID::randomUUID,
-            300
-    )
 }
 
 

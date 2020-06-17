@@ -49,13 +49,13 @@ class BridgeService(
         private val logger = LoggerFactory.getLogger(BridgeService::class.java)
     }
 
-    val serviceId = register(serviceDescription)
-
-    private var started = false
-
     private val services = HazelcastMap.SERVICES.getMap(hazelcastInstance)
     private val operations = HazelcastMap.OPERATIONS.getMap(hazelcastInstance)
     private val results = HazelcastMap.RESULTS.getMap(hazelcastInstance)
+
+    //The service id has to be generated after maps are initialized.
+    val serviceId = register(serviceDescription)
+    private var started = false
 
     private val operationQueueName = buildOperationQueueName(serviceId)
     private val resultQueueName = buildResultQueueName(serviceId)
@@ -193,19 +193,9 @@ class BridgeService(
         }
     }
 
-
-    fun getServiceTypePredicate(serviceType: ServiceType): Predicate<*, *> = Predicates.equal(
-            "serviceType",
-            serviceType.name
-    )
-
-    fun getServiceTypesPredicate(vararg serviceTypes: ServiceType): Predicate<*, *> = Predicates.`in`(
-            "serviceType",
-            *serviceTypes.map { it.name }.toTypedArray()
-    )
-
     /**
      * Waits until the required services have been registered in Hazelcast.
+     *
      * @param desiredCluster The desired number of services of each type.
      * @param timeout An optional amount of time to wait for the cluster to reach this state
      * @param timeunit The time unit for the [timeout] parameter.
@@ -215,7 +205,9 @@ class BridgeService(
             timeout: Long = 0,
             timeunit: TimeUnit = TimeUnit.MILLISECONDS
     ): Map<ServiceType, Map<UUID, ServiceDescription>> {
+        //Polling is easier for now.
         val start = System.nanoTime()
+        desiredCluster.entries
         var currentCluster: Map<ServiceType, Map<UUID, ServiceDescription>>
         var desiredClusterStateReached: Boolean
         do {
@@ -225,7 +217,7 @@ class BridgeService(
                             .groupBy({ it.value.serviceType }, { it.key to it.value })
                             .mapValues { it.value.toMap() }
             desiredClusterStateReached =
-                    desiredCluster.all { (serviceType, count) -> (currentCluster[serviceType] ?: 0) == count }
+                    desiredCluster.all { (serviceType, count) -> (currentCluster[serviceType]?.size ?: 0) == count }
             Thread.sleep(100)
         } while (!desiredClusterStateReached &&
                 (timeout == 0L || ((System.nanoTime() - start) < timeunit.toNanos(timeout))))
@@ -244,6 +236,16 @@ class BridgeService(
     }
 
 }
+
+fun getServiceTypePredicate(serviceType: ServiceType): Predicate<*, *> = Predicates.equal(
+        "serviceType",
+        serviceType.name
+)
+
+fun getServiceTypesPredicate(vararg serviceTypes: ServiceType): Predicate<*, *> = Predicates.`in`(
+        "serviceType",
+        *serviceTypes.map { it.name }.toTypedArray()
+)
 
 private fun buildOperationQueueName(serviceId: UUID) = "$OPERATION_QUEUES_PREFIX${serviceId.toString().replace(
         "-",
