@@ -11,6 +11,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Matchers.any
 import org.mockito.Mockito
+import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeoutException
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeoutException
  */
 class BridgeServiceTest {
     companion object {
+        private val logger = LoggerFactory.getLogger(BridgeServiceTest::class.java)
         private val hazelcastInstance = Mockito.mock(HazelcastInstance::class.java)
 
         private val services = mockHazelcastMap(UUID::class.java, ServiceDescription::class.java)
@@ -69,9 +71,10 @@ class BridgeServiceTest {
 
         private fun initializeBridgeService(
                 serviceType: ServiceType,
-                bridgeAwareServices: BridgeAwareServices = BridgeAwareServices()
+                bridgeAwareServices: BridgeAwareServices = BridgeAwareServices(),
+                tags: MutableList<String> = mutableListOf()
         ): BridgeService = BridgeService(
-                ServiceDescription(serviceType),
+                ServiceDescription(serviceType, tags),
                 bridgeAwareServices,
                 hazelcastInstance
         )
@@ -108,10 +111,79 @@ class BridgeServiceTest {
         Assert.assertEquals(2, cluster.getValue(ServiceType.DATASTORE).size)
     }
 
+    @Test
+    fun testInvocationOnAllService() {
+        logger.info("Testing invocation on all services.")
+        val desiredCluster = mapOf(ServiceType.CONDUCTOR to 3, ServiceType.DATASTORE to 2)
+
+        val expected = setOf(
+                bridgeService.serviceId,
+                initializeBridgeService(ServiceType.CONDUCTOR).serviceId,
+                initializeBridgeService(ServiceType.CONDUCTOR).serviceId,
+                initializeBridgeService(ServiceType.CONDUCTOR).serviceId,
+                initializeBridgeService(ServiceType.DATASTORE).serviceId,
+                initializeBridgeService(ServiceType.DATASTORE).serviceId
+        )
+
+        logger.info("Cluster state: {}", bridgeService.awaitCluster(desiredCluster))
+
+        Assert.assertEquals(
+                expected,
+                bridgeService.operateOnAllServices { it.bridgeService.serviceId }.values.toSet()
+        )
+
+    }
+
     @Test(expected = TimeoutException::class)
     fun testAwaitClusterTimeout() {
         val desiredCluster = mapOf(ServiceType.CONDUCTOR to 3, ServiceType.DATASTORE to 2)
         val cluster = bridgeService.awaitCluster(desiredCluster, 250)
+    }
+
+    @Test
+    fun testInvocationOnServiceByType() {
+        logger.info("Testing invocation on all services.")
+        val desiredCluster = mapOf(ServiceType.CONDUCTOR to 3, ServiceType.DATASTORE to 2)
+
+        initializeBridgeService(ServiceType.CONDUCTOR)
+        initializeBridgeService(ServiceType.CONDUCTOR)
+        initializeBridgeService(ServiceType.CONDUCTOR)
+
+        val expected = setOf(
+                initializeBridgeService(ServiceType.DATASTORE).serviceId,
+                initializeBridgeService(ServiceType.DATASTORE).serviceId
+        )
+
+        logger.info("Cluster state: {}", bridgeService.awaitCluster(desiredCluster))
+
+        Assert.assertEquals(
+                expected,
+                bridgeService.operateOnServicesOfType(ServiceType.DATASTORE) { it.bridgeService.serviceId }.values.toSet()
+        )
+    }
+
+    @Test
+    fun testInvocationOnServiceByTypeAndTag() {
+        logger.info("Testing invocation on all services.")
+        val desiredCluster = mapOf(ServiceType.CONDUCTOR to 3, ServiceType.DATASTORE to 2)
+
+        initializeBridgeService(ServiceType.CONDUCTOR)
+        initializeBridgeService(ServiceType.CONDUCTOR)
+        initializeBridgeService(ServiceType.DATASTORE)
+        initializeBridgeService(ServiceType.CONDUCTOR, tags = mutableListOf("a"))
+        
+        val expected = setOf(
+                initializeBridgeService(ServiceType.DATASTORE, tags = mutableListOf("a")).serviceId
+        )
+
+        logger.info("Cluster state: {}", bridgeService.awaitCluster(desiredCluster))
+
+        Assert.assertEquals(
+                expected,
+                bridgeService.operatedOnTaggedServices(listOf("a"), ServiceType.DATASTORE) {
+                    it.bridgeService.serviceId
+                }.values.toSet()
+        )
     }
 }
 

@@ -1,5 +1,6 @@
 package com.openlattice.admin
 
+import com.codahale.metrics.annotation.Timed
 import com.geekbeast.rhizome.services.ServiceState
 import com.google.common.eventbus.Subscribe
 import com.hazelcast.core.HazelcastInstance
@@ -64,7 +65,7 @@ class BridgeService(
     private val resultQueue = hazelcastInstance.getQueue<InvocationResultKey>(resultQueueName)
 
     private val operationQueues = mutableMapOf<UUID, IQueue<UUID>>() //service id -> operations queue
-    private val resultQueues = mutableMapOf<UUID, IQueue<UUID>>() //service id -> results queue
+    private val resultQueues = mutableMapOf<UUID, IQueue<InvocationResultKey>>() //service id -> results queue
     private val resultLocks = mutableMapOf<UUID, CountDownLatch>() //(service id ) -> count down latch
     private val resultResponses = mutableMapOf<UUID, MutableSet<UUID>>() // (operation id ) -> set of service ids
 
@@ -72,6 +73,9 @@ class BridgeService(
     private final val operationExecutor = Executors.newSingleThreadExecutor()
     private final val resultsExecutor = Executors.newSingleThreadExecutor()
 
+    init {
+        bridgeAwareServices.bridgeService = this
+    }
 
     val pinger = pingingExecutor.execute {
         while (true) {
@@ -86,7 +90,9 @@ class BridgeService(
             val invokationRequest = operations.getValue(operationId)
             val invocationResult = InvocationResultKey(serviceId, operationId)
             results[invocationResult] = invokationRequest.operation(bridgeAwareServices)
-
+            resultQueues
+                    .getOrPut(serviceId) { hazelcastInstance.getQueue(buildResultQueueName(invokationRequest.invoker)) }
+                    .put(invocationResult)
         }
     }
 
@@ -106,24 +112,31 @@ class BridgeService(
     /**
      * Assigns and registers the current service with a unique id.
      */
-    fun register(service: ServiceDescription): UUID = HazelcastUtils.insertIntoUnusedKey(
+    private fun register(service: ServiceDescription): UUID = HazelcastUtils.insertIntoUnusedKey(
             services,
             service,
             UUID::randomUUID,
             300
     )
 
-    fun operateOnAllServices(operation: (BridgeAwareServices) -> Any?) {
-        throw NotImplementedException("Blame MTR. Wait, what madness brought you here?")
+    @Timed
+    fun <T> operateOnAllServices(
+            timeout: Long = 0,
+            timeoutUnit: TimeUnit = TimeUnit.MILLISECONDS,
+            operation: (BridgeAwareServices) -> T?
+    ): Map<InvocationResultKey, T?> {
+        logger.warn("Are you sure you should be doing a cluster wide invocation?")
+        return invoke(services.keys, operation, timeout, timeoutUnit)
     }
 
-    fun operatedOnTaggedServices(
+    @Timed
+    fun <T> operatedOnTaggedServices(
             tags: List<String>,
             serviceType: ServiceType,
             timeout: Long = 0,
             timeoutUnit: TimeUnit = TimeUnit.MILLISECONDS,
-            operation: (BridgeAwareServices) -> Any?
-    ): Map<InvocationResultKey, Any?> {
+            operation: (BridgeAwareServices) -> T?
+    ): Map<InvocationResultKey, T?> {
         val tagsFilter = Predicates.`in`("tags[any]", *tags.toTypedArray())
         val serviceTypeFilter = getServiceTypePredicate(serviceType)
         val serviceIds = services.keySet(Predicates.and(tagsFilter, serviceTypeFilter))
@@ -131,12 +144,13 @@ class BridgeService(
         return invoke(serviceIds, operation, timeout, timeoutUnit)
     }
 
-    fun operateOnServicesOfType(
+    @Timed
+    fun <T> operateOnServicesOfType(
             serviceType: ServiceType,
             timeout: Long = 0,
             timeoutUnit: TimeUnit = TimeUnit.MILLISECONDS,
-            operation: (BridgeAwareServices) -> Any?
-    ): Map<InvocationResultKey, Any?> {
+            operation: (BridgeAwareServices) -> T?
+    ): Map<InvocationResultKey, T?> {
         val serviceTypeFilter = getServiceTypePredicate(serviceType)
         val serviceIds = services.keySet(serviceTypeFilter)
         return invoke(serviceIds, operation, timeout, timeoutUnit)
@@ -151,18 +165,19 @@ class BridgeService(
         started = (serviceState == ServiceState.RUNNING)
     }
 
-    private fun invoke(
+    private fun <T> invoke(
             serviceIds: Set<UUID>,
-            operation: (BridgeAwareServices) -> Any?,
+            operation: (BridgeAwareServices) -> T?,
             timeout: Long = 0,
             timeoutUnit: TimeUnit = TimeUnit.MILLISECONDS
-    ): Map<InvocationResultKey, Any?> {
+    ): Map<InvocationResultKey, T?> {
         val invocationRequest = InvocationRequest(serviceId, operation)
         val operationId = HazelcastUtils.insertIntoUnusedKey(operations, invocationRequest, UUID::randomUUID, 300)
         val invocationResultKeys = serviceIds.map { InvocationResultKey(it, operationId) }.toSet()
 
         //Acquire completion locks before submission.
         val invocationLatch = CountDownLatch(invocationResultKeys.size)
+        resultLocks[operationId] = invocationLatch
 
         try {
             //Submit actual invocation to nodes
@@ -184,7 +199,7 @@ class BridgeService(
 
         //Retrieve the results and clear the maps.
         try {
-            val invocationResults = results.getAll(invocationResultKeys) as MutableMap<InvocationResultKey, Any?>
+            val invocationResults = results.getAll(invocationResultKeys) as MutableMap<InvocationResultKey, T?>
             (invocationResultKeys - invocationResults.keys).forEach { invocationResults[it] = null }
             return invocationResults
         } finally {
@@ -271,6 +286,8 @@ class BridgeAwareServices {
 
     @Autowired(required = false)
     lateinit var storageManagementService: StorageManagementService
+
+    internal lateinit var bridgeService: BridgeService
 }
 
 data class InvocationResultKey(val responder: UUID, val operationId: UUID)
