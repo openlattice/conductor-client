@@ -276,6 +276,15 @@ class HazelcastOrganizationService(
             organizationId: UUID,
             members: Set<Principal>,
             profiles: Map<Principal, Map<String, Set<String>>> = members
+                    .asSequence()
+                    .filter {
+                        if (it.id == null) {
+                            logger.warn("Unexpected null id for principal: $it")
+                            false
+                        } else {
+                            true
+                        }
+                    }
                     .associateWith { getAppMetadata(users.getValue(it.id)) }
     ) {
         val newMembers = addMembers(AclKey(organizationId), members, profiles)
