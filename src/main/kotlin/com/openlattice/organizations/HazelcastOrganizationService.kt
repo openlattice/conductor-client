@@ -270,22 +270,20 @@ class HazelcastOrganizationService(
         return organizations[organizationId]?.members ?: setOf()
     }
 
+
     @Timed
-    @JvmOverloads
+    fun addMembers(
+            organizationId: UUID,
+            members: Set<Principal>
+    ) {
+        addMembers(organizationId, members, members.associateWith { getAppMetadata(users.getValue(it.id)) })
+    }
+
+    @Timed
     fun addMembers(
             organizationId: UUID,
             members: Set<Principal>,
-            profiles: Map<Principal, Map<String, Set<String>>> = members
-                    .asSequence()
-                    .filter {
-                        if (it.id == null) {
-                            logger.warn("Unexpected null id for principal: $it")
-                            false
-                        } else {
-                            true
-                        }
-                    }
-                    .associateWith { getAppMetadata(users.getValue(it.id)) }
+            profiles: Map<Principal, Map<String, Set<String>>>
     ) {
         val newMembers = addMembers(AclKey(organizationId), members, profiles)
 
@@ -293,7 +291,8 @@ class HazelcastOrganizationService(
             val securablePrincipals = securePrincipalsManager.getSecurablePrincipals(newMembers)
             eventBus.post(
                     MembersAddedToOrganizationEvent(
-                            organizationId, SecurablePrincipalList(securablePrincipals.toMutableList())
+                            organizationId,
+                            SecurablePrincipalList(securablePrincipals.toMutableList())
                     )
             )
         }
