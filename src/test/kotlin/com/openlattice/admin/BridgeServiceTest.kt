@@ -171,7 +171,7 @@ class BridgeServiceTest {
         initializeBridgeService(ServiceType.CONDUCTOR)
         initializeBridgeService(ServiceType.DATASTORE)
         initializeBridgeService(ServiceType.CONDUCTOR, tags = mutableListOf("a"))
-        
+
         val expected = setOf(
                 initializeBridgeService(ServiceType.DATASTORE, tags = mutableListOf("a")).serviceId
         )
