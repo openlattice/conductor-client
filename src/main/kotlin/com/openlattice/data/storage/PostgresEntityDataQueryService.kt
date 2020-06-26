@@ -9,6 +9,7 @@ import com.openlattice.analysis.SqlBindInfo
 import com.openlattice.analysis.requests.Filter
 import com.openlattice.data.DeleteType
 import com.openlattice.data.WriteEvent
+import com.openlattice.data.storage.PostgresEntitySetSizesInitializationTask.Companion.ENTITY_SET_SIZES_VIEW
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.data.util.PostgresDataHasher
 import com.openlattice.edm.type.PropertyType
@@ -18,9 +19,11 @@ import com.openlattice.postgres.PostgresTable.DATA
 import com.openlattice.postgres.PostgresTable.IDS
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.PreparedStatementHolderSupplier
+import com.openlattice.postgres.streams.StatementHolderSupplier
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
+import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.ByteBuffer
@@ -41,11 +44,18 @@ const val S3_DELETE_BATCH_SIZE = 10_000
 @Service
 class PostgresEntityDataQueryService(
         private val hds: HikariDataSource,
+        private val reader: HikariDataSource,
         private val byteBlobDataManager: ByteBlobDataManager,
         protected val partitionManager: PartitionManager
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(PostgresEntityDataQueryService::class.java)
+    }
+
+    fun getEntitySetCounts(): Map<UUID, Long> {
+        return BasePostgresIterable(StatementHolderSupplier(reader, "SELECT * FROM $ENTITY_SET_SIZES_VIEW")) {
+            ResultSetAdapters.entitySetId(it) to ResultSetAdapters.count(it)
+        }.toMap()
     }
 
     @JvmOverloads
@@ -62,6 +72,26 @@ class PostgresEntityDataQueryService(
                 propertyTypeFilters,
                 metadataOptions,
                 version
+        ) { rs ->
+            getEntityPropertiesByPropertyTypeId(rs, authorizedPropertyTypes, metadataOptions, byteBlobDataManager)
+        }
+    }
+
+    @JvmOverloads
+    fun getLinkedEntitiesWithPropertyTypeIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
+            metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            version: Optional<Long> = Optional.empty()
+    ): BasePostgresIterable<Pair<UUID, Map<UUID, Set<Any>>>> {
+        return getEntitySetIterable(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                propertyTypeFilters,
+                metadataOptions,
+                version,
+                linking = true
         ) { rs ->
             getEntityPropertiesByPropertyTypeId(rs, authorizedPropertyTypes, metadataOptions, byteBlobDataManager)
         }
@@ -202,7 +232,7 @@ class PostgresEntityDataQueryService(
                 detailed
         )
 
-        return BasePostgresIterable(PreparedStatementHolderSupplier(hds, sql, FETCH_SIZE) { ps ->
+        return BasePostgresIterable(PreparedStatementHolderSupplier(reader, sql, FETCH_SIZE) { ps ->
             val metaBinders = linkedSetOf<SqlBinder>()
             var bindIndex = 1
             metaBinders.add(
@@ -296,16 +326,16 @@ class PostgresEntityDataQueryService(
                 .forEach { (partition, batch) ->
                     var entityBatch = batch.associate { it.key to it.value }
 
-                    /* tombstoneFn must execute on the non-JsonDeserializer-formatted version of the entities,
-                       otherwise any values replaced by an empty set will not be tombstoned. */
-                    tombstoneFn(version, entityBatch)
-
                     if (!awsPassthrough) {
                         entityBatch = entityBatch.mapValues {
-                            Multimaps.asMap(JsonDeserializer.validateFormatAndNormalize(it.value, authorizedPropertyTypes)
-                            { "Entity set $entitySetId with entity key id ${it.key}" })
+                            JsonDeserializer.validateFormatAndNormalize(
+                                    it.value,
+                                    authorizedPropertyTypes
+                            ) { "Entity set $entitySetId with entity key id ${it.key}" }
                         }
                     }
+
+                    tombstoneFn(version, entityBatch)
 
                     val upc = upsertEntities(
                             entitySetId,
@@ -380,19 +410,35 @@ class PostgresEntityDataQueryService(
                 upsertPropertyValues.values.map { it.executeBatch().sum() }.sum()
             }.sum()
 
+            connection.autoCommit = false
+            val lockEntities = connection.prepareStatement(lockEntitiesInIdsTable)
             //Make data visible by marking new version in ids table.
             val upsertEntities = connection.prepareStatement(buildUpsertEntitiesAndLinkedData())
+
             val updatedLinkedEntities = attempt(LinearBackoff(60000, 125), 32) {
-                upsertEntities.setObject(1, versionsArrays)
-                upsertEntities.setObject(2, version)
-                upsertEntities.setObject(3, version)
-                upsertEntities.setObject(4, entitySetId)
-                upsertEntities.setArray(5, entityKeyIdsArr)
-                upsertEntities.setInt(6, partition)
-                upsertEntities.setInt(7, partition)
-                upsertEntities.setLong(8, version)
-                upsertEntities.executeUpdate()
+                try {
+                    lockEntities.setObject(1, entitySetId)
+                    lockEntities.setArray(2, entityKeyIdsArr)
+                    lockEntities.setInt(3, partition)
+                    lockEntities.executeQuery()
+
+                    upsertEntities.setObject(1, versionsArrays)
+                    upsertEntities.setObject(2, version)
+                    upsertEntities.setObject(3, version)
+                    upsertEntities.setObject(4, entitySetId)
+                    upsertEntities.setArray(5, entityKeyIdsArr)
+                    upsertEntities.setInt(6, partition)
+                    upsertEntities.setInt(7, partition)
+                    upsertEntities.setLong(8, version)
+                    upsertEntities.executeUpdate()
+                } catch( ex: PSQLException) {
+                    //Should be pretty rare.
+                    connection.rollback()
+                    throw ex
+                }
             }
+            connection.commit()
+            connection.autoCommit = true
             logger.debug("Updated $updatedLinkedEntities linked entities as part of insert.")
             updatedPropertyCounts
         }
@@ -1081,7 +1127,9 @@ class PostgresEntityDataQueryService(
             sqlFormat: Int,
             deleteType: DeleteType
     ): BasePostgresIterable<UUID> {
-        val partitions = PostgresArrays.createIntArray(hds.connection, partitionManager.getEntitySetPartitions(entitySetId))
+        val partitions = PostgresArrays.createIntArray(
+                hds.connection, partitionManager.getEntitySetPartitions(entitySetId)
+        )
         return BasePostgresIterable(
                 PreparedStatementHolderSupplier(
                         hds,

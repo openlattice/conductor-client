@@ -24,6 +24,7 @@ package com.openlattice.hazelcast.pods;
 
 import com.auth0.json.mgmt.users.User;
 import com.google.common.base.Charsets;
+import com.google.common.eventbus.EventBus;
 import com.google.common.io.Resources;
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore;
 import com.openlattice.apps.App;
@@ -38,18 +39,8 @@ import com.openlattice.auth0.Auth0Pod;
 import com.openlattice.auth0.Auth0TokenProvider;
 import com.openlattice.auth0.AwsAuth0TokenProvider;
 import com.openlattice.authentication.Auth0Configuration;
-import com.openlattice.authorization.AceKey;
-import com.openlattice.authorization.AceValue;
-import com.openlattice.authorization.AclKey;
-import com.openlattice.authorization.PostgresUserApi;
-import com.openlattice.authorization.SecurablePrincipal;
-import com.openlattice.authorization.mapstores.PermissionMapstore;
-import com.openlattice.authorization.mapstores.PostgresCredentialMapstore;
-import com.openlattice.authorization.mapstores.PrincipalMapstore;
-import com.openlattice.authorization.mapstores.PrincipalTreesMapstore;
-import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader;
-import com.openlattice.authorization.mapstores.SecurablePrincipalsMapLoader;
-import com.openlattice.authorization.mapstores.UserMapstore;
+import com.openlattice.authorization.*;
+import com.openlattice.authorization.mapstores.*;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.collections.CollectionTemplateKey;
 import com.openlattice.collections.EntitySetCollection;
@@ -80,6 +71,7 @@ import com.openlattice.postgres.PostgresTableManager;
 import com.openlattice.postgres.mapstores.*;
 import com.openlattice.requests.Status;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import com.openlattice.scheduling.mapstores.ScheduledTasksMapstore;
 import com.openlattice.shuttle.Integration;
 import com.openlattice.shuttle.IntegrationJob;
 import com.zaxxer.hikari.HikariDataSource;
@@ -111,6 +103,9 @@ public class MapstoresPod {
     private Auth0Configuration auth0Configuration;
 
     @Inject
+    private EventBus eventBus;
+
+    @Inject
     private Jdbi jdbi;
 
     @Bean
@@ -124,7 +119,7 @@ public class MapstoresPod {
             stmt.addBatch( deleteUserSql );
             stmt.executeBatch();
         } catch ( SQLException | IOException e ) {
-            logger.error( "Unable to configure postgres functions for user management." );
+            logger.error( "Unable to configure postgres functions for user management.", e );
         }
 
         return jdbi.onDemand( PostgresUserApi.class );
@@ -142,7 +137,7 @@ public class MapstoresPod {
 
     @Bean
     public SelfRegisteringMapStore<AceKey, AceValue> permissionMapstore() {
-        return new PermissionMapstore( hikariDataSource );
+        return new PermissionMapstore( hikariDataSource, eventBus );
     }
 
     @Bean
@@ -297,10 +292,16 @@ public class MapstoresPod {
 
     @Bean
     public SecurablePrincipalsMapLoader securablePrincipalsMapLoader() {
-        return new SecurablePrincipalsMapLoader( );
+        return new SecurablePrincipalsMapLoader();
     }
+
     @Bean
     public ResolvedPrincipalTreesMapLoader resolvedPrincipalTreesMapLoader() {
         return new ResolvedPrincipalTreesMapLoader();
+    }
+
+    @Bean
+    public ScheduledTasksMapstore scheduledTasksMapstore() {
+        return new ScheduledTasksMapstore( hikariDataSource );
     }
 }

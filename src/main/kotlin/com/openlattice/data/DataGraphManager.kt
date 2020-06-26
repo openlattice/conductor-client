@@ -25,9 +25,9 @@ import com.google.common.collect.ListMultimap
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
-import com.openlattice.data.integration.Association
-import com.openlattice.data.integration.Entity
+import com.openlattice.data.storage.MetadataOption
 import com.openlattice.edm.type.PropertyType
+import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.graph.core.NeighborSets
 import com.openlattice.graph.edge.Edge
 import com.openlattice.postgres.streams.BasePostgresIterable
@@ -55,8 +55,6 @@ interface DataGraphManager {
             linking: Boolean
     ): EntitySetData<FullQualifiedName>
 
-    fun getEntitySetSize(entitySetId: UUID): Long
-
     /*
      * CRUD methods for entity
      */
@@ -76,6 +74,12 @@ interface DataGraphManager {
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
+
+    fun getEntitiesWithMetadata(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
     /**
      * Clears property data, id, edges of association entities of the provided DataEdgeKeys in batches.
@@ -102,12 +106,6 @@ interface DataGraphManager {
      */
 
     fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID>
-
-    fun integrateEntities(
-            entitySetId: UUID,
-            entities: Map<String, Map<UUID, Set<Any>>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Map<String, UUID>
 
     fun createEntities(
             entitySetId: UUID,
@@ -140,23 +138,6 @@ interface DataGraphManager {
             authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, CreateAssociationEvent>
 
-    /**
-     * Integrates association data into the system.
-     * @param associations The assosciations to integrate
-     * @param authorizedPropertiesByEntitySet The authorized properties by entity set id.
-     * @return A map of entity sets to mappings of entity ids to entity key ids.
-     */
-    fun integrateAssociations(
-            associations: Set<Association>,
-            authorizedPropertiesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Map<String, UUID>>
-
-    fun integrateEntitiesAndAssociations(
-            entities: Set<Entity>,
-            associations: Set<Association>,
-            authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
-    ): IntegrationResults?
-
     fun getTopUtilizers(
             entitySetId: UUID,
             filteredNeighborsRankingList: List<FilteredNeighborsRankingAggregation>,
@@ -171,7 +152,7 @@ interface DataGraphManager {
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linked: Boolean,
             linkingEntitySetId: Optional<UUID>
-    ): Iterable<Map<String, Any>>
+    ): AggregationResult
 
     fun getNeighborEntitySets(entitySetIds: Set<UUID>): List<NeighborSets>
 

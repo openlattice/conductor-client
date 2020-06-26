@@ -280,6 +280,7 @@ fun optionalWhereClausesSingleEdk(
  *
  * The bind order is the following:
  *
+ *
  * 1 - versions
  *
  * 2 - version
@@ -328,15 +329,52 @@ fun buildUpsertEntitiesAndLinkedData(): String {
             ","
     ) { "${it.name} = EXCLUDED.${it.name}" }
 
-
     return "WITH linking_map as ($upsertEntitiesSql) INSERT INTO ${DATA.name} ($metadataColumnsSql,$insertColumns) " +
             "SELECT $metadataReadColumnsSql,$insertColumns FROM ${DATA.name} INNER JOIN " +
             "linking_map USING(${ENTITY_SET_ID.name},${ID.name},${PARTITION.name}) " +
             "WHERE ${LINKING_ID.name} IS NOT NULL AND version > ? " +
-            "ORDER BY ${ENTITY_SET_ID.name},${ID.name},${PARTITION.name},${PROPERTY_TYPE_ID.name},${HASH.name},${ORIGIN_ID.name} " +
+//            "ORDER BY ${ENTITY_SET_ID.name},${ID.name},${PARTITION.name},${PROPERTY_TYPE_ID.name},${HASH.name},${ORIGIN_ID.name} " +
             "ON CONFLICT ($primaryKeyColumnNamesAsString) " +
             "DO UPDATE SET $conflictClause"
 }
+
+/**
+ * Preparable sql to lock entities in [IDS] table.
+ *
+ * This query will lock provided entities that have an assigned linking id in ID order.
+ *
+ * The bind order is the following:
+ *
+ * 1 - entity set id
+ *
+ * 2 - entity key ids
+ *
+ * 3 - partition
+ */
+val lockEntitiesInIdsTable =
+        "SELECT 1 FROM ${IDS.name} " +
+                "WHERE ${ENTITY_SET_ID.name} = ? AND ${ID_VALUE.name} = ANY(?) AND ${PARTITION.name} = ? " +
+                "ORDER BY ${ID_VALUE.name} " +
+                "FOR UPDATE"
+
+/**
+ * Preparable sql to lock entities in [IDS] table.
+ *
+ * This query will lock provided entities that have an assigned linking id in ID order.
+ *
+ * The bind order is the following:
+ *
+ * 1 - entity set id
+ *
+ * 2 - entity key ids
+ *
+ * 3 - partition
+ */
+val lockLinkedEntitiesInIdsTable =
+        "SELECT 1 FROM ${IDS.name} " +
+                "WHERE ${ENTITY_SET_ID.name} = ? AND ${ID_VALUE.name} = ANY(?) AND ${PARTITION.name} = ? AND LINKING_ID IS NOT NULL " +
+                "ORDER BY ${ID_VALUE.name} " +
+                "FOR UPDATE"
 
 /**
  * Preparable sql to upsert entities in [IDS] table.
@@ -604,9 +642,9 @@ internal val deletePropertiesOfEntitiesInEntitySet =
  */
 internal val deleteEntitiesInEntitySet =
         "DELETE FROM ${DATA.name} " +
-        "WHERE ${ENTITY_SET_ID.name} = ? AND " +
-              "( ${ID_VALUE.name} = ANY( ? ) OR ${ORIGIN_ID.name} = ANY( ? ) ) AND " +
-              "${PARTITION.name} = ? "
+                "WHERE ${ENTITY_SET_ID.name} = ? AND " +
+                "( ${ID_VALUE.name} = ANY( ? ) OR ${ORIGIN_ID.name} = ANY( ? ) ) AND " +
+                "${PARTITION.name} = ? "
 
 
 /**
