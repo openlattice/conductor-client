@@ -44,7 +44,6 @@ class EdmAuthorizationHelperTest : HzAuthzTest() {
         val auditingConfig = testServer.context.getBean(AuditingConfiguration::class.java)
 
         val edmManager = EdmService(
-                hds,
                 hazelcastInstance,
                 HazelcastAclKeyReservationService(hazelcastInstance),
                 hzAuthz,
@@ -60,6 +59,7 @@ class EdmAuthorizationHelperTest : HzAuthzTest() {
                 hzAuthz,
                 PartitionManager(hazelcastInstance, hds),
                 edmManager,
+                hds,
                 auditingConfig
         )
 

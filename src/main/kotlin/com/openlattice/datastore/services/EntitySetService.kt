@@ -38,6 +38,7 @@ import com.openlattice.auditing.AuditingTypes
 import com.openlattice.authorization.*
 import com.openlattice.authorization.securable.SecurableObjectType
 import com.openlattice.authorization.securable.SecurableObjectType.PropertyTypeInEntitySet
+import com.openlattice.data.storage.PostgresEntitySetSizesInitializationTask
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.datastore.util.Util
 import com.openlattice.edm.EntitySet
@@ -60,8 +61,10 @@ import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.hazelcast.processors.AddEntitySetsToLinkingEntitySetProcessor
 import com.openlattice.hazelcast.processors.RemoveDataExpirationPolicyProcessor
 import com.openlattice.hazelcast.processors.RemoveEntitySetsFromLinkingEntitySetProcessor
+import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.mapstores.EntitySetMapstore
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet
+import com.zaxxer.hikari.HikariDataSource
 import edu.umd.cs.findbugs.classfile.ResourceNotFoundException
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -74,6 +77,7 @@ open class EntitySetService(
         private val authorizations: AuthorizationManager,
         private val partitionManager: PartitionManager,
         private val edm: EdmManager,
+        private val hds: HikariDataSource,
         auditingConfiguration: AuditingConfiguration
 ) : EntitySetManager {
 
@@ -84,7 +88,6 @@ open class EntitySetService(
             authorizations,
             hazelcastInstance
     )
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(EntitySetManager::class.java)
@@ -100,13 +103,12 @@ open class EntitySetService(
 
     private val aclKeys = HazelcastMap.ACL_KEYS.getMap(hazelcastInstance)
 
-
     override fun createEntitySet(principal: Principal, entitySet: EntitySet): UUID {
         ensureValidEntitySet(entitySet)
         Principals.ensureUser(principal)
 
         if (entitySet.partitions.isEmpty()) {
-            partitionManager.allocatePartitions(entitySet)
+            partitionManager.allocateEntitySetPartitions(entitySet)
         }
 
         val entityType = entityTypes.getValue(entitySet.entityTypeId)
@@ -117,10 +119,6 @@ open class EntitySetService(
             entitySet.removeFlag(EntitySetFlag.ASSOCIATION)
         }
 
-        return createEntitySet(principal, entitySet, entityType)
-    }
-
-    private fun createEntitySet(principal: Principal, entitySet: EntitySet, entityType: EntityType): UUID {
         val entitySetId = reserveEntitySetIfNotExists(entitySet)
 
         try {
@@ -237,6 +235,27 @@ open class EntitySetService(
         }
     }
 
+    private val GET_ENTITY_SET_COUNT = """
+        SELECT ${PostgresColumn.COUNT} 
+            FROM ${PostgresEntitySetSizesInitializationTask.ENTITY_SET_SIZES_VIEW} 
+            WHERE ${PostgresColumn.ENTITY_SET_ID.name} = ?
+    """.trimIndent()
+
+    override fun getEntitySetSize(entitySetId: UUID): Long {
+        return hds.connection.use { connection ->
+            connection.prepareStatement(GET_ENTITY_SET_COUNT).use { ps ->
+                ps.setObject(1, entitySetId)
+                ps.executeQuery().use { rs ->
+                    if (rs.next()) {
+                        rs.getLong(1)
+                    } else {
+                        0
+                    }
+                }
+            }
+        }
+    }
+
     override fun getEntitySet(entitySetId: UUID): EntitySet? {
         return Util.getSafely(entitySets, entitySetId)
     }
@@ -330,17 +349,23 @@ open class EntitySetService(
     @Timed
     @Suppress("UNCHECKED_CAST")
     override fun filterToAuthorizedNormalEntitySets(
-            entitySetIds: Set<UUID>, permissions: EnumSet<Permission>, principals: Set<Principal>
+            entitySetIds: Set<UUID>,
+            permissions: EnumSet<Permission>,
+            principals: Set<Principal>
     ): Set<UUID> {
+
+        val accessChecks = mutableMapOf<AclKey, EnumSet<Permission>>()
+
         val entitySetIdToNormalEntitySetIds = entitySets.executeOnKeys(
                 entitySetIds,
                 GetNormalEntitySetIdsEntryProcessor()
-        )
-                .mapValues { it.value as DelegatedUUIDSet }
-
-        val normalEntitySetIds = entitySetIdToNormalEntitySetIds.values.flatten()
-
-        val accessChecks = normalEntitySetIds.associate { AclKey(it) to permissions }
+        ).mapValues {
+            val set = (it.value as DelegatedUUIDSet).unwrap()
+            set.forEach {
+                accessChecks.putIfAbsent( AclKey(it), permissions )
+            }
+            set
+        }
 
         val entitySetsToAuthorizedStatus = authorizations.authorize(accessChecks, principals)
                 .map { it.key.first() to it.value.values.all { bool -> bool } }.toMap()
@@ -373,7 +398,7 @@ open class EntitySetService(
                 ?: throw  ResourceNotFoundException("Entity set $entitySetId does not exist.")
 
         val maybeEtProps = entityTypes.executeOnKey(maybeEtId, GetPropertiesFromEntityTypeEntryProcessor())
-                as? Set<UUID>
+                as? DelegatedUUIDSet
                 ?: throw  ResourceNotFoundException("Entity type $maybeEtId does not exist.")
 
         return propertyTypes.getAll(maybeEtProps)

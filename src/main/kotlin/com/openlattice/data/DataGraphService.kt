@@ -27,13 +27,12 @@ import com.google.common.collect.ListMultimap
 import com.google.common.collect.Multimaps
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
+import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
 import com.openlattice.data.storage.EntityDatastore
 import com.openlattice.data.storage.MetadataOption
-import com.openlattice.data.storage.PostgresEntitySetSizesTask
 import com.openlattice.edm.set.ExpirationBase
 import com.openlattice.edm.type.PropertyType
-import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.graph.core.GraphService
 import com.openlattice.graph.core.NeighborSets
 import com.openlattice.graph.edge.Edge
@@ -66,9 +65,7 @@ private val logger = LoggerFactory.getLogger(DataGraphService::class.java)
 class DataGraphService(
         private val graphService: GraphService,
         private val idService: EntityKeyIdService,
-        private val eds: EntityDatastore,
-        private val entitySetSizesTask: PostgresEntitySetSizesTask
-
+        private val eds: EntityDatastore
 ) : DataGraphManager {
     override fun getEntitiesWithMetadata(
             entitySetId: UUID, ids: Set<UUID>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
@@ -112,7 +109,6 @@ class DataGraphService(
         const val ASSOCIATION_SIZE = 30_000
     }
 
-
     /* Select */
 
     override fun getEntitySetData(
@@ -122,10 +118,6 @@ class DataGraphService(
             linking: Boolean
     ): EntitySetData<FullQualifiedName> {
         return eds.getEntitySetsData(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking = linking)
-    }
-
-    override fun getEntitySetSize(entitySetId: UUID): Long {
-        return entitySetSizesTask.getEntitySetSize(entitySetId)
     }
 
     override fun getEntity(

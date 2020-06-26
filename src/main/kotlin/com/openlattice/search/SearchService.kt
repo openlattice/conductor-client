@@ -19,6 +19,7 @@ import com.openlattice.data.events.EntitiesDeletedEvent
 import com.openlattice.data.events.EntitiesUpsertedEvent
 import com.openlattice.data.requests.NeighborEntityDetails
 import com.openlattice.data.requests.NeighborEntityIds
+import com.openlattice.data.storage.EntityDatastore
 import com.openlattice.data.storage.IndexingMetadataManager
 import com.openlattice.data.storage.MetadataOption
 import com.openlattice.datastore.services.EdmManager
@@ -44,7 +45,6 @@ import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
-import javax.inject.Inject
 import kotlin.streams.toList
 
 /**
@@ -54,7 +54,14 @@ import kotlin.streams.toList
 @Service
 class SearchService(
         val eventBus: EventBus,
-        val metricRegistry: MetricRegistry
+        val metricRegistry: MetricRegistry,
+        val authorizations: AuthorizationManager,
+        val elasticsearchApi: ConductorElasticsearchApi,
+        val dataModelService: EdmManager,
+        val entitySetService: EntitySetManager,
+        val dataGraphManager: DataGraphManager,
+        val graphService: GraphService,
+        val indexingMetadataManager: IndexingMetadataManager
 ) {
 
     companion object {
@@ -65,27 +72,6 @@ class SearchService(
             return UUID.fromString(entity.getValue(EdmConstants.ID_FQN).first().toString())
         }
     }
-
-    @Inject
-    private lateinit var authorizations: AuthorizationManager
-
-    @Inject
-    private lateinit var elasticsearchApi: ConductorElasticsearchApi
-
-    @Inject
-    private lateinit var dataModelService: EdmManager
-
-    @Inject
-    private lateinit var entitySetService: EntitySetManager
-
-    @Inject
-    private lateinit var graphService: GraphService
-
-    @Inject
-    private lateinit var dataManager: DataGraphManager
-
-    @Inject
-    private lateinit var indexingMetadataManager: IndexingMetadataManager
 
     init {
         eventBus.register(this)
@@ -667,7 +653,7 @@ class SearchService(
         sw1.reset().start()
 
 
-        val entitiesByEntitySetId = dataManager
+        val entitiesByEntitySetId = dataGraphManager
                 .getEntitiesAcrossEntitySets(entitySetIdToEntityKeyId, entitySetsIdsToAuthorizedProps)
         logger.debug("Get entities across entity sets query finished in {} ms", sw1.elapsed(TimeUnit.MILLISECONDS))
         sw1.reset().start()
@@ -915,13 +901,13 @@ class SearchService(
                     .linkedEntitySets
                     .associateWith { authorizedPropertyTypes.getValue(entitySet.id) }
 
-            return dataManager.getLinkingEntitiesWithMetadata(
+            return dataGraphManager.getLinkingEntitiesWithMetadata(
                     linkingIdsByEntitySetIds,
                     authorizedPropertiesOfNormalEntitySets,
                     EnumSet.of(MetadataOption.LAST_WRITE)
             ).toList()
         } else {
-            return dataManager
+            return dataGraphManager
                     .getEntitiesWithMetadata(
                             entitySet.id,
                             ImmutableSet.copyOf(entityKeyIds),
@@ -936,12 +922,7 @@ class SearchService(
             linkingIds: Set<UUID>,
             normalEntitySetIds: Set<UUID>
     ): Map<UUID, Set<UUID>> {
-        return dataManager.getEntityKeyIdsOfLinkingIds(linkingIds, normalEntitySetIds).toMap()
-    }
-
-    @Subscribe
-    fun clearAllData(event: ClearAllDataEvent) {
-        elasticsearchApi.clearAllData()
+        return dataGraphManager.getEntityKeyIdsOfLinkingIds(linkingIds, normalEntitySetIds).toMap()
     }
 
     fun triggerPropertyTypeIndex(propertyTypes: List<PropertyType>) {
