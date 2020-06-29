@@ -222,7 +222,7 @@ class BridgeService(
     ): Map<ServiceType, Map<UUID, ServiceDescription>> {
         //Polling is easier for now.
         val start = System.nanoTime()
-        desiredCluster.entries
+
         var currentCluster: Map<ServiceType, Map<UUID, ServiceDescription>>
         var desiredClusterStateReached: Boolean
         do {
