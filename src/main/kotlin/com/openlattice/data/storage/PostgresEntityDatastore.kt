@@ -11,8 +11,8 @@ import com.openlattice.data.Property
 import com.openlattice.data.WriteEvent
 import com.openlattice.data.events.EntitiesDeletedEvent
 import com.openlattice.data.events.EntitiesUpsertedEvent
+import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetManager
-import com.openlattice.edm.PostgresEdmManager
 import com.openlattice.edm.events.EntitySetDataDeletedEvent
 import com.openlattice.edm.set.EntitySetFlag
 import com.openlattice.edm.type.PropertyType
@@ -36,7 +36,7 @@ import javax.inject.Inject
 @Service
 class PostgresEntityDatastore(
         private val dataQueryService: PostgresEntityDataQueryService,
-        private val postgresEdmManager: PostgresEdmManager,
+        private val edmManager: EdmManager,
         private val entitySetManager: EntitySetManager,
         private val metricRegistry: MetricRegistry,
         private val eventBus: EventBus,
@@ -118,7 +118,7 @@ class PostgresEntityDatastore(
 
         markMaterializedEntitySetDirty(entitySetId) // mark entityset as unsync with data
         // mark all involved linking entitysets as unsync with data
-        postgresEdmManager.getAllLinkingEntitySetIdsForEntitySet(entitySetId)
+        edmManager.getAllLinkingEntitySetIdsForEntitySet(entitySetId)
                 .forEach { this.markMaterializedEntitySetDirty(it) }
     }
 
@@ -127,7 +127,7 @@ class PostgresEntityDatastore(
         markMaterializedEntitySetDirty(entitySetId) // mark entityset as unsync with data
 
         // mark all involved linking entitysets as unsync with data
-        postgresEdmManager.getAllLinkingEntitySetIdsForEntitySet(entitySetId)
+        edmManager.getAllLinkingEntitySetIdsForEntitySet(entitySetId)
                 .forEach { this.markMaterializedEntitySetDirty(it) }
     }
 
@@ -139,7 +139,7 @@ class PostgresEntityDatastore(
         markMaterializedEntitySetDirty(entitySetId) // mark entityset as unsync with data
 
         // mark all involved linking entitysets as unsync with data
-        postgresEdmManager.getAllLinkingEntitySetIdsForEntitySet(entitySetId)
+        edmManager.getAllLinkingEntitySetIdsForEntitySet(entitySetId)
                 .forEach { this.markMaterializedEntitySetDirty(it) }
     }
 
