@@ -25,13 +25,14 @@ import com.openlattice.authorization.util.toAceKeys
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.organizations.PrincipalSet
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
 import java.util.*
 import java.util.function.Function
 import java.util.stream.Collectors
 import java.util.stream.Stream
 
-
+@Service
 class HazelcastAuthorizationService(
         hazelcastInstance: HazelcastInstance,
         val eventBus: EventBus
@@ -93,23 +94,25 @@ class HazelcastAuthorizationService(
 
     /** Set Securable Object Type **/
 
-
+    @Timed
     override fun setSecurableObjectTypes(aclKeys: Set<AclKey>, objectType: SecurableObjectType) {
         securableObjectTypes.putAll(aclKeys.associateWith { objectType })
         aces.executeOnEntries(SecurableObjectTypeUpdater(objectType), hasAnyAclKeys(aclKeys))
     }
 
+    @Timed
     override fun setSecurableObjectType(aclKey: AclKey, objectType: SecurableObjectType) {
         securableObjectTypes[aclKey] = objectType
         aces.executeOnEntries(SecurableObjectTypeUpdater(objectType), hasAclKey(aclKey))
     }
 
     /** Add Permissions **/
-
+    @Timed
     override fun addPermission(key: AclKey, principal: Principal, permissions: EnumSet<Permission>) {
         addPermission(key, principal, permissions, OffsetDateTime.MAX)
     }
 
+    @Timed
     override fun addPermission(key: AclKey, principal: Principal, permissions: EnumSet<Permission>, expirationDate: OffsetDateTime) {
         //TODO: We should do something better than reading the securable object type.
         val securableObjectType = getDefaultObjectType(securableObjectTypes, key)
@@ -119,6 +122,7 @@ class HazelcastAuthorizationService(
         signalMaterializationPermissionChange(key, principal, permissions, securableObjectType)
     }
 
+    @Timed
     override fun addPermissions(
             keys: Set<AclKey>,
             principal: Principal,
@@ -128,6 +132,7 @@ class HazelcastAuthorizationService(
         addPermissions(keys, principal, permissions, securableObjectType, OffsetDateTime.MAX)
     }
 
+    @Timed
     override fun addPermissions(
             keys: Set<AclKey>,
             principal: Principal,
@@ -168,7 +173,7 @@ class HazelcastAuthorizationService(
         }
     }
 
-
+    @Timed
     override fun removePermission(
             key: AclKey,
             principal: Principal,
@@ -195,7 +200,7 @@ class HazelcastAuthorizationService(
     }
 
     /** Set Permissions **/
-
+    @Timed
     override fun setPermissions(acls: List<Acl>) {
         val types = getSecurableObjectTypeMapForAcls(acls)
 
@@ -224,6 +229,7 @@ class HazelcastAuthorizationService(
         setPermission(key, principal, permissions, OffsetDateTime.MAX)
     }
 
+    @Timed
     override fun setPermission(
             key: AclKey,
             principal: Principal,
@@ -240,6 +246,7 @@ class HazelcastAuthorizationService(
         aces[AceKey(key, principal)] = AceValue(permissions, securableObjectType, expirationDate)
     }
 
+    @Timed
     override fun setPermission(aclKeys: Set<AclKey>, principals: Set<Principal>, permissions: EnumSet<Permission>) {
         //This should be a rare call to overwrite all permissions, so it's okay to do a read before write.
         if (!permissions.contains(Permission.OWNER)) {
@@ -262,6 +269,7 @@ class HazelcastAuthorizationService(
         aces.putAll(newPermissions)
     }
 
+    @Timed
     override fun setPermissions(permissions: Map<AceKey, EnumSet<Permission>>) {
 
         permissions.entries

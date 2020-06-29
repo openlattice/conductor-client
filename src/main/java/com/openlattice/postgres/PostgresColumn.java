@@ -142,7 +142,7 @@ public final class PostgresColumn {
     public static final String                   DATASTORE_FIELD                   = "datastore";
     public static final PostgresColumnDefinition DATASTORE                         =
             new PostgresColumnDefinition( DATASTORE_FIELD, TEXT )
-            .withDefault( "" );
+            .withDefault( "'DEFAULT'" );
     public static final String                   DATATYPE_FIELD                    = "datatype";
     public static final PostgresColumnDefinition DATATYPE                          =
             new PostgresColumnDefinition( DATATYPE_FIELD, TEXT ).notNull();
