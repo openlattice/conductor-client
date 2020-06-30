@@ -67,8 +67,14 @@ class DataGraphService(
         private val idService: EntityKeyIdService,
         private val eds: EntityDatastore
 ) : DataGraphManager {
+
+    companion object {
+        const val ASSOCIATION_SIZE = 30_000
+    }
+
     override fun getEntitiesWithMetadata(
-            entitySetId: UUID, ids: Set<UUID>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            entitySetId: UUID, ids: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
     ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -76,13 +82,15 @@ class DataGraphService(
 
     override fun getLinkingEntitiesWithMetadata(
             linkingIdsByEntitySetIds: Map<UUID, Optional<Set<UUID>>>,
-            authorizedPropertiesOfNormalEntitySets: Map<UUID, Map<UUID, PropertyType>>, of: EnumSet<MetadataOption>?
+            authorizedPropertiesOfNormalEntitySets: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: Set<MetadataOption>
     ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun getEntityKeyIdsOfLinkingIds(
-            linkingIds: Set<UUID>, normalEntitySetIds: Set<UUID>
+            linkingIds: Set<UUID>,
+            normalEntitySetIds: Set<UUID>
     ): BasePostgresIterable<kotlin.Pair<UUID, Set<UUID>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
@@ -103,10 +111,6 @@ class DataGraphService(
 
     override fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID> {
         return idService.reserveEntityKeyIds(entityKeys)
-    }
-
-    companion object {
-        const val ASSOCIATION_SIZE = 30_000
     }
 
     /* Select */
@@ -406,7 +410,9 @@ class DataGraphService(
     }
 
     private fun getSqlParameters(
-            expirationPolicy: DataExpiration, dateTime: OffsetDateTime, expirationPT: Optional<PropertyType>
+            expirationPolicy: DataExpiration,
+            dateTime: OffsetDateTime,
+            expirationPT: Optional<PropertyType>
     ): Triple<String, Any, Int> {
         val expirationBaseColumn: String
         val formattedDateMinusTTE: Any

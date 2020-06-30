@@ -272,7 +272,6 @@ private fun buildResultQueueName(serviceId: UUID) = "$RESULT_QUEUES_PREFIX${serv
 data class ServiceDescription @JvmOverloads constructor(
         val serviceType: ServiceType,
         val tags: MutableList<String> = mutableListOf(),
-//        val operations: Map<UUID, InvocationRequest> = mutableMapOf(),
         var lastPing: Long = System.currentTimeMillis()
 )
 

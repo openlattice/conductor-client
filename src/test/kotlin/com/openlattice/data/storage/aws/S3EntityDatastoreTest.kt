@@ -15,7 +15,7 @@ import com.openlattice.data.EntityDataKey
 import com.openlattice.data.storage.EntityLoader
 import com.openlattice.data.storage.S3StorageConfiguration
 import com.openlattice.datastore.configuration.DatastoreConfiguration
-import com.openlattice.datastore.configuration.S3StorageProvider
+import com.openlattice.data.storage.providers.S3StorageProvider
 import com.openlattice.mapstores.TestDataFactory
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.junit.Assert
@@ -56,7 +56,12 @@ class S3EntityDatastoreTest {
 
         init {
             val s3Objects = mockHazelcastMap(EntityDataKey::class.java, Entity::class.java)
-            s3StorageProvider = S3StorageProvider(hazelcastInstance, byteBlobDataManager, metricRegistry, s3StorageConfiguration)
+            s3StorageProvider = S3StorageProvider(
+                    hazelcastInstance,
+                    byteBlobDataManager,
+                    metricRegistry,
+                    s3StorageConfiguration
+            )
 
             Mockito.`when`(hazelcastInstance.getMap<EntityDataKey, Entity>("S3_OBJECT_STORE")).thenReturn(s3Objects)
 

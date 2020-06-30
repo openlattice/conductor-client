@@ -1,7 +1,7 @@
 package com.openlattice.data.storage
 
 import com.hazelcast.core.HazelcastInstance
-import com.openlattice.datastore.configuration.StorageProvider
+import com.openlattice.data.storage.providers.StorageProvider
 import com.openlattice.hazelcast.HazelcastMap
 import com.zaxxer.hikari.HikariDataSource
 import java.util.*

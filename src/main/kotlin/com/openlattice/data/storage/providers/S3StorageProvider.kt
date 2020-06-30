@@ -1,4 +1,4 @@
-package com.openlattice.datastore.configuration
+package com.openlattice.data.storage.providers
 
 import com.codahale.metrics.MetricRegistry
 import com.google.common.base.Suppliers

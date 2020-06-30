@@ -2,8 +2,8 @@ package com.openlattice.data.storage
 
 import com.codahale.metrics.MetricRegistry
 import com.hazelcast.core.HazelcastInstance
-import com.openlattice.datastore.configuration.S3StorageProvider
-import com.openlattice.datastore.configuration.StorageProvider
+import com.openlattice.data.storage.providers.S3StorageProvider
+import com.openlattice.data.storage.providers.StorageProvider
 import java.security.InvalidParameterException
 
 /**

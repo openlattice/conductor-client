@@ -211,7 +211,7 @@ interface DataGraphManager {
     fun getLinkingEntitiesWithMetadata(
             linkingIdsByEntitySetIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertiesOfNormalEntitySets: Map<UUID, Map<UUID, PropertyType>>,
-            of: EnumSet<MetadataOption>?
+            metadataOptions: Set<MetadataOption>
     ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>>
 
     fun getEntityKeyIdsOfLinkingIds(

@@ -1,4 +1,4 @@
-package com.openlattice.datastore.configuration
+package com.openlattice.data.storage.providers
 
 import com.openlattice.data.storage.EntityLoader
 import com.openlattice.data.storage.EntityWriter

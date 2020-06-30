@@ -43,10 +43,8 @@ import com.openlattice.collections.EntityTypeCollection
 import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.EntityKey
-import com.openlattice.data.TicketKey
 import com.openlattice.data.storage.MigrationStatus
-import com.openlattice.data.storage.StorageConfiguration
-import com.openlattice.datastore.configuration.StorageProvider
+import com.openlattice.data.storage.providers.StorageProvider
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.set.EntitySetPropertyKey
 import com.openlattice.edm.set.EntitySetPropertyMetadata
