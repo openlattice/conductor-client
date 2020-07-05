@@ -22,9 +22,12 @@
 
 package com.openlattice.hazelcast.pods;
 
+
 import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
+import com.kryptnostic.rhizome.hazelcast.serializers.ListStreamSerializers.DelegatedUUIDListStreamSerializer;
+import com.openlattice.hazelcast.StreamSerializerTypeIds;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -46,4 +49,14 @@ public class SharedStreamSerializersPod {
         FullQualifiedNameJacksonSerializer.registerWithMapper( mapper );
         return mapper;
     }
+
+    @Bean
+    public DelegatedUUIDListStreamSerializer delegatedUUIDListStreamSerializer() {
+        return new DelegatedUUIDListStreamSerializer() {
+            @Override public int getTypeId() {
+                return StreamSerializerTypeIds.DELEGATED_UUID_LIST.ordinal();
+            }
+        };
+    }
 }
+
