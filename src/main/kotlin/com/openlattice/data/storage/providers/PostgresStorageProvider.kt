@@ -28,11 +28,11 @@ class PostgresStorageProvider(
     override val entityWriter: Supplier<EntityWriter> = Suppliers.memoize(::getWriter)
 
     private fun getLoader(): EntityLoader {
-        return getPostgresEntityDatastore(byteBlobDataManager)
+        return getPostgresEntityDatastore()
     }
 
     private fun getWriter(): EntityWriter {
-        return getPostgresEntityDatastore(byteBlobDataManager)
+        return getPostgresEntityDatastore()
     }
 
     private fun getPostgresEntityDatastore(): PostgresEntityDatastore {
