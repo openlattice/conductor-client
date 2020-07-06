@@ -3,6 +3,7 @@ package com.openlattice.postgres
 import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.openlattice.IdConstants.LAST_WRITE_ID
+import com.openlattice.data.EntityDataKey
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.MetadataOption
 import com.openlattice.data.storage.PROPERTIES
@@ -116,6 +117,29 @@ fun getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeFqn(
     }
 
     return id to (entitySetId to entityByFqn)
+}
+
+@Throws(SQLException::class)
+fun getEntityPropertiesAcrossEntitySetsByFullQualifiedName(
+        rs: ResultSet,
+        authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+        metadataOptions: Set<MetadataOption>,
+        byteBlobDataManager: ByteBlobDataManager
+): Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    val id = id(rs)
+    val entitySetId = entitySetId(rs)
+    val propertyTypes = authorizedPropertyTypes.getValue(entitySetId)
+
+    val entity = readJsonDataColumns(rs, propertyTypes, byteBlobDataManager)
+
+    val entityByFqn = entity.mapKeys { propertyTypes.getValue(it.key).type }.toMutableMap()
+    entityByFqn[ID_FQN] = mutableSetOf<Any>(id.toString())
+
+    if (metadataOptions.contains(MetadataOption.LAST_WRITE)) {
+        entityByFqn[LAST_WRITE_FQN] = mutableSetOf<Any>(lastWriteTyped(rs))
+    }
+
+    return EntityDataKey(entitySetId,id) to entityByFqn
 }
 
 @Throws(SQLException::class)

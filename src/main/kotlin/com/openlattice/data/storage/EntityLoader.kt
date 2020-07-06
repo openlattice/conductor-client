@@ -2,6 +2,7 @@ package com.openlattice.data.storage
 
 import com.codahale.metrics.Timer
 import com.codahale.metrics.annotation.Timed
+import com.openlattice.data.EntityDataKey
 import com.openlattice.data.EntitySetData
 import com.openlattice.data.Property
 import com.openlattice.edm.type.PropertyType
@@ -75,11 +76,13 @@ interface EntityLoader {
     /**
      *
      */
-    fun getHistoricalEntitiesById(
-            entitySetIds: Map<UUID, Optional<Set<UUID>>>,
+    fun getEntities(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            metadataOptions: EnumSet<MetadataOption> = EnumSet.allOf(MetadataOption::class.java)
-    ): Map<UUID, MutableMap<UUID,MutableSet<Property>>>
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            link: Boolean = false
+    ) : Iterable<Pair<UUID, Collectionø<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>>
+
 
     /**
      * Loads specific entities and associated metadata.
@@ -88,14 +91,56 @@ interface EntityLoader {
      * @param authorizedPropertyTypes The property types to load for each data set.
      * @param metadataOptions The metadata to read.
      *
-     * @return A stream of entities with corresponding property types and metadata.
+     * @return A iterable of entities with corresponding property types and metadata.
      */
+    fun getEntitiesAcrossEntitySetsWithFqns(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
+    ): Iterable<Pair<EntityDataKey, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>>>
+
+    /**
+     * Loads specific entities and associated metadata.
+     *
+     * @param entityKeyIds The set of ids to load for each entity set
+     * @param authorizedPropertyTypes The property types to load for each entity set.
+     * @param metadataOptions The metadata to read.
+     *
+     * @return A iterable of entities with corresponding property types and metadata.
+     */
+    fun getEntitiesAcrossEntitySetsWithIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
+    ): Iterable<Pair<EntityDataKey, Collection<MutableMap<UUID, MutableSet<Any>>>>>
+
+    /**
+     * Loads specific entities and associated metadata.
+     *
+     * @param entityKeyIds The set of ids to load for each entity set
+     * @param authorizedPropertyTypes The property types to load for each data set.
+     * @param metadataOptions The metadata to read.
+     *
+     * @return A iterable of entities with corresponding property types and metadata.
+     */
+    @Deprecated(message = "Legacy Data API that doesn't return entity set id of entities.")
     fun getEntitiesAcrossEntitySets(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
             linking: Boolean = false
     ): Iterable<Pair<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>
+
+    /**
+     *
+     */
+    fun getHistoricalEntitiesById(
+            entitySetIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.allOf(MetadataOption::class.java)
+    ): Map<UUID, MutableMap<UUID, MutableSet<Property>>>
+
+
 
     @JvmDefault
     @Timed
@@ -156,4 +201,6 @@ interface EntityLoader {
             linkingIds: Set<UUID>,
             normalEntitySetIds: Set<UUID>
     ): BasePostgresIterable<Pair<UUID, Set<UUID>>>
+
+
 }

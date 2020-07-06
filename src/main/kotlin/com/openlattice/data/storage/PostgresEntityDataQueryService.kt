@@ -7,6 +7,7 @@ import com.openlattice.IdConstants
 import com.openlattice.analysis.SqlBindInfo
 import com.openlattice.analysis.requests.Filter
 import com.openlattice.data.DeleteType
+import com.openlattice.data.EntityDataKey
 import com.openlattice.data.WriteEvent
 import com.openlattice.data.storage.PostgresEntitySetSizesInitializationTask.Companion.ENTITY_SET_SIZES_VIEW
 import com.openlattice.data.storage.partitions.PartitionManager
@@ -177,6 +178,31 @@ class PostgresEntityDataQueryService(
         ).toMap()
     }
 
+    fun getEntitiesAcrossEntitySetsWithPropertyTypeFqnsIterable(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            propertyTypeFilters: Map<UUID, Set<Filter>> ,
+            metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            version: Optional<Long>,
+            linking: Boolean = false
+    ): BasePostgresIterable<Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Any>>>> {
+        return getEntitySetIterable(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                propertyTypeFilters,
+                metadataOptions,
+                version,
+                linking
+        ) { rs ->
+            getEntityPropertiesAcrossEntitySetsByFullQualifiedName(
+                    rs,
+                    authorizedPropertyTypes,
+                    metadataOptions,
+                    byteBlobDataManager
+            )
+
+        }
+    }
     fun getEntitiesWithPropertyTypeFqnsIterable(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,

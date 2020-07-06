@@ -23,6 +23,7 @@ package com.openlattice.data
 
 import com.codahale.metrics.annotation.Timed
 import com.google.common.base.Stopwatch
+import com.google.common.collect.Iterables
 import com.google.common.collect.ListMultimap
 import com.google.common.collect.Multimaps
 import com.google.common.collect.SetMultimap
@@ -41,7 +42,6 @@ import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresDataTables
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.PostgresIterable
-import org.apache.commons.lang3.NotImplementedException
 import org.apache.commons.lang3.tuple.Pair
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -99,14 +99,27 @@ class DataGraphService(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
+        return eds.getEntitiesAcrossEntitySetsWithFqns(
+                entitySetIdsToEntityKeyIds.mapValues { Optional.of(it.value) },
+                authorizedPropertyTypesByEntitySet
+        )
     }
 
     override fun getEntitiesWithMetadata(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
     ): Iterable<MutableMap<FullQualifiedName, MutableSet<Any>>> {
-        throw NotImplementedException("NOT YET IMPLEMENTED.")
+        return Iterables.transform(
+                eds.getEntitiesAcrossEntitySets(
+                        entityKeyIds,
+                        authorizedPropertyTypes,
+                        metadataOptions
+                )
+        ) {
+            it!!.second
+        }
     }
 
     override fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID> {
