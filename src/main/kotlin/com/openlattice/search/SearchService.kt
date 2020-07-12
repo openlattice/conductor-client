@@ -661,9 +661,7 @@ class SearchService(
         val entities = Maps.newHashMap<UUID, Map<FullQualifiedName, Set<Any>>>()
         entitiesByEntitySetId.values.forEach { entries ->
             entries.forEach { entry ->
-                entities.put(
-                        getEntityKeyId(entry), entry
-                )
+                entities[entry.key] = entry.value
             }
         }
 

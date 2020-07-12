@@ -85,18 +85,6 @@ class StorageMigrationService(
     fun updateMigratingEntitySets() {
         migratingEntitySets = migrationStatus.keys
     }
-
-    private fun toEntity(properties: MutableMap<ByteBuffer, Property>, version: Long) {
-        val entity = mutableMapOf<UUID, MutableSet<Any>>()
-        properties.values.filter { property ->
-            property.versions.get().filter { propertyVersion ->
-                abs(
-                        propertyVersion
-                ) < version
-            }.maxBy { propertyVersion -> abs(propertyVersion) }!! > 0
-        }
-    }
-
 }
 
 private val migratedSql = "SELECT ${ENTITY_SET_ID.name},${ID.name} FROM ${IDS.name} WHERE storage != ?"

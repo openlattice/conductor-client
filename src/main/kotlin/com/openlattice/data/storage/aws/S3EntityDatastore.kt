@@ -144,6 +144,27 @@ class S3EntityDatastore(
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
+    override fun getEntities(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>, linked: Boolean, detailed: Boolean
+    ): Iterable<Pair<EntityDataKey, Map<FullQualifiedName, Set<Property>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntitiesAcrossEntitySetsWithFqns(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Property>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntitiesAcrossEntitySetsWithIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<Pair<EntityDataKey, Collection<MutableMap<UUID, MutableSet<Any>>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun getHistoricalEntitiesById(
             entitySetIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>

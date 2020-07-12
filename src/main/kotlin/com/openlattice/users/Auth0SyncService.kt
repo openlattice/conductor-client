@@ -189,7 +189,7 @@ class Auth0SyncService(
 
             spm.createSecurablePrincipalIfNotExists(
                     principal,
-                    SecurablePrincipal(Optional.empty(), principal, title, Optional.empty())
+                    SecurablePrincipal(Optional.empty<UUID>(), principal, title, Optional.empty<String>())
             )
         }
         return principal

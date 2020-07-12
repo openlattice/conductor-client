@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap
 import com.google.common.eventbus.EventBus
 import com.openlattice.assembler.events.MaterializedEntitySetDataChangeEvent
 import com.openlattice.data.DeleteType
+import com.openlattice.data.EntityDataKey
 import com.openlattice.data.Property
 import com.openlattice.data.WriteEvent
 import com.openlattice.data.events.EntitiesDeletedEvent
@@ -331,6 +332,27 @@ class PostgresEntityDatastore(
         }
 
         return linkedDataMap
+    }
+
+    override fun getEntities(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>, linked: Boolean, detailed: Boolean
+    ): Iterable<Pair<EntityDataKey, Map<FullQualifiedName, Set<Property>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntitiesAcrossEntitySetsWithFqns(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Property>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun getEntitiesAcrossEntitySetsWithIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<Pair<EntityDataKey, Collection<MutableMap<UUID, MutableSet<Any>>>>> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun getHistoricalEntitiesById(

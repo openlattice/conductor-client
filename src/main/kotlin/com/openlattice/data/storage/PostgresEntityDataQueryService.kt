@@ -1,18 +1,12 @@
 package com.openlattice.data.storage
 
 import com.codahale.metrics.annotation.Timed
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.geekbeast.util.LinearBackoff
-import com.geekbeast.util.attempt
-import com.google.common.base.Stopwatch
 import com.openlattice.IdConstants
 import com.openlattice.analysis.SqlBindInfo
 import com.openlattice.analysis.requests.Filter
 import com.openlattice.data.DeleteType
 import com.openlattice.data.EntityDataKey
-import com.openlattice.data.EntityKey
 import com.openlattice.data.WriteEvent
-import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.PostgresEntitySetSizesInitializationTask.Companion.ENTITY_SET_SIZES_VIEW
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.data.storage.partitions.getPartition
@@ -37,7 +31,6 @@ import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.util.*
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.streams.asStream
 

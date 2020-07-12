@@ -98,12 +98,13 @@ class DataGraphService(
     override fun getEntitiesAcrossEntitySets(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>> {
-
+    ): Map<UUID, Map<UUID, MutableMap<FullQualifiedName, MutableSet<Property>>>> {
         return eds.getEntitiesAcrossEntitySetsWithFqns(
                 entitySetIdsToEntityKeyIds.mapValues { Optional.of(it.value) },
                 authorizedPropertyTypesByEntitySet
         )
+                .groupBy( { it.first.entitySetId },{it.first.entityKeyId to it.second} )
+                .mapValues { it.value.toMap() }
     }
 
     override fun getEntitiesWithMetadata(

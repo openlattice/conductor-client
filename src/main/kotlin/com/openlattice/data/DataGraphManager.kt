@@ -91,7 +91,7 @@ interface DataGraphManager {
     fun getEntitiesAcrossEntitySets(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>>
+    ): Map<UUID, Map<UUID, MutableMap<FullQualifiedName, MutableSet<Property>>>>
 
 
     /**

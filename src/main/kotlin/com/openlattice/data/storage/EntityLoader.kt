@@ -74,14 +74,21 @@ interface EntityLoader {
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
 
     /**
+     * Returns data from either at least one regular entity sets or at least one linked entity set.
      *
+     * It is designed so that underlying implementation can return a stream of data.
+     *
+     * @param entityKeyIds Map of entity set ids to an optioanl set of entity key ids to load.
+     *
+     * @return Returns an iterable of pairs consisting of the entity data key and the entity.
      */
     fun getEntities(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
-            link: Boolean = false
-    ) : Iterable<Pair<UUID, Collectionø<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>>
+            linked: Boolean = false,
+            detailed: Boolean = false
+    ) : Iterable<Pair<EntityDataKey, Map<FullQualifiedName, Set<Property>>>>
 
 
     /**
@@ -97,7 +104,7 @@ interface EntityLoader {
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
-    ): Iterable<Pair<EntityDataKey, Collection<MutableMap<FullQualifiedName, MutableSet<Any>>>>>
+    ): Iterable<Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Property>>>>
 
     /**
      * Loads specific entities and associated metadata.
