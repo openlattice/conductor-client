@@ -58,11 +58,26 @@ interface DataGraphManager {
     /*
      * CRUD methods for entity
      */
+    @Deprecated("v1 style data read.")
     fun getEntity(
             entitySetId: UUID,
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Map<FullQualifiedName, Set<Any>>
+
+    fun getEntityWithPropertiesByFqn(
+            entitySetId: UUID,
+            entityKeyId: UUID,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
+    ):MutableMap<FullQualifiedName,MutableSet<Property>>
+
+    fun getEntityWithPropertiesById(
+            entitySetId: UUID,
+            entityKeyId: UUID,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
+    ):MutableMap<FullQualifiedName,MutableSet<Property>>
 
     fun getLinkingEntity(
             entitySetIds: Set<UUID>,

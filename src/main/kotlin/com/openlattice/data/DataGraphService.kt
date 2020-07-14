@@ -148,6 +148,20 @@ class DataGraphService(
                 .iterator().next()
     }
 
+    override fun getEntityWithPropertiesByFqn(
+            entitySetId: UUID, entityKeyId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): MutableMap<FullQualifiedName, MutableSet<Property>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getEntityWithPropertiesById(
+            entitySetId: UUID, entityKeyId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): MutableMap<FullQualifiedName, MutableSet<Property>> {
+        TODO("Not yet implemented")
+    }
+
     override fun getLinkingEntity(
             entitySetIds: Set<UUID>,
             entityKeyId: UUID,
