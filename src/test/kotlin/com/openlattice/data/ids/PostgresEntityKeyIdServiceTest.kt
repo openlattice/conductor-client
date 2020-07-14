@@ -54,7 +54,7 @@ import javax.mail.Part
  */
 class PostgresEntityKeyIdServiceTest : TestServer() {
     companion object {
-        const val NUM_THREADS = 8
+        private const val NUM_THREADS = 8
         private lateinit var postgresEntityKeyIdService: PostgresEntityKeyIdService
         private lateinit var idGenService: HazelcastIdGenerationService
         private val logger = LoggerFactory.getLogger(PostgresEntityKeyIdServiceTest::class.java)
@@ -115,9 +115,6 @@ class PostgresEntityKeyIdServiceTest : TestServer() {
                 EntityKey(entitySetId, RandomStringUtils.randomAlphanumeric(10))
             }.toSet()
             val idGroup1 = executor.submit<MutableMap<EntityKey, UUID>> {
-                postgresEntityKeyIdService.getEntityKeyIds(entityKeys1)
-            }.get()
-            val idGroup1a = executor.submit<MutableMap<EntityKey, UUID>> {
                 postgresEntityKeyIdService.getEntityKeyIds(entityKeys1)
             }.get()
             val idGroup2 = postgresEntityKeyIdService.getEntityKeyIds(entityKeys2.toSet())
