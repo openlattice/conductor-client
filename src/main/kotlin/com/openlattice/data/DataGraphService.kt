@@ -152,7 +152,7 @@ class DataGraphService(
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Map<FullQualifiedName, Set<Any>> = getEntityWithPropertyTypeFqns(entitySetId,entityKeyId, authorizedPropertyTypes)
-            .mapValues { it.value.any()} }
+            .mapValues { propertyValues -> propertyValues.value.mapTo(mutableSetOf()){ it.value} }
 //    {
 //        return eds
 //                .getEntitiesWithMetadata(entitySetId, setOf(entityKeyId), mapOf(entitySetId to authorizedPropertyTypes))
@@ -192,6 +192,20 @@ class DataGraphService(
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
         return eds.getLinkedEntitySetBreakDown(linkingIdsByEntitySetId, authorizedPropertyTypesByEntitySetId)
+    }
+
+    override fun getEntitiesWithPropertyTypeFqns(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<MutableMap<FullQualifiedName, MutableSet<Property>>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getEntitiesWithPropertyTypeIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<MutableMap<UUID, MutableSet<Property>>> {
+        TODO("Not yet implemented")
     }
 
     override fun getNeighborEntitySets(entitySetIds: Set<UUID>): List<NeighborSets> {
