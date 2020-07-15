@@ -54,6 +54,7 @@ import java.time.ZoneId
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
+import kotlin.streams.asStream
 
 /**
  *
@@ -73,12 +74,20 @@ class DataGraphService(
     }
 
     override fun getEntitiesWithMetadata(
-            entitySetId: UUID, ids: Set<UUID>,
+            entitySetId: UUID,
+            ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+    ): Stream<Map<FullQualifiedName, MutableSet<Any>>> =
+            getEntitiesWithPropertyTypeFqns(
+                    mapOf(entitySetId to Optional.of(ids)),
+                    authorizedPropertyTypes,
+                    metadataOptions
+            ).asSequence().map { entity ->
+                entity.mapValues { propertyValues ->
+                    propertyValues.value.mapTo(mutableSetOf()) { it.value }
+                }
+            }.asStream()
 
     override fun getLinkingEntitiesWithMetadata(
             linkingIdsByEntitySetIds: Map<UUID, Optional<Set<UUID>>>,
@@ -103,7 +112,7 @@ class DataGraphService(
                 entitySetIdsToEntityKeyIds.mapValues { Optional.of(it.value) },
                 authorizedPropertyTypesByEntitySet
         )
-                .groupBy( { it.first.entitySetId },{it.first.entityKeyId to it.second} )
+                .groupBy({ it.first.entitySetId }, { it.first.entityKeyId to it.second })
                 .mapValues { it.value.toMap() }
     }
 
@@ -142,20 +151,25 @@ class DataGraphService(
             entitySetId: UUID,
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Map<FullQualifiedName, Set<Any>> {
-        return eds
-                .getEntitiesWithMetadata(entitySetId, setOf(entityKeyId), mapOf(entitySetId to authorizedPropertyTypes))
-                .iterator().next()
-    }
+    ): Map<FullQualifiedName, Set<Any>> = getEntityWithPropertyTypeFqns(entitySetId,entityKeyId, authorizedPropertyTypes)
+            .mapValues { it.value.any()} }
+//    {
+//        return eds
+//                .getEntitiesWithMetadata(entitySetId, setOf(entityKeyId), mapOf(entitySetId to authorizedPropertyTypes))
+//                .iterator().next()
+//    }
 
-    override fun getEntityWithPropertiesByFqn(
-            entitySetId: UUID, entityKeyId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>,
+    override fun getEntityWithPropertyTypeFqns(
+            entitySetId: UUID,
+            entityKeyId: UUID,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
             metadataOptions: EnumSet<MetadataOption>
-    ): MutableMap<FullQualifiedName, MutableSet<Property>> {
-        TODO("Not yet implemented")
-    }
+    ): MutableMap<FullQualifiedName, MutableSet<Property>> = getEntitiesWithPropertyTypeFqns(
+            mapOf( entitySetId to Optional.of(setOf(entityKeyId))),
+            mapOf( entitySetId to authorizedPropertyTypes),
+            metadataOptions ).first()
 
-    override fun getEntityWithPropertiesById(
+    override fun getEntityWithPropertyTypeIds(
             entitySetId: UUID, entityKeyId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>,
             metadataOptions: EnumSet<MetadataOption>
     ): MutableMap<FullQualifiedName, MutableSet<Property>> {

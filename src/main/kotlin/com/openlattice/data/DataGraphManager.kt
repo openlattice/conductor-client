@@ -65,19 +65,19 @@ interface DataGraphManager {
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Map<FullQualifiedName, Set<Any>>
 
-    fun getEntityWithPropertiesByFqn(
+    fun getEntityWithPropertyTypeFqns(
             entitySetId: UUID,
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>,
             metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
-    ):MutableMap<FullQualifiedName,MutableSet<Property>>
+    ): MutableMap<FullQualifiedName, MutableSet<Property>>
 
-    fun getEntityWithPropertiesById(
+    fun getEntityWithPropertyTypeIds(
             entitySetId: UUID,
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>,
             metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
-    ):MutableMap<FullQualifiedName,MutableSet<Property>>
+    ): MutableMap<FullQualifiedName, MutableSet<Property>>
 
     fun getLinkingEntity(
             entitySetIds: Set<UUID>,
@@ -90,6 +90,20 @@ interface DataGraphManager {
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
 
+
+    fun getEntitiesWithPropertyTypeFqns(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<MutableMap<FullQualifiedName, MutableSet<Property>>>
+
+    fun getEntitiesWithPropertyTypeIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<MutableMap<UUID, MutableSet<Property>>>
+
+    @Deprecated("v1 api")
     fun getEntitiesWithMetadata(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
@@ -101,7 +115,7 @@ interface DataGraphManager {
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>>
+    ): Stream<Map<FullQualifiedName, MutableSet<Any>>>
 
     fun getEntitiesAcrossEntitySets(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
