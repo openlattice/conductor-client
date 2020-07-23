@@ -1,6 +1,7 @@
 package com.openlattice.ids
 
 import com.geekbeast.hazelcast.HazelcastClientProvider
+import com.geekbeast.hazelcast.IHazelcastClientProvider
 import com.google.common.collect.Queues
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.openlattice.hazelcast.HazelcastClient
@@ -12,10 +13,17 @@ import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 
 /**
- *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class HazelcastIdGenerationService(clients: HazelcastClientProvider) {
+class HazelcastIdGenerationService(clients: IHazelcastClientProvider) {
+    var random = false
+
+    /**
+     * For testing only
+     */
+    internal constructor(clients: IHazelcastClientProvider, random: Boolean) : this(clients) {
+        this.random = random
+    }
 
     /*
      * This should be good enough until we scale past 65536 Hazelcast nodes.
@@ -44,6 +52,9 @@ class HazelcastIdGenerationService(clients: HazelcastClientProvider) {
     }
 
     private val enqueueJob = executor.execute {
+        if (random) {
+            generateSequence { UUID.randomUUID() }.forEach { idsQueue.put(it) }
+        }
         while (true) {
             val ids = try {
                 //Use the 0 key a fence around the entire map.
