@@ -43,10 +43,10 @@ class PostgresEntityDataQueryServiceTest {
     @Test
     fun createEdgesTableQuery() {
         logger.info(PostgresTable.QUERIES.createTableQuery())
-        logger.info(PostgresTable.EDGES.createTableQuery())
+        logger.info(PostgresTable.E.createTableQuery())
         logger.info(PostgresTable.SYNC_IDS.createTableQuery())
 
-        logger.info(PostgresTable.EDGES.createIndexQueries.toList().joinToString("\n") { "$it;" })
+        logger.info(PostgresTable.E.createIndexQueries.toList().joinToString("\n") { "$it;" })
         logger.info(PostgresTable.SYNC_IDS.createIndexQueries.toList().joinToString("\n") { "$it;" })
         logger.info(PostgresTable.QUERIES.createIndexQueries.toList().joinToString("\n") { "$it;" })
     }
@@ -86,7 +86,7 @@ class PostgresEntityDataQueryServiceTest {
                         propertyTypes.associateBy { it.id },
                         mapOf(),
                         EnumSet.of(MetadataOption.ENTITY_KEY_IDS),
-                        linking = false,
+                        linking = true,
                         idsPresent = true,
                         partitionsPresent = true
                 ).first

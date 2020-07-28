@@ -24,6 +24,7 @@ import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking;
 import com.openlattice.data.DataEdgeKey;
 import com.openlattice.data.WriteEvent;
 import com.openlattice.edm.type.PropertyType;
+import com.openlattice.analysis.requests.AggregationResult;
 import com.openlattice.graph.edge.Edge;
 import com.openlattice.postgres.streams.PostgresIterable;
 import com.openlattice.search.requests.EntityNeighborsFilter;
@@ -42,8 +43,17 @@ public interface GraphService {
 
     WriteEvent deleteEdges( Iterable<DataEdgeKey> keys );
 
-    PostgresIterable<DataEdgeKey> getEdgeKeysOfEntitySet( UUID entitySetId );
+    /**
+     * Returns all {@link DataEdgeKey}s where either src, dst and/or edge entity set id(s) equal the requested
+     * entitySetId.
+     * If includeClearedEdges is set to true, it will also return cleared (version < 0) entities.
+     */
+    PostgresIterable<DataEdgeKey> getEdgeKeysOfEntitySet( UUID entitySetId, boolean includeClearedEdges );
 
+    /**
+     * Returns all {@link DataEdgeKey}s that include requested entityKeyIds either as src, dst and/or edge.
+     * If includeClearedEdges is set to true, it will also return cleared (version < 0) entities.
+     */
     PostgresIterable<DataEdgeKey> getEdgeKeysContainingEntities(
             UUID entitySetId,
             Set<UUID> entityKeyIds,
@@ -59,7 +69,7 @@ public interface GraphService {
 
     Set<UUID> getEdgeEntitySetsConnectedToEntitySet( UUID entitySetId );
 
-    PostgresIterable<Map<String, Object>> computeTopEntities(
+    AggregationResult computeTopEntities(
             int limit,
             Set<UUID> entitySetIds,
             Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes,

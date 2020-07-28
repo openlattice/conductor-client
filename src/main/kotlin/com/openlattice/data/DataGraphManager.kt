@@ -25,9 +25,9 @@ import com.google.common.collect.ListMultimap
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
-import com.openlattice.data.integration.Association
-import com.openlattice.data.integration.Entity
+import com.openlattice.data.storage.MetadataOption
 import com.openlattice.edm.type.PropertyType
+import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.graph.core.NeighborSets
 import com.openlattice.graph.edge.Edge
 import com.openlattice.postgres.streams.BasePostgresIterable
@@ -55,8 +55,6 @@ interface DataGraphManager {
             linking: Boolean
     ): EntitySetData<FullQualifiedName>
 
-    fun getEntitySetSize(entitySetId: UUID): Long
-
     /*
      * CRUD methods for entity
      */
@@ -77,8 +75,15 @@ interface DataGraphManager {
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
 
+    fun getEntitiesWithMetadata(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<MutableMap<FullQualifiedName, MutableSet<Any>>>
+
     /**
-     * Deletes property data, id, edges of association entities in batches.
+     * Clears property data, id, edges of association entities of the provided DataEdgeKeys in batches.
+     * Note: it only clears edge, not src or dst entities.
      */
     fun clearAssociationsBatch(
             entitySetId: UUID,
@@ -87,7 +92,8 @@ interface DataGraphManager {
     ): List<WriteEvent>
 
     /**
-     * Deletes property data, id, edges of association entities in batches.
+     * Deletes property data, id, edges of association entities of the provided DataEdgeKeys in batches.
+     * Note: it only deletes edge, not src or dst entities.
      */
     fun deleteAssociationsBatch(
             entitySetId: UUID,
@@ -100,12 +106,6 @@ interface DataGraphManager {
      */
 
     fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID>
-
-    fun integrateEntities(
-            entitySetId: UUID,
-            entities: Map<String, Map<UUID, Set<Any>>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Map<String, UUID>
 
     fun createEntities(
             entitySetId: UUID,
@@ -138,23 +138,6 @@ interface DataGraphManager {
             authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, CreateAssociationEvent>
 
-    /**
-     * Integrates association data into the system.
-     * @param associations The assosciations to integrate
-     * @param authorizedPropertiesByEntitySet The authorized properties by entity set id.
-     * @return A map of entity sets to mappings of entity ids to entity key ids.
-     */
-    fun integrateAssociations(
-            associations: Set<Association>,
-            authorizedPropertiesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Map<String, UUID>>
-
-    fun integrateEntitiesAndAssociations(
-            entities: Set<Entity>,
-            associations: Set<Association>,
-            authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
-    ): IntegrationResults?
-
     fun getTopUtilizers(
             entitySetId: UUID,
             filteredNeighborsRankingList: List<FilteredNeighborsRankingAggregation>,
@@ -169,7 +152,7 @@ interface DataGraphManager {
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linked: Boolean,
             linkingEntitySetId: Optional<UUID>
-    ): Iterable<Map<String, Any>>
+    ): AggregationResult
 
     fun getNeighborEntitySets(entitySetIds: Set<UUID>): List<NeighborSets>
 
@@ -182,8 +165,21 @@ interface DataGraphManager {
     fun getNeighborEntitySetIds(entitySetIds: Set<UUID>): Set<UUID>
 
     fun getEdgesAndNeighborsForVertex(entitySetId: UUID, entityKeyId: UUID): Stream<Edge>
-    fun getEdgeKeysOfEntitySet(entitySetId: UUID): PostgresIterable<DataEdgeKey>
-    fun getEdgesConnectedToEntities(entitySetId: UUID, entityKeyIds: Set<UUID>, includeClearedEdges: Boolean): PostgresIterable<DataEdgeKey>
+
+    /**
+     * Returns all [DataEdgeKey]s where either src, dst and/or edge entity set ids are equal the requested entitySetId.
+     * If includeClearedEdges is set to true, it will also return cleared (version < 0) entities.
+     */
+    fun getEdgeKeysOfEntitySet(entitySetId: UUID, includeClearedEdges: Boolean): PostgresIterable<DataEdgeKey>
+
+    /**
+     * Returns all [DataEdgeKey]s that include requested entityKeyIds either as src, dst and/or edge with the requested
+     * entity set id.
+     * If includeClearedEdges is set to true, it will also return cleared (version < 0) entities.
+     */
+    fun getEdgesConnectedToEntities(
+            entitySetId: UUID, entityKeyIds: Set<UUID>, includeClearedEdges: Boolean
+    ): PostgresIterable<DataEdgeKey>
     fun getExpiringEntitiesFromEntitySet(entitySetId: UUID,
                                          expirationPolicy: DataExpiration,
                                          dateTime: OffsetDateTime,

@@ -21,16 +21,16 @@
 
 package com.openlattice.data
 
+import com.codahale.metrics.annotation.Timed
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ListMultimap
 import com.google.common.collect.Multimaps
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
+import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
-import com.openlattice.data.integration.Association
-import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.EntityDatastore
-import com.openlattice.data.storage.PostgresEntitySetSizesTask
+import com.openlattice.data.storage.MetadataOption
 import com.openlattice.edm.set.ExpirationBase
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.core.GraphService
@@ -41,10 +41,12 @@ import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresDataTables
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.PostgresIterable
+import org.apache.commons.lang3.NotImplementedException
 import org.apache.commons.lang3.tuple.Pair
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import java.nio.ByteBuffer
 import java.sql.Types
 import java.time.OffsetDateTime
@@ -52,8 +54,6 @@ import java.time.ZoneId
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
 
 /**
  *
@@ -61,13 +61,19 @@ import kotlin.collections.HashSet
  */
 private val logger = LoggerFactory.getLogger(DataGraphService::class.java)
 
-open class DataGraphService(
+@Service
+class DataGraphService(
         private val graphService: GraphService,
         private val idService: EntityKeyIdService,
-        private val eds: EntityDatastore,
-        private val entitySetSizesTask: PostgresEntitySetSizesTask
-
+        private val eds: EntityDatastore
 ) : DataGraphManager {
+    override fun getEntitiesWithMetadata(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption>
+    ): Iterable<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        throw NotImplementedException("NOT YET IMPLEMENTED.")
+    }
+
     override fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID> {
         return idService.reserveEntityKeyIds(entityKeys)
     }
@@ -75,7 +81,6 @@ open class DataGraphService(
     companion object {
         const val ASSOCIATION_SIZE = 30_000
     }
-
 
     /* Select */
 
@@ -86,10 +91,6 @@ open class DataGraphService(
             linking: Boolean
     ): EntitySetData<FullQualifiedName> {
         return eds.getEntities(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking)
-    }
-
-    override fun getEntitySetSize(entitySetId: UUID): Long {
-        return entitySetSizesTask.getEntitySetSize(entitySetId)
     }
 
     override fun getEntity(
@@ -136,8 +137,8 @@ open class DataGraphService(
         return graphService.getEdgesAndNeighborsForVertex(entitySetId, entityKeyId)
     }
 
-    override fun getEdgeKeysOfEntitySet(entitySetId: UUID): PostgresIterable<DataEdgeKey> {
-        return graphService.getEdgeKeysOfEntitySet(entitySetId)
+    override fun getEdgeKeysOfEntitySet(entitySetId: UUID, includeClearedEdges: Boolean): PostgresIterable<DataEdgeKey> {
+        return graphService.getEdgeKeysOfEntitySet(entitySetId, includeClearedEdges)
     }
 
     override fun getEdgesConnectedToEntities(entitySetId: UUID, entityKeyIds: Set<UUID>, includeClearedEdges: Boolean)
@@ -249,28 +250,6 @@ open class DataGraphService(
 
     /* Create */
 
-    override fun integrateEntities(
-            entitySetId: UUID,
-            entities: Map<String, Map<UUID, Set<Any>>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Map<String, UUID> {
-        //We need to fix this to avoid remapping. Skipping for expediency.
-        return doIntegrateEntities(entitySetId, entities, authorizedPropertyTypes)
-                .map { it.key.entityId to it.value }.toMap()
-    }
-
-    private fun doIntegrateEntities(
-            entitySetId: UUID,
-            entities: Map<String, Map<UUID, Set<Any>>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Map<EntityKey, UUID> {
-        val ids = idService.getEntityKeyIds(entities.keys.map { EntityKey(entitySetId, it) }.toSet())
-        val identifiedEntities = ids.map { it.value to entities.getValue(it.key.entityId) }.toMap()
-        eds.integrateEntities(entitySetId, identifiedEntities, authorizedPropertyTypes)
-
-        return ids
-    }
-
     override fun createEntities(
             entitySetId: UUID,
             entities: List<Map<UUID, Set<Any>>>,
@@ -349,89 +328,8 @@ open class DataGraphService(
         return associationCreateEvents
     }
 
-    override fun integrateAssociations(
-            associations: Set<Association>,
-            authorizedPropertiesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Map<String, UUID>> {
-        val associationsByEntitySet = associations.groupBy { it.key.entitySetId }
-        val entityKeys = HashSet<EntityKey>(3 * associations.size)
-        val entityKeyIds = HashMap<EntityKey, UUID>(3 * associations.size)
-
-        //Create the entities for the association and build list of required entity keys
-        val integrationResults = associationsByEntitySet
-                .asSequence()
-                .map { (entitySetId, entitySetAssociations) ->
-                    val entities = entitySetAssociations.asSequence()
-                            .map { association ->
-                                entityKeys.add(association.src)
-                                entityKeys.add(association.dst)
-                                association.key.entityId to association.details
-                            }.toMap()
-                    val ids = doIntegrateEntities(
-                            entitySetId, entities, authorizedPropertiesByEntitySet.getValue(entitySetId)
-                    )
-                    entityKeyIds.putAll(ids)
-                    entitySetId to ids.asSequence().map { it.key.entityId to it.value }.toMap()
-                }.toMap()
-
-        // Retrieve the src/dst keys (it adds all entitykeyids to mutable entityKeyIds)
-        idService.getEntityKeyIds(entityKeys, entityKeyIds)
-
-        val edges = associations
-                .asSequence()
-                .map { association ->
-                    val srcId = entityKeyIds[association.src]
-                    val dstId = entityKeyIds[association.dst]
-                    val edgeId = entityKeyIds[association.key]
-
-                    val srcEsId = association.src.entitySetId
-                    val dstEsId = association.dst.entitySetId
-                    val edgeEsId = association.key.entitySetId
-
-                    val src = EntityDataKey(srcEsId, srcId)
-                    val dst = EntityDataKey(dstEsId, dstId)
-                    val edge = EntityDataKey(edgeEsId, edgeId)
-
-                    DataEdgeKey(src, dst, edge)
-                }
-                .toSet()
-        graphService.createEdges(edges)
-
-        return integrationResults
-    }
-
-    override fun integrateEntitiesAndAssociations(
-            entities: Set<Entity>,
-            associations: Set<Association>,
-            authorizedPropertiesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
-    ): IntegrationResults? {
-        val entitiesByEntitySet = HashMap<UUID, MutableMap<String, MutableMap<UUID, MutableSet<Any>>>>()
-
-        for (entity in entities) {
-            val entitiesToCreate = entitiesByEntitySet.getOrPut(entity.entitySetId) { mutableMapOf() }
-            val entityDetails = entitiesToCreate.getOrPut(entity.entityId) { entity.details }
-            if (entityDetails !== entity.details) {
-                entity.details.forEach { (propertyTypeId, values) ->
-                    entityDetails.getOrPut(propertyTypeId) { mutableSetOf() }.addAll(values)
-                }
-            }
-        }
-
-        entitiesByEntitySet
-                .forEach { (entitySetId, entitySet) ->
-                    integrateEntities(
-                            entitySetId,
-                            entitySet,
-                            authorizedPropertiesByEntitySetId.getValue(entitySetId)
-                    )
-                }
-
-        integrateAssociations(associations, authorizedPropertiesByEntitySetId)
-        return null
-    }
-
     /* Top utilizers */
-
+    @Timed
     override fun getFilteredRankings(
             entitySetIds: Set<UUID>,
             numResults: Int,
@@ -439,14 +337,7 @@ open class DataGraphService(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linked: Boolean,
             linkingEntitySetId: Optional<UUID>
-    ): Iterable<Map<String, Any>> {
-//        val maybeUtilizers = queryCache
-//                .getIfPresent(MultiKey(entitySetIds, filteredRankings))
-//        val utilizers: PostgresIterable<Map<String, Object>>
-//
-//
-//        if (maybeUtilizers == null) {
-
+    ): AggregationResult {
         return graphService.computeTopEntities(
                 numResults,
                 entitySetIds,
@@ -456,24 +347,6 @@ open class DataGraphService(
                 linkingEntitySetId
         )
 
-//            queryCache.put(MultiKey(entitySetIds, filteredRankings), utilizers)
-//        } else {
-//            utilizers = maybeUtilizers
-//        }
-
-//        val entities = eds
-//                .getEntities(entitySetIds.first(), utilizers.map { it.id }.toSet(), authorizedPropertyTypes)
-//                .map { it[ID_FQN].first() as UUID to it }
-//                .toList()
-//                .toMap()
-
-//        return utilizers.map {
-//            val entity = entities[it.id]!!
-//            entity.put(COUNT_FQN, it.weight)
-//            entity
-//        }.stream()
-
-
     }
 
     override fun getTopUtilizers(
@@ -482,53 +355,6 @@ open class DataGraphService(
             numResults: Int,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Stream<SetMultimap<FullQualifiedName, Any>> {
-//        val maybeUtilizers = queryCache
-//                .getIfPresent(MultiKey(entitySetId, filteredNeighborsRankingList))
-//        val utilizers: Array<IncrementableWeightId>
-//
-//
-//        if (maybeUtilizers == null) {
-//            utilizers = graphService.computeTopEntities(
-//                    numResults, entitySetId, authorizedPropertyTypes, filteredNeighborsRankingList
-//            )
-//            //            utilizers = new TopUtilizers( numResults );
-//            val srcFilters = HashMultimap.create<UUID, UUID>()
-//            val dstFilters = HashMultimap.create<UUID, UUID>()
-//
-//            val associationPropertyTypeFilters = HashMultimap.create<UUID, Optional<SetMultimap<UUID, RangeFilter<Comparable<Any>>>>>()
-//            val srcPropertyTypeFilters = HashMultimap.create<UUID, Optional<SetMultimap<UUID, RangeFilter<Comparable<Any>>>>>()
-//            val dstPropertyTypeFilters = HashMultimap.create<UUID, Optional<SetMultimap<UUID, RangeFilter<Comparable<Any>>>>>()
-//            filteredNeighborsRankingList.forEach { details ->
-//                val associationSets = edm.getEntitySetsOfType(details.associationTypeIds).map { it.id }
-//                val neighborSets = edm.getEntitySetsOfType(details.neighborTypeId).map { it.id }
-//
-//                associationSets.forEach {
-//                    (if (details.utilizerIsSrc) srcFilters else dstFilters).putAll(it, neighborSets)
-//                    (if (details.utilizerIsSrc) srcPropertyTypeFilters else dstPropertyTypeFilters).putAll(
-//                            it, details.neighborFilters
-//                    )
-//                }
-//
-//            }
-//
-//            utilizers = graphService.computeGraphAggregation(numResults, entitySetId, srcFilters, dstFilters)
-//
-//            queryCache.put(MultiKey(entitySetId, filteredNeighborsRankingList), utilizers)
-//        } else {
-//            utilizers = maybeUtilizers
-//        }
-//
-//        val entities = eds
-//                .getEntities(entitySetId, utilizers.map { it.id }.toSet(), authorizedPropertyTypes)
-//                .map { it[ID_FQN].first() as UUID to it }
-//                .toList()
-//                .toMap()
-//
-//        return utilizers.map {
-//            val entity = entities[it.id]!!
-//            entity.put(COUNT_FQN, it.weight)
-//            entity
-//        }.stream()
         return Stream.empty()
     }
 
