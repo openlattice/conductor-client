@@ -417,6 +417,7 @@ private val ENTITY_COUNT_NOT_LINKED = "SELECT ${ENTITY_SET_ID.name},COUNT(${ID.n
         "WHERE ${PARTITION.name} = ANY(?) " +
             "AND ${ENTITY_SET_ID.name} = ANY(?) " +
             "AND ${LAST_LINK.name} < ${LAST_WRITE.name} " +
+            "AND ( ${LAST_INDEX.name} > ${LAST_WRITE.name} ) " +
             "AND ${VERSION.name} > 0" +
             "GROUP BY " + ENTITY_SET_ID.name
 
