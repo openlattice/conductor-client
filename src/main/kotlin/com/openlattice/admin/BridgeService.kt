@@ -4,7 +4,7 @@ import com.codahale.metrics.annotation.Timed
 import com.geekbeast.rhizome.services.ServiceState
 import com.google.common.eventbus.Subscribe
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.core.IQueue
+import com.hazelcast.collection.IQueue
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
 import com.openlattice.data.storage.StorageManagementService
@@ -137,7 +137,7 @@ class BridgeService(
             timeoutUnit: TimeUnit = TimeUnit.MILLISECONDS,
             operation: (BridgeAwareServices) -> T?
     ): Map<InvocationResultKey, T?> {
-        val tagsFilter = Predicates.`in`("tags[any]", *tags.toTypedArray())
+        val tagsFilter = Predicates.`in`<UUID, ServiceDescription>("tags[any]", *tags.toTypedArray())
         val serviceTypeFilter = getServiceTypePredicate(serviceType)
         val serviceIds = services.keySet(Predicates.and(tagsFilter, serviceTypeFilter))
 
@@ -252,12 +252,12 @@ class BridgeService(
 
 }
 
-fun getServiceTypePredicate(serviceType: ServiceType): Predicate<*, *> = Predicates.equal(
+fun getServiceTypePredicate(serviceType: ServiceType): Predicate<UUID, ServiceDescription> = Predicates.equal(
         "serviceType",
         serviceType.name
 )
 
-fun getServiceTypesPredicate(vararg serviceTypes: ServiceType): Predicate<*, *> = Predicates.`in`(
+fun getServiceTypesPredicate(vararg serviceTypes: ServiceType): Predicate<UUID, ServiceDescription> = Predicates.`in`(
         "serviceType",
         *serviceTypes.map { it.name }.toTypedArray()
 )
