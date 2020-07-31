@@ -261,7 +261,6 @@ class Graph(
         ).stream()
     }
 
-
     override fun getEdgesAndNeighborsForVerticesBulk(
             entitySetIds: Set<UUID>,
             filter: EntityNeighborsFilter
@@ -425,7 +424,7 @@ class Graph(
                 }
 
                 logger.info("Grouped edges: {}", groupedEdges.size)
-                
+
                 edgePairs.putAll(groupedEdges)
 
                 try {
@@ -1185,6 +1184,8 @@ private val EDGE_IDS_SQL = "${EDGE_ENTITY_KEY_ID.name} = ANY(?) AND ${EDGE_ENTIT
 private val SRC_IDS_AND_ENTITY_SETS_SQL = "${SRC_ENTITY_KEY_ID.name} = ANY(?) AND ${SRC_ENTITY_SET_ID.name} = ANY(?)"
 private val DST_IDS_AND_ENTITY_SETS_SQL = "${DST_ENTITY_KEY_ID.name} = ANY(?) AND ${DST_ENTITY_SET_ID.name} = ANY(?)"
 
+//private val REPARTITION_SQL = "INSERT INTO ${E.name} SELECT $REPARTITION_COLUMNS FROM ${E.name} INNER JOIN (select id as entity_set_id, partitions from entity_sets) as es using (entity_set_id) WHERE entity_set_id = ? AND "
+
 /**
  * Loads edges where either the source, destination, or association matches a set of entityKeyIds from a specific entity set
  *
@@ -1407,9 +1408,7 @@ fun bindColumnsForEdge(
 
     var index = 1
 
-    ps.setObject(index++,
-                 getPartition(edk.entityKeyId, partitions)
-    )
+    ps.setObject(index++, getPartition(edk.entityKeyId, partitions))
     ps.setObject(index++, dataEdgeKey.src.entitySetId)
     ps.setObject(index++, dataEdgeKey.src.entityKeyId)
     ps.setObject(index++, dataEdgeKey.dst.entitySetId)

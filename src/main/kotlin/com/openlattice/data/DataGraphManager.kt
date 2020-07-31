@@ -246,4 +246,6 @@ interface DataGraphManager {
     fun getEntityKeyIdsOfLinkingIds(
             linkingIds: Set<UUID>, normalEntitySetIds: Set<UUID>
     ): BasePostgresIterable<kotlin.Pair<UUID, Set<UUID>>>
+
+    fun setPartitions(entitySetId: UUID, oldPartitions: Set<Int>): UUID
 }

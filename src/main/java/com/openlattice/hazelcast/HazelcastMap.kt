@@ -22,10 +22,10 @@ package com.openlattice.hazelcast
 import com.auth0.json.mgmt.users.User
 import com.geekbeast.rhizome.hazelcast.DelegatedIntList
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.core.IMap
-import com.openlattice.admin.ServiceDescription
+import com.hazelcast.map.IMap
 import com.openlattice.admin.InvocationRequest
 import com.openlattice.admin.InvocationResultKey
+import com.openlattice.admin.ServiceDescription
 import com.openlattice.apps.App
 import com.openlattice.apps.AppConfigKey
 import com.openlattice.apps.AppType
@@ -42,7 +42,6 @@ import com.openlattice.collections.EntitySetCollection
 import com.openlattice.collections.EntityTypeCollection
 import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
-import com.openlattice.data.EntityKey
 import com.openlattice.data.storage.MigrationStatus
 import com.openlattice.data.storage.providers.StorageProvider
 import com.openlattice.edm.EntitySet
@@ -96,66 +95,128 @@ class HazelcastMap<K, V> internal constructor(val name: String) : TypedMapIdenti
         private val instanceChecker = UniqueInstanceManager(HazelcastMap::class.java)
 
         // When adding new entries to this list, please make sure to keep it sorted and keep the name in sync
-        @JvmField val ACL_KEYS = HazelcastMap<String, UUID>("ACL_KEYS")
-        @JvmField val APPS = HazelcastMap<UUID, App>("APPS")
-        @JvmField val APP_TYPES = HazelcastMap<UUID, AppType>("APP_TYPES")
-        @JvmField val APP_CONFIGS = HazelcastMap<AppConfigKey, AppTypeSetting>("APP_CONFIGS")
-        @JvmField val ASSEMBLIES = HazelcastMap<UUID, OrganizationAssembly>("ASSEMBLIES")
-        @JvmField val ASSOCIATION_TYPES = HazelcastMap<UUID, AssociationType>("ASSOCIATION_TYPES")
-        @JvmField val AUDIT_RECORD_ENTITY_SETS = HazelcastMap<AclKey, AuditRecordEntitySetConfiguration>("AUDIT_RECORD_ENTITY_SETS")
-        @JvmField val CODEX_MEDIA = HazelcastMap<UUID, Base64Media>("CODEX_MEDIA")
-        @JvmField val DB_CREDS = HazelcastMap<String, String>("DB_CREDS")
-        @JvmField val DELETION_LOCKS = HazelcastMap<UUID, Long>("DELETION_LOCKS")
-        @JvmField val ENTITY_SET_COLLECTION_CONFIG = HazelcastMap<CollectionTemplateKey, UUID>("ENTITY_SET_COLLECTION_CONFIG")
-        @JvmField val ENTITY_SET_COLLECTIONS = HazelcastMap<UUID, EntitySetCollection>("ENTITY_SET_COLLECTIONS")
-        @JvmField val ENTITY_SET_PROPERTY_METADATA = HazelcastMap<EntitySetPropertyKey, EntitySetPropertyMetadata>("ENTITY_SET_PROPERTY_METADATA")
-        @JvmField val ENTITY_SETS = HazelcastMap<UUID, EntitySet>("ENTITY_SETS")
-        @JvmField val ENTITY_TYPE_COLLECTIONS = HazelcastMap<UUID, EntityTypeCollection>("ENTITY_TYPE_COLLECTIONS")
-        @JvmField val ENTITY_TYPE_PROPERTY_METADATA = HazelcastMap<EntityTypePropertyKey, EntityTypePropertyMetadata>("ENTITY_TYPE_PROPERTY_METADATA")
-        @JvmField val ENTITY_TYPES = HazelcastMap<UUID, EntityType>("ENTITY_TYPES")
-        @JvmField val EXPIRATION_LOCKS = HazelcastMap<UUID, Long>("EXPIRATION_LOCKS")
-        @JvmField val HBA_AUTHENTICATION_RECORDS = HazelcastMap<String, PostgresAuthenticationRecord>("HBA_AUTHENTICATION_RECORDS")
-        @JvmField val ID_GENERATION = HazelcastMap<Long, Range>("ID_GENERATION")
-        @JvmField val INDEXING_JOBS = HazelcastMap<UUID, DelegatedUUIDSet>("INDEXING_JOBS")
-        @JvmField val INDEXING_LOCKS = HazelcastMap<UUID, Long>("INDEXING_LOCKS")
-        @JvmField val INDEXING_PROGRESS = HazelcastMap<UUID, UUID>("INDEXING_PROGRESS")
-        @JvmField val INDEXING_PARTITION_PROGRESS = HazelcastMap<UUID, Int>("INDEXING_PARTITION_PROGRESS")
-        @JvmField val INDEXING_PARTITION_LIST = HazelcastMap<UUID, DelegatedIntList>("INDEXING_PARTITION_LIST")
-        @JvmField val INDEXING_GRAPH_PROCESSING = HazelcastMap<UUID, Long>("INDEXING_GRAPH_PROCESSING")
-        @JvmField val INTEGRATIONS = HazelcastMap<String, Integration>("INTEGRATIONS")
-        @JvmField val INTEGRATION_JOBS = HazelcastMap<UUID, IntegrationJob>("INTEGRATION_JOBS")
-        @JvmField val LINKING_FEEDBACK = HazelcastMap<EntityKeyPair, Boolean>("LINKING_FEEDBACK")
-        @JvmField val LINKING_INDEXING_LOCKS = HazelcastMap<UUID, Long>("LINKING_INDEXING_LOCKS")
-        @JvmField val LINKING_LOCKS = HazelcastMap<EntityDataKey, Long>("LINKING_LOCKS")
-        @JvmField val LONG_IDS = HazelcastMap<String, Long>("LONG_IDS")
-        @JvmField val MATERIALIZED_ENTITY_SETS = HazelcastMap<EntitySetAssemblyKey, MaterializedEntitySet>("MATERIALIZED_ENTITY_SETS")
-        @JvmField val PERMISSIONS = HazelcastMap<AceKey, AceValue>("PERMISSIONS")
-        @JvmField val PRINCIPAL_TREES = HazelcastMap<AclKey, AclKeySet>("PRINCIPAL_TREES")
-        @JvmField val PROPERTY_TYPES = HazelcastMap<UUID, PropertyType>("PROPERTY_TYPES")
-        @JvmField val ORGANIZATION_APPS = HazelcastMap<UUID, DelegatedUUIDSet>("ORGANIZATION_APPS")
-        @JvmField val ORGANIZATIONS = HazelcastMap<UUID, Organization>("ORGANIZATIONS")
-        @JvmField val NAMES = HazelcastMap<UUID, String>("NAMES")
-        @JvmField val SCHEMAS = HazelcastMap<String, DelegatedStringSet>("SCHEMAS")
-        @JvmField val ORGANIZATIONS_DESCRIPTIONS = HazelcastMap<UUID, String>("ORGANIZATIONS_DESCRIPTIONS")
-        @JvmField val ALLOWED_EMAIL_DOMAINS = HazelcastMap<UUID, DelegatedStringSet>("ALLOWED_EMAIL_DOMAINS")
-        @JvmField val ORGANIZATIONS_MEMBERS = HazelcastMap<UUID, PrincipalSet>("ORGANIZATIONS_MEMBERS")
-        @JvmField val SMS_INFORMATION = HazelcastMap<SmsInformationKey, SmsEntitySetInformation>("SMS_INFORMATION")
-        @JvmField val PRINCIPALS = HazelcastMap<AclKey, SecurablePrincipal>("PRINCIPALS")
-        @JvmField val REQUESTS = HazelcastMap<AceKey, Status>("REQUESTS")
-        @JvmField val SECURABLE_OBJECT_TYPES = HazelcastMap<AclKey, SecurableObjectType>("SECURABLE_OBJECT_TYPES")
-        @JvmField val USERS = HazelcastMap<String, User>("USERS")
-        @JvmField val ORGANIZATION_EXTERNAL_DATABASE_COLUMN = HazelcastMap<UUID, OrganizationExternalDatabaseColumn>("ORGANIZATION_EXTERNAL_DATABASE_COLUMN")
-        @JvmField val ORGANIZATION_EXTERNAL_DATABASE_TABLE = HazelcastMap<UUID, OrganizationExternalDatabaseTable>("ORGANIZATION_EXTERNAL_DATABASE_TABLE")
-        @JvmField val SECURABLE_PRINCIPALS = HazelcastMap<String, SecurablePrincipal>("SECURABLE_PRINCIPALS")
-        @JvmField val S3_OBJECT_STORE = HazelcastMap<EntityDataKey, Entity> ("S3_OBJECT_STORE")
-        @JvmField val RESOLVED_PRINCIPAL_TREES = HazelcastMap<String, SortedPrincipalSet>("RESOLVED_PRINCIPAL_TREES")
-        @JvmField val STORAGE_PROVIDERS = HazelcastMap<String, StorageProvider>("STORAGE_PROVIDER")
-        @JvmField val SERVICES = HazelcastMap<UUID, ServiceDescription>("SERVICES")
-        @JvmField val OPERATIONS = HazelcastMap<UUID, InvocationRequest>("OPERATIONS")
-        @JvmField val RESULTS = HazelcastMap<InvocationResultKey, Any>("RESULTS")
-        @JvmField val MIGRATION_STATUS = HazelcastMap<UUID, MigrationStatus> ("MIGRATION_STATUS")
-        @JvmField val SCHEDULED_TASKS = HazelcastMap<UUID, ScheduledTask>("SCHEDULED_TASKS")
-        @JvmField val SCHEDULED_TASK_LOCKS = HazelcastMap<UUID, Long>("SCHEDULED_TASK_LOCKS")
+        @JvmField
+        val ACL_KEYS = HazelcastMap<String, UUID>("ACL_KEYS")
+        @JvmField
+        val APPS = HazelcastMap<UUID, App>("APPS")
+        @JvmField
+        val APP_TYPES = HazelcastMap<UUID, AppType>("APP_TYPES")
+        @JvmField
+        val APP_CONFIGS = HazelcastMap<AppConfigKey, AppTypeSetting>("APP_CONFIGS")
+        @JvmField
+        val ASSEMBLIES = HazelcastMap<UUID, OrganizationAssembly>("ASSEMBLIES")
+        @JvmField
+        val ASSOCIATION_TYPES = HazelcastMap<UUID, AssociationType>("ASSOCIATION_TYPES")
+        @JvmField
+        val AUDIT_RECORD_ENTITY_SETS = HazelcastMap<AclKey, AuditRecordEntitySetConfiguration>("AUDIT_RECORD_ENTITY_SETS")
+        @JvmField
+        val CODEX_LOCKS = HazelcastMap<SmsInformationKey, Long>("CODEX_LOCKS")
+        @JvmField
+        val CODEX_MEDIA = HazelcastMap<UUID, Base64Media>("CODEX_MEDIA")
+        @JvmField
+        val DB_CREDS = HazelcastMap<String, String>("DB_CREDS")
+        @JvmField
+        val DELETION_LOCKS = HazelcastMap<UUID, Long>("DELETION_LOCKS")
+        @JvmField
+        val ENTITY_SET_COLLECTION_CONFIG = HazelcastMap<CollectionTemplateKey, UUID>("ENTITY_SET_COLLECTION_CONFIG")
+        @JvmField
+        val ENTITY_SET_COLLECTIONS = HazelcastMap<UUID, EntitySetCollection>("ENTITY_SET_COLLECTIONS")
+        @JvmField
+        val ENTITY_SET_PROPERTY_METADATA = HazelcastMap<EntitySetPropertyKey, EntitySetPropertyMetadata>("ENTITY_SET_PROPERTY_METADATA")
+        @JvmField
+        val ENTITY_SETS = HazelcastMap<UUID, EntitySet>("ENTITY_SETS")
+        @JvmField
+        val ENTITY_TYPE_COLLECTIONS = HazelcastMap<UUID, EntityTypeCollection>("ENTITY_TYPE_COLLECTIONS")
+        @JvmField
+        val ENTITY_TYPE_PROPERTY_METADATA = HazelcastMap<EntityTypePropertyKey, EntityTypePropertyMetadata>("ENTITY_TYPE_PROPERTY_METADATA")
+        @JvmField
+        val ENTITY_TYPES = HazelcastMap<UUID, EntityType>("ENTITY_TYPES")
+        @JvmField
+        val EXPIRATION_LOCKS = HazelcastMap<UUID, Long>("EXPIRATION_LOCKS")
+        @JvmField
+        val HBA_AUTHENTICATION_RECORDS = HazelcastMap<String, PostgresAuthenticationRecord>("HBA_AUTHENTICATION_RECORDS")
+        @JvmField
+        val ID_GENERATION = HazelcastMap<Long, Range>("ID_GENERATION")
+        @JvmField
+        val INDEXING_JOBS = HazelcastMap<UUID, DelegatedUUIDSet>("INDEXING_JOBS")
+        @JvmField
+        val INDEXING_LOCKS = HazelcastMap<UUID, Long>("INDEXING_LOCKS")
+        @JvmField
+        val INDEXING_PROGRESS = HazelcastMap<UUID, UUID>("INDEXING_PROGRESS")
+        @JvmField
+        val INDEXING_PARTITION_PROGRESS = HazelcastMap<UUID, Int>("INDEXING_PARTITION_PROGRESS")
+        @JvmField
+        val INDEXING_PARTITION_LIST = HazelcastMap<UUID, DelegatedIntList>("INDEXING_PARTITION_LIST")
+        @JvmField
+        val INDEXING_GRAPH_PROCESSING = HazelcastMap<UUID, Long>("INDEXING_GRAPH_PROCESSING")
+        @JvmField
+        val INTEGRATIONS = HazelcastMap<String, Integration>("INTEGRATIONS")
+        @JvmField
+        val INTEGRATION_JOBS = HazelcastMap<UUID, IntegrationJob>("INTEGRATION_JOBS")
+        @JvmField
+        val LINKING_FEEDBACK = HazelcastMap<EntityKeyPair, Boolean>("LINKING_FEEDBACK")
+        @JvmField
+        val LINKING_INDEXING_LOCKS = HazelcastMap<UUID, Long>("LINKING_INDEXING_LOCKS")
+        @JvmField
+        val LINKING_LOCKS = HazelcastMap<EntityDataKey, Long>("LINKING_LOCKS")
+        @JvmField
+        val LONG_IDS = HazelcastMap<String, Long>("LONG_IDS")
+        @JvmField
+        val MATERIALIZED_ENTITY_SETS = HazelcastMap<EntitySetAssemblyKey, MaterializedEntitySet>("MATERIALIZED_ENTITY_SETS")
+        @JvmField
+        val PERMISSIONS = HazelcastMap<AceKey, AceValue>("PERMISSIONS")
+        @JvmField
+        val PRINCIPAL_TREES = HazelcastMap<AclKey, AclKeySet>("PRINCIPAL_TREES")
+        @JvmField
+        val PROPERTY_TYPES = HazelcastMap<UUID, PropertyType>("PROPERTY_TYPES")
+        @JvmField
+        val ORGANIZATION_APPS = HazelcastMap<UUID, DelegatedUUIDSet>("ORGANIZATION_APPS")
+        @JvmField
+        val ORGANIZATIONS = HazelcastMap<UUID, Organization>("ORGANIZATIONS")
+        @JvmField
+        val NAMES = HazelcastMap<UUID, String>("NAMES")
+        @JvmField
+        val SCHEMAS = HazelcastMap<String, DelegatedStringSet>("SCHEMAS")
+        @JvmField
+        val ORGANIZATIONS_DESCRIPTIONS = HazelcastMap<UUID, String>("ORGANIZATIONS_DESCRIPTIONS")
+        @JvmField
+        val ALLOWED_EMAIL_DOMAINS = HazelcastMap<UUID, DelegatedStringSet>("ALLOWED_EMAIL_DOMAINS")
+        @JvmField
+        val ORGANIZATIONS_MEMBERS = HazelcastMap<UUID, PrincipalSet>("ORGANIZATIONS_MEMBERS")
+        @JvmField
+        val SMS_INFORMATION = HazelcastMap<SmsInformationKey, SmsEntitySetInformation>("SMS_INFORMATION")
+        @JvmField
+        val PRINCIPALS = HazelcastMap<AclKey, SecurablePrincipal>("PRINCIPALS")
+        @JvmField
+        val REQUESTS = HazelcastMap<AceKey, Status>("REQUESTS")
+        @JvmField
+        val SECURABLE_OBJECT_TYPES = HazelcastMap<AclKey, SecurableObjectType>("SECURABLE_OBJECT_TYPES")
+        @JvmField
+        val USERS = HazelcastMap<String, User>("USERS")
+        @JvmField
+        val ORGANIZATION_EXTERNAL_DATABASE_COLUMN = HazelcastMap<UUID, OrganizationExternalDatabaseColumn>("ORGANIZATION_EXTERNAL_DATABASE_COLUMN")
+        @JvmField
+        val ORGANIZATION_EXTERNAL_DATABASE_TABLE = HazelcastMap<UUID, OrganizationExternalDatabaseTable>("ORGANIZATION_EXTERNAL_DATABASE_TABLE")
+        @JvmField
+        val SECURABLE_PRINCIPALS = HazelcastMap<String, SecurablePrincipal>("SECURABLE_PRINCIPALS")
+        @JvmField
+        val S3_OBJECT_STORE = HazelcastMap<EntityDataKey, Entity>("S3_OBJECT_STORE")
+        @JvmField
+        val RESOLVED_PRINCIPAL_TREES = HazelcastMap<String, SortedPrincipalSet>("RESOLVED_PRINCIPAL_TREES")
+        @JvmField
+        val STORAGE_PROVIDERS = HazelcastMap<String, StorageProvider>("STORAGE_PROVIDER")
+        @JvmField
+        val SERVICES = HazelcastMap<UUID, ServiceDescription>("SERVICES")
+        @JvmField
+        val OPERATIONS = HazelcastMap<UUID, InvocationRequest>("OPERATIONS")
+        @JvmField
+        val RESULTS = HazelcastMap<InvocationResultKey, Any>("RESULTS")
+        @JvmField
+        val MIGRATION_STATUS = HazelcastMap<UUID, MigrationStatus>("MIGRATION_STATUS")
+        @JvmField
+        val SCHEDULED_TASKS = HazelcastMap<UUID, ScheduledTask>("SCHEDULED_TASKS")
+        @JvmField
+        val SCHEDULED_TASK_LOCKS = HazelcastMap<UUID, Long>("SCHEDULED_TASK_LOCKS")
 
         @JvmStatic
         fun values(): Array<HazelcastMap<*, *>> {

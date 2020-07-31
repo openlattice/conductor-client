@@ -22,6 +22,7 @@
 package com.openlattice.data
 
 import com.codahale.metrics.annotation.Timed
+import com.geekbeast.rhizome.jobs.HazelcastJobService
 import com.google.common.base.Stopwatch
 import com.google.common.collect.Iterables
 import com.google.common.collect.ListMultimap
@@ -37,11 +38,14 @@ import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.core.GraphService
 import com.openlattice.graph.core.NeighborSets
 import com.openlattice.graph.edge.Edge
+import com.openlattice.graph.partioning.RepartitioningJob
 import com.openlattice.postgres.DataTables
 import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresDataTables
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.PostgresIterable
+import com.zaxxer.hikari.HikariDataSource
+import org.apache.commons.lang3.NotImplementedException
 import org.apache.commons.lang3.tuple.Pair
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -66,7 +70,8 @@ private val logger = LoggerFactory.getLogger(DataGraphService::class.java)
 class DataGraphService(
         private val graphService: GraphService,
         private val idService: EntityKeyIdService,
-        private val eds: EntityDatastore
+        private val eds: EntityDatastore,
+        private val jobService: HazelcastJobService
 ) : DataGraphManager {
 
     companion object {
@@ -241,6 +246,12 @@ class DataGraphService(
         return graphService.getEdgeEntitySetsConnectedToEntitySet(entitySetId)
     }
 
+    override fun setPartitions(
+            entitySetId: UUID,
+            partitions: Set<Int>
+    ): UUID {
+        return jobService.submitJob(RepartitioningJob(entitySetId, partitions.toList() ) )
+    }
 
     /* Delete */
 

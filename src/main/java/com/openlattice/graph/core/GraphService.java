@@ -31,6 +31,7 @@ import com.openlattice.search.requests.EntityNeighborsFilter;
 
 import java.util.*;
 import java.util.stream.Stream;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Graph Object supporting CRUD operations of vertices and edges to the graph.

@@ -26,8 +26,7 @@ import com.google.common.base.Preconditions.checkState
 import com.google.common.collect.Sets
 import com.google.common.eventbus.EventBus
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.core.IMap
-import com.hazelcast.query.Predicate
+import com.hazelcast.map.IMap
 import com.hazelcast.query.Predicates
 import com.hazelcast.query.QueryConstants
 import com.openlattice.assembler.events.MaterializedEntitySetEdmChangeEvent
@@ -294,7 +293,7 @@ open class EntitySetService(
                 Predicates.`in`(
                         QueryConstants.KEY_ATTRIBUTE_NAME.value(),
                         *entitySetIds.toTypedArray()
-                ) as Predicate<UUID, EntitySet>
+                ) 
         )
     }
 
@@ -385,6 +384,19 @@ open class EntitySetService(
             entityTypesAsMap.getValue(entityTypesOfEntitySets.getValue(it))
                     .properties
                     .associateWith { ptId -> propertyTypesAsMap.getValue(ptId) }
+        }
+    }
+
+    override fun setPartitions(entitySetId: UUID, partitions: Set<Int>) {
+        require(entitySets.containsKey(entitySetId)) {
+            "Entity set $entitySetId not found"
+        }
+        entitySets.executeOnKey(entitySetId) {
+            val v = it.value
+            if( v != null ) {
+                v.setPartitions(partitions)
+                it.setValue(v)
+            }
         }
     }
 
