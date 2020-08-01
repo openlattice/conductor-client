@@ -1,15 +1,13 @@
 package com.openlattice.data.storage.aws
 
-import com.amazonaws.services.s3.model.DeleteObjectRequest
 import com.amazonaws.services.s3.model.DeleteObjectsRequest
-import com.amazonaws.services.s3.model.ListObjectsV2Request
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.Timer
 import com.dataloom.mappers.ObjectMappers
 import com.geekbeast.rhizome.aws.S3FolderListingIterable
 import com.geekbeast.rhizome.aws.newS3Client
-import com.hazelcast.core.IMap
+import com.hazelcast.map.IMap
 import com.openlattice.IdConstants
 import com.openlattice.data.*
 import com.openlattice.data.storage.*
@@ -22,7 +20,6 @@ import com.openlattice.postgres.streams.BasePostgresIterable
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.time.OffsetDateTime
 import java.util.*
@@ -195,7 +192,7 @@ class S3EntityDatastore(
             s3ObjectStore.setAsync(EntityDataKey(entitySetId, id), Entity(data))
         }.forEach {
             try {
-                it.get()
+                it.toCompletableFuture().get()
             } catch (ex: Exception) {
                 logger.error("Unable to write entity.", ex)
                 throw ex
@@ -231,7 +228,7 @@ class S3EntityDatastore(
             )
         }.forEach {
             try {
-                it.get()
+                it.toCompletableFuture().get()
             } catch (ex: Exception) {
                 logger.error(
                         "Unable to perform update of type {} for entity set {} with ids {}",
