@@ -2,10 +2,9 @@ package com.openlattice.admin
 
 import com.geekbeast.rhizome.hazelcast.mockHazelcastMap
 import com.geekbeast.rhizome.hazelcast.mockHazelcastQueue
+import com.hazelcast.collection.IQueue
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.core.IQueue
 import com.openlattice.hazelcast.HazelcastMap
-import com.openlattice.hazelcast.HazelcastUtils
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
