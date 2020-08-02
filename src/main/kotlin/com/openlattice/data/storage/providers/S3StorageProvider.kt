@@ -18,16 +18,11 @@ data class S3StorageProvider(
         private val metricRegistry: MetricRegistry,
         override val storageConfiguration: S3StorageConfiguration
 ) : StorageProvider {
-    override val entityLoader: Supplier<EntityLoader> = Suppliers.memoize(::getLoader )
-    override val entityWriter: Supplier<EntityWriter> = Suppliers.memoize(::getWriter )
-
-    private fun getLoader(): EntityLoader {
-        return getS3EntityDatastore(byteBlobDataManager)
-    }
-
-    private fun getWriter(): EntityWriter {
-        return getS3EntityDatastore(byteBlobDataManager)
-    }
+    private val datastore = getS3EntityDatastore(byteBlobDataManager)
+    override val entityLoader: EntityLoader
+        get() = datastore
+    override val entityWriter: EntityWriter
+        get() = datastore
 
     private fun getS3EntityDatastore(
             byteBlobDataManager: ByteBlobDataManager

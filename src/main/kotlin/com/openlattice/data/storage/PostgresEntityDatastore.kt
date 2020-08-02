@@ -69,7 +69,6 @@ class PostgresEntityDatastore(
             versioned: Boolean
     ): WriteEvent {
         // need to collect linking ids before writes to the entities
-
         val writeEvent = dataQueryService.upsertEntities(entitySetId, entities, authorizedPropertyTypes)
         signalCreatedEntities(entitySetId, entities.keys)
 
@@ -203,7 +202,7 @@ class PostgresEntityDatastore(
             entitySetId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Map<UUID,MutableMap<FullQualifiedName, MutableSet<Any>>> {
         return getEntitiesWithMetadataInternal(entitySetId, emptySet(), authorizedPropertyTypes, metadataOptions)
     }
 
@@ -213,9 +212,9 @@ class PostgresEntityDatastore(
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>> {
         return if (ids.isEmpty()) {
-            Stream.of()
+            mapOf()
         } else {
             getEntitiesWithMetadataInternal(entitySetId, ids, authorizedPropertyTypes, metadataOptions)
         }
@@ -226,7 +225,7 @@ class PostgresEntityDatastore(
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Map<UUID,MutableMap<FullQualifiedName, MutableSet<Any>>> {
         //If the query generated exceeds 33.5M UUIDs good chance that it exceeds Postgres's 1 GB max query buffer size
 
         return dataQueryService.getEntitiesWithPropertyTypeFqns(
@@ -234,7 +233,7 @@ class PostgresEntityDatastore(
                 authorizedPropertyTypes,
                 emptyMap(),
                 metadataOptions
-        ).values.stream()
+        )
     }
 
     @Timed
@@ -335,14 +334,16 @@ class PostgresEntityDatastore(
     }
 
     override fun getEntities(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>, linked: Boolean, detailed: Boolean
-    ): Iterable<Pair<EntityDataKey, Map<FullQualifiedName, Set<Property>>>> {
+    ): Iterable<Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Property>>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun getEntitiesAcrossEntitySetsWithFqns(
-            entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
     ): Iterable<Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Property>>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -487,17 +488,4 @@ class PostgresEntityDatastore(
     override fun writeEntitiesWithHistory(entities: Map<UUID, MutableMap<UUID, MutableSet<Property>>>) {
         TODO("Not yet implemented")
     }
-
-    override fun getExpiringEntitiesFromEntitySet(
-            entitySetId: UUID,
-            expirationBaseColumn: String,
-            formattedDateMinusTTE: Any,
-            sqlFormat: Int,
-            deleteType: DeleteType
-    ): BasePostgresIterable<UUID> {
-        return dataQueryService.getExpiringEntitiesFromEntitySet(
-                entitySetId, expirationBaseColumn, formattedDateMinusTTE, sqlFormat, deleteType
-        )
-    }
-
 }

@@ -10,7 +10,7 @@ import java.util.function.Supplier
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 interface StorageProvider {
-    val entityLoader: Supplier<EntityLoader>
-    val entityWriter: Supplier<EntityWriter>
+    val entityLoader: EntityLoader
+    val entityWriter: EntityWriter
     val storageConfiguration: StorageConfiguration
 }

@@ -51,6 +51,8 @@ class StorageMigrationService(
 
     /**
      * Migrates data to new datastore so read can proceed as intended.
+     *
+     * Still need to decide if we block for migrating an entire entity set if Optional.empty() is provided.
      */
     fun migrateIfNeeded(entityKeyIds: Map<UUID, Optional<Set<UUID>>>) {
         val entitySetsNeedingMigration = entityKeyIds.keys.intersect(migratingEntitySets)

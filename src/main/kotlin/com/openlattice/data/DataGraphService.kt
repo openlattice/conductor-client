@@ -24,21 +24,21 @@ package com.openlattice.data
 import com.codahale.metrics.annotation.Timed
 import com.geekbeast.rhizome.jobs.HazelcastJobService
 import com.google.common.base.Stopwatch
-import com.google.common.collect.Iterables
-import com.google.common.collect.ListMultimap
-import com.google.common.collect.Multimaps
-import com.google.common.collect.SetMultimap
+import com.google.common.collect.*
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
 import com.openlattice.data.storage.EntityDatastore
 import com.openlattice.data.storage.MetadataOption
+import com.openlattice.data.storage.StorageManagementService
+import com.openlattice.data.storage.StorageMigrationService
 import com.openlattice.edm.set.ExpirationBase
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.core.GraphService
 import com.openlattice.graph.core.NeighborSets
 import com.openlattice.graph.edge.Edge
 import com.openlattice.graph.partioning.RepartitioningJob
+import com.openlattice.metadata.MetadataManager
 import com.openlattice.postgres.DataTables
 import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresDataTables
@@ -58,6 +58,7 @@ import java.time.ZoneId
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
+import kotlin.streams.asSequence
 import kotlin.streams.asStream
 
 /**
@@ -70,7 +71,9 @@ private val logger = LoggerFactory.getLogger(DataGraphService::class.java)
 class DataGraphService(
         private val graphService: GraphService,
         private val idService: EntityKeyIdService,
-        private val eds: EntityDatastore,
+        private val storageManagement: StorageManagementService,
+        private val storageMigration: StorageMigrationService,
+        private val metadataManager: MetadataManager,
         private val jobService: HazelcastJobService
 ) : DataGraphManager {
 
@@ -113,12 +116,16 @@ class DataGraphService(
             entitySetIdsToEntityKeyIds: Map<UUID, Set<UUID>>,
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, MutableMap<FullQualifiedName, MutableSet<Property>>>> {
-        return eds.getEntitiesAcrossEntitySetsWithFqns(
-                entitySetIdsToEntityKeyIds.mapValues { Optional.of(it.value) },
-                authorizedPropertyTypesByEntitySet
-        )
-                .groupBy({ it.first.entitySetId }, { it.first.entityKeyId to it.second })
-                .mapValues { it.value.toMap() }
+        //Since we are no longer assuming a single storage entity here, we have to load a single entity set at a time
+        //for now. Long term, we will want to group calls to read all entity sets to each storage provider.
+        return entitySetIdsToEntityKeyIds.mapValues { (entitySetId, ids) ->
+            val loadingMap = mapOf(entitySetId to Optional.of(ids))
+            storageMigration.migrateIfNeeded(mapOf(entitySetId to Optional.of(ids)))
+            storageManagement.getReader(entitySetId).getEntities(
+                    loadingMap,
+                    authorizedPropertyTypesByEntitySet
+            ).map { it.first.entityKeyId to it.second }.toMap()
+        }
     }
 
     override fun getEntitiesWithMetadata(
@@ -156,8 +163,12 @@ class DataGraphService(
             entitySetId: UUID,
             entityKeyId: UUID,
             authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Map<FullQualifiedName, Set<Any>> = getEntityWithPropertyTypeFqns(entitySetId,entityKeyId, authorizedPropertyTypes)
-            .mapValues { propertyValues -> propertyValues.value.mapTo(mutableSetOf()){ it.value} }
+    ): Map<FullQualifiedName, Set<Any>> = getEntityWithPropertyTypeFqns(
+            entitySetId,
+            entityKeyId,
+            authorizedPropertyTypes
+    )
+            .mapValues { propertyValues -> propertyValues.value.mapTo(mutableSetOf()) { it.value } }
 //    {
 //        return eds
 //                .getEntitiesWithMetadata(entitySetId, setOf(entityKeyId), mapOf(entitySetId to authorizedPropertyTypes))
@@ -170,9 +181,10 @@ class DataGraphService(
             authorizedPropertyTypes: Map<UUID, PropertyType>,
             metadataOptions: EnumSet<MetadataOption>
     ): MutableMap<FullQualifiedName, MutableSet<Property>> = getEntitiesWithPropertyTypeFqns(
-            mapOf( entitySetId to Optional.of(setOf(entityKeyId))),
-            mapOf( entitySetId to authorizedPropertyTypes),
-            metadataOptions ).first()
+            mapOf(entitySetId to Optional.of(setOf(entityKeyId))),
+            mapOf(entitySetId to authorizedPropertyTypes),
+            metadataOptions
+    ).first()
 
     override fun getEntityWithPropertyTypeIds(
             entitySetId: UUID, entityKeyId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>,
@@ -196,6 +208,29 @@ class DataGraphService(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
+        //Migration is slightly more complicated for linked entities, because we need to look up all linked entities
+        //and make sure they are migrated.
+
+        //In addition, we want to allow individual entity datastores to maintain optimizations for reading linked
+        //entities that live on those datastores.
+        val linkedEntityDataKeys = metadataManager.getLinkedEntityDataKeys(linkingIdsByEntitySetId)
+
+        storageMigration.migrateIfNeeded(Maps.transformValues(linkedEntityDataKeys) { Optional.ofNullable(it?.values?.toSet()) })
+        val readers = storageManagement.getReaders(linkedEntityDataKeys.keys)
+        // All entity sets corresponding to the same provider have be requested together
+        // so we need to group entities by providers
+        //
+        //
+
+
+        return linkingIdsByEntitySetId.mapValues { (entitySetId, linkingIds) ->
+            val loadingMap = mapOf(entitySetId to Optional.of(ids))
+
+            storageManagement.getReader(entitySetId).getEntities(
+                    loadingMap,
+                    authorizedPropertyTypesByEntitySet
+            ).map { it.first.entityKeyId to it.second }.toMap()
+        }
         return eds.getLinkedEntitySetBreakDown(linkingIdsByEntitySetId, authorizedPropertyTypesByEntitySetId)
     }
 
@@ -250,7 +285,7 @@ class DataGraphService(
             entitySetId: UUID,
             partitions: Set<Int>
     ): UUID {
-        return jobService.submitJob(RepartitioningJob(entitySetId, partitions.toList() ) )
+        return jobService.submitJob(RepartitioningJob(entitySetId, partitions.toList()))
     }
 
     /* Delete */
@@ -296,7 +331,11 @@ class DataGraphService(
         val verticesCount = graphService.clearEdges(dataEdgeKeys)
 
         //clear entities
-        val entityWriteEvent = eds.clearEntities(entitySetId, entityKeyIds, authorizedPropertyTypes)
+        val entityWriteEvent = storageManagement.getWriter(entitySetId).clearEntities(
+                entitySetId,
+                entityKeyIds,
+                authorizedPropertyTypes
+        )
 
         logger.info("Cleared {} entities and {} vertices.", entityWriteEvent.numUpdates, verticesCount)
         return entityWriteEvent
@@ -335,11 +374,14 @@ class DataGraphService(
             entityKeyIds: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
+
         // delete edges
         val verticesCount = graphService.deleteEdges(dataEdgeKeys)
 
         // delete entities
-        val entityWriteEvent = eds.deleteEntities(entitySetId, entityKeyIds, authorizedPropertyTypes)
+        val entityWriteEvent = storageManagement
+                .getWriter(entitySetId)
+                .deleteEntities(entitySetId, entityKeyIds, authorizedPropertyTypes)
 
         logger.info("Deleted {} entities and {} vertices.", entityWriteEvent.numUpdates, verticesCount.numUpdates)
 
@@ -347,17 +389,17 @@ class DataGraphService(
     }
 
     /* Create */
-    /**
-     *
-     */
     override fun createEntities(
             entitySetId: UUID,
             entities: List<MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): Pair<List<UUID>, WriteEvent> {
+        //Doesn't require migration since these are all new entities.
         val ids = idService.reserveIds(entitySetId, entities.size)
         val entityMap = ids.mapIndexed { i, id -> id to entities[i] }.toMap()
-        val writeEvent = eds.createOrUpdateEntities(entitySetId, entityMap, authorizedPropertyTypes)
+        val writeEvent = storageManagement
+                .getWriter(entitySetId)
+                .createOrUpdateEntities(entitySetId, entityMap, authorizedPropertyTypes)
 
         return Pair.of(ids, writeEvent)
     }
@@ -367,23 +409,42 @@ class DataGraphService(
             entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-        return eds.createOrUpdateEntities(entitySetId, entities, authorizedPropertyTypes)
+        storageMigration.migrateIfNeeded(mapOf(entitySetId to Optional.of(entities.keys)))
+        return storageManagement.getWriter(entitySetId).createOrUpdateEntities(
+                entitySetId,
+                entities,
+                authorizedPropertyTypes
+        )
     }
+
 
     override fun replaceEntities(
             entitySetId: UUID,
             entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-        return eds.replaceEntities(entitySetId, entities, authorizedPropertyTypes)
+        storageMigration.migrateIfNeeded(mapOf(entitySetId to Optional.of(entities.keys)))
+        return storageManagement.getWriter(entitySetId).replaceEntities(
+                entitySetId,
+                entities,
+                authorizedPropertyTypes
+        )
     }
+
 
     override fun partialReplaceEntities(
             entitySetId: UUID,
             entities: Map<UUID, MutableMap<UUID, MutableSet<Any>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-        return eds.partialReplaceEntities(entitySetId, entities, authorizedPropertyTypes)
+        storageMigration.migrateIfNeeded(mapOf(entitySetId to Optional.of(entities.keys)))
+        return storageManagement
+                .getWriter(entitySetId)
+                .partialReplaceEntities(
+                        entitySetId,
+                        entities,
+                        authorizedPropertyTypes
+                )
     }
 
     override fun replacePropertiesInEntities(
@@ -391,7 +452,10 @@ class DataGraphService(
             replacementProperties: Map<UUID, Map<UUID, Set<Map<ByteBuffer, Any>>>>,
             authorizedPropertyTypes: Map<UUID, PropertyType>
     ): WriteEvent {
-        return eds.replacePropertiesInEntities(entitySetId, replacementProperties, authorizedPropertyTypes)
+        storageMigration.migrateIfNeeded(mapOf(entitySetId to Optional.of(replacementProperties.keys)))
+        return storageManagement
+                .getWriter(entitySetId)
+                .replacePropertiesInEntities(entitySetId, replacementProperties, authorizedPropertyTypes)
     }
 
     override fun createAssociations(associations: Set<DataEdgeKey>): WriteEvent {
@@ -462,17 +526,23 @@ class DataGraphService(
     }
 
     override fun getExpiringEntitiesFromEntitySet(
-            entitySetId: UUID, expirationPolicy: DataExpiration,
-            dateTime: OffsetDateTime, deleteType: DeleteType,
+            entitySetId: UUID,
+            expirationPolicy: DataExpiration,
+            dateTime: OffsetDateTime,
+            deleteType: DeleteType,
             expirationPropertyType: Optional<PropertyType>
     ): BasePostgresIterable<UUID> {
         val sqlParams = getSqlParameters(expirationPolicy, dateTime, expirationPropertyType)
         val expirationBaseColumn = sqlParams.first
         val formattedDateMinusTTE = sqlParams.second
         val sqlFormat = sqlParams.third
-        return eds.getExpiringEntitiesFromEntitySet(
-                entitySetId, expirationBaseColumn, formattedDateMinusTTE,
-                sqlFormat, deleteType
+
+        return metadataManager.getExpiringEntitiesFromEntitySet(
+                entitySetId,
+                expirationBaseColumn,
+                formattedDateMinusTTE,
+                sqlFormat,
+                deleteType
         )
     }
 

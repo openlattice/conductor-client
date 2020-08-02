@@ -2,6 +2,7 @@ package com.openlattice.data.storage
 
 import com.codahale.metrics.Timer
 import com.codahale.metrics.annotation.Timed
+import com.openlattice.data.DeleteType
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.EntitySetData
 import com.openlattice.data.Property
@@ -32,7 +33,7 @@ interface EntityLoader {
             entitySetId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>>
+    ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>
 
     /**
      * Loads specific entities and associated metadata.
@@ -42,14 +43,14 @@ interface EntityLoader {
      * @param authorizedPropertyTypes The property types for which to load data.
      * @param metadataOptions The metadata which to read.
      *
-     * @return A stream of entities with corresponding property types and metadata.
+     * @return A map of entities where the keys are ids and the values are the entities.
      */
     fun getEntitiesWithMetadata(
             entitySetId: UUID,
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>>
+    ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>
 
     fun getLinkingEntities(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
@@ -88,7 +89,7 @@ interface EntityLoader {
             metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
             linked: Boolean = false,
             detailed: Boolean = false
-    ) : Iterable<Pair<EntityDataKey, Map<FullQualifiedName, Set<Property>>>>
+    ) : Iterable<Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Property>>>>
 
 
     /**
@@ -208,6 +209,7 @@ interface EntityLoader {
             linkingIds: Set<UUID>,
             normalEntitySetIds: Set<UUID>
     ): BasePostgresIterable<Pair<UUID, Set<UUID>>>
+
 
 
 }

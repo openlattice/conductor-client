@@ -24,16 +24,11 @@ class PostgresStorageProvider(
         private val linkingQueryService: LinkingQueryService,
         override val storageConfiguration: PostgresStorageConfiguration
 ) : StorageProvider {
-    override val entityLoader: Supplier<EntityLoader> = Suppliers.memoize(::getLoader)
-    override val entityWriter: Supplier<EntityWriter> = Suppliers.memoize(::getWriter)
-
-    private fun getLoader(): EntityLoader {
-        return getPostgresEntityDatastore()
-    }
-
-    private fun getWriter(): EntityWriter {
-        return getPostgresEntityDatastore()
-    }
+    private val datastore = getPostgresEntityDatastore()
+    override val entityLoader: EntityLoader
+        get() = datastore
+    override val entityWriter: EntityWriter
+        get() = datastore
 
     private fun getPostgresEntityDatastore(): PostgresEntityDatastore {
         return PostgresEntityDatastore(
