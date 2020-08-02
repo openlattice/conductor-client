@@ -72,7 +72,7 @@ interface EntityLoader {
     fun getLinkedEntitySetBreakDown(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>>
+    ): MutableMap<UUID, MutableMap<UUID, MutableMap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>>
 
     /**
      * Returns data from either at least one regular entity sets or at least one linked entity set.

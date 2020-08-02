@@ -141,7 +141,7 @@ class PostgresEntityDataQueryService(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
             version: Optional<Long> = Optional.empty()
-    ): BasePostgresIterable<Pair<UUID, Pair<UUID, Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>>> {
+    ): BasePostgresIterable<Pair<UUID, Pair<UUID, MutableMap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>>> {
         return getEntitySetIterable(
                 entityKeyIds,
                 authorizedPropertyTypes,

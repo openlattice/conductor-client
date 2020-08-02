@@ -28,7 +28,6 @@ import com.google.common.collect.*
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
-import com.openlattice.data.storage.EntityDatastore
 import com.openlattice.data.storage.MetadataOption
 import com.openlattice.data.storage.StorageManagementService
 import com.openlattice.data.storage.StorageMigrationService
@@ -44,8 +43,6 @@ import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresDataTables
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.PostgresIterable
-import com.zaxxer.hikari.HikariDataSource
-import org.apache.commons.lang3.NotImplementedException
 import org.apache.commons.lang3.tuple.Pair
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -58,7 +55,6 @@ import java.time.ZoneId
 import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.stream.Stream
-import kotlin.streams.asSequence
 import kotlin.streams.asStream
 
 /**
@@ -195,13 +191,28 @@ class DataGraphService(
 
     override fun getLinkingEntity(
             entitySetIds: Set<UUID>,
-            entityKeyId: UUID,
+            linkingId: UUID,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>
     ): Map<FullQualifiedName, Set<Any>> {
-        return eds.getLinkingEntities(
-                entitySetIds.map { it to Optional.of(setOf(entityKeyId)) }.toMap(),
-                authorizedPropertyTypes
-        ).iterator().next()
+        val k = Optional.of(setOf(linkingId))
+        storageMigration.migrateIfNeeded(
+                metadataManager.getLinkedEntityDataKeys(entitySetIds.associateWith { k })
+        )
+
+        return storageManagement.getReaders(entitySetIds).entries.fold(mutableMapOf<FullQualifiedName, MutableSet<Any>>()) { linkedEntity, (storageProvider, entitySetIds) ->
+            val partialLinkedEntity = storageProvider.entityLoader.getLinkingEntities(
+                    entitySetIds.map { it to k }.toMap(),
+                    authorizedPropertyTypes
+            ).iterator().next()
+
+            partialLinkedEntity.forEach { (propertyFqn, values) ->
+                linkedEntity.merge(propertyFqn, values) { oldValues, newValues ->
+                    oldValues.addAll(newValues)
+                    oldValues
+                }
+            }
+            return@fold linkedEntity
+        }
     }
 
     override fun getLinkedEntitySetBreakDown(
@@ -211,27 +222,49 @@ class DataGraphService(
         //Migration is slightly more complicated for linked entities, because we need to look up all linked entities
         //and make sure they are migrated.
 
-        //In addition, we want to allow individual entity datastores to maintain optimizations for reading linked
-        //entities that live on those datastores.
-        val linkedEntityDataKeys = metadataManager.getLinkedEntityDataKeys(linkingIdsByEntitySetId)
-
-        storageMigration.migrateIfNeeded(Maps.transformValues(linkedEntityDataKeys) { Optional.ofNullable(it?.values?.toSet()) })
-        val readers = storageManagement.getReaders(linkedEntityDataKeys.keys)
-        // All entity sets corresponding to the same provider have be requested together
-        // so we need to group entities by providers
-        //
-        //
+        storageMigration.migrateIfNeeded(metadataManager.getLinkedEntityDataKeys(linkingIdsByEntitySetId))
 
 
-        return linkingIdsByEntitySetId.mapValues { (entitySetId, linkingIds) ->
-            val loadingMap = mapOf(entitySetId to Optional.of(ids))
+        /**
+         * In order to allow individual entity datastores to maintain optimizations for reading linked data sets, we
+         * group entity sets by storage providers before retrieving and merging the entity set breakdowns.
+         */
+        val readers = storageManagement.getReaders(linkingIdsByEntitySetId.keys)
 
-            storageManagement.getReader(entitySetId).getEntities(
-                    loadingMap,
-                    authorizedPropertyTypesByEntitySet
-            ).map { it.first.entityKeyId to it.second }.toMap()
+        /**
+         * Now the magic happens where we fold all the entity breakdowns together.
+         */
+
+        return readers.entries.fold(mutableMapOf<UUID, MutableMap<UUID, MutableMap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>>()) { linkedEntityBreakdown, (storageProvider, entitySetIds) ->
+            val partialLinkedEntityBreakdown = storageProvider.entityLoader.getLinkedEntitySetBreakDown(
+                    entitySetIds.associateWith { linkingIdsByEntitySetId.getValue(it) },
+                    authorizedPropertyTypesByEntitySetId
+            )
+
+            partialLinkedEntityBreakdown.forEach { (linkingId, breakdown) ->
+                linkedEntityBreakdown.merge(linkingId, breakdown) { oldBreakdown, newBreakdown ->
+                    newBreakdown.forEach { (entitySetId, entities) ->
+                        oldBreakdown.merge(entitySetId, entities) { oldEntities, newEntities ->
+                            newEntities.forEach { (id, properties) ->
+                                oldEntities.merge(id, properties) { oldProperties, newProperties ->
+                                    newProperties.forEach { (propertyFqn, values) ->
+                                        oldProperties.merge(propertyFqn, values) { oldValues, newValues ->
+                                            oldValues.addAll(newValues)
+                                            oldValues
+                                        }
+                                    }
+                                    oldProperties
+                                }
+                            }
+                            oldEntities
+                        }
+                    }
+                    oldBreakdown
+                }
+            }
+
+            return@fold linkedEntityBreakdown
         }
-        return eds.getLinkedEntitySetBreakDown(linkingIdsByEntitySetId, authorizedPropertyTypesByEntitySetId)
     }
 
     override fun getEntitiesWithPropertyTypeFqns(

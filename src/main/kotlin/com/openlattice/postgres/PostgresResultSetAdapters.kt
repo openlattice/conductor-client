@@ -93,7 +93,7 @@ fun getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeFqn(
         authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
         metadataOptions: Set<MetadataOption>,
         byteBlobDataManager: ByteBlobDataManager
-): Pair<UUID, Pair<UUID, Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>> {
+): Pair<UUID, Pair<UUID, MutableMap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>> {
     val id = id(rs)
     val entitySetId = entitySetId(rs)
     val propertyTypes = authorizedPropertyTypes.getValue(entitySetId)
@@ -106,14 +106,14 @@ fun getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeFqn(
 
     val entities = readJsonDataColumnsWithId(rs, propertyTypes, byteBlobDataManager, lastWrite)
 
-    val entityByFqn = entities.mapValues { (_, propertyValues) ->
-        propertyValues.mapKeys {
+    val entityByFqn = entities.mapValuesTo(mutableMapOf()) { (_, propertyValues) ->
+        propertyValues.mapKeysTo(mutableMapOf()) {
             if (it.key == LAST_WRITE_ID.id) {
                 LAST_WRITE_FQN
             } else {
                 propertyTypes.getValue(it.key).type
             }
-        }.toMutableMap()
+        }
     }
 
     return id to (entitySetId to entityByFqn)
@@ -139,7 +139,7 @@ fun getEntityPropertiesAcrossEntitySetsByFullQualifiedName(
         entityByFqn[LAST_WRITE_FQN] = mutableSetOf<Any>(lastWriteTyped(rs))
     }
 
-    return EntityDataKey(entitySetId,id) to entityByFqn
+    return EntityDataKey(entitySetId, id) to entityByFqn
 }
 
 @Throws(SQLException::class)

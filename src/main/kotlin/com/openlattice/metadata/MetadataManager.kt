@@ -26,5 +26,5 @@ interface MetadataManager {
      */
     fun getLinkedEntityDataKeys(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>
-    ): Map<UUID, Map<UUID, UUID>>
+    ): Map<UUID, Optional<Set<UUID>>>
 }

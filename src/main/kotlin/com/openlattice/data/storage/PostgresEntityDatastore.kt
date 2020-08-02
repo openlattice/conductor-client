@@ -309,7 +309,7 @@ class PostgresEntityDatastore(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     )
-            : Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
+            : MutableMap<UUID, MutableMap<UUID, MutableMap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>> {
         // pair<linking_id to pair<entity_set_id to pair<origin_id to property_data>>>
         val linkedEntityDataStream = dataQueryService.getLinkedEntitySetBreakDown(
                 linkingIdsByEntitySetId,
@@ -317,7 +317,7 @@ class PostgresEntityDatastore(
         )
 
         // linking_id/entity_set_id/origin_id/property_type_id
-        val linkedDataMap = HashMap<UUID, MutableMap<UUID, Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>>()
+        val linkedDataMap = mutableMapOf<UUID, MutableMap<UUID, MutableMap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>>()
         linkedEntityDataStream.forEach {
             val linkingId = it.first
             val entitySetId = it.second.first
