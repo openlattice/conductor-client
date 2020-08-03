@@ -129,15 +129,18 @@ class DataGraphService(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
     ): Iterable<MutableMap<FullQualifiedName, MutableSet<Any>>> {
-        return Iterables.transform(
-                eds.getEntitiesAcrossEntitySets(
-                        entityKeyIds,
-                        authorizedPropertyTypes,
-                        metadataOptions
-                )
-        ) {
-            it!!.second
-        }
+        storageMigration.migrateIfNeeded(entityKeyIds)
+        return storageManagement
+                .getReaders(entityKeyIds.keys)
+                .asSequence()
+                .flatMap { (provider, entitySetIds) ->
+                    provider.entityLoader.getEntitiesAcrossEntitySets(
+                            entitySetIds.associateWith { entityKeyIds.getValue(it) },
+                            authorizedPropertyTypes,
+                            metadataOptions
+                    ).asSequence()
+                }.map { it.second }
+                .asIterable()
     }
 
     override fun getEntityKeyIds(entityKeys: Set<EntityKey>): Set<UUID> {
@@ -152,7 +155,23 @@ class DataGraphService(
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linking: Boolean
     ): EntitySetData<FullQualifiedName> {
-        return eds.getEntitySetsData(entityKeyIds, orderedPropertyNames, authorizedPropertyTypes, linking = linking)
+        storageMigration.migrateIfNeeded(entityKeyIds)
+        return EntitySetData<FullQualifiedName>(
+                orderedPropertyNames,
+                Iterables.concat(
+                        *storageManagement
+                                .getReaders(entityKeyIds.keys)
+                                .entries
+                                .map { (provider, entitySetIds) ->
+                                    provider.entityLoader.getEntitySetsData(
+                                            entitySetIds.associateWith { entityKeyIds.getValue(it) },
+                                            orderedPropertyNames,
+                                            authorizedPropertyTypes,
+                                            linking = linking
+                                    ).entities
+                                }.toTypedArray()
+                )
+        )
     }
 
     override fun getEntity(
