@@ -24,7 +24,6 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.lang.Exception
 import java.nio.ByteBuffer
 import java.security.InvalidParameterException
 import java.sql.Connection
@@ -179,7 +178,7 @@ class PostgresEntityDataQueryService(
     fun getEntitiesAcrossEntitySetsWithPropertyTypeFqnsIterable(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            propertyTypeFilters: Map<UUID, Set<Filter>> ,
+            propertyTypeFilters: Map<UUID, Set<Filter>>,
             metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
             version: Optional<Long>,
             linking: Boolean = false
@@ -201,10 +200,11 @@ class PostgresEntityDataQueryService(
 
         }
     }
+
     fun getEntitiesWithPropertyTypeFqnsIterable(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
-            propertyTypeFilters: Map<UUID, Set<Filter>> ,
+            propertyTypeFilters: Map<UUID, Set<Filter>>,
             metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
             version: Optional<Long>,
             linking: Boolean = false
@@ -1234,6 +1234,38 @@ class PostgresEntityDataQueryService(
                 "AND ${PROPERTY_TYPE_ID.name} != ? " +
                 "AND $expirationBaseColumn <= ? " +
                 ignoredClearedEntitiesClause // this clause ignores entities that have already been cleared
+    }
+
+    /**
+     * Resolve entity set ids and linking to entity key ids.
+     *
+     * While the signature of this function accepts Optional<Set<UUID>>, it will fail if value is not present. The
+     * signature is to avoid callers having to transform all the values and it is only intended to be invoked from
+     * [DataGraphService]
+     */
+    fun getEntityKeyIdsUsingLinkingIds(
+            linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>
+    ): Map<UUID, Optional<Set<UUID>>> {
+        require( linkingIdsByEntitySetId.values.all { it.isPresent } ) {
+            "Cannot get entity key ids"
+        }
+        return linkingIdsByEntitySetId.mapValues { (entitySetId, maybeIds) ->
+            Optional.of(
+                    BasePostgresIterable<UUID>(
+                            PreparedStatementHolderSupplier(hds, idsFromLinkingIds) { ps ->
+                                ps.setObject(1, entitySetId)
+                                ps.setArray(
+                                        2,
+                                        PostgresArrays.createIntArray(
+                                                ps.connection,
+                                                partitionManager.getEntitySetPartitions(entitySetId)
+                                        )
+                                )
+                                ps.setArray(3, PostgresArrays.createUuidArray(ps.connection, maybeIds.get()))
+                            }, ResultSetAdapters::id
+                    ).toSet()
+            )
+        }
     }
 }
 

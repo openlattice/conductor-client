@@ -24,7 +24,10 @@ package com.openlattice.data
 import com.codahale.metrics.annotation.Timed
 import com.geekbeast.rhizome.jobs.HazelcastJobService
 import com.google.common.base.Stopwatch
-import com.google.common.collect.*
+import com.google.common.collect.Iterables
+import com.google.common.collect.ListMultimap
+import com.google.common.collect.Multimaps
+import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
 import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
@@ -234,15 +237,29 @@ class DataGraphService(
         }
     }
 
+    /**
+     * Reads that attempt load an entire entity set will fail until that entity set is migrated.
+     *
+     * This function is a guard to ensure that we do not try to migrate an entire entity set at once due to a read. It
+     * also protects from attempting to load all entity key ids and linking ids in an entity set via [metadataManager#getLinkedEntityDataKeys]
+     *
+     */
+    private fun requireIdsForEntitySetIfMigrating(idsByEntitySetId : Map<UUID, Optional<Set<UUID>>>) {
+        //Doing an inline migration of an entire linked entity set
+        require(idsByEntitySetId.all { (entitySetId, maybeLinkingIds) ->
+            storageMigration.isMigrating(entitySetId) == false || maybeLinkingIds.map { it.isNotEmpty() }.orElse(false)
+        }) { "Cannot get linked entity set breakdown for entire entity set, while it is migrating." }
+    }
+
     override fun getLinkedEntitySetBreakDown(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
     ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
+        requireIdsForEntitySetIfMigrating(linkingIdsByEntitySetId)
+
         //Migration is slightly more complicated for linked entities, because we need to look up all linked entities
         //and make sure they are migrated.
-
         storageMigration.migrateIfNeeded(metadataManager.getLinkedEntityDataKeys(linkingIdsByEntitySetId))
-
 
         /**
          * In order to allow individual entity datastores to maintain optimizations for reading linked data sets, we

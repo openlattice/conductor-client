@@ -4,6 +4,7 @@ package com.openlattice.data.storage
 import com.openlattice.IdConstants
 import com.openlattice.analysis.SqlBindInfo
 import com.openlattice.analysis.requests.Filter
+import com.openlattice.auditing.ENTITY_SET
 import com.openlattice.data.storage.partitions.getPartition
 import com.openlattice.edm.PostgresEdmTypeConverter
 import com.openlattice.edm.type.PropertyType
@@ -649,6 +650,17 @@ internal val deleteEntityKeys =
             "${ID.name} = ANY(?) AND " +
             "${PARTITION.name} = ? "
 // @formatter:on
+
+/**
+ * Retrieves the entity key ids given entity set id and linking ids.
+ * 1. entity set id
+ * 2. partitions (array)
+ * 3. linking_ids (array)
+ */
+internal val idsFromLinkingIds = """
+    SELECT ${ENTITY_SET_ID.name},${ID.name},${PARTITION.name},${LINKING_ID.name} FROM ${IDS.name}
+     WHERE ${ENTITY_SET_ID.name} = ? AND ${PARTITION.name} = ANY(?) AND ${LINKING_ID.name} = ANY(?)
+""".trimIndent()
 
 /**
  * Selects a text properties from entity sets with the following bind order:

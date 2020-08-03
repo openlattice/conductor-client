@@ -22,4 +22,7 @@ class MetadataService(private val dataQueryService: PostgresEntityDataQueryServi
         )
     }
 
+    override fun getLinkedEntityDataKeys(
+            linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>
+    ): Map<UUID, Optional<Set<UUID>>> = dataQueryService.getEntityKeyIdsUsingLinkingIds( linkingIdsByEntitySetId )
 }
