@@ -3,6 +3,7 @@ package com.openlattice.data.storage
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.controllers.exceptions.ResourceNotFoundException
 import com.openlattice.data.Property
+import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
@@ -21,7 +22,7 @@ import kotlin.math.abs
 class StorageMigrationService(
         hazelcastInstance: HazelcastInstance,
         val storageManagementService: StorageManagementService,
-        val entitySetService: EntitySetService,
+        val entitySetService: EntitySetManager,
         val metastore: HikariDataSource
 ) {
     private val migrationStatus = HazelcastMap.MIGRATION_STATUS.getMap(hazelcastInstance)
