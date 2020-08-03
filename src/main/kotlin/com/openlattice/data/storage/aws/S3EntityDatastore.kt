@@ -72,7 +72,7 @@ class S3EntityDatastore(
     override fun getAllEntitiesWithMetadata(
             entitySetId: UUID, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -92,7 +92,7 @@ class S3EntityDatastore(
             ids: Set<UUID>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>
-    ): Stream<MutableMap<FullQualifiedName, MutableSet<Any>>> {
+    ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>> {
         val propertyTypes =
                 authorizedPropertyTypes.getValue(entitySetId) + mapMetadataOptionsToPropertyTypes(metadataOptions)
 
@@ -106,9 +106,8 @@ class S3EntityDatastore(
                             propertyTypes
                     )
                     entityByFqn[EdmConstants.ID_FQN] = mutableSetOf<Any>(edk.entitySetId)
-                    return@map entityByFqn
-                }
-                .asStream()
+                    return@map edk.entityKeyId to entityByFqn
+                }.toMap()
     }
 
     override fun getLinkingEntities(
@@ -137,14 +136,14 @@ class S3EntityDatastore(
     override fun getLinkedEntitySetBreakDown(
             linkingIdsByEntitySetId: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypesByEntitySetId: Map<UUID, Map<UUID, PropertyType>>
-    ): Map<UUID, Map<UUID, Map<UUID, Map<FullQualifiedName, Set<Any>>>>> {
+    ): MutableMap<UUID, MutableMap<UUID, MutableMap<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     override fun getEntities(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>, authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: EnumSet<MetadataOption>, linked: Boolean, detailed: Boolean
-    ): Iterable<Pair<EntityDataKey, Map<FullQualifiedName, Set<Property>>>> {
+    ): Iterable<Pair<EntityDataKey, MutableMap<FullQualifiedName, MutableSet<Property>>>> {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -320,16 +319,6 @@ class S3EntityDatastore(
 
     override fun writeEntitiesWithHistory(entities: Map<UUID, MutableMap<UUID, MutableSet<Property>>>) {
         TODO("Not yet implemented")
-    }
-
-    override fun getExpiringEntitiesFromEntitySet(
-            entitySetId: UUID,
-            expirationBaseColumn: String,
-            formattedDateMinusTTE: Any,
-            sqlFormat: Int,
-            deleteType: DeleteType
-    ): BasePostgresIterable<UUID> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 }
 
