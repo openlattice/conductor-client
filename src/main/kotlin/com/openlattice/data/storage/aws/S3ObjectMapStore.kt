@@ -14,6 +14,7 @@ import com.kryptnostic.rhizome.mapstores.TestableSelfRegisteringMapStore
 import com.openlattice.IdConstants
 import com.openlattice.data.Entity
 import com.openlattice.data.EntityDataKey
+import com.openlattice.data.Property
 import com.openlattice.data.storage.S3StorageConfiguration
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.mapstores.TestDataFactory
@@ -24,7 +25,8 @@ import java.time.OffsetDateTime
 import java.util.*
 import java.util.stream.Collectors
 
-private const val S3_OBJECT_MAP_TTL = 5*60 // 5 minutes in seconds
+private const val S3_OBJECT_MAP_TTL = 5 * 60 // 5 minutes in seconds
+
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -48,8 +50,8 @@ class S3ObjectMapStore(
 
         entities.entries.parallelStream().forEach { (ewk, data) ->
             attempt(LinearBackoff(5000, 100), 10) {
-                data.getOrPut(IdConstants.LAST_WRITE_ID.id) { mutableSetOf() } += lastWrite
-                data.getOrPut(IdConstants.VERSION_ID.id) { mutableSetOf() } += version
+                data.getOrPut(IdConstants.LAST_WRITE_ID.id) { mutableSetOf() }.add(Property(lastWrite, propertyMetadata = mapOf()) )
+                data.getOrPut(IdConstants.VERSION_ID.id) { mutableSetOf() }.add(Property(version, propertyMetadata = mapOf()) )
                 val json = mapper.writeValueAsBytes(data)
                 val metadata = ObjectMetadata()
                 metadata.contentLength = json.size.toLong()
@@ -125,7 +127,21 @@ class S3ObjectMapStore(
                 TestDataFactory.propertyType(EdmPrimitiveTypeKind.String),
                 TestDataFactory.propertyType(EdmPrimitiveTypeKind.String)
         ).associateBy { it.id }
-        return Entity(TestDataFactory.entities(1, propertyTypes).values.first())
+        return Entity(
+                TestDataFactory.entities(
+                        1,
+                        propertyTypes
+                ).values.map {
+                    it.mapValues { (_, values) ->
+                        values.map { v ->
+                            Property(
+                                    v,
+                                    propertyMetadata = mapOf()
+                            )
+                        }.toMutableSet()
+                    }.toMutableMap()
+                }.first()
+        )
     }
 
     override fun getMapStoreConfig(): MapStoreConfig {
