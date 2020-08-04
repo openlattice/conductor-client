@@ -350,11 +350,12 @@ class DataGraphService(
         return graphService.getEdgeEntitySetsConnectedToEntitySet(entitySetId)
     }
 
-    override fun setPartitions(
+    override fun repartitionEntitySet(
             entitySetId: UUID,
-            partitions: Set<Int>
+            oldPartitions: Set<Int>,
+            newPartitions: Set<Int>
     ): UUID {
-        return jobService.submitJob(RepartitioningJob(entitySetId, partitions.toList()))
+        return jobService.submitJob(RepartitioningJob(entitySetId, oldPartitions.toList(), newPartitions))
     }
 
     /* Delete */

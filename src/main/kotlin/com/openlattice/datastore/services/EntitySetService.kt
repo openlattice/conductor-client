@@ -66,6 +66,7 @@ import com.zaxxer.hikari.HikariDataSource
 import edu.umd.cs.findbugs.classfile.ResourceNotFoundException
 import org.slf4j.LoggerFactory
 import java.util.*
+import kotlin.collections.LinkedHashSet
 
 open class EntitySetService(
         hazelcastInstance: HazelcastInstance,
@@ -126,10 +127,20 @@ open class EntitySetService(
             authorizations.setSecurableObjectType(aclKey, SecurableObjectType.EntitySet)
             authorizations.addPermission(aclKey, principal, EnumSet.allOf(Permission::class.java))
 
-            val aclKeys = entityType.properties.mapTo( mutableSetOf() ) { propertyTypeId -> AclKey(entitySetId, propertyTypeId) }
-            
+            val aclKeys = entityType.properties.mapTo(mutableSetOf()) { propertyTypeId ->
+                AclKey(
+                        entitySetId,
+                        propertyTypeId
+                )
+            }
+
             authorizations.setSecurableObjectTypes(aclKeys, PropertyTypeInEntitySet)
-            authorizations.addPermissions(aclKeys, principal, EnumSet.allOf(Permission::class.java), PropertyTypeInEntitySet)
+            authorizations.addPermissions(
+                    aclKeys,
+                    principal,
+                    EnumSet.allOf(Permission::class.java),
+                    PropertyTypeInEntitySet
+            )
 
             aresManager.createAuditEntitySetForEntitySet(entitySet)
 
@@ -155,13 +166,14 @@ open class EntitySetService(
     private fun setupDefaultEntitySetPropertyMetadata(entitySetId: UUID, entityTypeId: UUID) {
         val et = edm.getEntityType(entityTypeId)
         val propertyTags = et.propertyTags
-        entitySetPropertyMetadata.putAll(edm.getPropertyTypes(et.properties).associate {
-            val key = EntitySetPropertyKey(entitySetId, it.id)
+        entitySetPropertyMetadata.putAll(edm.getPropertyTypes(et.properties).associate { property ->
+            val key = EntitySetPropertyKey(entitySetId, property.id)
             val metadata = EntitySetPropertyMetadata(
-                    it.title,
-                    it.description,
-                    LinkedHashSet(propertyTags.get(it.id)),
-                    true)
+                    property.title,
+                    property.description,
+                    propertyTags.getOrDefault(property.id, LinkedHashSet()),
+                    true
+            )
 
             key to metadata
         })
@@ -293,7 +305,7 @@ open class EntitySetService(
                 Predicates.`in`(
                         QueryConstants.KEY_ATTRIBUTE_NAME.value(),
                         *entitySetIds.toTypedArray()
-                ) 
+                )
         )
     }
 
@@ -359,7 +371,7 @@ open class EntitySetService(
         ).mapValues {
             val set = (it.value as DelegatedUUIDSet).unwrap()
             set.forEach {
-                accessChecks.putIfAbsent( AclKey(it), permissions )
+                accessChecks.putIfAbsent(AclKey(it), permissions)
             }
             set
         }
@@ -384,19 +396,6 @@ open class EntitySetService(
             entityTypesAsMap.getValue(entityTypesOfEntitySets.getValue(it))
                     .properties
                     .associateWith { ptId -> propertyTypesAsMap.getValue(ptId) }
-        }
-    }
-
-    override fun setPartitions(entitySetId: UUID, partitions: Set<Int>) {
-        require(entitySets.containsKey(entitySetId)) {
-            "Entity set $entitySetId not found"
-        }
-        entitySets.executeOnKey(entitySetId) {
-            val v = it.value
-            if( v != null ) {
-                v.setPartitions(partitions)
-                it.setValue(v)
-            }
         }
     }
 
@@ -458,7 +457,7 @@ open class EntitySetService(
         missingKeys.forEach { newKey ->
             val propertyType = missingPropertyTypesById.getValue(newKey.propertyTypeId)
             val propertyTags = entityTypesById.getValue(entityTypesByEntitySetId.getValue(newKey.entitySetId))
-                    .propertyTags.get(newKey.propertyTypeId)
+                    .propertyTags.getOrDefault(newKey.propertyTypeId, LinkedHashSet())
 
             val defaultMetadata = EntitySetPropertyMetadata(
                     propertyType.title,
