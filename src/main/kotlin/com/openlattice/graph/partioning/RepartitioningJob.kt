@@ -76,7 +76,7 @@ class RepartitioningJob(
     }
 
     override fun initialize() {
-        state.needsMigrationCount = getNeedsMigrationCount()
+        state.needsMigrationCount = 3 * getNeedsMigrationCount()
     }
 
     override fun processNextBatch() {
@@ -125,8 +125,7 @@ class RepartitioningJob(
 
             setPartitions(state.entitySetId, state.newPartitions)
             //The 4*getCount was an estimate, we remove estimate and addin updated value.
-            state.needsMigrationCount /= 2
-            state.needsMigrationCount += getNeedsMigrationCount()
+            state.needsMigrationCount = 3 * getNeedsMigrationCount()
             //Another publish to save needsMigrationCount
             publishJobState()
         }
@@ -186,7 +185,7 @@ class RepartitioningJob(
         }
     }
 
-    private fun getNeedsMigrationCount(): Long = 3 * state.oldPartitions.fold(0L) { count, partition ->
+    private fun getNeedsMigrationCount(): Long = state.oldPartitions.fold(0L) { count, partition ->
         count + getCount(idsNeedingMigrationCountSql, partition) +
                 getCount(dataNeedingMigrationCountSql, partition) +
                 getCount(edgesNeedingMigrationCountSql, partition)
@@ -377,7 +376,9 @@ INSERT INTO ${E.name} SELECT $REPARTITION_EDGES_COLUMNS
 private val DELETE_DATA_SQL = """
 DELETE FROM ${DATA.name} 
     USING (SELECT ${ID.name},${ENTITY_SET_ID.name},${PARTITION.name},${PARTITIONS.name} FROM ${DATA.name} INNER JOIN (select ? as ${ENTITY_SET_ID.name},? as ${PARTITIONS.name} ) as es USING (${ENTITY_SET_ID.name})) as to_be_deleted
-    WHERE ${DATA.name}.${PARTITION.name} = ? AND ${DATA.name}.${PARTITION.name}!=${getPartitioningSelector(DATA.name + "." + ID.name)} AND to_be_deleted.${ID.name} = ${DATA.name}.${ID.name} and to_be_deleted.${PARTITION.name} = ${DATA.name}.${PARTITION.name};  
+    WHERE ${DATA.name}.${PARTITION.name} = ? AND ${DATA.name}.${PARTITION.name}!=${getPartitioningSelector(
+        DATA.name + "." + ID.name
+)} AND to_be_deleted.${ID.name} = ${DATA.name}.${ID.name} and to_be_deleted.${PARTITION.name} = ${DATA.name}.${PARTITION.name};  
 """.trimIndent()
 
 /**
@@ -389,7 +390,9 @@ DELETE FROM ${DATA.name}
 private val DELETE_IDS_SQL = """
 DELETE FROM ${IDS.name} 
     USING (SELECT ${ID.name},${ENTITY_SET_ID.name},${PARTITION.name},${PARTITIONS.name} FROM ${IDS.name} INNER JOIN (select ? as ${ENTITY_SET_ID.name},? as ${PARTITIONS.name} ) as es USING (${ENTITY_SET_ID.name})) as to_be_deleted
-    WHERE ${IDS.name}.${PARTITION.name} = ? AND ${IDS.name}.${PARTITION.name}!=${getPartitioningSelector(IDS.name + "." + ID.name)} AND to_be_deleted.${ID.name} = ${IDS.name}.${ID.name} and to_be_deleted.${PARTITION.name} = ${IDS.name}.${PARTITION.name};  
+    WHERE ${IDS.name}.${PARTITION.name} = ? AND ${IDS.name}.${PARTITION.name}!=${getPartitioningSelector(
+        IDS.name + "." + ID.name
+)} AND to_be_deleted.${ID.name} = ${IDS.name}.${ID.name} and to_be_deleted.${PARTITION.name} = ${IDS.name}.${PARTITION.name};  
 """.trimIndent()
 
 /**
@@ -402,5 +405,7 @@ DELETE FROM ${IDS.name}
 private val DELETE_EDGES_SQL = """
 DELETE FROM ${E.name} 
     USING (SELECT ${SRC_ENTITY_SET_ID.name},${SRC_ENTITY_KEY_ID.name},${PARTITION.name},${PARTITIONS.name} FROM ${E.name} INNER JOIN (select ? as ${SRC_ENTITY_SET_ID.name},? as ${PARTITIONS.name} ) as es USING (${SRC_ENTITY_SET_ID.name})) as to_be_deleted
-    WHERE ${E.name}.${PARTITION.name} = ? AND ${E.name}.${PARTITION.name}!=${getPartitioningSelector(E.name + "." + SRC_ENTITY_KEY_ID.name)} AND to_be_deleted.${SRC_ENTITY_SET_ID.name} = ${E.name}.${SRC_ENTITY_SET_ID.name} and to_be_deleted.${PARTITION.name} = ${E.name}.${PARTITION.name};
+    WHERE ${E.name}.${PARTITION.name} = ? AND ${E.name}.${PARTITION.name}!=${getPartitioningSelector(
+        E.name + "." + SRC_ENTITY_KEY_ID.name
+)} AND to_be_deleted.${SRC_ENTITY_SET_ID.name} = ${E.name}.${SRC_ENTITY_SET_ID.name} and to_be_deleted.${PARTITION.name} = ${E.name}.${PARTITION.name};
 """.trimIndent()
