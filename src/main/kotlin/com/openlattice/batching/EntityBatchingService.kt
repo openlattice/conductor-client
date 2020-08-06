@@ -1,5 +1,6 @@
 package com.openlattice.batching
 
+import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.postgres.PostgresColumn.*
 import com.openlattice.postgres.PostgresTable.BATCHES
 import com.openlattice.postgres.PostgresTable.IDS
@@ -15,7 +16,10 @@ const val DEFAULT_BATCHING_SIZE = 8192
  * Allow performing batch operations.
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class EntityBatchingService(val hds: HikariDataSource) {
+class EntityBatchingService(
+        val hds: HikariDataSource,
+        partitionManager:PartitionManager) {
+    val partitions = partitionManager.getAllPartitions()
     companion object {
         private val logger = LoggerFactory.getLogger(EntityBatchingService::class.java)
     }
@@ -78,21 +82,31 @@ class EntityBatchingService(val hds: HikariDataSource) {
     ): T = hds.connection.use { connection ->
         connection.autoCommit = false
         try {
+            var remaining = batchSize
             val batch = mutableListOf<EntityBatchEntry>()
+
+            /**
+             * Since this is a skip locked query, it won't ever deadlock and will simply skipped locked rows to process
+             * unlocked rows.
+             */
             val result = connection.prepareStatement(SELECT_BATCH).use { ps ->
-                ps.setString(1, batchType)
-                ps.setInt(2, batchSize)
-                val rs = ps.executeQuery()
-                while (rs.next()) {
-                    batch.add(
-                            EntityBatchEntry(
-                                    ResultSetAdapters.entitySetId(rs),
-                                    ResultSetAdapters.id(rs),
-                                    ResultSetAdapters.linkingId(rs),
-                                    ResultSetAdapters.partition(rs),
-                                    ResultSetAdapters.batchType(rs)
-                            )
-                    )
+                partitions.forEach { partition ->
+                    ps.setString(1, batchType)
+                    ps.setInt(2, remaining)
+                    ps.setInt(3, partition)
+                    val rs = ps.executeQuery()
+                    while (rs.next()) {
+                        batch.add(
+                                EntityBatchEntry(
+                                        ResultSetAdapters.entitySetId(rs),
+                                        ResultSetAdapters.id(rs),
+                                        ResultSetAdapters.linkingId(rs),
+                                        ResultSetAdapters.partition(rs),
+                                        ResultSetAdapters.batchType(rs)
+                                )
+                        )
+                    }
+                    remaining=batchSize-batch.size //Don't read more entries than requested.
                 }
                 process(Collections.unmodifiableList(batch))
             }
@@ -146,7 +160,7 @@ private val DELETE_BATCH = """
 """.trimIndent()
 private val SELECT_BATCH = """
     SELECT * FROM ${BATCHES.name} 
-    WHERE ${BATCH_TYPE.name} = ?
+    WHERE ${BATCH_TYPE.name} = ? AND PARTITION = ?
     ORDER BY ${ID_VALUE.name}
     LIMIT ?
     FOR UPDATE SKIP LOCKED
