@@ -90,8 +90,8 @@ class EntityBatchingService(
              * unlocked rows.
              */
             val result = connection.prepareStatement(SELECT_BATCH).use { ps ->
+                ps.setString(1, batchType)
                 partitions.forEach { partition ->
-                    ps.setString(1, batchType)
                     ps.setInt(2, remaining)
                     ps.setInt(3, partition)
                     val rs = ps.executeQuery()
