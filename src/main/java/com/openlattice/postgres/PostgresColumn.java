@@ -87,6 +87,10 @@ public final class PostgresColumn {
     public static final String                   BASE_TYPE_FIELD                   = "base_type";
     public static final PostgresColumnDefinition BASE_TYPE                         =
             new PostgresColumnDefinition( BASE_TYPE_FIELD, UUID );
+    public static final String                   BATCH_TYPE_FIELD                  = "batch_type";
+    public static final PostgresColumnDefinition BATCH_TYPE                        = new PostgresColumnDefinition(
+            BATCH_TYPE_FIELD,
+            TEXT );
     public static final String                   BIDIRECTIONAL_FIELD               = "bidirectional";
     public static final PostgresColumnDefinition BIDIRECTIONAL                     =
             new PostgresColumnDefinition( BIDIRECTIONAL_FIELD, BOOLEAN );
@@ -319,13 +323,13 @@ public final class PostgresColumn {
             TIMESTAMPTZ )
             .withDefault( "'-infinity'" )
             .notNull();
-    public static final String                   LAST_WRITE_FIELD                  = "last_write";
     public static final String                   LAST_SYNC_FIELD                   = "last_sync";
     public static final PostgresColumnDefinition LAST_SYNC                         = new PostgresColumnDefinition(
             LAST_SYNC_FIELD,
             TIMESTAMPTZ )
             .withDefault( "'-infinity'" )
             .notNull();
+    public static final String                   LAST_WRITE_FIELD                  = "last_write";
     public static final String                   LINKED_ENTITY_SETS_FIELD          = "linked_entity_sets";
     public static final PostgresColumnDefinition LINKED_ENTITY_SETS                =
             new PostgresColumnDefinition( LINKED_ENTITY_SETS_FIELD, UUID_ARRAY );

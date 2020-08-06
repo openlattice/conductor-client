@@ -32,7 +32,6 @@ import static com.openlattice.postgres.PostgresColumn.*;
  * Tables definitions for all tables used in the OpenLattice platform.
  */
 public final class PostgresTable {
-    public static final PostgresTableDefinition JOBS = PostgresJobsMapStore.JOBS;
     public static final PostgresTableDefinition ACL_KEYS          =
             new PostgresTableDefinition( "acl_keys" )
                     .addColumns( NAME, SECURABLE_OBJECTID )
@@ -63,7 +62,6 @@ public final class PostgresTable {
                             BLOCK_ID )
                     .primaryKey( ACL_KEY, EVENT_TYPE, PRINCIPAL_TYPE, PRINCIPAL_ID, TIME_UUID )
                     .setUnique( ACL_KEY, EVENT_TYPE, PRINCIPAL_TYPE, PRINCIPAL_ID, TIME_UUID );
-
     public static final PostgresTableDefinition AUDIT_RECORD_ENTITY_SET_IDS   =
             new PostgresTableDefinition( "audit_record_entity_set_ids" )
                     .addColumns( ACL_KEY,
@@ -76,6 +74,10 @@ public final class PostgresTable {
             new PostgresTableDefinition( "base_long_ids" )
                     .addColumns( SCOPE, BASE )
                     .primaryKey( SCOPE );
+    public static final PostgresTableDefinition BATCHES = new CitusDistributedTableDefinition( "batches" )
+            .addColumns( ENTITY_SET_ID, ID_VALUE, LINKING_ID, PARTITION, BATCH_TYPE )
+            .primaryKey( ID_VALUE,PARTITION, BATCH_TYPE )
+            .distributionColumn( PARTITION );
     public static final PostgresTableDefinition DATA                          = PostgresDataTables
             .buildDataTableDefinition();
     public static final PostgresTableDefinition DB_CREDS                      =
@@ -172,10 +174,6 @@ public final class PostgresTable {
             new PostgresTableDefinition( "entity_set_property_metadata" )
                     .addColumns( ENTITY_SET_ID, PROPERTY_TYPE_ID, TITLE, DESCRIPTION, TAGS, SHOW )
                     .primaryKey( ENTITY_SET_ID, PROPERTY_TYPE_ID );
-    public static final PostgresTableDefinition ENTITY_TYPE_PROPERTY_METADATA =
-            new PostgresTableDefinition( "entity_type_property_metadata" )
-                    .addColumns( ENTITY_TYPE_ID, PROPERTY_TYPE_ID, TITLE, DESCRIPTION, TAGS, SHOW )
-                    .primaryKey( ENTITY_TYPE_ID, PROPERTY_TYPE_ID );
     //.setUnique( NAMESPACE, NAME ); //Not allowed by postgres xl
     public static final PostgresTableDefinition ENTITY_TYPES                  =
             new PostgresTableDefinition( "entity_types" )
@@ -202,6 +200,10 @@ public final class PostgresTable {
                             DESCRIPTION,
                             SCHEMAS,
                             TEMPLATE );
+    public static final PostgresTableDefinition ENTITY_TYPE_PROPERTY_METADATA =
+            new PostgresTableDefinition( "entity_type_property_metadata" )
+                    .addColumns( ENTITY_TYPE_ID, PROPERTY_TYPE_ID, TITLE, DESCRIPTION, TAGS, SHOW )
+                    .primaryKey( ENTITY_TYPE_ID, PROPERTY_TYPE_ID );
     public static final PostgresTableDefinition ENUM_TYPES                    =
             new PostgresTableDefinition( "enum_types" )
                     .addColumns( ID,
@@ -217,17 +219,6 @@ public final class PostgresTable {
                             ANALYZER,
                             MULTI_VALUED,
                             INDEX_TYPE );
-
-    public static final PostgresTableDefinition INTEGRATIONS =
-            new PostgresTableDefinition( "integrations" )
-                    .addColumns( NAME,
-                            INTEGRATION )
-                    .primaryKey( NAME );
-
-    public static final PostgresTableDefinition INTEGRATION_JOBS =
-            new PostgresTableDefinition( "integration_jobs" )
-                    .addColumns( ID, NAME, STATUS );
-
     public static final PostgresTableDefinition        GRAPH_QUERIES =
             new PostgresTableDefinition( "graph_queries" )
                     .addColumns( QUERY_ID, QUERY, STATE, START_TIME )
@@ -246,7 +237,6 @@ public final class PostgresTable {
                     ENTITY_SET_ID,
                     PRINCIPAL_ID
             );
-
     public static final PostgresTableDefinition HBA_AUTHENTICATION_RECORDS =
             new PostgresTableDefinition( "hba_authentication_records" )
                     .addColumns(
@@ -256,7 +246,6 @@ public final class PostgresTable {
                             IP_ADDRESS,
                             AUTHENTICATION_METHOD )
                     .primaryKey( USERNAME, DATABASE, CONNECTION_TYPE, IP_ADDRESS );
-
     public static final PostgresTableDefinition IDS              =
             new CitusDistributedTableDefinition( "ids" )
                     .addColumns( PARTITION,
@@ -277,6 +266,15 @@ public final class PostgresTable {
             new PostgresTableDefinition( "id_gen" )
                     .primaryKey( PARTITION_INDEX )
                     .addColumns( PARTITION_INDEX, MSB, LSB );
+    public static final PostgresTableDefinition INTEGRATIONS =
+            new PostgresTableDefinition( "integrations" )
+                    .addColumns( NAME,
+                            INTEGRATION )
+                    .primaryKey( NAME );
+    public static final PostgresTableDefinition INTEGRATION_JOBS =
+            new PostgresTableDefinition( "integration_jobs" )
+                    .addColumns( ID, NAME, STATUS );
+    public static final PostgresTableDefinition JOBS    = PostgresJobsMapStore.JOBS;
     public static final PostgresTableDefinition LINKING_FEEDBACK =
             new PostgresTableDefinition( "linking_feedback" )
                     .addColumns(
@@ -429,19 +427,19 @@ public final class PostgresTable {
     public static final PostgresTableDefinition SCHEDULED_TASKS     =
             new PostgresTableDefinition( "scheduled_tasks" )
                     .addColumns( ID, SCHEDULED_DATE, CLASS_NAME, CLASS_PROPERTIES );
-    public static final PostgresTableDefinition SCHEMA            =
+    public static final PostgresTableDefinition SCHEMA              =
             new PostgresTableDefinition( "schemas" )
                     .addColumns( NAMESPACE, NAME_SET )
                     .primaryKey( NAMESPACE );
-    public static final PostgresTableDefinition SECURABLE_OBJECTS =
+    public static final PostgresTableDefinition SECURABLE_OBJECTS   =
             new PostgresTableDefinition( "securable_objects" )
                     .addColumns( ACL_KEY, SECURABLE_OBJECT_TYPE )
                     .primaryKey( ACL_KEY );
-    public static final PostgresTableDefinition SMS_INFORMATION   =
+    public static final PostgresTableDefinition SMS_INFORMATION     =
             new PostgresTableDefinition( "sms_information" )
                     .addColumns( PHONE_NUMBER, ORGANIZATION_ID, ENTITY_SET_IDS, TAGS, LAST_SYNC )
                     .primaryKey( PHONE_NUMBER, ORGANIZATION_ID );
-    public static final PostgresTableDefinition SUBSCRIPTIONS     =
+    public static final PostgresTableDefinition SUBSCRIPTIONS       =
             new PostgresTableDefinition( "subscriptions" )
                     .addColumns( ENTITY_SET_ID,
                             ID_VALUE,
@@ -452,7 +450,7 @@ public final class PostgresTable {
                             CONTACT_TYPE,
                             CONTACT_INFO )
                     .primaryKey( ID, PRINCIPAL_ID );
-    public static final PostgresTableDefinition SYNC_IDS          =
+    public static final PostgresTableDefinition SYNC_IDS            =
             new CitusDistributedTableDefinition( "sync_ids" )
                     .addColumns( ENTITY_SET_ID, ENTITY_ID, ID_VALUE, ID_WRITTEN )
                     .primaryKey( ENTITY_SET_ID, ENTITY_ID )
