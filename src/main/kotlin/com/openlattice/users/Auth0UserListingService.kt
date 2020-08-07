@@ -77,7 +77,7 @@ class Auth0UserListingService(
             Thread.sleep(200) // wait before calling again for job status
             exportJobResult = exportEntity.getJob(job.id)
         }
-
+        
         return readUsersFromLocation(exportJobResult)
     }
 

@@ -15,7 +15,8 @@ import java.util.*
 const val DEFAULT_BATCHING_SIZE = 8192
 
 /**
- * Allow performing batch operations.
+ * When items can't be partitioned or require aggregation.
+ * @param enqueueSql
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 class AggregateBatchingService(
@@ -25,6 +26,7 @@ class AggregateBatchingService(
         partitionManager: PartitionManager
 ) {
     private val partitions = partitionManager.getAllPartitions()
+    private val version : Long = 0
 
     companion object {
         private val logger = LoggerFactory.getLogger(EntityBatchingService::class.java)
