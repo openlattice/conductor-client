@@ -8,8 +8,6 @@ import com.hazelcast.query.Predicates
 import com.hazelcast.query.QueryConstants
 import com.openlattice.assembler.AssemblerConnectionManager
 import com.openlattice.assembler.AssemblerConnectionManager.Companion.INTEGRATIONS_SCHEMA
-import com.openlattice.assembler.AssemblerConnectionManager.Companion.MATERIALIZED_VIEWS_SCHEMA
-import com.openlattice.assembler.AssemblerConnectionManager.Companion.PUBLIC_SCHEMA
 import com.openlattice.assembler.PostgresDatabases
 import com.openlattice.assembler.PostgresRoles.Companion.buildPostgresUsername
 import com.openlattice.assembler.PostgresRoles.Companion.getSecurablePrincipalIdFromUserName
@@ -19,8 +17,6 @@ import com.openlattice.authorization.processors.PermissionMerger
 import com.openlattice.authorization.securable.SecurableObjectType
 import com.openlattice.edm.requests.MetadataUpdate
 import com.openlattice.hazelcast.HazelcastMap
-import com.openlattice.hazelcast.processors.DeleteOrganizationExternalDatabaseColumnsEntryProcessor
-import com.openlattice.hazelcast.processors.DeleteOrganizationExternalDatabaseTableEntryProcessor
 import com.openlattice.hazelcast.processors.organizations.UpdateOrganizationExternalDatabaseColumnEntryProcessor
 import com.openlattice.hazelcast.processors.organizations.UpdateOrganizationExternalDatabaseTableEntryProcessor
 import com.openlattice.organization.OrganizationExternalDatabaseColumn
