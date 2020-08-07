@@ -4,6 +4,7 @@ import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.postgres.PostgresColumn.*
 import com.openlattice.postgres.PostgresTable.BATCHES
 import com.openlattice.postgres.PostgresTable.IDS
+import com.openlattice.postgres.PostgresTableDefinition
 import com.openlattice.postgres.ResultSetAdapters
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
@@ -17,7 +18,9 @@ const val DEFAULT_BATCHING_SIZE = 8192
  * Allow performing batch operations.
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class EntityBatchingService(
+class AggregateBatchingService(
+        private val workTable: PostgresTableDefinition,
+        private val enqueueSql : String,
         private val hds: HikariDataSource,
         partitionManager: PartitionManager
 ) {
@@ -25,6 +28,10 @@ class EntityBatchingService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(EntityBatchingService::class.java)
+    }
+
+    fun unqueuedWorkCount() : Long {
+
     }
 
     /**

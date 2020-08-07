@@ -3,8 +3,7 @@ package com.openlattice.data.storage
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.data.storage.partitions.getPartition
-import com.openlattice.postgres.DataTables.LAST_INDEX
-import com.openlattice.postgres.DataTables.LAST_LINK
+import com.openlattice.postgres.DataTables.*
 import com.openlattice.postgres.PostgresArrays
 import com.openlattice.postgres.PostgresColumn.*
 import com.openlattice.postgres.PostgresTable.IDS
@@ -270,7 +269,7 @@ private val updateLastIndexSql = "UPDATE ${IDS.name} SET ${LAST_INDEX.name} = ? 
  * 4. partition
  */
 private val updateLastLinkingIndexSql =
-        "UPDATE ${IDS.name} SET ${LAST_LINK_INDEX.name} = ? WHERE $linkingIdInEntitySet"
+        "UPDATE ${IDS.name} SET ${LAST_LINK_INDEX.name} = ${LAST_WRITE.name} WHERE $linkingIdInEntitySet AND version = ?"
 
 /**
  * Arguments of preparable sql in order:
