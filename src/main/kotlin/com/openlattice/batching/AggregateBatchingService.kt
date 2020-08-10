@@ -3,177 +3,133 @@ package com.openlattice.batching
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.postgres.PostgresColumn.*
 import com.openlattice.postgres.PostgresTable.BATCHES
-import com.openlattice.postgres.PostgresTable.IDS
 import com.openlattice.postgres.PostgresTableDefinition
 import com.openlattice.postgres.ResultSetAdapters
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import java.sql.PreparedStatement
-import java.time.OffsetDateTime
+import java.sql.ResultSet
 import java.util.*
 
-const val DEFAULT_BATCHING_SIZE = 8192
-
+const val SELECT_INSERT_CLAUSE_NAME = "to_insert"
+const val MARK_INSERTED_CLAUSE_NAME = "marked"
 /**
- * When items can't be partitioned or require aggregation.
- * @param enqueueSql
+ * When items can't be partitioned or require aggregation on the ids table. The main contractual observation here is
+ * that we update last_write for involved objects in the same transaction that queues them using a CTE.
+ *
+ * @param batchTable The table to be used for concurrent work queues.
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class AggregateBatchingService(
-        private val workTable: PostgresTableDefinition,
-        private val enqueueSql : String,
+abstract class AggregateBatchingService<T>(
+        protected val batchTable: PostgresTableDefinition,
+        private val selectInsertBatchSql: String,
+        private val markBatchSql: String,
+        private val insertBatchSql: String,
+        private val countSql: String,
+        private val selectProcessBatchSql: String,
+        private val selectDeleteBatchSql: String,
         private val hds: HikariDataSource,
-        partitionManager: PartitionManager
+        partitionManager: PartitionManager,
+        private val mapper: (ResultSet) -> T
 ) {
     private val partitions = partitionManager.getAllPartitions()
-    private val version : Long = 0
 
     companion object {
         private val logger = LoggerFactory.getLogger(EntityBatchingService::class.java)
     }
 
-    fun unqueuedWorkCount() : Long {
-
-    }
-
     /**
-     * Adds up to [batchSize] id to the batch of type [batchType] in the [BATCHES] table.
+     * Adds queue for us to see what the problem is
      *
      * @param batchType Use group types of batch operations together. An example here might be indexing vs linking indexing
      * @param idsSql A select sql fragment returns at least [ENTITY_SET_ID],[ID],[LINKING_ID], and [PARTITION] columns for batch entry that needs to be added.
      * @param batchSize The maximum number of batch entries to retry to read from executing idsSql and insert.
      * @param bind A bind function that takes a [PreparedStatement] and [Int] offset, performs the required binds for [idsSql] and returns the base after performing the binds.
      */
-    fun enqueue(
-            batchType: String,
-            idsSql: String,
-            batchSize: Int = DEFAULT_BATCHING_SIZE,
-            bind: (PreparedStatement, Int) -> Int
-    ): Int = hds.connection.use { connection ->
-        connection.prepareStatement(buildInsertBatch(idsSql)).use { ps ->
-            ps.setString(1, batchType)
-            val offset = bind(ps, 1)
-            ps.setInt(offset + 1, batchSize)
+    fun enqueue(): Int = hds.connection.use { connection ->
+        connection.prepareStatement(buildInsertBatch(selectInsertBatchSql, markBatchSql, insertBatchSql)).use { ps ->
+            bindEnqueueBatch(ps)
             ps.executeUpdate()
         }
     }
 
 
     /**
-     * Counts the number of batch entries of a given batch type.
-     *
-     * @param batchType Use group types of batch operations together. An example here might be indexing vs linking indexing
+     * Counts the number of batch entries.
      */
-    fun count(batchType: String): Long = hds.connection.use { connection ->
-        connection.prepareStatement(COUNT_BATCH_TYPE).use { ps ->
-            ps.setString(1, batchType)
+    fun count(): Long = hds.connection.use { connection ->
+        connection.prepareStatement(countSql).use { ps ->
+            bindQueueSize(ps)
             val rs = ps.executeQuery()
-            require(rs.next()) { "Something went wrong when counting for batch type $batchType" }
+            require(rs.next()) { "Something went wrong when executing counting query." }
             ResultSetAdapters.count(rs)
         }
     }
 
     /**
-     * See [processBatch]
-     */
-    fun processBatch(
-            batchType: String,
-            batchSize: Int,
-            process: (List<EntityBatchEntry>) -> Unit
-    ) = processBatch<Unit>(batchType, batchSize, process)
-
-    /**
-     * @param batchType Use group types of batch operations together. An example here might be indexing vs linking indexing
      * @param batchSize The maximum number of batch entries to process.
      * @param process The function to applied to each batch.
      */
-    fun <T> processBatch(
-            batchType: String,
+    fun <R> processBatch(
             batchSize: Int,
-            process: (List<EntityBatchEntry>) -> T
-    ): T = hds.connection.use { connection ->
+            process: (List<T>) -> R
+    ): R = hds.connection.use { connection ->
         connection.autoCommit = false
         try {
             var remaining = batchSize
-            val batch = mutableListOf<EntityBatchEntry>()
+            val batch = mutableListOf<T>()
 
             /**
              * Since this is a skip locked query, it won't ever deadlock and will simply skipped locked rows to process
              * unlocked rows.
              */
-            val result = connection.prepareStatement(SELECT_BATCH).use { ps ->
-                ps.setString(1, batchType)
+            val result = connection.prepareStatement(selectProcessBatchSql).use { ps ->
                 partitions.forEach { partition ->
-                    ps.setInt(2, remaining)
-                    ps.setInt(3, partition)
+                    bindProcessBatch(ps, partition, remaining)
                     val rs = ps.executeQuery()
                     while (rs.next()) {
-                        batch.add(
-                                EntityBatchEntry(
-                                        ResultSetAdapters.entitySetId(rs),
-                                        ResultSetAdapters.id(rs),
-                                        ResultSetAdapters.linkingId(rs),
-                                        ResultSetAdapters.partition(rs),
-                                        ResultSetAdapters.batchType(rs)
-                                )
-                        )
+                        batch.add(mapper(rs))
                     }
                     remaining = batchSize - batch.size //Don't read more entries than requested.
+                    if (remaining == 0) {
+                        return@forEach
+                    }
                 }
                 process(Collections.unmodifiableList(batch))
             }
 
-            val deletedCount = connection.prepareStatement(DELETE_BATCH).use { ps ->
+            val deletedCount = connection.prepareStatement(selectDeleteBatchSql).use { ps ->
                 batch.forEach { batchEntry ->
-                    ps.setObject(1, batchEntry.id)
-                    ps.setInt(2, batchEntry.partition)
-                    ps.setString(3, batchType)
+                    bindDequeueProcessBatch(ps, batchEntry)
                     ps.addBatch()
                 }
                 ps.executeBatch()
             }.sum()
 
-            connection.commit()
-            logger.info("Successfully processed $deletedCount batch entries of type $batchType and size $batchSize.")
+            logger.info("Removed $deletedCount entries from queue.")
 
+            connection.commit()
+            logger.info("Committed processing of ${batch.size} entries of type with $batchSize.")
             result
         } catch (ex: Exception) {
-            logger.error("Failed to process batch of type $batchType and size $batchSize.", ex)
-            connection.autoCommit = true
+            logger.error("Failed to process batch of size $batchSize.", ex)
+            connection.rollback()
+
             throw ex //Closes connection.
+        } finally {
+            connection.autoCommit = true
         }
     }
 
+    abstract fun bindEnqueueBatch(ps: PreparedStatement)
+    abstract fun bindQueueSize(ps: PreparedStatement)
+    abstract fun bindProcessBatch(ps: PreparedStatement, partition: Int, remaining: Int)
+    abstract fun bindDequeueProcessBatch(ps: PreparedStatement, batch: T)
 
 }
 
-data class EntityBatchEntry(
-        val entitySetId: UUID,
-        val id: UUID,
-        val linkingId: UUID?,
-        val partition: Int,
-        val batchType: String
-)
-
-private val COUNT_BATCH_TYPE = "SELECT count(*) FROM ${BATCHES.name} WHERE ${BATCH_TYPE.name} = ?"
-
-private fun buildInsertBatch(idsSql: String) = """
-    INSERT INTO ${BATCHES.name}
-    SELECT ${IDS.name}.${ENTITY_SET_ID.name},${IDS.name}.${ID.name},${IDS.name}.${LINKING_ID.name},${IDS.name}.${PARTITION.name}, ? as bt
-        FROM ($idsSql) as ids LEFT JOIN ${BATCHES.name} USING(${ID.name},${PARTITION.name})
-        WHERE ${BATCHES.name}.${BATCH_TYPE.name} IS NULL
-        LIMIT ?
-    ON CONFLICT DO NOTHING
-""".trimIndent()
-
-private val DELETE_BATCH = """
-    DELETE FROM ${BATCHES.name}
-    WHERE ${ID_VALUE.name} = ? AND ${PARTITION.name} = ? AND ${BATCH_TYPE.name} = ?
-""".trimIndent()
-private val SELECT_BATCH = """
-    SELECT * FROM ${BATCHES.name} 
-    WHERE ${BATCH_TYPE.name} = ? AND PARTITION = ?
-    ORDER BY ${ID_VALUE.name}
-    LIMIT ?
-    FOR UPDATE SKIP LOCKED
+private fun buildInsertBatch(aggBatch: String, markSql: String, insertSql: String) = """
+    WITH $SELECT_INSERT_CLAUSE_NAME as ($aggBatch),
+        $MARK_INSERTED_CLAUSE_NAME as ($markSql)
+    $insertSql
 """.trimIndent()

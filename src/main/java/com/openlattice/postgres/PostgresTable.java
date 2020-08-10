@@ -74,6 +74,9 @@ public final class PostgresTable {
             new PostgresTableDefinition( "base_long_ids" )
                     .addColumns( SCOPE, BASE )
                     .primaryKey( SCOPE );
+    public static final PostgresTableDefinition LINKING_BATCHES = new PostgresTableDefinition( "linking_batches" )
+            .addColumns( LINKING_ID, BATCH_TYPE )
+            .primaryKey( LINKING_ID, BATCH_TYPE );
     public static final PostgresTableDefinition BATCHES = new CitusDistributedTableDefinition( "batches" )
             .addColumns( ENTITY_SET_ID, ID_VALUE, LINKING_ID, PARTITION, BATCH_TYPE )
             .primaryKey( ID_VALUE,PARTITION, BATCH_TYPE )
