@@ -7,7 +7,6 @@ import com.google.common.eventbus.EventBus
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
-import com.openlattice.admin.ORGANIZATION
 import com.openlattice.assembler.Assembler
 import com.openlattice.authorization.*
 import com.openlattice.authorization.mapstores.PrincipalMapstore
@@ -139,7 +138,7 @@ class HazelcastOrganizationService(
 
         //We add the user/role that created the organization to the admin role for the organization
 
-        assembler.createOrganization(organization)
+        assembler.createOrganization(organization.id)
         eventBus.post(OrganizationCreatedEvent(organization))
         setSmsEntitySetInformation(organization.smsEntitySetInfo)
     }

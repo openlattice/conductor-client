@@ -21,12 +21,47 @@
 package com.openlattice.assembler
 
 import com.hazelcast.map.IMap
+import com.openlattice.authorization.DbCredentialService
 import com.openlattice.authorization.EdmAuthorizationHelper
 import com.openlattice.datastore.services.EdmManager
+import com.openlattice.organization.OrganizationEntitySetFlag
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.tasks.HazelcastTaskDependencies
 import com.zaxxer.hikari.HikariDataSource
+import java.util.*
 
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+interface AssemblerConnectionManagerDependent<T> {
+    companion object {
+        const val NOT_INITIALIZED = "Assembler Connection Manager not initialized."
+    }
+    fun init(acm: AssemblerConnectionManager): T
+}
+
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+data class AssemblerDependencies(
+        val hds: HikariDataSource,
+        val dbCredentialService: DbCredentialService,
+        val assemblerConnectionManager: AssemblerConnectionManager
+) : HazelcastTaskDependencies {
+    val target: HikariDataSource = assemblerConnectionManager.connect("postgres")
+}
+
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+data class OrganizationAssembly(
+        val organizationId: UUID,
+        var initialized : Boolean = false,
+        val materializedEntitySets: MutableMap<UUID, EnumSet<OrganizationEntitySetFlag>> = mutableMapOf())
+
+/**
+ *
+ */
 data class MaterializedEntitySetsDependencies(
         val assembler: Assembler,
         val materializedEntitySets: IMap<EntitySetAssemblyKey, MaterializedEntitySet>,

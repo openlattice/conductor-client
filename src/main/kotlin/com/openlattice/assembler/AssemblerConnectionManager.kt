@@ -62,8 +62,6 @@ import java.util.function.Function
 import java.util.function.Supplier
 import kotlin.NoSuchElementException
 
-private val logger = LoggerFactory.getLogger(AssemblerConnectionManager::class.java)
-
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -88,14 +86,14 @@ class AssemblerConnectionManager(
             metricRegistry.timer(name(AssemblerConnectionManager::class.java, "materializeAll"))
     private val materializeEntitySetsTimer: Timer =
             metricRegistry.timer(name(AssemblerConnectionManager::class.java, "materializeEntitySets"))
-    private val materializeEdgesTimer: Timer =
-            metricRegistry.timer(name(AssemblerConnectionManager::class.java, "materializeEdges"))
 
     init {
         eventBus.register(this)
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(AssemblerConnectionManager::class.java)
+
         const val INTEGRATIONS_SCHEMA = "integrations"
         const val PUBLIC_ROLE = "public"
 
@@ -589,7 +587,6 @@ class AssemblerConnectionManager(
         )
     }
 
-
     private fun configureRolesInDatabase(dataSource: HikariDataSource) {
         val roles = getAllRoles()
         if (roles.iterator().hasNext()) {
@@ -711,17 +708,13 @@ class AssemblerConnectionManager(
         }
     }
 
-    private fun entitySetIdTableName(entitySetId: UUID): String {
-        return quote(entitySetId.toString())
-    }
+    val revokeAll = "REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA $MATERIALIZED_VIEWS_SCHEMA FROM ?"
 }
 
 val MEMBER_ORG_DATABASE_PERMISSIONS = setOf("CREATE", "CONNECT", "TEMPORARY", "TEMP")
 val PUBLIC_TABLES = setOf(E.name, PROPERTY_TYPES.name, ENTITY_TYPES.name, ENTITY_SETS.name)
 
-
 private val PRINCIPALS_SQL = "SELECT acl_key FROM principals WHERE ${PRINCIPAL_TYPE.name} = ?"
-
 
 internal fun createRoleIfNotExistsSql(dbRole: String): String {
     return "DO\n" +
@@ -757,7 +750,6 @@ internal fun createUserIfNotExistsSql(dbUser: String, dbUserPassword: String): S
             "\$do\$;"
 }
 
-
 internal fun dropOwnedIfExistsSql(dbUser: String): String {
     return "DO\n" +
             "\$do\$\n" +
@@ -791,5 +783,3 @@ internal fun dropUserIfExistsSql(dbUser: String): String {
             "END\n" +
             "\$do\$;"
 }
-
-

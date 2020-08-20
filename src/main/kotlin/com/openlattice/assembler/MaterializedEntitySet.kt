@@ -22,17 +22,21 @@ package com.openlattice.assembler
 
 import com.openlattice.organization.OrganizationEntitySetFlag
 import java.time.OffsetDateTime
-import java.util.EnumSet
+import java.util.*
 
+/**
+ * @param assemblyKey
+ * @param refreshRate Holds the user set refresh rate in milliseconds.
+ *      If it's null, that means, that it should NOT be refreshed automatically.
+ * @param flags
+ * @param lastRefresh
+ */
 data class MaterializedEntitySet(
         val assemblyKey: EntitySetAssemblyKey,
-        /**
-         * Holds the user set refresh rate in milliseconds.
-         * If it's null, that means, that it should NOT be refreshed automatically.
-         */
         var refreshRate: Long?,
         val flags: EnumSet<OrganizationEntitySetFlag> = EnumSet.noneOf(OrganizationEntitySetFlag::class.java),
-        var lastRefresh: OffsetDateTime = OffsetDateTime.now()) {
+        var lastRefresh: OffsetDateTime = OffsetDateTime.now()
+) {
         override fun equals(other: Any?): Boolean {
                 if (this === other) return true
                 if (other !is MaterializedEntitySet) return false

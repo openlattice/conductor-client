@@ -51,10 +51,9 @@ class InitializeOrganizationAssemblyProcessor :
             assembly == null -> {
                 logger.error("Assembly for organization id {} was not initialized properly.", organizationId)
             }
-            assembly.initialized -> logger.info(
-                    "The database for organization {} has already been initialized",
-                    organizationId
-            )
+            assembly.initialized -> {
+                logger.info( "The database for organization {} has already been initialized", organizationId )
+            }
             else -> {
                 acm?.createOrganizationDatabase(organizationId)
                         ?: throw IllegalStateException(AssemblerConnectionManagerDependent.NOT_INITIALIZED)
