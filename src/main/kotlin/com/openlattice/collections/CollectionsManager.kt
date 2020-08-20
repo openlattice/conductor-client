@@ -6,7 +6,6 @@ import com.google.common.collect.Sets
 import com.google.common.eventbus.EventBus
 import com.hazelcast.aggregation.Aggregators
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.map.IMap
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
 import com.openlattice.authorization.*
@@ -44,13 +43,11 @@ class CollectionsManager(
         private val schemaManager: HazelcastSchemaManager,
         private val authorizations: AuthorizationManager,
         private val eventBus: EventBus
-
 ) {
 
     private val entityTypeCollections = HazelcastMap.ENTITY_TYPE_COLLECTIONS.getMap(hazelcast)
     private val entitySetCollections = HazelcastMap.ENTITY_SET_COLLECTIONS.getMap(hazelcast)
     private val entitySetCollectionConfig = HazelcastMap.ENTITY_SET_COLLECTION_CONFIG.getMap(hazelcast)
-
 
     /** READ **/
 

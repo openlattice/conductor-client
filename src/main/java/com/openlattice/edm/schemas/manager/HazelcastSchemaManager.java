@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright (C) 2018. OpenLattice, Inc.
  *
@@ -22,15 +20,12 @@
 
 package com.openlattice.edm.schemas.manager;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
-import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor;
 import com.openlattice.authorization.securable.AbstractSchemaAssociatedSecurableType;
 import com.openlattice.datastore.util.Util;
 import com.openlattice.edm.Schema;
@@ -43,6 +38,8 @@ import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
 import com.openlattice.hazelcast.HazelcastMap;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
@@ -51,7 +48,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HazelcastSchemaManager {
     // map( namespace -> set<name> )

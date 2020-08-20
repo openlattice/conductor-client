@@ -59,6 +59,7 @@ import java.util.stream.Collectors
 import kotlin.streams.toList
 
 /**
+ * Handles all hazelcast map state for Assemblies
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */

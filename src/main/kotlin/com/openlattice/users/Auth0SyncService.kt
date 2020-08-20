@@ -21,7 +21,7 @@ import java.util.*
  */
 class Auth0SyncService(
         hazelcastInstance: HazelcastInstance,
-        private val hds: HikariDataSource,
+        hds: HikariDataSource,
         private val spm: SecurePrincipalsManager,
         private val orgService: HazelcastOrganizationService
 ) {
@@ -34,7 +34,6 @@ class Auth0SyncService(
     private val authnPrincipalCache = HazelcastMap.SECURABLE_PRINCIPALS.getMap(hazelcastInstance)
     private val authnRolesCache = HazelcastMap.RESOLVED_PRINCIPAL_TREES.getMap(hazelcastInstance)
     private val principalTrees = HazelcastMap.PRINCIPAL_TREES.getMap(hazelcastInstance)
-    private val mapper = ObjectMappers.newJsonMapper()
 
     /**
      * Returns true, if the user initialization task has ran at and
