@@ -31,11 +31,11 @@ import java.util.*
 @ReloadableConfiguration(uri = "assembler.yaml")
 data class AssemblerConfiguration(
         val server: Properties,
-        val foreignHost: String,
-        val foreignDbName: String,
-        val foreignPort: Short,
-        val foreignUsername: String,
-        val foreignPassword: String,
+        val foreignHost: String,        // unused
+        val foreignDbName: String,      // unused
+        val foreignPort: Short,         // unused
+        val foreignUsername: String,    // unused
+        val foreignPassword: String,    // unused
         val ssl: Boolean = true
 ) {
     override fun toString(): String {

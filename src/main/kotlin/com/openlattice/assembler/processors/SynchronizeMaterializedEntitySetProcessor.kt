@@ -34,6 +34,7 @@ import com.openlattice.edm.type.PropertyType
 import java.time.OffsetDateTime
 import java.util.*
 
+@Deprecated("unused")
 data class SynchronizeMaterializedEntitySetProcessor(
         val entitySet: EntitySet,
         val materializablePropertyTypes: Map<UUID, PropertyType>,

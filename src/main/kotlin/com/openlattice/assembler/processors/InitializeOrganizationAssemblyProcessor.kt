@@ -35,8 +35,8 @@ private val logger = LoggerFactory.getLogger(InitializeOrganizationAssemblyProce
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ *
  */
-
 class InitializeOrganizationAssemblyProcessor :
         AbstractRhizomeEntryProcessor<UUID, OrganizationAssembly, Void?>(),
         AssemblerConnectionManagerDependent<InitializeOrganizationAssemblyProcessor>,

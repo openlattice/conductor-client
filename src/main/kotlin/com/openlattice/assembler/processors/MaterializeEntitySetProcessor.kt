@@ -42,6 +42,7 @@ private val logger = LoggerFactory.getLogger(MaterializeEntitySetProcessor::clas
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 
+@Deprecated("unused")
 data class MaterializeEntitySetProcessor(
         val entitySet: EntitySet,
         val materializablePropertyTypes: Map<UUID, PropertyType>,

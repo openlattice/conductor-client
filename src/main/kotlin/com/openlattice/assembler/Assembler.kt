@@ -59,9 +59,9 @@ import java.util.stream.Collectors
 import kotlin.streams.toList
 
 /**
- * Handles all hazelcast map state for Assemblies
- *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ *
+ * Handles all hazelcast map state for Assemblies
  */
 class Assembler(
         private val dbCredentialService: DbCredentialService,
@@ -79,8 +79,10 @@ class Assembler(
 
     private val entitySets = HazelcastMap.ENTITY_SETS.getMap(hazelcast)
     private val propertyTypes = HazelcastMap.PROPERTY_TYPES.getMap(hazelcast)
+
     internal val assemblies = HazelcastMap.ASSEMBLIES.getMap(hazelcast)
     private val materializedEntitySets = HazelcastMap.MATERIALIZED_ENTITY_SETS.getMap(hazelcast)
+
     internal val securableObjectTypes = HazelcastMap.SECURABLE_OBJECT_TYPES.getMap(hazelcast)
     internal val principals = HazelcastMap.PRINCIPALS.getMap(hazelcast)
 

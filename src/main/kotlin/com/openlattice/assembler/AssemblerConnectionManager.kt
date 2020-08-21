@@ -154,13 +154,12 @@ class AssemblerConnectionManager(
     }
 
     /**
-     * Creates a private organization database that can be used for uploading data using launchpad.
-     * Also sets up foreign data wrapper using assembler in assembler so that materialized views of data can be
-     * provided.
+     * Creates a private organization database using information stored under [organizationId]
+     * that can be used for uploading data using launchpad.
      */
     fun createOrganizationDatabase(organizationId: UUID) {
         logger.info("Creating organization database for organization with id $organizationId")
-        val organization = organizations.getOrganization(organizationId)!!
+        val organization = organizations.getOrganization(organizationId)
         val dbName = buildOrganizationDatabaseName(organizationId)
         createOrganizationDatabase(organizationId, dbName)
 
@@ -175,7 +174,7 @@ class AssemblerConnectionManager(
     }
 
     /**
-     * Create schema [schemaName] in datasource [dataSource] if it does not already exist
+     * Create schema [schemaName] in [dataSource] if it does not already exist
      */
     private fun createSchema(dataSource: HikariDataSource, schemaName: String) {
         dataSource.connection.use { connection ->
@@ -202,8 +201,7 @@ class AssemblerConnectionManager(
 
     /**
      * Grants USAGE and CREATE to [organizationId]'s organization user on [MATERIALIZED_VIEWS_SCHEMA]
-     *  and sets the search_path for the organization user to [MATERIALIZED_VIEWS_SCHEMA] in
-     *  datasource [dataSource]
+     *  and sets the search_path for the organization user to [MATERIALIZED_VIEWS_SCHEMA] in [dataSource]
      */
     private fun configureOrganizationUser(organizationId: UUID, dataSource: HikariDataSource) {
         val dbOrgUser = quote(buildOrganizationUserId(organizationId))
@@ -215,7 +213,7 @@ class AssemblerConnectionManager(
     }
 
     /**
-     * Filters invalid principals out of [members], then calls [configureUsersInDatabase] on datasource [dataSource]
+     * Filters invalid principals out of [members], then calls [configureUsersInDatabase] on [dataSource]
      */
     private fun addMembersToOrganization(dbName: String, dataSource: HikariDataSource, members: Set<Principal>) {
         logger.info("Configuring members for organization database {}", dbName)
@@ -563,16 +561,20 @@ class AssemblerConnectionManager(
         logger.info("Removed materialized entity sets $entitySetIds from organization $organizationId")
     }
 
+    private val SELECT_COUNT_OF_DATABASE_WITH_NAME_SQL = "select count(*) from pg_database where datname = ?"
+
     internal fun exists(dbName: String): Boolean {
         target.connection.use { connection ->
-            connection.createStatement().use { stmt ->
-                stmt.executeQuery("select count(*) from pg_database where datname = '$dbName'").use { rs ->
+            connection.prepareStatement( SELECT_COUNT_OF_DATABASE_WITH_NAME_SQL ).use {ps ->
+                ps.setString(1, dbName)
+                ps.executeQuery().use {rs ->
                     rs.next()
-                    return rs.getInt("count") > 0
+                    return rs.getInt(COUNT) > 0
                 }
             }
         }
     }
+
 
     internal fun getAllRoles(): PostgresIterable<Role> {
         return PostgresIterable(
@@ -582,7 +584,7 @@ class AssemblerConnectionManager(
                     ps.setString(1, PrincipalType.ROLE.name)
                     StatementHolder(conn, ps, ps.executeQuery())
                 },
-                Function { securePrincipalsManager.getSecurablePrincipal(ResultSetAdapters.aclKey(it)) as Role }
+                Function { securePrincipalsManager.getSecurablePrincipal(ResultSetAdapters.aclKey( it )) as Role }
         )
     }
 
@@ -613,21 +615,6 @@ class AssemblerConnectionManager(
                     //Don't allow users to access public schema which will contain foreign data wrapper tables.
                     statement.execute("REVOKE USAGE ON SCHEMA $PUBLIC_SCHEMA FROM $roleIdsSql")
                 }
-            }
-        }
-    }
-
-    private fun dropUserIfExists(user: SecurablePrincipal) {
-        target.connection.use { connection ->
-            connection.createStatement().use { statement ->
-                //TODO: Go through every database and for old users clean them out.
-//                    logger.info("Attempting to drop owned by old name {}", user.name)
-//                    statement.execute(dropOwnedIfExistsSql(user.name))
-                logger.info("Attempting to drop user {}", user.name)
-                statement.execute(dropUserIfExistsSql(user.name)) //Clean out the old users.
-                dbCredentialService.deleteUserCredential(user.name)
-                //Don't allow users to access public schema which will contain foreign data wrapper tables.
-                logger.info("Revoking $PUBLIC_SCHEMA schema right from user {}", user)
             }
         }
     }
@@ -734,7 +721,7 @@ class AssemblerConnectionManager(
 val MEMBER_ORG_DATABASE_PERMISSIONS = setOf("CREATE", "CONNECT", "TEMPORARY", "TEMP")
 val PUBLIC_TABLES = setOf(E.name, PROPERTY_TYPES.name, ENTITY_TYPES.name, ENTITY_SETS.name)
 
-private val PRINCIPALS_SQL = "SELECT acl_key FROM principals WHERE ${PRINCIPAL_TYPE.name} = ?"
+private val PRINCIPALS_SQL = "SELECT ${ACL_KEY.name} FROM principals WHERE ${PRINCIPAL_TYPE.name} = ?"
 
 internal fun createRoleIfNotExistsSql(dbRole: String): String {
     return "DO\n" +

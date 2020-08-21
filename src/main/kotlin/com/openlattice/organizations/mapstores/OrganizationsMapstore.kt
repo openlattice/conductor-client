@@ -43,7 +43,7 @@ class OrganizationsMapstore(val hds: HikariDataSource) : AbstractBasePostgresMap
     }
 
     override fun bind(ps: PreparedStatement, key: UUID, value: Organization) {
-        var offset = bind(ps, key, 1)
+        val offset = bind(ps, key, 1)
         val orgJson = mapper.writeValueAsString(value)
         ps.setObject(offset, orgJson)
     }

@@ -153,11 +153,11 @@ class HazelcastOrganizationService(
     }
 
     @Timed
-    fun getOrganization(organizationId: UUID): Organization? {
-        val org = organizations[organizationId]
+    fun getOrganization(organizationId: UUID): Organization {
+        val org = organizations[organizationId]!!
         val roles = getRoles(organizationId)
 
-        org?.roles?.addAll(roles)
+        org.roles.addAll(roles)
 
         return org
     }

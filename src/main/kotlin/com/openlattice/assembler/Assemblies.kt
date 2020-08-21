@@ -53,6 +53,9 @@ data class AssemblerDependencies(
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ *
+ * Data class encapsulating an [organizationId]'s assembly metadata, whether it has been [initialized]
+ * and a mapping of entity set id to Assembly status ([materializedEntitySets])
  */
 data class OrganizationAssembly(
         val organizationId: UUID,
@@ -60,8 +63,9 @@ data class OrganizationAssembly(
         val materializedEntitySets: MutableMap<UUID, EnumSet<OrganizationEntitySetFlag>> = mutableMapOf())
 
 /**
- *
+ * TODO - weird that this is unused
  */
+@Deprecated("unused")
 data class MaterializedEntitySetsDependencies(
         val assembler: Assembler,
         val materializedEntitySets: IMap<EntitySetAssemblyKey, MaterializedEntitySet>,
