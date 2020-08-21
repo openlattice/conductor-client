@@ -1,7 +1,6 @@
 package com.openlattice.users
 
 import com.auth0.json.mgmt.users.User
-import com.dataloom.mappers.ObjectMappers
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
 import com.openlattice.IdConstants
@@ -11,6 +10,7 @@ import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.SortedPrincipalSet
 import com.openlattice.organizations.roles.SecurePrincipalsManager
+import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -20,6 +20,7 @@ import java.util.*
  */
 class Auth0SyncService(
         hazelcastInstance: HazelcastInstance,
+        hds: HikariDataSource,
         private val spm: SecurePrincipalsManager,
         private val orgService: HazelcastOrganizationService
 ) {

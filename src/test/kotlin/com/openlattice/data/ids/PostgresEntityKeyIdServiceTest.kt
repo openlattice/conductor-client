@@ -75,9 +75,7 @@ class PostgresEntityKeyIdServiceTest : TestServer() {
                 override fun getClient(name: String): HazelcastInstance {
                     return hazelcastInstance
                 }
-
             }
-
 
 //            Mockito.doReturn((0 until 257).toSet()).`when`(partMgr).getEntitySetPartitions(UUID.randomUUID())
             Mockito.`when`(partMgr.getEntitySetPartitions(UUID.randomUUID())).then {
@@ -94,7 +92,6 @@ class PostgresEntityKeyIdServiceTest : TestServer() {
                     idGenService,
                     partMgr
             )
-
         }
     }
 
@@ -237,7 +234,7 @@ class PostgresEntityKeyIdServiceTest : TestServer() {
     @Test
     fun testUniqueIdAssignment2() {
         val entitySetId = UUID.randomUUID()
-        var testLock = ReentrantLock()
+        val testLock = ReentrantLock()
         testLock.lock()
 
         executor.submit {

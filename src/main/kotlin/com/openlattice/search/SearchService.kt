@@ -3,19 +3,29 @@ package com.openlattice.search
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.annotation.Timed
 import com.google.common.base.Stopwatch
-import com.google.common.collect.*
+import com.google.common.collect.HashMultimap
+import com.google.common.collect.Lists
 import com.google.common.eventbus.EventBus
 import com.google.common.eventbus.Subscribe
 import com.openlattice.IdConstants
 import com.openlattice.apps.App
 import com.openlattice.apps.AppType
-import com.openlattice.authorization.*
+import com.openlattice.authorization.AccessCheck
+import com.openlattice.authorization.AclKey
+import com.openlattice.authorization.AuthorizationManager
 import com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION
+import com.openlattice.authorization.Permission
+import com.openlattice.authorization.Principal
+import com.openlattice.authorization.Principals
 import com.openlattice.authorization.securable.SecurableObjectType
 import com.openlattice.conductor.rpc.ConductorElasticsearchApi
 import com.openlattice.data.DeleteType
 import com.openlattice.data.events.EntitiesDeletedEvent
 import com.openlattice.data.events.EntitiesUpsertedEvent
+import com.openlattice.data.events.EntitySetCreatedEvent
+import com.openlattice.data.events.EntitySetDataDeletedEvent
+import com.openlattice.data.events.EntitySetDeletedEvent
+import com.openlattice.data.events.EntitySetMetadataUpdatedEvent
 import com.openlattice.data.requests.NeighborEntityDetails
 import com.openlattice.data.requests.NeighborEntityIds
 import com.openlattice.data.storage.EntityDatastore
@@ -25,7 +35,9 @@ import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.edm.EdmConstants
 import com.openlattice.edm.EntitySet
-import com.openlattice.edm.events.*
+import com.openlattice.edm.events.EntityTypeCreatedEvent
+import com.openlattice.edm.events.PropertyTypesAddedToEntityTypeEvent
+import com.openlattice.edm.events.PropertyTypesInEntitySetUpdatedEvent
 import com.openlattice.edm.type.AssociationType
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
@@ -36,7 +48,11 @@ import com.openlattice.organizations.events.OrganizationCreatedEvent
 import com.openlattice.organizations.events.OrganizationDeletedEvent
 import com.openlattice.organizations.events.OrganizationUpdatedEvent
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet
-import com.openlattice.search.requests.*
+import com.openlattice.search.requests.DataSearchResult
+import com.openlattice.search.requests.EntityNeighborsFilter
+import com.openlattice.search.requests.SearchConstraints
+import com.openlattice.search.requests.SearchResult
+import com.openlattice.search.requests.SearchTerm
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -91,7 +107,6 @@ class SearchService(
     private val markAsIndexedTimer = metricRegistry.timer(
             MetricRegistry.name(SearchService::class.java, "markAsIndexed")
     )
-
 
     @Timed
     fun executeEntitySetKeywordSearchQuery(

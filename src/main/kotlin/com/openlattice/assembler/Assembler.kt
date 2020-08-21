@@ -39,9 +39,9 @@ import com.openlattice.authorization.DbCredentialService
 import com.openlattice.authorization.EdmAuthorizationHelper
 import com.openlattice.authorization.securable.SecurableObjectType
 import com.openlattice.controllers.exceptions.ResourceNotFoundException
+import com.openlattice.data.events.EntitySetDeletedEvent
+import com.openlattice.data.events.EntitySetNameUpdatedEvent
 import com.openlattice.datastore.util.Util
-import com.openlattice.edm.events.EntitySetDeletedEvent
-import com.openlattice.edm.events.EntitySetNameUpdatedEvent
 import com.openlattice.edm.events.EntitySetOrganizationUpdatedEvent
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
@@ -61,7 +61,7 @@ import kotlin.streams.toList
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  *
- * Handles all hazelcast map state for Assemblies
+ * Listens to events and manages all hazelcast map state for Assemblies
  */
 class Assembler(
         private val dbCredentialService: DbCredentialService,
@@ -104,6 +104,9 @@ class Assembler(
         return assemblies[organizationId]?.materializedEntitySets ?: mapOf()
     }
 
+    /**
+     * Handle delta changes in assembled entity sets using [entitySetDataChangeEvent] contents
+     */
     @Subscribe
     fun handleEntitySetDataChange(entitySetDataChangeEvent: MaterializedEntitySetDataChangeEvent) {
         flagMaterializedEntitySet(entitySetDataChangeEvent.entitySetId, OrganizationEntitySetFlag.DATA_UNSYNCHRONIZED)
@@ -308,7 +311,7 @@ class Assembler(
     }
 
     /**
-     * Returns true, if the entity set is materialized in any of the organization assemblies
+     * Returns true, if entity set [entitySetId] is materialized in any of the organization assemblies
      */
     private fun isEntitySetMaterialized(entitySetId: UUID): Boolean {
         return materializedEntitySets

@@ -31,6 +31,7 @@ import com.openlattice.edm.EntitySet
 import com.openlattice.organization.OrganizationEntitySetFlag
 import java.time.OffsetDateTime
 
+@Deprecated("unused")
 data class RefreshMaterializedEntitySetProcessor(val entitySet: EntitySet)
     : AbstractRhizomeEntryProcessor<EntitySetAssemblyKey, MaterializedEntitySet, Void?>(),
         AssemblerConnectionManagerDependent<RefreshMaterializedEntitySetProcessor>,

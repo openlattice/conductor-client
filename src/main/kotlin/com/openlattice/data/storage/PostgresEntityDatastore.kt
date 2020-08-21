@@ -12,9 +12,9 @@ import com.openlattice.data.EntitySetData
 import com.openlattice.data.WriteEvent
 import com.openlattice.data.events.EntitiesDeletedEvent
 import com.openlattice.data.events.EntitiesUpsertedEvent
+import com.openlattice.data.events.EntitySetDataDeletedEvent
 import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetManager
-import com.openlattice.edm.events.EntitySetDataDeletedEvent
 import com.openlattice.edm.set.EntitySetFlag
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.linking.LinkingQueryService
@@ -38,7 +38,7 @@ class PostgresEntityDatastore(
         private val dataQueryService: PostgresEntityDataQueryService,
         private val edmManager: EdmManager,
         private val entitySetManager: EntitySetManager,
-        private val metricRegistry: MetricRegistry,
+        metricRegistry: MetricRegistry,
         private val eventBus: EventBus,
         private val feedbackQueryService: PostgresLinkingFeedbackService,
         private val linkingQueryService: LinkingQueryService
@@ -195,7 +195,6 @@ class PostgresEntityDatastore(
 
         return writeEvent
     }
-
 
     @Timed
     override fun getEntities(
