@@ -144,12 +144,12 @@ class HazelcastPrincipalService(
         return Util.getSafely(principals, AclKey(id))
     }
 
-    override fun getAllRolesInOrganization(organizationId: UUID): Collection<SecurablePrincipal> {
+    override fun getAllRolesInOrganization(organizationId: UUID): Set<Role> {
         val rolesInOrganization = Predicates.and<AclKey, SecurablePrincipal>(
                 Predicates.equal<AclKey, SecurablePrincipal>(PrincipalMapstore.PRINCIPAL_TYPE_INDEX, PrincipalType.ROLE),
                 Predicates.equal<AclKey, SecurablePrincipal>(PrincipalMapstore.ACL_KEY_ROOT_INDEX, organizationId)
         )
-        return principals.values(rolesInOrganization)
+        return principals.values(rolesInOrganization).map { it as Role }.toSet()
     }
 
     override fun deletePrincipal(aclKey: AclKey) {

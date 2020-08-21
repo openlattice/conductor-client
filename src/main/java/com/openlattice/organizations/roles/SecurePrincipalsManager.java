@@ -53,7 +53,7 @@ public interface SecurePrincipalsManager {
 
     @Nonnull SecurablePrincipal getPrincipal( String principalId );
 
-    Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId );
+    Set<Role> getAllRolesInOrganization( UUID organizationId );
 
     Collection<SecurablePrincipal> getSecurablePrincipals( Predicate<AclKey, SecurablePrincipal> p );
 

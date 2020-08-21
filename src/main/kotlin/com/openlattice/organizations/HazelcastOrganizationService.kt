@@ -430,8 +430,6 @@ class HazelcastOrganizationService(
     @Timed
     fun getRoles(organizationId: UUID): Set<Role> {
         return securePrincipalsManager.getAllRolesInOrganization(organizationId)
-                .map { sp -> sp as Role }
-                .toSet()
     }
 
     @Timed
