@@ -139,6 +139,7 @@ class RepartitioningJob(
         try {
             connection.prepareStatement(deleteSql).use { deleteData ->
                 bind(deleteData)
+                deleteData.setObject(4, state.entitySetId)
                 logger.info(deleteData.toString())
                 deleteData.executeLargeUpdate()
             }
@@ -375,14 +376,18 @@ INSERT INTO ${E.name} SELECT $REPARTITION_EDGES_COLUMNS
  * 1. entity set id
  * 2. partitions (array)
  * 3. partition
+ * 4. entity set id
  *
  */
 private val DELETE_DATA_SQL = """
 DELETE FROM ${DATA.name} 
     USING (SELECT ${ID.name},${ENTITY_SET_ID.name},${PARTITION.name},${PARTITIONS.name} FROM ${DATA.name} INNER JOIN (select ? as ${ENTITY_SET_ID.name},? as ${PARTITIONS.name} ) as es USING (${ENTITY_SET_ID.name})) as to_be_deleted
-    WHERE ${DATA.name}.${PARTITION.name} = ? AND ${DATA.name}.${PARTITION.name}!=${getPartitioningSelector(
-        DATA.name + "." + ID.name
-)} AND to_be_deleted.${ID.name} = ${DATA.name}.${ID.name} and to_be_deleted.${PARTITION.name} = ${DATA.name}.${PARTITION.name};  
+    WHERE 
+      ${DATA.name}.${PARTITION.name} = ?
+      AND ${DATA.name}.${ENTITY_SET_ID.name} = ?
+      AND ${DATA.name}.${PARTITION.name}!=${getPartitioningSelector(DATA.name + "." + ID.name)} 
+      AND to_be_deleted.${ID.name} = ${DATA.name}.${ID.name} 
+      AND to_be_deleted.${PARTITION.name} = ${DATA.name}.${PARTITION.name};
 """.trimIndent()
 
 /**
@@ -390,13 +395,18 @@ DELETE FROM ${DATA.name}
  * 1. entity set id
  * 2. partitions (array)
  * 3. partition
+ * 4. entity set id
+ *
  */
 private val DELETE_IDS_SQL = """
 DELETE FROM ${IDS.name} 
     USING (SELECT ${ID.name},${ENTITY_SET_ID.name},${PARTITION.name},${PARTITIONS.name} FROM ${IDS.name} INNER JOIN (select ? as ${ENTITY_SET_ID.name},? as ${PARTITIONS.name} ) as es USING (${ENTITY_SET_ID.name})) as to_be_deleted
-    WHERE ${IDS.name}.${PARTITION.name} = ? AND ${IDS.name}.${PARTITION.name}!=${getPartitioningSelector(
-        IDS.name + "." + ID.name
-)} AND to_be_deleted.${ID.name} = ${IDS.name}.${ID.name} and to_be_deleted.${PARTITION.name} = ${IDS.name}.${PARTITION.name};  
+    WHERE 
+      ${IDS.name}.${PARTITION.name} = ?
+      AND ${IDS.name}.${ENTITY_SET_ID.name} = ?
+      AND ${IDS.name}.${PARTITION.name}!=${getPartitioningSelector(IDS.name + "." + ID.name)} 
+      AND to_be_deleted.${ID.name} = ${IDS.name}.${ID.name} 
+      AND to_be_deleted.${PARTITION.name} = ${IDS.name}.${PARTITION.name};
 """.trimIndent()
 
 /**
@@ -405,11 +415,30 @@ DELETE FROM ${IDS.name}
  * 1. entity set id
  * 2. partitions (array)
  * 3. partition
+ * 4. entity set id
+ *
  */
 private val DELETE_EDGES_SQL = """
 DELETE FROM ${E.name} 
-    USING (SELECT ${SRC_ENTITY_SET_ID.name},${SRC_ENTITY_KEY_ID.name},${PARTITION.name},${PARTITIONS.name} FROM ${E.name} INNER JOIN (select ? as ${SRC_ENTITY_SET_ID.name},? as ${PARTITIONS.name} ) as es USING (${SRC_ENTITY_SET_ID.name})) as to_be_deleted
-    WHERE ${E.name}.${PARTITION.name} = ? AND ${E.name}.${PARTITION.name}!=${getPartitioningSelector(
-        E.name + "." + SRC_ENTITY_KEY_ID.name
-)} AND to_be_deleted.${SRC_ENTITY_SET_ID.name} = ${E.name}.${SRC_ENTITY_SET_ID.name} and to_be_deleted.${PARTITION.name} = ${E.name}.${PARTITION.name};
+    USING (SELECT
+      ${SRC_ENTITY_SET_ID.name},
+      ${SRC_ENTITY_KEY_ID.name},
+      ${DST_ENTITY_SET_ID.name},
+      ${DST_ENTITY_KEY_ID.name},
+      ${EDGE_ENTITY_SET_ID.name},
+      ${EDGE_ENTITY_KEY_ID.name},
+      ${PARTITION.name},
+      ${PARTITIONS.name} 
+    FROM ${E.name} INNER JOIN (select ? as ${SRC_ENTITY_SET_ID.name},? as ${PARTITIONS.name} ) as es USING (${SRC_ENTITY_SET_ID.name})) as to_be_deleted
+    WHERE
+      ${E.name}.${PARTITION.name} = ? 
+      AND ${E.name}.${SRC_ENTITY_SET_ID.name} = ?
+      AND ${E.name}.${PARTITION.name}!=${getPartitioningSelector(E.name + "." + SRC_ENTITY_KEY_ID.name)} 
+      AND to_be_deleted.${SRC_ENTITY_SET_ID.name} = ${E.name}.${SRC_ENTITY_SET_ID.name} 
+      AND to_be_deleted.${SRC_ENTITY_KEY_ID.name} = ${E.name}.${SRC_ENTITY_KEY_ID.name}
+      AND to_be_deleted.${DST_ENTITY_SET_ID.name} = ${E.name}.${DST_ENTITY_SET_ID.name}
+      AND to_be_deleted.${DST_ENTITY_KEY_ID.name} = ${E.name}.${DST_ENTITY_KEY_ID.name}
+      AND to_be_deleted.${EDGE_ENTITY_SET_ID.name} = ${E.name}.${EDGE_ENTITY_SET_ID.name}
+      AND to_be_deleted.${EDGE_ENTITY_KEY_ID.name} = ${E.name}.${EDGE_ENTITY_KEY_ID.name}
+      AND to_be_deleted.${PARTITION.name} = ${E.name}.${PARTITION.name};
 """.trimIndent()
