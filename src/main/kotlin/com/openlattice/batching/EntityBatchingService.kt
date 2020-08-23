@@ -161,6 +161,7 @@ private val DELETE_BATCH = """
     DELETE FROM ${BATCHES.name}
     WHERE ${ID_VALUE.name} = ? AND ${PARTITION.name} = ? AND ${BATCH_TYPE.name} = ?
 """.trimIndent()
+
 private val SELECT_BATCH = """
     SELECT * FROM ${BATCHES.name} 
     WHERE ${BATCH_TYPE.name} = ? AND PARTITION = ?

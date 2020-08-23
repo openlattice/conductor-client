@@ -13,6 +13,7 @@ import java.util.*
 
 const val SELECT_INSERT_CLAUSE_NAME = "to_insert"
 const val MARK_INSERTED_CLAUSE_NAME = "marked"
+
 /**
  * When items can't be partitioned or require aggregation on the ids table. The main contractual observation here is
  * that we update last_write for involved objects in the same transaction that queues them using a CTE.
@@ -71,8 +72,7 @@ abstract class AggregateBatchingService<T>(
      * @param process The function to applied to each batch.
      */
     fun <R> processBatch(
-            batchSize: Int,
-            process: (List<T>) -> R
+            batchSize: Int
     ): R = hds.connection.use { connection ->
         connection.autoCommit = false
         try {
@@ -95,7 +95,7 @@ abstract class AggregateBatchingService<T>(
                         return@forEach
                     }
                 }
-                process(Collections.unmodifiableList(batch))
+                process<R>(Collections.unmodifiableList(batch))
             }
 
             val deletedCount = connection.prepareStatement(selectDeleteBatchSql).use { ps ->
@@ -121,11 +121,12 @@ abstract class AggregateBatchingService<T>(
         }
     }
 
-    abstract fun bindEnqueueBatch(ps: PreparedStatement)
-    abstract fun bindQueueSize(ps: PreparedStatement)
-    abstract fun bindProcessBatch(ps: PreparedStatement, partition: Int, remaining: Int)
-    abstract fun bindDequeueProcessBatch(ps: PreparedStatement, batch: T)
+    protected abstract fun <R> process( batch: List<T> ): R
 
+    protected abstract fun bindEnqueueBatch(ps: PreparedStatement)
+    protected abstract fun bindQueueSize(ps: PreparedStatement)
+    protected abstract fun bindProcessBatch(ps: PreparedStatement, partition: Int, remaining: Int)
+    protected abstract fun bindDequeueProcessBatch(ps: PreparedStatement, batch: T)
 }
 
 private fun buildInsertBatch(aggBatch: String, markSql: String, insertSql: String) = """
