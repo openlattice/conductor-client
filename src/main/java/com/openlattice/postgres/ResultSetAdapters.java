@@ -20,90 +20,6 @@
 
 package com.openlattice.postgres;
 
-import com.dataloom.mappers.ObjectMappers;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.openlattice.apps.App;
-import com.openlattice.apps.AppConfigKey;
-import com.openlattice.apps.AppTypeSetting;
-import com.openlattice.assembler.EntitySetAssemblyKey;
-import com.openlattice.assembler.MaterializedEntitySet;
-import com.openlattice.auditing.AuditRecordEntitySetConfiguration;
-import com.openlattice.authorization.AceKey;
-import com.openlattice.authorization.AclKey;
-import com.openlattice.authorization.Permission;
-import com.openlattice.authorization.Principal;
-import com.openlattice.authorization.PrincipalType;
-import com.openlattice.authorization.SecurablePrincipal;
-import com.openlattice.authorization.securable.SecurableObjectType;
-import com.openlattice.collections.CollectionTemplateKey;
-import com.openlattice.collections.CollectionTemplateType;
-import com.openlattice.collections.EntitySetCollection;
-import com.openlattice.collections.EntityTypeCollection;
-import com.openlattice.data.DataEdgeKey;
-import com.openlattice.data.DataExpiration;
-import com.openlattice.data.DeleteType;
-import com.openlattice.data.EntityDataKey;
-import com.openlattice.data.EntityKey;
-import com.openlattice.data.PropertyUsageSummary;
-import com.openlattice.data.storage.MetadataOption;
-import com.openlattice.edm.EntitySet;
-import com.openlattice.edm.set.EntitySetFlag;
-import com.openlattice.edm.set.EntitySetPropertyKey;
-import com.openlattice.edm.set.EntitySetPropertyMetadata;
-import com.openlattice.edm.set.ExpirationBase;
-import com.openlattice.edm.type.Analyzer;
-import com.openlattice.edm.type.AssociationType;
-import com.openlattice.edm.type.EntityType;
-import com.openlattice.edm.type.EntityTypePropertyKey;
-import com.openlattice.edm.type.EntityTypePropertyMetadata;
-import com.openlattice.edm.type.PropertyType;
-import com.openlattice.entitysets.StorageType;
-import com.openlattice.graph.NeighborhoodQuery;
-import com.openlattice.graph.NeighborhoodSelection;
-import com.openlattice.graph.edge.Edge;
-import com.openlattice.ids.Range;
-import com.openlattice.linking.EntityKeyPair;
-import com.openlattice.linking.EntityLinkingFeedback;
-import com.openlattice.notifications.sms.SmsEntitySetInformation;
-import com.openlattice.notifications.sms.SmsInformationKey;
-import com.openlattice.organization.OrganizationEntitySetFlag;
-import com.openlattice.organization.OrganizationExternalDatabaseColumn;
-import com.openlattice.organization.OrganizationExternalDatabaseTable;
-import com.openlattice.organization.roles.Role;
-import com.openlattice.organizations.PrincipalSet;
-import com.openlattice.requests.Request;
-import com.openlattice.requests.RequestStatus;
-import com.openlattice.requests.Status;
-import com.openlattice.scheduling.RunnableTask;
-import com.openlattice.scheduling.ScheduledTask;
-import com.openlattice.search.PersistentSearchNotificationType;
-import com.openlattice.search.requests.PersistentSearch;
-import com.openlattice.search.requests.SearchConstraints;
-import com.openlattice.shuttle.IntegrationJob;
-import com.openlattice.shuttle.IntegrationStatus;
-import com.openlattice.subscriptions.Subscription;
-import com.openlattice.subscriptions.SubscriptionContactType;
-import java.sql.Array;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.OffsetDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import static com.openlattice.postgres.DataTables.LAST_INDEX;
 import static com.openlattice.postgres.DataTables.LAST_LINK;
 import static com.openlattice.postgres.DataTables.LAST_WRITE;
@@ -125,8 +41,7 @@ import static com.openlattice.postgres.PostgresColumn.CATEGORY;
 import static com.openlattice.postgres.PostgresColumn.CLASS_NAME;
 import static com.openlattice.postgres.PostgresColumn.CLASS_PROPERTIES;
 import static com.openlattice.postgres.PostgresColumn.COLUMN_NAME;
-import static com.openlattice.postgres.PostgresColumn.CONFIG_TYPE_ID;
-import static com.openlattice.postgres.PostgresColumn.CONFIG_TYPE_IDS;
+import static com.openlattice.postgres.PostgresColumn.CONFIG_ID;
 import static com.openlattice.postgres.PostgresColumn.CONNECTION_TYPE;
 import static com.openlattice.postgres.PostgresColumn.CONSTRAINT_TYPE;
 import static com.openlattice.postgres.PostgresColumn.CONTACTS;
@@ -229,21 +144,121 @@ import static com.openlattice.postgres.PostgresColumn.USERNAME;
 import static com.openlattice.postgres.PostgresColumn.VERSION;
 import static com.openlattice.postgres.PostgresColumn.VERSIONS;
 
+import com.dataloom.mappers.ObjectMappers;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.MoreObjects;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.openlattice.apps.App;
+import com.openlattice.apps.AppConfigKey;
+import com.openlattice.apps.AppRole;
+import com.openlattice.apps.AppTypeSetting;
+import com.openlattice.assembler.EntitySetAssemblyKey;
+import com.openlattice.assembler.MaterializedEntitySet;
+import com.openlattice.auditing.AuditRecordEntitySetConfiguration;
+import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.authorization.SecurablePrincipal;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.collections.CollectionTemplateKey;
+import com.openlattice.collections.CollectionTemplateType;
+import com.openlattice.collections.EntitySetCollection;
+import com.openlattice.collections.EntityTypeCollection;
+import com.openlattice.data.DataEdgeKey;
+import com.openlattice.data.DataExpiration;
+import com.openlattice.data.DeleteType;
+import com.openlattice.data.EntityDataKey;
+import com.openlattice.data.EntityKey;
+import com.openlattice.data.PropertyUsageSummary;
+import com.openlattice.data.storage.MetadataOption;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.set.EntitySetFlag;
+import com.openlattice.edm.set.EntitySetPropertyKey;
+import com.openlattice.edm.set.EntitySetPropertyMetadata;
+import com.openlattice.edm.set.ExpirationBase;
+import com.openlattice.edm.type.Analyzer;
+import com.openlattice.edm.type.AssociationType;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.EntityTypePropertyKey;
+import com.openlattice.edm.type.EntityTypePropertyMetadata;
+import com.openlattice.edm.type.PropertyType;
+import com.openlattice.entitysets.StorageType;
+import com.openlattice.graph.NeighborhoodQuery;
+import com.openlattice.graph.NeighborhoodSelection;
+import com.openlattice.graph.edge.Edge;
+import com.openlattice.ids.Range;
+import com.openlattice.linking.EntityKeyPair;
+import com.openlattice.linking.EntityLinkingFeedback;
+import com.openlattice.notifications.sms.SmsEntitySetInformation;
+import com.openlattice.notifications.sms.SmsInformationKey;
+import com.openlattice.organization.OrganizationEntitySetFlag;
+import com.openlattice.organization.OrganizationExternalDatabaseColumn;
+import com.openlattice.organization.OrganizationExternalDatabaseTable;
+import com.openlattice.organization.roles.Role;
+import com.openlattice.requests.Request;
+import com.openlattice.requests.RequestStatus;
+import com.openlattice.requests.Status;
+import com.openlattice.scheduling.RunnableTask;
+import com.openlattice.scheduling.ScheduledTask;
+import com.openlattice.search.PersistentSearchNotificationType;
+import com.openlattice.search.requests.PersistentSearch;
+import com.openlattice.search.requests.SearchConstraints;
+import com.openlattice.shuttle.IntegrationJob;
+import com.openlattice.shuttle.IntegrationStatus;
+import com.openlattice.subscriptions.Subscription;
+import com.openlattice.subscriptions.SubscriptionContactType;
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public final class ResultSetAdapters {
 
-    private static final Logger                                               logger               = LoggerFactory
+    private static final Logger         logger  = LoggerFactory
             .getLogger( ResultSetAdapters.class );
-    private static final ObjectMapper                                         mapper               = ObjectMappers
+    private static final Base64.Decoder DECODER = Base64
+            .getMimeDecoder();
+    private static final ObjectMapper   mapper  = ObjectMappers
             .newJsonMapper();
-    private static final TypeReference<Map<String, Object>>                   alertMetadataTypeRef =
-            new TypeReference<>() {
-            };
-    private static final TypeReference<LinkedHashSet<CollectionTemplateType>> templateTypeRef      =
-            new TypeReference<>() {
-            };
+
+    private static final TypeReference<Map<String, Object>>                   alertMetadataTypeRef = new TypeReference<>() {
+    };
+    private static final TypeReference<LinkedHashSet<CollectionTemplateType>> templateTypeRef      = new TypeReference<>() {
+    };
+    private static final TypeReference<Map<String, Object>>                   appSettingsTypeRef   = new TypeReference<>() {
+    };
+    private static final TypeReference<Set<AppRole>>                          appRoleTypeRef       = new TypeReference<>() {
+    };
+    private static final TypeReference<Map<UUID, AclKey>>                     rolesTypeRef         = new TypeReference<>() {
+    };
 
     public static String batchType( ResultSet rs ) throws SQLException {
         return rs.getString( BATCH_TYPE_FIELD );
@@ -585,12 +600,8 @@ public final class ResultSetAdapters {
         return rs.getObject( APP_ID.getName(), UUID.class );
     }
 
-    public static UUID appTypeId( ResultSet rs ) throws SQLException {
-        return rs.getObject( CONFIG_TYPE_ID.getName(), UUID.class );
-    }
-
-    public static LinkedHashSet<UUID> appTypeIds( ResultSet rs ) throws SQLException {
-        return linkedHashSetUUID( rs, CONFIG_TYPE_IDS.getName() );
+    public static UUID configId( ResultSet rs ) throws SQLException {
+        return rs.getObject( CONFIG_ID.getName(), UUID.class );
     }
 
     public static Set<UUID> entityKeyIds( ResultSet rs ) throws SQLException {
@@ -825,33 +836,39 @@ public final class ResultSetAdapters {
     public static AppConfigKey appConfigKey( ResultSet rs ) throws SQLException {
         UUID appId = appId( rs );
         UUID organizationId = organizationId( rs );
-        UUID appTypeId = appTypeId( rs );
-        return new AppConfigKey( appId, organizationId, appTypeId );
+        return new AppConfigKey( appId, organizationId );
     }
 
-    public static AppTypeSetting appTypeSetting( ResultSet rs ) throws SQLException {
-        UUID entitySetId = entitySetId( rs );
-        EnumSet<Permission> permissions = permissions( rs );
-        return new AppTypeSetting( entitySetId, permissions );
+    public static AppTypeSetting appTypeSetting( ResultSet rs ) throws SQLException, IOException {
+        UUID id = configId( rs );
+        UUID entitySetCollectionId = entitySetCollectionId( rs );
+        Map<UUID, AclKey> roles = roles( rs );
+        Map<String, Object> settings = appSettings( rs );
+        return new AppTypeSetting( id, entitySetCollectionId, roles, settings );
     }
 
-    public static App app( ResultSet rs ) throws SQLException {
-        UUID id = id( rs );
+    public static Set<AppRole> appRoles( ResultSet rs ) throws SQLException, IOException {
+        return mapper.readValue( rs.getString( PostgresColumn.ROLES.getName() ), appRoleTypeRef );
+    }
+
+    public static Map<UUID, AclKey> roles( ResultSet rs ) throws SQLException, IOException {
+        return mapper.readValue( rs.getString( PostgresColumn.ROLES.getName() ), rolesTypeRef );
+    }
+
+    public static Map<String, Object> appSettings( ResultSet rs ) throws SQLException, IOException {
+        return mapper.readValue( rs.getString( PostgresColumn.SETTINGS.getName() ), appSettingsTypeRef );
+    }
+
+    public static App app( ResultSet rs ) throws SQLException, IOException {
+        Optional<UUID> id = Optional.of( id( rs ) );
         String name = name( rs );
         String title = title( rs );
         Optional<String> description = Optional.ofNullable( description( rs ) );
-        LinkedHashSet<UUID> appTypeIds = appTypeIds( rs );
+        UUID entityTypeCollectionId = entityTypeCollectionId( rs );
         String url = url( rs );
-        return new App( id, name, title, description, appTypeIds, url );
-    }
-
-    public static AppType appType( ResultSet rs ) throws SQLException {
-        UUID id = id( rs );
-        FullQualifiedName type = fqn( rs );
-        String title = title( rs );
-        Optional<String> description = Optional.ofNullable( description( rs ) );
-        UUID entityTypeId = entityTypeId( rs );
-        return new AppType( id, type, title, description, entityTypeId );
+        Set<AppRole> appRoles = appRoles( rs );
+        Map<String, Object> settings = appSettings( rs );
+        return new App( id, name, title, description, url, entityTypeCollectionId, appRoles, settings );
     }
 
     public static UUID linkingId( ResultSet rs ) throws SQLException {
