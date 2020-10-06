@@ -1,9 +1,12 @@
 package com.openlattice.data.storage
 
 import com.amazonaws.HttpMethod
+import com.openlattice.postgres.PostgresArrays
 import com.openlattice.postgres.PostgresColumnDefinition
 import com.openlattice.postgres.PostgresDatatype
 import com.openlattice.postgres.PostgresTableDefinition
+import com.openlattice.postgres.streams.BasePostgresIterable
+import com.openlattice.postgres.streams.PreparedStatementHolderSupplier
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -38,6 +41,10 @@ class LocalBlobDataService(private val hds: HikariDataSource) : ByteBlobDataMana
         throw UnsupportedOperationException()
     }
 
+    override fun getPresignedUrlsAsMap(keys: Collection<Any>): Map<Any, URL> {
+        throw UnsupportedOperationException()
+    }
+
     override fun putObject(s3Key: String, data: ByteArray, contentType: String) {
         insertEntity(s3Key, data)
     }
@@ -51,51 +58,45 @@ class LocalBlobDataService(private val hds: HikariDataSource) : ByteBlobDataMana
     }
 
     override fun getObjects(keys: Collection<Any>): List<Any> {
-        return getEntities(keys)
+        return getObjectsAsMap(keys).values.toList()
     }
 
-    fun insertEntity(s3Key: String, value: ByteArray) {
-        val connection = hds.connection
-        val preparedStatement = connection.prepareStatement(insertEntitySql())
-        preparedStatement.setString(1, s3Key)
-        preparedStatement.setBytes(2, value)
-        preparedStatement.execute()
-        preparedStatement.close()
-        connection.close()
+    override fun getObjectsAsMap(keys: Collection<Any>): Map<Any, Any> {
+        return getEntitiesAsMap(keys)
     }
 
-    fun deleteEntity(s3Key: String) {
-        val connection = hds.connection
-        val preparedStatement = connection.prepareStatement(deleteEntitySql(s3Key))
-        preparedStatement.executeUpdate()
-        preparedStatement.close()
-        connection.close()
-    }
-
-    fun getEntities(keys: Collection<Any>): List<ByteArray> {
-        val entities = mutableListOf<ByteArray>()
-        val connection = hds.connection
-        connection.use {
-            for (key in keys) {
-                val ps = connection.prepareStatement(selectEntitySql(key as String))
-                val rs = ps.executeQuery()
-                while (rs.next()) {
-                    entities.add(rs.getBytes(1))
-                }
+    private fun insertEntity(s3Key: String, value: ByteArray) {
+        hds.connection.use { connection ->
+            connection.prepareStatement(insertEntitySql).use { ps ->
+                ps.setString(1, s3Key)
+                ps.setBytes(2, value)
+                ps.execute()
             }
         }
-        return entities
     }
 
-    fun insertEntitySql(): String {
-        return "INSERT INTO mock_s3_bucket(key, object) VALUES(?, ?)"
+    private fun deleteEntity(s3Key: String) {
+        hds.connection.use { connection ->
+            connection.prepareStatement(deleteEntitySql).use { ps ->
+                ps.setString(1, s3Key)
+                ps.executeUpdate()
+            }
+        }
     }
 
-    fun deleteEntitySql(s3Key: String): String {
-        return "DELETE FROM mock_s3_bucket WHERE key = '$s3Key'"
+
+    private fun getEntitiesAsMap(keys: Collection<Any>): Map<Any, ByteArray> {
+        return BasePostgresIterable(PreparedStatementHolderSupplier(hds, selectEntitySql) {
+            it.setArray(1, PostgresArrays.createTextArray(it.connection, keys.map { k -> k.toString() }))
+        }) {
+            it.getString(1) to it.getBytes(2)
+        }.toMap()
     }
 
-    fun selectEntitySql(s3Key: String): String {
-        return "SELECT \"object\" FROM mock_s3_bucket WHERE key = '$s3Key'"
-    }
+    private val insertEntitySql = "INSERT INTO mock_s3_bucket(key, object) VALUES(?, ?)"
+
+    private val deleteEntitySql = "DELETE FROM mock_s3_bucket WHERE key = ?"
+
+    private val selectEntitySql = "SELECT key, \"object\" FROM mock_s3_bucket WHERE key = ANY(?)"
+
 }

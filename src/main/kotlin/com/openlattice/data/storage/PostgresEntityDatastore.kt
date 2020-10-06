@@ -115,7 +115,7 @@ class PostgresEntityDatastore(
                             mapOf(),
                             EnumSet.of(MetadataOption.LAST_WRITE)
                     )
-            eventBus.post(EntitiesUpsertedEvent(entitySetId, entities.toMap()))
+            eventBus.post(EntitiesUpsertedEvent(entitySetId, entities))
         }
 
         markMaterializedEntitySetDirty(entitySetId) // mark entityset as unsync with data

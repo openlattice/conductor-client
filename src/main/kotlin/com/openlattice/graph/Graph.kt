@@ -268,12 +268,12 @@ class Graph(
             pgDataQueryService.getLinkedEntitiesWithPropertyTypeIds(
                     entityKeyIds,
                     authorizedPropertyTypes
-            ).toMap()
+            )
         } else {
             pgDataQueryService.getEntitiesWithPropertyTypeIds(
                     entityKeyIds,
                     authorizedPropertyTypes
-            ).toMap()
+            )
         }
 
         logger.info("Source entities: {}", srcEntities.size)
@@ -335,13 +335,13 @@ class Graph(
                         associationEntityKeyIds,
                         authorizedPropertyTypes,
                         authorizedFilteredNeighborsRanking.filteredNeighborsRanking.associationFilters
-                ).toMap()
+                )
 
                 val neighborEntities = pgDataQueryService.getEntitiesWithPropertyTypeIds(
                         neighborEntityKeyIds,
                         authorizedPropertyTypes,
                         authorizedFilteredNeighborsRanking.filteredNeighborsRanking.neighborFilters
-                ).toMap()
+                )
 
                 //Purposefully verbose for clarity.
                 //Need to filter out associations and neighbors not matching filters.
@@ -452,11 +452,11 @@ class Graph(
             val associations = pgDataQueryService.getEntitiesWithPropertyTypeIds(
                     associationEntityKeyIds as Map<UUID, Optional<Set<UUID>>>,
                     authorizedPropertyTypes
-            ).toMap()
-            var neighbors = pgDataQueryService.getEntitiesWithPropertyTypeIds(
+            )
+            val neighbors = pgDataQueryService.getEntitiesWithPropertyTypeIds(
                     neighborEntityKeyIds as Map<UUID, Optional<Set<UUID>>>,
                     authorizedPropertyTypes
-            ).toMap()
+            )
             val allEntities = (srcEntities + associations + neighbors).mapValues { entityPair ->
                 entityPair.value.mapKeys { propertyTypes.getValue(it.key).type }
             }

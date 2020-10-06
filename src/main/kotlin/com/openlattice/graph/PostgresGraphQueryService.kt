@@ -341,7 +341,7 @@ class PostgresGraphQueryService(
                     apt,
                     mapOf(),
                     EnumSet.of(MetadataOption.LAST_WRITE)
-            ).toMap().forEach { data[it.key] = it.value }
+            ).forEach { data[it.key] = it.value }
             logger.info("Loading data for entity set {} took {} ms", entitySetId, sw.elapsed(TimeUnit.MILLISECONDS))
         }
 

@@ -76,14 +76,21 @@ class AwsBlobDataService(
         return getPresignedUrls(keys)
     }
 
-    override fun getPresignedUrls(keys: Collection<Any>): List<URL> {
+    override fun getObjectsAsMap(keys: Collection<Any>): Map<Any, Any> {
+        return getPresignedUrlsAsMap(keys)
+    }
+
+    override fun getPresignedUrlsAsMap(keys: Collection<Any>): Map<Any, URL> {
         val expirationTime = Date()
         val timeToLive = expirationTime.time + datastoreConfiguration.timeToLive
         expirationTime.time = timeToLive
 
         return keys
-                .map { executorService.submit(Callable<URL> { getPresignedUrl(it as String, expirationTime, HttpMethod.GET, Optional.empty()) }) }
-                .map { it.get() }
+                .associateWith { executorService.submit(Callable<URL> { getPresignedUrl(it as String, expirationTime, HttpMethod.GET, Optional.empty()) }) }
+                .mapValues { it.value.get() }    }
+
+    override fun getPresignedUrls(keys: Collection<Any>): List<URL> {
+        return getPresignedUrlsAsMap(keys).values.toList()
     }
 
     override fun getPresignedUrl(key: Any, expiration: Date, httpMethod: HttpMethod, contentType: Optional<String>): URL {

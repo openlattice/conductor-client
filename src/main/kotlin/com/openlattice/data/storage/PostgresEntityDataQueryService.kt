@@ -63,7 +63,7 @@ class PostgresEntityDataQueryService(
             propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
             metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
             version: Optional<Long> = Optional.empty()
-    ): BasePostgresIterable<Pair<UUID, Map<UUID, Set<Any>>>> {
+    ): Map<UUID, Map<UUID, Set<Any>>> {
         return getEntitySetIterable(
                 entityKeyIds,
                 authorizedPropertyTypes,
@@ -71,8 +71,8 @@ class PostgresEntityDataQueryService(
                 metadataOptions,
                 version
         ) { rs ->
-            getEntityPropertiesByPropertyTypeId(rs, authorizedPropertyTypes, metadataOptions, byteBlobDataManager)
-        }
+            getEntityData(rs, authorizedPropertyTypes, metadataOptions) { it.id }
+        }.toMap()
     }
 
     @JvmOverloads
@@ -82,8 +82,8 @@ class PostgresEntityDataQueryService(
             propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
             metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
             version: Optional<Long> = Optional.empty()
-    ): BasePostgresIterable<Pair<UUID, Map<UUID, Set<Any>>>> {
-        return getEntitySetIterable(
+    ): Map<UUID, Map<UUID, Set<Any>>> {
+        val rawData = getEntitySetIterable(
                 entityKeyIds,
                 authorizedPropertyTypes,
                 propertyTypeFilters,
@@ -91,15 +91,17 @@ class PostgresEntityDataQueryService(
                 version,
                 linking = true
         ) { rs ->
-            getEntityPropertiesByPropertyTypeId(rs, authorizedPropertyTypes, metadataOptions, byteBlobDataManager)
-        }
+            getEntityData(rs, authorizedPropertyTypes, metadataOptions) { it.id }
+        }.toMap()
+
+        return transformBinaryDataInEntityMap(rawData, authorizedPropertyTypes, byteBlobDataManager) { it.id }
     }
 
     fun getEntitySetWithPropertyTypeIdsIterable(
             entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
-    ): BasePostgresIterable<Pair<UUID, Map<UUID, Set<Any>>>> {
+    ): Map<UUID, Map<UUID, Set<Any>>> {
         return getEntitiesWithPropertyTypeIds(entityKeyIds, authorizedPropertyTypes, mapOf(), metadataOptions)
     }
 
@@ -124,9 +126,9 @@ class PostgresEntityDataQueryService(
                 linking = true,
                 detailed = true
         ) { rs ->
-            getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeId(
+            getLinkingEntityData(
                     rs, authorizedPropertyTypes, metadataOptions, byteBlobDataManager
-            )
+            ) { it.id }
         }
     }
 
@@ -150,9 +152,9 @@ class PostgresEntityDataQueryService(
                 linking = true,
                 detailed = true
         ) { rs ->
-            getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeFqn(
+            getLinkingEntityData(
                     rs, authorizedPropertyTypes, EnumSet.noneOf(MetadataOption::class.java), byteBlobDataManager
-            )
+            ) { it.type }
         }
     }
 
@@ -165,7 +167,7 @@ class PostgresEntityDataQueryService(
             version: Optional<Long> = Optional.empty(),
             linking: Boolean = false
     ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>> {
-        return getEntitySetIterable(
+        val rawData = getEntitySetIterable(
                 entityKeyIds,
                 authorizedPropertyTypes,
                 propertyTypeFilters,
@@ -173,13 +175,19 @@ class PostgresEntityDataQueryService(
                 version,
                 linking
         ) { rs ->
-            getEntityPropertiesByFullQualifiedName(
+            getEntityData(
                     rs,
                     authorizedPropertyTypes,
                     metadataOptions,
-                    byteBlobDataManager
-            )
+                    includeEntityKeyId = true
+            ) { it.type }
         }.toMap()
+
+        return transformBinaryDataInEntityMap(
+                rawData,
+                authorizedPropertyTypes,
+                byteBlobDataManager
+        ) { it.type }
     }
 
     /**
