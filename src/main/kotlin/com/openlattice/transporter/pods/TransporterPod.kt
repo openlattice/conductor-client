@@ -13,6 +13,7 @@ import com.openlattice.transporter.services.TransporterService
 import com.openlattice.transporter.tasks.TransporterRunSyncTask
 import com.openlattice.transporter.tasks.TransporterRunSyncTaskDependencies
 import com.openlattice.transporter.types.TransporterDatastore
+import com.openlattice.transporter.types.TransporterDependent
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -38,11 +39,15 @@ class TransporterPod {
     private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
     @Inject
     private lateinit var assemblerConfiguration: AssemblerConfiguration
+    @Inject
+    private lateinit var transporterDependent: Set<TransporterDependent<*>>
 
     @Bean
     fun transporterDatastore(): TransporterDatastore {
         LoggerFactory.getLogger(TransporterPod::class.java).info("Constructing TransporterDatastore")
-        return TransporterDatastore(assemblerConfiguration, rhizome, externalDbConnMan)
+        val td =  TransporterDatastore(assemblerConfiguration, rhizome, externalDbConnMan)
+        transporterDependent.forEach { it.init(td) }
+        return td
     }
 
     @Bean
