@@ -35,12 +35,12 @@ import java.util.concurrent.TimeUnit
  */
 class AuthorizationInitializationTask : HazelcastInitializationTask<AuthorizationInitializationDependencies> {
     override fun initialize(dependencies: AuthorizationInitializationDependencies) {
-        val spm = dependencies.securePrincipalsManager
-        spm.createSecurablePrincipalIfNotExists(SystemRole.AUTHENTICATED_USER.principal, GLOBAL_USER_ROLE)
-        spm.createSecurablePrincipalIfNotExists(SystemRole.ADMIN.principal, GLOBAL_ADMIN_ROLE)
-        val source = spm.lookup(SystemRole.AUTHENTICATED_USER.principal)
-        val target = spm.lookup(SystemRole.ADMIN.principal)
-        spm.addPrincipalToPrincipal(source, target)
+//        val spm = dependencies.securePrincipalsManager
+//        spm.createSecurablePrincipalIfNotExists(SystemRole.AUTHENTICATED_USER.principal, GLOBAL_USER_ROLE)
+//        spm.createSecurablePrincipalIfNotExists(SystemRole.ADMIN.principal, GLOBAL_ADMIN_ROLE)
+//        val source = spm.lookup(SystemRole.AUTHENTICATED_USER.principal)
+//        val target = spm.lookup(SystemRole.ADMIN.principal)
+//        spm.addPrincipalToPrincipal(source, target)
     }
 
     override fun after(): Set<Class<out HazelcastInitializationTask<*>>> {
