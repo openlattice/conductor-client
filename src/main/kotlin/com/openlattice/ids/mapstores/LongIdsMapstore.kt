@@ -12,8 +12,7 @@ import org.springframework.stereotype.Component
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 
-@Component
-class LongIdsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore<String, Long>(
+open class LongIdsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore<String, Long>(
         HazelcastMap.LONG_IDS,
         BASE_LONG_IDS,
         hds
