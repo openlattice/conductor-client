@@ -212,7 +212,7 @@ class PostgresLinkingQueryService(
         }
     }
 
-    override fun updateLinkingInformation(linkingId: UUID, newMember: EntityDataKey, cluster: Map<UUID, LinkedHashSet<UUID>>) {
+    override fun updateLinkingInformation(linkingId: UUID, newMember: EntityDataKey, cluster: Map<UUID, Set<UUID>>) {
         val entitySetPartitions = partitionManager.getEntitySetPartitions(newMember.entitySetId).toList()
         val partition = getPartition(newMember.entityKeyId, entitySetPartitions)
         hds.connection.use { connection ->
@@ -283,31 +283,29 @@ class PostgresLinkingQueryService(
             clusterId: UUID,
             scores: Map<EntityDataKey, Map<EntityDataKey, Double>>
     ): Int {
-        connection.use { conn ->
-            conn.prepareStatement(INSERT_SQL).use { ps ->
-                scores.forEach { (srcEntityDataKey, dst) ->
-                    dst.forEach { (dstEntityDataKey, score) ->
-                        ps.setObject(1, clusterId)
-                        ps.setObject(2, srcEntityDataKey.entitySetId)
-                        ps.setObject(3, srcEntityDataKey.entityKeyId)
-                        ps.setObject(4, dstEntityDataKey.entitySetId)
-                        ps.setObject(5, dstEntityDataKey.entityKeyId)
-                        ps.setDouble(6, score)
-                        ps.addBatch()
-                    }
+        connection.prepareStatement(INSERT_SQL).use { ps ->
+            scores.forEach { (srcEntityDataKey, dst) ->
+                dst.forEach { (dstEntityDataKey, score) ->
+                    ps.setObject(1, clusterId)
+                    ps.setObject(2, srcEntityDataKey.entitySetId)
+                    ps.setObject(3, srcEntityDataKey.entityKeyId)
+                    ps.setObject(4, dstEntityDataKey.entitySetId)
+                    ps.setObject(5, dstEntityDataKey.entityKeyId)
+                    ps.setDouble(6, score)
+                    ps.addBatch()
                 }
-                val insertCount = ps.executeBatch().sum()
-                conn.commit()
-                return insertCount
             }
+            val insertCount = ps.executeBatch().sum()
+            connection.commit()
+            return insertCount
         }
     }
 
     override fun deleteNeighborhood(entity: EntityDataKey, positiveFeedbacks: Collection<EntityKeyPair>): Int {
         val deleteNeighborHoodSql = DELETE_NEIGHBORHOOD_SQL +
-                if (positiveFeedbacks.isNotEmpty()) " AND NOT ( ${buildFilterEntityKeyPairs(
-                        positiveFeedbacks
-                )} )" else ""
+            if (positiveFeedbacks.isNotEmpty()) " AND NOT ( ${buildFilterEntityKeyPairs(
+                positiveFeedbacks
+            )} )" else ""
         hds.connection.use {
             it.prepareStatement(deleteNeighborHoodSql).use {
                 it.setObject(1, entity.entitySetId)

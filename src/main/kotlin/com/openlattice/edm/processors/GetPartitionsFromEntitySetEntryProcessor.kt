@@ -3,7 +3,7 @@ package com.openlattice.edm.processors
 import com.openlattice.edm.EntitySet
 import com.openlattice.rhizome.DelegatedIntSet
 import com.openlattice.rhizome.hazelcast.entryprocessors.AbstractReadOnlyRhizomeEntryProcessor
-import java.util.*
+import java.util.UUID
 
 class GetPartitionsFromEntitySetEntryProcessor : AbstractReadOnlyRhizomeEntryProcessor<UUID, EntitySet, DelegatedIntSet>() {
     override fun process(entry: MutableMap.MutableEntry<UUID, EntitySet?>): DelegatedIntSet {
