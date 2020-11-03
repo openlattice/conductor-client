@@ -48,6 +48,7 @@ private const val TYPE = "ol.type"
 private const val COL_NAME = "ol.column_name"
 private const val CONTACT = "contact.Email"
 private const val DESCRIPTION = "ol.description"
+private const val STANDARDIZED = "ol.standardized"
 
 
 /**
@@ -216,9 +217,11 @@ class OrganizationMetadataEntitySetsService(private val edmService: EdmManager) 
                 propertyTypes.getValue(COL_NAME).id to setOf(propertyType.type.fullQualifiedNameAsString),
                 propertyTypes.getValue(ORG_ID).id to setOf(organizationId.toString()),
                 propertyTypes.getValue(TYPE).id to setOf(propertyType.datatype.toString()),
-                propertyTypes.getValue(DESCRIPTION).id to setOf(propertyType.description)
+                propertyTypes.getValue(DESCRIPTION).id to setOf(propertyType.description),
+
         )
         val datasetColumnEntity = mutableMapOf<UUID, Set<Any>>(
+                propertyTypes.getValue(STANDARDIZED).id to setOf(true),
                 propertyTypes.getValue(COL_INFO).id to setOf(mapper.writeValueAsString(propertyType))
         )
 
@@ -261,6 +264,7 @@ class OrganizationMetadataEntitySetsService(private val edmService: EdmManager) 
         )
 
         val datasetColumnEntity = mutableMapOf<UUID, Set<Any>>(
+                propertyTypes.getValue(STANDARDIZED).id to setOf(false),
                 propertyTypes.getValue(COL_INFO).id to setOf(mapper.writeValueAsString(column))
         )
 
