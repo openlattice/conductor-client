@@ -6,7 +6,6 @@ import com.google.common.collect.Sets
 import com.google.common.eventbus.EventBus
 import com.hazelcast.aggregation.Aggregators
 import com.hazelcast.core.HazelcastInstance
-import com.hazelcast.core.IMap
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
 import com.openlattice.authorization.*
@@ -31,11 +30,12 @@ import com.openlattice.edm.requests.MetadataUpdate
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
 import com.openlattice.edm.set.EntitySetFlag
 import com.openlattice.hazelcast.HazelcastMap
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.springframework.stereotype.Service
 import java.util.*
-import java.util.concurrent.ConcurrentMap
 
 @Service
+@SuppressFBWarnings("NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE")
 class CollectionsManager(
         hazelcast: HazelcastInstance,
         private val edmManager: EdmManager,
@@ -47,9 +47,9 @@ class CollectionsManager(
 
 ) {
 
-    private val entityTypeCollections = HazelcastMap.ENTITY_TYPE_COLLECTIONS.getMap( hazelcast )
-    private val entitySetCollections = HazelcastMap.ENTITY_SET_COLLECTIONS.getMap( hazelcast )
-    private val entitySetCollectionConfig = HazelcastMap.ENTITY_SET_COLLECTION_CONFIG.getMap( hazelcast )
+    private val entityTypeCollections = HazelcastMap.ENTITY_TYPE_COLLECTIONS.getMap(hazelcast)
+    private val entitySetCollections = HazelcastMap.ENTITY_SET_COLLECTIONS.getMap(hazelcast)
+    private val entitySetCollectionConfig = HazelcastMap.ENTITY_SET_COLLECTION_CONFIG.getMap(hazelcast)
 
 
     /** READ **/
@@ -60,6 +60,10 @@ class CollectionsManager(
 
     fun getEntityTypeCollection(id: UUID): EntityTypeCollection {
         return entityTypeCollections[id] ?: throw IllegalStateException("EntityTypeCollection $id does not exist")
+    }
+
+    fun getEntityTypeCollections(ids: Set<UUID>): Map<UUID, EntityTypeCollection> {
+        return entityTypeCollections.getAll(ids)
     }
 
     fun getEntitySetCollection(id: UUID): EntitySetCollection {
@@ -74,14 +78,21 @@ class CollectionsManager(
     fun getEntitySetCollections(ids: Set<UUID>): Map<UUID, EntitySetCollection> {
         val templates = getTemplatesForIds(ids)
         val collections = entitySetCollections.getAll(ids)
-        collections.mapValues { it.value.template = templates[it.key] ?: mutableMapOf() }
+        collections.forEach { it.value.template = templates[it.key] ?: mutableMapOf() }
 
         return collections
     }
 
     fun getEntitySetCollectionsOfType(ids: Set<UUID>, entityTypeCollectionId: UUID): Iterable<EntitySetCollection> {
         val templates = getTemplatesForIds(ids)
-        val collections = entitySetCollections.values(Predicates.and(idsPredicate(ids), entityTypeCollectionIdPredicate(entityTypeCollectionId)))
+        val collections = entitySetCollections.values(
+                Predicates.and(
+                        idsPredicate(ids),
+                        entityTypeCollectionIdPredicate(
+                                entityTypeCollectionId
+                        )
+                )
+        )
         collections.map { it.template = templates[it.id] ?: mutableMapOf() }
 
         return collections
@@ -92,14 +103,20 @@ class CollectionsManager(
     fun createEntityTypeCollection(entityTypeCollection: EntityTypeCollection): UUID {
 
         val entityTypeIds = entityTypeCollection.template.map { it.entityTypeId }.toSet()
-        val nonexistentEntityTypeIds = Sets.difference(entityTypeIds, edmManager.getEntityTypesAsMap(entityTypeIds).keys)
+        val nonexistentEntityTypeIds = Sets.difference(
+                entityTypeIds,
+                edmManager.getEntityTypesAsMap(entityTypeIds).keys
+        )
 
         if (nonexistentEntityTypeIds.isNotEmpty()) {
             throw IllegalStateException("EntityTypeCollection contains entityTypeIds that do not exist: $nonexistentEntityTypeIds")
         }
 
         aclKeyReservations.reserveIdAndValidateType(entityTypeCollection)
-        val existingEntityTypeCollection = entityTypeCollections.putIfAbsent(entityTypeCollection.id, entityTypeCollection)
+        val existingEntityTypeCollection = entityTypeCollections.putIfAbsent(
+                entityTypeCollection.id,
+                entityTypeCollection
+        )
 
         if (existingEntityTypeCollection == null) {
             schemaManager.upsertSchemas(entityTypeCollection.schemas)
@@ -119,32 +136,50 @@ class CollectionsManager(
         val entityTypeCollectionId = entitySetCollection.entityTypeCollectionId
 
         val template = entityTypeCollections[entityTypeCollectionId]?.template ?: throw IllegalStateException(
-                "Cannot create EntitySetCollection ${entitySetCollection.id} because EntityTypeCollection $entityTypeCollectionId does not exist.")
+                "Cannot create EntitySetCollection ${entitySetCollection.id} because EntityTypeCollection $entityTypeCollectionId does not exist."
+        )
 
         if (!autoCreate) {
-            checkArgument(template.map { it.id }.toSet() == entitySetCollection.template.keys,
-                    "EntitySetCollection ${entitySetCollection.name} template keys do not match its EntityTypeCollection template.")
+            checkArgument(
+                    template.map { it.id }.toSet() == entitySetCollection.template.keys,
+                    "EntitySetCollection ${entitySetCollection.name} template keys do not match its EntityTypeCollection template."
+            )
         }
 
         validateEntitySetCollectionTemplate(entitySetCollection.name, entitySetCollection.template, template)
 
         aclKeyReservations.reserveIdAndValidateType(entitySetCollection, entitySetCollection::name)
-        checkState(entitySetCollections.putIfAbsent(entitySetCollection.id, entitySetCollection) == null,
-                "EntitySetCollection ${entitySetCollection.name} already exists.")
+        checkState(
+                entitySetCollections.putIfAbsent(entitySetCollection.id, entitySetCollection) == null,
+                "EntitySetCollection ${entitySetCollection.name} already exists."
+        )
 
         val templateTypesToCreate = template.filter { !entitySetCollection.template.keys.contains(it.id) }
         if (templateTypesToCreate.isNotEmpty()) {
             val userPrincipal = Principals.getCurrentUser()
-            val entitySetsCreated = templateTypesToCreate.associate { it.id to generateEntitySet(entitySetCollection, it, userPrincipal) }
+            val entitySetsCreated = templateTypesToCreate.associate {
+                it.id to generateEntitySet(
+                        entitySetCollection,
+                        it,
+                        userPrincipal
+                )
+            }
             entitySetCollection.template.putAll(entitySetsCreated)
         }
 
-        entitySetCollectionConfig.putAll(entitySetCollection.template.entries.associate { CollectionTemplateKey(entitySetCollection.id, it.key) to it.value })
+        entitySetCollectionConfig.putAll(entitySetCollection.template.entries.associate {
+            CollectionTemplateKey(
+                    entitySetCollection.id,
+                    it.key
+            ) to it.value
+        })
 
         authorizations.setSecurableObjectType(AclKey(entitySetCollection.id), SecurableObjectType.EntitySetCollection)
-        authorizations.addPermission(AclKey(entitySetCollection.id),
+        authorizations.addPermission(
+                AclKey(entitySetCollection.id),
                 principal,
-                EnumSet.allOf(Permission::class.java))
+                EnumSet.allOf(Permission::class.java)
+        )
 
         eventBus.post(EntitySetCollectionCreatedEvent(entitySetCollection))
 
@@ -169,7 +204,7 @@ class CollectionsManager(
     fun addTypeToEntityTypeCollectionTemplate(id: UUID, collectionTemplateType: CollectionTemplateType) {
 
         ensureEntityTypeCollectionExists(id)
-        ensureEntityTypeExists(collectionTemplateType.entityTypeId)
+        edmManager.ensureEntityTypeExists(collectionTemplateType.entityTypeId)
 
         val entityTypeCollection = entityTypeCollections[id]!!
         if (entityTypeCollection.template.any { it.id == collectionTemplateType.id || it.name == collectionTemplateType.name }) {
@@ -183,13 +218,26 @@ class CollectionsManager(
         signalEntityTypeCollectionUpdated(id)
     }
 
-    private fun updateEntitySetCollectionsForNewType(entityTypeCollectionId: UUID, collectionTemplateType: CollectionTemplateType) {
+    private fun updateEntitySetCollectionsForNewType(
+            entityTypeCollectionId: UUID, collectionTemplateType: CollectionTemplateType
+    ) {
 
-        val entitySetCollectionsToUpdate = entitySetCollections.values(entityTypeCollectionIdPredicate(entityTypeCollectionId)).associate { it.id to it }
+        val entitySetCollectionsToUpdate = entitySetCollections.values(
+                entityTypeCollectionIdPredicate(
+                        entityTypeCollectionId
+                )
+        ).associate { it.id to it }
 
-        val entitySetCollectionOwners = authorizations.getOwnersForSecurableObjects(entitySetCollectionsToUpdate.keys.map { AclKey(it) }.toSet())
+        val entitySetCollectionOwners = authorizations.getOwnersForSecurableObjects(entitySetCollectionsToUpdate.keys.map {
+            AclKey(
+                    it
+            )
+        }.toSet())
         val entitySetsCreated = entitySetCollectionsToUpdate.values.associate {
-            it.id to generateEntitySet(it, collectionTemplateType, entitySetCollectionOwners.get(AclKey(it.id)).first { p -> p.type == PrincipalType.USER })
+            it.id to generateEntitySet(
+                    it,
+                    collectionTemplateType,
+                    entitySetCollectionOwners.get(AclKey(it.id)).first { p -> p.type == PrincipalType.USER })
         }
 
         val propertyTypeIds = edmManager.getEntityType(collectionTemplateType.entityTypeId).properties
@@ -203,14 +251,24 @@ class CollectionsManager(
 
             entitySetCollectionOwners.get(AclKey(entitySetCollectionId)).forEach { owner ->
                 permissionsToAdd[AceKey(AclKey(entitySetId), owner)] = ownerPermissions
-                propertyTypeIds.forEach { ptId -> permissionsToAdd[AceKey(AclKey(entitySetId, ptId), owner)] = ownerPermissions }
+                propertyTypeIds.forEach { ptId ->
+                    permissionsToAdd[AceKey(
+                            AclKey(entitySetId, ptId),
+                            owner
+                    )] = ownerPermissions
+                }
             }
 
             entitySetCollectionsToUpdate.getValue(entitySetCollectionId).template[collectionTemplateType.id] = entitySetId
         }
 
         authorizations.setPermissions(permissionsToAdd)
-        entitySetCollectionConfig.putAll(entitySetCollectionsToUpdate.keys.associate { CollectionTemplateKey(it, collectionTemplateType.id) to entitySetsCreated.getValue(it) })
+        entitySetCollectionConfig.putAll(entitySetCollectionsToUpdate.keys.associate {
+            CollectionTemplateKey(
+                    it,
+                    collectionTemplateType.id
+            ) to entitySetsCreated.getValue(it)
+        })
 
         entitySetCollectionsToUpdate.values.forEach { eventBus.post(EntitySetCollectionCreatedEvent(it)) }
 
@@ -236,7 +294,11 @@ class CollectionsManager(
         }
 
         if (update.organizationId.isPresent) {
-            if (!authorizations.checkIfHasPermissions(AclKey(update.organizationId.get()), Principals.getCurrentPrincipals(), EnumSet.of(Permission.READ))) {
+            if (!authorizations.checkIfHasPermissions(
+                            AclKey(update.organizationId.get()),
+                            Principals.getCurrentPrincipals(),
+                            EnumSet.of(Permission.READ)
+                    )) {
                 throw ForbiddenException("Cannot update EntitySetCollection $id with organization id ${update.organizationId.get()}")
             }
         }
@@ -254,12 +316,18 @@ class CollectionsManager(
         val entityTypeCollectionId = entitySetCollection.entityTypeCollectionId
 
         val template = entityTypeCollections[entityTypeCollectionId]?.template ?: throw IllegalStateException(
-                "Cannot update EntitySetCollection ${entitySetCollection.id} because EntityTypeCollection $entityTypeCollectionId does not exist.")
+                "Cannot update EntitySetCollection ${entitySetCollection.id} because EntityTypeCollection $entityTypeCollectionId does not exist."
+        )
 
         entitySetCollection.template.putAll(templateUpdates)
         validateEntitySetCollectionTemplate(entitySetCollection.name, entitySetCollection.template, template)
 
-        entitySetCollectionConfig.putAll(templateUpdates.entries.associate { CollectionTemplateKey(id, it.key) to it.value })
+        entitySetCollectionConfig.putAll(templateUpdates.entries.associate {
+            CollectionTemplateKey(
+                    id,
+                    it.key
+            ) to it.value
+        })
 
         eventBus.post(EntitySetCollectionCreatedEvent(entitySetCollection))
     }
@@ -279,27 +347,20 @@ class CollectionsManager(
     fun deleteEntitySetCollection(id: UUID) {
         entitySetCollections.remove(id)
         aclKeyReservations.release(id)
-        entitySetCollectionConfig.removeAll(Predicates.equal(ENTITY_SET_COLLECTION_ID_INDEX, id) as Predicate<CollectionTemplateKey, UUID>)
+        entitySetCollectionConfig.removeAll(Predicates.equal(ENTITY_SET_COLLECTION_ID_INDEX, id))
 
         eventBus.post(EntitySetCollectionDeletedEvent(id))
     }
 
     /** validation **/
 
-
-    private fun ensureEntityTypeExists(id: UUID) {
-        if (!edmManager.checkEntityTypeExists(id)) {
-            throw IllegalArgumentException("Entity type $id does not exist")
-        }
-    }
-
-    private fun ensureEntityTypeCollectionExists(id: UUID) {
+    fun ensureEntityTypeCollectionExists(id: UUID) {
         if (!entityTypeCollections.containsKey(id)) {
             throw IllegalStateException("EntityTypeCollection $id does not exist.")
         }
     }
 
-    private fun ensureEntitySetCollectionExists(id: UUID) {
+    fun ensureEntitySetCollectionExists(id: UUID) {
         if (!entitySetCollections.containsKey(id)) {
             throw IllegalStateException("EntitySetCollection $id does not exist.")
         }
@@ -308,13 +369,18 @@ class CollectionsManager(
     private fun ensureEntityTypeCollectionNotInUse(id: UUID) {
         val numEntitySetCollectionsOfType = entitySetCollections.aggregate(
                 Aggregators.count(),
-                entityTypeCollectionIdPredicate(id) as Predicate<UUID, EntitySetCollection>)
+                entityTypeCollectionIdPredicate(id)
+        )
 
-        checkState(numEntitySetCollectionsOfType == 0L,
-                "EntityTypeCollection $id cannot be deleted or modified because there exist $numEntitySetCollectionsOfType EntitySetCollections that use it")
+        checkState(
+                numEntitySetCollectionsOfType == 0L,
+                "EntityTypeCollection $id cannot be deleted or modified because there exist $numEntitySetCollectionsOfType EntitySetCollections that use it"
+        )
     }
 
-    private fun validateEntitySetCollectionTemplate(name: String, mappings: Map<UUID, UUID>, template: LinkedHashSet<CollectionTemplateType>) {
+    private fun validateEntitySetCollectionTemplate(
+            name: String, mappings: Map<UUID, UUID>, template: LinkedHashSet<CollectionTemplateType>
+    ) {
         val entitySets = entitySetManager.getEntitySetsAsMap(mappings.values.toSet())
 
         val templateEntityTypesById = template.map { it.id to it.entityTypeId }.toMap()
@@ -326,27 +392,25 @@ class CollectionsManager(
                     ?: throw IllegalStateException("Could not create/update EntitySetCollection $name because entity set $entitySetId does not exist.")
 
             if (entitySet.entityTypeId != templateEntityTypesById[id]) {
-                throw IllegalStateException("Could not create/update EntitySetCollection $name because entity set" +
-                        " $entitySetId for key $id does not match template entity type ${templateEntityTypesById[id]}.")
+                throw IllegalStateException(
+                        "Could not create/update EntitySetCollection $name because entity set" +
+                                " $entitySetId for key $id does not match template entity type ${templateEntityTypesById[id]}."
+                )
             }
         }
     }
 
     /** predicates **/
 
-    private fun idsPredicate(ids: Collection<UUID>): Predicate<*, *> {
+    private fun idsPredicate(ids: Collection<UUID>): Predicate<UUID, EntitySetCollection> {
         return Predicates.`in`(ID_INDEX, *ids.toTypedArray())
     }
 
-    private fun entityTypeCollectionIdPredicate(entityTypeCollectionId: UUID): Predicate<*, *> {
+    private fun entityTypeCollectionIdPredicate(entityTypeCollectionId: UUID): Predicate<UUID, EntitySetCollection> {
         return Predicates.equal(ENTITY_TYPE_COLLECTION_ID_INDEX, entityTypeCollectionId)
     }
 
-    private fun entitySetCollectionIdPredicate(id: UUID): Predicate<*, *> {
-        return Predicates.equal(ENTITY_SET_COLLECTION_ID_INDEX, id)
-    }
-
-    private fun entitySetCollectionIdsPredicate(ids: Set<UUID>): Predicate<*, *> {
+    private fun entitySetCollectionIdsPredicate(ids: Set<UUID>): Predicate<CollectionTemplateKey, UUID> {
         return Predicates.`in`(ENTITY_SET_COLLECTION_ID_INDEX, *ids.toTypedArray())
     }
 
@@ -368,13 +432,15 @@ class CollectionsManager(
         val description = "${collectionTemplateType.description}\n\nAuto-generated for EntitySetCollection ${entitySetCollection.name}"
         val flags = EnumSet.noneOf(EntitySetFlag::class.java)
 
-        val entitySet = EntitySet(entityTypeId = collectionTemplateType.entityTypeId,
+        val entitySet = EntitySet(
+                entityTypeId = collectionTemplateType.entityTypeId,
                 name = name,
                 _title = title,
                 _description = description,
                 contacts = mutableSetOf(),
                 organizationId = entitySetCollection.organizationId,
-                flags = flags)
+                flags = flags
+        )
 
         entitySetManager.createEntitySet(principal, entitySet)
         return entitySet.id
@@ -390,10 +456,11 @@ class CollectionsManager(
         return nameAttempt
     }
 
-    private fun getTemplatesForIds(ids: Set<UUID>): ConcurrentMap<UUID, ConcurrentMap<UUID, UUID>> {
+    private fun getTemplatesForIds(ids: Set<UUID>): MutableMap<UUID, MutableMap<UUID, UUID>> {
         return entitySetCollectionConfig.aggregate(
                 EntitySetCollectionConfigAggregator(CollectionTemplates()),
-                entitySetCollectionIdsPredicate(ids) as Predicate<CollectionTemplateKey, UUID>).templates
+                entitySetCollectionIdsPredicate(ids)
+        ).templates
     }
 
     private fun signalEntityTypeCollectionUpdated(id: UUID) {

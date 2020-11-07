@@ -22,7 +22,7 @@
 package com.openlattice.assembler.processors
 
 import com.hazelcast.core.Offloadable
-import com.hazelcast.spi.ExecutionService
+import com.hazelcast.spi.impl.executionservice.ExecutionService
 import com.openlattice.assembler.AssemblerConnectionManager
 import com.openlattice.assembler.AssemblerConnectionManagerDependent
 import com.openlattice.assembler.EntitySetAssemblyKey
@@ -31,6 +31,7 @@ import com.openlattice.authorization.Principal
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.rhizome.hazelcast.entryprocessors.AbstractReadOnlyRhizomeEntryProcessor
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.slf4j.LoggerFactory
 import java.util.*
 
@@ -42,6 +43,7 @@ private val logger = LoggerFactory.getLogger(MaterializeEntitySetProcessor::clas
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 
+@SuppressFBWarnings(value = ["SE_BAD_FIELD"], justification = "Custom Stream Serializer is implemented")
 data class MaterializeEntitySetProcessor(
         val entitySet: EntitySet,
         val materializablePropertyTypes: Map<UUID, PropertyType>,

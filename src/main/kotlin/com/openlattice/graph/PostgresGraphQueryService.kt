@@ -36,9 +36,10 @@ import com.openlattice.postgres.DataTables.quote
 import com.openlattice.postgres.PostgresArrays
 import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresColumn.*
-import com.openlattice.postgres.PostgresTable
 import com.openlattice.postgres.PostgresTable.*
-import com.openlattice.postgres.streams.PostgresIterable
+import com.openlattice.postgres.ResultSetAdapters
+import com.openlattice.postgres.streams.BasePostgresIterable
+import com.openlattice.postgres.streams.PreparedStatementHolderSupplier
 import com.openlattice.postgres.streams.StatementHolder
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
@@ -49,7 +50,6 @@ import java.sql.Statement
 import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.TimeUnit
-import java.util.function.Function
 import java.util.function.Supplier
 
 private val logger = LoggerFactory.getLogger(PostgresGraphQueryService::class.java)
@@ -66,22 +66,14 @@ class PostgresGraphQueryService(
 ) : GraphQueryService {
     @Timed
     override fun getEntitySetForIds(ids: Set<UUID>): Map<UUID, UUID> {
-        return PostgresIterable<Pair<UUID, UUID>>(
-                Supplier {
-                    val connection = hds.connection
-                    val ps = connection.prepareStatement(
-                            "SELECT ${PostgresColumn.ENTITY_SET_ID.name},${ID_VALUE.name} FROM ${ENTITY_KEY_IDS.name} WHERE ${ID_VALUE.name} = ANY(?)"
-                    )
-                    val arr = PostgresArrays.createUuidArray(connection, ids)
-                    ps.setArray(1, arr)
+        val sql = "SELECT ${PostgresColumn.ENTITY_SET_ID.name},${ID_VALUE.name} FROM ${IDS.name} WHERE ${ID_VALUE.name} = ANY(?)"
 
-                    StatementHolder(connection, ps, ps.executeQuery())
-                },
-                Function {
-                    return@Function it.getObject(ID_VALUE.name, UUID::class.java) to
-                            it.getObject(PostgresColumn.ENTITY_SET_ID.name, UUID::class.java)
-                }
-        ).toMap()
+        return BasePostgresIterable<Pair<UUID, UUID>>(PreparedStatementHolderSupplier(hds, sql) { ps ->
+            val arr = PostgresArrays.createUuidArray(ps.connection, ids)
+            ps.setArray(1, arr)
+        }) {
+            ResultSetAdapters.id(it) to ResultSetAdapters.entitySetId(it)
+        }.toMap()
     }
 
     @Timed
@@ -134,7 +126,7 @@ class PostgresGraphQueryService(
             if (entitySetIds.isEmpty() || associationEntitySetIds.isEmpty()) {
                 return@forEachIndexed
             }
-            PostgresIterable<DataEdgeKey>(
+            BasePostgresIterable<DataEdgeKey>(
                     Supplier {
                         val connection = hds.connection
                         val stmt = connection.createStatement()
@@ -192,7 +184,7 @@ class PostgresGraphQueryService(
                         val rs = stmt.executeQuery(sql)
                         logger.info("Neighborhood query took {} ms", sw.elapsed(TimeUnit.MILLISECONDS))
                         StatementHolder(connection, stmt, rs)
-                    }, Function {
+                    }) {
                 val srcEs = it.getObject(SRC_ENTITY_SET_ID_FIELD, UUID::class.java)
                 val srcId = it.getObject(ID_VALUE.name, UUID::class.java)
                 val dstEs = it.getObject(DST_ENTITY_SET_ID_FIELD, UUID::class.java)
@@ -200,7 +192,7 @@ class PostgresGraphQueryService(
                 val edgeEs = it.getObject(EDGE_ENTITY_SET_ID_FIELD, UUID::class.java)
                 val edgeId = it.getObject(EDGE_COMP_2.name, UUID::class.java)
                 DataEdgeKey(EntityDataKey(srcEs, srcId), EntityDataKey(dstEs, dstId), EntityDataKey(edgeEs, edgeId))
-            }).forEach {
+            }.forEach {
                 entities.getOrPut(it.src.entitySetId) { mutableMapOf() }.getOrPut(it.src.entityKeyId) { mutableMapOf() }
                 entities.getOrPut(it.dst.entitySetId) { mutableMapOf() }.getOrPut(it.dst.entityKeyId) { mutableMapOf() }
                 entities.getOrPut(it.edge.entitySetId) { mutableMapOf() }.getOrPut(
@@ -244,7 +236,7 @@ class PostgresGraphQueryService(
             }
 
 
-            PostgresIterable<DataEdgeKey>(
+            BasePostgresIterable<DataEdgeKey>(
                     Supplier {
                         val connection = hds.connection
                         val stmt = connection.createStatement()
@@ -303,7 +295,7 @@ class PostgresGraphQueryService(
                         val rs = stmt.executeQuery(sql)
                         logger.info("Neighborhood query took {} ms", sw.elapsed(TimeUnit.MILLISECONDS))
                         StatementHolder(connection, stmt, rs)
-                    }, Function {
+                    }) {
                 val srcEs = it.getObject(SRC_ENTITY_SET_ID_FIELD, UUID::class.java)
                 val srcId = it.getObject(EDGE_COMP_2_FIELD, UUID::class.java)
                 val dstEs = it.getObject(DST_ENTITY_SET_ID_FIELD, UUID::class.java)
@@ -311,7 +303,7 @@ class PostgresGraphQueryService(
                 val edgeEs = it.getObject(EDGE_ENTITY_SET_ID_FIELD, UUID::class.java)
                 val edgeId = it.getObject(EDGE_COMP_1_FIELD, UUID::class.java)
                 DataEdgeKey(EntityDataKey(srcEs, srcId), EntityDataKey(dstEs, dstId), EntityDataKey(edgeEs, edgeId))
-            }).forEach {
+            }.forEach {
                 entities.getOrPut(it.src.entitySetId) { mutableMapOf() }.getOrPut(it.src.entityKeyId) { mutableMapOf() }
                 entities.getOrPut(it.dst.entitySetId) { mutableMapOf() }.getOrPut(it.dst.entityKeyId) { mutableMapOf() }
                 entities.getOrPut(it.edge.entitySetId) { mutableMapOf() }.getOrPut(
@@ -552,16 +544,16 @@ class PostgresGraphQueryService(
     ): String {
         val tableSql =
                 selectEntitySetWithCurrentVersionOfPropertyTypes(
-                filterDefinition.entitySetIds.associateWith { Optional.empty<Set<UUID>>() },
-                propertyTypeFqns,
-                setOf(),
-                authorizedPropertyTypes,
-                filterDefinition.filters,
-                EnumSet.of(MetadataOption.LAST_WRITE),
-                propertyTypes.mapValues { it.value.datatype == EdmPrimitiveTypeKind.Binary },
-                linking = false,
-                omitEntitySetId = true
-        )
+                        filterDefinition.entitySetIds.associateWith { Optional.empty<Set<UUID>>() },
+                        propertyTypeFqns,
+                        setOf(),
+                        authorizedPropertyTypes,
+                        filterDefinition.filters,
+                        EnumSet.of(MetadataOption.LAST_WRITE),
+                        propertyTypes.mapValues { it.value.datatype == EdmPrimitiveTypeKind.Binary },
+                        linking = false,
+                        omitEntitySetId = true
+                )
 
         val lowerbound = OffsetDateTime.now().minusDays(14)
         val upperbound = OffsetDateTime.now().plusYears(100)
@@ -607,7 +599,7 @@ class PostgresGraphQueryService(
         val associationEntitySetIdsClause = "AND ${EDGE_ENTITY_SET_ID.name} ${inClause(associationEntitySetIds)}"
         val dstEntitySetIdsClause = "AND ${DST_ENTITY_SET_ID.name} ${inClause(entitySetIds)}"
 
-        return "SELECT * FROM ${EDGES.name} WHERE $idsClause $dstEntitySetIdsClause $associationEntitySetIdsClause"
+        return "SELECT * FROM ${E.name} WHERE $idsClause $dstEntitySetIdsClause $associationEntitySetIdsClause"
     }
 
     /**
@@ -624,7 +616,7 @@ class PostgresGraphQueryService(
         val associationEntitySetIdsClause = "AND ${EDGE_ENTITY_SET_ID.name} ${inClause(associationEntitySetIds)}"
         val srcEntitySetIdsClause = "AND ${DST_ENTITY_SET_ID.name} ${inClause(entitySetIds)}"
 
-        return "SELECT * FROM ${EDGES.name} WHERE $idsClause $srcEntitySetIdsClause $associationEntitySetIdsClause"
+        return "SELECT * FROM ${E.name} WHERE $idsClause $srcEntitySetIdsClause $associationEntitySetIdsClause"
     }
 
     /**
@@ -641,7 +633,7 @@ class PostgresGraphQueryService(
         val associationEntitySetIdsClause = "AND ${EDGE_ENTITY_SET_ID.name} ${inClause(associationEntitySetIds)}"
         val dstEntitySetIdsClause = "AND ${DST_ENTITY_SET_ID.name} ${inClause(entitySetIds)}"
 
-        return "SELECT * FROM ${EDGES.name} WHERE $idsClause $dstEntitySetIdsClause $associationEntitySetIdsClause"
+        return "SELECT * FROM ${E.name} WHERE $idsClause $dstEntitySetIdsClause $associationEntitySetIdsClause"
     }
 
     private fun inClause(ids: Set<UUID>): String {
@@ -682,6 +674,7 @@ private val idsClause = "${ID_VALUE.name} IN ("
 private val entitySetIdsClause = "${PostgresColumn.ENTITY_SET_ID.name} IN ("
 
 const val TTL_MILLIS = 10 * 60 * 1000
+
 //private val getQuerySql = "SELECT ${QUERY.name} FROM ${GRAPH_QUERIES.name} WHERE ${QUERY_ID.name} = ?"
 private val readGraphQueryState = "SELECT * FROM ${GRAPH_QUERIES.name} WHERE ${QUERY_ID.name} = ?"
 //private val insertGraphQuery =

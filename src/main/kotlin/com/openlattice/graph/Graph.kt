@@ -21,18 +21,23 @@
 
 package com.openlattice.graph
 
+import com.codahale.metrics.MetricRegistry
+import com.codahale.metrics.annotation.Timed
+import com.geekbeast.metrics.time
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Multimaps
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
-import com.openlattice.analysis.requests.WeightedRankingAggregation
+import com.openlattice.analysis.requests.*
 import com.openlattice.data.DataEdgeKey
 import com.openlattice.data.EntityDataKey
+import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.WriteEvent
+import com.openlattice.data.storage.PostgresEntityDataQueryService
 import com.openlattice.data.storage.entityKeyIdColumns
-import com.openlattice.data.storage.getPartition
 import com.openlattice.data.storage.partitions.PartitionManager
+import com.openlattice.data.storage.partitions.getPartition
 import com.openlattice.data.storage.selectEntitySetWithCurrentVersionOfPropertyTypes
 import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.edm.type.PropertyType
@@ -43,21 +48,27 @@ import com.openlattice.postgres.DataTables.quote
 import com.openlattice.postgres.PostgresArrays
 import com.openlattice.postgres.PostgresColumn
 import com.openlattice.postgres.PostgresColumn.*
-import com.openlattice.postgres.PostgresTable.*
+import com.openlattice.postgres.PostgresColumnDefinition
+import com.openlattice.postgres.PostgresTable.E
+import com.openlattice.postgres.PostgresTable.IDS
 import com.openlattice.postgres.ResultSetAdapters
 import com.openlattice.postgres.streams.BasePostgresIterable
-import com.openlattice.postgres.streams.PostgresIterable
-import com.openlattice.postgres.streams.StatementHolder
+import com.openlattice.postgres.streams.PreparedStatementHolderSupplier
+import com.openlattice.postgres.streams.StatementHolderSupplier
 import com.openlattice.search.requests.EntityNeighborsFilter
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import java.security.InvalidParameterException
 import java.sql.PreparedStatement
-import java.sql.ResultSet
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.OffsetDateTime
 import java.util.*
-import java.util.function.Function
-import java.util.function.Supplier
 import java.util.stream.Stream
+import kotlin.streams.asSequence
+import kotlin.streams.toList
 
 /**
  *
@@ -69,18 +80,24 @@ private const val BATCH_SIZE = 10_000
 
 private val logger = LoggerFactory.getLogger(Graph::class.java)
 
+@Service
 class Graph(
         private val hds: HikariDataSource,
+        private val reader: HikariDataSource,
         private val entitySetManager: EntitySetManager,
-        private val partitionManager: PartitionManager
+        private val partitionManager: PartitionManager,
+        private val pgDataQueryService: PostgresEntityDataQueryService,
+        private val entityKeyIdService: EntityKeyIdService,
+        private val metricRegistry: MetricRegistry
 ) : GraphService {
 
     /* Create */
 
-    override fun createEdges(keys: MutableSet<DataEdgeKey>): WriteEvent {
-        val partitionsInfoByEntitySet = partitionManager.getPartitionsByEntitySetId(keys.flatMap { listOf(it.src, it.dst, it.edge) }
-                .map { it.entitySetId }.toSet())
-                .mapValues { it.value.toList() }
+    override fun createEdges(keys: Set<DataEdgeKey>): WriteEvent {
+        val partitionsInfoByEntitySet = partitionManager.getPartitionsByEntitySetId(
+                keys.flatMap { listOf(it.src, it.dst, it.edge) }
+                        .map { it.entitySetId }.toSet()
+        ).mapValues { it.value.toList() }
 
         hds.connection.use { connection ->
             val ps = connection.prepareStatement(EDGES_UPSERT_SQL)
@@ -97,11 +114,12 @@ class Graph(
     }
 
 
-
     private fun addKeyIds(ps: PreparedStatement, dataEdgeKey: DataEdgeKey, startIndex: Int = 1) {
         val edk = dataEdgeKey.src
         val partitions = partitionManager.getEntitySetPartitions(edk.entitySetId)
-        val partition = getPartition(edk.entityKeyId, partitions.toList())
+        val partition = getPartition(
+                edk.entityKeyId, partitions.toList()
+        )
         ps.setObject(startIndex, partition)
         ps.setObject(startIndex + 1, dataEdgeKey.src.entityKeyId)
         ps.setObject(startIndex + 2, dataEdgeKey.dst.entityKeyId)
@@ -126,9 +144,11 @@ class Graph(
         }
     }
 
-    private fun lockAndOperateOnEdges(keys: Iterable<DataEdgeKey>,
-                                      statement: String,
-                                      statementSupplier: (lockStmt: PreparedStatement, operationStmt: PreparedStatement, dataEdgeKey: DataEdgeKey) -> Unit): Int {
+    private fun lockAndOperateOnEdges(
+            keys: Iterable<DataEdgeKey>,
+            statement: String,
+            statementSupplier: (lockStmt: PreparedStatement, operationStmt: PreparedStatement, dataEdgeKey: DataEdgeKey) -> Unit
+    ): Int {
         hds.connection.use { connection ->
             var updates = 0
             connection.autoCommit = false
@@ -165,107 +185,58 @@ class Graph(
 
     override fun getEdgeKeysContainingEntities(
             entitySetId: UUID, entityKeyIds: Set<UUID>, includeClearedEdges: Boolean
-    ): PostgresIterable<DataEdgeKey> {
+    ): BasePostgresIterable<DataEdgeKey> {
         val sql = if (includeClearedEdges) BULK_NEIGHBORHOOD_SQL else BULK_NON_TOMBSTONED_NEIGHBORHOOD_SQL
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    connection.autoCommit = false
-                    val idArr = PostgresArrays.createUuidArray(connection, entityKeyIds)
-                    val stmt = connection.prepareStatement(sql)
-                    stmt.setArray(1, idArr)
-                    stmt.setObject(2, entitySetId)
-                    stmt.setArray(3, idArr)
-                    stmt.setObject(4, entitySetId)
-                    stmt.setArray(5, idArr)
-                    stmt.setObject(6, entitySetId)
-                    stmt.fetchSize = BATCH_SIZE
-                    val rs = stmt.executeQuery()
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, DataEdgeKey> { ResultSetAdapters.edgeKey(it) }
-        )
+        return BasePostgresIterable(PreparedStatementHolderSupplier(hds, sql, BATCH_SIZE, false) { ps ->
+            val idArr = PostgresArrays.createUuidArray(ps.connection, entityKeyIds)
+            ps.setArray(1, idArr)
+            ps.setObject(2, entitySetId)
+            ps.setArray(3, idArr)
+            ps.setObject(4, entitySetId)
+            ps.setArray(5, idArr)
+            ps.setObject(6, entitySetId)
+        }) {
+            ResultSetAdapters.edgeKey(it)
+        }
     }
 
     override fun getEdgeKeysOfEntitySet(
             entitySetId: UUID, includeClearedEdges: Boolean
-    ): PostgresIterable<DataEdgeKey> {
+    ): BasePostgresIterable<DataEdgeKey> {
         val sql = if (includeClearedEdges) NEIGHBORHOOD_OF_ENTITY_SET_SQL else NON_TOMBSTONED_NEIGHBORHOOD_OF_ENTITY_SET_SQL
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    connection.autoCommit = false
-                    val stmt = connection.prepareStatement(sql)
-                    stmt.setObject(1, entitySetId)
-                    stmt.setObject(2, entitySetId)
-                    stmt.setObject(3, entitySetId)
-                    stmt.fetchSize = BATCH_SIZE
-                    val rs = stmt.executeQuery()
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, DataEdgeKey> { ResultSetAdapters.edgeKey(it) }
-        )
-    }
-
-    override fun getEdgesAndNeighborsForVertex(entitySetId: UUID, vertexId: UUID): Stream<Edge> {
-
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    val stmt = connection.prepareStatement(NEIGHBORHOOD_SQL)
-                    stmt.setObject(1, vertexId)
-                    stmt.setObject(2, entitySetId)
-                    stmt.setObject(3, vertexId)
-                    stmt.setObject(4, entitySetId)
-                    stmt.setObject(5, vertexId)
-                    stmt.setObject(6, entitySetId)
-                    val rs = stmt.executeQuery()
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, Edge> { ResultSetAdapters.edge(it) }
-        ).stream()
-    }
-
-    override fun getEdgesAndNeighborsForVertices(entitySetId: UUID, filter: EntityNeighborsFilter): Stream<Edge> {
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds)
-                    val stmt = connection.prepareStatement(getFilteredNeighborhoodSql(filter, false))
-                    stmt.setArray(1, ids)
-                    stmt.setObject(2, entitySetId)
-                    stmt.setArray(3, ids)
-                    stmt.setObject(4, entitySetId)
-                    val rs = stmt.executeQuery()
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, Edge> { ResultSetAdapters.edge(it) }
-        ).stream()
-    }
-
-
-    override fun getEdgesAndNeighborsForVerticesBulk(
-            entitySetIds: Set<UUID>,
-            filter: EntityNeighborsFilter
-    ): Stream<Edge> {
-        if (entitySetIds.size == 1) {
-            return getEdgesAndNeighborsForVertices(entitySetIds.first(), filter)
+        return BasePostgresIterable(PreparedStatementHolderSupplier(hds, sql, BATCH_SIZE, false) { ps ->
+            ps.setObject(1, entitySetId)
+            ps.setObject(2, entitySetId)
+            ps.setObject(3, entitySetId)
+        }) {
+            ResultSetAdapters.edgeKey(it)
         }
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    val ids = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.stream())
-                    val entitySetIdsArr = PostgresArrays.createUuidArray(connection, entitySetIds.stream())
-                    val stmt = connection.prepareStatement(getFilteredNeighborhoodSql(filter, true))
-                    stmt.setArray(1, ids)
-                    stmt.setArray(2, entitySetIdsArr)
-                    stmt.setArray(3, ids)
-                    stmt.setArray(4, entitySetIdsArr)
-                    val rs = stmt.executeQuery()
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, Edge> { ResultSetAdapters.edge(it) }
-        ).stream()
+    }
+
+    override fun getEdgesAndNeighborsForVertices(
+            entitySetIds: Set<UUID>,
+            pagedNeighborRequest: PagedNeighborRequest
+    ): Stream<Edge> {
+
+        val filter = pagedNeighborRequest.filter
+
+        val srcEntitySetIds = filter.srcEntitySetIds.orElse(setOf())
+        val entitySetPartitions = partitionManager.getPartitionsByEntitySetId(srcEntitySetIds + entitySetIds)
+        val srcEntitySetPartitions = srcEntitySetIds.flatMap { entitySetPartitions.getValue(it) }.toSet()
+
+        return BasePostgresIterable(PreparedStatementHolderSupplier(reader, getFilteredNeighborhoodSql(pagedNeighborRequest, srcEntitySetPartitions)) { ps ->
+            val connection = ps.connection
+            val idsArr = PostgresArrays.createUuidArray(connection, filter.entityKeyIds.stream())
+            val entitySetIdsArr = PostgresArrays.createUuidArray(connection, entitySetIds.stream())
+            val partitionsArr = PostgresArrays.createIntArray(connection, entitySetIds.flatMap { entitySetPartitions.getValue(it) })
+            ps.setArray(1, idsArr)
+            ps.setArray(2, entitySetIdsArr)
+            ps.setArray(3, idsArr)
+            ps.setArray(4, entitySetIdsArr)
+            ps.setArray(5, partitionsArr)
+        }) {
+            ResultSetAdapters.edge(it)
+        }.stream()
     }
 
 
@@ -277,6 +248,7 @@ class Graph(
      * 3. Apply relevant filters for associations with an innner join.
      *
      */
+    @Timed
     override fun computeTopEntities(
             limit: Int,
             entitySetIds: Set<UUID>,
@@ -284,74 +256,504 @@ class Graph(
             filteredRankings: List<AuthorizedFilteredNeighborsRanking>,
             linked: Boolean,
             linkingEntitySetId: Optional<UUID>
-    ): PostgresIterable<Map<String, Any>> {
+    ): AggregationResult {
+        //Step 1:
+        //Load all entity set data that satisfies filters
 
-        /*
-         * The plan is that there are set of association entity sets and either source or destination entity sets.
-         *
-         * The plan is to do inner joins (ANDS) of property tables that are ORs of the filters and join them in to
-         *
-         * Join all association queries using full outer joins
-         * Join all entity set queries using full outer joins
-         *
-         * The plan is to do all the aggregations in subqueries and then do outer joins on (entity_set_id, entity_key_id)
-         * or linking_id while computing the score as the weighted sum of aggregates.
-         *
-         * For each association type we will query all entity sets of that type at once resulting in a table:
-         *
-         * | person_ek | edge_ek | 1_assoc_ptId | 2_assoc_pt_id | ...
-         *
-         * For each neighbor entity type we will query all entity sets of that type at once resulting in the table:
-         *
-         * | person_ek | other_ek | 1_assoc_ptId | 2_assoc_pt_id |
-         *
-         * The final table will be produced by doing a group by on the entity key or linking id resulting in a table:
-         *
-         * | person_ek | 1_assoc_ptId_agg | 2_assoc_pt_id_agg | 1_entity_ptId_agg | 2_entity_ptId_agg | score
-         */
+        //Step 2: Load all neighbors that satisfy filters
+
+        //Step 3: Execute extractors to annotate each row
+
+        //Step 4: Compute aggregations in memory
+        val entityKeyIds = entitySetIds.associateWith { Optional.empty<Set<UUID>>() }
+        val propertyTypes = authorizedPropertyTypes.values.flatMap { it.values }.associateBy { it.id }
+
+        val srcEntities = if (linked) {
+            pgDataQueryService.getLinkedEntitiesWithPropertyTypeIds(
+                    entityKeyIds,
+                    authorizedPropertyTypes
+            ).toMap()
+        } else {
+            pgDataQueryService.getEntitiesWithPropertyTypeIds(
+                    entityKeyIds,
+                    authorizedPropertyTypes
+            ).toMap()
+        }
+
+        logger.info("Source entities: {}", srcEntities.size)
+        val linkedEntities = if (linked) {
+            entityKeyIdService.getLinkingEntityKeyIds(entityKeyIds.keys)
+        } else {
+            mapOf()
+        }
+
+        val reverseLinkedEntities = linkedEntities.entries.groupBy({ it.value }, { it.key })
+
+        val ascRankings = sortedSetOf<NeighborhoodRankingAggregationResult>()
+//        val neighbors = mutableMapOf<UUID, Map<UUID, Set<Any>>>()
+//        val associations = mutableMapOf<UUID, Map<UUID, Set<Any>>>()
+        val edgePairs = mutableMapOf<UUID, List<Pair<UUID, UUID>>>()
+
+        val neighborhoods = metricRegistry.time(Graph::class.java, "aggregate-neighborhood") { log, context ->
+            filteredRankings.parallelStream().flatMap { authorizedFilteredNeighborsRanking ->
+                logger.info("Filtered ranking: {}", authorizedFilteredNeighborsRanking)
+                val assocEntitySetIds = authorizedFilteredNeighborsRanking.associationSets.keys
+                val dstEntitySetIds = authorizedFilteredNeighborsRanking.entitySets.keys
 
 
-        val idColumns = listOf(
-                SELF_ENTITY_SET_ID to EdmPrimitiveTypeKind.Guid,
-                SELF_ENTITY_KEY_ID to EdmPrimitiveTypeKind.Guid
-        )
+                val dst = authorizedFilteredNeighborsRanking.filteredNeighborsRanking.dst
 
-        val aggregationColumns = filteredRankings.mapIndexed { index, authorizedFilteredRanking ->
-            buildAggregationColumnMap(
-                    index,
-                    authorizedFilteredRanking.associationPropertyTypes,
-                    authorizedFilteredRanking.filteredNeighborsRanking.associationAggregations,
-                    ASSOC
-            ).map { it.value to authorizedFilteredRanking.associationPropertyTypes.getValue(it.key).datatype } +
-                    buildAggregationColumnMap(
-                            index,
-                            authorizedFilteredRanking.entitySetPropertyTypes,
-                            authorizedFilteredRanking.filteredNeighborsRanking.neighborTypeAggregations,
-                            ENTITY
-                    ).map { it.value to authorizedFilteredRanking.entitySetPropertyTypes.getValue(it.key).datatype } +
-                    (associationCountColumnName(index) to EdmPrimitiveTypeKind.Int64) +
-                    (entityCountColumnName(index) to EdmPrimitiveTypeKind.Int64)
-        }.flatten().plus(idColumns).plus(SCORE.name to EdmPrimitiveTypeKind.Double).toMap()
+                var neighborsFilter = EntityNeighborsFilter(
+                        srcEntities.keys,
+                        if (dst) Optional.of(dstEntitySetIds) else Optional.of(entitySetIds),
+                        if (dst) Optional.of(entitySetIds) else Optional.of(dstEntitySetIds),
+                        Optional.of(assocEntitySetIds)
+                )
 
-        val sql = buildTopEntitiesQuery(limit, entitySetIds, filteredRankings, linked, linkingEntitySetId)
+                //Now we load all edges for this neighbor type into memory
+                val edges = getEdgesAndNeighborsForVertices(entitySetIds, PagedNeighborRequest(neighborsFilter))
+                        .toList()
 
-        logger.info("Running top utilizers query")
-        logger.info(sql)
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    val stmt = connection.createStatement()
-                    val rs = stmt.executeQuery(sql)
-                    StatementHolder(connection, stmt, rs)
-                }, Function { rs ->
-            return@Function aggregationColumns.map { (col, type) ->
-                when (type) {
-                    EdmPrimitiveTypeKind.Guid -> col to (rs.getObject(col) as UUID)
-                    else -> col to rs.getObject(col)
+                logger.info("Edges: {}", edges.size)
+
+                val associationEntityKeyIds = edges
+                        .groupBy({ it.edge.entitySetId }, { it.edge.entityKeyId })
+                        .mapValues { Optional.of(it.value.toSet()) }
+
+                logger.info("Association entity key ids: {}", associationEntityKeyIds.size)
+
+                //Purposefully verbose for clarity.
+                val neighborEntityKeyIds = if (dst) {
+                    edges
+                            .groupBy({ it.src.entitySetId }, { it.src.entityKeyId })
+                            .mapValues { Optional.of(it.value.toSet()) }
+                } else {
+                    edges
+                            .groupBy({ it.dst.entitySetId }, { it.dst.entityKeyId })
+                            .mapValues { Optional.of(it.value.toSet()) }
                 }
-            }.toMap()
-        })
+
+                logger.info("Neighbor entity key ids: {}", neighborEntityKeyIds.size)
+
+                val associationEntities = pgDataQueryService.getEntitiesWithPropertyTypeIds(
+                        associationEntityKeyIds,
+                        authorizedPropertyTypes,
+                        authorizedFilteredNeighborsRanking.filteredNeighborsRanking.associationFilters
+                ).toMap()
+
+                val neighborEntities = pgDataQueryService.getEntitiesWithPropertyTypeIds(
+                        neighborEntityKeyIds,
+                        authorizedPropertyTypes,
+                        authorizedFilteredNeighborsRanking.filteredNeighborsRanking.neighborFilters
+                ).toMap()
+
+                //Purposefully verbose for clarity.
+                //Need to filter out associations and neighbors not matching filters.
+                val groupedEdges = if (dst) {
+                    edges
+                            .asSequence()
+                            .filter { edge ->
+                                neighborEntities.containsKey(edge.src.entityKeyId) &&
+                                        associationEntities.containsKey(edge.edge.entityKeyId)
+                            }
+                            .groupBy(
+                                    {
+                                        if (linked) getLinkingId(linkedEntities, it.dst.entityKeyId)
+                                        else it.dst.entityKeyId
+                                    },
+                                    { it.edge.entityKeyId to it.src.entityKeyId }
+                            )
+                } else {
+                    edges.asSequence()
+                            .filter { edge ->
+                                neighborEntities.containsKey(edge.dst.entityKeyId) &&
+                                        associationEntities.containsKey(edge.edge.entityKeyId)
+                            }
+                            .groupBy(
+                                    {
+                                        if (linked) getLinkingId(linkedEntities, it.src.entityKeyId)
+                                        else it.src.entityKeyId
+                                    },
+                                    { it.edge.entityKeyId to it.dst.entityKeyId })
+                }
+
+                logger.info("Grouped edges: {}", groupedEdges.size)
+
+                edgePairs.putAll(groupedEdges)
+
+                try {
+                    computeAggregations(
+                            authorizedFilteredNeighborsRanking,
+                            srcEntities,
+                            associationEntities,
+                            neighborEntities,
+                            groupedEdges,
+                            propertyTypes
+                    ).stream()
+                } catch (e: Exception) {
+                    log.error("wat", e)
+                    Stream.of<FilteredNeighborsRankingAggregationResult>()
+                } finally {
+                    val neighborTypeId = authorizedFilteredNeighborsRanking.filteredNeighborsRanking.neighborTypeId
+                    val associationTypeId = authorizedFilteredNeighborsRanking.filteredNeighborsRanking.associationTypeId
+                    log.info("Aggregation for ($neighborTypeId,$associationTypeId) took ${context.stop() / 1000} ms")
+                }
+            }.asSequence().groupBy { it.entityKeyId }
+        }
+
+        logger.info("Neighborhoods: {}", neighborhoods.size)
+
+        metricRegistry.time(Graph::class.java, "select-top-n") { log, context ->
+            neighborhoods.forEach { (entityKeyId, results) ->
+
+                val next = NeighborhoodRankingAggregationResult(
+                        entityKeyId,
+                        results.sumByDouble { it.score },
+                        results
+                )
+                if (ascRankings.size < limit) {
+                    ascRankings.add(next)
+                } else {
+                    if (ascRankings.first().score < next.score) {
+                        ascRankings.remove(ascRankings.first())
+                        ascRankings.add(next)
+                    }
+                }
+
+            }
+            log.info("Selecting top $limit took ${context.stop() / 1000} ms")
+        }
+
+        return metricRegistry.time(Graph::class.java, "prepare-results") { log, context ->
+            val rankings = ascRankings.descendingSet()
+            val ekids = if (linked) {
+                rankings.flatMap { reverseLinkedEntities.getValue(it.entityKeyId) }.toSet()
+            } else {
+                rankings.map { it.entityKeyId }.toSet()
+            }
+            val allNeighborsFilter = EntityNeighborsFilter(
+                    ekids,
+                    Optional.of(authorizedPropertyTypes.keys),
+                    Optional.of(authorizedPropertyTypes.keys),
+                    Optional.of(authorizedPropertyTypes.keys)
+            )
+            val allNeighborEdges = getEdgesAndNeighborsForVertices(entitySetIds, PagedNeighborRequest(allNeighborsFilter))
+            val associationEntityKeyIds = mutableMapOf<UUID, Optional<MutableSet<UUID>>>()
+            val neighborEntityKeyIds = mutableMapOf<UUID, Optional<MutableSet<UUID>>>()
+            val edges = mutableMapOf<UUID, MutableMap<UUID, UUID>>()
+            allNeighborEdges.forEach {
+                associationEntityKeyIds
+                        .getOrPut(it.edge.entitySetId) { Optional.of(mutableSetOf()) }
+                        .get()
+                        .add(it.edge.entityKeyId)
+
+                neighborEntityKeyIds
+                        .getOrPut(it.dst.entitySetId) { Optional.of(mutableSetOf()) }
+                        .get()
+                        .add(it.dst.entityKeyId)
+                edges.getOrPut(it.src.entityKeyId) { mutableMapOf() }[it.edge.entityKeyId] = it.dst.entityKeyId
+            }
+            val associations = pgDataQueryService.getEntitiesWithPropertyTypeIds(
+                    associationEntityKeyIds as Map<UUID, Optional<Set<UUID>>>,
+                    authorizedPropertyTypes
+            ).toMap()
+            var neighbors = pgDataQueryService.getEntitiesWithPropertyTypeIds(
+                    neighborEntityKeyIds as Map<UUID, Optional<Set<UUID>>>,
+                    authorizedPropertyTypes
+            ).toMap()
+            val allEntities = (srcEntities + associations + neighbors).mapValues { entityPair ->
+                entityPair.value.mapKeys { propertyTypes.getValue(it.key).type }
+            }
+            try {
+                AggregationResult(
+                        rankings,
+                        allEntities,
+                        edges
+                )
+            } finally {
+                log.info("Preparing results took ${context.stop() / 1000} ms")
+            }
+
+        }
     }
+
+    /**
+     * Computes the aggregations for a filtered neighbor ranking
+     * @param authorizedFilteredNeighborsRanking The aggregations to compute
+     * @param srcEntities The source entities.
+     * @param associationEntities The association entities
+     * @param neighborEntities The destination entities
+     * @param edges Each source entity key id and its neighborhood of entity key ids
+     * @param propertyTypes Property type definitions needed to compute aggregations.
+     * @return The computed aggregations.
+     */
+    private fun computeAggregations(
+            authorizedFilteredNeighborsRanking: AuthorizedFilteredNeighborsRanking,
+            srcEntities: Map<UUID, Map<UUID, Set<Any>>>,
+            associationEntities: Map<UUID, Map<UUID, Set<Any>>>,
+            neighborEntities: Map<UUID, Map<UUID, Set<Any>>>,
+            edges: Map<UUID, List<Pair<UUID, UUID>>>,
+            propertyTypes: Map<UUID, PropertyType>
+    ): List<FilteredNeighborsRankingAggregationResult> {
+        //For each entity compute the association and neighbor aggregations.
+        return srcEntities.mapNotNull { (entityKeyId, _) ->
+            val neighbors = edges[entityKeyId] ?: return@mapNotNull FilteredNeighborsRankingAggregationResult(
+                    entityKeyId,
+                    0.0,
+                    authorizedFilteredNeighborsRanking.filteredNeighborsRanking.associationTypeId,
+                    authorizedFilteredNeighborsRanking.filteredNeighborsRanking.neighborTypeId,
+                    EntityAggregationResult(mapOf(), mapOf()),
+                    EntityAggregationResult(mapOf(), mapOf())
+            )
+
+            val (associationsEntityKeyIds, neighborEntityKeyIds) = neighbors.unzip()
+
+            val associationAggregationResult = computeAggregationSlice(
+                    authorizedFilteredNeighborsRanking,
+                    associationsEntityKeyIds,
+                    associationEntities,
+                    propertyTypes,
+                    true
+            )
+
+            val neighborAggregationResult = computeAggregationSlice(
+                    authorizedFilteredNeighborsRanking,
+                    neighborEntityKeyIds,
+                    neighborEntities,
+                    propertyTypes
+            )
+
+
+            var weight = authorizedFilteredNeighborsRanking.filteredNeighborsRanking.countWeight.orElse(1.0)
+
+            //TODO: Consider properly count edges.
+            var score = weight * neighborEntityKeyIds.size
+            score += (associationAggregationResult.scorable.values.sum() + neighborAggregationResult.scorable.values.sum())
+
+            FilteredNeighborsRankingAggregationResult(
+                    entityKeyId,
+                    score,
+                    authorizedFilteredNeighborsRanking.filteredNeighborsRanking.associationTypeId,
+                    authorizedFilteredNeighborsRanking.filteredNeighborsRanking.neighborTypeId,
+                    associationAggregationResult,
+                    neighborAggregationResult
+            )
+        }
+    }
+
+    private fun computeAggregationSlice(
+            authorizedFilteredNeighborsRanking: AuthorizedFilteredNeighborsRanking,
+            entityKeyIds: Collection<UUID>,
+            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            propertyTypes: Map<UUID, PropertyType>,
+            associationAggregation: Boolean = false
+    ): EntityAggregationResult {
+        val scorable = mutableMapOf<UUID, Double>()
+        val passthrough = mutableMapOf<UUID, Comparable<*>>()
+
+        //Calculate all the aggregations requested for this filtered neighbors ranking
+        if (associationAggregation) {
+            authorizedFilteredNeighborsRanking.filteredNeighborsRanking
+                    .associationAggregations
+        } else {
+            authorizedFilteredNeighborsRanking.filteredNeighborsRanking
+                    .neighborTypeAggregations
+        }.forEach { (propertyTypeId, weightedRankingAggregation) ->
+            val weight = weightedRankingAggregation.weight
+            when (propertyTypes.getValue(propertyTypeId).datatype) {
+                EdmPrimitiveTypeKind.GeographyPoint -> {
+                    val values = entityKeyIds.mapNotNull {
+                        entities[it]?.get(
+                                propertyTypeId
+                        )?.first() as String?
+                    }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        else -> throw InvalidParameterException(
+                                "Unrecognized aggregation type for GeographyPoint."
+                        )
+                    }
+                }
+                EdmPrimitiveTypeKind.Int64 -> {
+                    val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Long? }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Long.")
+                    }
+                }
+                EdmPrimitiveTypeKind.Guid -> {
+                    val values = entityKeyIds.mapNotNull {
+                        entities[it]?.get(
+                                propertyTypeId
+                        )?.first() as String?
+                    }
+                            .map { UUID.fromString(it) }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Guid")
+                    }
+                }
+                EdmPrimitiveTypeKind.SByte, EdmPrimitiveTypeKind.Byte -> {
+                    val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Byte? }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for (S)Byte.")
+                    }
+                }
+                EdmPrimitiveTypeKind.Int16 -> {
+                    val values = entityKeyIds.mapNotNull {
+                        entities[it]?.get(
+                                propertyTypeId
+                        )?.first() as Short?
+                    }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Int16.")
+                    }
+                }
+                EdmPrimitiveTypeKind.Int32 -> {
+                    val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Int? }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Int32.")
+                    }
+
+                }
+                EdmPrimitiveTypeKind.Duration -> {
+                    val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Long? }
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!!.toDouble() * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!!.toDouble() * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Duration.")
+                    }
+                }
+                EdmPrimitiveTypeKind.Date -> {
+                    val values = entityKeyIds
+                            .mapNotNull { entities[it]?.get(propertyTypeId)?.first() as String? }
+                            .map(LocalDate::parse)
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Date.")
+                    }
+                }
+                EdmPrimitiveTypeKind.TimeOfDay -> {
+                    val values = entityKeyIds
+                            .mapNotNull { entities[it]?.get(propertyTypeId)?.first() as String? }
+                            .map(LocalTime::parse)
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for TimeOfDay.")
+                    }
+                }
+                EdmPrimitiveTypeKind.DateTimeOffset -> {
+                    val values = entityKeyIds
+                            .mapNotNull { entities[it]?.get(propertyTypeId)?.first() as String? }
+                            .map(OffsetDateTime::parse)
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        else -> throw InvalidParameterException(
+                                "Unrecognized aggregation type for DateTimeOffset."
+                        )
+                    }
+                }
+                EdmPrimitiveTypeKind.Double -> {
+                    val values = entityKeyIds.mapNotNull {
+                        val v = entities[it]?.get(
+                                propertyTypeId
+                        )?.first()
+                        //TODO: Address jackson serialization causing unexpected data types here.
+                        if (v != null && v is Int) {
+                            v.toDouble() as Double?
+                        } else {
+                            v as Double?
+                        }
+                    }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.AVG -> scorable[propertyTypeId] = values.average() * weight
+                        AggregationType.MIN -> scorable[propertyTypeId] = values.min()!! * weight
+                        AggregationType.MAX -> scorable[propertyTypeId] = values.max()!! * weight
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        AggregationType.SUM -> scorable[propertyTypeId] = values.sum()
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Double.")
+                    }
+                }
+                EdmPrimitiveTypeKind.Binary -> {
+                    val values = entityKeyIds.mapNotNull {
+                        entities[it]?.get(
+                                propertyTypeId
+                        )?.first() as String?
+                    }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Binary.")
+                    }
+                }
+                EdmPrimitiveTypeKind.Boolean -> {
+                    val values = entityKeyIds.mapNotNull { entities[it]?.get(propertyTypeId)?.first() as Long? }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for Boolean.")
+                    }
+                }
+                EdmPrimitiveTypeKind.String -> {
+                    val values = entityKeyIds.mapNotNull {
+                        entities[it]?.get(
+                                propertyTypeId
+                        )?.first() as String?
+                    }
+                    if (values.isEmpty()) return@forEach
+                    when (weightedRankingAggregation.type) {
+                        AggregationType.MIN -> passthrough[propertyTypeId] = values.min()!!
+                        AggregationType.MAX -> passthrough[propertyTypeId] = values.max()!!
+                        AggregationType.COUNT -> scorable[propertyTypeId] = values.count().toDouble() * weight
+                        else -> throw InvalidParameterException("Unrecognized aggregation type for String.")
+                    }
+                }
+                else -> throw InvalidParameterException("Unsupported data type for aggregation.")
+            }
+        }
+        return EntityAggregationResult(scorable, passthrough)
+    }
+
 
     @VisibleForTesting
     fun buildTopEntitiesQuery(
@@ -380,9 +782,11 @@ class Graph(
 
         val countColumns = filteredRankings.mapIndexed { index, authorizedFilteredRanking ->
             authorizedFilteredRanking.filteredNeighborsRanking.countWeight.map {
-                "$it*COALESCE(${associationCountColumnName(
-                        index
-                )},0)"
+                "$it*COALESCE(${
+                    associationCountColumnName(
+                            index
+                    )
+                },0)"
             }
                     .orElse("")
         }.filter(String::isNotBlank)
@@ -395,7 +799,9 @@ class Graph(
          */
         val associationSql =
                 filteredRankings.mapIndexed { index, authorizedFilteredRanking ->
-                    val tableSql = buildAssociationTable(index, entitySetIds, authorizedFilteredRanking, linked)
+                    val tableSql = buildAssociationTable(
+                            index, entitySetIds, authorizedFilteredRanking, linked
+                    )
                     //We are guaranteed at least one association for a valid top utilizers request
 
                     if (index == 0) {
@@ -413,7 +819,9 @@ class Graph(
                 }.joinToString("\n")
 
         val entitiesSql = filteredRankings.mapIndexed { index, authorizedFilteredRanking ->
-            val tableSql = buildEntityTable(index, entitySetIds, authorizedFilteredRanking, linked)
+            val tableSql = buildEntityTable(
+                    index, entitySetIds, authorizedFilteredRanking, linked
+            )
             "FULL OUTER JOIN ($tableSql) as entity_table$index USING($joinColumns) "
         }.joinToString("\n")
         val sql = "$associationSql \n$entitiesSql \nORDER BY score DESC \nLIMIT $limit"
@@ -424,35 +832,33 @@ class Graph(
 
     @Deprecated("Edges table queries need update")
     private fun topEntitiesWorker(
-            limit: Int, entitySetId: UUID, srcFilters: SetMultimap<UUID, UUID>, dstFilters: SetMultimap<UUID, UUID>
+            limit: Int, entitySetId: UUID, srcFilters: SetMultimap<UUID, UUID>,
+            dstFilters: SetMultimap<UUID, UUID>
     ): Stream<Pair<EntityDataKey, Long>> {
         val countColumn = "total_count"
         val query = getTopUtilizersSql(entitySetId, srcFilters, dstFilters, limit)
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    val stmt = connection.createStatement()
-                    logger.info("Executing top utilizer query: {}", query)
-                    val rs = stmt.executeQuery(query)
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, Pair<EntityDataKey, Long>> {
-                    ResultSetAdapters.entityDataKey(it) to it.getLong(countColumn)
-                }
-        ).stream()
+
+        return BasePostgresIterable(StatementHolderSupplier(reader, query)) {
+            ResultSetAdapters.entityDataKey(it) to it.getLong(countColumn)
+        }.stream()
     }
 
-    override fun getNeighborEntitySets(entitySetIds: Set<UUID>): List<NeighborSets> {
+    override fun getNeighborEntitySets(
+            entitySetIds: Set<UUID>
+    ): List<NeighborSets> {
         val neighbors: MutableList<NeighborSets> = ArrayList()
 
         val query = "SELECT DISTINCT ${SRC_ENTITY_SET_ID.name},${EDGE_ENTITY_SET_ID.name}, ${DST_ENTITY_SET_ID.name} " +
                 "FROM ${E.name} " +
-                "WHERE ${SRC_ENTITY_SET_ID.name} = ANY(?) OR ${DST_ENTITY_SET_ID.name} = ANY(?)"
-        val connection = hds.connection
+                "WHERE ( ${SRC_ENTITY_SET_ID.name} = ANY(?) OR ${DST_ENTITY_SET_ID.name} = ANY(?) ) " +
+                "AND ${VERSION.name} > 0"
+        val connection = reader.connection
         connection.use {
             val ps = connection.prepareStatement(query)
             ps.use {
-                val entitySetIdsArr = PostgresArrays.createUuidArray(connection, entitySetIds)
+                val entitySetIdsArr = PostgresArrays.createUuidArray(
+                        connection, entitySetIds
+                )
                 ps.setArray(1, entitySetIdsArr)
                 ps.setArray(2, entitySetIdsArr)
                 val rs = ps.executeQuery()
@@ -469,46 +875,38 @@ class Graph(
         return neighbors
     }
 
-    override fun getEdgeEntitySetsConnectedToEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): Set<UUID> {
+    override fun getEdgeEntitySetsConnectedToEntities(
+            entitySetId: UUID, entityKeyIds: Set<UUID>
+    ): Set<UUID> {
         val query = "SELECT DISTINCT ${EDGE_ENTITY_SET_ID.name} " +
                 "FROM ${E.name} " +
                 "WHERE ($SRC_IDS_SQL) OR ($DST_IDS_SQL) "
 
-        return PostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-                    val entityKeyIdArr = PostgresArrays.createUuidArray(connection, entityKeyIds)
-
-                    val ps = connection.prepareStatement(query)
-                    ps.setArray(1, entityKeyIdArr)
-                    ps.setObject(2, entitySetId)
-                    ps.setArray(3, entityKeyIdArr)
-                    ps.setObject(4, entitySetId)
-                    val rs = ps.executeQuery()
-                    StatementHolder(connection, ps, rs)
-                },
-                Function<ResultSet, UUID> { ResultSetAdapters.edgeEntitySetId(it) }
-        ).toSet()
+        return BasePostgresIterable(PreparedStatementHolderSupplier(reader, query) { ps ->
+            val entityKeyIdArr = PostgresArrays.createUuidArray(ps.connection, entityKeyIds)
+            ps.setArray(1, entityKeyIdArr)
+            ps.setObject(2, entitySetId)
+            ps.setArray(3, entityKeyIdArr)
+            ps.setObject(4, entitySetId)
+        }) {
+            ResultSetAdapters.edgeEntitySetId(it)
+        }.toSet()
     }
 
 
-    override fun getEdgeEntitySetsConnectedToEntitySet(entitySetId: UUID): Set<UUID> {
+    override fun getEdgeEntitySetsConnectedToEntitySet(
+            entitySetId: UUID
+    ): Set<UUID> {
         val query = "SELECT DISTINCT ${EDGE_ENTITY_SET_ID.name} " +
                 "FROM ${E.name} " +
                 "WHERE ${SRC_ENTITY_SET_ID.name} = ? OR ${DST_ENTITY_SET_ID.name} = ?"
 
-        return BasePostgresIterable(
-                Supplier {
-                    val connection = hds.connection
-
-                    val ps = connection.prepareStatement(query)
-                    ps.setObject(1, entitySetId)
-                    ps.setObject(2, entitySetId)
-                    val rs = ps.executeQuery()
-                    StatementHolder(connection, ps, rs)
-                },
-                { ResultSetAdapters.edgeEntitySetId(it) }
-        ).toSet()
+        return BasePostgresIterable(PreparedStatementHolderSupplier(reader, query) { ps ->
+            ps.setObject(1, entitySetId)
+            ps.setObject(2, entitySetId)
+        }) {
+            ResultSetAdapters.edgeEntitySetId(it)
+        }.toSet()
     }
 
     private fun buildAssociationTable(
@@ -518,14 +916,20 @@ class Graph(
             linked: Boolean
     ): String {
         val esEntityKeyIds = entitySetManager
-                .getEntitySetIdsOfType(authorizedFilteredRanking.filteredNeighborsRanking.associationTypeId)
+                .getEntitySetIdsOfType(
+                        authorizedFilteredRanking.filteredNeighborsRanking.associationTypeId
+                )
                 .map { it to Optional.empty<Set<UUID>>() }
                 .toMap()
         val associationPropertyTypes = authorizedFilteredRanking.associationPropertyTypes
         //This will read all the entity sets of the same type all at once applying filters.
         val dataSql = selectEntitySetWithCurrentVersionOfPropertyTypes(
                 esEntityKeyIds,
-                associationPropertyTypes.mapValues { quote(it.value.type.fullQualifiedNameAsString) },
+                associationPropertyTypes.mapValues {
+                    quote(
+                            it.value.type.fullQualifiedNameAsString
+                    )
+                },
                 authorizedFilteredRanking.filteredNeighborsRanking.associationAggregations.keys,
                 authorizedFilteredRanking.associationSets,
                 authorizedFilteredRanking.filteredNeighborsRanking.associationFilters,
@@ -538,17 +942,25 @@ class Graph(
         val joinColumns = entityKeyIdColumns
         val groupingColumns = if (linked) LINKING_ID.name else "$SELF_ENTITY_SET_ID, $SELF_ENTITY_KEY_ID"
 
-        val spineSql = buildSpineSql(selfEntitySetIds, authorizedFilteredRanking, linked, true)
+        val spineSql = buildSpineSql(
+                selfEntitySetIds, authorizedFilteredRanking, linked, true
+        )
 
         val aggregationColumns =
                 authorizedFilteredRanking.filteredNeighborsRanking.associationAggregations
                         .mapValues {
-                            val fqn = quote(associationPropertyTypes.getValue(it.key).type.fullQualifiedNameAsString)
+                            val fqn = quote(
+                                    associationPropertyTypes.getValue(
+                                            it.key
+                                    ).type.fullQualifiedNameAsString
+                            )
                             val alias = aggregationAssociationColumnName(index, it.key)
                             "${it.value.type.name}(COALESCE($fqn[1],0)) as $alias"
                         }.values.joinToString(",")
         val countAlias = associationCountColumnName(index)
-        val allColumns = listOf(groupingColumns, aggregationColumns, "count(*) as $countAlias")
+        val allColumns = listOf(
+                groupingColumns, aggregationColumns, "count(*) as $countAlias"
+        )
                 .filter(String::isNotBlank)
                 .joinToString(",")
         val nullCheck = if (linked) "WHERE ${LINKING_ID.name} IS NOT NULL" else ""
@@ -566,14 +978,20 @@ class Graph(
             linked: Boolean
     ): String {
         val esEntityKeyIds = entitySetManager
-                .getEntitySetIdsOfType(authorizedFilteredRanking.filteredNeighborsRanking.neighborTypeId)
+                .getEntitySetIdsOfType(
+                        authorizedFilteredRanking.filteredNeighborsRanking.neighborTypeId
+                )
                 .map { it to Optional.empty<Set<UUID>>() }
                 .toMap()
         val entitySetPropertyTypes = authorizedFilteredRanking.entitySetPropertyTypes
         //This will read all the entity sets of the same type all at once applying filters.
         val dataSql = selectEntitySetWithCurrentVersionOfPropertyTypes(
                 esEntityKeyIds,
-                entitySetPropertyTypes.mapValues { quote(it.value.type.fullQualifiedNameAsString) },
+                entitySetPropertyTypes.mapValues {
+                    quote(
+                            it.value.type.fullQualifiedNameAsString
+                    )
+                },
                 authorizedFilteredRanking.filteredNeighborsRanking.neighborTypeAggregations.keys,
                 authorizedFilteredRanking.entitySets,
                 authorizedFilteredRanking.filteredNeighborsRanking.neighborFilters,
@@ -587,17 +1005,25 @@ class Graph(
         val joinColumns = entityKeyIdColumns
         val groupingColumns = if (linked) LINKING_ID.name else "$SELF_ENTITY_SET_ID, $SELF_ENTITY_KEY_ID"
 
-        val spineSql = buildSpineSql(selfEntitySetIds, authorizedFilteredRanking, linked, false)
+        val spineSql = buildSpineSql(
+                selfEntitySetIds, authorizedFilteredRanking, linked, false
+        )
 
         val aggregationColumns =
                 authorizedFilteredRanking.filteredNeighborsRanking.neighborTypeAggregations
                         .mapValues {
-                            val fqn = quote(entitySetPropertyTypes.getValue(it.key).type.fullQualifiedNameAsString)
+                            val fqn = quote(
+                                    entitySetPropertyTypes.getValue(
+                                            it.key
+                                    ).type.fullQualifiedNameAsString
+                            )
                             val alias = aggregationEntityColumnName(index, it.key)
                             "${it.value.type.name}(COALESCE($fqn[1],0)) as $alias"
                         }.values.joinToString(",")
         val countAlias = entityCountColumnName(index)
-        val allColumns = listOf(groupingColumns, aggregationColumns, "count(*) as $countAlias")
+        val allColumns = listOf(
+                groupingColumns, aggregationColumns, "count(*) as $countAlias"
+        )
                 .filter(String::isNotBlank)
                 .joinToString(",")
         val nullCheck = if (linked) "WHERE ${LINKING_ID.name} IS NOT NULL" else ""
@@ -608,9 +1034,11 @@ class Graph(
     }
 }
 
+internal fun getLinkingId(linkingIds: Map<UUID, UUID>, entityKeyId: UUID): UUID = linkingIds.getValue(entityKeyId)
+
 private val KEY_COLUMNS = E.primaryKey.map { col -> col.name }.toSet()
 
-private val INSERT_COLUMNS = E.columns.map { it.name }.toSet()
+private val INSERT_COLUMNS = E.columns.filterNot { LAST_TRANSPORT == it }.map { it.name }.toSet()
 
 /**
  * Builds the SQL query for top utilizers.
@@ -684,11 +1112,14 @@ private val SRC_ID_SQL = "${SRC_ENTITY_KEY_ID.name} = ? AND ${SRC_ENTITY_SET_ID.
 private val DST_ID_SQL = "${DST_ENTITY_KEY_ID.name} = ? AND ${DST_ENTITY_SET_ID.name} = ?"
 
 private val SRC_IDS_SQL = "${SRC_ENTITY_KEY_ID.name} = ANY(?) AND ${SRC_ENTITY_SET_ID.name} = ?"
-private val DST_IDS_SQL = "${DST_ENTITY_KEY_ID.name} = ANY(?) AND ${DST_ENTITY_SET_ID.name} = ?"
 private val EDGE_IDS_SQL = "${EDGE_ENTITY_KEY_ID.name} = ANY(?) AND ${EDGE_ENTITY_SET_ID.name} = ?"
+private val DST_IDS_SQL = "${DST_ENTITY_KEY_ID.name} = ANY(?) AND ${DST_ENTITY_SET_ID.name} = ?"
+private val DST_IDS_AND_PARTITION_SQL = "${DST_ENTITY_KEY_ID.name} = ANY(?) AND ${DST_ENTITY_SET_ID.name} = ? AND ${PARTITION.name} = ANY(?)"
 
-private val SRC_IDS_AND_ENTITY_SETS_SQL = "${SRC_ENTITY_KEY_ID.name} = ANY(?) AND ${SRC_ENTITY_SET_ID.name} = ANY(?)"
-private val DST_IDS_AND_ENTITY_SETS_SQL = "${DST_ENTITY_KEY_ID.name} = ANY(?) AND ${DST_ENTITY_SET_ID.name} = ANY(?)"
+private val DEFAULT_NEIGHBORHOOD_SRC_FILTER = "${SRC_ENTITY_KEY_ID.name} = ANY(?) AND ${SRC_ENTITY_SET_ID.name} = ANY(?) AND ${PARTITION.name} = ANY(?)"
+private val DEFAULT_NEIGHBORHOOD_DST_FILTER = "${DST_ENTITY_KEY_ID.name} = ANY(?) AND ${DST_ENTITY_SET_ID.name} = ANY(?)"
+
+//private val REPARTITION_SQL = "INSERT INTO ${E.name} SELECT $REPARTITION_COLUMNS FROM ${E.name} INNER JOIN (select id as entity_set_id, partitions from entity_sets) as es using (entity_set_id) WHERE entity_set_id = ? AND "
 
 /**
  * Loads edges where either the source, destination, or association matches a set of entityKeyIds from a specific entity set
@@ -697,62 +1128,102 @@ private val DST_IDS_AND_ENTITY_SETS_SQL = "${DST_ENTITY_KEY_ID.name} = ANY(?) AN
  * 2. entitySetId
  * 3. entityKeyIds
  * 4. entitySetId
+ * 5. partitions (for vertex entity set or sets)
  * 5. entityKeyIds
  * 6. entitySetId
  */
 private val BULK_NEIGHBORHOOD_SQL = "SELECT * FROM ${E.name} WHERE (($SRC_IDS_SQL) OR ($DST_IDS_SQL) OR ($EDGE_IDS_SQL))"
 private val BULK_NON_TOMBSTONED_NEIGHBORHOOD_SQL = "$BULK_NEIGHBORHOOD_SQL AND ${VERSION.name} > 0"
 
+
+private val PAGED_NEIGHBOR_SEARCH_ORDER_COLS = listOf(
+        SRC_ENTITY_SET_ID,
+        SRC_ENTITY_KEY_ID,
+        EDGE_ENTITY_SET_ID,
+        EDGE_ENTITY_KEY_ID,
+        DST_ENTITY_SET_ID,
+        DST_ENTITY_KEY_ID
+).map { it.name }
+
 /**
- * Loads edges where either the source or destination matches an EntityDataKey
+ * PreparedStatement bind order (note: these bind params all apply to the vertex entity set):
  *
- * 1. entityKeyId
- * 2. entitySetId
- * 3. entityKeyId
- * 4. entitySetId
- * 5. entityKeyId
- * 6. entitySetId
+ * 1. entityKeyIds
+ * 2. entitySetIds
+ * 3. entityKeyIds
+ * 4. entitySetIds
+ * 5. partitions
  */
-private val NEIGHBORHOOD_SQL = "SELECT * FROM ${E.name} WHERE ($SRC_ID_SQL) OR ($DST_ID_SQL)"
+internal fun getFilteredNeighborhoodSql(
+        pagedNeighborRequest: PagedNeighborRequest,
+        srcEntitySetPartitions: Set<Int>
+): String {
 
-internal fun getFilteredNeighborhoodSql(filter: EntityNeighborsFilter, multipleEntitySetIds: Boolean): String {
+    val filter = pagedNeighborRequest.filter
+    val limit = pagedNeighborRequest.pageSize
+    val bookmark = pagedNeighborRequest.bookmark
 
-    var (srcSql, dstSql) = if (multipleEntitySetIds) {
-        SRC_IDS_AND_ENTITY_SETS_SQL to DST_IDS_AND_ENTITY_SETS_SQL
-    } else {
-        SRC_IDS_SQL to DST_IDS_SQL
-    }
+
+    var vertexAsSrcSql = DEFAULT_NEIGHBORHOOD_SRC_FILTER
+    var vertexAsDstSql = DEFAULT_NEIGHBORHOOD_DST_FILTER
 
     if (filter.dstEntitySetIds.isPresent) {
-        if (filter.dstEntitySetIds.get().size > 0) {
-            srcSql += " AND ( ${DST_ENTITY_SET_ID.name} IN (${filter.dstEntitySetIds.get().joinToString(
-                    ","
-            ) { "'$it'" }}))"
-        } else {
-            srcSql = "false AND $srcSql "
-        }
+        val dstEntitySetIdsSql = entitySetFilterClause(DST_ENTITY_SET_ID, filter.dstEntitySetIds)
+
+        vertexAsSrcSql += " AND ( $dstEntitySetIdsSql )"
     }
 
     if (filter.srcEntitySetIds.isPresent) {
-        if (filter.srcEntitySetIds.get().size > 0) {
-            dstSql += " AND ( ${SRC_ENTITY_SET_ID.name} IN (${filter.srcEntitySetIds.get().joinToString(
-                    ","
-            ) { "'$it'" }}))"
-        } else {
-            dstSql = "false AND $dstSql "
-        }
+        val srcEntitySetIdsSql = entitySetFilterClause(SRC_ENTITY_SET_ID, filter.srcEntitySetIds)
+        val srcPartitionsSql = "${PARTITION.name} = ANY('{${srcEntitySetPartitions.joinToString(",")}}')"
+
+        vertexAsDstSql += " AND ( $srcEntitySetIdsSql AND $srcPartitionsSql )"
     }
 
-    if (filter.associationEntitySetIds.isPresent) {
-        srcSql += " AND ( ${EDGE_ENTITY_SET_ID.name} IN (${filter.associationEntitySetIds.get().joinToString(
-                ","
-        ) { "'$it'" }}))"
-        dstSql += " AND ( ${EDGE_ENTITY_SET_ID.name} IN (${filter.associationEntitySetIds.get().joinToString(
-                ","
-        ) { "'$it'" }}))"
+    if (filter.associationEntitySetIds.isPresent && filter.associationEntitySetIds.get().isNotEmpty()) {
+        val associationEntitySetIdsSql = entitySetFilterClause(EDGE_ENTITY_SET_ID, filter.associationEntitySetIds)
+
+        vertexAsSrcSql += " AND ( $associationEntitySetIdsSql )"
+        vertexAsDstSql += " AND ( $associationEntitySetIdsSql )"
     }
 
-    return "SELECT * FROM ${E.name} WHERE (( $srcSql ) OR ( $dstSql )) AND ${VERSION.name} > 0"
+    val bookmarkClause = if (bookmark != null) {
+        """
+            AND ( ${PAGED_NEIGHBOR_SEARCH_ORDER_COLS.joinToString()} ) > (
+              '${bookmark.src.entitySetId}',
+              '${bookmark.src.entityKeyId}',
+              '${bookmark.edge.entitySetId}',
+              '${bookmark.edge.entityKeyId}',
+              '${bookmark.dst.entitySetId}',
+              '${bookmark.dst.entityKeyId}'
+            )
+        """.trimIndent()
+    } else {
+        ""
+    }
+
+    val pagingClause = if (limit > 0) "ORDER BY ${PAGED_NEIGHBOR_SEARCH_ORDER_COLS.joinToString()} LIMIT $limit" else ""
+
+
+    return """
+      SELECT *
+      FROM ${E.name}
+      WHERE 
+        ( ( $vertexAsDstSql ) OR ( $vertexAsSrcSql ) ) 
+        AND ${VERSION.name} > 0
+        $bookmarkClause
+      $pagingClause
+   """.trimIndent()
+}
+
+private fun entitySetFilterClause(column: PostgresColumnDefinition, entitySetFilter: Optional<Set<UUID>>): String {
+    return if (entitySetFilter.get().isNotEmpty()) {
+        "${column.name} IN (${
+            entitySetFilter.get().joinToString { "'$it'" }
+        })"
+    } else {
+        "false"
+    }
 }
 
 private fun srcClauses(entitySetId: UUID, associationFilters: SetMultimap<UUID, UUID>): String {
@@ -829,10 +1300,10 @@ private fun buildSpineSql(
     }
 
     val edgeClause = buildEdgeFilteringClause(selfEntitySetIds, authorizedFilteredRanking, association, isDst)
-    val idSql = "SELECT ${PostgresColumn.ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${PostgresColumn.ID.name} as $SELF_ENTITY_KEY_ID, ${LINKING_ID.name} FROM ${ENTITY_KEY_IDS.name}"
+    val idSql = "SELECT ${PostgresColumn.ENTITY_SET_ID.name} as $SELF_ENTITY_SET_ID, ${PostgresColumn.ID.name} as $SELF_ENTITY_KEY_ID, ${LINKING_ID.name} FROM ${IDS.name}"
     val spineSql = if (linked) {
         "SELECT edges.*, ${LINKING_ID.name} FROM (SELECT DISTINCT $baseEntityColumnsSql FROM edges WHERE $edgeClause) as edges " +
-                "LEFT JOIN ($idSql) as ${ENTITY_KEY_IDS.name} USING ($SELF_ENTITY_SET_ID,$SELF_ENTITY_KEY_ID)"
+                "LEFT JOIN ($idSql) as ${IDS.name} USING ($SELF_ENTITY_SET_ID,$SELF_ENTITY_KEY_ID)"
     } else {
         "SELECT DISTINCT $baseEntityColumnsSql FROM edges WHERE $edgeClause"
     }
@@ -848,7 +1319,8 @@ private fun buildSpineSql(
  * @param associationFilters A multimap from association entity set ids to allowed neighbor entity set ids.
  */
 private fun associationClauses(
-        entitySetColumn: String, entitySetId: UUID, neighborColumn: String, associationFilters: SetMultimap<UUID, UUID>
+        entitySetColumn: String, entitySetId: UUID, neighborColumn: String,
+        associationFilters: SetMultimap<UUID, UUID>
 ): String {
     if (associationFilters.isEmpty) {
         return " false "
@@ -903,7 +1375,8 @@ fun bindColumnsForEdge(
         dataEdgeKey: DataEdgeKey,
         version: Long,
         versions: java.sql.Array,
-        partitionsInfoByEntitySet: Map<UUID, List<Int>>) {
+        partitionsInfoByEntitySet: Map<UUID, List<Int>>
+) {
 
     val edk = dataEdgeKey.src
     val partitions = partitionsInfoByEntitySet.getValue(edk.entitySetId)

@@ -26,18 +26,22 @@ import com.google.common.collect.Sets;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
-import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
+import com.kryptnostic.rhizome.hazelcast.serializers.UUIDStreamSerializerUtils;
 import com.openlattice.data.DataExpiration;
 import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.set.EntitySetFlag;
 import com.openlattice.hazelcast.StreamSerializerTypeIds;
+import com.openlattice.mapstores.TestDataFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Component
-public class EntitySetStreamSerializer implements SelfRegisteringStreamSerializer<EntitySet> {
+public class EntitySetStreamSerializer implements TestableSelfRegisteringStreamSerializer<EntitySet> {
 
     @Override
     public void write( ObjectDataOutput out, EntitySet object ) throws IOException {
@@ -45,14 +49,14 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
     }
 
     public static void serialize( ObjectDataOutput out, EntitySet object ) throws IOException {
-        UUIDStreamSerializer.serialize( out, object.getId() );
-        UUIDStreamSerializer.serialize( out, object.getEntityTypeId() );
+        UUIDStreamSerializerUtils.serialize( out, object.getId() );
+        UUIDStreamSerializerUtils.serialize( out, object.getEntityTypeId() );
         out.writeUTF( object.getName() );
         out.writeUTF( object.getTitle() );
         out.writeUTF( object.getDescription() );
         SetStreamSerializers.fastStringSetSerialize( out, object.getContacts() );
         SetStreamSerializers.fastUUIDSetSerialize( out, object.getLinkedEntitySets() );
-        UUIDStreamSerializer.serialize( out, object.getOrganizationId() );
+        UUIDStreamSerializerUtils.serialize( out, object.getOrganizationId() );
         out.writeInt( object.getFlags().size() );
         for ( EntitySetFlag flag : object.getFlags() ) {
             EntitySetFlagStreamSerializer.serialize( out, flag );
@@ -74,14 +78,14 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
     }
 
     public static EntitySet deserialize( ObjectDataInput in ) throws IOException {
-        UUID id = UUIDStreamSerializer.deserialize( in );
-        UUID entityTypeId = UUIDStreamSerializer.deserialize( in );
+        UUID id = UUIDStreamSerializerUtils.deserialize( in );
+        UUID entityTypeId = UUIDStreamSerializerUtils.deserialize( in );
         String name = in.readUTF();
         String title = in.readUTF();
         String description = in.readUTF();
         Set<String> contacts = SetStreamSerializers.fastStringSetDeserialize( in );
         Set<UUID> linkedEntitySets = SetStreamSerializers.fastUUIDSetDeserialize( in );
-        UUID organizationId = UUIDStreamSerializer.deserialize( in );
+        UUID organizationId = UUIDStreamSerializerUtils.deserialize( in );
 
         int numFlags = in.readInt();
         EnumSet<EntitySetFlag> flags = EnumSet.noneOf( EntitySetFlag.class );
@@ -89,8 +93,7 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
             flags.add( EntitySetFlagStreamSerializer.deserialize( in ) );
         }
 
-        LinkedHashSet<Integer> partitions = (LinkedHashSet<Integer>) StreamSerializers
-                .deserializeIntList( in, Sets.newLinkedHashSet() );
+        LinkedHashSet<Integer> partitions = (LinkedHashSet<Integer>) StreamSerializers.deserializeIntList( in, Sets.newLinkedHashSet() );
 
         DataExpiration expiration;
         boolean hasExpiration = in.readBoolean();
@@ -129,4 +132,7 @@ public class EntitySetStreamSerializer implements SelfRegisteringStreamSerialize
         return EntitySet.class;
     }
 
+    @Override public EntitySet generateTestValue() {
+        return TestDataFactory.entitySet();
+    }
 }

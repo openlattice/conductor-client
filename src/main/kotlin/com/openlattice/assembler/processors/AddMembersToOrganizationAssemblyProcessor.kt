@@ -23,17 +23,18 @@ package com.openlattice.assembler.processors
 
 import com.hazelcast.core.Offloadable
 import com.hazelcast.core.ReadOnly
-import com.hazelcast.spi.ExecutionService
+import com.hazelcast.spi.impl.executionservice.ExecutionService
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor
 import com.openlattice.assembler.AssemblerConnectionManager
 import com.openlattice.assembler.AssemblerConnectionManagerDependent
 import com.openlattice.assembler.OrganizationAssembly
-import com.openlattice.assembler.PostgresDatabases
 import com.openlattice.authorization.SecurablePrincipal
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.PropertyType
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import java.util.*
 
+@SuppressFBWarnings(value = ["SE_BAD_FIELD"], justification = "Custom Stream Serializer is implemented")
 data class AddMembersToOrganizationAssemblyProcessor(
         val authorizedPropertyTypesOfEntitySetsByPrincipal: Map<SecurablePrincipal, Map<EntitySet, Collection<PropertyType>>>
 ) : AbstractRhizomeEntryProcessor<UUID, OrganizationAssembly, Void?>(false),
@@ -53,10 +54,7 @@ data class AddMembersToOrganizationAssemblyProcessor(
         }
 
         check(::acm.isInitialized) { AssemblerConnectionManagerDependent.NOT_INITIALIZED }
-        val dbName = PostgresDatabases.buildOrganizationDatabaseName(organizationId)
-        acm.connect(dbName).let { dataSource ->
-            acm.addMembersToOrganization(dbName, dataSource, authorizedPropertyTypesOfEntitySetsByPrincipal)
-        }
+        acm.addMembersToOrganization(organizationId, authorizedPropertyTypesOfEntitySetsByPrincipal)
 
         return null
     }

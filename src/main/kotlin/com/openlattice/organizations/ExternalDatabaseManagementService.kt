@@ -1,24 +1,23 @@
 package com.openlattice.organizations
 
 import com.google.common.base.Preconditions.checkState
-import com.google.common.collect.Maps
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
 import com.hazelcast.query.QueryConstants
-import com.openlattice.assembler.AssemblerConnectionManager
-import com.openlattice.assembler.AssemblerConnectionManager.Companion.PUBLIC_SCHEMA
-import com.openlattice.assembler.PostgresDatabases
-import com.openlattice.assembler.PostgresRoles.Companion.buildPostgresUsername
+import com.openlattice.assembler.AssemblerConnectionManager.Companion.OPENLATTICE_SCHEMA
+import com.openlattice.assembler.AssemblerConnectionManager.Companion.STAGING_SCHEMA
 import com.openlattice.assembler.PostgresRoles.Companion.getSecurablePrincipalIdFromUserName
 import com.openlattice.assembler.PostgresRoles.Companion.isPostgresUserName
+import com.openlattice.assembler.dropAllConnectionsToDatabaseSql
 import com.openlattice.authorization.*
 import com.openlattice.authorization.processors.PermissionMerger
 import com.openlattice.authorization.securable.SecurableObjectType
+import com.openlattice.edm.processors.GetEntityTypeFromEntitySetEntryProcessor
+import com.openlattice.edm.processors.GetFqnFromPropertyTypeEntryProcessor
 import com.openlattice.edm.requests.MetadataUpdate
 import com.openlattice.hazelcast.HazelcastMap
-import com.openlattice.hazelcast.processors.DeleteOrganizationExternalDatabaseColumnsEntryProcessor
-import com.openlattice.hazelcast.processors.DeleteOrganizationExternalDatabaseTableEntryProcessor
+import com.openlattice.hazelcast.processors.GetMembersOfOrganizationEntryProcessor
 import com.openlattice.hazelcast.processors.organizations.UpdateOrganizationExternalDatabaseColumnEntryProcessor
 import com.openlattice.hazelcast.processors.organizations.UpdateOrganizationExternalDatabaseTableEntryProcessor
 import com.openlattice.organization.OrganizationExternalDatabaseColumn
@@ -30,8 +29,13 @@ import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.postgres.*
 import com.openlattice.postgres.DataTables.quote
 import com.openlattice.postgres.ResultSetAdapters.*
+import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
 import com.openlattice.postgres.streams.BasePostgresIterable
 import com.openlattice.postgres.streams.StatementHolderSupplier
+import com.openlattice.transporter.processors.DestroyTransportedEntitySetEntryProcessor
+import com.openlattice.transporter.processors.GetPropertyTypesFromTransporterColumnSetEntryProcessor
+import com.openlattice.transporter.processors.TransportEntitySetEntryProcessor
+import com.openlattice.transporter.types.TransporterDatastore
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
@@ -45,26 +49,37 @@ import java.nio.file.StandardOpenOption
 import java.time.OffsetDateTime
 import java.util.*
 import kotlin.collections.HashMap
+import kotlin.streams.toList
 
 @Service
 class ExternalDatabaseManagementService(
-        private val hazelcastInstance: HazelcastInstance,
-        private val acm: AssemblerConnectionManager,
+        hazelcastInstance: HazelcastInstance,
+        private val externalDbManager: ExternalDatabaseConnectionManager,
         private val securePrincipalsManager: SecurePrincipalsManager,
         private val aclKeyReservations: HazelcastAclKeyReservationService,
         private val authorizationManager: AuthorizationManager,
         private val organizationExternalDatabaseConfiguration: OrganizationExternalDatabaseConfiguration,
+        private val transporterDatastore: TransporterDatastore,
+        private val dbCredentialService: DbCredentialService,
         private val hds: HikariDataSource
 ) {
 
     private val organizationExternalDatabaseColumns = HazelcastMap.ORGANIZATION_EXTERNAL_DATABASE_COLUMN.getMap(hazelcastInstance)
     private val organizationExternalDatabaseTables = HazelcastMap.ORGANIZATION_EXTERNAL_DATABASE_TABLE.getMap(hazelcastInstance)
     private val securableObjectTypes = HazelcastMap.SECURABLE_OBJECT_TYPES.getMap(hazelcastInstance)
-    private val organizations = HazelcastMap.ORGANIZATIONS.getMap(hazelcastInstance)
     private val aces = HazelcastMap.PERMISSIONS.getMap(hazelcastInstance)
     private val logger = LoggerFactory.getLogger(ExternalDatabaseManagementService::class.java)
     private val primaryKeyConstraint = "PRIMARY KEY"
     private val FETCH_SIZE = 100_000
+
+    /**
+     * Only needed for materialize entity set, which should move elsewhere eventually
+     */
+    private val entitySets = HazelcastMap.ENTITY_SETS.getMap(hazelcastInstance)
+    private val entityTypes = HazelcastMap.ENTITY_TYPES.getMap(hazelcastInstance)
+    private val propertyTypes = HazelcastMap.PROPERTY_TYPES.getMap(hazelcastInstance)
+    private val organizations = HazelcastMap.ORGANIZATIONS.getMap(hazelcastInstance)
+    private val transporterState = HazelcastMap.TRANSPORTER_DB_COLUMNS.getMap(hazelcastInstance)
 
     /*CREATE*/
     fun createOrganizationExternalDatabaseTable(orgId: UUID, table: OrganizationExternalDatabaseTable): UUID {
@@ -94,23 +109,23 @@ class ExternalDatabaseManagementService(
         return column.id
     }
 
-    fun getColumnMetadata(dbName: String, tableName: String, tableId: UUID, orgId: UUID, columnName: Optional<String>): BasePostgresIterable<
+    fun getColumnMetadata(tableName: String, tableId: UUID, orgId: UUID, columnName: Optional<String>): BasePostgresIterable<
             OrganizationExternalDatabaseColumn> {
         var columnCondition = ""
         columnName.ifPresent { columnCondition = "AND information_schema.columns.column_name = '$it'" }
 
         val sql = getColumnMetadataSql(tableName, columnCondition)
         return BasePostgresIterable(
-                StatementHolderSupplier(acm.connect(dbName), sql)
+                StatementHolderSupplier(externalDbManager.connectToOrg(orgId), sql)
         ) { rs ->
-            val columnName = columnName(rs)
+            val storedColumnName = columnName(rs)
             val dataType = sqlDataType(rs)
             val position = ordinalPosition(rs)
             val isPrimaryKey = constraintType(rs) == primaryKeyConstraint
             OrganizationExternalDatabaseColumn(
                     Optional.empty(),
-                    columnName,
-                    columnName,
+                    storedColumnName,
+                    storedColumnName,
                     Optional.empty(),
                     tableId,
                     orgId,
@@ -120,10 +135,68 @@ class ExternalDatabaseManagementService(
         }
     }
 
-    /*GET*/
-    fun getOrganizationIds(): Set<UUID> {
-        return organizations.keys
+    fun destroyTransportedEntitySet(entitySetId: UUID) {
+        entitySets.executeOnKey(entitySetId, DestroyTransportedEntitySetEntryProcessor().init(transporterDatastore))
     }
+
+    fun transportEntitySet(organizationId: UUID, entitySetId: UUID) {
+        val userToPrincipalsCompletion = organizations.submitToKey(
+                organizationId,
+                GetMembersOfOrganizationEntryProcessor()
+        ).thenApplyAsync { members ->
+            securePrincipalsManager.bulkGetUnderlyingPrincipals(
+                    securePrincipalsManager.getSecurablePrincipals(members).toSet()
+            ).mapKeys {
+                dbCredentialService.getDbUsername(it.key)
+            }
+        }
+
+        val entityTypeId = entitySets.submitToKey(
+                entitySetId,
+                GetEntityTypeFromEntitySetEntryProcessor()
+        )
+
+        val accessCheckCompletion = entityTypeId.thenCompose { etid ->
+            entityTypes.getAsync(etid!!)
+        }.thenApplyAsync { entityType ->
+            entityType.properties.mapTo(mutableSetOf()) { ptid ->
+                AccessCheck(AclKey(entitySetId, ptid), EnumSet.of(Permission.READ))
+            }
+        }
+
+        val transporterColumnsCompletion = entityTypeId.thenCompose { etid ->
+            requireNotNull(etid) {
+                "Entity set $entitySetId has no entity type"
+            }
+            transporterState.submitToKey(etid, GetPropertyTypesFromTransporterColumnSetEntryProcessor())
+        }.thenCompose { transporterPtIds ->
+            propertyTypes.submitToKeys(transporterPtIds, GetFqnFromPropertyTypeEntryProcessor())
+        }
+
+        val userToPermissionsCompletion = userToPrincipalsCompletion.thenCombine(accessCheckCompletion) { userToPrincipals, accessChecks ->
+            userToPrincipals.mapValues { (_, principals) ->
+                authorizationManager.accessChecksForPrincipals(accessChecks, principals).filter {
+                    it.permissions[Permission.READ]!!
+                }.map {
+                    it.aclKey[1]
+                }.toList()
+            }
+        }
+
+        userToPermissionsCompletion.thenCombine(transporterColumnsCompletion) { userToPtCols, transporterColumns ->
+            val userToEntitySetColumnNames = userToPtCols.mapValues { (_, columns) ->
+                columns.map {
+                    transporterColumns.get(it).toString()
+                }
+            }
+            entitySets.submitToKey(entitySetId,
+                    TransportEntitySetEntryProcessor(transporterColumns, organizationId, userToEntitySetColumnNames)
+                            .init(transporterDatastore)
+            )
+        }.toCompletableFuture().get().toCompletableFuture().get()
+    }
+
+    /*GET*/
 
     fun getExternalDatabaseTables(orgId: UUID): Set<Map.Entry<UUID, OrganizationExternalDatabaseTable>> {
         return organizationExternalDatabaseTables.entrySet(belongsToOrganization(orgId))
@@ -150,10 +223,9 @@ class ExternalDatabaseManagementService(
         val columnNamesSql = authorizedColumns.joinToString(", ") { it.name }
         val dataByColumnId = mutableMapOf<UUID, MutableList<Any?>>()
 
-        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
         val sql = "SELECT $columnNamesSql FROM $tableName LIMIT $rowCount"
         BasePostgresIterable(
-                StatementHolderSupplier(acm.connect(dbName), sql)
+                StatementHolderSupplier(externalDbManager.connectToOrg(orgId), sql)
         ) { rs ->
             val pairsList = mutableListOf<Pair<UUID, Any?>>()
             authorizedColumns.forEach {
@@ -176,14 +248,17 @@ class ExternalDatabaseManagementService(
         return organizationExternalDatabaseColumns.getValue(columnId)
     }
 
-    fun getColumnNamesByTable(dbName: String): Map<String, Set<String>> {
-        val columnNamesByTableName = Maps.newHashMapWithExpectedSize<String, MutableSet<String>>(organizationExternalDatabaseTables.size)
+    fun getColumnNamesByTableName(dbName: String): Map<String, TableSchemaInfo> {
+        val columnNamesByTableName = mutableMapOf<String, TableSchemaInfo>()
         val sql = getCurrentTableAndColumnNamesSql()
         BasePostgresIterable(
-                StatementHolderSupplier(acm.connect(dbName), sql, FETCH_SIZE)
-        ) { rs -> name(rs) to columnName(rs) }
+                StatementHolderSupplier(externalDbManager.connect(dbName), sql, FETCH_SIZE)
+        ) { rs -> TableInfo(oid(rs), name(rs) , columnName(rs))  }
                 .forEach {
-                    columnNamesByTableName.getOrPut(it.first) { mutableSetOf() }.add(it.second)
+                    columnNamesByTableName
+                            .getOrPut(it.tableName) {
+                                TableSchemaInfo(it.oid, mutableSetOf())
+                            }.columnNames.add(it.columnName)
                 }
         return columnNamesByTableName
     }
@@ -193,8 +268,7 @@ class ExternalDatabaseManagementService(
         update.name.ifPresent {
             val newTableFqn = FullQualifiedName(orgId.toString(), it)
             val oldTableName = getNameFromFqnString(tableFqnToId.first)
-            val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-            acm.connect(dbName).connection.use { conn ->
+            externalDbManager.connectToOrg(orgId).connection.use { conn ->
                 val stmt = conn.createStatement()
                 stmt.execute("ALTER TABLE $oldTableName RENAME TO $it")
             }
@@ -209,8 +283,7 @@ class ExternalDatabaseManagementService(
             val tableName = getNameFromFqnString(tableFqnToId.first)
             val newColumnFqn = FullQualifiedName(tableFqnToId.second.toString(), it)
             val oldColumnName = getNameFromFqnString(columnFqnToId.first)
-            val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-            acm.connect(dbName).connection.use { conn ->
+            externalDbManager.connectToOrg(orgId).connection.use { conn ->
                 val stmt = conn.createStatement()
                 stmt.execute("ALTER TABLE $tableName RENAME COLUMN $oldColumnName to $it")
             }
@@ -234,8 +307,7 @@ class ExternalDatabaseManagementService(
             deleteOrganizationExternalDatabaseColumns(orgId, columnsByTable)
 
             //delete tables from postgres
-            val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-            acm.connect(dbName).connection.use { conn ->
+            externalDbManager.connectToOrg(orgId).connection.use { conn ->
                 val stmt = conn.createStatement()
                 stmt.execute("DROP TABLE $tableName")
             }
@@ -253,7 +325,7 @@ class ExternalDatabaseManagementService(
             securableObjectTypes.remove(aclKey)
             aclKeyReservations.release(it)
         }
-        organizationExternalDatabaseTables.executeOnEntries(DeleteOrganizationExternalDatabaseTableEntryProcessor(), idsPredicate(tableIds))
+        organizationExternalDatabaseTables.removeAll(idsPredicate(tableIds))
     }
 
     fun deleteOrganizationExternalDatabaseColumns(orgId: UUID, columnsByTable: Map<Pair<String, UUID>, Map<String, UUID>>) {
@@ -267,8 +339,7 @@ class ExternalDatabaseManagementService(
 
             //delete columns from postgres
             val dropColumnsSql = createDropColumnSql(columnNames)
-            val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-            acm.connect(dbName).connection.use { conn ->
+            externalDbManager.connectToOrg(orgId).connection.use { conn ->
                 val stmt = conn.createStatement()
                 stmt.execute("ALTER TABLE $tableName $dropColumnsSql")
             }
@@ -279,13 +350,13 @@ class ExternalDatabaseManagementService(
 
     fun deleteOrganizationExternalDatabaseColumnObjects(columnIdsByTableId: Map<UUID, Set<UUID>>) {
         columnIdsByTableId.forEach { (tableId, columnIds) ->
-            columnIds.forEach {
-                val aclKey = AclKey(tableId, it)
+            columnIds.forEach { columnId ->
+                val aclKey = AclKey(tableId, columnId)
                 authorizationManager.deletePermissions(aclKey)
                 securableObjectTypes.remove(aclKey)
-                aclKeyReservations.release(it)
+                aclKeyReservations.release(columnId)
             }
-            organizationExternalDatabaseColumns.executeOnEntries(DeleteOrganizationExternalDatabaseColumnsEntryProcessor(), idsPredicate(columnIds))
+            organizationExternalDatabaseColumns.removeAll(idsPredicate(columnIds))
         }
     }
 
@@ -303,16 +374,17 @@ class ExternalDatabaseManagementService(
         deleteOrganizationExternalDatabaseTables(orgId, tableIdByFqn)
 
         //drop db from schema
-        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-        acm.connect(dbName).connection.use { conn ->
+        val dbName = externalDbManager.getOrganizationDatabaseName(orgId)
+        externalDbManager.connect(dbName).connection.use { conn ->
             val stmt = conn.createStatement()
+            stmt.execute(dropAllConnectionsToDatabaseSql(dbName))
             stmt.execute("DROP DATABASE $dbName")
         }
     }
 
     /*PERMISSIONS*/
     fun addHBARecord(orgId: UUID, userPrincipal: Principal, connectionType: PostgresConnectionType, ipAddress: String) {
-        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+        val dbName = externalDbManager.getOrganizationDatabaseName(orgId)
         val username = getDBUser(userPrincipal.id)
         val record = PostgresAuthenticationRecord(
                 connectionType,
@@ -333,7 +405,7 @@ class ExternalDatabaseManagementService(
     }
 
     fun removeHBARecord(orgId: UUID, userPrincipal: Principal, connectionType: PostgresConnectionType, ipAddress: String) {
-        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+        val dbName = externalDbManager.getOrganizationDatabaseName(orgId)
         val username = getDBUser(userPrincipal.id)
         val record = PostgresAuthenticationRecord(
                 connectionType,
@@ -366,8 +438,7 @@ class ExternalDatabaseManagementService(
         }
 
         columnAclsByOrg.forEach { (orgId, columnAcls) ->
-            val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
-            acm.connect(dbName).connection.use { conn ->
+            externalDbManager.connectToOrg(orgId).connection.use { conn ->
                 conn.autoCommit = false
                 val stmt = conn.createStatement()
                 columnAcls.forEach {
@@ -401,16 +472,15 @@ class ExternalDatabaseManagementService(
      * when that user is removed from an organization.
      */
     fun revokeAllPrivilegesFromMember(orgId: UUID, userId: String) {
-        val dbName = PostgresDatabases.buildOrganizationDatabaseName(orgId)
+        val dbName = externalDbManager.getOrganizationDatabaseName(orgId)
         val userName = getDBUser(userId)
-        acm.connect(dbName).connection.use { conn ->
+        externalDbManager.connect(dbName).connection.use { conn ->
             val stmt = conn.createStatement()
             stmt.execute("REVOKE ALL ON DATABASE $dbName FROM $userName")
         }
     }
 
     fun syncPermissions(
-            dbName: String,
             orgOwnerIds: List<UUID>,
             orgId: UUID,
             tableId: UUID,
@@ -435,7 +505,7 @@ class ExternalDatabaseManagementService(
 
 
             BasePostgresIterable(
-                    StatementHolderSupplier(acm.connect(dbName), sql)
+                    StatementHolderSupplier(externalDbManager.connectToOrg(orgId), sql)
             ) { rs ->
                 user(rs) to PostgresPrivileges.valueOf(privilegeType(rs).toUpperCase())
             }
@@ -468,7 +538,6 @@ class ExternalDatabaseManagementService(
             aces.executeOnKey(aceKey, PermissionMerger(permissions, objectType, OffsetDateTime.MAX))
             return@map Acl(aclKeyUUIDs, setOf(Ace(principal, permissions, Optional.empty())))
         }
-
     }
 
     /*PRIVATE FUNCTIONS*/
@@ -477,7 +546,7 @@ class ExternalDatabaseManagementService(
     }
 
     private fun createDropColumnSql(columnNames: Set<String>): String {
-        return columnNames.joinToString(", ") { "DROP COLUMN $it" }
+        return columnNames.joinToString(", ") { "DROP COLUMN ${quote(it)}" }
     }
 
     private fun createPrivilegesUpdateSql(action: Action, privileges: List<String>, tableName: String, columnName: String, dbUser: String): String {
@@ -485,9 +554,9 @@ class ExternalDatabaseManagementService(
         checkState(action == Action.REMOVE || action == Action.ADD || action == Action.SET,
                 "Invalid action $action specified")
         return if (action == Action.REMOVE) {
-            "REVOKE $privilegesAsString ($columnName) ON $tableName FROM $dbUser"
+            "REVOKE $privilegesAsString (${quote(columnName)}) ON $tableName FROM $dbUser"
         } else {
-            "GRANT $privilegesAsString ($columnName) ON $tableName TO $dbUser"
+            "GRANT $privilegesAsString (${quote(columnName)}) ON $tableName TO $dbUser"
         }
     }
 
@@ -502,10 +571,10 @@ class ExternalDatabaseManagementService(
     private fun getDBUser(principalId: String): String {
         val securePrincipal = securePrincipalsManager.getPrincipal(principalId)
         checkState(securePrincipal.principalType == PrincipalType.USER, "Principal must be of type USER")
-        return quote(buildPostgresUsername(securePrincipal))
+        return dbCredentialService.getDbUsername(securePrincipal)
     }
 
-    private fun areValidPermissions(permissions: EnumSet<Permission>): Boolean {
+    private fun areValidPermissions(permissions: Set<Permission>): Boolean {
         if (!(permissions.contains(Permission.OWNER) || permissions.contains(Permission.READ) || permissions.contains(Permission.WRITE))) {
             return false
         } else if (permissions.isEmpty()) {
@@ -514,7 +583,7 @@ class ExternalDatabaseManagementService(
         return true
     }
 
-    private fun getPrivilegesFromPermissions(permissions: EnumSet<Permission>): List<String> {
+    private fun getPrivilegesFromPermissions(permissions: Set<Permission>): List<String> {
         val privileges = mutableListOf<String>()
         if (permissions.contains(Permission.OWNER)) {
             privileges.add(PostgresPrivileges.ALL.toString())
@@ -566,7 +635,7 @@ class ExternalDatabaseManagementService(
             out.close()
 
             //reload config
-            acm.connect(dbName).connection.use { conn ->
+            externalDbManager.connect(dbName).connection.use { conn ->
                 val stmt = conn.createStatement()
                 stmt.executeQuery(getReloadConfigSql())
             }
@@ -591,10 +660,23 @@ class ExternalDatabaseManagementService(
         }
     }
 
+    /**
+     * Moves a table from the [OPENLATTICE_SCHEMA] schema to the [STAGING_SCHEMA] schema
+     */
+    fun promoteStagingTable(organizationId: UUID, tableName: String) {
+        externalDbManager.connectToOrg(organizationId).use { hds ->
+            hds.connection.use { conn ->
+                conn.createStatement().use { stmt ->
+                    stmt.execute(publishStagingTableSql(tableName))
+                }
+            }
+        }
+    }
+
     /*INTERNAL SQL QUERIES*/
     private fun getCurrentTableAndColumnNamesSql(): String {
         return selectExpression + fromExpression + leftJoinColumnsExpression +
-                "WHERE information_schema.tables.table_schema='$PUBLIC_SCHEMA' " +
+                "WHERE information_schema.tables.table_schema=ANY('{$OPENLATTICE_SCHEMA,$STAGING_SCHEMA}') " +
                 "AND table_type='BASE TABLE'"
     }
 
@@ -626,11 +708,12 @@ class ExternalDatabaseManagementService(
         return "SELECT pg_reload_conf()"
     }
 
-    private val selectExpression = "SELECT information_schema.tables.table_name AS name, information_schema.columns.column_name "
+    private val selectExpression = "SELECT oid, information_schema.tables.table_name AS name, information_schema.columns.column_name "
 
     private val fromExpression = "FROM information_schema.tables "
 
-    private val leftJoinColumnsExpression = "LEFT JOIN information_schema.columns ON information_schema.tables.table_name = information_schema.columns.table_name "
+    private val leftJoinColumnsExpression0 = "LEFT JOIN pg_class ON relname = information_schema.tables.table_name "
+    private val leftJoinColumnsExpression = "LEFT JOIN information_schema.columns ON information_schema.tables.table_name = information_schema.columns.table_name $leftJoinColumnsExpression0"
 
     private fun getInsertRecordSql(table: PostgresTableDefinition, columns: String, pkey: String, record: PostgresAuthenticationRecord): String {
         return "INSERT INTO ${table.name} $columns VALUES(${record.buildPostgresRecord()}) " +
@@ -649,16 +732,31 @@ class ExternalDatabaseManagementService(
     }
 
     /*PREDICATES*/
-    private fun idsPredicate(ids: Set<UUID>): Predicate<*, *> {
+    private fun <T> idsPredicate(ids: Set<UUID>): Predicate<UUID, T> {
         return Predicates.`in`(QueryConstants.KEY_ATTRIBUTE_NAME.value(), *ids.toTypedArray())
     }
 
-    private fun belongsToOrganization(orgId: UUID): Predicate<*, *> {
+    private fun belongsToOrganization(orgId: UUID): Predicate<UUID, OrganizationExternalDatabaseTable> {
         return Predicates.equal(ORGANIZATION_ID_INDEX, orgId)
     }
 
-    private fun belongsToTable(tableId: UUID): Predicate<*, *> {
+    private fun belongsToTable(tableId: UUID): Predicate<UUID, OrganizationExternalDatabaseColumn> {
         return Predicates.equal(TABLE_ID_INDEX, tableId)
     }
 
+    private fun publishStagingTableSql(tableName: String): String {
+        return "ALTER TABLE ${quote(tableName)} SET SCHEMA $OPENLATTICE_SCHEMA"
+    }
+
 }
+
+data class TableSchemaInfo(
+        val oid: Int,
+        val columnNames: MutableSet<String>
+)
+
+data class TableInfo(
+        val oid : Int,
+        val tableName: String,
+        val columnName: String
+)

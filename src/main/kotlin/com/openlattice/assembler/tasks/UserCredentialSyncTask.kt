@@ -22,7 +22,6 @@
 package com.openlattice.assembler.tasks
 
 import com.openlattice.assembler.AssemblerDependencies
-import com.openlattice.assembler.PostgresRoles.Companion.buildPostgresUsername
 import com.openlattice.postgres.DataTables
 import com.openlattice.tasks.HazelcastInitializationTask
 import com.openlattice.tasks.PostConstructInitializerTaskDependencies.PostConstructInitializerTask
@@ -45,8 +44,8 @@ class UserCredentialSyncTask : HazelcastInitializationTask<AssemblerDependencies
                 .forEach { user ->
                     dependencies.target.connection.use { conn ->
                         conn.createStatement().use { stmt ->
-                            val username = buildPostgresUsername(user)
-                            val credential = dependencies.dbCredentialService.getOrCreateUserCredentials(username)
+                            val (username, credential) = dependencies.dbCredentialService.getOrCreateUserCredentials( user )
+
                             try {
                                 stmt.execute(
                                         "ALTER USER ${DataTables.quote(username)} WITH ENCRYPTED PASSWORD '$credential'"

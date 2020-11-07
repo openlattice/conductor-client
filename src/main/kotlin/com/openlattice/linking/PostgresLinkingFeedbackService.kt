@@ -9,19 +9,16 @@ import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.linking.mapstores.*
 import com.openlattice.postgres.PostgresTable.LINKING_FEEDBACK
 import com.openlattice.postgres.ResultSetAdapters
-import com.openlattice.postgres.streams.PostgresIterable
-import com.openlattice.postgres.streams.StatementHolder
+import com.openlattice.postgres.streams.BasePostgresIterable
+import com.openlattice.postgres.streams.StatementHolderSupplier
 import com.zaxxer.hikari.HikariDataSource
-import java.sql.ResultSet
 import java.util.*
-import java.util.function.Function
-import java.util.function.Supplier
 
 const val FETCH_SIZE = 100_000
 
 class PostgresLinkingFeedbackService(private val hds: HikariDataSource, hazelcastInstance: HazelcastInstance) {
 
-    private val linkingFeedback = HazelcastMap.LINKING_FEEDBACK.getMap( hazelcastInstance )
+    private val linkingFeedback = HazelcastMap.LINKING_FEEDBACK.getMap(hazelcastInstance)
 
     fun addLinkingFeedback(entityLinkingFeedback: EntityLinkingFeedback) {
         linkingFeedback.set(entityLinkingFeedback.entityPair, entityLinkingFeedback.linked)
@@ -29,20 +26,9 @@ class PostgresLinkingFeedbackService(private val hds: HikariDataSource, hazelcas
 
     fun getLinkingFeedback(): Iterable<EntityLinkingFeedback> {
         // since we are not using an entryprocessor after retriveing all the feedback, it's easier to just query them
-        return PostgresIterable(
-                Supplier<StatementHolder> {
-                    val connection = hds.connection
-                    connection.autoCommit = false
-                    val stmt = connection.prepareStatement(SELECT_ALL_SQL)
-                    stmt.fetchSize = FETCH_SIZE
-                    val rs = stmt.executeQuery()
-
-                    StatementHolder(connection, stmt, rs)
-                },
-                Function<ResultSet, EntityLinkingFeedback> {
-                    ResultSetAdapters.entityLinkingFeedback(it)
-                }
-        )
+        return BasePostgresIterable(StatementHolderSupplier(hds, SELECT_ALL_SQL, FETCH_SIZE, false)) {
+            ResultSetAdapters.entityLinkingFeedback(it)
+        }
     }
 
     fun hasFeedbacks(feedbackType: FeedbackType, entity: EntityDataKey): Boolean {
@@ -66,23 +52,28 @@ class PostgresLinkingFeedbackService(private val hds: HikariDataSource, hazelcas
     private inline fun <R> buildPredicatesForQueryAndRun(
             feedbackType: FeedbackType,
             entity: EntityDataKey,
-            operation: (predicates: Predicate<EntityKeyPair, Boolean>) -> R): R {
+            operation: (predicates: Predicate<EntityKeyPair, Boolean>) -> R
+    ): R {
         return operation(buildPredicatesForQueries(feedbackType, entity))
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun buildPredicatesForQueries(feedbackType: FeedbackType, entity: EntityDataKey): Predicate<EntityKeyPair, Boolean> {
-        val entityPredicate = Predicates.or(
-                Predicates.equal(FIRST_ENTITY_INDEX, entity),
-                Predicates.equal(SECOND_ENTITY_INDEX, entity))
+    fun buildPredicatesForQueries(
+            feedbackType: FeedbackType, entity: EntityDataKey
+    ): Predicate<EntityKeyPair, Boolean> {
+        val entityPredicate = Predicates.or<EntityKeyPair, Boolean>(
+                Predicates.equal<EntityKeyPair, Boolean>(FIRST_ENTITY_INDEX, entity),
+                Predicates.equal<EntityKeyPair, Boolean>(SECOND_ENTITY_INDEX, entity)
+        )
 
-        return Predicates.and(entityPredicate,
+        return Predicates.and(
+                entityPredicate,
                 when (feedbackType) {
                     FeedbackType.Positive -> Predicates.equal(FEEDBACK_INDEX, true)
                     FeedbackType.Negative -> Predicates.equal(FEEDBACK_INDEX, false)
                     FeedbackType.All -> Predicates.alwaysTrue<EntityKeyPair, Boolean>()
                 }
-        ) as Predicate<EntityKeyPair, Boolean>
+        )
 
     }
 
@@ -94,13 +85,14 @@ class PostgresLinkingFeedbackService(private val hds: HikariDataSource, hazelcas
 
     @Suppress("UNCHECKED_CAST")
     fun deleteLinkingFeedback(entitySetId: UUID, entityKeyIds: Optional<Set<UUID>>): Int {
-        val firstEntitySetPredicate = Predicates.equal(FIRST_ENTITY_SET_INDEX, entitySetId)
-        val secondEntitySetPredicate = Predicates.equal(SECOND_ENTITY_SET_INDEX, entitySetId)
+        val firstEntitySetPredicate = Predicates.equal<EntityKeyPair, Boolean>(FIRST_ENTITY_SET_INDEX, entitySetId)
+        val secondEntitySetPredicate = Predicates.equal<EntityKeyPair, Boolean>(SECOND_ENTITY_SET_INDEX, entitySetId)
 
         val firstPredicate = if (entityKeyIds.isPresent) {
             Predicates.and(
                     firstEntitySetPredicate,
-                    LinkingFeedbackPredicateBuilder.inUuidArray(entityKeyIds.get(), FIRST_ENTITY_KEY_INDEX))
+                    LinkingFeedbackPredicateBuilder.inUuidArray(entityKeyIds.get(), FIRST_ENTITY_KEY_INDEX)
+            )
         } else {
             firstEntitySetPredicate
         }
@@ -108,14 +100,14 @@ class PostgresLinkingFeedbackService(private val hds: HikariDataSource, hazelcas
         val secondPredicate = if (entityKeyIds.isPresent) {
             Predicates.and(
                     secondEntitySetPredicate,
-                    LinkingFeedbackPredicateBuilder.inUuidArray(entityKeyIds.get(), SECOND_ENTITY_KEY_INDEX))
+                    LinkingFeedbackPredicateBuilder.inUuidArray(entityKeyIds.get(), SECOND_ENTITY_KEY_INDEX)
+            )
         } else {
             secondEntitySetPredicate
         }
 
         val feedbackCount = linkingFeedback.count()
-        linkingFeedback.removeAll(
-                Predicates.or(firstPredicate, secondPredicate) as Predicate<EntityKeyPair, Boolean>)
+        linkingFeedback.removeAll(Predicates.or(firstPredicate, secondPredicate))
         return feedbackCount - linkingFeedback.count()
     }
 

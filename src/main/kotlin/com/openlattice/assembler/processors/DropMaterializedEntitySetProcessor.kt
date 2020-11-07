@@ -21,14 +21,14 @@
 package com.openlattice.assembler.processors
 
 import com.hazelcast.core.Offloadable
-import com.hazelcast.spi.ExecutionService
+import com.hazelcast.spi.impl.executionservice.ExecutionService
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor
 import com.openlattice.assembler.AssemblerConnectionManager
 import com.openlattice.assembler.AssemblerConnectionManagerDependent
 import com.openlattice.assembler.EntitySetAssemblyKey
 import com.openlattice.assembler.MaterializedEntitySet
 
-
+@Deprecated("Use Transporter instead")
 class DropMaterializedEntitySetProcessor
     : AbstractRhizomeEntryProcessor<EntitySetAssemblyKey, MaterializedEntitySet, Void?>(),
         AssemblerConnectionManagerDependent<DropMaterializedEntitySetProcessor>,

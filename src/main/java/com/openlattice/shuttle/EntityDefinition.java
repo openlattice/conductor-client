@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
@@ -32,10 +33,9 @@ import com.openlattice.data.UpdateType;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.transformations.Transformation;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
@@ -45,11 +45,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonInclude( value = Include.NON_EMPTY )
+@SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "External representation only" )
 public class EntityDefinition implements Serializable {
 
     private static final long serialVersionUID = -3565689091187367622L;
-
-    private static final Logger logger = LoggerFactory.getLogger( EntityDefinition.class );
 
     protected final Optional<List<Condition>>                                        condition;
     protected final SerializableFunction<Map<String, Object>, ?>                valueMapper;
@@ -61,29 +60,33 @@ public class EntityDefinition implements Serializable {
     protected final String                                                      alias;
     protected final Optional<SerializableFunction<Map<String, Object>, String>> generator;
     protected final UpdateType                                                  updateType;
+    protected final boolean                                                     associateOnly;
 
     @JsonCreator
     public EntityDefinition(
             @JsonProperty( SerializationConstants.ID_FIELD ) Optional<UUID> id,
-            @JsonProperty( SerializationConstants.FQN ) String entityTypeFqn,
+            @JsonProperty( SerializationConstants.FQN ) Optional<String> entityTypeFqn,
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
-            @JsonProperty( SerializationConstants.KEY_FIELD ) List<FullQualifiedName> key,
+            @JsonProperty( SerializationConstants.KEY_FIELD ) Optional<List<FullQualifiedName>> key,
             @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( SerializationConstants.CONDITIONS ) Optional<List<Condition>> condition,
             @JsonProperty( SerializationConstants.GENERATOR ) Optional<SerializableFunction<Map<String, Object>, String>> generator,
-            @JsonProperty( SerializationConstants.UPDATE_TYPE ) Optional<UpdateType> updateType ) {
+            @JsonProperty( SerializationConstants.UPDATE_TYPE ) Optional<UpdateType> updateType,
+            @JsonProperty( SerializationConstants.ASSOCIATE_ONLY ) Optional<Boolean> associateOnly
+    ) {
 
         this.id = id;
-        this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
+        this.entityTypeFqn = entityTypeFqn.map( FullQualifiedName::new ).orElse( null );
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
-        this.key = key;
+        this.key = key.orElse( null );
         this.alias = alias == null ? entitySetName : alias;
         this.condition = condition;
         this.updateType = updateType.orElse( UpdateType.Merge );
         this.generator = generator;
+        this.associateOnly = associateOnly.orElse( false );
 
         if ( condition.isPresent() ) {
             final List<Condition> internalConditions;
@@ -114,6 +117,7 @@ public class EntityDefinition implements Serializable {
         this.condition = Optional.empty();
         this.valueMapper = null;
         this.updateType = updateType;
+        this.associateOnly = false;
     }
 
     private EntityDefinition( EntityDefinition.Builder builder ) {
@@ -127,6 +131,7 @@ public class EntityDefinition implements Serializable {
         this.alias = builder.alias;
         this.generator = Optional.ofNullable( builder.entityIdGenerator );
         this.updateType = builder.updateType;
+        this.associateOnly = builder.associateOnly;
     }
 
     @JsonProperty( SerializationConstants.ID_FIELD )
@@ -142,6 +147,11 @@ public class EntityDefinition implements Serializable {
     @JsonProperty( SerializationConstants.FQN )
     public String getFqn() {
         return this.entityTypeFqn == null ? null : this.entityTypeFqn.getFullQualifiedNameAsString();
+    }
+
+    @JsonProperty( SerializationConstants.ASSOCIATE_ONLY )
+    public boolean getAssociateOnly() {
+        return associateOnly;
     }
 
     @JsonProperty( SerializationConstants.ENTITY_SET_NAME )
@@ -237,6 +247,7 @@ public class EntityDefinition implements Serializable {
         private String                                            alias;
         private SerializableFunction<Map<String, Object>, String> entityIdGenerator;
         private UpdateType                                        updateType;
+        private boolean                                           associateOnly;
 
         public Builder(
                 String alias,
@@ -284,6 +295,11 @@ public class EntityDefinition implements Serializable {
         public Builder entityIdGenerator(
                 SerializableFunction<Map<String, Object>, String> generator ) {
             this.entityIdGenerator = generator;
+            return this;
+        }
+
+        public Builder associateOnly( boolean associateOnly ) {
+            this.associateOnly = associateOnly;
             return this;
         }
 

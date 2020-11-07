@@ -2,20 +2,18 @@ package com.openlattice.search
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.annotation.Timed
-import com.dataloom.streams.StreamUtil
-import com.google.common.base.Stopwatch
 import com.google.common.collect.*
 import com.google.common.eventbus.EventBus
 import com.google.common.eventbus.Subscribe
 import com.openlattice.IdConstants
 import com.openlattice.apps.App
-import com.openlattice.apps.AppType
 import com.openlattice.authorization.*
 import com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION
 import com.openlattice.authorization.securable.SecurableObjectType
 import com.openlattice.conductor.rpc.ConductorElasticsearchApi
+import com.openlattice.data.DataEdgeKey
 import com.openlattice.data.DeleteType
-import com.openlattice.data.EntityKeyIdService
+import com.openlattice.data.EntityDataKey
 import com.openlattice.data.events.EntitiesDeletedEvent
 import com.openlattice.data.events.EntitiesUpsertedEvent
 import com.openlattice.data.requests.NeighborEntityDetails
@@ -31,6 +29,8 @@ import com.openlattice.edm.events.*
 import com.openlattice.edm.type.AssociationType
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
+import com.openlattice.graph.NeighborPage
+import com.openlattice.graph.PagedNeighborRequest
 import com.openlattice.graph.core.GraphService
 import com.openlattice.graph.edge.Edge
 import com.openlattice.organizations.Organization
@@ -44,9 +44,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.OffsetDateTime
 import java.util.*
-import java.util.concurrent.TimeUnit
 import java.util.stream.Collectors
-import javax.inject.Inject
 import kotlin.streams.toList
 
 /**
@@ -54,7 +52,17 @@ import kotlin.streams.toList
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Service
-class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
+class SearchService(
+        val eventBus: EventBus,
+        val metricRegistry: MetricRegistry,
+        val authorizations: AuthorizationManager,
+        val elasticsearchApi: ConductorElasticsearchApi,
+        val dataModelService: EdmManager,
+        val entitySetService: EntitySetManager,
+        val graphService: GraphService,
+        val dataManager: EntityDatastore,
+        val indexingMetadataManager: IndexingMetadataManager
+) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(SearchService::class.java)
@@ -64,36 +72,6 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
             return UUID.fromString(entity.getValue(EdmConstants.ID_FQN).first().toString())
         }
     }
-
-    @Inject
-    private lateinit var eventBus: EventBus
-
-    @Inject
-    private lateinit var authorizations: AuthorizationManager
-
-    @Inject
-    private lateinit var securableObjectTypes: SecurableObjectResolveTypeService
-
-    @Inject
-    private lateinit var elasticsearchApi: ConductorElasticsearchApi
-
-    @Inject
-    private lateinit var dataModelService: EdmManager
-
-    @Inject
-    private lateinit var entitySetService: EntitySetManager
-
-    @Inject
-    private lateinit var graphService: GraphService
-
-    @Inject
-    private lateinit var dataManager: EntityDatastore
-
-    @Inject
-    private lateinit var entityKeyService: EntityKeyIdService
-
-    @Inject
-    private lateinit var indexingMetadataManager: IndexingMetadataManager
 
     init {
         eventBus.register(this)
@@ -121,26 +99,39 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
             optionalQuery: Optional<String>,
             optionalEntityType: Optional<UUID>,
             optionalPropertyTypes: Optional<Set<UUID>>,
+            optionalOrganizationId: Optional<UUID>,
+            excludePropertyTypes: Boolean,
             start: Int,
             maxHits: Int
     ): SearchResult {
 
-        val authorizedEntitySetIds = authorizations
+        var authorizedEntitySetIds = authorizations
                 .getAuthorizedObjectsOfType(
                         Principals.getCurrentPrincipals(),
                         SecurableObjectType.EntitySet,
                         READ_PERMISSION
                 ).collect(Collectors.toSet())
+
+        if (optionalOrganizationId.isPresent) {
+            authorizedEntitySetIds = entitySetService.filterEntitySetsForOrganization(
+                    optionalOrganizationId.get(),
+                    authorizedEntitySetIds.map { it.first() }
+            ).map { AclKey(it) }.toSet()
+        }
+
         return if (authorizedEntitySetIds.size == 0) {
             SearchResult(0, arrayListOf())
-        } else elasticsearchApi.executeEntitySetMetadataSearch(
-                optionalQuery,
-                optionalEntityType,
-                optionalPropertyTypes,
-                authorizedEntitySetIds,
-                start,
-                maxHits
-        )
+        } else {
+            elasticsearchApi.executeEntitySetMetadataSearch(
+                    optionalQuery,
+                    optionalEntityType,
+                    optionalPropertyTypes,
+                    excludePropertyTypes,
+                    authorizedEntitySetIds,
+                    start,
+                    maxHits
+            )
+        }
 
     }
 
@@ -151,20 +142,22 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
             maxHits: Int
     ): SearchResult {
 
-        val authorizedEntitySetCollectionIds = authorizations!!
-                .getAuthorizedObjectsOfType(
-                        Principals.getCurrentPrincipals(),
-                        SecurableObjectType.EntitySetCollection,
-                        READ_PERMISSION
-                ).collect(Collectors.toSet())
+        val authorizedEntitySetCollectionIds = authorizations.getAuthorizedObjectsOfType(
+                Principals.getCurrentPrincipals(),
+                SecurableObjectType.EntitySetCollection,
+                READ_PERMISSION
+        ).collect(Collectors.toSet())
+
         return if (authorizedEntitySetCollectionIds.size == 0) {
             SearchResult(0, Lists.newArrayList())
-        } else elasticsearchApi!!.executeEntitySetCollectionSearch(
-                searchTerm,
-                authorizedEntitySetCollectionIds,
-                start,
-                maxHits
-        )
+        } else {
+            elasticsearchApi.executeEntitySetCollectionSearch(
+                    searchTerm,
+                    authorizedEntitySetCollectionIds,
+                    start,
+                    maxHits
+            )
+        }
 
     }
 
@@ -174,8 +167,8 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
             authorizedPropertyTypesByEntitySet: Map<UUID, Map<UUID, PropertyType>>
     ): DataSearchResult {
 
-        val entitySetIds = Sets.newHashSet(Arrays.asList(*searchConstraints.entitySetIds))
-        val entitySetsById = entitySetService!!.getEntitySetsAsMap(entitySetIds)
+        val entitySetIds = searchConstraints.entitySetIds.toSet()
+        val entitySetsById = entitySetService.getEntitySetsAsMap(entitySetIds)
         val linkingEntitySets = entitySetsById.values
                 .filter { it.isLinking }
                 .associate { it.id to DelegatedUUIDSet.wrap(it.linkedEntitySets) }
@@ -188,11 +181,11 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
             return DataSearchResult(0, Lists.newArrayList())
         }
 
-        val entityTypesByEntitySet = entitySetService!!
+        val entityTypesByEntitySet = entitySetService
                 .getEntitySetsAsMap(searchConstraints.entitySetIds.toSet())
                 .mapValues { it.value.entityTypeId }
 
-        val result = elasticsearchApi!!.executeSearch(
+        val result = elasticsearchApi.executeSearch(
                 searchConstraints,
                 entityTypesByEntitySet,
                 authorizedPropertiesByEntitySet,
@@ -201,7 +194,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
 
         val entityKeyIdsByEntitySetId = HashMultimap.create<UUID, UUID>()
         result.entityDataKeys
-                .forEach { edk -> entityKeyIdsByEntitySetId.put(edk.getEntitySetId(), edk.getEntityKeyId()) }
+                .forEach { edk -> entityKeyIdsByEntitySetId.put(edk.entitySetId, edk.entityKeyId) }
 
         //TODO: Properly parallelize this at some point
         val entitiesById = entityKeyIdsByEntitySetId.keySet()
@@ -227,21 +220,21 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     @Timed
     @Subscribe
     fun createEntitySet(event: EntitySetCreatedEvent) {
-        val entityType = dataModelService!!.getEntityType(event.entitySet.entityTypeId)
-        elasticsearchApi!!.saveEntitySetToElasticsearch(entityType, event.entitySet, event.propertyTypes)
+        val entityType = dataModelService.getEntityType(event.entitySet.entityTypeId)
+        elasticsearchApi.saveEntitySetToElasticsearch(entityType, event.entitySet, event.propertyTypes)
     }
 
     @Timed
     @Subscribe
     fun deleteEntitySet(event: EntitySetDeletedEvent) {
-        elasticsearchApi!!.deleteEntitySet(event.entitySetId, event.entityTypeId)
+        elasticsearchApi.deleteEntitySet(event.entitySetId, event.entityTypeId)
     }
 
     @Subscribe
     fun deleteEntities(event: EntitiesDeletedEvent) {
         val deleteEntitiesContext = deleteEntitiesTimer.time()
-        val entityTypeId = entitySetService!!.getEntityTypeByEntitySetId(event.entitySetId).id
-        val entitiesDeleted = elasticsearchApi!!.deleteEntityDataBulk(entityTypeId, event.entityKeyIds)
+        val entityTypeId = entitySetService.getEntityTypeByEntitySetId(event.entitySetId).id
+        val entitiesDeleted = elasticsearchApi.deleteEntityDataBulk(entityTypeId, event.entityKeyIds)
         deleteEntitiesContext.stop()
 
         if (entitiesDeleted) {
@@ -251,7 +244,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
             // - let background task take soft deletes
             if (event.deleteType === DeleteType.Hard) {
                 val markAsIndexedContext = markAsIndexedTimer.time()
-                indexingMetadataManager!!.markAsUnIndexed(mapOf(event.entitySetId to event.entityKeyIds))
+                indexingMetadataManager.markAsUnIndexed(mapOf(event.entitySetId to event.entityKeyIds))
                 markAsIndexedContext.stop()
             }
         }
@@ -260,8 +253,8 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     @Subscribe
     fun entitySetDataCleared(event: EntitySetDataDeletedEvent) {
         val deleteEntitySetDataContext = deleteEntitySetDataTimer.time()
-        val entityTypeId = entitySetService!!.getEntityTypeByEntitySetId(event.entitySetId).id
-        val entitySetDataDeleted = elasticsearchApi!!.clearEntitySetData(event.entitySetId, entityTypeId)
+        val entityTypeId = entitySetService.getEntityTypeByEntitySetId(event.entitySetId).id
+        val entitySetDataDeleted = elasticsearchApi.clearEntitySetData(event.entitySetId, entityTypeId)
         deleteEntitySetDataContext.stop()
 
         if (entitySetDataDeleted) {
@@ -271,7 +264,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
             // - let background task take soft deletes (would be too much overhead for clear calls)
             if (event.deleteType === DeleteType.Hard) {
                 val markAsIndexedContext = markAsIndexedTimer.time()
-                indexingMetadataManager!!.markAsUnIndexed(event.entitySetId)
+                indexingMetadataManager.markAsUnIndexed(event.entitySetId)
                 markAsIndexedContext.stop()
             }
         }
@@ -280,20 +273,20 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     @Timed
     @Subscribe
     fun createOrganization(event: OrganizationCreatedEvent) {
-        elasticsearchApi!!.createOrganization(event.organization)
+        elasticsearchApi.createOrganization(event.organization)
     }
 
     @Timed
     fun executeOrganizationKeywordSearch(searchTerm: SearchTerm): SearchResult {
-        val authorizedOrganizationIds = authorizations!!
-                .getAuthorizedObjectsOfType(
-                        Principals.getCurrentPrincipals(),
-                        SecurableObjectType.Organization,
-                        READ_PERMISSION
-                ).collect(Collectors.toSet())
+        val authorizedOrganizationIds = authorizations.getAuthorizedObjectsOfType(
+                Principals.getCurrentPrincipals(),
+                SecurableObjectType.Organization,
+                READ_PERMISSION
+        ).collect(Collectors.toSet())
+
         return if (authorizedOrganizationIds.size == 0) {
             SearchResult(0, Lists.newArrayList())
-        } else elasticsearchApi!!.executeOrganizationSearch(
+        } else elasticsearchApi.executeOrganizationSearch(
                 searchTerm.searchTerm,
                 authorizedOrganizationIds,
                 searchTerm.start,
@@ -305,7 +298,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     @Timed
     @Subscribe
     fun updateOrganization(event: OrganizationUpdatedEvent) {
-        elasticsearchApi!!.updateOrganization(
+        elasticsearchApi.updateOrganization(
                 event.id,
                 event.optionalTitle,
                 event.optionalDescription
@@ -314,7 +307,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
 
     @Subscribe
     fun deleteOrganization(event: OrganizationDeletedEvent) {
-        elasticsearchApi!!
+        elasticsearchApi
                 .deleteSecurableObjectFromElasticsearch(SecurableObjectType.Organization, event.organizationId)
     }
 
@@ -325,8 +318,8 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     @Subscribe
     fun indexEntities(event: EntitiesUpsertedEvent) {
         val indexEntitiesContext = indexEntitiesTimer.time()
-        val entityTypeId = entitySetService!!.getEntityTypeByEntitySetId(event.entitySetId).id
-        val entitiesIndexed = elasticsearchApi!!
+        val entityTypeId = entitySetService.getEntityTypeByEntitySetId(event.entitySetId).id
+        val entitiesIndexed = elasticsearchApi
                 .createBulkEntityData(entityTypeId, event.entitySetId, event.entities)
         indexEntitiesContext.stop()
 
@@ -344,12 +337,12 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
 
     @Subscribe
     fun updateEntitySetMetadata(event: EntitySetMetadataUpdatedEvent) {
-        elasticsearchApi!!.updateEntitySetMetadata(event.entitySet)
+        elasticsearchApi.updateEntitySetMetadata(event.entitySet)
     }
 
     @Subscribe
     fun updatePropertyTypesInEntitySet(event: PropertyTypesInEntitySetUpdatedEvent) {
-        elasticsearchApi!!.updatePropertyTypesInEntitySet(event.entitySetId, event.updatedPropertyTypes)
+        elasticsearchApi.updatePropertyTypesInEntitySet(event.entitySetId, event.updatedPropertyTypes)
     }
 
     /**
@@ -357,15 +350,15 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
      */
     @Subscribe
     fun addPropertyTypesToEntityType(event: PropertyTypesAddedToEntityTypeEvent) {
-        elasticsearchApi!!.addPropertyTypesToEntityType(event.entityType, event.newPropertyTypes)
+        elasticsearchApi.addPropertyTypesToEntityType(event.entityType, event.newPropertyTypes)
     }
 
     @Subscribe
     fun createEntityType(event: EntityTypeCreatedEvent) {
         val entityType = event.entityType
         val propertyTypes = Lists
-                .newArrayList(dataModelService!!.getPropertyTypes(entityType.properties))
-        elasticsearchApi!!.saveEntityTypeToElasticsearch(entityType, propertyTypes)
+                .newArrayList(dataModelService.getPropertyTypes(entityType.properties))
+        elasticsearchApi.saveEntityTypeToElasticsearch(entityType, propertyTypes)
     }
 
     @Subscribe
@@ -373,55 +366,49 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
         val associationType = event.associationType
         val propertyTypes = Lists
                 .newArrayList(
-                        dataModelService!!
+                        dataModelService
                                 .getPropertyTypes(associationType.associationEntityType.properties)
                 )
-        elasticsearchApi!!.saveAssociationTypeToElasticsearch(associationType, propertyTypes)
+        elasticsearchApi.saveAssociationTypeToElasticsearch(associationType, propertyTypes)
     }
 
     @Subscribe
     fun createPropertyType(event: PropertyTypeCreatedEvent) {
         val propertyType = event.propertyType
-        elasticsearchApi!!
+        elasticsearchApi
                 .saveSecurableObjectToElasticsearch(SecurableObjectType.PropertyTypeInEntitySet, propertyType)
     }
 
     @Subscribe
     fun createApp(event: AppCreatedEvent) {
         val app = event.app
-        elasticsearchApi!!.saveSecurableObjectToElasticsearch(SecurableObjectType.App, app)
-    }
-
-    @Subscribe
-    fun createAppType(event: AppTypeCreatedEvent) {
-        val appType = event.appType
-        elasticsearchApi!!.saveSecurableObjectToElasticsearch(SecurableObjectType.AppType, appType)
+        elasticsearchApi.saveSecurableObjectToElasticsearch(SecurableObjectType.App, app)
     }
 
     @Subscribe
     fun deleteEntityType(event: EntityTypeDeletedEvent) {
         val entityTypeId = event.entityTypeId
-        elasticsearchApi!!.deleteSecurableObjectFromElasticsearch(SecurableObjectType.EntityType, entityTypeId)
+        elasticsearchApi.deleteSecurableObjectFromElasticsearch(SecurableObjectType.EntityType, entityTypeId)
     }
 
     @Subscribe
     fun deleteAssociationType(event: AssociationTypeDeletedEvent) {
         val associationTypeId = event.associationTypeId
-        elasticsearchApi!!
+        elasticsearchApi
                 .deleteSecurableObjectFromElasticsearch(SecurableObjectType.AssociationType, associationTypeId)
     }
 
     @Subscribe
     fun createEntityTypeCollection(event: EntityTypeCollectionCreatedEvent) {
         val entityTypeCollection = event.entityTypeCollection
-        elasticsearchApi!!
+        elasticsearchApi
                 .saveSecurableObjectToElasticsearch(SecurableObjectType.EntityTypeCollection, entityTypeCollection)
     }
 
     @Subscribe
     fun deleteEntityTypeCollection(event: EntityTypeCollectionDeletedEvent) {
         val entityTypeCollectionId = event.entityTypeCollectionId
-        elasticsearchApi!!
+        elasticsearchApi
                 .deleteSecurableObjectFromElasticsearch(
                         SecurableObjectType.EntityTypeCollection,
                         entityTypeCollectionId
@@ -431,14 +418,14 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     @Subscribe
     fun createEntitySetCollection(event: EntitySetCollectionCreatedEvent) {
         val entitySetCollection = event.entitySetCollection
-        elasticsearchApi!!
+        elasticsearchApi
                 .saveSecurableObjectToElasticsearch(SecurableObjectType.EntitySetCollection, entitySetCollection)
     }
 
     @Subscribe
     fun deleteEntitySetCollection(event: EntitySetCollectionDeletedEvent) {
         val entitySetCollectionId = event.entitySetCollectionId
-        elasticsearchApi!!
+        elasticsearchApi
                 .deleteSecurableObjectFromElasticsearch(
                         SecurableObjectType.EntitySetCollection,
                         entitySetCollectionId
@@ -453,34 +440,28 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     @Subscribe
     fun deletePropertyType(event: PropertyTypeDeletedEvent) {
         val propertyTypeId = event.propertyTypeId
-        elasticsearchApi!!
+        elasticsearchApi
                 .deleteSecurableObjectFromElasticsearch(SecurableObjectType.PropertyTypeInEntitySet, propertyTypeId)
     }
 
     @Subscribe
     fun deleteApp(event: AppDeletedEvent) {
         val appId = event.appId
-        elasticsearchApi!!.deleteSecurableObjectFromElasticsearch(SecurableObjectType.App, appId)
-    }
-
-    @Subscribe
-    fun deleteAppType(event: AppTypeDeletedEvent) {
-        val appTypeId = event.appTypeId
-        elasticsearchApi!!.deleteSecurableObjectFromElasticsearch(SecurableObjectType.AppType, appTypeId)
+        elasticsearchApi.deleteSecurableObjectFromElasticsearch(SecurableObjectType.App, appId)
     }
 
     fun executeEntityTypeSearch(searchTerm: String, start: Int, maxHits: Int): SearchResult {
-        return elasticsearchApi!!
+        return elasticsearchApi
                 .executeSecurableObjectSearch(SecurableObjectType.EntityType, searchTerm, start, maxHits)
     }
 
     fun executeAssociationTypeSearch(searchTerm: String, start: Int, maxHits: Int): SearchResult {
-        return elasticsearchApi!!
+        return elasticsearchApi
                 .executeSecurableObjectSearch(SecurableObjectType.AssociationType, searchTerm, start, maxHits)
     }
 
     fun executePropertyTypeSearch(searchTerm: String, start: Int, maxHits: Int): SearchResult {
-        return elasticsearchApi!!.executeSecurableObjectSearch(
+        return elasticsearchApi.executeSecurableObjectSearch(
                 SecurableObjectType.PropertyTypeInEntitySet,
                 searchTerm,
                 start,
@@ -489,11 +470,11 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     }
 
     fun executeAppSearch(searchTerm: String, start: Int, maxHits: Int): SearchResult {
-        return elasticsearchApi!!.executeSecurableObjectSearch(SecurableObjectType.App, searchTerm, start, maxHits)
+        return elasticsearchApi.executeSecurableObjectSearch(SecurableObjectType.App, searchTerm, start, maxHits)
     }
 
     fun executeEntityTypeCollectionSearch(searchTerm: String, start: Int, maxHits: Int): SearchResult {
-        return elasticsearchApi!!.executeSecurableObjectSearch(
+        return elasticsearchApi.executeSecurableObjectSearch(
                 SecurableObjectType.EntityTypeCollection,
                 searchTerm,
                 start,
@@ -502,12 +483,12 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     }
 
     fun executeFQNEntityTypeSearch(namespace: String, name: String, start: Int, maxHits: Int): SearchResult {
-        return elasticsearchApi!!
+        return elasticsearchApi
                 .executeSecurableObjectFQNSearch(SecurableObjectType.EntityType, namespace, name, start, maxHits)
     }
 
     fun executeFQNPropertyTypeSearch(namespace: String, name: String, start: Int, maxHits: Int): SearchResult {
-        return elasticsearchApi!!.executeSecurableObjectFQNSearch(
+        return elasticsearchApi.executeSecurableObjectFQNSearch(
                 SecurableObjectType.PropertyTypeInEntitySet,
                 namespace,
                 name,
@@ -516,115 +497,75 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
         )
     }
 
-    @Timed
-    fun executeEntityNeighborSearch(
+    private fun getAuthorizedFilterEntitySetOptions(
             entitySetIds: Set<UUID>,
             filter: EntityNeighborsFilter,
             principals: Set<Principal>
-    ): Map<UUID, List<NeighborEntityDetails>> {
-        val sw1 = Stopwatch.createStarted()
-        val sw2 = Stopwatch.createStarted()
+    ): Pair<EntityNeighborsFilter, Map<UUID, Map<UUID, PropertyType>>> {
 
-        logger.info("Starting Entity Neighbor Search...")
-        if (filter.associationEntitySetIds.isPresent && filter.associationEntitySetIds.get().isEmpty()) {
-            logger.info("Missing association entity set ids.. returning empty result")
-            return ImmutableMap.of()
+        val srcEntitySetIds = mutableSetOf<UUID>()
+        val dstEntitySetIds = mutableSetOf<UUID>()
+        val associationEntitySetIds = mutableSetOf<UUID>()
+
+        graphService.getNeighborEntitySets(entitySetIds).forEach { neighborSet ->
+            srcEntitySetIds.add(neighborSet.srcEntitySetId)
+            dstEntitySetIds.add(neighborSet.dstEntitySetId)
+            associationEntitySetIds.add(neighborSet.edgeEntitySetId)
         }
-
-        val linkingEntitySets = entitySetService
-                .getEntitySetsAsMap(entitySetIds)
-                .values
-                .filter { !it.isLinking }
-
-        var entityKeyIdsByLinkingId: Map<UUID, Set<UUID>> = ImmutableMap.of()
-
-        val entityKeyIds = Sets.newHashSet(filter.entityKeyIds)
-        val allBaseEntitySetIds = Sets.newHashSet(entitySetIds)
-
-        if (linkingEntitySets.isNotEmpty()) {
-            val normalEntitySetIds = linkingEntitySets.flatMap { it.linkedEntitySets }.toSet()
-
-            entityKeyIdsByLinkingId = getEntityKeyIdsByLinkingIds(entityKeyIds, normalEntitySetIds)
-            entityKeyIdsByLinkingId.values.forEach { entityKeyIds.addAll(it) }
-            entityKeyIds.removeAll(entityKeyIdsByLinkingId.keys) // remove linking ids
-
-            //TODO: This like an odd spot to place this general logic.
-            // normal entity sets within 1 linking entity set are only authorized if all of them is authorized
-            val authorizedNormalEntitySetIds = linkingEntitySets
-                    .map { it.linkedEntitySets }
-                    .filter { esIds ->
-                        esIds.all { esId ->
-                            authorizations.checkIfHasPermissions(AclKey(esId), principals, READ_PERMISSION)
-                        }
-                    }.flatten().toSet()
-
-            allBaseEntitySetIds.addAll(authorizedNormalEntitySetIds)
-        }
-
-        val edges = Lists.newArrayList<Edge>()
-        val allEntitySetIds = Sets.newHashSet<UUID>()
-        val authorizedEdgeESIdsToVertexESIds = Maps.newHashMap<UUID, MutableSet<UUID>>()
-        val entitySetIdToEntityKeyId = HashMultimap.create<UUID, UUID>()
-        val entitySetsIdsToAuthorizedProps = mutableMapOf<UUID, MutableMap<UUID, PropertyType>>()
-
-        graphService!!.getEdgesAndNeighborsForVerticesBulk(
-                allBaseEntitySetIds,
-                EntityNeighborsFilter(
-                        entityKeyIds,
-                        filter.srcEntitySetIds,
-                        filter.dstEntitySetIds,
-                        filter.associationEntitySetIds
-                )
-        ).forEach { edge ->
-            edges.add(edge)
-            allEntitySetIds.add(edge.getEdge().getEntitySetId())
-            allEntitySetIds.add(
-                    if (entityKeyIds.contains(edge.getSrc().getEntityKeyId()))
-                        edge.getDst().getEntitySetId()
-                    else
-                        edge.getSrc().getEntitySetId()
-            )
-        }
-        logger.info(
-                "Get edges and neighbors for vertices query for {} ids finished in {} ms",
-                filter.entityKeyIds.size,
-                sw1.elapsed(TimeUnit.MILLISECONDS)
-        )
-        sw1.reset().start()
 
         val authorizedEntitySetIds = authorizations
                 .accessChecksForPrincipals(
-                        allEntitySetIds.map { esId -> AccessCheck(AclKey(esId), READ_PERMISSION) }.toSet(),
+                        (srcEntitySetIds + dstEntitySetIds + associationEntitySetIds).map { esId ->
+                            AccessCheck(AclKey(esId), READ_PERMISSION)
+                        }.toSet(),
                         principals
                 )
                 .filter { auth -> auth.permissions.getValue(Permission.READ) }
                 .map { auth -> auth.aclKey.first() }
                 .collect(Collectors.toSet())
 
-        val entitySetsById = entitySetService!!.getEntitySetsAsMap(authorizedEntitySetIds)
+        val authorizedPropertyTypesByEntitySet = getAuthorizedPropertyTypesOfEntitySets(authorizedEntitySetIds, principals)
 
-        val entityTypesById = dataModelService
-                .getEntityTypesAsMap(entitySetsById.values.map { entitySet ->
-                    entitySetsIdsToAuthorizedProps[entitySet.id] = mutableMapOf()
-                    authorizedEdgeESIdsToVertexESIds[entitySet.id] = mutableSetOf()
-                    entitySet.entityTypeId
-                }.toSet())
+        val srcFilteredEntitySetIds = filter.srcEntitySetIds.orElse(srcEntitySetIds)
+                .filter { srcEntitySetIds.contains(it) && authorizedPropertyTypesByEntitySet.contains(it) }.toSet()
+        val dstFilteredEntitySetIds = filter.dstEntitySetIds.orElse(dstEntitySetIds)
+                .filter { dstEntitySetIds.contains(it) && authorizedPropertyTypesByEntitySet.contains(it) }.toSet()
+        val associationFilteredEntitySetIds = filter.associationEntitySetIds.orElse(associationEntitySetIds)
+                .filter { associationEntitySetIds.contains(it) && authorizedPropertyTypesByEntitySet.contains(it) }.toSet()
+
+        return EntityNeighborsFilter(
+                filter.entityKeyIds,
+                Optional.of(srcFilteredEntitySetIds),
+                Optional.of(dstFilteredEntitySetIds),
+                Optional.of(associationFilteredEntitySetIds)
+        ) to authorizedPropertyTypesByEntitySet
+    }
+
+    private fun getAuthorizedPropertyTypesOfEntitySets(
+            entitySetIds: Set<UUID>,
+            principals: Set<Principal>
+    ): Map<UUID, Map<UUID, PropertyType>> {
+
+        val entityTypeIdsByEntitySet = entitySetService.getEntityTypeIdsByEntitySetIds(entitySetIds)
+        val entityTypesById = dataModelService.getEntityTypesAsMap(entityTypeIdsByEntitySet.values.toSet())
 
         val propertyTypesById = dataModelService
                 .getPropertyTypesAsMap(entityTypesById.values.flatMap { it.properties }.toSet())
 
-        val accessChecks = entitySetsById.values
-                .flatMap { entitySet ->
+        val accessChecks = entityTypeIdsByEntitySet.entries
+                .flatMap { (entitySetId, entityTypeId) ->
                     entityTypesById
-                            .getValue(entitySet.entityTypeId)
+                            .getValue(entityTypeId)
                             .properties
                             .map { propertyTypeId ->
                                 AccessCheck(
-                                        AclKey(entitySet.getId(), propertyTypeId),
+                                        AclKey(entitySetId, propertyTypeId),
                                         READ_PERMISSION
                                 )
                             }
                 }.toSet()
+
+        val entitySetsIdsToAuthorizedProps = mutableMapOf<UUID, MutableMap<UUID, PropertyType>>()
 
         authorizations
                 .accessChecksForPrincipals(accessChecks, principals)
@@ -633,86 +574,168 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
                         val esId = auth.aclKey[0]
                         val propertyTypeId = auth.aclKey[1]
                         entitySetsIdsToAuthorizedProps
-                                .getValue(esId)[propertyTypeId] = propertyTypesById.getValue(propertyTypeId)
+                                .getOrPut(esId) { mutableMapOf() }[propertyTypeId] = propertyTypesById.getValue(propertyTypeId)
                     }
                 }
 
-        logger.info(
-                "Access checks for entity sets and their properties finished in {} ms",
-                sw1.elapsed(TimeUnit.MILLISECONDS)
-        )
+        return entitySetsIdsToAuthorizedProps
+    }
 
-        sw1.reset().start()
+    private fun getLinkingEntitySets(entitySetIds: Set<UUID>): Map<UUID, EntitySet> {
+        return entitySetService
+                .getEntitySetsAsMap(entitySetIds)
+                .filter { !it.value.isLinking }
+    }
+
+    private fun getBaseEntitySetIdsOfLinkingEntitySets(
+            linkingEntitySets: Map<UUID, EntitySet>,
+            principals: Set<Principal>
+    ): Set<UUID> {
+        if (linkingEntitySets.isEmpty()) {
+            return mutableSetOf()
+        }
+
+        return linkingEntitySets
+                .values
+                .map { it.linkedEntitySets }
+                .filter { esIds ->
+                    esIds.all { esId ->
+                        authorizations.checkIfHasPermissions(AclKey(esId), principals, READ_PERMISSION)
+                    }
+                }.flatten().toSet()
+
+    }
+
+    private fun getEntityKeyIdsByLinkingId(
+            linkingEntitySets: Map<UUID, EntitySet>,
+            entityKeyIds: Set<UUID>
+    ): Map<UUID, Set<UUID>> {
+        if (linkingEntitySets.isEmpty()) {
+            return mutableMapOf()
+        }
+
+        val normalEntitySetIds = linkingEntitySets.values.flatMap { it.linkedEntitySets }.toSet()
+
+        return getEntityKeyIdsByLinkingIds(entityKeyIds, normalEntitySetIds)
+    }
+
+    private fun getEntityKeyIdsToQueryFor(
+            entityKeyIdsByLinkingId: Map<UUID, Set<UUID>>,
+            filterEntityKeyIds: Set<UUID>
+    ): Set<UUID> {
+        if (entityKeyIdsByLinkingId.isEmpty()) {
+            return filterEntityKeyIds
+        }
+
+        val entityKeyIds = filterEntityKeyIds.toMutableSet()
+
+        entityKeyIdsByLinkingId.values.forEach { entityKeyIds.addAll(it) }
+        entityKeyIds.removeAll(entityKeyIdsByLinkingId.keys) // remove linking ids
+
+        return entityKeyIds
+    }
+
+    private fun getNeighborEntitySetIdToEntityKeyIdForEdges(edges: List<Edge>, entityKeyIds: Set<UUID>): SetMultimap<UUID, UUID> {
+        val entitySetIdToEntityKeyId = HashMultimap.create<UUID, UUID>()
 
         edges.forEach { edge ->
-            val edgeEntityKeyId = edge.getEdge().getEntityKeyId()
-            val neighborEntityKeyId = if ((entityKeyIds.contains(edge.getSrc().getEntityKeyId())))
-                edge.getDst()
-                        .getEntityKeyId()
-            else
-                edge.getSrc().getEntityKeyId()
-            val edgeEntitySetId = edge.getEdge().getEntitySetId()
-            val neighborEntitySetId = if ((entityKeyIds.contains(edge.getSrc().getEntityKeyId())))
-                edge.getDst()
-                        .getEntitySetId()
-            else
-                edge.getSrc().getEntitySetId()
+            entitySetIdToEntityKeyId.put(edge.edge.entitySetId, edge.edge.entityKeyId)
 
-            if (entitySetsIdsToAuthorizedProps.containsKey(edgeEntitySetId)) {
-                entitySetIdToEntityKeyId.put(edgeEntitySetId, edgeEntityKeyId)
-
-                if (entitySetsIdsToAuthorizedProps.containsKey(neighborEntitySetId)) {
-                    authorizedEdgeESIdsToVertexESIds.getValue(edgeEntitySetId).add(neighborEntitySetId)
-                    entitySetIdToEntityKeyId.put(neighborEntitySetId, neighborEntityKeyId)
-                }
+            if (entityKeyIds.contains(edge.src.entityKeyId)) {
+                entitySetIdToEntityKeyId.put(edge.dst.entitySetId, edge.dst.entityKeyId)
             }
 
+            if (entityKeyIds.contains(edge.dst.entityKeyId)) {
+                entitySetIdToEntityKeyId.put(edge.src.entitySetId, edge.src.entityKeyId)
+            }
         }
-        logger.info("Edge and neighbor entity key ids collected in {} ms", sw1.elapsed(TimeUnit.MILLISECONDS))
-        sw1.reset().start()
 
-        val entitiesByEntitySetId = dataManager!!
+        return entitySetIdToEntityKeyId
+    }
+
+    @Timed
+    fun executeEntityNeighborSearch(
+            entitySetIds: Set<UUID>,
+            pagedNeighborRequest: PagedNeighborRequest,
+            principals: Set<Principal>
+    ): NeighborPage {
+
+
+        /* Load all possible association/neighbor entity set combos and perform auth checks **/
+
+        val (filter, entitySetsIdsToAuthorizedProps) = getAuthorizedFilterEntitySetOptions(
+                entitySetIds,
+                pagedNeighborRequest.filter,
+                principals
+        )
+        val authorizedPagedNeighborRequest = PagedNeighborRequest(filter, pagedNeighborRequest.bookmark, pagedNeighborRequest.pageSize)
+
+        val allEntitySets = filter.srcEntitySetIds.get() + filter.dstEntitySetIds.get() + filter.associationEntitySetIds.get()
+
+        val entitySetsById = entitySetService.getEntitySetsAsMap(allEntitySets)
+
+        if (filter.associationEntitySetIds.isPresent && filter.associationEntitySetIds.get().isEmpty()) {
+            logger.info("Missing association entity set ids.. returning empty result")
+            return NeighborPage(linkedMapOf(), null)
+        }
+
+
+        /* Handle linking entity sets, if present */
+
+        val linkingEntitySets = getLinkingEntitySets(entitySetIds)
+
+        val allBaseEntitySetIds = entitySetIds + getBaseEntitySetIdsOfLinkingEntitySets(linkingEntitySets, principals)
+        val entityKeyIdsByLinkingId = getEntityKeyIdsByLinkingId(linkingEntitySets, filter.entityKeyIds)
+        val entityKeyIds = getEntityKeyIdsToQueryFor(entityKeyIdsByLinkingId, filter.entityKeyIds)
+
+
+        /* Load authorized edges and their corresponding neighbor data */
+
+        val edges = graphService.getEdgesAndNeighborsForVertices(allBaseEntitySetIds, authorizedPagedNeighborRequest).toList()
+
+        val entitySetIdToEntityKeyId = getNeighborEntitySetIdToEntityKeyIdForEdges(edges, entityKeyIds)
+
+        val entitiesByEntitySetId = dataManager
                 .getEntitiesAcrossEntitySets(entitySetIdToEntityKeyId, entitySetsIdsToAuthorizedProps)
-        logger.info("Get entities across entity sets query finished in {} ms", sw1.elapsed(TimeUnit.MILLISECONDS))
-        sw1.reset().start()
 
         val entities = Maps.newHashMap<UUID, Map<FullQualifiedName, Set<Any>>>()
         entitiesByEntitySetId.values.forEach { entries ->
             entries.forEach { entry ->
-                entities.put(
-                        getEntityKeyId(entry), entry
-                )
+                entities[getEntityKeyId(entry)] = entry
             }
         }
 
-        val entityNeighbors = Maps.newConcurrentMap<UUID, MutableList<NeighborEntityDetails>>()
+        /* Format neighbor data into the expected return format */
+        val entityNeighbors = Maps.newLinkedHashMap<UUID, MutableList<NeighborEntityDetails>>()
 
-        // create a NeighborEntityDetails object for each edge based on authorizations
-        edges.parallelStream().forEach { edge ->
-            val vertexIsSrc = entityKeyIds.contains(edge.getKey().getSrc().getEntityKeyId())
-            val entityId = if ((vertexIsSrc))
-                edge.getKey().getSrc().getEntityKeyId()
-            else
-                edge.getKey().getDst().getEntityKeyId()
-            if (!entityNeighbors.containsKey(entityId)) {
-                entityNeighbors.put(
-                        entityId, Collections.synchronizedList(
-                        Lists.newArrayList()
+        edges.forEach { edge ->
+
+            mapOf(
+                    edge.key to true,
+                    DataEdgeKey(edge.key.dst, edge.key.src, edge.key.edge) to false
+            ).forEach { (directedEdge, vertexIsSrc) ->
+
+                val vertexEntityKeyId = directedEdge.src.entityKeyId
+                val neighborDetails = getNeighborEntityDetails(
+                        directedEdge.edge,
+                        directedEdge.dst,
+                        vertexIsSrc,
+                        entitySetsById,
+                        entities
                 )
-                )
+
+                if (entityKeyIds.contains(directedEdge.src.entityKeyId) && neighborDetails != null) {
+
+                    if (!entityNeighbors.containsKey(vertexEntityKeyId)) {
+                        entityNeighbors[vertexEntityKeyId] = mutableListOf()
+                    }
+
+                    entityNeighbors.getValue(vertexEntityKeyId).add(neighborDetails)
+                }
+
             }
-            val neighbor = getNeighborEntityDetails(
-                    edge,
-                    authorizedEdgeESIdsToVertexESIds,
-                    entitySetsById,
-                    vertexIsSrc,
-                    entities
-            )
-            if (neighbor != null) {
-                entityNeighbors.getValue(entityId).add(neighbor)
-            }
+
         }
-        logger.info("Neighbor entity details collected in {} ms", sw1.elapsed(TimeUnit.MILLISECONDS))
 
         /* Map linkingIds to the collection of neighbors for all entityKeyIds in the cluster */
         entityKeyIdsByLinkingId.forEach { (linkingId, normalEntityKeyIds) ->
@@ -723,58 +746,34 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
 
         }
 
-        entityNeighbors.entries
-                .removeIf { entry -> !filter.entityKeyIds.contains(entry.key) }
-
-        logger.info("Finished entity neighbor search in {} ms", sw2.elapsed(TimeUnit.MILLISECONDS))
-        return entityNeighbors
+        return NeighborPage(entityNeighbors, edges.lastOrNull()?.key)
     }
 
     private fun getNeighborEntityDetails(
-            edge: Edge,
-            authorizedEdgeESIdsToVertexESIds: Map<UUID, Set<UUID>>,
-            entitySetsById: Map<UUID, EntitySet>,
+            associationEDK: EntityDataKey,
+            neighborEDK: EntityDataKey,
             vertexIsSrc: Boolean,
+            entitySetsById: Map<UUID, EntitySet>,
             entities: Map<UUID, Map<FullQualifiedName, Set<Any>>>
     ): NeighborEntityDetails? {
 
-        val edgeEntitySetId = edge.edge.entitySetId
-        if (authorizedEdgeESIdsToVertexESIds.containsKey(edgeEntitySetId)) {
-            val neighborEntityKeyId = if (vertexIsSrc)
-                edge.dst.entityKeyId
-            else
-                edge.src.entityKeyId
-            val neighborEntitySetId = if (vertexIsSrc)
-                edge.dst.entitySetId
-            else
-                edge.src.entitySetId
+        val edgeDetails = entities[associationEDK.entityKeyId]
+        val neighborDetails = entities[neighborEDK.entityKeyId]
+        val neighborEntitySet = entitySetsById[neighborEDK.entitySetId]
 
-            val edgeDetails = entities[edge.edge.entityKeyId]
-            if (edgeDetails != null) {
-                if (authorizedEdgeESIdsToVertexESIds.getValue(edgeEntitySetId).contains(neighborEntitySetId)) {
-                    val neighborDetails = entities[neighborEntityKeyId]
-
-                    if (neighborDetails != null) {
-                        return NeighborEntityDetails(
-                                entitySetsById[edgeEntitySetId],
-                                edgeDetails,
-                                entitySetsById[neighborEntitySetId],
-                                neighborEntityKeyId,
-                                neighborDetails,
-                                vertexIsSrc
-                        )
-                    }
-
-                } else {
-                    return NeighborEntityDetails(
-                            entitySetsById[edgeEntitySetId],
-                            edgeDetails,
-                            vertexIsSrc
-                    )
-                }
-            }
+        if (edgeDetails == null || neighborDetails == null || neighborEntitySet == null) {
+            return null
         }
-        return null
+
+        return NeighborEntityDetails(
+                entitySetsById[associationEDK.entitySetId],
+                edgeDetails,
+                neighborEntitySet,
+                neighborEDK.entityKeyId,
+                neighborDetails,
+                vertexIsSrc
+        )
+
     }
 
     @Timed
@@ -829,23 +828,26 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     @Timed
     fun executeEntityNeighborIdsSearch(
             entitySetIds: Set<UUID>,
-            filter: EntityNeighborsFilter,
+            requestedFilter: EntityNeighborsFilter,
             principals: Set<Principal>
     ): Map<UUID, Map<UUID, SetMultimap<UUID, NeighborEntityIds>>> {
-        val sw1 = Stopwatch.createStarted()
 
-        logger.info("Starting Reduced Entity Neighbor Search...")
+        val (filter, _) = getAuthorizedFilterEntitySetOptions(
+                entitySetIds,
+                requestedFilter,
+                principals
+        )
+
         if (filter.associationEntitySetIds.isPresent && filter.associationEntitySetIds.get().isEmpty()) {
             logger.info("Missing association entity set ids. Returning empty result.")
             return ImmutableMap.of()
         }
 
         val entityKeyIds = filter.entityKeyIds
-        val allEntitySetIds = Sets.newHashSet<UUID>()
 
         val neighbors = mutableMapOf<UUID, MutableMap<UUID, SetMultimap<UUID, NeighborEntityIds>>>()
 
-        graphService!!.getEdgesAndNeighborsForVerticesBulk(entitySetIds, filter).forEach { edge ->
+        graphService.getEdgesAndNeighborsForVertices(entitySetIds, PagedNeighborRequest(filter)).forEach { edge ->
 
             val isSrc = entityKeyIds.contains(edge.src.entityKeyId)
             val entityKeyId = if (isSrc) edge.src.entityKeyId else edge.dst.entityKeyId
@@ -862,44 +864,7 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
                     .getOrPut(edge.edge.entitySetId) { HashMultimap.create<UUID, NeighborEntityIds>() }
                     .put(neighborEntityDataKey.entitySetId, neighborEntityIds)
 
-
-            allEntitySetIds.add(edge.edge.entitySetId)
-            allEntitySetIds.add(neighborEntityDataKey.entitySetId)
-
         }
-
-        val unauthorizedEntitySetIds = authorizations
-                .accessChecksForPrincipals(
-                        allEntitySetIds
-                                .map { esId ->
-                                    AccessCheck(
-                                            AclKey(esId),
-                                            READ_PERMISSION
-                                    )
-                                }.toSet(), principals
-                )
-                .filter { auth -> !auth.permissions.getValue(Permission.READ) }
-                .map { auth -> auth.aclKey[0] }
-                .collect(Collectors.toSet())
-
-        if (unauthorizedEntitySetIds.size > 0) {
-
-            neighbors.values.forEach { associationMap ->
-                associationMap.values.forEach { neighborsMap ->
-                    neighborsMap.entries()
-                            .removeIf { neighborEntry -> unauthorizedEntitySetIds.contains(neighborEntry.key) }
-                }
-                associationMap.entries.removeIf { entry ->
-                    (unauthorizedEntitySetIds.contains(
-                            entry.key
-                    ) || entry.value.size() == 0)
-                }
-
-            }
-
-        }
-
-        logger.info("Reduced entity neighbor search took {} ms", sw1.elapsed(TimeUnit.MILLISECONDS))
 
         return neighbors
     }
@@ -916,18 +881,18 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
         if (linking) {
             val linkingIdsByEntitySetIds = entitySet
                     .linkedEntitySets
-                    .associateWith { Optional.of (entityKeyIds) }
+                    .associateWith { Optional.of(entityKeyIds) }
             val authorizedPropertiesOfNormalEntitySets = entitySet
                     .linkedEntitySets
                     .associateWith { authorizedPropertyTypes.getValue(entitySet.id) }
 
-            return dataManager!!.getLinkingEntitiesWithMetadata(
+            return dataManager.getLinkingEntitiesWithMetadata(
                     linkingIdsByEntitySetIds,
                     authorizedPropertiesOfNormalEntitySets,
                     EnumSet.of(MetadataOption.LAST_WRITE)
             ).toList()
         } else {
-            return dataManager!!
+            return dataManager
                     .getEntitiesWithMetadata(
                             entitySet.id,
                             ImmutableSet.copyOf(entityKeyIds),
@@ -945,21 +910,16 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
         return dataManager.getEntityKeyIdsOfLinkingIds(linkingIds, normalEntitySetIds).toMap()
     }
 
-    @Subscribe
-    fun clearAllData(event: ClearAllDataEvent) {
-        elasticsearchApi!!.clearAllData()
-    }
-
     fun triggerPropertyTypeIndex(propertyTypes: List<PropertyType>) {
-        elasticsearchApi!!.triggerSecurableObjectIndex(SecurableObjectType.PropertyTypeInEntitySet, propertyTypes)
+        elasticsearchApi.triggerSecurableObjectIndex(SecurableObjectType.PropertyTypeInEntitySet, propertyTypes)
     }
 
     fun triggerEntityTypeIndex(entityTypes: List<EntityType>) {
-        elasticsearchApi!!.triggerSecurableObjectIndex(SecurableObjectType.EntityType, entityTypes)
+        elasticsearchApi.triggerSecurableObjectIndex(SecurableObjectType.EntityType, entityTypes)
     }
 
     fun triggerAssociationTypeIndex(associationTypes: List<AssociationType>) {
-        elasticsearchApi!!.triggerSecurableObjectIndex(SecurableObjectType.AssociationType, associationTypes)
+        elasticsearchApi.triggerSecurableObjectIndex(SecurableObjectType.AssociationType, associationTypes)
     }
 
     fun triggerEntitySetIndex() {
@@ -974,40 +934,36 @@ class SearchService(eventBus: EventBus, metricRegistry: MetricRegistry) {
     }
 
     fun triggerEntitySetDataIndex(entitySetId: UUID) {
-        val entityType = entitySetService!!.getEntityTypeByEntitySetId(entitySetId)
-        val propertyTypes = dataModelService!!.getPropertyTypesAsMap(entityType.properties)
+        val entityType = entitySetService.getEntityTypeByEntitySetId(entitySetId)
+        val propertyTypes = dataModelService.getPropertyTypesAsMap(entityType.properties)
         val propertyTypeList = Lists.newArrayList(propertyTypes.values)
 
-        elasticsearchApi!!.deleteEntitySet(entitySetId, entityType.id)
-        elasticsearchApi!!.saveEntitySetToElasticsearch(
+        elasticsearchApi.deleteEntitySet(entitySetId, entityType.id)
+        elasticsearchApi.saveEntitySetToElasticsearch(
                 entityType,
-                entitySetService!!.getEntitySet(entitySetId),
+                entitySetService.getEntitySet(entitySetId),
                 propertyTypeList
         )
 
-        val entitySet = entitySetService!!.getEntitySet(entitySetId)
-        val entitySetIds = if (entitySet!!.isLinking) entitySet!!.linkedEntitySets else setOf(entitySetId)
-        indexingMetadataManager!!.markEntitySetsAsNeedsToBeIndexed(entitySetIds, entitySet!!.isLinking)
+        val entitySet = entitySetService.getEntitySet(entitySetId)
+        val entitySetIds = if (entitySet!!.isLinking) entitySet.linkedEntitySets else setOf(entitySetId)
+        indexingMetadataManager.markEntitySetsAsNeedsToBeIndexed(entitySetIds, entitySet.isLinking)
     }
 
     fun triggerAllEntitySetDataIndex() {
-        entitySetService!!.getEntitySets().forEach { entitySet -> triggerEntitySetDataIndex(entitySet.getId()) }
+        entitySetService.getEntitySets().forEach { entitySet -> triggerEntitySetDataIndex(entitySet.getId()) }
     }
 
     fun triggerAppIndex(apps: List<App>) {
-        elasticsearchApi!!.triggerSecurableObjectIndex(SecurableObjectType.App, apps)
-    }
-
-    fun triggerAppTypeIndex(appTypes: List<AppType>) {
-        elasticsearchApi!!.triggerSecurableObjectIndex(SecurableObjectType.AppType, appTypes)
+        elasticsearchApi.triggerSecurableObjectIndex(SecurableObjectType.App, apps)
     }
 
     fun triggerAllOrganizationsIndex(allOrganizations: List<Organization>) {
-        elasticsearchApi!!.triggerOrganizationIndex(allOrganizations)
+        elasticsearchApi.triggerOrganizationIndex(allOrganizations)
     }
 
     fun triggerOrganizationIndex(organization: Organization) {
-        elasticsearchApi!!.triggerOrganizationIndex(Lists.newArrayList(organization))
+        elasticsearchApi.triggerOrganizationIndex(Lists.newArrayList(organization))
     }
 
 }

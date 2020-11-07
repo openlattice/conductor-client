@@ -28,6 +28,7 @@ import com.openlattice.authorization.SystemRole
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask.Companion.GLOBAL_ADMIN_ROLE
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask.Companion.GLOBAL_USER_ROLE
+import com.openlattice.edm.tasks.EdmSyncInitializerTask
 import com.openlattice.organization.OrganizationConstants.Companion.GLOBAL_ORG_PRINCIPAL
 import com.openlattice.organizations.Grant
 import com.openlattice.organizations.GrantType
@@ -50,8 +51,9 @@ class OrganizationsInitializationTask : HazelcastInitializationTask<Organization
         logger.info("Running bootstrap process for organizations.")
         val sw = Stopwatch.createStarted()
         val organizationService = dependencies.organizationService
+        val partitionManager = dependencies.partitionManager
         val globalOrg = organizationService.maybeGetOrganization(GLOBAL_ORG_PRINCIPAL)
-        val defaultPartitions = organizationService.allocateDefaultPartitions(organizationService.numberOfPartitions)
+        val defaultPartitions = partitionManager.getAllPartitions()
 
         if (globalOrg.isPresent) {
             val orgPrincipal = globalOrg.get()
@@ -112,7 +114,8 @@ class OrganizationsInitializationTask : HazelcastInitializationTask<Organization
         return setOf(
                 AuthorizationInitializationTask::class.java,
                 UsersAndRolesInitializationTask::class.java,
-                PostConstructInitializerTask::class.java
+                PostConstructInitializerTask::class.java,
+                EdmSyncInitializerTask::class.java
         )
     }
 

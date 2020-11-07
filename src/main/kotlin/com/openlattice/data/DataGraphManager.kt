@@ -24,13 +24,12 @@ package com.openlattice.data
 import com.google.common.collect.ListMultimap
 import com.google.common.collect.SetMultimap
 import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking
+import com.openlattice.analysis.requests.AggregationResult
 import com.openlattice.analysis.requests.FilteredNeighborsRankingAggregation
 import com.openlattice.data.storage.MetadataOption
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.core.NeighborSets
-import com.openlattice.graph.edge.Edge
 import com.openlattice.postgres.streams.BasePostgresIterable
-import com.openlattice.postgres.streams.PostgresIterable
 import org.apache.commons.lang3.tuple.Pair
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import java.nio.ByteBuffer
@@ -53,8 +52,6 @@ interface DataGraphManager {
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linking: Boolean
     ): EntitySetData<FullQualifiedName>
-
-    fun getEntitySetSize(entitySetId: UUID): Long
 
     /*
      * CRUD methods for entity
@@ -153,7 +150,7 @@ interface DataGraphManager {
             authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
             linked: Boolean,
             linkingEntitySetId: Optional<UUID>
-    ): Iterable<Map<String, Any>>
+    ): AggregationResult
 
     fun getNeighborEntitySets(entitySetIds: Set<UUID>): List<NeighborSets>
 
@@ -165,13 +162,11 @@ interface DataGraphManager {
 
     fun getNeighborEntitySetIds(entitySetIds: Set<UUID>): Set<UUID>
 
-    fun getEdgesAndNeighborsForVertex(entitySetId: UUID, entityKeyId: UUID): Stream<Edge>
-
     /**
      * Returns all [DataEdgeKey]s where either src, dst and/or edge entity set ids are equal the requested entitySetId.
      * If includeClearedEdges is set to true, it will also return cleared (version < 0) entities.
      */
-    fun getEdgeKeysOfEntitySet(entitySetId: UUID, includeClearedEdges: Boolean): PostgresIterable<DataEdgeKey>
+    fun getEdgeKeysOfEntitySet(entitySetId: UUID, includeClearedEdges: Boolean): BasePostgresIterable<DataEdgeKey>
 
     /**
      * Returns all [DataEdgeKey]s that include requested entityKeyIds either as src, dst and/or edge with the requested
@@ -180,14 +175,32 @@ interface DataGraphManager {
      */
     fun getEdgesConnectedToEntities(
             entitySetId: UUID, entityKeyIds: Set<UUID>, includeClearedEdges: Boolean
-    ): PostgresIterable<DataEdgeKey>
-    fun getExpiringEntitiesFromEntitySet(entitySetId: UUID,
-                                         expirationPolicy: DataExpiration,
-                                         dateTime: OffsetDateTime,
-                                         deleteType: DeleteType,
-                                         expirationPropertyType: Optional<PropertyType>
+    ): BasePostgresIterable<DataEdgeKey>
+
+    fun getExpiringEntitiesFromEntitySet(
+            entitySetId: UUID,
+            expirationPolicy: DataExpiration,
+            dateTime: OffsetDateTime,
+            deleteType: DeleteType,
+            expirationPropertyType: Optional<PropertyType>
     ): BasePostgresIterable<UUID>
 
     fun getEdgeEntitySetsConnectedToEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): Set<UUID>
     fun getEdgeEntitySetsConnectedToEntitySet(entitySetId: UUID): Set<UUID>
+
+    /**
+     * Re-partitions the data for an entity set.
+     *
+     * NOTE: This function is a bit of a layer violation. It only migrates data from the provided partitions, which
+     * must be known by the caller. It assumes that new partitions have been properly assigned to the entity set and
+     * have been persisted to the database by the caller.
+     *
+     * @param entitySetId The id of the entity set to repartition
+     * @param oldPartitions The previous data partitions for the entity set.
+     */
+    fun repartitionEntitySet(
+            entitySetId: UUID,
+            oldPartitions: Set<Int>,
+            newPartitions: Set<Int>
+    ): UUID
 }

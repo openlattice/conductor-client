@@ -22,25 +22,28 @@
 
 package com.openlattice.authorization;
 
-import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
-import static com.openlattice.authorization.EdmAuthorizationHelper.WRITE_PERMISSION;
-
 import com.openlattice.IdConstants;
 import com.openlattice.authorization.securable.AbstractSecurableObject;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.controllers.exceptions.ForbiddenException;
 import com.openlattice.edm.type.PropertyType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.openlattice.authorization.EdmAuthorizationHelper.TRANSPORT_PERMISSION;
+import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
+import static com.openlattice.authorization.EdmAuthorizationHelper.WRITE_PERMISSION;
 
 public interface AuthorizingComponent {
     Set<UUID> internalIds = Arrays.stream( IdConstants.values() ).map( IdConstants::getId )
@@ -72,6 +75,10 @@ public interface AuthorizingComponent {
         return isAuthorized( Permission.OWNER ).test( new AclKey( aclKey ) );
     }
 
+    default void ensureTransportAccess( AclKey aclKey ) {
+        accessCheck( aclKey, TRANSPORT_PERMISSION );
+    }
+
     default void ensureReadAccess( AclKey aclKey ) {
         accessCheck( aclKey, READ_PERMISSION );
     }
@@ -82,6 +89,11 @@ public interface AuthorizingComponent {
 
     default void ensureOwnerAccess( AclKey aclKey ) {
         accessCheck( aclKey, EnumSet.of( Permission.OWNER ) );
+    }
+
+    default void ensureOwnerAccess( Set<AclKey> keys ) {
+        EnumSet<Permission> owner = EnumSet.of( Permission.OWNER );
+        accessCheck( keys.stream().collect( Collectors.toMap( Function.identity(), aclKey -> owner ) ) );
     }
 
     default void ensureLinkAccess( AclKey aclKey ) {
@@ -117,7 +129,6 @@ public interface AuthorizingComponent {
                     authorizedPropertyTypes.keySet() );
             throw new ForbiddenException( "Insufficient permissions to perform operation." );
         }
-
     }
 
     default void accessCheck( Map<AclKey, EnumSet<Permission>> requiredPermissionsByAclKey ) {
