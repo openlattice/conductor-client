@@ -90,7 +90,7 @@ class AuditInitializationTask(
                         partitions = LinkedHashSet(dependencies.partitionManager.getAllPartitions())
                 )
 
-                dependencies.entitySetManager.createEntitySet(admins.first(), edmAuditEntitySet)
+                dependencies.entitySetManager.createEntitySet(admins.first().principal, edmAuditEntitySet)
             }
 
             val edmAuditAclKeys = dependencies.entitySetManager.getAuditRecordEntitySetsManager().auditingTypes
