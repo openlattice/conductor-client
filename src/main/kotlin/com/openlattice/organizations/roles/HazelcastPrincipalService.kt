@@ -232,10 +232,11 @@ class HazelcastPrincipalService(
     }
 
     override fun getOrganizationMembers(organizationIds: MutableSet<UUID>): Map<UUID, Set<SecurablePrincipal>> {
-        return getParentPrincipalsOfPrincipals(organizationIds.map { AclKey(it) }.toSet())
-                .entries
+        val orgAclKeys = organizationIds.map { AclKey(it) }.toSet()
+        val orgMembers = getParentPrincipalsOfPrincipals(orgAclKeys)
+        return orgAclKeys
                 .associate {
-                    it.key.first() to it.value.filter { p -> p.principalType == PrincipalType.USER }.toMutableSet()
+                    it.first() to orgMembers.getOrDefault(it, setOf()).filter { p -> p.principalType == PrincipalType.USER }.toMutableSet()
                 }
     }
 
