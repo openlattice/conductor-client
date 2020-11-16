@@ -114,9 +114,9 @@ class HazelcastOrganizationService(
         }
     }
 
-    private fun initializeOrganizationAdminRole(principal: Principal, organization: Organization): Role {
+    private fun initializeOrganizationAdminRole(principal: Principal, adminRoleAclKey: AclKey, organization: Organization): Role {
         //Create the admin role for the organization and give it ownership of organization.
-        val adminRole = createOrganizationAdminRole(organization.securablePrincipal)
+        val adminRole = createOrganizationAdminRole(organization.securablePrincipal, adminRoleAclKey)
         createRoleIfNotExists(principal, adminRole)
         authorizations.addPermission(
                 organization.getAclKey(), adminRole.principal, EnumSet.allOf(Permission::class.java)
@@ -151,13 +151,14 @@ class HazelcastOrganizationService(
 
         initializeOrganizationPrincipal(principal, organization)
         initializeOrganization(organization)
-        organizationMetadataEntitySetsService.initializeOrganizationMetadataEntitySets(organization.id)
 
         // set up organization database
         val orgDatabase = assembler.createOrganizationAndReturnOid(organization.id)
         organizationDatabases.set(organization.id, orgDatabase)
 
-        val adminRole = initializeOrganizationAdminRole(principal, organization)
+        val adminRole = initializeOrganizationAdminRole(principal, organization.adminRoleAclKey, organization)
+
+        organizationMetadataEntitySetsService.initializeOrganizationMetadataEntitySets(adminRole)
 
         if (membersToAdd.isNotEmpty()) {
             addMembers(organization.getAclKey().first(), membersToAdd, mapOf())
@@ -195,6 +196,13 @@ class HazelcastOrganizationService(
         }) as Set<UUID>
     }
 
+    @Timed
+    fun getAdminRoleAclKey(organizationId: UUID): AclKey {
+        return organizations.executeOnKey(organizationId, OrganizationReadEntryProcessor {
+            it.adminRoleAclKey
+        }) as AclKey
+    }
+
     fun getOrganizationDatabaseName(organizationId: UUID): String {
         return organizationDatabases.getValue(organizationId).name
     }
@@ -219,6 +227,7 @@ class HazelcastOrganizationService(
                 .map {
                     Organization(
                             it.securablePrincipal,
+                            it.adminRoleAclKey,
                             it.emailDomains,
                             membersByOrg[it.id] ?: mutableSetOf(),
                             //TODO: If you're an organization you can view its roles.
@@ -671,12 +680,13 @@ class HazelcastOrganizationService(
             return organization.id.toString() + "|" + constructOrganizationAdminRolePrincipalTitle(organization)
         }
 
-        private fun createOrganizationAdminRole(organization: SecurablePrincipal): Role {
+        private fun createOrganizationAdminRole(organization: SecurablePrincipal, adminRoleAclKey: AclKey): Role {
+            val roleId = adminRoleAclKey[1]
             val principalTitle = constructOrganizationAdminRolePrincipalTitle(organization)
             val principalId = constructOrganizationAdminRolePrincipalId(organization)
             val rolePrincipal = Principal(PrincipalType.ROLE, principalId)
             return Role(
-                    Optional.empty(),
+                    Optional.of(roleId),
                     organization.id,
                     rolePrincipal,
                     principalTitle,
