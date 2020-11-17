@@ -118,9 +118,7 @@ class HazelcastOrganizationService(
         //Create the admin role for the organization and give it ownership of organization.
         val adminRole = createOrganizationAdminRole(organization.securablePrincipal, adminRoleAclKey)
         createRoleIfNotExists(principal, adminRole)
-        authorizations.addPermission(
-                organization.getAclKey(), adminRole.principal, EnumSet.allOf(Permission::class.java)
-        )
+        authorizations.addPermission(organization.getAclKey(), adminRole.principal, EnumSet.allOf(Permission::class.java))
         addRoleToPrincipalInOrganization(organization.id, adminRole.id, principal)
 
         //Grant the creator of the organizations
@@ -246,9 +244,9 @@ class HazelcastOrganizationService(
         securePrincipalsManager.deleteAllRolesInOrganization(organizationId)
         securePrincipalsManager.deletePrincipal(aclKey)
         organizations.delete(organizationId)
+        assembler.destroyOrganization(organizationId)
         organizationDatabases.delete(organizationId)
         reservations.release(organizationId)
-        assembler.destroyOrganization(organizationId)
         eventBus.post(OrganizationDeletedEvent(organizationId))
     }
 
