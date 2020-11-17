@@ -183,14 +183,14 @@ class HazelcastPrincipalService(
         ensurePrincipalsExist(targets + setOf(source))
 
         return principalTrees.executeOnKeys(targets) {
-            val currentObjects: AclKeySet = it.value ?: AclKeySet()
+            val currentChildPrincipals: AclKeySet = it.value ?: AclKeySet()
 
-            if (currentObjects.contains(source)) {
+            if (currentChildPrincipals.contains(source)) {
                 null
             } else {
-                currentObjects.add(source)
-                it.setValue(currentObjects)
-                source
+                currentChildPrincipals.add(source)
+                it.setValue(currentChildPrincipals)
+                it.key
             }
         }.values.filterNotNull().toSet()
     }
