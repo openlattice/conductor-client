@@ -12,10 +12,13 @@ import org.springframework.stereotype.Component
 class AclKeyStreamSerializer : TestableSelfRegisteringStreamSerializer<AclKey> {
 
     companion object {
+
+        @JvmStatic
         fun serialize(out: ObjectDataOutput, `object`: AclKey) {
             ListStreamSerializers.fastUUIDListSerialize(out, `object`)
         }
 
+        @JvmStatic
         fun deserialize(`in`: ObjectDataInput): AclKey {
             return AclKey(*ListStreamSerializers.fastUUIDArrayDeserialize(`in`))
         }
