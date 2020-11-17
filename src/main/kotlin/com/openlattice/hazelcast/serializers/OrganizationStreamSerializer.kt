@@ -24,6 +24,9 @@ class OrganizationStreamSerializer : SelfRegisteringStreamSerializer<Organizatio
             OrganizationPrincipalStreamSerializer.serialize(out, obj.securablePrincipal)
             AclKeyStreamSerializer.serialize(out, obj.adminRoleAclKey)
             SetStreamSerializers.fastStringSetSerialize(out, obj.emailDomains)
+            StreamSerializers.serializeSet(out, obj.members) { principal ->
+                PrincipalStreamSerializer.serialize(out, principal)
+            }
 
             StreamSerializers.serializeSet(out, obj.roles) { role ->
                 RoleStreamSerializer.serialize(out, role)
@@ -49,6 +52,9 @@ class OrganizationStreamSerializer : SelfRegisteringStreamSerializer<Organizatio
             val op = OrganizationPrincipalStreamSerializer.deserialize(input)
             val adminRoleAclKey = AclKeyStreamSerializer.deserialize(input)
             val email = SetStreamSerializers.fastStringSetDeserialize(input)
+            val members = StreamSerializers.deserializeSet(input) {
+                PrincipalStreamSerializer.deserialize(input)
+            }
 
             val roles = StreamSerializers.deserializeSet(input) {
                 RoleStreamSerializer.deserialize(input)
@@ -74,7 +80,7 @@ class OrganizationStreamSerializer : SelfRegisteringStreamSerializer<Organizatio
                     op,
                     adminRoleAclKey,
                     email,
-                    mutableSetOf(),
+                    members,
                     roles,
                     sms,
                     partitions,
