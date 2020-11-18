@@ -250,13 +250,20 @@ class ExternalDatabaseManagementService(
     }
 
     fun getExternalDatabaseTableSchema(organizationId: UUID, tableId: UUID): String? {
+
         val table = getOrganizationExternalDatabaseTable(tableId)
         val sql = getExternalDatabaseTableSchemaSql(table.name)
-        return BasePostgresIterable(
+        val schemas = BasePostgresIterable(
                 StatementHolderSupplier(externalDbManager.connectToOrg(organizationId), sql)
         ) { rs: ResultSet ->
             rs.getString(PostgresColumn.PG_SCHEMA_NAME)
-        }.firstOrNull()
+        }.toList()
+
+        if (schemas.size != 1) {
+            return null
+        }
+
+        return schemas.firstOrNull()
     }
 
     fun getColumnNamesByTableName(dbName: String): Map<String, TableSchemaInfo> {
