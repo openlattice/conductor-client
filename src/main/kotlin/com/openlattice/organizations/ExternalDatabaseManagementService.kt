@@ -1,7 +1,6 @@
 package com.openlattice.organizations
 
 import com.google.common.base.Preconditions.checkState
-import com.google.common.collect.ImmutableList
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
@@ -746,7 +745,8 @@ class ExternalDatabaseManagementService(
     }
 
     private fun getExternalDatabaseTableSchemaSql(tableName: String): String {
-        return "SELECT schemaname FROM pg_catalog.pg_tables WHERE tablename = ${quote(tableName)}"
+        return "SELECT ${PostgresColumn.PG_SCHEMA_NAME} FROM pg_catalog.pg_tables " +
+                "WHERE ${PostgresColumn.PG_TABLE_NAME} = ${quote(tableName)}"
     }
 
     /*PREDICATES*/
