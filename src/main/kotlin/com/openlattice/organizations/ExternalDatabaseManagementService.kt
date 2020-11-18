@@ -1,6 +1,7 @@
 package com.openlattice.organizations
 
 import com.google.common.base.Preconditions.checkState
+import com.google.common.collect.ImmutableList
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicate
 import com.hazelcast.query.Predicates
@@ -46,6 +47,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
+import java.sql.ResultSet
 import java.time.OffsetDateTime
 import java.util.*
 import kotlin.collections.HashMap
@@ -246,6 +248,18 @@ class ExternalDatabaseManagementService(
 
     fun getOrganizationExternalDatabaseColumn(columnId: UUID): OrganizationExternalDatabaseColumn {
         return organizationExternalDatabaseColumns.getValue(columnId)
+    }
+
+    fun getExternalDatabaseTableSchema(organizationId: UUID, tableId: UUID): String? {
+
+        val table = getOrganizationExternalDatabaseTable(tableId)
+        val sql = getExternalDatabaseTableSchemaSql(table.name)
+
+        return BasePostgresIterable(
+                StatementHolderSupplier(externalDbManager.connectToOrg(organizationId), sql)
+        ) { rs: ResultSet ->
+            rs.getString("schemaname")
+        }.firstOrNull()
     }
 
     fun getColumnNamesByTableName(dbName: String): Map<String, TableSchemaInfo> {
@@ -661,7 +675,7 @@ class ExternalDatabaseManagementService(
     }
 
     /**
-     * Moves a table from the [OPENLATTICE_SCHEMA] schema to the [STAGING_SCHEMA] schema
+     * Moves a table from the [STAGING_SCHEMA] schema to the [OPENLATTICE_SCHEMA] schema
      */
     fun promoteStagingTable(organizationId: UUID, tableName: String) {
         externalDbManager.connectToOrg(organizationId).use { hds ->
@@ -729,6 +743,10 @@ class ExternalDatabaseManagementService(
 
     private fun getSelectRecordsSql(tableName: String): String {
         return "SELECT * FROM $tableName"
+    }
+
+    private fun getExternalDatabaseTableSchemaSql(tableName: String): String {
+        return "SELECT schemaname FROM pg_catalog.pg_tables WHERE tablename = ${quote(tableName)}"
     }
 
     /*PREDICATES*/
