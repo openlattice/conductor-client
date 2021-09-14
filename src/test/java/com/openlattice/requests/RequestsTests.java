@@ -22,18 +22,16 @@
 
 package com.openlattice.requests;
 
-import com.openlattice.requests.HazelcastRequestsManager;
-import com.openlattice.requests.RequestQueryService;
+import com.google.common.collect.ImmutableSet;
+import com.hazelcast.map.IMap;
+import com.hazelcast.spi.exception.RetryableHazelcastException;
 import com.openlattice.authorization.AceKey;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.HzAuthzTest;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.hazelcast.HazelcastMap;
 import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.requests.util.RequestUtil;
-import com.google.common.collect.ImmutableSet;
-import com.hazelcast.core.IMap;
-import com.hazelcast.spi.exception.RetryableHazelcastException;
-import com.openlattice.authorization.AclKey;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -45,40 +43,37 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RequestsTests extends HzAuthzTest {
-    protected static final RequestQueryService      aqs;
     protected static final HazelcastRequestsManager hzRequests;
-    protected static final Lock        lock      = new ReentrantLock();
-    protected static final Status      expected  = TestDataFactory.status();
-    protected static final Status      expected2 = new Status(
+    protected static final Status                   expected  = TestDataFactory.status();
+    protected static final Status                   expected2 = new Status(
             expected.getRequest(),
             TestDataFactory.userPrincipal(),
             RequestStatus.SUBMITTED );
-    protected static final Status      expected3 = new Status(
+    protected static final Status                   expected3 = new Status(
             expected.getRequest(),
             TestDataFactory.userPrincipal(),
             RequestStatus.SUBMITTED );
-    protected static final Status      expected4 = new Status(
+    protected static final Status                   expected4 = new Status(
             TestDataFactory.aclKey(),
             expected.getRequest().getPermissions(),
             expected.getRequest().getReason(),
             expected.getPrincipal(),
             RequestStatus.SUBMITTED );
-    protected static final Set<Status> ss        = ImmutableSet.of( expected,
+    protected static final Set<Status>              ss        = ImmutableSet.of( expected,
             expected2,
             expected3,
             expected4,
             TestDataFactory.status(),
             TestDataFactory.status(),
             TestDataFactory.status() );
-    protected static final Set<Status> submitted = ImmutableSet.of(
+    protected static final Set<Status>              submitted = ImmutableSet.of(
             expected2,
             expected3,
             expected4 );
-    private static final Logger logger = LoggerFactory.getLogger( RequestsTests.class );
+    private static final   Logger                   logger    = LoggerFactory.getLogger( RequestsTests.class );
 
     static {
-        IMap<AclKey, SecurableObjectType> objectTypes = hazelcastInstance
-                .getMap( HazelcastMap.SECURABLE_OBJECT_TYPES.name() );
+        IMap<AclKey, SecurableObjectType> objectTypes = HazelcastMap.SECURABLE_OBJECT_TYPES.getMap( hazelcastInstance );
         for ( Status s : ss ) {
             boolean successful = false;
             while ( !successful ) {
@@ -94,8 +89,8 @@ public class RequestsTests extends HzAuthzTest {
 
             }
         }
-        aqs = new RequestQueryService( hds );
-        hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs, neuron );
+        final var aqs = new RequestQueryService( hds );
+        hzRequests = new HazelcastRequestsManager( hazelcastInstance, aqs );
         Map<AceKey, Status> statusMap = RequestUtil.statusMap( ss );
         hzRequests.submitAll( statusMap );
     }
@@ -159,7 +154,7 @@ public class RequestsTests extends HzAuthzTest {
                 .checkIfHasPermissions( new AclKey( s.getRequest().getAclKey() ),
                         ImmutableSet.of( s.getPrincipal() ),
                         s.getRequest().getPermissions() ) ) );
-        ;
+
         hzRequests.submitAll( RequestUtil
                 .statusMap( submitted.stream().map( RequestUtil::approve ).collect( Collectors.toSet() ) ) );
 

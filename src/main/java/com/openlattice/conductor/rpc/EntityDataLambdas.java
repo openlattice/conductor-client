@@ -22,47 +22,46 @@
 
 package com.openlattice.conductor.rpc;
 
-import com.google.common.collect.SetMultimap;
 import com.openlattice.data.EntityDataKey;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.Serializable;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
 public class EntityDataLambdas implements Function<ConductorElasticsearchApi, Boolean>, Serializable {
     private static final long serialVersionUID = -1071651645473672891L;
 
-    @SuppressFBWarnings(value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented")
-    private EntityDataKey             edk;
-    private SetMultimap<UUID, Object> propertyValues;
-    private boolean                   shouldUpdate;
+    @SuppressFBWarnings( value = "SE_BAD_FIELD", justification = "Custom Stream Serializer is implemented" )
+    private EntityDataKey          edk;
+    private UUID                   entityTypeId;
+    private Map<UUID, Set<Object>> propertyValues;
 
     public EntityDataLambdas(
+            UUID entityTypeId,
             EntityDataKey edk,
-            SetMultimap<UUID, Object> propertyValues,
-            boolean shouldUpdate ) {
+            Map<UUID, Set<Object>> propertyValues ) {
+        this.entityTypeId = entityTypeId;
         this.edk = edk;
         this.propertyValues = propertyValues;
-        this.shouldUpdate = shouldUpdate;
     }
 
     @Override
     public Boolean apply( ConductorElasticsearchApi api ) {
-        return shouldUpdate ?
-                api.updateEntityData( edk, propertyValues ) :
-                api.createEntityData( edk, propertyValues );
+        return api.createEntityData( entityTypeId, edk, propertyValues );
+    }
+
+    public UUID getEntityTypeId() {
+        return entityTypeId;
     }
 
     public EntityDataKey getEntityDataKey() {
         return edk;
     }
 
-    public SetMultimap<UUID, Object> getPropertyValues() {
+    public Map<UUID, Set<Object>> getPropertyValues() {
         return propertyValues;
-    }
-
-    public boolean getShouldUpdate() {
-        return shouldUpdate;
     }
 }

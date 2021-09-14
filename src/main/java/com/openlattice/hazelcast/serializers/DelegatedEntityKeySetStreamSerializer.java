@@ -25,15 +25,18 @@ import com.openlattice.hazelcast.StreamSerializerTypeIds;
 import com.google.common.collect.Sets;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 import com.openlattice.data.EntityKey;
+
 import java.io.IOException;
+import java.util.Set;
+
+import com.openlattice.mapstores.TestDataFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DelegatedEntityKeySetStreamSerializer extends SetStreamSerializer<DelegatedEntityKeySet, EntityKey> {
 
-    public DelegatedEntityKeySetStreamSerializer( ) {
+    public DelegatedEntityKeySetStreamSerializer() {
         super( DelegatedEntityKeySet.class );
     }
 
@@ -57,4 +60,8 @@ public class DelegatedEntityKeySetStreamSerializer extends SetStreamSerializer<D
         EntityKeyStreamSerializer.serialize( out, element );
     }
 
+    @Override
+    public DelegatedEntityKeySet generateTestValue() {
+        return new DelegatedEntityKeySet( Set.of( TestDataFactory.entityKey(), TestDataFactory.entityKey() ) );
+    }
 }

@@ -23,11 +23,10 @@ package com.openlattice.hazelcast.serializers;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import com.openlattice.edm.requests.MetadataUpdate;
 import com.openlattice.edm.types.processors.UpdateEntitySetPropertyMetadataProcessor;
 import com.openlattice.hazelcast.StreamSerializerTypeIds;
 import java.io.IOException;
-import java.util.Optional;
+
 import org.springframework.stereotype.Component;
 
 @Component
@@ -36,28 +35,13 @@ public class UpdateEntitySetPropertyMetadataProcessorStreamSerializer
 
     @Override
     public void write( ObjectDataOutput out, UpdateEntitySetPropertyMetadataProcessor object ) throws IOException {
-        MetadataUpdate update = object.getUpdate();
-        OptionalStreamSerializers.serialize( out, update.getTitle(), ObjectDataOutput::writeUTF );
-        OptionalStreamSerializers.serialize( out, update.getDescription(), ObjectDataOutput::writeUTF );
-        OptionalStreamSerializers.serialize( out, update.getDefaultShow(), ObjectDataOutput::writeBoolean );
+        MetadataUpdateStreamSerializer.serialize( out, object.getUpdate() );
     }
 
     @Override
     public UpdateEntitySetPropertyMetadataProcessor read( ObjectDataInput in ) throws IOException {
-        Optional<String> title = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
-        Optional<String> description = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
-        Optional<Boolean> defaultShow = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readBoolean );
 
-        MetadataUpdate update = new MetadataUpdate(
-                title,
-                description,
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                defaultShow,
-                Optional.empty() );
-        return new UpdateEntitySetPropertyMetadataProcessor( update );
+        return new UpdateEntitySetPropertyMetadataProcessor( MetadataUpdateStreamSerializer.deserialize( in ) );
     }
 
     @Override

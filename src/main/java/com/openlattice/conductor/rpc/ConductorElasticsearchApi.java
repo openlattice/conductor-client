@@ -22,21 +22,19 @@
 
 package com.openlattice.conductor.rpc;
 
-import com.openlattice.apps.App;
-import com.openlattice.apps.AppType;
+import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.data.EntityDataKey;
-import com.openlattice.data.EntityKey;
 import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
-import com.openlattice.organization.Organization;
-import com.openlattice.search.requests.EntityKeyIdSearchResult;
-import com.openlattice.search.requests.SearchDetails;
-import com.openlattice.search.requests.SearchResult;
-import com.google.common.collect.SetMultimap;
-import com.openlattice.authorization.AclKey;
+import com.openlattice.organizations.Organization;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
+import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
+import com.openlattice.search.requests.EntityDataKeySearchResult;
+import com.openlattice.search.requests.SearchConstraints;
+import com.openlattice.search.requests.SearchResult;
 
 import java.util.List;
 import java.util.Map;
@@ -47,117 +45,212 @@ import java.util.UUID;
 public interface ConductorElasticsearchApi {
 
     // settings consts
-    final String NUM_SHARDS         = "number_of_shards";
-    final String NUM_REPLICAS       = "number_of_replicas";
-    final String ANALYSIS           = "analysis";
-    final String FILTER             = "filter";
-    final String ANALYZER           = "analyzer";
-    final String ENCODER            = "encoder";
-    final String REPLACE            = "replace";
-    final String TOKENIZER          = "tokenizer";
-    final String STANDARD           = "standard";
-    final String LOWERCASE          = "lowercase";
-    final String PHONETIC           = "phonetic";
-    final String METAPHONE          = "metaphone";
-    final String METAPHONE_FILTER   = "metaphone_filter";
-    final String METAPHONE_ANALYZER = "MetaphoneAnalyzer";
+    String NUM_SHARDS         = "number_of_shards";
+    String NUM_REPLICAS       = "number_of_replicas";
+    String ANALYSIS           = "analysis";
+    String FILTER             = "filter";
+    String ANALYZER           = "analyzer";
+    String ENCODER            = "encoder";
+    String REPLACE            = "replace";
+    String OUTPUT_UNIGRAMS    = "output_unigrams";
+    String TOKEN_SEPARATOR    = "token_separator";
+    String TOKENIZER          = "tokenizer";
+    String STANDARD           = "standard";
+    String LOWERCASE          = "lowercase";
+    String PHONETIC           = "phonetic";
+    String METAPHONE          = "metaphone";
+    String SHINGLE            = "shingle";
+    String METAPHONE_FILTER   = "metaphone_filter";
+    String SHINGLE_FILTER     = "shingle_filter";
+    String METAPHONE_ANALYZER = "MetaphoneAnalyzer";
 
-    final String ES_PROPERTIES = "properties";
-    final String PARENT        = "_parent";
-    final String TYPE          = "type";
-    final String OBJECT        = "object";
-    final String NESTED        = "nested";
-    final String INDEX         = "index";
-    final String NOT_ANALYZED  = "not_analyzed";
+    String MAPPING_PROPERTIES = "properties";
+    String TYPE               = "type";
+    String OBJECT             = "object";
+    String NESTED             = "nested";
+    String INDEX              = "index";
 
     // datatypes
-    final String TEXT      = "text";
-    final String KEYWORD   = "keyword";
-    final String INTEGER   = "integer";
-    final String SHORT     = "short";
-    final String LONG      = "long";
-    final String DOUBLE    = "double";
-    final String FLOAT     = "float";
-    final String BYTE      = "byte";
-    final String DATE      = "date";
-    final String BOOLEAN   = "boolean";
-    final String BINARY    = "binary";
-    final String GEO_POINT = "geo_point";
+    String TEXT      = "text";
+    String KEYWORD   = "keyword";
+    String INTEGER   = "integer";
+    String SHORT     = "short";
+    String LONG      = "long";
+    String DOUBLE    = "double";
+    String FLOAT     = "float";
+    String BYTE      = "byte";
+    String DATE      = "date";
+    String BOOLEAN   = "boolean";
+    String GEO_POINT = "geo_point";
 
     // entity_set_data_model setup consts
-    final String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
-    final String ENTITY_SET_TYPE       = "entity_set";
+    String ENTITY_SET_DATA_MODEL = "entity_set_data_model";
+    String ENTITY_SET_TYPE       = "entity_set";
 
     // organizations setup consts
-    final String ORGANIZATIONS     = "organizations";
-    final String ORGANIZATION      = "organization";
-    final String ORGANIZATION_TYPE = "organizationType";
-    final String ORGANIZATION_ID   = "organizationId";
+    String ORGANIZATIONS     = "organizations";
+    String ORGANIZATION      = "com/openlattice/organization";
+    String ORGANIZATION_TYPE = "organizationType";
 
-    final String SECURABLE_OBJECT_INDEX_PREFIX = "securable_object_";
-    final String SECURABLE_OBJECT_TYPE_PREFIX  = "type_";
-    final String ACL_KEY                       = "aclKey";
-    final String PROPERTY_TYPE_ID              = "propertyTypeId";
+    String DATA_INDEX_PREFIX = "entity_data_";
+    String DATA_TYPE_PREFIX  = "data_type_";
 
     // entity_type_index setup consts
-    final String ENTITY_TYPE_INDEX = "entity_type_index";
-    final String ENTITY_TYPE       = "entity_type";
+    String ENTITY_TYPE_INDEX = "entity_type_index";
+    String ENTITY_TYPE       = "entity_type";
 
     // property_type_index setup consts
-    final String PROPERTY_TYPE_INDEX = "property_type_index";
-    final String PROPERTY_TYPE       = "property_type";
+    String PROPERTY_TYPE_INDEX = "property_type_index";
+    String PROPERTY_TYPE       = "property_type";
 
     // association_type_index setup consts
-    final String ASSOCIATION_TYPE_INDEX = "association_type_index";
-    final String ASSOCIATION_TYPE       = "association_type";
-    final String ENTITY_TYPE_FIELD      = "entityType";
+    String ASSOCIATION_TYPE_INDEX = "association_type_index";
+    String ASSOCIATION_TYPE       = "association_type";
 
     // app_index setup consts
-    final String APP_INDEX = "app_index";
-    final String APP       = "app";
-
-    // app_type_index setup consts
-    final String APP_TYPE_INDEX = "app_type_index";
-    final String APP_TYPE       = "app_type";
+    String APP_INDEX = "app_index";
+    String APP       = "app";
 
     // entity set field consts
-    final String TYPE_FIELD     = "_type";
-    final String ENTITY_SET     = "entitySet";
-    final String ENTITY_SET_ID  = "entitySetId";
-    final String PROPERTY_TYPES = "propertyTypes";
-    final String ACLS           = "acls";
-    final String NAME           = "name";
-    final String NAMESPACE      = "namespace";
-    final String TITLE          = "title";
-    final String DESCRIPTION    = "description";
-    final String ENTITY_TYPE_ID = "entityTypeId";
-    final String ID             = "id";
-    final String SRC            = "src";
-    final String DST            = "dst";
-    final String BIDIRECTIONAL  = "bidirectional";
-    final String URL            = "url";
+    String ENTITY_SET     = "entitySet";
+    String PROPERTY_TYPES = "propertyTypes";
 
-    boolean saveEntitySetToElasticsearch( EntitySet entitySet, List<PropertyType> propertyTypes );
+    // entity type data nested fields
+    String ENTITY              = "entity";
+    String ENTITY_SET_ID_FIELD = "entitySetId";
 
-    boolean createSecurableObjectIndex( UUID entitySetId, List<PropertyType> propertyTypes );
+    // entity_type_collection_index setup consts
+    String ENTITY_TYPE_COLLECTION_INDEX = "entity_type_collection_index";
+    String ENTITY_TYPE_COLLECTION       = "entity_type_collection";
 
-    boolean deleteEntitySet( UUID entitySetId );
+    // entity_set_collection_index setup consts
+    String ENTITY_SET_COLLECTION_INDEX = "entity_set_collection_index";
+    String ENTITY_SET_COLLECTION       = "entity_set_collection";
+
+    Set<UUID> getEntityTypesWithIndices();
+
+    /**
+     * Entity Data Create/Update/Delete
+     **/
+
+    /* Create */
+    boolean createEntityData(
+            UUID entityTypeId,
+            EntityDataKey edk,
+            Map<UUID, Set<Object>> propertyValues );
+
+    boolean createBulkEntityData( UUID entityTypeId, UUID entitySetId, Map<UUID, Map<UUID, Set<Object>>> entitiesById );
+
+    /**
+     * Creates documents in elasticsearch for each of these linked entities.
+     * @param entityTypeId The entity type of the linked entities.
+     * @param entitiesByLinkingId Map of the linked entity data, mapped by (respectively) linking id, entity set id,
+     *                            origin id (as in the entity key id of the source entity) and property type id.
+     * @return true if indexing was successful
+     */
+    boolean createBulkLinkedData(
+            UUID entityTypeId,
+            Map<UUID, Map<UUID, Map<UUID, Map<UUID, Set<Object>>>>> entitiesByLinkingId
+    );
+
+    /* Delete */
+    boolean deleteEntitySet( UUID entitySetId, UUID entityTypeId );
+
+    boolean clearEntitySetData( UUID entitySetId, UUID entityTypeId );
+
+    boolean deleteEntityDataBulk( UUID entityTypeId, Set<UUID> entityKeyIds );
+
+    /* Update Mappings */
+    boolean addPropertyTypesToEntityType( EntityType entityType, List<PropertyType> newPropertyTypes );
+
+    /**
+     * Entity Data Search
+     **/
+
+    EntityDataKeySearchResult executeSearch(
+            SearchConstraints searchConstraints,
+            Map<UUID, UUID> entityTypesByEntitySetId,
+            Map<UUID, DelegatedUUIDSet> authorizedPropertyTypesByEntitySet,
+            Map<UUID, DelegatedUUIDSet> linkingEntitySets
+    );
+
+    /**
+     * Performs a capped size search across all non-linked entity sets of a particular index.
+     * NOTE: permissions are not enforced on this search, so it should not be exposed via the api.
+     *
+     * @param entityTypeId  The entity type id of the index to search
+     * @param fieldSearches The values for each field that is being searched.
+     * @param size          The size cap on the results per entity set.
+     * @param explain
+     * @return A map entity set ids to entity key ids of results for each entity set.
+     */
+    Map<UUID, Set<UUID>> executeBlockingSearch(
+            UUID entityTypeId,
+            Map<UUID, DelegatedStringSet> fieldSearches,
+            int size,
+            boolean explain );
+
+    /**
+     * EDM / SecurableObject Create/Update/Delete
+     **/
+
+
+    /* Entity Sets */
+    boolean saveEntitySetToElasticsearch(
+            EntityType entityType,
+            EntitySet entitySet,
+            List<PropertyType> propertyTypes );
+
+    boolean updateEntitySetMetadata( EntitySet entitySet );
+
+    boolean updatePropertyTypesInEntitySet( UUID entitySetId, List<PropertyType> updatedPropertyTypes );
+
+    /* Organizations */
+    boolean createOrganization( Organization organization );
+
+    boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
+
+    /* Entity/Association Type Creation */
+    boolean saveEntityTypeToElasticsearch( EntityType entityType, List<PropertyType> propertyTypes );
+
+    boolean saveAssociationTypeToElasticsearch( AssociationType associationType, List<PropertyType> propertyTypes );
+
+    /* Default SecurableObject create and delete */
+    boolean saveSecurableObjectToElasticsearch( SecurableObjectType securableObjectType, Object securableObject );
+
+    boolean deleteSecurableObjectFromElasticsearch( SecurableObjectType securableObjectType, UUID objectId );
+
+    /**
+     * EDM / SecurableObject Metadata Searches
+     **/
+
+    SearchResult executeSecurableObjectSearch(
+            SecurableObjectType securableObjectType,
+            String searchTerm,
+            int start,
+            int maxHits );
+
+    SearchResult executeSecurableObjectFQNSearch(
+            SecurableObjectType securableObjectType,
+            String namespace,
+            String name,
+            int start,
+            int maxHits );
+
+    SearchResult executeEntitySetCollectionSearch(
+            String searchTerm,
+            Set<AclKey> authorizedEntitySetCollectionIds,
+            int start,
+            int maxHits );
 
     SearchResult executeEntitySetMetadataSearch(
             Optional<String> optionalSearchTerm,
             Optional<UUID> optionalEntityType,
             Optional<Set<UUID>> optionalPropertyTypes,
+            boolean excludePropertyTypes,
             Set<AclKey> authorizedAclKeys,
             int start,
             int maxHits );
-
-    boolean updateEntitySetMetadata( EntitySet entitySet );
-
-    boolean updatePropertyTypesInEntitySet( UUID entitySetId, List<PropertyType> newPropertyTypes );
-
-    boolean createOrganization( Organization organization );
-
-    boolean deleteOrganization( UUID organizationId );
 
     SearchResult executeOrganizationSearch(
             String searchTerm,
@@ -165,86 +258,16 @@ public interface ConductorElasticsearchApi {
             int start,
             int maxHits );
 
-    boolean updateOrganization( UUID id, Optional<String> optionalTitle, Optional<String> optionalDescription );
-
-    boolean createEntityData(
-            EntityDataKey edk,
-            SetMultimap<UUID, Object> propertyValues );
-
-    boolean updateEntityData(
-            EntityDataKey edk,
-            SetMultimap<UUID, Object> propertyValues );
-
-    boolean deleteEntityData( EntityDataKey edk );
-
-    EntityKeyIdSearchResult executeEntitySetDataSearch(
-            UUID entitySetId,
-            String searchTerm,
-            int start,
-            int maxHits,
-            Set<UUID> authorizedPropertyTypes );
-
-    List<UUID> executeEntitySetDataSearchAcrossIndices(
-            Iterable<UUID> entitySetIds,
-            Map<UUID, DelegatedStringSet> fieldSearches,
-            int size,
-            boolean explain );
-
-    EntityKeyIdSearchResult executeAdvancedEntitySetDataSearch(
-            UUID entitySetId,
-            List<SearchDetails> searches,
-            int start,
-            int maxHits,
-            Set<UUID> authorizedPropertyTypes );
-
-    boolean saveEntityTypeToElasticsearch( EntityType entityType );
-
-    boolean saveAssociationTypeToElasticsearch( AssociationType associationType );
-
-    boolean savePropertyTypeToElasticsearch( PropertyType propertyType );
-
-    boolean deleteEntityType( UUID entityTypeId );
-
-    boolean deleteAssociationType( UUID associationTypeId );
-
-    boolean deletePropertyType( UUID propertyTypeId );
-
-    SearchResult executeEntityTypeSearch( String searchTerm, int start, int maxHits );
-
-    SearchResult executeAssociationTypeSearch( String searchTerm, int start, int maxHits );
-
-    SearchResult executePropertyTypeSearch( String searchTerm, int start, int maxHits );
-
-    SearchResult executeFQNEntityTypeSearch( String namespace, String name, int start, int maxHits );
-
-    SearchResult executeFQNPropertyTypeSearch( String namespace, String name, int start, int maxHits );
-
-    boolean clearAllData();
-
-    double getModelScore( double[][] features );
-
-    boolean triggerPropertyTypeIndex( List<PropertyType> propertyTypes );
-
-    boolean triggerEntityTypeIndex( List<EntityType> entityTypes );
-
-    boolean triggerAssociationTypeIndex( List<AssociationType> associationTypes );
+    /**
+     * Re-indexing
+     **/
 
     boolean triggerEntitySetIndex( Map<EntitySet, Set<UUID>> entitySets, Map<UUID, PropertyType> propertyTypes );
 
-    boolean triggerAppIndex( List<App> apps );
+    boolean triggerOrganizationIndex( List<Organization> organizations );
 
-    boolean triggerAppTypeIndex( List<AppType> appTypes );
-
-    boolean saveAppToElasticsearch( App app );
-
-    boolean deleteApp( UUID appId );
-
-    SearchResult executeAppSearch( String searchTerm, int start, int maxHits );
-
-    boolean saveAppTypeToElasticsearch( AppType appType );
-
-    boolean deleteAppType( UUID appTypeId );
-
-    SearchResult executeAppTypeSearch( String searchTerm, int start, int maxHits );
+    boolean triggerSecurableObjectIndex(
+            SecurableObjectType securableObjectType,
+            Iterable<?> securableObjects );
 
 }

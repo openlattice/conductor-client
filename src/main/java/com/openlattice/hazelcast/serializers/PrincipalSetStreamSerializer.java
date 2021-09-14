@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright (C) 2018. OpenLattice, Inc.
  *
@@ -23,13 +21,16 @@
 package com.openlattice.hazelcast.serializers;
 
 import com.openlattice.hazelcast.StreamSerializerTypeIds;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.organizations.PrincipalSet;
 import com.google.common.collect.Sets;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
 import com.openlattice.authorization.Principal;
+
 import java.io.IOException;
+import java.util.Set;
+
 import org.springframework.stereotype.Component;
 
 @Component
@@ -59,4 +60,8 @@ public class PrincipalSetStreamSerializer extends SetStreamSerializer<PrincipalS
         PrincipalStreamSerializer.serialize( out, element );
     }
 
+    @Override
+    public PrincipalSet generateTestValue() {
+        return new PrincipalSet( Set.of( TestDataFactory.rolePrincipal(), TestDataFactory.userPrincipal() ) );
+    }
 }

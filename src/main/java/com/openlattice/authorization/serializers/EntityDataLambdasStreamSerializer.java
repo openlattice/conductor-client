@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import com.openlattice.conductor.rpc.EntityDataLambdas;
 import com.openlattice.data.EntityDataKey;
@@ -19,8 +20,9 @@ import java.io.IOException;
 import java.util.UUID;
 
 public class EntityDataLambdasStreamSerializer extends Serializer<EntityDataLambdas> {
-    private static final Logger        logger = LoggerFactory.getLogger( EntityDataLambdasStreamSerializer.class );
-    private              TypeReference ref    = new TypeReference<SetMultimap<UUID, Object>>() {
+    private static final Logger                                   logger = LoggerFactory
+            .getLogger( EntityDataLambdasStreamSerializer.class );
+    private              TypeReference<SetMultimap<UUID, Object>> ref    = new TypeReference<>() {
     };
 
     private ObjectMapper mapper;
@@ -43,9 +45,9 @@ public class EntityDataLambdasStreamSerializer extends Serializer<EntityDataLamb
     @Override
     public void write(
             Kryo kryo, Output output, EntityDataLambdas object ) {
+        writeUUID( output, object.getEntityTypeId() );
         writeUUID( output, object.getEntityDataKey().getEntitySetId() );
         writeUUID( output, object.getEntityDataKey().getEntityKeyId() );
-        output.writeBoolean( object.getShouldUpdate() );
 
         try {
             byte[] bytes = mapper.writeValueAsBytes( object.getPropertyValues() );
@@ -59,19 +61,20 @@ public class EntityDataLambdasStreamSerializer extends Serializer<EntityDataLamb
     @Override
     public EntityDataLambdas read(
             Kryo kryo, Input input, Class<EntityDataLambdas> type ) {
+        UUID entityTypeId = readUUID( input );
         UUID entitySetId = readUUID( input );
         UUID entityKeyId = readUUID( input );
         EntityDataKey edk = new EntityDataKey( entitySetId, entityKeyId );
-        boolean shouldUpdate = input.readBoolean();
 
         int numBytes = input.readInt();
-        SetMultimap<UUID, Object> propertyValues = HashMultimap.create();
+        final SetMultimap<UUID, Object> propertyValues;
         try {
             propertyValues = mapper.readValue( input.readBytes( numBytes ), ref );
         } catch ( IOException e ) {
             logger.debug( "Unable to deserialize entity with id: {}", entityKeyId );
+            throw new IllegalStateException( "Unable to deserialize entity with id: " + entityKeyId.toString() );
         }
 
-        return new EntityDataLambdas( edk, propertyValues, shouldUpdate );
+        return new EntityDataLambdas( entityTypeId, edk, Multimaps.asMap( propertyValues ) );
     }
 }

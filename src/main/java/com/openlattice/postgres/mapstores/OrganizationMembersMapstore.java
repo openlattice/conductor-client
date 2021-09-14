@@ -1,21 +1,22 @@
 package com.openlattice.postgres.mapstores;
 
-import static com.openlattice.postgres.PostgresColumn.ID;
-import static com.openlattice.postgres.PostgresColumn.MEMBERS;
-import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
-
-import com.openlattice.authorization.Principal;
-import com.openlattice.authorization.PrincipalType;
-import com.openlattice.hazelcast.HazelcastMap;
-import com.openlattice.organizations.PrincipalSet;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
+import com.hazelcast.config.MapConfig;
+import com.openlattice.authorization.Principal;
+import com.openlattice.authorization.PrincipalType;
+import com.openlattice.hazelcast.HazelcastMap;
+import com.openlattice.organizations.PrincipalSet;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.commons.lang3.RandomStringUtils;
+
 import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -26,11 +27,27 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.apache.commons.lang.RandomStringUtils;
 
+import static com.openlattice.postgres.PostgresColumn.ID;
+import static com.openlattice.postgres.PostgresColumn.MEMBERS;
+import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
+
+/**
+ * There is currently an implication in the codebase that all Principals in this Mapstore are of type PrincipalType.USER
+ */
 public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UUID, PrincipalSet> {
+
+    public static final String ANY_PRINCIPAL_SET = "principals[any]";
+
     public OrganizationMembersMapstore( HikariDataSource hds ) {
-        super( HazelcastMap.ORGANIZATIONS_MEMBERS.name(), ORGANIZATIONS, hds );
+        super( HazelcastMap.ORGANIZATIONS_MEMBERS, ORGANIZATIONS, hds );
+    }
+
+    @Override
+    public MapConfig getMapConfig() {
+        return super
+                .getMapConfig()
+                .addIndexConfig( new IndexConfig( IndexType.HASH,ANY_PRINCIPAL_SET) );
     }
 
     @Override
@@ -61,7 +78,8 @@ public class OrganizationMembersMapstore extends AbstractBasePostgresMapstore<UU
             String[] value = (String[]) arr.getArray();
             if ( value != null ) {
                 return PrincipalSet
-                        .wrap( Arrays.stream( value ).map( user -> new Principal( PrincipalType.USER, user ) )
+                        .wrap( Arrays.stream( value )
+                                .map( user -> new Principal( PrincipalType.USER, user ) )
                                 .collect( Collectors.toSet() ) );
             }
         }

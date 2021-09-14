@@ -20,16 +20,17 @@
 
 package com.openlattice.organizations.roles;
 
-import com.openlattice.authorization.Principal;
-import com.openlattice.authorization.PrincipalType;
-import com.openlattice.directory.pojo.Auth0UserBasic;
-import com.openlattice.organization.roles.Role;
-import com.google.common.collect.SetMultimap;
-import com.hazelcast.map.EntryProcessor;
+import com.auth0.json.mgmt.users.User;
 import com.hazelcast.query.Predicate;
 import com.openlattice.authorization.AclKey;
+import com.openlattice.authorization.Permission;
+import com.openlattice.authorization.Principal;
 import com.openlattice.authorization.SecurablePrincipal;
+import com.openlattice.organization.roles.Role;
+
+import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -37,12 +38,11 @@ import java.util.UUID;
 public interface SecurePrincipalsManager {
 
     /**
-     * @param owner The owner of a role. Usually the organization.
+     * @param owner     The owner of a role. Usually the organization.
      * @param principal The principal which to create.
+     * @return True if the securable principal was created false otherwise.
      */
-    void createSecurablePrincipalIfNotExists( Principal owner, SecurablePrincipal principal );
-
-    //    SecurablePrincipal getSecurablePrincipal( Principal principal );
+    boolean createSecurablePrincipalIfNotExists( Principal owner, SecurablePrincipal principal );
 
     /**
      * Retrieves a securable principal by acl key lookup.
@@ -52,15 +52,11 @@ public interface SecurePrincipalsManager {
      */
     SecurablePrincipal getSecurablePrincipal( AclKey aclKey );
 
-    SecurablePrincipal getPrincipal( String principalId );
-
-    Collection<SecurablePrincipal> getSecurablePrincipals( PrincipalType principalType );
+    @Nonnull SecurablePrincipal getPrincipal( String principalId );
 
     Collection<SecurablePrincipal> getAllRolesInOrganization( UUID organizationId );
 
-    SetMultimap<SecurablePrincipal,SecurablePrincipal> getRolesForUsersInOrganization( UUID organizationId );
-
-    Collection<SecurablePrincipal> getSecurablePrincipals( Predicate p );
+    Collection<SecurablePrincipal> getSecurablePrincipals( Predicate<AclKey, SecurablePrincipal> p );
 
     void createSecurablePrincipal(
             Principal owner, SecurablePrincipal principal );
@@ -77,30 +73,54 @@ public interface SecurePrincipalsManager {
 
     void removePrincipalFromPrincipal( AclKey source, AclKey target );
 
-    Map<AclKey, Object> executeOnPrincipal( EntryProcessor<AclKey, SecurablePrincipal> ep, Predicate p );
-
-    //More logical to use Principal
-
-    void removePrincipalFromPrincipals( AclKey source, Predicate targetFilter );
+    void removePrincipalsFromPrincipals( Set<AclKey> sources, Set<AclKey> target );
 
     Collection<SecurablePrincipal> getAllPrincipalsWithPrincipal( AclKey aclKey );
+
+    Collection<SecurablePrincipal> getParentPrincipalsOfPrincipal( AclKey aclKey );
+
+    boolean principalHasChildPrincipal( AclKey parent, AclKey child );
 
     // Methods about users
     Collection<Principal> getAllUsersWithPrincipal( AclKey principal );
 
-    Collection<Auth0UserBasic> getAllUserProfilesWithPrincipal( AclKey principal );
+    Collection<User> getAllUserProfilesWithPrincipal( AclKey principal );
 
     boolean principalExists( Principal p );
 
-    Auth0UserBasic getUser( String userId );
+    User getUser( String userId );
 
     Role getRole( UUID organizationId, UUID roleId );
 
     AclKey lookup( Principal p );
 
-    Collection<Principal> getPrincipals( Predicate<AclKey, SecurablePrincipal> p );
+    Map<Principal, AclKey> lookup( Set<Principal> principals );
 
-    Collection<SecurablePrincipal> getSecurablePrincipals( Set<Principal> members );
+    Role lookupRole( Principal principal );
+
+    Collection<SecurablePrincipal> getSecurablePrincipals( Collection<Principal> members );
 
     Collection<SecurablePrincipal> getAllPrincipals( SecurablePrincipal sp );
+
+    Map<SecurablePrincipal, Set<Principal>> bulkGetUnderlyingPrincipals(Set<SecurablePrincipal> sps);
+
+    Collection<Principal> getAllUnderlyingPrincipals( SecurablePrincipal sp );
+
+    /**
+     * Returns all Principals, which have all the specified permissions on the securable object
+     * @param key The securable object
+     * @param permissions Set of permission to check for
+     */
+    Set<Principal> getAuthorizedPrincipalsOnSecurableObject( AclKey key, EnumSet<Permission> permissions );
+
+    SecurablePrincipal getSecurablePrincipalById( UUID id );
+
+    UUID getCurrentUserId();
+
+    void ensurePrincipalsExist( Set<AclKey> aclKeys );
+
+    Set<Role> getAllRoles();
+
+    Set<SecurablePrincipal> getAllUsers();
+
 }

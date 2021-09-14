@@ -25,7 +25,12 @@ package com.openlattice.data.storage;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public enum MetadataOption {
-    LAST_WRITE,
+    ENTITY_KEY_IDS,
+    @Deprecated
+    ENTITY_SET_IDS,
     LAST_INDEX,
-    VERSION
+    LAST_LINK,
+    LAST_WRITE,
+    VERSION,
+    VERSIONS
 }

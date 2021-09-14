@@ -7,6 +7,7 @@ import static com.openlattice.postgres.PostgresTable.ORGANIZATIONS;
 import com.openlattice.hazelcast.HazelcastMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.postgres.PostgresColumnDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
@@ -17,12 +18,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.commons.lang3.RandomStringUtils;
 
 public class OrganizationDescriptionsMapstore extends AbstractBasePostgresMapstore<UUID, String> {
 
     public OrganizationDescriptionsMapstore( HikariDataSource hds ) {
-        super( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS.name(), ORGANIZATIONS, hds );
+        super( HazelcastMap.ORGANIZATIONS_DESCRIPTIONS, ORGANIZATIONS, hds );
     }
 
     @Override public List<PostgresColumnDefinition> initValueColumns() {
@@ -70,6 +70,6 @@ public class OrganizationDescriptionsMapstore extends AbstractBasePostgresMapsto
     }
 
     @Override public String generateTestValue() {
-        return RandomStringUtils.random( 10 );
+        return TestDataFactory.random( 10 );
     }
 }

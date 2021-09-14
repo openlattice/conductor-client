@@ -2,9 +2,12 @@ package com.openlattice.postgres.mapstores;
 
 import static com.openlattice.postgres.PostgresTable.SECURABLE_OBJECTS;
 
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
+import com.hazelcast.config.MapConfig;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.hazelcast.HazelcastMap;
-import com.openlattice.authorization.AclKey;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
@@ -14,9 +17,11 @@ import java.sql.SQLException;
 import java.util.UUID;
 
 public class SecurableObjectTypeMapstore extends AbstractBasePostgresMapstore<AclKey, SecurableObjectType> {
+    public static final String ACL_KEY_INDEX               = "__key.index";
+    public static final String SECURABLE_OBJECT_TYPE_INDEX = "this";
 
     public SecurableObjectTypeMapstore( HikariDataSource hds ) {
-        super( HazelcastMap.SECURABLE_OBJECT_TYPES.name(), SECURABLE_OBJECTS, hds );
+        super( HazelcastMap.SECURABLE_OBJECT_TYPES, SECURABLE_OBJECTS, hds );
     }
 
     @Override protected void bind(
@@ -38,6 +43,12 @@ public class SecurableObjectTypeMapstore extends AbstractBasePostgresMapstore<Ac
 
     @Override protected AclKey mapToKey( ResultSet rs ) throws SQLException {
         return ResultSetAdapters.aclKey( rs );
+    }
+
+    @Override public MapConfig getMapConfig() {
+        return super.getMapConfig()
+                .addIndexConfig( new IndexConfig( IndexType.HASH, ACL_KEY_INDEX ) )
+                .addIndexConfig( new IndexConfig( IndexType.HASH, SECURABLE_OBJECT_TYPE_INDEX ) );
     }
 
     @Override public AclKey generateTestKey() {

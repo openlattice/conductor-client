@@ -22,35 +22,32 @@
 
 package com.openlattice.authorization;
 
-import com.openlattice.authorization.securable.AbstractSecurableObject;
-import com.openlattice.authorization.securable.AbstractSecurableType;
-import com.openlattice.authorization.securable.SecurableObjectType;
-import com.openlattice.edm.EntitySet;
-import com.openlattice.edm.exceptions.AclKeyConflictException;
-import com.openlattice.edm.exceptions.TypeExistsException;
-import com.openlattice.hazelcast.HazelcastMap;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableSet;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.map.IMap;
+import com.openlattice.authorization.securable.AbstractSecurableObject;
+import com.openlattice.authorization.securable.AbstractSecurableType;
+import com.openlattice.authorization.securable.SecurableObjectType;
+import com.openlattice.controllers.exceptions.UniqueIdConflictException;
+import com.openlattice.controllers.exceptions.TypeExistsException;
 import com.openlattice.datastore.util.Util;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.hazelcast.HazelcastMap;
 
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 public class HazelcastAclKeyReservationService {
     public static final  String                               PRIVATE_NAMESPACE     = "_private";
     /**
      * This keeps mapping between SecurableObjectTypes that aren't associated to names and their placeholder names.
      */
-    private static final EnumMap<SecurableObjectType, String> RESERVED_NAMES_AS_MAP = new EnumMap<SecurableObjectType, String>(
+    private static final EnumMap<SecurableObjectType, String> RESERVED_NAMES_AS_MAP = new EnumMap<>(
             SecurableObjectType.class );
     private static final Set<String>                          RESERVED_NAMES        = ImmutableSet
             .copyOf( RESERVED_NAMES_AS_MAP.values() );
@@ -75,12 +72,20 @@ public class HazelcastAclKeyReservationService {
     private final IMap<UUID, String> names;
 
     public HazelcastAclKeyReservationService( HazelcastInstance hazelcast ) {
-        this.aclKeys = hazelcast.getMap( HazelcastMap.ACL_KEYS.name() );
-        this.names = hazelcast.getMap( HazelcastMap.NAMES.name() );
+        this.aclKeys = HazelcastMap.ACL_KEYS.getMap( hazelcast );
+        this.names = HazelcastMap.NAMES.getMap( hazelcast );
     }
 
     public UUID getId( String name ) {
         return Util.getSafely( aclKeys, name );
+    }
+
+    public Collection<UUID> getIds(Set<String> names) {
+        return Util.getSafely( aclKeys, names ).values();
+    }
+
+    public Map<String, UUID> getIdsByFqn(Set<String> names) {
+        return Util.getSafely( aclKeys, names);
     }
 
     public boolean isReserved( String name ) {
@@ -134,7 +139,7 @@ public class HazelcastAclKeyReservationService {
 
     /**
      * This function reserves a UUID for a SecurableObject based on AclKey. It throws unchecked exception
-     * {@link TypeExistsException} if the type already exists or {@link AclKeyConflictException} if a different AclKey
+     * {@link TypeExistsException} if the type already exists or {@link UniqueIdConflictException} if a different AclKey
      * is already associated with the type.
      *
      * @param type The type for which to reserve an FQN and UUID.
@@ -149,8 +154,8 @@ public class HazelcastAclKeyReservationService {
 
     /**
      * This function reserves an {@code AclKey} for a SecurableObject that has a name. It throws unchecked exceptions
-     * {@link TypeExistsException} if the type already exists with the same name or {@link AclKeyConflictException} if a
-     * different AclKey is already associated with the type.
+     * {@link TypeExistsException} if the type already exists with the same name or {@link UniqueIdConflictException}
+     * if a different AclKey is already associated with the type.
      */
     public <T extends AbstractSecurableObject> void reserveIdAndValidateType( T type, Supplier<String> namer ) {
         /*
@@ -184,13 +189,13 @@ public class HazelcastAclKeyReservationService {
              * Only a single thread should ever reach here.
              */
         } else {
-            throw new AclKeyConflictException( "AclKey is already associated with different type." );
+            throw new UniqueIdConflictException( "AclKey is already associated with different type." );
         }
     }
 
     /**
      * This function reserves an id for a SecurableObject. It throws unchecked exceptions
-     * {@link TypeExistsException} if the type already exists or {@link AclKeyConflictException} if a different AclKey
+     * {@link TypeExistsException} if the type already exists or {@link UniqueIdConflictException} if a different AclKey
      * is already associated with the type.
      */
     public void reserveId( AbstractSecurableObject type ) {
@@ -207,7 +212,7 @@ public class HazelcastAclKeyReservationService {
          */
 
         if ( name != null ) {
-            throw new AclKeyConflictException( "AclKey is already associated with different name." );
+            throw new UniqueIdConflictException( "AclKey is already associated with different name." );
         }
     }
 
@@ -222,8 +227,9 @@ public class HazelcastAclKeyReservationService {
         /*
          * We always issue the delete, even if sometimes there is no aclKey registered for that FQN.
          */
-
-        aclKeys.delete( name );
+        if ( name != null ) {
+            aclKeys.delete( name );
+        }
     }
 
     private static String getPlaceholder( String objName ) {

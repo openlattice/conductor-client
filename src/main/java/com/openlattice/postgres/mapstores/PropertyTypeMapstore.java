@@ -36,38 +36,46 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 public class PropertyTypeMapstore extends AbstractBasePostgresMapstore<UUID, PropertyType> {
 
     public PropertyTypeMapstore( HikariDataSource hds ) {
-        super( HazelcastMap.PROPERTY_TYPES.name(), PostgresTable.PROPERTY_TYPES, hds );
+        super( HazelcastMap.PROPERTY_TYPES, PostgresTable.PROPERTY_TYPES, hds );
     }
 
     @Override protected void bind( PreparedStatement ps, UUID key, PropertyType value ) throws SQLException {
-        bind( ps, key, 1 );
+        int parameterIndex = bind( ps, key, 1 );
         FullQualifiedName fqn = value.getType();
-        ps.setString( 2, fqn.getNamespace() );
-        ps.setString( 3, fqn.getName() );
+        ps.setString( parameterIndex++, fqn.getNamespace() );
+        ps.setString( parameterIndex++, fqn.getName() );
 
-        ps.setString( 4, value.getDatatype().name() );
-        ps.setString( 5, value.getTitle() );
-        ps.setString( 6, value.getDescription() );
+        ps.setString( parameterIndex++, value.getDatatype().name() );
+        ps.setString( parameterIndex++, value.getTitle() );
+        ps.setString( parameterIndex++, value.getDescription() );
+
+        Array enumValues = PostgresArrays.createTextArray( ps.getConnection(), value.getEnumValues() );
+        ps.setArray( parameterIndex++, enumValues );
 
         Array schemas = PostgresArrays.createTextArray(
                 ps.getConnection(),
                 value.getSchemas().stream().map( FullQualifiedName::getFullQualifiedNameAsString ) );
 
-        ps.setArray( 7, schemas );
-        ps.setBoolean( 8, value.isPIIfield() );
-        ps.setString( 9, value.getAnalyzer().name() );
+        ps.setArray( parameterIndex++, schemas );
+        ps.setBoolean( parameterIndex++, value.isPii() );
+        ps.setString( parameterIndex++, value.getAnalyzer().name() );
+        ps.setBoolean( parameterIndex++, value.isMultiValued() );
+        ps.setString( parameterIndex++, value.getPostgresIndexType().name() );
 
         //UPDATE
-        ps.setString( 10, fqn.getNamespace() );
-        ps.setString( 11, fqn.getName() );
+        ps.setString( parameterIndex++, fqn.getNamespace() );
+        ps.setString( parameterIndex++, fqn.getName() );
 
-        ps.setString( 12, value.getDatatype().name() );
-        ps.setString( 13, value.getTitle() );
-        ps.setString( 14, value.getDescription() );
+        ps.setString( parameterIndex++, value.getDatatype().name() );
+        ps.setString( parameterIndex++, value.getTitle() );
+        ps.setString( parameterIndex++, value.getDescription() );
+        ps.setArray( parameterIndex++, enumValues );
 
-        ps.setArray( 15, schemas );
-        ps.setBoolean( 16, value.isPIIfield() );
-        ps.setString( 17, value.getAnalyzer().name() );
+        ps.setArray( parameterIndex++, schemas );
+        ps.setBoolean( parameterIndex++, value.isPii() );
+        ps.setString( parameterIndex++, value.getAnalyzer().name() );
+        ps.setBoolean( parameterIndex++, value.isMultiValued() );
+        ps.setString( parameterIndex++, value.getPostgresIndexType().name() );
     }
 
     @Override protected int bind( PreparedStatement ps, UUID key, int parameterIndex ) throws SQLException {

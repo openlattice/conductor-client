@@ -37,15 +37,14 @@ public final class PostgresEdmTypeConverter {
 
     public static PostgresDatatype map( EdmPrimitiveTypeKind edmType ) {
         switch ( edmType ) {
-            case GeographyPoint:
-            case String:
-                return PostgresDatatype.TEXT;
             case Guid:
                 return PostgresDatatype.UUID;
+            case GeographyPoint:
+            case String:
             case Byte:
             case SByte:
             case Binary:
-                return PostgresDatatype.BYTEA;
+                return PostgresDatatype.TEXT;
             case Int16:
                 return PostgresDatatype.SMALLINT;
             case Int32:
@@ -71,6 +70,8 @@ public final class PostgresEdmTypeConverter {
     public static PostgresDatatype mapToArrayType( EdmPrimitiveTypeKind edmType ) {
         switch ( edmType ) {
             case String:
+            case Binary:
+            case GeographyPoint:
                 return PostgresDatatype.TEXT_ARRAY;
             case Guid:
                 return PostgresDatatype.UUID_ARRAY;
@@ -91,8 +92,8 @@ public final class PostgresEdmTypeConverter {
                 return PostgresDatatype.DOUBLE_ARRAY;
             case Boolean:
                 return PostgresDatatype.BOOLEAN_ARRAY;
-            case Binary:
-                return PostgresDatatype.BYTEA_ARRAY;
+            case TimeOfDay:
+                return PostgresDatatype.TIMETZ_ARRAY;
             default:
                 throw new NotImplementedException( "Don't know how to convert " + edmType.name() + " to array type" );
         }

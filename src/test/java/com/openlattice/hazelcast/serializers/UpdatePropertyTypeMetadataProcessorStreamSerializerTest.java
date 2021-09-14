@@ -49,7 +49,11 @@ public class UpdatePropertyTypeMetadataProcessorStreamSerializerTest extends
                 Optional.of( pt.getType() ),
                 Optional.empty(),
                 Optional.empty(),
-                Optional.empty() );
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty());
         return new UpdatePropertyTypeMetadataProcessor( update );
     }
 

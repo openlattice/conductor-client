@@ -20,33 +20,40 @@
 
 package com.openlattice.authorization.mapstores;
 
-import static com.openlattice.postgres.PostgresTable.PRINCIPALS;
-
-import com.openlattice.hazelcast.HazelcastMap;
-import com.openlattice.mapstores.TestDataFactory;
-import com.openlattice.organization.roles.Role;
+import com.hazelcast.config.InMemoryFormat;
+import com.hazelcast.config.IndexConfig;
+import com.hazelcast.config.IndexType;
 import com.hazelcast.config.MapConfig;
-import com.hazelcast.config.MapIndexConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.openlattice.authorization.AclKey;
 import com.openlattice.authorization.SecurablePrincipal;
+import com.openlattice.hazelcast.HazelcastMap;
+import com.openlattice.mapstores.TestDataFactory;
+import com.openlattice.organization.roles.Role;
 import com.openlattice.postgres.PostgresArrays;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import static com.openlattice.postgres.PostgresTable.PRINCIPALS;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class PrincipalMapstore extends AbstractBasePostgresMapstore<AclKey, SecurablePrincipal> {
-    private static Role TEST_ROLE = TestDataFactory.role();
+    public static final String ACL_KEY_ROOT_INDEX   = "aclKey[0]";
+    public static final String PRINCIPAL_ID_INDEX   = "id";
+    public static final String PRINCIPAL_INDEX      = "principal";
+    public static final String PRINCIPAL_TYPE_INDEX = "principalType";
+    private static      Role   TEST_ROLE            = TestDataFactory.role();
 
     public PrincipalMapstore( HikariDataSource hds ) {
-        super( HazelcastMap.PRINCIPALS.name(), PRINCIPALS, hds );
+        super( HazelcastMap.PRINCIPALS, PRINCIPALS, hds );
     }
 
     @Override public AclKey generateTestKey() {
@@ -92,7 +99,11 @@ public class PrincipalMapstore extends AbstractBasePostgresMapstore<AclKey, Secu
 
     @Override public MapConfig getMapConfig() {
         return super.getMapConfig()
-                .addMapIndexConfig( new MapIndexConfig( "principal", false ) )
-                .addMapIndexConfig( new MapIndexConfig( "aclKey[0]", false ) );
+                .addIndexConfig( new IndexConfig( IndexType.HASH, PRINCIPAL_INDEX ) )
+                .addIndexConfig( new IndexConfig( IndexType.HASH, PRINCIPAL_ID_INDEX ) )
+                .addIndexConfig( new IndexConfig( IndexType.HASH, ACL_KEY_ROOT_INDEX ) )
+                .addIndexConfig( new IndexConfig( IndexType.HASH, PRINCIPAL_TYPE_INDEX ) )
+                .setInMemoryFormat( InMemoryFormat.OBJECT );
     }
+
 }

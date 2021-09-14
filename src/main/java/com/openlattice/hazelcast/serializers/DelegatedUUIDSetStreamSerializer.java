@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright (C) 2018. OpenLattice, Inc.
  *
@@ -22,14 +20,18 @@
 
 package com.openlattice.hazelcast.serializers;
 
+import com.kryptnostic.rhizome.hazelcast.serializers.UUIDStreamSerializerUtils;
 import com.openlattice.hazelcast.StreamSerializerTypeIds;
 import com.google.common.collect.Sets;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializer;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.rhizome.hazelcast.DelegatedUUIDSet;
+
 import java.io.IOException;
+import java.util.Set;
 import java.util.UUID;
+
 import org.springframework.stereotype.Component;
 
 @Component
@@ -51,12 +53,16 @@ public class DelegatedUUIDSetStreamSerializer extends SetStreamSerializer<Delega
 
     @Override
     protected UUID readSingleElement( ObjectDataInput in ) throws IOException {
-        return UUIDStreamSerializer.deserialize( in );
+        return UUIDStreamSerializerUtils.deserialize( in );
     }
 
     @Override
     protected void writeSingleElement( ObjectDataOutput out, UUID element ) throws IOException {
-        UUIDStreamSerializer.serialize( out, element );
+        UUIDStreamSerializerUtils.serialize( out, element );
     }
 
+    @Override
+    public DelegatedUUIDSet generateTestValue() {
+        return new DelegatedUUIDSet( Set.of( UUID.randomUUID(), UUID.randomUUID() ) );
+    }
 }

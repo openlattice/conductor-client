@@ -20,15 +20,18 @@
 
 package com.openlattice.graph.core;
 
-import com.google.common.collect.SetMultimap;
-import com.openlattice.data.EntityDataKey;
-import com.openlattice.data.analytics.IncrementableWeightId;
-import com.openlattice.graph.core.objects.NeighborTripletSet;
+import com.openlattice.analysis.AuthorizedFilteredNeighborsRanking;
+import com.openlattice.analysis.requests.AggregationResult;
+import com.openlattice.data.DataEdgeKey;
+import com.openlattice.data.WriteEvent;
+import com.openlattice.edm.type.PropertyType;
 import com.openlattice.graph.edge.Edge;
-import com.openlattice.graph.edge.EdgeKey;
-import com.openlattice.graph.query.GraphQuery;
+import com.openlattice.postgres.streams.BasePostgresIterable;
+import com.openlattice.search.requests.EntityNeighborsFilter;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -38,45 +41,41 @@ import java.util.stream.Stream;
  */
 public interface GraphService {
 
-    int createEdges( Set<EdgeKey> keys );
+    WriteEvent createEdges( Set<DataEdgeKey> keys );
 
-    int clearEdges( Set<EdgeKey> keys );
+    int clearEdges( Iterable<DataEdgeKey> keys );
 
-    int clearVerticesInEntitySet( UUID entitySetId );
-
-    int clearVertices( UUID entitySetId, Set<UUID> vertices );
-
-    int deleteEdges( Set<EdgeKey> keys );
-
-    int deleteVerticesInEntitySet( UUID entitySetId );
-
-    int deleteVertices( UUID entitySetId, Set<UUID> vertices );
-
-    Edge getEdge( EdgeKey key );
-
-    Map<EdgeKey, Edge> getEdgesAsMap( Set<EdgeKey> keys );
-
-    Stream<Edge> getEdges( Set<EdgeKey> keys );
-
-    Stream<Edge> getEdgesAndNeighborsForVertex( UUID entitySetId, UUID vertexId );
-
-    Stream<Edge> getEdgesAndNeighborsForVertices( UUID entitySetId, Set<UUID> vertexIds );
-
-    Stream<EntityDataKey> topEntities(
-            int limit,
-            UUID entitySetId,
-            SetMultimap<UUID, UUID> srcFilters,
-            SetMultimap<UUID, UUID> dstFilters );
+    WriteEvent deleteEdges( Iterable<DataEdgeKey> keys );
 
     /**
-     * @param srcFilters Association type ids to neighbor type ids
-     * @param dstFilters Association type ids to neighbor type ids
+     * Returns all {@link DataEdgeKey}s where either src, dst and/or edge entity set id(s) equal the requested
+     * entitySetId.
+     * If includeClearedEdges is set to true, it will also return cleared (version < 0) entities.
      */
-    IncrementableWeightId[] computeGraphAggregation(
-            int limit,
-            UUID entitySetId,
-            SetMultimap<UUID, UUID> srcFilters,
-            SetMultimap<UUID, UUID> dstFilters );
+    BasePostgresIterable<DataEdgeKey> getEdgeKeysOfEntitySet( UUID entitySetId, boolean includeClearedEdges );
 
-    List<NeighborSets> getNeighborEntitySets( UUID entitySetId );
+    /**
+     * Returns all {@link DataEdgeKey}s that include requested entityKeyIds either as src, dst and/or edge.
+     * If includeClearedEdges is set to true, it will also return cleared (version < 0) entities.
+     */
+    BasePostgresIterable<DataEdgeKey> getEdgeKeysContainingEntities(
+            UUID entitySetId,
+            Set<UUID> entityKeyIds,
+            boolean includeClearedEdges );
+
+    Stream<Edge> getEdgesAndNeighborsForVertices( Set<UUID> entitySetIds, EntityNeighborsFilter filter );
+
+    Set<UUID> getEdgeEntitySetsConnectedToEntities( UUID entitySetId, Set<UUID> entityKeyIds );
+
+    Set<UUID> getEdgeEntitySetsConnectedToEntitySet( UUID entitySetId );
+
+    AggregationResult computeTopEntities(
+            int limit,
+            Set<UUID> entitySetIds,
+            Map<UUID, Map<UUID, PropertyType>> authorizedPropertyTypes,
+            List<AuthorizedFilteredNeighborsRanking> details,
+            boolean linked,
+            Optional<UUID> linkingEntitySetId );
+
+    List<NeighborSets> getNeighborEntitySets( Set<UUID> entitySetIds );
 }

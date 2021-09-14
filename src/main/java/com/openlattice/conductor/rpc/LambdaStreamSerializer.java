@@ -22,50 +22,44 @@
 
 package com.openlattice.conductor.rpc;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.invoke.SerializedLambda;
-
-import org.objenesis.strategy.StdInstantiatorStrategy;
-import org.springframework.stereotype.Component;
-
-import com.openlattice.hazelcast.StreamSerializerTypeIds;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
-import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-
+import com.openlattice.hazelcast.StreamSerializerTypeIds;
+import com.openlattice.hazelcast.serializers.TestableSelfRegisteringStreamSerializer;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.objenesis.strategy.StdInstantiatorStrategy;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.lang.invoke.SerializedLambda;
 
 @Component
-public class LambdaStreamSerializer implements SelfRegisteringStreamSerializer<Runnable> {
-    private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
+public class LambdaStreamSerializer implements TestableSelfRegisteringStreamSerializer<Runnable> {
+    private static final ThreadLocal<Kryo> kryoThreadLocal = ThreadLocal.withInitial( () -> {
+        Kryo kryo = new Kryo();
+        // Stuff from
+        // https://github.com/EsotericSoftware/kryo/blob/master/test/com/esotericsoftware/kryo/serializers/Java8ClosureSerializerTest.java
+        kryo.setInstantiatorStrategy( new Kryo.DefaultInstantiatorStrategy( new StdInstantiatorStrategy() ) );
+        kryo.register( Object[].class );
+        kryo.register( Class.class );
 
-        @Override
-        protected Kryo initialValue() {
-            Kryo kryo = new Kryo();
-            // Stuff from
-            // https://github.com/EsotericSoftware/kryo/blob/master/test/com/esotericsoftware/kryo/serializers/Java8ClosureSerializerTest.java
-            kryo.setInstantiatorStrategy( new Kryo.DefaultInstantiatorStrategy( new StdInstantiatorStrategy() ) );
-            kryo.register( Object[].class );
-            kryo.register( java.lang.Class.class );
+        // Shared Lambdas
+        kryo.register( SerializedLambda.class );
 
-            // Shared Lambdas
-            kryo.register( ElasticsearchLambdas.class );
-            kryo.register( SerializedLambda.class );
+        // always needed for closure serialization, also if registrationRequired=false
+        kryo.register( ClosureSerializer.Closure.class, new ClosureSerializer() );
 
-            // always needed for closure serialization, also if registrationRequired=false
-            kryo.register( ClosureSerializer.Closure.class, new ClosureSerializer() );
+        kryo.register( Runnable.class, new ClosureSerializer() );
 
-            kryo.register( Runnable.class, new ClosureSerializer() );
-
-            return kryo;
-        }
-    };
+        return kryo;
+    } );
 
     @Override
     @SuppressFBWarnings
@@ -95,5 +89,9 @@ public class LambdaStreamSerializer implements SelfRegisteringStreamSerializer<R
     @Override
     public Class<Runnable> getClazz() {
         return Runnable.class;
+    }
+
+    @Override public Runnable generateTestValue() {
+        return (Runnable & Serializable) () -> System.out.println( "foo" );
     }
 }

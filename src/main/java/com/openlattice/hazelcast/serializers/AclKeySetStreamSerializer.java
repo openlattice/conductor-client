@@ -20,25 +20,24 @@
 
 package com.openlattice.hazelcast.serializers;
 
-import com.openlattice.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.hazelcast.serializers.SetStreamSerializers;
-import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
 import com.openlattice.authorization.AclKeySet;
-import java.io.IOException;
+import com.openlattice.hazelcast.InternalTestDataFactory;
+import com.openlattice.hazelcast.StreamSerializerTypeIds;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+
 @Component
-public class AclKeySetStreamSerializer implements SelfRegisteringStreamSerializer<AclKeySet> {
+public class AclKeySetStreamSerializer implements TestableSelfRegisteringStreamSerializer<AclKeySet> {
     @Override public Class<? extends AclKeySet> getClazz() {
         return AclKeySet.class;
     }
 
     @Override public void write( ObjectDataOutput out, AclKeySet object ) throws IOException {
-        SetStreamSerializers.serialize( out, object, aclKey -> {
-            AclKeyStreamSerializer.serialize( out, aclKey );
-        } );
+        SetStreamSerializers.serialize( out, object, aclKey -> AclKeyStreamSerializer.serialize( out, aclKey ) );
     }
 
     @Override public AclKeySet read( ObjectDataInput in ) throws IOException {
@@ -56,5 +55,10 @@ public class AclKeySetStreamSerializer implements SelfRegisteringStreamSerialize
 
     @Override public void destroy() {
 
+    }
+
+    @Override
+    public AclKeySet generateTestValue() {
+        return InternalTestDataFactory.aclKeySet();
     }
 }

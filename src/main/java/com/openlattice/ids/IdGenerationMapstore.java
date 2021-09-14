@@ -22,11 +22,11 @@ package com.openlattice.ids;
 
 import static com.openlattice.postgres.PostgresColumn.PARTITION_INDEX_FIELD;
 
+import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.config.MapStoreConfig;
 import com.hazelcast.config.MapStoreConfig.InitialLoadMode;
 import com.openlattice.hazelcast.HazelcastMap;
-import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.postgres.PostgresTable;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore;
@@ -40,15 +40,15 @@ import java.sql.SQLException;
  */
 public class IdGenerationMapstore extends AbstractBasePostgresMapstore<Long, Range> {
     public IdGenerationMapstore( HikariDataSource hds ) {
-        super( HazelcastMap.ID_GENERATION.name(), PostgresTable.ID_GENERATION, hds );
+        super( HazelcastMap.ID_GENERATION, PostgresTable.ID_GENERATION, hds );
     }
 
     @Override public Long generateTestKey() {
-        return (long) TestDataFactory.integer();
+        return 1L;
     }
 
     @Override public Range generateTestValue() {
-        return new Range( 0, 1, 2 );
+        return new Range( generateTestKey() << 48L, 1, 2 );
     }
 
     @Override protected void bind( PreparedStatement ps, Long key, Range value ) throws SQLException {
@@ -64,11 +64,13 @@ public class IdGenerationMapstore extends AbstractBasePostgresMapstore<Long, Ran
     }
 
     @Override public MapStoreConfig getMapStoreConfig() {
-        return super.getMapStoreConfig().setInitialLoadMode( InitialLoadMode.EAGER ).setWriteDelaySeconds( 5 );
+        return super.getMapStoreConfig().setInitialLoadMode( InitialLoadMode.EAGER );
     }
 
     @Override public MapConfig getMapConfig() {
-        return super.getMapConfig();
+        return super
+                .getMapConfig()
+                .setInMemoryFormat( InMemoryFormat.OBJECT );
     }
 
     @Override protected int bind( PreparedStatement ps, Long key, int parameterIndex ) throws SQLException {

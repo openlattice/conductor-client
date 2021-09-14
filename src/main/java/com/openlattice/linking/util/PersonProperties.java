@@ -20,33 +20,82 @@
 
 package com.openlattice.linking.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.MappingIterator;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.fasterxml.jackson.datatype.guava.GuavaModule;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.common.io.Resources;
 import com.openlattice.rhizome.hazelcast.DelegatedStringSet;
-import java.text.DecimalFormat;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.text.DecimalFormat;
 import java.time.LocalDate;
-public class PersonProperties {
-    private static final Logger        logger = LoggerFactory.getLogger( PersonProperties.class );
-    private static       DecimalFormat dd     = new DecimalFormat( "00" );
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-    private static FullQualifiedName FIRST_NAME_FQN     = new FullQualifiedName( "nc.PersonGivenName" );
-    private static FullQualifiedName MIDDLE_NAME_FQN    = new FullQualifiedName( "nc.PersonMiddleName" );
-    private static FullQualifiedName LAST_NAME_FQN      = new FullQualifiedName( "nc.PersonSurName" );
-    private static FullQualifiedName SEX_FQN            = new FullQualifiedName( "nc.PersonSex" );
-    private static FullQualifiedName RACE_FQN           = new FullQualifiedName( "nc.PersonRace" );
-    private static FullQualifiedName ETHNICITY_FQN      = new FullQualifiedName( "nc.PersonEthnicity" );
-    private static FullQualifiedName DOB_FQN            = new FullQualifiedName( "nc.PersonBirthDate" );
-    private static FullQualifiedName IDENTIFICATION_FQN = new FullQualifiedName( "nc.SubjectIdentification" );
-    private static FullQualifiedName SSN_FQN            = new FullQualifiedName( "nc.ssn" );
-    private static FullQualifiedName AGE_FQN            = new FullQualifiedName( "person.age" );
-    private static FullQualifiedName XREF_FQN           = new FullQualifiedName( "justice.xref" );
+public class PersonProperties {
+    private static final Logger            logger            = LoggerFactory.getLogger( PersonProperties.class );
+    public static final FullQualifiedName PERSON_TYPE_FQN    = new FullQualifiedName( "general.person" );
+    public static final FullQualifiedName FIRST_NAME_FQN     = new FullQualifiedName( "nc.PersonGivenName" );
+    public static final FullQualifiedName MIDDLE_NAME_FQN    = new FullQualifiedName( "nc.PersonMiddleName" );
+    public static final FullQualifiedName LAST_NAME_FQN      = new FullQualifiedName( "nc.PersonSurName" );
+    public static final FullQualifiedName SEX_FQN            = new FullQualifiedName( "nc.PersonSex" );
+    public static final FullQualifiedName RACE_FQN           = new FullQualifiedName( "nc.PersonRace" );
+    public static final FullQualifiedName ETHNICITY_FQN      = new FullQualifiedName( "nc.PersonEthnicity" );
+    public static final FullQualifiedName DOB_FQN            = new FullQualifiedName( "nc.PersonBirthDate" );
+    public static final FullQualifiedName IDENTIFICATION_FQN = new FullQualifiedName( "nc.SubjectIdentification" );
+    public static final FullQualifiedName SSN_FQN            = new FullQualifiedName( "nc.SSN" );
+
+    public static final Set<FullQualifiedName> FQNS = ImmutableSet.of( FIRST_NAME_FQN,
+            MIDDLE_NAME_FQN,
+            LAST_NAME_FQN,
+            SEX_FQN,
+            RACE_FQN,
+            ETHNICITY_FQN,
+            DOB_FQN,
+            IDENTIFICATION_FQN,
+            SSN_FQN );
+    private static Map<String, Double> firstNameCounts;
+    private static Map<String, Double> lastNameCounts;
+    private static final DecimalFormat dd = new DecimalFormat( "00" );
+
+    static {
+        try {
+            firstNameCounts = loadFile("firstnames.csv");
+            lastNameCounts = loadFile("lastnames.csv");
+        } catch (Exception e) {
+            logger.info("Unable to load file!", e);
+            firstNameCounts = null;
+            lastNameCounts = null;
+            throw new IllegalStateException(e);
+        }
+    }
+
+
+    public static Map<String, Double> loadFile(String namefile) throws IOException {
+        Map<String, Double> m = new ConcurrentHashMap<>();
+        CsvMapper mapper = new CsvMapper();
+        mapper.registerModule(new GuavaModule());
+        mapper.registerModule(new AfterburnerModule());
+        CsvSchema schema = mapper.schemaFor(Name.class).withHeader();
+        MappingIterator<Name> iter = mapper.readerFor(Name.class).with(schema).readValues(Resources.getResource(namefile));
+        iter.forEachRemaining(n -> m.put(n.getName(), n.getProb()) );
+        return m;
+    }
+
 
     public static DelegatedStringSet getValuesAsSet( Map<UUID, DelegatedStringSet> entity, UUID id ) {
         return DelegatedStringSet.wrap( entity.containsKey( id )
@@ -56,8 +105,7 @@ public class PersonProperties {
 
     public static int valueIsPresent( Map<UUID, DelegatedStringSet> entity, UUID propertyTypeId ) {
         if ( !entity.containsKey( propertyTypeId )
-                || entity.get( propertyTypeId ).stream().filter( StringUtils::isNotBlank ).count() == 0 )
-            return 0;
+                || entity.get( propertyTypeId ).stream().noneMatch( StringUtils::isNotBlank ) ) { return 0; }
         return 1;
     }
 
@@ -155,25 +203,18 @@ public class PersonProperties {
         return valueIsPresent( entity, fqnToIdMap.get( SSN_FQN ) );
     }
 
-    public static DelegatedStringSet getAge(
+    public static double getFirstProba(
             Map<UUID, DelegatedStringSet> entity,
             Map<FullQualifiedName, UUID> fqnToIdMap ) {
-        return getValuesAsSet( entity, fqnToIdMap.get( AGE_FQN ) );
+        return getProba(entity, fqnToIdMap, true);
     }
 
-    public static int getHasAge( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
-        return valueIsPresent( entity, fqnToIdMap.get( AGE_FQN ) );
-    }
-
-    public static DelegatedStringSet getXref(
+    public static double getLastProba(
             Map<UUID, DelegatedStringSet> entity,
             Map<FullQualifiedName, UUID> fqnToIdMap ) {
-        return getValuesAsSet( entity, fqnToIdMap.get( XREF_FQN ) );
+        return getProba(entity, fqnToIdMap,false);
     }
 
-    public static int getHasXref( Map<UUID, DelegatedStringSet> entity, Map<FullQualifiedName, UUID> fqnToIdMap ) {
-        return valueIsPresent( entity, fqnToIdMap.get( XREF_FQN ) );
-    }
 
     public static DelegatedStringSet getDobStrs(
             Map<UUID, DelegatedStringSet> entity,
@@ -197,5 +238,50 @@ public class PersonProperties {
         }
         return values;
     }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Name {
+        private final String name;
+        private final double prob;
+
+        @JsonCreator
+        public Name(
+                @JsonProperty("name") String name, @JsonProperty("prob") double prob) {
+            this.name = name;
+            this.prob = prob;
+        }
+
+        @JsonProperty("name")
+        public String getName() {
+            return name;
+        }
+
+        @JsonProperty("prob")
+        public double getProb() {
+            return prob;
+        }
+
+    }
+
+    public static double getProba(
+            Map<UUID, DelegatedStringSet> entity,
+            Map<FullQualifiedName, UUID> fqnToIdMap,
+            boolean first ) {
+        final DelegatedStringSet nameSet = first ?
+                getFirstName( entity, fqnToIdMap ) :
+                getLastName( entity, fqnToIdMap );
+        final Map<String, Double> nameCounts = first ? firstNameCounts : lastNameCounts;
+
+        for ( String name : nameSet ) {
+            if ( nameCounts.containsKey( name ) ) {
+                return nameCounts.get( name );
+            }
+        }
+
+        return 0;
+
+    }
+//        logger.info(proba);
+
 
 }

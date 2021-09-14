@@ -22,20 +22,32 @@
 
 package com.openlattice.authorization;
 
-import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
-import static com.openlattice.authorization.EdmAuthorizationHelper.WRITE_PERMISSION;
-
+import com.openlattice.IdConstants;
 import com.openlattice.authorization.securable.AbstractSecurableObject;
 import com.openlattice.authorization.securable.SecurableObjectType;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
+import com.openlattice.controllers.exceptions.ForbiddenException;
+import com.openlattice.edm.type.PropertyType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.openlattice.authorization.EdmAuthorizationHelper.TRANSPORT_PERMISSION;
+import static com.openlattice.authorization.EdmAuthorizationHelper.READ_PERMISSION;
+import static com.openlattice.authorization.EdmAuthorizationHelper.WRITE_PERMISSION;
+
 public interface AuthorizingComponent {
+    Set<UUID> internalIds = Arrays.stream( IdConstants.values() ).map( IdConstants::getId )
+            .collect( Collectors.toSet() );
     Logger logger = LoggerFactory.getLogger( AuthorizingComponent.class );
 
     AuthorizationManager getAuthorizationManager();
@@ -63,6 +75,10 @@ public interface AuthorizingComponent {
         return isAuthorized( Permission.OWNER ).test( new AclKey( aclKey ) );
     }
 
+    default void ensureTransportAccess( AclKey aclKey ) {
+        accessCheck( aclKey, TRANSPORT_PERMISSION );
+    }
+
     default void ensureReadAccess( AclKey aclKey ) {
         accessCheck( aclKey, READ_PERMISSION );
     }
@@ -75,18 +91,44 @@ public interface AuthorizingComponent {
         accessCheck( aclKey, EnumSet.of( Permission.OWNER ) );
     }
 
+    default void ensureOwnerAccess( Set<AclKey> keys ) {
+        EnumSet<Permission> owner = EnumSet.of( Permission.OWNER );
+        accessCheck( keys.stream().collect( Collectors.toMap( Function.identity(), aclKey -> owner ) ) );
+    }
+
     default void ensureLinkAccess( AclKey aclKey ) {
         accessCheck( aclKey, EnumSet.of( Permission.LINK ) );
     }
 
+    default boolean isAdmin() {
+        return Principals.getCurrentPrincipals().contains( Principals.getAdminRole() );
+    }
+
     default void ensureAdminAccess() {
-        if ( !Principals.getCurrentPrincipals().contains( Principals.getAdminRole() ) ) {
+        if ( !isAdmin() ) {
             throw new ForbiddenException( "Only admins are allowed to perform this action." );
         }
     }
 
-    default Map<AclKey, EnumMap<Permission, Boolean>> authorize( Map<AclKey, EnumSet<Permission>> requiredPermissionsByAclKey ) {
-        return getAuthorizationManager().authorize( requiredPermissionsByAclKey, Principals.getCurrentPrincipals() );
+    default Map<AclKey, EnumMap<Permission, Boolean>> authorize(
+            Map<AclKey, EnumSet<Permission>> requiredPermissionsByAclKey ) {
+        return authorize( requiredPermissionsByAclKey, Principals.getCurrentPrincipals() );
+    }
+
+    default Map<AclKey, EnumMap<Permission, Boolean>> authorize(
+            Map<AclKey, EnumSet<Permission>> requiredPermissionsByAclKey,
+            Set<Principal> principals ) {
+        return getAuthorizationManager().authorize( requiredPermissionsByAclKey, principals );
+    }
+
+    default void accessCheck( Map<UUID, PropertyType> authorizedPropertyTypes, Set<UUID> requiredPropertyTypes ) {
+        final boolean authorized = authorizedPropertyTypes.keySet().containsAll( requiredPropertyTypes );
+        if ( !authorized ) {
+            logger.warn( "Authorization failed. Required {} but only found {}.",
+                    requiredPropertyTypes,
+                    authorizedPropertyTypes.keySet() );
+            throw new ForbiddenException( "Insufficient permissions to perform operation." );
+        }
     }
 
     default void accessCheck( Map<AclKey, EnumSet<Permission>> requiredPermissionsByAclKey ) {
@@ -116,5 +158,23 @@ public interface AuthorizingComponent {
                 Principals.getCurrentPrincipals(),
                 securableObjectType,
                 requiredPermissions );
+    }
+
+    default Stream<AclKey> getAccessibleObjects(
+            SecurableObjectType securableObjectType,
+            EnumSet<Permission> requiredPermissions,
+            com.hazelcast.query.Predicate additionalFilters ) {
+        return getAuthorizationManager().getAuthorizedObjectsOfType(
+                Principals.getCurrentPrincipals(),
+                securableObjectType,
+                requiredPermissions,
+                additionalFilters );
+    }
+
+    default void ensureObjectCanBeDeleted( UUID objectId ) {
+        if ( internalIds.contains( objectId ) ) {
+            throw new ForbiddenException(
+                    "Object " + objectId.toString() + " cannot be deleted because this id is reserved." );
+        }
     }
 }

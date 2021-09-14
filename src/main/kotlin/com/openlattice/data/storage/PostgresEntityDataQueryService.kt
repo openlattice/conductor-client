@@ -1,164 +1,632 @@
-/*
- * Copyright (C) 2018. OpenLattice, Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * You can contact the owner of the copyright at support@openlattice.com
- *
- *
- */
-
 package com.openlattice.data.storage
 
-import com.google.common.collect.HashMultimap
-import com.google.common.collect.Multimaps
-import com.google.common.collect.SetMultimap
+import com.codahale.metrics.annotation.Timed
+import com.openlattice.IdConstants
+import com.openlattice.analysis.SqlBindInfo
+import com.openlattice.analysis.requests.Filter
+import com.openlattice.data.DeleteType
+import com.openlattice.data.WriteEvent
+import com.openlattice.data.storage.PostgresEntitySetSizesInitializationTask.Companion.ENTITY_SET_SIZES_VIEW
+import com.openlattice.data.storage.partitions.PartitionManager
+import com.openlattice.data.storage.partitions.getPartition
+import com.openlattice.data.util.PostgresDataHasher
 import com.openlattice.edm.type.PropertyType
-import com.openlattice.postgres.DataTables
-import com.openlattice.postgres.DataTables.*
-import com.openlattice.postgres.JsonDeserializer
+import com.openlattice.postgres.*
 import com.openlattice.postgres.PostgresColumn.*
-import com.openlattice.postgres.ResultSetAdapters
-import com.openlattice.postgres.streams.PostgresIterable
-import com.openlattice.postgres.streams.StatementHolder
+import com.openlattice.postgres.PostgresTable.DATA
+import com.openlattice.postgres.PostgresTable.IDS
+import com.openlattice.postgres.streams.BasePostgresIterable
+import com.openlattice.postgres.streams.PreparedStatementHolderSupplier
+import com.openlattice.postgres.streams.StatementHolderSupplier
 import com.zaxxer.hikari.HikariDataSource
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
+import java.lang.Exception
 import java.nio.ByteBuffer
+import java.security.InvalidParameterException
+import java.sql.Connection
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 import java.util.*
-import java.util.function.Function
-import java.util.function.Supplier
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.streams.asStream
+
+const val S3_DELETE_BATCH_SIZE = 10_000
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-const val MAX_PREV_VERSION = "max_prev_version"
-const val EXPANDED_VERSIONS = "expanded_versions"
-const val BATCH_SIZE = 10000
-private val logger = LoggerFactory.getLogger(PostgresEntityDataQueryService::class.java)
-
-class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
-    fun streamableEntitySet(
-            entitySetId: UUID,
-            authorizedPropertyTypes: Map<UUID, PropertyType>,
-            metadataOptions: Set<MetadataOption>,
-            version: Optional<Long> = Optional.empty()
-    ): PostgresIterable<SetMultimap<FullQualifiedName, Any>> {
-        return streamableEntitySet(entitySetId, setOf(), authorizedPropertyTypes, metadataOptions, version)
+@Service
+class PostgresEntityDataQueryService(
+        private val hds: HikariDataSource,
+        private val reader: HikariDataSource,
+        private val byteBlobDataManager: ByteBlobDataManager,
+        protected val partitionManager: PartitionManager
+) {
+    companion object {
+        private val logger = LoggerFactory.getLogger(PostgresEntityDataQueryService::class.java)
     }
 
-    fun streamableEntitySet(
-            entitySetId: UUID,
-            entityKeyIds: Set<UUID>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>,
-            metadataOptions: Set<MetadataOption>,
-            version: Optional<Long> = Optional.empty()
-    ): PostgresIterable<SetMultimap<FullQualifiedName, Any>> {
-        return PostgresIterable(
-                Supplier<StatementHolder> {
-                    val connection = hds.getConnection()
-                    val statement = connection.createStatement()
-                    val rs = statement.executeQuery(
-                            if (version.isPresent) {
-                                selectEntitySetWithPropertyTypesAndVersion(
-                                        entitySetId,
-                                        entityKeyIds,
-                                        authorizedPropertyTypes.map { it.key to it.value.type.fullQualifiedNameAsString }.toMap(),
-                                        metadataOptions,
-                                        version.get()
-                                )
-                            } else {
-                                selectEntitySetWithPropertyTypes(
-                                        entitySetId,
-                                        entityKeyIds,
-                                        authorizedPropertyTypes.map { it.key to it.value.type.fullQualifiedNameAsString }.toMap(),
-                                        metadataOptions
-                                )
-                            }
-                    )
-                    StatementHolder(connection, statement, rs)
-                },
-                Function<ResultSet, SetMultimap<FullQualifiedName, Any>> {
-                    ResultSetAdapters.implicitEntity(it, authorizedPropertyTypes, metadataOptions)
-                }
-        )
+    fun getEntitySetCounts(): Map<UUID, Long> {
+        return BasePostgresIterable(StatementHolderSupplier(reader, "SELECT * FROM $ENTITY_SET_SIZES_VIEW")) {
+            ResultSetAdapters.entitySetId(it) to ResultSetAdapters.count(it)
+        }.toMap()
     }
 
-
-    fun upsertEntities(
-            entitySetId: UUID, entities: Map<UUID, SetMultimap<UUID, Any>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Int {
-        val connection = hds.getConnection()
-        connection.use {
-            val version = System.currentTimeMillis()
-            val entitySetPreparedStatement = connection.prepareStatement(upsertEntity(entitySetId, version))
-            val datatypes = authorizedPropertyTypes.map { it.key to it.value.datatype }.toMap()
-            val preparedStatements = authorizedPropertyTypes
-                    .map {
-                        it.key to connection.prepareStatement(
-                                upsertPropertyValues(
-                                        entitySetId, it.key, it.value.type.fullQualifiedNameAsString, version
-                                )
-                        )
-                    }
-                    .toMap()
-
-            entities.forEach {
-                entitySetPreparedStatement.setObject(1, it.key)
-                entitySetPreparedStatement.addBatch()
-
-                val entityKeyId = it.key
-                val entityData = JsonDeserializer.validateFormatAndNormalize(it.value, datatypes)
-
-                Multimaps
-                        .asMap(entityData)
-                        .forEach {
-                            val propertyTypeId = it.key
-                            val properties = it.value
-                            properties.forEach {
-                                val ps = preparedStatements[propertyTypeId]
-                                ps?.setObject(1, entityKeyId)
-                                ps?.setBytes(2, PostgresDataHasher.hashObject(it, datatypes[propertyTypeId]))
-                                ps?.setObject(3, it)
-                                ps?.addBatch()
-                                if (ps == null) {
-                                    logger.warn(
-                                            "Skipping unauthorized property in entity $entityKeyId from entity set $entitySetId"
-                                    )
-                                }
-                            }
-                        }
-            }
-
-            //In case we want to do validation
-            val updatedPropertyCounts = preparedStatements.values.map { it.executeBatch() }.sumBy { it.sum() }
-            val updatedEntityCount = entitySetPreparedStatement.executeBatch().sum()
-            preparedStatements.values.forEach(PreparedStatement::close)
-            entitySetPreparedStatement.close()
-
-            logger.debug("Updated $updatedEntityCount entities and $updatedPropertyCounts properties")
-
-            return updatedEntityCount
+    @JvmOverloads
+    fun getEntitiesWithPropertyTypeIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
+            metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            version: Optional<Long> = Optional.empty()
+    ): BasePostgresIterable<Pair<UUID, Map<UUID, Set<Any>>>> {
+        return getEntitySetIterable(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                propertyTypeFilters,
+                metadataOptions,
+                version
+        ) { rs ->
+            getEntityPropertiesByPropertyTypeId(rs, authorizedPropertyTypes, metadataOptions, byteBlobDataManager)
         }
     }
 
-    fun clearEntitySet(entitySetId: UUID): Int {
-        return tombstone(entitySetId)
+    @JvmOverloads
+    fun getLinkedEntitiesWithPropertyTypeIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
+            metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            version: Optional<Long> = Optional.empty()
+    ): BasePostgresIterable<Pair<UUID, Map<UUID, Set<Any>>>> {
+        return getEntitySetIterable(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                propertyTypeFilters,
+                metadataOptions,
+                version,
+                linking = true
+        ) { rs ->
+            getEntityPropertiesByPropertyTypeId(rs, authorizedPropertyTypes, metadataOptions, byteBlobDataManager)
+        }
+    }
+
+    fun getEntitySetWithPropertyTypeIdsIterable(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java)
+    ): BasePostgresIterable<Pair<UUID, Map<UUID, Set<Any>>>> {
+        return getEntitiesWithPropertyTypeIds(entityKeyIds, authorizedPropertyTypes, mapOf(), metadataOptions)
+    }
+
+    /**
+     * Returns linked entity set data detailed in a Map mapped by linking id, (normal) entity set id, origin id,
+     * property type id and values respectively.
+     */
+    @JvmOverloads
+    fun getLinkedEntitiesByEntitySetIdWithOriginIds(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            metadataOptions: EnumSet<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
+            version: Optional<Long> = Optional.empty()
+    ): BasePostgresIterable<Pair<UUID, Pair<UUID, Map<UUID, MutableMap<UUID, MutableSet<Any>>>>>> {
+        return getEntitySetIterable(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                propertyTypeFilters,
+                metadataOptions,
+                version,
+                linking = true,
+                detailed = true
+        ) { rs ->
+            getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeId(
+                    rs, authorizedPropertyTypes, metadataOptions, byteBlobDataManager
+            )
+        }
+    }
+
+    /**
+     * Returns linked entity set data detailed in a Map mapped by linking id, (normal) entity set id, origin id,
+     * property type full qualified name and values respectively.
+     */
+    @JvmOverloads
+    fun getLinkedEntitySetBreakDown(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
+            version: Optional<Long> = Optional.empty()
+    ): BasePostgresIterable<Pair<UUID, Pair<UUID, Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>>>>> {
+        return getEntitySetIterable(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                propertyTypeFilters,
+                EnumSet.noneOf(MetadataOption::class.java),
+                version,
+                linking = true,
+                detailed = true
+        ) { rs ->
+            getEntityPropertiesByEntitySetIdOriginIdAndPropertyTypeFqn(
+                    rs, authorizedPropertyTypes, EnumSet.noneOf(MetadataOption::class.java), byteBlobDataManager
+            )
+        }
+    }
+
+    @JvmOverloads
+    fun getEntitiesWithPropertyTypeFqns(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
+            metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            version: Optional<Long> = Optional.empty(),
+            linking: Boolean = false
+    ): Map<UUID, MutableMap<FullQualifiedName, MutableSet<Any>>> {
+        return getEntitySetIterable(
+                entityKeyIds,
+                authorizedPropertyTypes,
+                propertyTypeFilters,
+                metadataOptions,
+                version,
+                linking
+        ) { rs ->
+            getEntityPropertiesByFullQualifiedName(
+                    rs,
+                    authorizedPropertyTypes,
+                    metadataOptions,
+                    byteBlobDataManager
+            )
+        }.toMap()
+    }
+
+    /**
+     * Note: for linking queries, linking id and entity set id will be returned, thus data won't be merged by linking id
+     */
+    private fun <T> getEntitySetIterable(
+            entityKeyIds: Map<UUID, Optional<Set<UUID>>>,
+            authorizedPropertyTypes: Map<UUID, Map<UUID, PropertyType>>,
+            propertyTypeFilters: Map<UUID, Set<Filter>> = mapOf(),
+            metadataOptions: Set<MetadataOption> = EnumSet.noneOf(MetadataOption::class.java),
+            version: Optional<Long> = Optional.empty(),
+            linking: Boolean = false,
+            detailed: Boolean = false,
+            adapter: (ResultSet) -> T
+    ): BasePostgresIterable<T> {
+        val propertyTypes = authorizedPropertyTypes.values.flatMap { it.values }.associateBy { it.id }
+        val entitySetIds = entityKeyIds.keys
+        val ids = entityKeyIds.values.flatMap { it.orElse(emptySet()) }.toSet()
+        // For linking queries we use all the partitions of participating entity sets, since cannot narrow down the
+        // partitions due to the lack of origin ids
+        val partitions = entityKeyIds.flatMap { (entitySetId, maybeEntityKeyIds) ->
+            val entitySetPartitions = partitionManager.getEntitySetPartitions(entitySetId).toList()
+
+            if (!linking) {
+                maybeEntityKeyIds.map {
+                    getPartitionsInfo(it, entitySetPartitions)
+                }.orElse(entitySetPartitions)
+            } else {
+                entitySetPartitions
+            }
+        }.toSet()
+        var startIndex = 2
+        if (ids.isNotEmpty()) {
+            startIndex++
+        }
+        if (partitions.isNotEmpty()) {
+            startIndex++
+        }
+
+        val (sql, binders) = buildPreparableFiltersSql(
+                startIndex,
+                propertyTypes,
+                propertyTypeFilters,
+                metadataOptions,
+                linking,
+                ids.isNotEmpty(),
+                partitions.isNotEmpty(),
+                detailed
+        )
+
+        return BasePostgresIterable(PreparedStatementHolderSupplier(reader, sql, FETCH_SIZE) { ps ->
+            val metaBinders = linkedSetOf<SqlBinder>()
+            var bindIndex = 1
+            metaBinders.add(
+                    SqlBinder(
+                            SqlBindInfo(bindIndex++, PostgresArrays.createUuidArray(ps.connection, entitySetIds)),
+                            ::doBind
+                    )
+            )
+            if (ids.isNotEmpty()) {
+                metaBinders.add(
+                        SqlBinder(
+                                SqlBindInfo(bindIndex++, PostgresArrays.createUuidArray(ps.connection, ids)), ::doBind
+                        )
+                )
+            }
+
+            if (partitions.isNotEmpty()) {
+                metaBinders.add(
+                        SqlBinder(
+                                SqlBindInfo(bindIndex, PostgresArrays.createIntArray(ps.connection, partitions)),
+                                ::doBind
+                        )
+                )
+            }
+            (metaBinders + binders).forEach { it.bind(ps) }
+        }, adapter)
+    }
+
+    /**
+     * Updates or insert entities.
+     * @param entitySetId The entity set id for which to insert entities for.
+     * @param entities The entites to update or insert.
+     * @param authorizedPropertyTypes The authorized property types for the insertion.
+     * @param awsPassthrough True if the data will be stored directly in AWS via another means and all that is being
+     * provided is the s3 prefix and key.
+     * @param partitions Contains the partition information for the requested entity set.
+     *
+     * @return A write event summarizing the results of performing this operation.
+     */
+    @Timed
+    fun upsertEntities(
+            entitySetId: UUID,
+            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            awsPassthrough: Boolean = false,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+        val version = System.currentTimeMillis()
+
+        val tombstoneFn = { _: Long, _: Map<UUID, Map<UUID, Set<Any>>> -> }
+
+        return upsertEntities(
+                entitySetId,
+                tombstoneFn,
+                entities,
+                authorizedPropertyTypes,
+                version,
+                partitions,
+                awsPassthrough
+        )
+    }
+
+    /**
+     * Updates or insert entities.
+     * @param entitySetId The entity set id for which to insert entities.
+     * @param tombstoneFn A function that may tombstone values before performing the upsert.
+     * @param entities The entities to update or insert.
+     * @param authorizedPropertyTypes The authorized property types for the insertion.
+     * @param version The version to use for upserting.
+     * @param partitions Contains the partition information for the requested entity set.
+     * @param awsPassthrough True if the data will be stored directly in AWS via another means and all that is being
+     * provided is the s3 prefix and key.
+     *
+     * @return A write event summarizing the results of performing this operation.
+     */
+    private fun upsertEntities(
+            entitySetId: UUID,
+            tombstoneFn: (version: Long, entityBatch: Map<UUID, Map<UUID, Set<Any>>>) -> Unit,
+            entities: Map<UUID, Map<UUID, Set<Any>>>, // ekids ->
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            version: Long,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList(),
+            awsPassthrough: Boolean = false
+    ): WriteEvent {
+        var updatedEntityCount = 0
+        var updatedPropertyCounts = 0
+
+
+        entities.entries
+                .groupBy { getPartition(it.key, partitions) }
+                .toSortedMap()
+                .forEach { (partition, batch) ->
+                    var entityBatch = batch.associate { it.key to it.value }
+
+                    if (!awsPassthrough) {
+                        entityBatch = entityBatch.mapValues {
+                            JsonDeserializer.validateFormatAndNormalize(
+                                    it.value,
+                                    authorizedPropertyTypes
+                            ) { "Entity set $entitySetId with entity key id ${it.key}" }
+                        }
+                    }
+
+                    tombstoneFn(version, entityBatch)
+
+                    val upc = upsertEntities(
+                            entitySetId,
+                            entityBatch,
+                            authorizedPropertyTypes,
+                            version + 1,
+                            partition,
+                            awsPassthrough
+                    )
+
+                    //For now we can't track how many entities were updated in a call transactionally.
+                    //If we want to check how many entities were written at a specific version that is possible but
+                    //expensive.
+                    updatedEntityCount += batch.size
+                    updatedPropertyCounts += upc
+                }
+
+        logger.debug("Updated $updatedEntityCount entities and $updatedPropertyCounts properties")
+
+        return WriteEvent(version, updatedEntityCount)
+    }
+
+    private fun upsertEntities(
+            entitySetId: UUID,
+            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            version: Long,
+            partition: Int,
+            awsPassthrough: Boolean
+    ): Int {
+
+        val entitiesWithHashAndInsertData = entities.mapValues { entityKeyIdToEntity ->
+            entityKeyIdToEntity.value.mapValues { propertyTypeIdToPropertyValues ->
+                propertyTypeIdToPropertyValues.value.map { propertyValue ->
+                    getPropertyHash(
+                            entitySetId,
+                            entityKeyIdToEntity.key,
+                            propertyTypeIdToPropertyValues.key,
+                            propertyValue,
+                            authorizedPropertyTypes.getValue(propertyTypeIdToPropertyValues.key).datatype,
+                            awsPassthrough
+                    )
+                }
+            }
+        }
+
+        return hds.connection.use { connection ->
+            //Update the versions of all entities.
+            val versionsArrays = PostgresArrays.createLongArray(connection, version)
+
+            /*
+             * We do not need entity level locking as the version in the ids table ensures that data is consistent even
+             * if the follow property upserts fails halfway through.
+             *
+             * Previous me said deletes had to be handled specially, but it makes sense that clear is fine.
+             *
+             */
+
+            //Update property values. We use multiple prepared statements in batch while re-using ARRAY[version].
+            val upsertPropertyValues = mutableMapOf<UUID, PreparedStatement>()
+            val updatedPropertyCounts = entitiesWithHashAndInsertData.entries.map { (entityKeyId, entityData) ->
+
+                entityData.map { (propertyTypeId, hashAndInsertValue) ->
+                    val upsertPropertyValue = upsertPropertyValues.getOrPut(propertyTypeId) {
+                        val pt = authorizedPropertyTypes[propertyTypeId] ?: abortInsert(entitySetId, entityKeyId)
+                        connection.prepareStatement(upsertPropertyValueSql(pt))
+                    }
+
+                    hashAndInsertValue.map { (propertyHash, insertValue) ->
+                        upsertPropertyValue.setObject(1, entitySetId)
+                        upsertPropertyValue.setObject(2, entityKeyId)
+                        upsertPropertyValue.setInt(3, partition)
+                        upsertPropertyValue.setObject(4, propertyTypeId)
+                        upsertPropertyValue.setBytes(5, propertyHash)
+                        upsertPropertyValue.setObject(6, version)
+                        upsertPropertyValue.setArray(7, versionsArrays)
+                        upsertPropertyValue.setObject(8, insertValue)
+                        upsertPropertyValue.addBatch()
+                    }
+                }
+                upsertPropertyValues.values.map { it.executeBatch().sum() }.sum()
+            }.sum()
+
+            /**
+             * At this point, we either need to either commit all versions by updating the version in the ids table our
+             * fail out. Dead locks should be impossible due to explicit locking within the transaction.
+             *
+             */
+
+            //Make data visible by marking new version in ids table.
+
+            val ps = connection.prepareStatement(updateEntitySql)
+
+            entities.keys.sorted().forEach { entityKeyId ->
+                ps.setArray(1, versionsArrays)
+                ps.setObject(2, version)
+                ps.setObject(3, version)
+                ps.setObject(4, entitySetId)
+                ps.setObject(5, entityKeyId)
+                ps.setInt(6, partition)
+                ps.addBatch()
+            }
+
+            val updatedEntities = ps.executeBatch().sum()
+            logger.debug("Updated $updatedEntities entities as part of insert.")
+            return updatedPropertyCounts
+        }
+    }
+
+    private fun getPropertyHash(
+            entitySetId: UUID,
+            entityKeyId: UUID,
+            propertyTypeId: UUID,
+            value: Any,
+            dataType: EdmPrimitiveTypeKind,
+            awsPassthrough: Boolean
+    ): Pair<ByteArray, Any> {
+        if (dataType != EdmPrimitiveTypeKind.Binary) {
+            return PostgresDataHasher.hashObject(value, dataType) to value
+        }
+        //Binary data types get stored in S3 bucket:
+        if (awsPassthrough) {
+            //Data is being stored in AWS directly the value will be the url fragment
+            //of where the data will be stored in AWS.
+            return PostgresDataHasher.hashObject(value, EdmPrimitiveTypeKind.String) to value
+        }
+
+        //Data is expected to be of a specific type so that it can be stored in s3 bucket
+        val binaryData = value as BinaryDataWithContentType
+        val digest = PostgresDataHasher.hashObjectToHex(binaryData.data, EdmPrimitiveTypeKind.Binary)
+
+        //store entity set id/entity key id/property type id/property hash as key in S3
+        val s3Key = "$entitySetId/$entityKeyId/$propertyTypeId/$digest"
+
+        byteBlobDataManager.putObject(s3Key, binaryData.data, binaryData.contentType)
+        return PostgresDataHasher.hashObject(s3Key, EdmPrimitiveTypeKind.String) to s3Key
+    }
+
+    @Timed
+    fun replaceEntities(
+            entitySetId: UUID,
+            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+
+        val propertyTypes = authorizedPropertyTypes.values
+
+        val tombstoneFn: (Long, Map<UUID, Map<UUID, Set<Any>>>) ->
+        Unit = { version: Long,
+                 entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
+            tombstone(
+                    entitySetId,
+                    entityBatch.keys,
+                    propertyTypes,
+                    version,
+                    partitions
+            )
+        }
+
+        return upsertEntities(
+                entitySetId,
+                tombstoneFn,
+                entities,
+                authorizedPropertyTypes,
+                System.currentTimeMillis(),
+                partitions
+        )
+    }
+
+    @Timed
+    fun partialReplaceEntities(
+            entitySetId: UUID,
+            entities: Map<UUID, Map<UUID, Set<Any>>>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+
+        // Is the overhead from including irrelevant property types in a bulk delete really worse than performing individual queries? :thinking-face:
+        val tombstoneFn =
+                { version: Long,
+                  entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
+                    entityBatch.forEach { (entityKeyId, entity) ->
+                        //Implied access enforcement as it will raise exception if lacking permission
+                        tombstone(
+                                entitySetId,
+                                setOf(entityKeyId),
+                                entity.keys.map { authorizedPropertyTypes.getValue(it) }.toSet(),
+                                version,
+                                partitions
+                        )
+                    }
+                }
+
+        return upsertEntities(
+                entitySetId,
+                tombstoneFn,
+                entities,
+                authorizedPropertyTypes,
+                System.currentTimeMillis(),
+                partitions
+        )
+    }
+
+    @Timed
+    fun replacePropertiesInEntities(
+            entitySetId: UUID,
+            replacementProperties: Map<UUID, Map<UUID, Set<Map<ByteBuffer, Any>>>>, // ekid -> ptid -> hashes -> shit
+            authorizedPropertyTypes: Map<UUID, PropertyType>
+    ): WriteEvent {
+        //We expect controller to have performed access control checks upstream.
+        val partitions = partitionManager.getEntitySetPartitions(entitySetId).toList()
+
+        val tombstoneFn: (Long, Map<UUID, Map<UUID, Set<Any>>>) -> Unit =
+                { version: Long, entityBatch: Map<UUID, Map<UUID, Set<Any>>> ->
+                    val ids = entityBatch.keys
+                    tombstone(
+                            entitySetId,
+                            replacementProperties.filter { ids.contains(it.key) },
+                            version,
+                            partitions
+                    )
+                }
+
+        //This performs unnecessary copies and we should fix at some point
+        val replacementValues = replacementProperties.asSequence().map {
+            it.key to extractValues(
+                    it.value
+            )
+        }.toMap()
+
+        return upsertEntities(
+                entitySetId,
+                tombstoneFn,
+                replacementValues,
+                authorizedPropertyTypes,
+                System.currentTimeMillis(),
+                partitions
+        )
+
+    }
+
+    private fun extractValues(propertyValues: Map<UUID, Set<Map<ByteBuffer, Any>>>): Map<UUID, Set<Any>> {
+        return propertyValues.mapValues { (_, replacements) -> replacements.flatMap { it.values }.toSet() }
+    }
+
+    /**
+     * This is fail safe as all id tombstones should commit at once.
+     * Tombstones all entities in an entity set in both [IDS] and [DATA] table.
+     */
+    private fun tombstone(conn: Connection, entitySetId: UUID, version: Long): WriteEvent {
+        val partitions = partitionManager.getEntitySetPartitions(entitySetId)
+        val idTombstones = conn.prepareStatement(updateVersionsForEntitySet)
+        val dataTombstones = conn.prepareStatement(updateVersionsForPropertiesInEntitySet)
+
+        partitions.sorted().map { partition ->
+            idTombstones.setLong(1, -version)
+            idTombstones.setLong(2, -version)
+            idTombstones.setLong(3, -version)
+            idTombstones.setObject(4, entitySetId)
+            idTombstones.setInt(5, partition)
+            idTombstones.addBatch()
+        }
+        val numUpdates = idTombstones.executeBatch().sum()
+
+
+        //We don't count the number of property types that were updated
+        //TODO: Someday if we encounter deadlocks when deleting entity sets, we will probably have to implement locking
+        //Only likely to happen if someone is actively writing to an entity set that is being cleared.
+        dataTombstones.setLong(1, -version)
+        dataTombstones.setLong(2, -version)
+        dataTombstones.setLong(3, -version)
+        dataTombstones.setObject(4, entitySetId)
+        dataTombstones.setArray(5, PostgresArrays.createIntArray(conn, partitions))
+        dataTombstones.executeUpdate()
+
+        return WriteEvent(version, numUpdates)
+    }
+
+    /**
+     * Tombstones all data from authorizedPropertyTypes for an entity set in both [IDS] and [DATA] table.
+     *
+     * NOTE: this function commits the tombstone transactions.
+     */
+    @Timed
+    fun clearEntitySet(entitySetId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>): WriteEvent {
+        return hds.connection.use { conn ->
+            val version = System.currentTimeMillis()
+            tombstone(conn, entitySetId, authorizedPropertyTypes.values, version)
+            val event = tombstone(conn, entitySetId, version)
+            event
+        }
     }
 
     /**
@@ -167,387 +635,575 @@ class PostgresEntityDataQueryService(private val hds: HikariDataSource) {
      * @param entityKeyIds The entity key ids to tombstone.
      * @param authorizedPropertyTypes The property types the user is allowed to tombstone. We assume that authorization
      * checks are enforced at a higher level and that this just streamlines issuing the necessary queries.
+     * @param partitions Contains the partition information for the requested entity set.
      */
     fun clearEntities(
-            entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Int {
-        //TODO: Make these a single transaction.
-        tombstone(entitySetId, entityKeyIds, authorizedPropertyTypes.values)
-        return tombstone(entitySetId, entityKeyIds)
+            entitySetId: UUID,
+            entityKeyIds: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+
+        val version = System.currentTimeMillis()
+
+
+        tombstone(
+                entitySetId,
+                entityKeyIds,
+                authorizedPropertyTypes.values,
+                version,
+                partitions
+        )
+        return tombstoneIdsTable(entitySetId, entityKeyIds, version, partitions)
+
     }
 
-    fun deleteEntities(
-            entitySetId: UUID, entityKeyIds: Set<UUID>, authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Int {
-        val connection = hds.getConnection()
-        return connection.use {
-            return authorizedPropertyTypes
-                    .map {
-                        val s = connection.createStatement()
-                        val count: Int = s.executeUpdate(deletePropertiesOfEntities(entitySetId, it.key, entityKeyIds))
-                        s.close()
-                        count
-                    }
-                    .sum()
-        }
-    }
+    /**
+     * Tombstones (writes a negative version) for the provided entity properties.
+     * @param entitySetId The entity set to operate on.
+     * @param entityKeyIds The entity key ids to tombstone.
+     * @param authorizedPropertyTypes The property types the user is requested and is allowed to tombstone. We assume
+     * that authorization checks are enforced at a higher level and that this just streamlines issuing the necessary
+     * queries.
+     * @param partitions Contains the partition information for the requested entity set.
+     */
+    fun clearEntityData(
+            entitySetId: UUID,
+            entityKeyIds: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            partitions: Set<Int> = partitionManager.getEntitySetPartitions(entitySetId)
+    ): WriteEvent {
+        val version = System.currentTimeMillis()
 
-    fun deleteEntitySet(entitySetId: UUID, authorizedPropertyTypes: Map<UUID, PropertyType>): Int {
-        val connection = hds.getConnection()
-        return connection.use {
-            authorizedPropertyTypes
-                    .map {
-                        val s = connection.createStatement()
-                        val count: Int = s.executeUpdate(deletePropertiesInEntitySet(entitySetId, it.key))
-                        s.close()
-                        count
-                    }
-                    .sum()
+        return hds.connection.use { conn ->
+            val writeEvent = tombstone(
+                    entitySetId,
+                    entityKeyIds,
+                    authorizedPropertyTypes.values,
+                    version,
+                    partitions.toList()
+            )
+            return@use writeEvent
         }
     }
 
     /**
-     * Replace Replacing an entity involves setting all properties for that versions for that entity to -now()*
+     * Deletes properties of entities in entity set from [DATA] table.
      */
-    fun replaceEntities(
+    fun deleteEntityData(
             entitySetId: UUID,
-            entities: Map<UUID, SetMultimap<UUID, Any>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Int {
-        tombstone(entitySetId, entities.keys, authorizedPropertyTypes.values)
-        return upsertEntities(entitySetId, entities, authorizedPropertyTypes)
-    }
-
-    fun partialReplaceEntities(
-            entitySetId: UUID,
-            entities: Map<UUID, SetMultimap<UUID, Any>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
-    ): Int {
-        //Only tombstone properties being replaced.
-        entities.forEach {
-            val entity = it.value
-            //Implied access enforcement as it will raise exception if lacking permission
-            tombstone(entitySetId, setOf(it.key), entity.keySet().map { authorizedPropertyTypes[it]!! }.toSet())
+            entityKeyIds: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+        // TODO same as deleteEntityDataAndEntities?
+        // Delete properties from S3
+        authorizedPropertyTypes.map { property ->
+            if (property.value.datatype == EdmPrimitiveTypeKind.Binary) {
+                deletePropertyOfEntityFromS3(entitySetId, entityKeyIds, property.key)
+            }
         }
-        return upsertEntities(entitySetId, entities, authorizedPropertyTypes)
+
+        val numUpdates = entityKeyIds
+                .groupBy { getPartition(it, partitions) }
+                .map { (partition, entities) ->
+                    deletePropertiesFromEntities(
+                            entitySetId, entities, authorizedPropertyTypes, partition
+                    )
+                }.sum()
+
+        return WriteEvent(System.currentTimeMillis(), numUpdates)
     }
 
-    fun replacePropertiesInEntities(
+    /**
+     * Deletes properties of entities in entity set from [DATA] table.
+     */
+    private fun deletePropertiesFromEntities(
             entitySetId: UUID,
-            replacementProperties: Map<UUID, SetMultimap<UUID, Map<ByteBuffer, Any>>>,
-            authorizedPropertyTypes: Map<UUID, PropertyType>
+            entities: Collection<UUID>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            partition: Int
     ): Int {
-        //We expect controller to have performed access control checks upstream.
-        tombstone(entitySetId, replacementProperties)
-        //This performs unnecessary copies and we should fix at some point
-        val replacementValues = replacementProperties.asSequence().map {
-            it.key to extractValues(
-                    it.value
-            )
-        }.toMap()
-        return upsertEntities(entitySetId, replacementValues, authorizedPropertyTypes)
+        return hds.connection.use { connection ->
+
+            val propertyTypesArr = PostgresArrays.createUuidArray(connection, authorizedPropertyTypes.keys)
+            val idsArr = PostgresArrays.createUuidArray(connection, entities)
+
+            // Delete entity and linked entity properties from data table
+            connection
+                    .prepareStatement(deletePropertiesOfEntitiesInEntitySet)
+                    .use { ps ->
+                        ps.setObject(1, entitySetId)
+                        ps.setArray(2, idsArr)
+                        ps.setArray(3, idsArr)
+                        ps.setInt(4, partition)
+                        ps.setArray(5, propertyTypesArr)
+
+                        ps.executeUpdate()
+                    }
+        }
+    }
+
+    /**
+     * Deletes properties of entities in entity set from [DATA] table.
+     */
+    fun deleteEntityDataAndEntities(
+            entitySetId: UUID,
+            entityKeyIds: Set<UUID>,
+            authorizedPropertyTypes: Map<UUID, PropertyType>,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+        // Delete properties from S3
+        authorizedPropertyTypes.map { property ->
+            if (property.value.datatype == EdmPrimitiveTypeKind.Binary) {
+                deletePropertyOfEntityFromS3(entitySetId, entityKeyIds, property.key)
+            }
+        }
+
+        val numUpdates = entityKeyIds
+                .groupBy { getPartition(it, partitions) }
+                .map { (partition, entities) ->
+                    deleteEntities(entitySetId, entities, partition)
+                }.sum()
+
+        return WriteEvent(System.currentTimeMillis(), numUpdates)
+    }
+
+    /**
+     * Deletes entities from [DATA] table.
+     */
+    private fun deleteEntities(
+            entitySetId: UUID,
+            entities: Collection<UUID>,
+            partition: Int
+    ): Int {
+        return hds.connection.use { connection ->
+
+            val idsArr = PostgresArrays.createUuidArray(connection, entities)
+
+            // Delete entity and linking entity properties from data table
+            connection.prepareStatement(deleteEntitiesInEntitySet)
+                    .use { deleteEntities ->
+                        deleteEntities.setObject(1, entitySetId)
+                        deleteEntities.setArray(2, idsArr)
+                        deleteEntities.setArray(3, idsArr)
+                        deleteEntities.setInt(4, partition)
+
+                        deleteEntities.executeUpdate()
+                    }
+        }
+    }
+
+    /**
+     * Deletes property types of entity set from [DATA] table.
+     */
+    fun deleteEntitySetData(entitySetId: UUID, propertyTypes: Map<UUID, PropertyType>): WriteEvent {
+        val numUpdates = hds.connection.use { connection ->
+            val ps = connection.prepareStatement(deletePropertyInEntitySet)
+
+            propertyTypes
+                    .map { propertyType ->
+                        if (propertyType.value.datatype == EdmPrimitiveTypeKind.Binary) {
+                            deletePropertiesInEntitySetFromS3(entitySetId, propertyType.key)
+                        }
+
+                        ps.setObject(1, entitySetId)
+                        ps.setObject(2, propertyType.key)
+                        ps.addBatch()
+                    }
+            ps.executeBatch().sum()
+        }
+
+        return WriteEvent(System.currentTimeMillis(), numUpdates)
+    }
+
+    private fun deletePropertyOfEntityFromS3(
+            entitySetId: UUID,
+            entityKeyIds: Set<UUID>,
+            propertyTypeId: UUID
+    ) {
+        val count = AtomicLong()
+        BasePostgresIterable<String>(
+                PreparedStatementHolderSupplier(hds, selectEntitiesTextProperties, FETCH_SIZE) { ps ->
+                    val connection = ps.connection
+                    val entitySetIdsArr = PostgresArrays.createUuidArray(connection, setOf(entitySetId))
+                    val propertyTypeIdsArr = PostgresArrays.createUuidArray(connection, setOf(propertyTypeId))
+                    val entityKeyIdsArr = PostgresArrays.createUuidArray(connection, entityKeyIds)
+                    ps.setArray(1, entitySetIdsArr)
+                    ps.setArray(2, propertyTypeIdsArr)
+                    ps.setArray(3, entityKeyIdsArr)
+                }
+        ) { rs ->
+            rs.getString(getMergedDataColumnName(PostgresDatatype.TEXT))
+        }.asSequence().chunked(S3_DELETE_BATCH_SIZE).asStream().parallel().forEach { s3Keys ->
+            byteBlobDataManager.deleteObjects(s3Keys)
+            count.addAndGet(s3Keys.size.toLong())
+        }
     }
 
 
-    private fun extractValues(
-            replacementProperties: SetMultimap<UUID, Map<ByteBuffer, Any>>
-    ): SetMultimap<UUID, Any> {
-        val values: SetMultimap<UUID, Any> = HashMultimap.create()
-        replacementProperties.asMap().forEach {
-            values.putAll(
-                    it.key,
-                    it.value.asSequence().flatMap { it.values.asSequence() }.asIterable()
-            )
+    private fun deletePropertiesInEntitySetFromS3(entitySetId: UUID, propertyTypeId: UUID): Long {
+        val count = AtomicLong()
+        BasePostgresIterable<String>(
+                PreparedStatementHolderSupplier(hds, selectEntitySetTextProperties, FETCH_SIZE) { ps ->
+                    val entitySetIdsArr = PostgresArrays.createUuidArray(ps.connection, setOf(entitySetId))
+                    val propertyTypeIdsArr = PostgresArrays.createUuidArray(ps.connection, setOf(propertyTypeId))
+                    ps.setArray(1, entitySetIdsArr)
+                    ps.setArray(2, propertyTypeIdsArr)
+                }
+        ) { rs ->
+            rs.getString(getMergedDataColumnName(PostgresDatatype.TEXT))
+        }.asSequence().chunked(S3_DELETE_BATCH_SIZE).asStream().parallel().forEach { s3Keys ->
+            byteBlobDataManager.deleteObjects(s3Keys)
+            count.addAndGet(s3Keys.size.toLong())
         }
-        return values
+        return count.get()
+    }
+
+    /**
+     * Tombstones (to version = 0) entity key ids belonging to the requested entity set in [IDS] table.
+     */
+    fun tombstoneDeletedEntitySet(entitySetId: UUID): WriteEvent {
+        val partitions = partitionManager.getEntitySetPartitions(entitySetId)
+
+        val numUpdates = hds.connection.use { connection ->
+            try {
+                lockIdsAndExecute(
+                        connection,
+                        zeroVersionsForEntitySet,
+                        entitySetId,
+                        partitions.associateWith { listOf<UUID>() },
+                        batch = true,
+                        shouldLockEntireEntitySet = true
+                ) { ps, partition, _ ->
+                    ps.setObject(1, entitySetId)
+                    ps.setInt(2, partition)
+                }
+            } catch (ex: Exception) {
+                logger.error("Unable to mark entity set $entitySetId for deletion.")
+                throw ex
+            }
+        }
+
+        return WriteEvent(System.currentTimeMillis(), numUpdates)
+    }
+
+    /**
+     * Deletes entities from [IDS] table.
+     */
+    fun deleteEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): WriteEvent {
+        val partitions = partitionManager.getEntitySetPartitions(entitySetId).toList()
+        val entitiesByPartition = getIdsByPartition(entityKeyIds, partitions)
+
+        val numUpdates = hds.connection.use { connection ->
+            try {
+                lockIdsAndExecute(
+                        connection,
+                        deleteEntityKeys,
+                        entitySetId,
+                        entitiesByPartition,
+                        batch = true
+                ) { ps, partition, entityKeyIds ->
+                    val entityArr = PostgresArrays.createUuidArray(ps.connection, entityKeyIds)
+                    ps.setObject(1, entitySetId)
+                    ps.setArray(2, entityArr)
+                    ps.setInt(3, partition)
+                }
+            } catch (ex: Exception) {
+                logger.error("Unable to delete entities ($entityKeyIds) in $entitySetId.")
+                throw ex
+            }
+        }
+
+        return WriteEvent(System.currentTimeMillis(), numUpdates)
+    }
+
+    /**
+     * Tombstones (to version = 0) entities in [IDS] table.
+     */
+    fun tombstoneDeletedEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): WriteEvent {
+        val partitions = partitionManager.getEntitySetPartitions(entitySetId).toList()
+        val entitiesByPartition = getIdsByPartition(entityKeyIds, partitions)
+
+
+        val numUpdates = hds.connection.use { connection ->
+            try {
+                lockIdsAndExecute(
+                        connection,
+                        zeroVersionsForEntitiesInEntitySet,
+                        entitySetId,
+                        entitiesByPartition,
+                        shouldLockEntireEntitySet = false,
+                        batch = true
+                ) { ps, partition, entityKeyIds ->
+                    val idsArr = PostgresArrays.createUuidArray(ps.connection, entityKeyIds)
+
+                    ps.setObject(1, entitySetId)
+                    ps.setInt(2, partition)
+                    ps.setArray(3, idsArr)
+                }
+
+            } catch (ex: Exception) {
+                logger.error("Unable to market entities for deletion ($entityKeyIds) in $entitySetId.")
+                throw ex
+            }
+        }
+        return WriteEvent(System.currentTimeMillis(), numUpdates)
     }
 
     /**
      * Tombstones the provided set of property types for each provided entity key.
+     *
+     * This version of tombstone only operates on the [DATA] table and does not change the version of
+     * entities in the [IDS] table
+     *
+     * @param conn A valid JDBC connection, ideally with autocommit disabled.
+     * @param entitySetId The entity set id for which to tombstone entries
+     * @param propertyTypesToTombstone A collection of property types to tombstone
+     *
+     * @return A write event object containing a summary of the operation useful for auditing purposes.
+     *
      */
     private fun tombstone(
-            entitySetId: UUID, entityKeyIds: Set<UUID>, propertyTypesToTombstone: Collection<PropertyType>
-    ): Int {
-        val connection = hds.getConnection()
-        connection.use {
-            val tombstoneVersion = -System.currentTimeMillis()
+            conn: Connection,
+            entitySetId: UUID,
+            propertyTypesToTombstone: Collection<PropertyType>,
+            version: Long
+    ): WriteEvent {
+        val propertyTypeIdsArr = PostgresArrays.createUuidArray(conn, propertyTypesToTombstone.map { it.id })
+        val partitions = PostgresArrays.createIntArray(conn, partitionManager.getEntitySetPartitions(entitySetId))
 
-            return propertyTypesToTombstone
-                    .map {
-                        val ps = connection.prepareStatement(
-                                updatePropertyVersion(entitySetId, it.id, tombstoneVersion)
-                        )
-                        entityKeyIds.forEach {
-                            ps.setObject(1, it)
-                            ps.addBatch()
-                        }
-                        ps.executeBatch().sum()
-                    }
-                    .sum()
+        val numUpdated = conn.prepareStatement(updateVersionsForPropertyTypesInEntitySet).use { ps ->
+            ps.setLong(1, -version)
+            ps.setLong(2, -version)
+            ps.setLong(3, -version)
+            ps.setObject(4, entitySetId)
+            ps.setArray(5, partitions)
+            ps.setArray(6, propertyTypeIdsArr)
+            ps.executeUpdate()
+        }
+
+        return WriteEvent(version, numUpdated)
+    }
+
+    /**
+     * Tombstones entities in the [PostgresTable.IDS] table.
+     *
+     * @param conn A valid JDBC connection, ideally with autocommit disabled.
+     * @param entitySetId The entity set id for which to tombstone entries.
+     * @param entityKeyIds The entity key ids for which to tombstone entries.
+     * @param version Version to be used for tombstoning.
+     * @param partitions Contains the partition information for the requested entity set.
+     */
+    private fun tombstoneIdsTable(
+            entitySetId: UUID,
+            entityKeyIds: Set<UUID>,
+            version: Long,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+        val idsByPartition = getIdsByPartition(entityKeyIds, partitions)
+
+        val numUpdated = hds.connection.use { connection ->
+            lockIdsAndExecute(
+                    connection,
+                    updateVersionsForEntitiesInEntitySet,
+                    entitySetId,
+                    idsByPartition,
+                    batch = true
+            ) { ps, partition, ids ->
+                val entityKeyIdsArr = PostgresArrays.createUuidArray(ps.connection, ids)
+                ps.setLong(1, -version)
+                ps.setLong(2, -version)
+                ps.setLong(3, -version)
+                ps.setObject(4, entitySetId)
+                ps.setInt(5, partition)
+                ps.setArray(6, entityKeyIdsArr)
+            }
+        }
+
+        return WriteEvent(version, numUpdated)
+    }
+
+
+    /**
+     * Tombstones the provided set of property types for each provided entity key.
+     *
+     * This version of tombstone only operates on the [DATA] table and does not change the version of
+     * entities in the [IDS] table
+     *
+     * @param entitySetId The entity set id for which to tombstone entries
+     * @param entityKeyIds The entity key ids for which to tombstone entries.
+     * @param propertyTypesToTombstone A collection of property types to tombstone
+     * @param version Version to be used for tombstoning.
+     * @param partitions Contains the partition info for the requested entity set.
+     *
+     * @return A write event object containing a summary of the operation useful for auditing purposes.
+     */
+    private fun tombstone(
+            entitySetId: UUID,
+            entityKeyIds: Set<UUID>,
+            propertyTypesToTombstone: Collection<PropertyType>,
+            version: Long,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+
+        return hds.connection.use { conn ->
+            val propertyTypeIdsArr = PostgresArrays.createUuidArray(conn, propertyTypesToTombstone.map { it.id })
+            val entityKeyIdsArr = PostgresArrays.createUuidArray(conn, entityKeyIds)
+            val partitionsArr = PostgresArrays.createIntArray(conn, entityKeyIds.map {
+                getPartition(
+                        it, partitions
+                )
+            })
+
+            val numUpdated = conn.prepareStatement(
+                    updateVersionsForPropertyTypesInEntitiesInEntitySet()
+            ).use { ps ->
+                ps.setLong(1, -version)
+                ps.setLong(2, -version)
+                ps.setLong(3, -version)
+                ps.setObject(4, entitySetId)
+                ps.setArray(5, partitionsArr)
+                ps.setArray(6, propertyTypeIdsArr)
+                ps.setArray(7, entityKeyIdsArr)
+                ps.executeUpdate()
+            }
+
+            val linksTombstoned = conn.prepareStatement(
+                    updateVersionsForPropertyTypesInEntitiesInEntitySet(linking = true)
+            ).use { ps ->
+                ps.setLong(1, -version)
+                ps.setLong(2, -version)
+                ps.setLong(3, -version)
+                ps.setObject(4, entitySetId)
+                ps.setArray(5, partitionsArr)
+                ps.setArray(6, propertyTypeIdsArr)
+                ps.setArray(7, entityKeyIdsArr)
+                ps.executeUpdate()
+            }
+
+            WriteEvent(version, numUpdated + linksTombstoned)
         }
     }
 
     /**
-     * Tombstones specific property values through hash id
+     *
+     * Tombstones the provided set of property type hash values for each provided entity key.
+     *
+     * This version of tombstone only operates on the [DATA] table and does not change the version of
+     * entities in the [IDS] table
+     *
+     * @param entitySetId The entity set id for which to tombstone entries
+     * @param entities The entities with their properties for which to tombstone entries.
+     * @param version The version to use to tombstone.
+     * @param partitions Contains the partition info for the entity set of the entities.
+     *
+     * @return A write event object containing a summary of the operation useful for auditing purposes.
+     *
      */
-    private fun tombstone(entitySetId: UUID, entities: Map<UUID, SetMultimap<UUID, Map<ByteBuffer, Any>>>): Int {
-        val connection = hds.getConnection()
-        return connection.use {
-            val tombstoneVersion = -System.currentTimeMillis()
-            val propertyTypePreparedStatements = entities.values
-                    .flatMap { it.keySet() }
-                    .toSet()
-                    .map {
-                        it to connection.prepareStatement(
-                                updatePropertyValueVersion(entitySetId, it, tombstoneVersion)
-                        )
-                    }
-                    .toMap()
+    private fun tombstone(
+            entitySetId: UUID,
+            entities: Map<UUID, Map<UUID, Set<Map<ByteBuffer, Any>>>>,
+            version: Long,
+            partitions: List<Int> = partitionManager.getEntitySetPartitions(entitySetId).toList()
+    ): WriteEvent {
+        return hds.connection.use { conn ->
+            val entityKeyIds = entities.keys
+            val entityKeyIdsArr = PostgresArrays.createUuidArray(conn, entityKeyIds)
+            val partitionsArr = PostgresArrays.createIntArray(
+                    conn, entities.keys.map {
+                getPartition(it, partitions)
+            })
 
-            entities.forEach {
-                val entityKeyId = it.key
-                Multimaps
-                        .asMap(it.value)
-                        .map {
-                            val ps = propertyTypePreparedStatements[it.key]!!
-                            //TODO: We're currently doing this one hash at a time and we should consider doing it using in query
-                            it.value.forEach {
-                                it.keys.forEach {
-                                    ps.setObject(1, entityKeyId)
-                                    ps.setBytes(2, it.array()) //hash
-                                    ps.addBatch()
-                                }
+            val updatePropertyValueVersion = conn.prepareStatement(
+                    updateVersionsForPropertyValuesInEntitiesInEntitySet()
+            )
+            val tombstoneLinks = conn.prepareStatement(
+                    updateVersionsForPropertyValuesInEntitiesInEntitySet(linking = true)
+            )
+
+            entities.forEach { (_, entity) ->
+                entity.forEach { (propertyTypeId, updates) ->
+                    val propertyTypeIdsArr = PostgresArrays.createUuidArray(conn, propertyTypeId)
+                    //TODO: https://github.com/pgjdbc/pgjdbc/issues/936
+                    //TODO: https://github.com/pgjdbc/pgjdbc/pull/1194
+                    //TODO: https://github.com/pgjdbc/pgjdbc/pull/1044
+                    //Once above issues are resolved this can be done as a single query WHERE HASH = ANY(?)
+
+                    updates
+                            .flatMap { it.keys }
+                            .forEach { update ->
+                                updatePropertyValueVersion.setLong(1, -version)
+                                updatePropertyValueVersion.setLong(2, -version)
+                                updatePropertyValueVersion.setLong(3, -version)
+                                updatePropertyValueVersion.setObject(4, entitySetId)
+                                updatePropertyValueVersion.setArray(5, partitionsArr)
+                                updatePropertyValueVersion.setArray(6, propertyTypeIdsArr)
+                                updatePropertyValueVersion.setArray(7, entityKeyIdsArr)
+                                updatePropertyValueVersion.setBytes(8, update.array())
+                                updatePropertyValueVersion.addBatch()
+
+                                tombstoneLinks.setLong(1, -version)
+                                tombstoneLinks.setLong(2, -version)
+                                tombstoneLinks.setLong(3, -version)
+                                tombstoneLinks.setObject(4, entitySetId)
+                                tombstoneLinks.setArray(5, partitionsArr)
+                                tombstoneLinks.setArray(6, propertyTypeIdsArr)
+                                tombstoneLinks.setArray(7, entityKeyIdsArr)
+                                tombstoneLinks.setBytes(8, update.array())
+                                tombstoneLinks.addBatch()
                             }
-                        }
+                }
             }
-            return propertyTypePreparedStatements.values.map(PreparedStatement::executeBatch).map(IntArray::sum).sum()
+            val numUpdated = updatePropertyValueVersion.executeUpdate()
+            val linksUpdated = tombstoneLinks.executeUpdate()
+
+            WriteEvent(version, numUpdated + linksUpdated)
         }
+
     }
 
-    private fun tombstone(entitySetId: UUID): Int {
-        val connection = hds.getConnection()
-        return connection.use {
-            val ps = it.prepareStatement(updateAllEntityVersions(entitySetId, System.currentTimeMillis()))
-            return ps.executeUpdate()
-        }
+    fun getExpiringEntitiesFromEntitySet(
+            entitySetId: UUID,
+            expirationBaseColumn: String,
+            formattedDateMinusTTE: Any,
+            sqlFormat: Int,
+            deleteType: DeleteType
+    ): BasePostgresIterable<UUID> {
+        val partitions = PostgresArrays.createIntArray(
+                hds.connection, partitionManager.getEntitySetPartitions(entitySetId)
+        )
+        return BasePostgresIterable(
+                PreparedStatementHolderSupplier(
+                        hds,
+                        getExpiringEntitiesQuery(expirationBaseColumn, deleteType),
+                        FETCH_SIZE,
+                        false
+                ) { stmt ->
+                    stmt.setObject(1, entitySetId)
+                    stmt.setArray(2, partitions)
+                    stmt.setObject(3, IdConstants.ID_ID.id)
+                    stmt.setObject(4, formattedDateMinusTTE, sqlFormat)
+                }
+        ) { rs -> ResultSetAdapters.id(rs) }
     }
 
-    private fun tombstone(entitySetId: UUID, entityKeyIds: Set<UUID>): Int {
-        val connection = hds.getConnection()
-        return connection.use {
-            val ps = connection.prepareStatement(updateEntityVersion(entitySetId, System.currentTimeMillis()))
-            entityKeyIds.forEach {
-                ps.setObject(1, it)
-                ps.addBatch()
-            }
-            return ps.executeBatch().sum()
+    private fun getExpiringEntitiesQuery(expirationBaseColumn: String, deleteType: DeleteType): String {
+        var ignoredClearedEntitiesClause = ""
+        if (deleteType == DeleteType.Soft) {
+            ignoredClearedEntitiesClause = "AND ${VERSION.name} >= 0 "
         }
+        return "SELECT ${ID.name} FROM ${DATA.name} " +
+                "WHERE ${ENTITY_SET_ID.name} = ? " +
+                "AND ${PARTITION.name} = ANY(?) " +
+                "AND ${PROPERTY_TYPE_ID.name} != ? " +
+                "AND $expirationBaseColumn <= ? " +
+                ignoredClearedEntitiesClause // this clause ignores entities that have already been cleared
     }
 }
 
-fun updateAllEntityVersions(entitySetId: UUID, version: Long): String {
-    val entitiesTable = quote(entityTableName(entitySetId))
-    return "UPDATE $entitiesTable SET versions = versions || $version, version = $version "
-}
-
-fun updateEntityVersion(entitySetId: UUID, version: Long): String {
-    return updateAllEntityVersions(entitySetId, version) + " WHERE ${ID_VALUE.name} = ? "
-}
-
-fun updatePropertyVersion(entitySetId: UUID, propertyTypeId: UUID, version: Long): String {
-    val propertyTable = quote(propertyTableName(propertyTypeId))
-    return "UPDATE $propertyTable SET versions = versions || $version, version = $version " +
-            "WHERE ${ENTITY_SET_ID.name} = '$entitySetId'::uuid AND ${ID_VALUE.name} = ? "
-}
-
-fun updatePropertyValueVersion(entitySetId: UUID, propertyTypeId: UUID, version: Long): String {
-    return updatePropertyVersion(entitySetId, propertyTypeId, version) +
-            "AND ${HASH.name} = ?"
-}
-
-fun deletePropertiesInEntitySet(entitySetId: UUID, propertyTypeId: UUID): String {
-    val propertyTable = quote(propertyTableName(propertyTypeId))
-    return "DELETE FROM $propertyTable WHERE ${ENTITY_SET_ID.name} = '$entitySetId'::uuid "
-}
-
-fun deletePropertiesOfEntities(entitySetId: UUID, propertyTypeId: UUID, entityKeyIds: Set<UUID>): String {
-    return deletePropertiesInEntitySet(
-            entitySetId, propertyTypeId
-    ) + " WHERE id in (SELECT * FROM UNNEST( (?)::uuid[] )) "
-}
-
-fun deleteEntities(entitySetId: UUID, entityKeyIds: Set<UUID>): String {
-    val esTableName = DataTables.quote(DataTables.entityTableName(entitySetId))
-    return "DELETE FROM $esTableName WHERE id in (SELECT * FROM UNNEST( (?)::uuid[] )) "
-}
-
-fun deleteEntitySet(entitySetId: UUID): String {
-    val esTableName = DataTables.quote(DataTables.entityTableName(entitySetId))
-    return "DROP TABLE $esTableName"
-}
-
-fun upsertEntity(entitySetId: UUID, version: Long): String {
-    val esTableName = DataTables.quote(DataTables.entityTableName(entitySetId))
-    val columns = setOf(
-            ID_VALUE.name,
-            VERSION.name,
-            VERSIONS.name,
-            LAST_WRITE.name,
-            LAST_INDEX.name
+private fun abortInsert(entitySetId: UUID, entityKeyId: UUID): Nothing {
+    throw InvalidParameterException(
+            "Cannot insert property type not in authorized property types for entity $entityKeyId from entity set $entitySetId."
     )
-    return "INSERT INTO $esTableName (${columns.joinToString(",")}) " +
-            "VALUES( ?,$version,ARRAY[$version],now(),'-infinity') " +
-            "ON CONFLICT (${ID_VALUE.name}) " +
-            "DO UPDATE SET versions = $esTableName.${VERSIONS.name} || EXCLUDED.${VERSIONS.name}, " +
-            "${VERSION.name} = EXCLUDED.${VERSION.name}, " +
-            "${LAST_WRITE.name} = now() " +
-            "WHERE EXCLUDED.${VERSION.name} > abs($esTableName.version) "
-}
-
-fun upsertPropertyValues(entitySetId: UUID, propertyTypeId: UUID, propertyType: String, version: Long): String {
-    val propertyTable = quote(propertyTableName(propertyTypeId))
-    val columns = setOf(
-            ENTITY_SET_ID.name,
-            ID_VALUE.name,
-            HASH.name,
-            quote(propertyType),
-            VERSION.name,
-            VERSIONS.name,
-            LAST_WRITE.name
-    )
-
-    //Insert new row or update version. We only perform update if we're the winning timestamp.
-    return "INSERT INTO $propertyTable (${columns.joinToString(
-            ","
-    )}) VALUES('$entitySetId'::uuid,?,?,?,$version,ARRAY[$version],now()) " +
-            "ON CONFLICT (${ENTITY_SET_ID.name},${ID_VALUE.name}, ${HASH.name}) " +
-            "DO UPDATE SET versions = $propertyTable.${VERSIONS.name} || EXCLUDED.${VERSIONS.name}, " +
-            "${VERSION.name} = EXCLUDED.${VERSION.name} " +
-            "WHERE EXCLUDED.${VERSION.name} > abs($propertyTable.version) "
-}
-
- fun selectEntitySetWithPropertyTypes(
-        entitySetId: UUID,
-        entityKeyIds: Set<UUID>,
-        authorizedPropertyTypes: Map<UUID, String>,
-        metadataOptions: Set<MetadataOption>
-): String {
-    val esTableName = DataTables.quote(DataTables.entityTableName(entitySetId))
-    val entityKeyIdsClause: Optional<String> =
-            if (entityKeyIds.isEmpty()) {
-                Optional.empty()
-            } else {
-                Optional.of(entityKeyIdsClause(entityKeyIds))
-            }
-    //@formatter:off
-    val columns = setOf(
-            "${ID_VALUE.name}",
-            if(metadataOptions.contains(MetadataOption.LAST_WRITE) ) {"${LAST_WRITE.name}" } else { "" },
-            if(metadataOptions.contains(MetadataOption.LAST_INDEX) ) {"${LAST_INDEX.name}" } else { "" })
-            .union( authorizedPropertyTypes.values.map(::quote ) )
-
-    return "SELECT ${columns.filter(String::isNotBlank).joinToString (",")} \n" +
-            "FROM $esTableName \n" +
-            authorizedPropertyTypes
-                    .map { "LEFT JOIN ${subSelectLatestVersionOfPropertyTypeInEntitySet(entitySetId, entityKeyIdsClause, it.key, it.value )} USING (${ID.name} )" }
-                    .joinToString("\n" ) +
-            if( entityKeyIdsClause.isPresent ) { " WHERE ${entityKeyIdsClause.get()} " } else  { " " }
-    //@formatter:on
-}
-
-fun selectEntitySetWithPropertyTypesAndVersion(
-        entitySetId: UUID,
-        entityKeyIds: Set<UUID>,
-        authorizedPropertyTypes: Map<UUID, String>,
-        metadataOptions: Set<MetadataOption>,
-        version: Long
-): String {
-    val esTableName = DataTables.quote(DataTables.entityTableName(entitySetId))
-    val entityKeyIdsClause: Optional<String> =
-            if (entityKeyIds.isEmpty()) {
-                Optional.empty()
-            } else {
-                Optional.of(entityKeyIdsClause(entityKeyIds))
-            }
-    //@formatter:off
-    val columns = setOf(
-            "${ID_VALUE.name}",
-            if(metadataOptions.contains(MetadataOption.LAST_WRITE) ) {"${LAST_WRITE.name}" } else { "" },
-            if(metadataOptions.contains(MetadataOption.LAST_INDEX) ) {"${LAST_INDEX.name}" } else { "" })
-            .union( authorizedPropertyTypes.values.map(::quote ) )
-
-    return "SELECT ${columns.filter(String::isNotBlank).joinToString (",")} \n" +
-            "FROM $esTableName \n" +
-            authorizedPropertyTypes
-                    .map { "LEFT JOIN ${selectVersionOfPropertyTypeInEntitySet(entitySetId, entityKeyIdsClause, it.key, it.value, version )} USING (${ID.name} )" }
-                    .joinToString("\n" ) +
-            if( entityKeyIdsClause.isPresent ) { " WHERE ${entityKeyIdsClause.get()} " } else  { " " }
-    //@formatter:on
-}
-
-internal fun selectVersionOfPropertyTypeInEntitySet(
-        entitySetId: UUID,
-        entityKeyIdsClause: Optional<String>,
-        propertyTypeId: UUID,
-        fqn: String,
-        version: Long
-): String {
-    val propertyTable = quote(propertyTableName(propertyTypeId))
-    return "(SELECT ${ENTITY_SET_ID.name}, " +
-            "   ${ID_VALUE.name}, " +
-            "   ${DataTables.quote(fqn)}, " +
-            "   $MAX_PREV_VERSION " +
-            "FROM ${subSelectFilteredVersionOfPropertyTypeInEntitySet(
-                    entitySetId, entityKeyIdsClause, propertyTypeId, fqn, version
-            )}" +
-            "WHERE ARRAY[$MAX_PREV_VERSION] <@ versions) as $propertyTable AND ${entityKeyIdsClause.get()}"
-}
-
-// We could combine latest and versioned reads, but it's easier to understand if they are separate.
-internal fun subSelectLatestVersionOfPropertyTypeInEntitySet(
-        entitySetId: UUID,
-        entityKeyIdsClause: Optional<String>,
-        propertyTypeId: UUID,
-        fqn: String
-): String {
-    val propertyTable = quote(propertyTableName(propertyTypeId))
-    return "(SELECT ${ENTITY_SET_ID.name}," +
-            " ${ID_VALUE.name}," +
-            " array_agg(${DataTables.quote(fqn)}) as ${DataTables.quote(fqn)}," +
-            " ${VERSION.name} " +
-            "FROM $propertyTable " +
-            "WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND ${VERSION.name} >= 0 " +
-            //@formatter:off
-            if( entityKeyIdsClause.isPresent ) { " AND ${entityKeyIdsClause.get()} " } else { " " } +
-            //@formatter:on
-            "GROUP BY (${ENTITY_SET_ID.name}, ${ID_VALUE.name}, ${HASH.name})) as $propertyTable "
-}
-
-fun subSelectFilteredVersionOfPropertyTypeInEntitySet(
-        entitySetId: UUID,
-        entityKeyIdsClause: Optional<String>,
-        propertyTypeId: UUID,
-        fqn: String,
-        version: Long
-): String {
-    val propertyTable = quote(propertyTableName(propertyTypeId))
-    return "(SELECT ${ENTITY_SET_ID.name}," +
-            " ${ID_VALUE.name}, " +
-            " ${HASH.name}, " +
-            " array_agg(${DataTables.quote(fqn)}) as ${DataTables.quote(fqn)}," +
-            " array_agg($EXPANDED_VERSIONS) as versions," +
-            " max(abs($EXPANDED_VERSIONS)) as $MAX_PREV_VERSION " +
-            "FROM $propertyTable, unnest(versions) as $EXPANDED_VERSIONS " +
-            "WHERE ${ENTITY_SET_ID.name} = '$entitySetId' AND abs($EXPANDED_VERSIONS) <= $version " +
-            //@formatter:off
-            if( entityKeyIdsClause.isPresent ) { " AND ${entityKeyIdsClause.get()} " } else { " " } +
-            //@formatter:on
-            "GROUP BY (${ENTITY_SET_ID.name}," +
-            "   ${ID_VALUE.name}," +
-            "   ${HASH.name})" +
-            ") as $propertyTable "
-}
-
-internal fun entityKeyIdsClause(entityKeyIds: Set<UUID>): String {
-    return "${ID_VALUE.name} IN ('" + entityKeyIds.joinToString("','") + "')"
 }

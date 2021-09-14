@@ -24,11 +24,9 @@ import com.openlattice.hazelcast.StreamSerializerTypeIds;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer;
-import com.openlattice.edm.requests.MetadataUpdate;
 import com.openlattice.edm.types.processors.UpdatePropertyTypeMetadataProcessor;
 import java.io.IOException;
-import java.util.Optional;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
+
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,31 +35,12 @@ public class UpdatePropertyTypeMetadataProcessorStreamSerializer
 
     @Override
     public void write( ObjectDataOutput out, UpdatePropertyTypeMetadataProcessor object ) throws IOException {
-        MetadataUpdate update = object.getUpdate();
-        OptionalStreamSerializers.serialize( out, update.getTitle(), ObjectDataOutput::writeUTF );
-        OptionalStreamSerializers.serialize( out, update.getDescription(), ObjectDataOutput::writeUTF );
-        OptionalStreamSerializers.serialize( out, update.getType(), FullQualifiedNameStreamSerializer::serialize );
-        OptionalStreamSerializers.serialize( out, update.getPii(), ObjectDataOutput::writeBoolean );
+        MetadataUpdateStreamSerializer.serialize( out, object.getUpdate() );
     }
 
     @Override
     public UpdatePropertyTypeMetadataProcessor read( ObjectDataInput in ) throws IOException {
-        Optional<String> title = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
-        Optional<String> description = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readUTF );
-        Optional<FullQualifiedName> type = OptionalStreamSerializers.deserialize( in,
-                FullQualifiedNameStreamSerializer::deserialize );
-        Optional<Boolean> pii = OptionalStreamSerializers.deserialize( in, ObjectDataInput::readBoolean );
-
-        MetadataUpdate update = new MetadataUpdate(
-                title,
-                description,
-                Optional.empty(),
-                Optional.empty(),
-                type,
-                pii,
-                Optional.empty(),
-                Optional.empty() );
-        return new UpdatePropertyTypeMetadataProcessor( update );
+        return new UpdatePropertyTypeMetadataProcessor( MetadataUpdateStreamSerializer.deserialize( in ) );
     }
 
     @Override

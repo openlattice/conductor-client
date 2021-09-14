@@ -1,27 +1,20 @@
 package com.openlattice.postgres.mapstores;
 
 import com.openlattice.hazelcast.HazelcastMap;
-import com.google.common.collect.ImmutableList;
-import com.openlattice.postgres.PostgresColumn;
-import com.openlattice.postgres.PostgresColumnDefinition;
-import com.openlattice.postgres.PostgresTableDefinition;
 import com.openlattice.postgres.ResultSetAdapters;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.UUID;
 
-import static com.openlattice.postgres.PostgresColumn.NAME;
-import static com.openlattice.postgres.PostgresColumn.SECURABLE_OBJECTID;
 import static com.openlattice.postgres.PostgresTable.NAMES;
 
 public class NamesMapstore extends AbstractBasePostgresMapstore<UUID, String> {
 
     public NamesMapstore( HikariDataSource hds ) {
-        super( HazelcastMap.NAMES.name(), NAMES, hds );
+        super( HazelcastMap.NAMES, NAMES, hds );
     }
 
 
